@@ -126,6 +126,60 @@ curl -X POST http://localhost:9527/api/generate_png \
   }'
 ```
 
+## 🏗️ Architecture
+
+```
+D3.js Dify
+├── Frontend (Web Interface)
+│   ├── Modern UI with real-time preview
+│   ├── Chart customization options
+│   └── Export functionality
+├── Backend (Flask API)
+│   ├── LangChain agent processing
+│   ├── D3.js chart generation
+│   └── Image export service
+├── AI Engine (LangChain)
+│   ├── Natural language processing
+│   ├── Chart type detection
+│   └── Data generation
+└── Visualization Engine (D3.js)
+    ├── Interactive charts
+    ├── Responsive design
+    └── Animation system
+```
+
+## 🛠️ Configuration
+
+### Environment Variables
+
+```bash
+# API Configuration
+API_KEY=your_api_key_here
+API_BASE_URL=https://api.example.com
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=9527
+DEBUG=True
+
+# Chart Configuration
+DEFAULT_THEME=light
+CHART_WIDTH=800
+CHART_HEIGHT=600
+```
+
+### Custom Chart Themes
+
+Create custom themes by modifying the D3.js configuration:
+
+```javascript
+const customTheme = {
+  colors: ['#ff6b6b', '#4ecdc4', '#45b7d1'],
+  background: '#ffffff',
+  textColor: '#333333'
+};
+```
+
 ## 🐳 Docker Deployment
 
 ### Quick Docker Setup
@@ -139,12 +193,26 @@ docker build -t d3-dify .
 docker run -p 9527:9527 d3-dify
 ```
 
+### Production Deployment
+
+```bash
+# Production build
+docker build -f Dockerfile.prod -t d3-dify-prod .
+
+# Run with environment variables
+docker run -d \
+  -p 9527:9527 \
+  -e API_KEY=your_key \
+  -e DEBUG=False \
+  d3-dify-prod
+```
+
 ## 📚 Documentation
 
 - **[Agent Guide](docs/AGENT.md)** - LangChain agent functionality
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Installation and deployment
 - **[Graph Specs](docs/GRAPH_SPECS.md)** - Custom chart specifications
-- **[Complete Wiki](WIKI.md)** - Comprehensive project documentation
+- **[API Reference](docs/API.md)** - Complete API documentation
 
 ## 🤝 Contributing
 
@@ -156,17 +224,55 @@ We welcome contributions! Here's how you can help:
 4. **Push to the branch** (`git push origin feature/amazing-feature`)
 5. **Open a Pull Request**
 
-## 📞 Support
+### Development Setup
 
-- **Issues**: [GitHub Issues](https://github.com/lycosa9527/D3.js_Dify/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lycosa9527/D3.js_Dify/discussions)
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+python -m pytest tests/
+
+# Run linting
+flake8 .
+black .
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Q: Charts not rendering properly?**
+A: Ensure Playwright is installed: `python -m playwright install chromium`
+
+**Q: API requests failing?**
+A: Check your API key in the `.env` file and ensure the service is running
+
+**Q: Slow chart generation?**
+A: This is normal for complex charts. Consider using the async API for better performance
+
+**Q: Export not working?**
+A: Verify that the export directory has write permissions
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🙏 Acknowledgments
+
+- **D3.js** - The powerful visualization library
+- **LangChain** - The AI framework that powers our agents
+- **Flask** - The web framework
+- **Playwright** - For headless browser rendering
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/lycosa9527/D3.js_Dify/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/lycosa9527/D3.js_Dify/discussions)
+- **Documentation**: [Wiki](https://github.com/lycosa9527/D3.js_Dify/wiki)
+
 ---
 
 **Made with ❤️ by the D3.js Dify Team**
 
-Transform your data into beautiful visualizations with the power of AI! 🚀
+Transform your data into beautiful visualizations with the power of AI! 🚀 
