@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Debug Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f4f6fb; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.10); padding: 32px 28px; }
+        h1 { text-align: center; color: #4e79a7; margin-bottom: 24px; }
+        label { font-weight: 600; color: #35506b; }
+        textarea { width: 100%; min-height: 60px; font-size: 1.1rem; border-radius: 8px; border: 1.5px solid #cfd8dc; padding: 12px; margin-bottom: 16px; }
+        select, button { font-size: 1rem; padding: 8px 16px; border-radius: 6px; border: 1.5px solid #cfd8dc; margin-right: 8px; }
+        button { background: #4e79a7; color: #fff; border: none; font-weight: 600; cursor: pointer; }
+        button:disabled { background: #bbb; cursor: not-allowed; }
+        .result, .error { margin-top: 24px; padding: 18px; border-radius: 10px; }
+        .result { background: #f9fafd; color: #222; word-break: break-all; }
+        .error { background: #fff3f3; color: #d32f2f; border: 1.5px solid #f8d7da; }
+        img { display: block; margin: 18px auto 0 auto; max-width: 100%; border-radius: 10px; box-shadow: 0 2px 12px rgba(78,121,167,0.10); border: 2px solid #a7c7e7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>D3.js_Dify debug tool</h1>
+        <label for="prompt">Prompt:</label>
+        <textarea id="prompt" placeholder="Enter your graph prompt..."></textarea>
+        <label for="language">Language:</label>
+        <select id="language">
+            <option value="zh">中文 (Chinese)</option>
+            <option value="en">English</option>
+        </select>
+        <button id="getJsonBtn">Get JSON Spec</button>
+        <button id="getPngBtn">Generate Diagram</button>
+        <div id="infoMsg"></div>
+        <div id="historyBox" style="margin-top:18px;"></div>
+        <div class="result" id="jsonResult" style="display:none;"></div>
+        <div class="result" id="pngResult" style="display:none;"></div>
+        <div class="error" id="errorMsg" style="display:none;"></div>
+    </div>
+    <script>
+    const getJsonBtn = document.getElementById('getJsonBtn');
+    const getPngBtn = document.getElementById('getPngBtn');
+    const promptBox = document.getElementById('prompt');
+    const languageSelect = document.getElementById('language');
+    const jsonResult = document.getElementById('jsonResult');
+    const pngResult = document.getElementById('pngResult');
+    const errorMsg = document.getElementById('errorMsg');
+    const infoMsg = document.getElementById('infoMsg');
+    const historyBox = document.getElementById('historyBox');
+
+    // --- History logic ---
+    let history = JSON.parse(localStorage.getItem('d3js_dify_history') || '[]');
+    function saveHistory(prompt, lang) {
+        if (!prompt.trim()) return;
+        history = history.filter(h => h.prompt !== prompt || h.lang !== lang);
+        history.unshift({prompt, lang});
+        if (history.length > 10) history = history.slice(0, 10);
+        localStorage.setItem('d3js_dify_history', JSON.stringify(history));
+        renderHistory();
+    }
+    function renderHistory() {
+        if (!history.length) { historyBox.innerHTML = ''; return; }
+        historyBox.innerHTML = '<b>History:</b>' + history.map((h, i) =>
+            `<div style='margin:4px 0;'><a href='#' data-idx='${i}' style='color:#4e79a7;text-decoration:underline;'>${h.prompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</a> <span style='color:#888;font-size:0.9em;'>[${h.lang}]</span></div>`
+        ).join('');
+    }
+    historyBox.onclick = function(e) {
+        if (e.target.tagName === 'A' && e.target.dataset.idx) {
+            const idx = +e.target.dataset.idx;
+            promptBox.value = history[idx].prompt;
+            languageSelect.value = history[idx].lang;
+        }
+    };
+    renderHistory();
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = msg ? 'block' : 'none';
+    }
+    function showInfo(msg) {
+        infoMsg.textContent = msg;
+    }
+    function showJsonResult(data) {
+        jsonResult.style.display = 'block';
+        pngResult.style.display = 'none';
+        jsonResult.textContent = JSON.stringify(data, null, 2);
+    }
+    function showPngResult(blob) {
+        jsonResult.style.display = 'none';
+        pngResult.style.display = 'block';
+        pngResult.innerHTML = '';
+        const url = URL.createObjectURL(blob);
+        const img = document.createElement('img');
+        img.src = url;
+        img.onload = () => URL.revokeObjectURL(url);
+        pngResult.appendChild(img);
+    }
+    getJsonBtn.onclick = async function() {
+        showError(''); showInfo('Requesting JSON spec...');
+        jsonResult.style.display = 'none'; pngResult.style.display = 'none';
+        try {
+            const resp = await fetch('/generate_graph', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
+            });
+            const data = await resp.json();
+            if (!resp.ok || !data || data.error) {
+                showError(data.error || 'Agent error.');
+                showInfo('');
+                return;
+            }
+            showJsonResult(data);
+            showInfo('');
+            saveHistory(promptBox.value, languageSelect.value);
+        } catch (e) {
+            showError('Request failed: ' + e);
+            showInfo('');
+        }
+    };
+    getPngBtn.onclick = async function() {
+        showError(''); showInfo('Requesting PNG...');
+        jsonResult.style.display = 'none'; pngResult.style.display = 'none';
+        try {
+            const resp = await fetch('/generate_png', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
+            });
+            if (!resp.ok) {
+                // Try to parse error JSON, fallback to generic error
+                let data = {};
+                try { data = await resp.json(); } catch {}
+                showError(data.error || 'PNG generation failed.');
+                showInfo('');
+                return;
+            }
+            // Display PNG in the page, not as a download
+            const blob = await resp.blob();
+            showPngResult(blob);
+            showInfo('');
+            saveHistory(promptBox.value, languageSelect.value);
+        } catch (e) {
+            showError('Request failed: ' + e);
+            showInfo('');
+        }
+    };
+    </script>
+</body>
+</html> 

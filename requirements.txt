@@ -1,0 +1,37 @@
+# Core Flask dependencies
+Flask==3.1.1
+Werkzeug>=2.0.0
+Flask-Limiter>=3.4.0
+flask-cors>=4.0.0
+
+# HTTP and networking
+requests>=2.31.0
+websockets==15.0.1
+
+# AI and language processing
+langchain>=0.3.0
+
+# Configuration and environment
+PyYAML>=6.0.0
+python-dotenv>=0.19.0
+
+# Async and concurrency
+nest_asyncio==1.6.0
+pyee==13.0.0
+
+# Browser automation
+playwright>=1.40.0
+
+# Image processing
+Pillow>=10.0.1
+
+# System monitoring (optional)
+# psutil: Used for basic system metrics in status endpoints
+psutil>=5.9.0
+
+# Testing (optional, for development)
+pytest>=7.0.0
+
+# --- Optional/utility dependencies ---
+# If you use image processing or export features, Pillow is required
+# If you use Flask extensions, add them here 
