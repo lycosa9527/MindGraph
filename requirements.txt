@@ -1,3 +1,15 @@
+# D3.js_Dify - AI-Powered Graph Generation Application
+# Version: 2.0.0
+# Requirements for Python 3.8+
+# 
+# Core Features:
+# - AI-powered graph generation with Qwen and DeepSeek LLMs
+# - Interactive D3.js visualization
+# - PNG export functionality
+# - Comprehensive dependency validation
+# - Professional startup sequence
+# - Cross-platform compatibility
+
 # Core Flask dependencies
 Flask==3.1.1
 Werkzeug>=2.0.0
@@ -19,19 +31,26 @@ python-dotenv>=0.19.0
 nest_asyncio==1.6.0
 pyee==13.0.0
 
-# Browser automation
+# Browser automation (for PNG generation)
 playwright>=1.40.0
 
-# Image processing
+# Image processing (for PNG export)
 Pillow>=10.0.1
 
-# System monitoring (optional)
-# psutil: Used for basic system metrics in status endpoints
+# System monitoring (for status endpoints)
 psutil>=5.9.0
 
 # Testing (optional, for development)
 pytest>=7.0.0
 
-# --- Optional/utility dependencies ---
-# If you use image processing or export features, Pillow is required
-# If you use Flask extensions, add them here 
+# --- Development and Optional Dependencies ---
+# These are not required for production but useful for development
+# 
+# For local development:
+# - pytest: Unit testing framework
+# - psutil: System metrics and monitoring
+#
+# For production deployment:
+# - All core dependencies above are required
+# - Ensure Python 3.8+ is installed
+# - Node.js 18.19+ for D3.js dependencies 

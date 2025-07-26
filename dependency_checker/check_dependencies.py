@@ -29,39 +29,36 @@ def check_python_packages(verbose=True):
     """Check if all required Python packages are installed."""
     if verbose:
         logger.info("🔍 Checking Python packages...")
-    
+
     required_packages = [
-        'flask', 'requests', 'langchain', 'yaml', 'dotenv', 
-        'nest_asyncio', 'pyee', 'websockets', 'playwright',
-        'werkzeug', 'PIL', 'flask_limiter', 'flask_cors'
+        'flask', 'requests', 'langchain', 'yaml', 'dotenv',
+        'nest_asyncio', 'pyee', 'playwright', 'pillow'
     ]
-    
+    package_mapping = {
+        'yaml': 'yaml',
+        'dotenv': 'dotenv',
+        'pillow': 'PIL',
+    }
+
     missing_packages = []
-    
     for package in required_packages:
         try:
-            if package == 'yaml':
-                import yaml
-            elif package == 'dotenv':
-                import dotenv
-            elif package == 'PIL':
-                import PIL
-            elif package == 'flask_limiter':
-                import flask_limiter
-            elif package == 'flask_cors':
-                import flask_cors
-            else:
-                __import__(package)
-        except ImportError:
+            import_name = package_mapping.get(package, package)
+            __import__(import_name)
+            if verbose:
+                logger.debug(f"Successfully imported {package} as {import_name}")
+        except ImportError as e:
+            if verbose:
+                logger.debug(f"Failed to import {package} as {import_name}: {e}")
             missing_packages.append(package)
-    
+
     if missing_packages:
         if verbose:
             logger.error(f"❌ Missing Python packages: {', '.join(missing_packages)}")
             logger.info("Please install missing packages with:")
             logger.info("   pip install -r requirements.txt")
         return False
-    
+
     if verbose:
         logger.info("✅ All Python packages are installed!")
     return True

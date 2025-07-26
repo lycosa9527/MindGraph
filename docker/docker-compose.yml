@@ -1,18 +1,36 @@
-# D3.js_Dify Docker Compose Configuration
-# This file sets up a production-ready environment with simple logging and monitoring
+# D3.js_Dify - AI-Powered Graph Generation Application
+# Version: 2.0.0
+# 
+# Features:
+# - AI-powered graph generation with Qwen and DeepSeek LLMs
+# - Interactive D3.js visualization
+# - PNG export functionality
+# - Comprehensive dependency validation
+# - Professional startup sequence
+# - Cross-platform compatibility
+#
+# This Docker Compose configuration sets up a production-ready environment
+# with comprehensive logging, monitoring, and resource management.
 
 version: '3.8'
 
 services:
   # Main D3.js_Dify application service
   d3js-dify:
-    build: .
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: d3js-dify
     ports:
       # Expose the main application port
       - "9527:9527"
+    
     environment:
-      # Qwen API configuration (required for AI graph generation)
+      # ============================================================================
+      # REQUIRED CONFIGURATION
+      # ============================================================================
+      
+      # Qwen API configuration (required for core functionality)
       # These must be set in your .env file or environment
       - QWEN_API_KEY=${QWEN_API_KEY}
       - QWEN_API_URL=${QWEN_API_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
@@ -21,33 +39,83 @@ services:
       - QWEN_MAX_TOKENS=${QWEN_MAX_TOKENS:-1000}
       - QWEN_TIMEOUT=${QWEN_TIMEOUT:-40}
       
-      # Application configuration
-      # DEBUG: Set to True for development, False for production
-      # GRAPH_LANGUAGE: Language for graph generation (zh/en)
-      # WATERMARK_TEXT: Text to display on generated graphs
+      # ============================================================================
+      # OPTIONAL CONFIGURATION
+      # ============================================================================
+      
+      # DeepSeek API configuration (optional for enhanced features)
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_API_URL=${DEEPSEEK_API_URL:-https://api.deepseek.com/v1/chat/completions}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - DEEPSEEK_TEMPERATURE=${DEEPSEEK_TEMPERATURE:-0.7}
+      - DEEPSEEK_MAX_TOKENS=${DEEPSEEK_MAX_TOKENS:-2000}
+      - DEEPSEEK_TIMEOUT=${DEEPSEEK_TIMEOUT:-60}
+      
+      # ============================================================================
+      # APPLICATION CONFIGURATION
+      # ============================================================================
+      
+      # Core application settings
       - HOST=0.0.0.0
       - PORT=9527
       - DEBUG=${DEBUG:-False}
       - GRAPH_LANGUAGE=${GRAPH_LANGUAGE:-zh}
       - WATERMARK_TEXT=${WATERMARK_TEXT:-D3.js_Dify}
       
+      # D3.js visualization configuration
+      - TOPIC_FONT_SIZE=${TOPIC_FONT_SIZE:-18}
+      - CHAR_FONT_SIZE=${CHAR_FONT_SIZE:-14}
+      - D3_BASE_WIDTH=${D3_BASE_WIDTH:-700}
+      - D3_BASE_HEIGHT=${D3_BASE_HEIGHT:-500}
+      - D3_PADDING=${D3_PADDING:-40}
+      
+      # Color theme configuration
+      - D3_TOPIC_FILL=${D3_TOPIC_FILL:-#4e79a7}
+      - D3_TOPIC_TEXT=${D3_TOPIC_TEXT:-#ffffff}
+      - D3_TOPIC_STROKE=${D3_TOPIC_STROKE:-#2c3e50}
+      - D3_SIM_FILL=${D3_SIM_FILL:-#a7c7e7}
+      - D3_SIM_TEXT=${D3_SIM_TEXT:-#2c3e50}
+      - D3_SIM_STROKE=${D3_SIM_STROKE:-#4e79a7}
+      - D3_DIFF_FILL=${D3_DIFF_FILL:-#f4f6fb}
+      - D3_DIFF_TEXT=${D3_DIFF_TEXT:-#2c3e50}
+      - D3_DIFF_STROKE=${D3_DIFF_STROKE:-#a7c7e7}
+    
     volumes:
       # Persist generated graph exports
       # This allows you to access generated graphs from the host
-      - ./d3js_dify_exports:/app/d3js_dify_exports
+      - ../d3js_dify_exports:/app/d3js_dify_exports
       
       # Persist application logs
-      - ./logs:/app/logs
-      
+      - ../logs:/app/logs
+    
     restart: unless-stopped
     
-    # Status check configuration
-
-      
-    # Resource limits
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9527/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits for production stability
     deploy:
       resources:
         limits:
           memory: 2G
+          cpus: '1.0'
         reservations:
-          memory: 512M 
+          memory: 512M
+          cpus: '0.5'
+    
+    # Network configuration
+    networks:
+      - d3js-network
+
+# ============================================================================
+# NETWORK CONFIGURATION
+# ============================================================================
+
+networks:
+  d3js-network:
+    driver: bridge 

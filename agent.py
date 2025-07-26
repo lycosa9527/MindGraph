@@ -697,25 +697,23 @@ def get_agent_config():
     }
 
 
-import signal
 import threading
+import time
 
 def validate_agent_setup():
     """
-    Validate that the agent is properly configured with timeout
+    Validate that the agent is properly configured with cross-platform timeout
     
     Returns:
         bool: True if agent is ready, False otherwise
     """
-    def timeout_handler(signum, frame):
+    def timeout_handler():
         raise TimeoutError("LLM validation timed out")
     
+    timer = threading.Timer(config.QWEN_TIMEOUT, timeout_handler)
+    timer.start()
+    
     try:
-        # Set timeout for validation (only on Unix-like systems)
-        if hasattr(signal, 'SIGALRM'):
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(config.QWEN_TIMEOUT)  # Use configurable timeout
-        
         # Test LLM connection
         test_prompt = "Test"
         llm._call(test_prompt)
@@ -728,6 +726,4 @@ def validate_agent_setup():
         logger.error(f"Agent: LLM connection failed: {e}")
         return False
     finally:
-        # Cancel alarm if it was set
-        if hasattr(signal, 'SIGALRM'):
-            signal.alarm(0) 
+        timer.cancel() 

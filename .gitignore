@@ -46,4 +46,9 @@ temp/
 tmp/
 
 # Docker
-.dockerignore 
+.dockerignore
+
+# Environment variables
+.env
+.env.local
+.env.*.local 

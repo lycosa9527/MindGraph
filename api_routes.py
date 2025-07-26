@@ -113,7 +113,7 @@ def sanitize_prompt(prompt):
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
-    """Generate graph specification from user prompt."""
+    """Generate graph specification from user prompt using Qwen (default)."""
     # Input validation
     data = request.json
     valid, msg = validate_request_data(data, ['prompt'])
@@ -124,13 +124,13 @@ def generate_graph():
     if not prompt:
         return jsonify({'error': 'Invalid or empty prompt'}), 400
     
-    language = data.get('language', 'zh')
+    language = data.get('language', 'zh')  # Default to Chinese for Qwen
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
     
-    logger.info(f"Frontend /generate_graph: prompt={prompt!r}, language={language!r}")
+    logger.info(f"Frontend /generate_graph (Qwen): prompt={prompt!r}, language={language!r}")
     
-    # Generate graph specification
+    # Generate graph specification using Qwen (default agent)
     graph_type = agent.classify_graph_type_with_llm(prompt, language)
     spec = agent.generate_graph_spec(prompt, graph_type, language)
     
@@ -142,7 +142,8 @@ def generate_graph():
             logger.warning(f"Generated invalid spec for {graph_type}: {msg}")
             return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
     
-    return jsonify({'type': graph_type, 'spec': spec})
+    return jsonify({'type': graph_type, 'spec': spec, 'agent': 'qwen'})
+
 
 @api.route('/generate_png', methods=['POST'])
 @handle_api_errors
@@ -375,4 +376,120 @@ function renderGraph(type,spec){
         # If the error is about missing SVG, return a specific message
         if isinstance(e, ValueError) and str(e).startswith("SVG element not found"):
             return jsonify({'error': 'Failed to render the graph: SVG element not found. Please check your input or try a different prompt.'}), 400
-        return jsonify({'error': f'Failed to generate PNG: {e}'}), 500 
+        return jsonify({'error': f'Failed to generate PNG: {e}'}), 500
+
+
+@api.route('/generate_graph_deepseek', methods=['POST'])
+@handle_api_errors
+def generate_graph_deepseek():
+    """Generate graph specification using DeepSeek for prompt enhancement and Qwen for JSON generation (optional)."""
+    # Input validation
+    data = request.json
+    valid, msg = validate_request_data(data, ['prompt'])
+    if not valid:
+        return jsonify({'error': msg}), 400
+    
+    prompt = sanitize_prompt(data['prompt'])
+    if not prompt:
+        return jsonify({'error': 'Invalid or empty prompt'}), 400
+    
+    language = data.get('language', 'en')  # Default to English for DeepSeek
+    if not isinstance(language, str) or language not in ['zh', 'en']:
+        return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
+    
+    logger.info(f"Frontend /generate_graph_deepseek: prompt={prompt!r}, language={language!r}")
+    
+    try:
+        # Step 1: Use DeepSeek to enhance the prompt and classify diagram type
+        import deepseek_agent
+        
+        # Generate enhanced prompt using DeepSeek
+        deepseek_result = deepseek_agent.development_workflow(prompt, language, save_to_file=False)
+        
+        # Check if DeepSeek processing was successful
+        if isinstance(deepseek_result, dict) and deepseek_result.get('error'):
+            logger.error(f"DeepSeek prompt enhancement failed: {deepseek_result['error']}")
+            return jsonify({'error': deepseek_result['error']}), 400
+        
+        diagram_type = deepseek_result.get('diagram_type', 'bubble_map')
+        enhanced_prompt = deepseek_result.get('development_prompt', prompt)
+        
+        logger.info(f"DeepSeek: Classified as {diagram_type}, enhanced prompt generated")
+        
+        # Step 2: Use Qwen to generate the actual JSON specification
+        spec = agent.generate_graph_spec(enhanced_prompt, diagram_type, language)
+        
+        # Check if Qwen generation was successful
+        if isinstance(spec, dict) and spec.get('error'):
+            logger.error(f"Qwen JSON generation failed: {spec['error']}")
+            return jsonify({'error': spec['error']}), 400
+        
+        logger.info(f"Qwen: Generated JSON specification for {diagram_type}")
+        
+        return jsonify({
+            'type': diagram_type, 
+            'spec': spec, 
+            'agent': 'deepseek+qwen',
+            'enhanced_prompt': enhanced_prompt
+        })
+        
+    except ImportError:
+        logger.error("DeepSeek agent module not available")
+        return jsonify({'error': 'DeepSeek agent is not available. Please check configuration.'}), 500
+    except Exception as e:
+        logger.error(f"DeepSeek + Qwen workflow failed: {e}", exc_info=True)
+        return jsonify({'error': f'Workflow failed: {str(e)}'}), 500
+
+
+@api.route('/generate_development_prompt', methods=['POST'])
+@handle_api_errors
+def generate_development_prompt():
+    """Generate development phase prompt template using DeepSeek (for developers)."""
+    # Input validation
+    data = request.json
+    valid, msg = validate_request_data(data, ['prompt'])
+    if not valid:
+        return jsonify({'error': msg}), 400
+    
+    prompt = sanitize_prompt(data['prompt'])
+    if not prompt:
+        return jsonify({'error': 'Invalid or empty prompt'}), 400
+    
+    language = data.get('language', 'en')  # Default to English for DeepSeek
+    if not isinstance(language, str) or language not in ['zh', 'en']:
+        return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
+    
+    save_to_file = data.get('save_to_file', True)  # Default to saving
+    
+    logger.info(f"Frontend /generate_development_prompt: prompt={prompt!r}, language={language!r}")
+    
+    try:
+        # Use DeepSeek for development phase prompt generation
+        import deepseek_agent
+        
+        # Generate development prompt template
+        result = deepseek_agent.development_workflow(prompt, language, save_to_file)
+        
+        # Check if DeepSeek processing was successful
+        if isinstance(result, dict) and result.get('error'):
+            logger.error(f"DeepSeek development prompt generation failed: {result['error']}")
+            return jsonify({'error': result['error']}), 400
+        
+        logger.info(f"DeepSeek: Generated development prompt for {result.get('diagram_type', 'unknown')}")
+        
+        return jsonify({
+            'diagram_type': result.get('diagram_type'),
+            'development_prompt': result.get('development_prompt'),
+            'original_prompt': result.get('original_prompt'),
+            'language': result.get('language'),
+            'workflow_type': result.get('workflow_type'),
+            'saved_filename': result.get('saved_filename'),
+            'agent': 'deepseek_development'
+        })
+        
+    except ImportError:
+        logger.error("DeepSeek agent module not available")
+        return jsonify({'error': 'DeepSeek agent is not available. Please check configuration.'}), 500
+    except Exception as e:
+        logger.error(f"DeepSeek development workflow failed: {e}", exc_info=True)
+        return jsonify({'error': f'Development workflow failed: {str(e)}'}), 500 
