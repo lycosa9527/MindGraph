@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![WakaTime](https://wakatime.com/badge/user/lyc9527/project/D3.js_Dify.svg)](https://wakatime.com/@lyc9527/projects/D3.js_Dify)
+[![WakaTime](https://wakatime.com/badge/user/cunchi.wang@mail.bnu.edu.cn/project/D3.js_Dify.svg)](https://wakatime.com/@cunchi.wang@mail.bnu.edu.cn/projects/D3.js_Dify)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
