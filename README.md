@@ -132,11 +132,18 @@ curl -X POST http://localhost:9527/api/generate_png \
 
 ```bash
 # Build and run with Docker Compose
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # Or build manually
-docker build -t d3-dify .
+docker build -t d3-dify docker/
 docker run -p 9527:9527 d3-dify
+
+# Or use the convenience scripts
+# Linux/macOS
+./docker/run-docker.sh
+
+# Windows
+docker\run-docker.bat
 ```
 
 ## 📚 Documentation

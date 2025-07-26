@@ -186,18 +186,25 @@ const customTheme = {
 
 ```bash
 # Build and run with Docker Compose
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # Or build manually
-docker build -t d3-dify .
+docker build -t d3-dify docker/
 docker run -p 9527:9527 d3-dify
+
+# Or use the convenience scripts
+# Linux/macOS
+./docker/run-docker.sh
+
+# Windows
+docker\run-docker.bat
 ```
 
 ### Production Deployment
 
 ```bash
 # Production build
-docker build -f Dockerfile.prod -t d3-dify-prod .
+docker build -f docker/Dockerfile -t d3-dify-prod docker/
 
 # Run with environment variables
 docker run -d \
@@ -206,6 +213,17 @@ docker run -d \
   -e DEBUG=False \
   d3-dify-prod
 ```
+
+### Docker Configuration
+
+All Docker-related files are organized in the `docker/` folder:
+- **Dockerfile** - Main image definition
+- **docker-compose.yml** - Multi-service orchestration
+- **run-docker.sh** - Linux/macOS deployment script
+- **run-docker.bat** - Windows deployment script
+- **.dockerignore** - Build context exclusions
+
+See [docker/README.md](docker/README.md) for detailed Docker documentation.
 
 ## 📚 Documentation
 
