@@ -1,6 +1,6 @@
 # D3.js Dify - AI-Powered Data Visualization Generator
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
@@ -14,7 +14,7 @@
 
 - **🤖 AI-Powered**: Uses LangChain agents (Qwen & DeepSeek) to understand your requests and generate appropriate chart types
 - **🧠 Educational Focus**: DeepSeek agent specializes in Thinking Maps® and educational diagram generation
-- **📊 Multiple Chart Types**: Supports Thinking Maps, concept maps, mind maps, and traditional charts
+- **📊 Multiple Chart Types**: Supports Thinking Maps® (Bubble Maps, Circle Maps, Double Bubble Maps, Bridge Maps), concept maps, mind maps, and traditional charts
 - **🌐 Interactive**: Fully interactive D3.js visualizations with hover effects, animations, and zoom
 - **🎨 Beautiful Design**: Modern, responsive UI with customizable themes
 - **📱 Export Options**: Export charts as PNG images or interactive HTML
@@ -100,6 +100,17 @@ Export your charts as:
 - Embeddable code snippets
 
 ## 📊 Supported Chart Types
+
+### 🧠 Thinking Maps® (Educational Diagrams)
+
+| Chart Type | Description | Best For |
+|------------|-------------|----------|
+| **Bubble Map** | Central topic with connected attributes | Describing characteristics of a single topic |
+| **Circle Map** | Outer boundary with central topic and perimeter context | Defining topics in context |
+| **Double Bubble Map** | Two topics with shared and unique characteristics | Comparing and contrasting two topics |
+| **Bridge Map** | Analogical relationships with relating factors | Showing analogies and similarities |
+
+### 📈 Traditional Charts
 
 | Chart Type | Description | Best For |
 |------------|-------------|----------|

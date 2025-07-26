@@ -1,7 +1,7 @@
 # D3.js_Dify Code Review Report
 ## Comprehensive Logic Error Analysis
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Review Date:** 2024-01-27  
 **Reviewer:** AI Assistant  
 **Scope:** Full project codebase review

@@ -1,5 +1,5 @@
 # D3.js_Dify - AI-Powered Graph Generation Application
-# Version: 2.1.0
+# Version: 2.2.0
 # 
 # Features:
 # - AI-powered graph generation with Qwen and DeepSeek LLMs
@@ -68,7 +68,7 @@ ENV HOST=0.0.0.0
 ENV PORT=9527
 ENV DEBUG=False
 ENV GRAPH_LANGUAGE=zh
-ENV WATERMARK_TEXT=D3.js_Dify
+ENV WATERMARK_TEXT=MindSpring
 
 # Qwen API configuration (required for core functionality)
 # These must be provided at runtime via docker run or docker-compose

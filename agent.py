@@ -508,14 +508,14 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             "需求：{user_prompt}\n"
             "请输出一个包含以下字段的JSON对象：\n"
             "topic: \"主题\"\n"
-            "children: [{\"name\": \"子主题1\", \"children\": [{\"name\": \"子主题1.1\"}]}]\n"
+            "children: [{{\"name\": \"子主题1\", \"children\": [{{\"name\": \"子主题1.1\"}}]}}]\n"
             "请确保JSON格式正确，不要包含任何代码块标记。\n"
         ) if language == 'zh' else (
             "Please generate a JSON specification for a tree map for the following user request.\n"
             "Request: {user_prompt}\n"
             "Please output a JSON object containing the following fields:\n"
             "topic: \"Topic\"\n"
-            "children: [{\"name\": \"Subtopic1\", \"children\": [{\"name\": \"Subtopic1.1\"}]}]\n"
+            "children: [{{\"name\": \"Subtopic1\", \"children\": [{{\"name\": \"Subtopic1.1\"}}]}}]\n"
             "Please ensure the JSON format is correct, do not include any code block markers.\n"
         )
         prompt = PromptTemplate(
@@ -542,14 +542,14 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             "需求：{user_prompt}\n"
             "请输出一个包含以下字段的JSON对象：\n"
             "topic: \"主题\"\n"
-            "concepts: [{\"name\": \"概念1\", \"children\": [{\"name\": \"概念1.1\"}]}]\n"
+            "concepts: [{{\"name\": \"概念1\", \"children\": [{{\"name\": \"概念1.1\"}}]}}]\n"
             "请确保JSON格式正确，不要包含任何代码块标记。\n"
         ) if language == 'zh' else (
             "Please generate a JSON specification for a concept map for the following user request.\n"
             "Request: {user_prompt}\n"
             "Please output a JSON object containing the following fields:\n"
             "topic: \"Topic\"\n"
-            "concepts: [{\"name\": \"Concept1\", \"children\": [{\"name\": \"Concept1.1\"}]}]\n"
+            "concepts: [{{\"name\": \"Concept1\", \"children\": [{{\"name\": \"Concept1.1\"}}]}}]\n"
             "Please ensure the JSON format is correct, do not include any code block markers.\n"
         )
         prompt = PromptTemplate(
@@ -794,103 +794,248 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
 1. 主要主题和子主题
 2. 样式偏好（颜色、字体、布局等）
 3. 最适合的图表类型
+
 可用图表类型：
 - double_bubble_map: 比较和对比两个主题
 - bubble_map: 描述单个主题的特征
 - circle_map: 在上下文中定义主题
-- flow_map: 序列事件或过程
-- brace_map: 显示整体/部分关系
-- tree_map: 分类和归类信息
-- multi_flow_map: 显示因果关系
-- bridge_map: 显示类比和相似性
-- mindmap: 围绕中心主题组织想法
-- concept_map: 显示概念之间的关系
+- tree_map: 层次结构图
+- mindmap: 思维导图
+- concept_map: 概念图
+- flowchart: 流程图
+- venn_diagram: 维恩图
+
 样式偏好包括：
-- 颜色主题：classic, innovation, nature, corporate, vibrant, pastel, monochrome
-- 颜色名称：red, blue, green, yellow, purple, orange, pink, brown, gray, black, white
-- 字体大小：small, medium, large, extra-large
-- 重要性：center, main, sub
-- 背景：dark, light
-- 边框：bold, thin
+- colorTheme: 颜色主题 (classic, innovation, colorful, monochromatic, dark, light, print, display)
+- primaryColor: 主色调 (颜色名称或十六进制)
+- fontSize: 字体大小
+- importance: 重要性级别 (center, main, sub, detail)
+- backgroundTheme: 背景主题 (dark, light)
+
 请以JSON格式输出：
 {{{{
-    "topics": ["主题1", "主题2", ...],
+    "topics": ["主题1", "主题2"],
     "style_preferences": {{{{
-        "color_theme": "主题名称",
-        "primary_color": "颜色名称",
-        "font_size": "字体大小",
+        "colorTheme": "主题名称",
+        "primaryColor": "颜色",
+        "fontSize": 数字,
         "importance": "重要性级别",
-        "background": "背景偏好",
-        "stroke": "边框样式"
+        "backgroundTheme": "背景主题"
     }}}},
     "diagram_type": "图表类型"
 }}}}
-用户需求：{user_prompt}
-你的输出：
+
+用户需求：{{user_prompt}}
 """
     else:
         prompt_text = f"""
-You are an intelligent diagram assistant that extracts both topics and style preferences from user requests in a single pass.
+You are an intelligent diagram assistant that extracts both topic content and style preferences from user requirements.
 Please analyze the following user request and extract:
 1. Main topics and subtopics
 2. Style preferences (colors, fonts, layout, etc.)
 3. Most suitable diagram type
+
 Available diagram types:
 - double_bubble_map: Compare and contrast two topics
-- bubble_map: Describe attributes of a single topic
-- circle_map: Define a topic in context
-- flow_map: Sequence events or processes
-- brace_map: Show whole/part relationships
-- tree_map: Categorize and classify information
-- multi_flow_map: Show cause and effect relationships
-- bridge_map: Show analogies and similarities
-- mindmap: Organize ideas around a central topic
-- concept_map: Show relationships between concepts
+- bubble_map: Describe characteristics of a single topic
+- circle_map: Define topic in context
+- tree_map: Hierarchical structure
+- mindmap: Mind mapping
+- concept_map: Concept mapping
+- flowchart: Process flow
+- venn_diagram: Set relationships
+
 Style preferences include:
-- Color themes: classic, innovation, nature, corporate, vibrant, pastel, monochrome
-- Color names: red, blue, green, yellow, purple, orange, pink, brown, gray, black, white
-- Font sizes: small, medium, large, extra-large
-- Importance levels: center, main, sub
-- Backgrounds: dark, light
-- Strokes: bold, thin
+- colorTheme: Color theme (classic, innovation, colorful, monochromatic, dark, light, print, display)
+- primaryColor: Primary color (color name or hex)
+- fontSize: Font size
+- importance: Importance level (center, main, sub, detail)
+- backgroundTheme: Background theme (dark, light)
+
 Please output in JSON format:
 {{{{
-    "topics": ["topic1", "topic2", ...],
+    "topics": ["topic1", "topic2"],
     "style_preferences": {{{{
-        "color_theme": "theme_name",
-        "primary_color": "color_name",
-        "font_size": "font_size",
+        "colorTheme": "theme_name",
+        "primaryColor": "color",
+        "fontSize": number,
         "importance": "importance_level",
-        "background": "background_preference",
-        "stroke": "stroke_style"
+        "backgroundTheme": "background_theme"
     }}}},
     "diagram_type": "diagram_type"
 }}}}
-User request: {user_prompt}
-Your output:
+
+User request: {{user_prompt}}
 """
+    
     prompt = PromptTemplate(
         input_variables=["user_prompt"],
         template=prompt_text
     )
+    
     try:
-        result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip()
+        result = (prompt | llm).invoke({"user_prompt": user_prompt})
         cleaned_result = clean_llm_response(result)
         parsed_result = validate_and_parse_json(cleaned_result)
-        if not parsed_result:
-            return get_default_result()
-        style_prefs = parsed_result.get("style_preferences", {})
-        if not isinstance(style_prefs, dict):
-            style_prefs = {}
-        validated_result = {
-            "topics": parsed_result.get("topics", []),
-            "style_preferences": style_prefs,
-            "diagram_type": parsed_result.get("diagram_type", "bubble_map")
-        }
-        return validated_result
-    except (json.JSONDecodeError, ValueError, TypeError) as e:
-        logger.error(f"JSON parsing failed in enhanced extraction: {e}")
-        return get_default_result()
+        
+        if parsed_result:
+            # Validate and sanitize the parsed result
+            topics = parsed_result.get('topics', [])
+            if not isinstance(topics, list):
+                topics = []
+            
+            style_preferences = parsed_result.get('style_preferences', {})
+            if not isinstance(style_preferences, dict):
+                style_preferences = {}
+            
+            diagram_type = parsed_result.get('diagram_type', 'bubble_map')
+            if not isinstance(diagram_type, str):
+                diagram_type = 'bubble_map'
+            
+            return {
+                "topics": topics,
+                "style_preferences": style_preferences,
+                "diagram_type": diagram_type
+            }
     except Exception as e:
-        logger.error(f"Unexpected error in enhanced extraction: {e}")
-        return get_default_result() 
+        logger.error(f"Qwen style extraction failed: {e}")
+    
+    # Fallback to hardcoded parser
+    try:
+        from diagram_styles import parse_style_from_prompt
+        style_preferences = parse_style_from_prompt(user_prompt)
+        
+        # Simple topic extraction fallback
+        topics = []
+        if "vs" in user_prompt.lower() or "compare" in user_prompt.lower() or "对比" in user_prompt:
+            diagram_type = "double_bubble_map"
+        elif "mind" in user_prompt.lower() or "思维" in user_prompt:
+            diagram_type = "mindmap"
+        elif "tree" in user_prompt.lower() or "树" in user_prompt:
+            diagram_type = "tree_map"
+        elif "concept" in user_prompt.lower() or "概念" in user_prompt:
+            diagram_type = "concept_map"
+        elif "flow" in user_prompt.lower() or "流程" in user_prompt:
+            diagram_type = "flowchart"
+        elif "venn" in user_prompt.lower() or "维恩" in user_prompt:
+            diagram_type = "venn_diagram"
+        else:
+            diagram_type = "bubble_map"
+        
+        return {
+            "topics": topics,
+            "style_preferences": style_preferences,
+            "diagram_type": diagram_type
+        }
+    except Exception as e:
+        logger.error(f"Fallback style extraction failed: {e}")
+        return get_default_result()
+
+
+def generate_graph_spec_with_styles(user_prompt: str, graph_type: str, language: str = 'zh', style_preferences: dict = None) -> dict:
+    """
+    Generate graph specification with integrated style system.
+    
+    Args:
+        user_prompt: User's input prompt
+        graph_type: Type of diagram to generate
+        language: Language for processing
+        style_preferences: User's style preferences
+    
+    Returns:
+        dict: JSON specification with integrated styles for D3.js rendering
+    """
+    logger.info(f"Agent: Generating graph spec with styles for type: {graph_type}")
+    
+    # Generate the base specification
+    spec = generate_graph_spec(user_prompt, graph_type, language)
+    
+    if not spec or isinstance(spec, dict) and spec.get('error'):
+        logger.error(f"Agent: Failed to generate base spec for {graph_type}")
+        return spec
+    
+    # Integrate style system
+    try:
+        from diagram_styles import get_style, parse_style_from_prompt
+        
+        # Parse additional styles from prompt if not provided
+        if not style_preferences:
+            style_preferences = parse_style_from_prompt(user_prompt)
+        
+        # Get the complete style configuration
+        color_theme = style_preferences.get('colorTheme', 'classic')
+        variation = 'colorful'  # Default variation
+        if 'dark' in style_preferences.get('backgroundTheme', '').lower():
+            variation = 'dark'
+        elif 'light' in style_preferences.get('backgroundTheme', '').lower():
+            variation = 'light'
+        
+        complete_style = get_style(graph_type, style_preferences, color_theme, variation)
+        
+        # Add style information to the spec
+        spec['_style'] = complete_style
+        spec['_style_metadata'] = {
+            'color_theme': color_theme,
+            'variation': variation,
+            'user_preferences': style_preferences
+        }
+        
+        logger.info(f"Agent: Successfully integrated styles for {graph_type}")
+        
+    except Exception as e:
+        logger.error(f"Agent: Style integration failed: {e}")
+        # Continue without styles if integration fails
+        spec['_style'] = {}
+        spec['_style_metadata'] = {}
+    
+    return spec
+
+
+def agent_graph_workflow_with_styles(user_prompt, language='zh'):
+    """
+    Enhanced agent workflow with integrated style system.
+    
+    Args:
+        user_prompt (str): User's input prompt
+        language (str): Language for processing ('zh' or 'en')
+    
+    Returns:
+        dict: JSON specification with integrated styles for D3.js rendering
+    """
+    logger.info(f"Agent: Starting enhanced graph workflow for: {user_prompt}")
+    
+    try:
+        # Extract topics, styles, and diagram type
+        extraction = extract_topics_and_styles_from_prompt_qwen(user_prompt, language)
+        topics = extraction.get('topics', [])
+        style_preferences = extraction.get('style_preferences', {})
+        diagram_type = extraction.get('diagram_type', 'bubble_map')
+        
+        logger.info(f"Agent: Extracted - topics: {topics}, diagram_type: {diagram_type}")
+        logger.info(f"Agent: Style preferences: {style_preferences}")
+        
+        # Generate specification with integrated styles
+        spec = generate_graph_spec_with_styles(user_prompt, diagram_type, language, style_preferences)
+        
+        # Add metadata to the result
+        result = {
+            'spec': spec,
+            'diagram_type': diagram_type,
+            'topics': topics,
+            'style_preferences': style_preferences,
+            'language': language
+        }
+        
+        logger.info(f"Agent: Enhanced workflow completed successfully")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Agent: Enhanced workflow failed: {e}")
+        # Return fallback result
+        return {
+            'spec': {"topic": "主题", "characteristics": ["特征1", "特征2", "特征3", "特征4", "特征5"]},
+            'diagram_type': 'bubble_map',
+            'topics': [],
+            'style_preferences': {},
+            'language': language
+        } 

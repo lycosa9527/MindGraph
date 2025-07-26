@@ -125,6 +125,10 @@ def get_importance_color(base_color: str, importance_level: str) -> str:
     Apply importance-based color intensity (Center Topic -> Main Topic -> Sub Topic).
     Higher importance = higher intensity.
     """
+    # Convert color name to hex if needed
+    if not base_color.startswith('#'):
+        base_color = COLOR_NAMES.get(base_color.lower(), "#000000")
+    
     # Convert hex to RGB
     hex_color = base_color.lstrip('#')
     r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -159,6 +163,10 @@ def get_contrasting_text_color(background_color: str) -> str:
     Automatically calculate text color for optimal legibility against background.
     Based on luminance calculation.
     """
+    # Convert color name to hex if needed
+    if not background_color.startswith('#'):
+        background_color = COLOR_NAMES.get(background_color.lower(), "#000000")
+    
     # Convert hex to RGB
     hex_color = background_color.lstrip('#')
     r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -432,7 +440,15 @@ def get_style(diagram_type: str, user_style: Optional[dict] = None,
     
     # Apply user overrides
     if user_style:
-        style.update(user_style)
+        # Convert color names to hex in user_style
+        processed_user_style = {}
+        for key, value in user_style.items():
+            if isinstance(value, str) and "Color" in key and not value.startswith('#'):
+                # Convert color name to hex
+                processed_user_style[key] = COLOR_NAMES.get(value.lower(), value)
+            else:
+                processed_user_style[key] = value
+        style.update(processed_user_style)
     
     # Apply importance-based intensity if specified
     if "importance" in style:

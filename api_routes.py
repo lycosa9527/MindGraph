@@ -116,7 +116,7 @@ def sanitize_prompt(prompt):
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
-    """Generate graph specification from user prompt using Qwen (default, with enhanced extraction)."""
+    """Generate graph specification from user prompt using Qwen (default, with enhanced extraction and style integration)."""
     # Input validation
     data = request.json
     valid, msg = validate_request_data(data, ['prompt'])
@@ -131,36 +131,41 @@ def generate_graph():
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
     
-    logger.info(f"Frontend /generate_graph (Qwen): prompt={prompt!r}, language={language!r}")
+    logger.info(f"Frontend /generate_graph (Qwen with styles): prompt={prompt!r}, language={language!r}")
     
-    # Enhanced extraction using Qwen for topics, styles, and diagram type
-    extraction = agent.extract_topics_and_styles_from_prompt_qwen(prompt, language)
-    topics = extraction.get('topics', [])
-    style_preferences = extraction.get('style_preferences', {})
-    diagram_type = extraction.get('diagram_type', 'bubble_map')  # Default fallback
-    
-    # Use the diagram type from enhanced extraction
-    graph_type = diagram_type
-    
-    # Generate graph specification using Qwen (default agent)
-    spec = agent.generate_graph_spec(prompt, graph_type, language)
-    
-    # Validate the generated spec
-    if hasattr(graph_specs, f'validate_{graph_type}'):
-        validate_fn = getattr(graph_specs, f'validate_{graph_type}')
-        valid, msg = validate_fn(spec)
-        if not valid:
-            logger.warning(f"Generated invalid spec for {graph_type}: {msg}")
-            return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
-    
-    return jsonify({
-        'type': graph_type,
-        'spec': spec,
-        'agent': 'qwen',
-        'topics': topics,
-        'style_preferences': style_preferences,
-        'diagram_type': diagram_type
-    })
+    # Use enhanced agent workflow with integrated style system
+    try:
+        result = agent.agent_graph_workflow_with_styles(prompt, language)
+        
+        spec = result.get('spec', {})
+        diagram_type = result.get('diagram_type', 'bubble_map')
+        topics = result.get('topics', [])
+        style_preferences = result.get('style_preferences', {})
+        
+        # Validate the generated spec
+        if hasattr(graph_specs, f'validate_{diagram_type}'):
+            validate_fn = getattr(graph_specs, f'validate_{diagram_type}')
+            valid, msg = validate_fn(spec)
+            if not valid:
+                logger.warning(f"Generated invalid spec for {diagram_type}: {msg}")
+                return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
+        
+        return jsonify({
+            'type': diagram_type,
+            'spec': spec,
+            'agent': 'qwen',
+            'topics': topics,
+            'style_preferences': style_preferences,
+            'diagram_type': diagram_type,
+            'has_styles': '_style' in spec,
+            'theme': config.get_d3_theme(),
+            'dimensions': config.get_d3_dimensions(),
+            'watermark': config.get_watermark_config()
+        })
+        
+    except Exception as e:
+        logger.error(f"Enhanced agent workflow failed: {e}")
+        return jsonify({'error': 'Failed to generate graph specification'}), 500
 
 
 @api.route('/generate_png', methods=['POST'])
@@ -220,8 +225,13 @@ def generate_png():
             <script>
             window.spec = {json.dumps(spec, ensure_ascii=False)};
             window.graph_type = '{graph_type}';
+            // Merge D3 theme with watermark config
+            const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
+            const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
+            window.theme = {{...d3Theme, ...watermarkConfig}};
+            window.dimensions = {json.dumps(config.get_d3_dimensions(), ensure_ascii=False)};
             {d3_renderers}
-            renderGraph(window.graph_type, window.spec);
+            renderGraph(window.graph_type, window.spec, window.theme, window.dimensions);
             </script>
             </body></html>
             '''
@@ -324,7 +334,10 @@ def generate_graph_deepseek():
             'agent': 'deepseek+qwen',
             'enhanced_prompt': enhanced_prompt,
             'topics': topics,
-            'style_preferences': style_preferences
+            'style_preferences': style_preferences,
+            'theme': config.get_d3_theme(),
+            'dimensions': config.get_d3_dimensions(),
+            'watermark': config.get_watermark_config()
         })
         
     except ImportError:

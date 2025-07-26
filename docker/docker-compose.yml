@@ -1,5 +1,5 @@
 # D3.js_Dify - AI-Powered Graph Generation Application
-# Version: 2.1.0
+# Version: 2.2.0
 # 
 # Features:
 # - AI-powered graph generation with Qwen and DeepSeek LLMs
@@ -60,7 +60,7 @@ services:
       - PORT=9527
       - DEBUG=${DEBUG:-False}
       - GRAPH_LANGUAGE=${GRAPH_LANGUAGE:-zh}
-      - WATERMARK_TEXT=${WATERMARK_TEXT:-D3.js_Dify}
+      - WATERMARK_TEXT=${WATERMARK_TEXT:-MindSpring}
       
       # D3.js visualization configuration
       - TOPIC_FONT_SIZE=${TOPIC_FONT_SIZE:-18}

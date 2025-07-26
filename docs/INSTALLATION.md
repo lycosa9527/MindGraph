@@ -268,7 +268,7 @@ python app.py
 | `PORT` | Flask port number | 9527 | No |
 | `DEBUG` | Debug mode (True/False) | False | No |
 | `GRAPH_LANGUAGE` | Graph language (zh/en) | zh | No |
-| `WATERMARK_TEXT` | Watermark text | D3.js_Dify | No |
+| `WATERMARK_TEXT` | Watermark text | MindSpring | No |
 
 #### **D3.js Visualization Settings**
 

@@ -349,12 +349,23 @@
         if (data.topics !== undefined || data.style_preferences !== undefined) {
             displayExtractionResults(data);
         }
-        // Render the diagram with extracted styles
+        // Render the diagram with extracted styles and backend configuration
         if (data.spec && data.type) {
             const stylePreferences = data.style_preferences || {};
             const theme = convertStylePreferencesToTheme(stylePreferences);
+            
+            // Merge backend configuration with user styles
+            const backendTheme = data.theme || {};
+            const backendDimensions = data.dimensions || {};
+            const backendWatermark = data.watermark || {};
+            
+            // Merge watermark into theme
+            if (backendWatermark.watermarkText) {
+                theme.watermarkText = backendWatermark.watermarkText;
+            }
+            
             try {
-                renderGraph(data.type, data.spec, theme);
+                renderGraph(data.type, data.spec, theme, backendDimensions);
             } catch (e) {
                 showError('Failed to render diagram: ' + e);
             }

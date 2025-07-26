@@ -6,8 +6,8 @@ This folder contains all Docker-related files for the D3.js Dify project.
 
 ### **Dockerfile**
 The main Docker image definition that:
-- Uses Python 3.9 slim base image
-- Installs system dependencies
+- Uses Python 3.12 slim base image
+- Installs system dependencies (Node.js, curl, gnupg)
 - Copies application code
 - Installs Python dependencies
 - Sets up Playwright for browser rendering

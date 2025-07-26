@@ -2,7 +2,7 @@
 D3.js_Dify Configuration Module
 ==============================
 
-Version: 2.1.0
+Version: 2.2.0
 
 This module provides centralized configuration management for the D3.js_Dify application.
 It handles environment variable loading, validation, and provides a clean interface
@@ -180,7 +180,7 @@ class Config:
     @property
     def WATERMARK_TEXT(self):
         """Watermark text displayed on generated graphs."""
-        return self._get_cached_value('WATERMARK_TEXT', 'D3.js_Dify')
+        return self._get_cached_value('WATERMARK_TEXT', 'MindSpring')
     
     # ============================================================================
     # D3.js VISUALIZATION CONFIGURATION
@@ -533,6 +533,17 @@ class Config:
             'padding': self.D3_PADDING,
             'topicFontSize': self.TOPIC_FONT_SIZE,
             'charFontSize': self.CHAR_FONT_SIZE
+        }
+    
+    def get_watermark_config(self) -> dict:
+        """
+        Get watermark configuration.
+        
+        Returns:
+            dict: Watermark configuration for D3.js visualizations
+        """
+        return {
+            'watermarkText': self.WATERMARK_TEXT
         }
 
 # Create global configuration instance

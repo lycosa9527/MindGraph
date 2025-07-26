@@ -450,6 +450,87 @@ By defining a topic in context, help students understand the topic's background 
 This prompt template is designed for the development phase to generate high-quality educational circle maps.
 Please ensure the JSON format is correct, do not include any code block markers.
 """
+        },
+        
+        "bridge_map": {
+            "zh": f"""
+# 桥接图 - 开发阶段提示模板
+
+## 原始用户需求
+{user_prompt}
+
+## 教育目标
+通过类比推理，帮助学生理解概念之间的相似关系和模式，培养类比思维能力。
+
+## 增强要求
+- 生成4-6个类比关系对
+- 每个类比对应该展示相同的关联因子
+- 关联因子应该清晰、简洁（如"是...的类型"、"导致"、"包含"等）
+- 类比对应该具有教育价值和学习意义
+- 使用简洁的关键词，避免完整句子
+- 确保类比关系逻辑清晰，易于理解
+- 涵盖不同领域和概念，展示跨学科联系
+
+## 输出格式
+{{
+  "relating_factor": "关联因子",
+  "analogies": [
+    {{
+      "left_pair": {{
+        "top": "左侧对顶部",
+        "bottom": "左侧对底部"
+      }},
+      "right_pair": {{
+        "top": "右侧对顶部",
+        "bottom": "右侧对底部"
+      }}
+    }}
+  ]
+}}
+
+## 使用说明
+此提示模板专为开发阶段设计，用于生成高质量的教育性桥接图。
+请确保JSON格式正确，不要包含任何代码块标记。
+""",
+            "en": f"""
+# Bridge Map - Development Phase Prompt Template
+
+## Original User Request
+{user_prompt}
+
+## Educational Goal
+Through analogical reasoning, help students understand similar relationships and patterns between concepts, developing analogical thinking skills.
+
+## Enhanced Requirements
+- Generate 4-6 analogy pairs
+- Each analogy pair should demonstrate the same relating factor
+- The relating factor should be clear and concise (e.g., "is a type of", "causes", "contains", etc.)
+- Analogy pairs should have educational value and learning significance
+- Use concise keywords, avoid complete sentences
+- Ensure analogy relationships are logically clear and easy to understand
+- Cover diverse fields and concepts, showing interdisciplinary connections
+
+## Output Format
+{{
+  "relating_factor": "relating_factor",
+  "analogies": [
+    {{
+      "left_pair": {{
+        "top": "left_pair_top",
+        "bottom": "left_pair_bottom"
+      }},
+      "right_pair": {{
+        "top": "right_pair_top",
+        "bottom": "right_pair_bottom"
+      }}
+    }}
+  ]
+}}
+
+## Usage Instructions
+This prompt template is designed for the development phase to generate high-quality educational bridge maps.
+Please ensure the JSON format is correct, do not include any code block markers.
+"""
         }
     }
     

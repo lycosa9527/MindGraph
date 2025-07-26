@@ -5,6 +5,69 @@ All notable changes to the D3.js_Dify project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-01-27
+
+### 🚀 Major Improvements
+
+#### Enhanced Circle Map Layout
+- **New Circle Map Design**: Implemented outer boundary circle with central topic and perimeter context circles
+- **Precise Geometric Positioning**: Replaced force simulation with trigonometric positioning for exact circle placement
+- **Optimized Spacing**: Configurable spacing between topic and context circles (half circle size gap)
+- **Improved Visual Hierarchy**: Clear visual separation between outer boundary, context circles, and central topic
+- **Enhanced D3.js Renderer**: Complete `renderCircleMap` function with proper SVG structure and theming
+
+#### Bubble Map Enhancements
+- **Refined Bubble Map Layout**: Central topic positioning with 360-degree attribute distribution
+- **Improved Connecting Lines**: Clean lines from topic edge to attribute edges for better visual clarity
+- **Enhanced Rendering Pipeline**: Consistent high-quality output for both web interface and PNG generation
+- **Better Attribute Distribution**: Even spacing of attributes around the central topic
+
+#### Bridge Map Implementation
+- **New Bridge Map Support**: Complete implementation of analogical relationship visualization
+- **Relating Factor Display**: Clear presentation of the connecting concept between analogy pairs
+- **Educational Focus**: Designed specifically for teaching analogical thinking skills
+- **D3.js Renderer**: Full `renderBridgeMap` function with bridge structure and analogy pairs
+
+### 🔧 Technical Enhancements
+
+#### D3.js Renderer Improvements
+- **Unified Rendering Pipeline**: All diagram types now use consistent, high-quality D3.js renderers
+- **Enhanced Theming**: Comprehensive theme support for all new diagram types
+- **Responsive Design**: All new diagrams adapt to different screen sizes and export dimensions
+- **Export Compatibility**: PNG generation works seamlessly with all new diagram types
+
+#### DeepSeek Agent Enhancements
+- **Bridge Map Templates**: Added comprehensive development prompt templates for bridge maps
+- **Educational Prompts**: Enhanced templates focus on educational value and learning outcomes
+- **Multi-language Support**: All new templates available in both English and Chinese
+- **Structured Output**: Consistent JSON format generation for all diagram types
+
+#### Code Quality & Architecture
+- **Modular Design**: Clean separation between different diagram renderers
+- **Validation Support**: Comprehensive validation for all new diagram specifications
+- **Error Handling**: Robust error handling for new diagram types
+- **Documentation**: Complete inline documentation for all new functions
+
+### 📋 Documentation Updates
+
+#### User Documentation
+- **Thinking Maps® Guide**: Updated documentation to include all supported Thinking Maps
+- **Circle Map Guide**: Comprehensive guide for the new circle map layout and usage
+- **Bridge Map Guide**: Complete documentation for bridge map functionality
+- **API Documentation**: Updated API documentation to include new endpoints
+
+#### Technical Documentation
+- **Renderer Documentation**: Detailed documentation of all D3.js renderer functions
+- **Template Documentation**: Complete documentation of development prompt templates
+- **Validation Guide**: Enhanced validation documentation for all diagram types
+
+### 🛡️ Security & Stability
+
+#### Rendering Stability
+- **Consistent Output**: All new diagram types produce consistent, high-quality output
+- **Error Recovery**: Improved error handling and recovery for new diagram types
+- **Validation**: Enhanced validation ensures data integrity for all diagram specifications
+
 ## [2.1.0] - 2025-01-27
 
 ### 🚀 Major Improvements
