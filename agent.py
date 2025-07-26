@@ -293,64 +293,218 @@ def extract_yaml_from_code_block(text):
 
 def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
     """
-    Use the LLM to classify the user's intent as 'double_bubble_map', 'bubble_map', or 'circle_map'.
+    Use the LLM to classify the user's intent into the appropriate diagram type.
     
     Args:
         user_prompt: The user's input prompt
         language: Language for processing ('zh' or 'en')
     
     Returns:
-        str: 'double_bubble_map', 'bubble_map', or 'circle_map'
+        str: Diagram type from available types
     """
+    # Get available diagram types
+    from prompts import get_available_diagram_types
+    available_types = get_available_diagram_types()
+    
     # LLM prompt logic for type detection
     if language == 'zh':
         prompt_text = (
-            "你是一个图谱类型分类助手。根据用户的需求，判断他们是想要比较两个主题（输出double_bubble_map）、分析一个主题的特征（输出bubble_map），还是想要一个圆圈图（输出circle_map）。\n"
+            "你是一个图谱类型分类助手。根据用户的需求，判断他们想要创建哪种类型的图表。\n"
+            "\n【可用图表类型】\n"
+            "# 思维导图 (Thinking Maps)\n"
+            "- double_bubble_map: 比较和对比两个主题\n"
+            "- bubble_map: 描述单个主题的特征\n"
+            "- circle_map: 在上下文中定义主题\n"
+            "- flow_map: 序列事件或过程\n"
+            "- brace_map: 显示整体/部分关系\n"
+            "- tree_map: 分类和归类信息\n"
+            "- multi_flow_map: 显示因果关系\n"
+            "- bridge_map: 桥形图 - 显示类比和相似性\n"
+            "\n"
+            "# 概念图 (Concept Maps)\n"
+            "- concept_map: 显示概念之间的关系\n"
+            "- semantic_web: 创建相关概念的网络\n"
+            "\n"
+            "# 思维导图 (Mind Maps)\n"
+            "- mindmap: 围绕中心主题组织想法\n"
+            "- radial_mindmap: 创建径向思维导图结构\n"
+            "\n"
+            "# 常用图表 (Common Diagrams)\n"
+            "- venn_diagram: 显示重叠集合\n"
+            "- fishbone_diagram: 分析因果关系\n"
+            "- flowchart: 显示流程过程\n"
+            "- org_chart: 显示组织结构\n"
+            "- timeline: 显示时间顺序事件\n"
+            "\n【重要区分】\n"
+            "- 比较/对比 (compare/contrast): 使用 double_bubble_map\n"
+            "- 类比 (analogy): 使用 bridge_map\n"
+            "- 概念关系 (concept relationships): 使用 concept_map\n"
+            "- 思维组织 (idea organization): 使用 mindmap\n"
             "\n【规则】\n"
-            "- 如果用户想要比较、对比、区分、分析两个不同的主题，请输出 double_bubble_map。\n"
-            "- 如果用户只关注一个主题，想要分析其特征、属性、优缺点等，请输出 bubble_map。\n"
-            "- 如果用户明确要求圆圈图、circle map、中心大圆、内部小圆等，请输出 circle_map。\n"
-            "- 只输出 'double_bubble_map'、'bubble_map' 或 'circle_map'，不要输出其他内容。\n"
+            "- 仔细分析用户的需求和意图\n"
+            "- 选择最适合的图表类型\n"
+            "- 只输出图表类型名称，不要其他内容\n"
             "\n【示例】\n"
             "用户需求：比较猫和狗\n输出：double_bubble_map\n"
-            "用户需求：画一个关于绿茶婊的气泡图\n输出：bubble_map\n"
-            "用户需求：画一个主题为太阳系的circle map\n输出：circle_map\n"
-            "用户需求：中心大圆，内部有小圆，描述苹果的特征\n输出：circle_map\n"
+            "用户需求：类比：手之于人，如同轮子之于车\n输出：bridge_map\n"
+            "用户需求：用桥形图类比光合作用和呼吸作用\n输出：bridge_map\n"
+            "用户需求：描述太阳系的特征\n输出：bubble_map\n"
+            "用户需求：展示水循环过程\n输出：flow_map\n"
+            "用户需求：分析全球变暖的原因和影响\n输出：multi_flow_map\n"
+            "用户需求：创建概念图显示生态系统\n输出：concept_map\n"
+            "用户需求：制作思维导图整理学习内容\n输出：mindmap\n"
+            "用户需求：绘制维恩图比较三个集合\n输出：venn_diagram\n"
+            "用户需求：制作鱼骨图分析问题原因\n输出：fishbone_diagram\n"
+            "用户需求：绘制流程图说明操作步骤\n输出：flowchart\n"
+            "用户需求：创建组织架构图\n输出：org_chart\n"
+            "用户需求：制作时间线显示历史事件\n输出：timeline\n"
             "\n用户需求：{user_prompt}\n你的输出："
         )
     else:
         prompt_text = (
-            "You are a diagram type classifier. Based on the user's request, determine if they want to compare two topics (output double_bubble_map), analyze the characteristics of a single topic (output bubble_map), or want a circle map (output circle_map).\n"
+            "You are a diagram type classifier. Based on the user's request, determine which type of diagram they want to create.\n"
+            "\n[Available Diagram Types]\n"
+            "# Thinking Maps\n"
+            "- double_bubble_map: Compare and contrast two topics\n"
+            "- bubble_map: Describe attributes of a single topic\n"
+            "- circle_map: Define a topic in context\n"
+            "- flow_map: Sequence events or processes\n"
+            "- brace_map: Show whole/part relationships\n"
+            "- tree_map: Categorize and classify information\n"
+            "- multi_flow_map: Show cause and effect relationships\n"
+            "- bridge_map: Show analogies and similarities\n"
+            "\n"
+            "# Concept Maps\n"
+            "- concept_map: Show relationships between concepts\n"
+            "- semantic_web: Create a web of related concepts\n"
+            "\n"
+            "# Mind Maps\n"
+            "- mindmap: Organize ideas around a central topic\n"
+            "- radial_mindmap: Create a radial mind map structure\n"
+            "\n"
+            "# Common Diagrams\n"
+            "- venn_diagram: Show overlapping sets\n"
+            "- fishbone_diagram: Analyze cause and effect\n"
+            "- flowchart: Show process flow\n"
+            "- org_chart: Show organizational structure\n"
+            "- timeline: Show chronological events\n"
+            "\n[Important Distinctions]\n"
+            "- Compare/contrast: use double_bubble_map\n"
+            "- Analogy: use bridge_map\n"
+            "- Concept relationships: use concept_map\n"
+            "- Idea organization: use mindmap\n"
             "\n[Rules]\n"
-            "- If the user wants to compare, contrast, distinguish, or analyze two different topics, output double_bubble_map.\n"
-            "- If the user is only interested in one topic and wants to analyze its features, attributes, pros/cons, etc., output bubble_map.\n"
-            "- If the user explicitly requests a circle map, big circle in the center, small circles inside, etc., output circle_map.\n"
-            "- Only output 'double_bubble_map', 'bubble_map', or 'circle_map', nothing else.\n"
+            "- Carefully analyze the user's needs and intent\n"
+            "- Choose the most appropriate diagram type\n"
+            "- Output only the diagram type name, nothing else\n"
             "\n[Examples]\n"
             "User request: Compare cats and dogs\nOutput: double_bubble_map\n"
-            "User request: Draw a bubble map about green tea\nOutput: bubble_map\n"
-            "User request: Draw a circle map for the solar system\nOutput: circle_map\n"
-            "User request: Big circle in the center, small circles inside, describe apple's features\nOutput: circle_map\n"
+            "User request: Analogy: hand is to person as wheel is to car\nOutput: bridge_map\n"
+            "User request: Use bridge map to analogize photosynthesis and respiration\nOutput: bridge_map\n"
+            "User request: Describe characteristics of solar system\nOutput: bubble_map\n"
+            "User request: Show water cycle process\nOutput: flow_map\n"
+            "User request: Analyze causes and effects of global warming\nOutput: multi_flow_map\n"
+            "User request: Create concept map showing ecosystem relationships\nOutput: concept_map\n"
+            "User request: Make mind map to organize study content\nOutput: mindmap\n"
+            "User request: Draw Venn diagram comparing three sets\nOutput: venn_diagram\n"
+            "User request: Create fishbone diagram to analyze problem causes\nOutput: fishbone_diagram\n"
+            "User request: Draw flowchart showing operation steps\nOutput: flowchart\n"
+            "User request: Create organizational chart\nOutput: org_chart\n"
+            "User request: Make timeline showing historical events\nOutput: timeline\n"
             "\nUser request: {user_prompt}\nYour output:"
         )
+    
     prompt = PromptTemplate(
         input_variables=["user_prompt"],
         template=prompt_text
     )
-    # Refactored: Use RunnableSequence API
-    result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip().lower()
-    if "circle_map" in result:
-        return "circle_map"
-    if "bubble_map" in result and "double_bubble_map" not in result:
-        return "bubble_map"
-    elif "double_bubble_map" in result:
-        return "double_bubble_map"
-    # fallback: guess by keywords
-    if any(word in user_prompt.lower() for word in ["circle map", "中心大圆", "内部小圆", "big circle", "small circles inside"]):
-        return "circle_map"
-    if any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "区别", "对比"]):
-        return "double_bubble_map"
-    return "bubble_map"
+    
+    try:
+        # Refactored: Use RunnableSequence API
+        result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip().lower()
+        
+        # Extract the diagram type from the response
+        for diagram_type in available_types:
+            if diagram_type in result:
+                return diagram_type
+        
+        # Fallback to default types based on keywords
+        if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
+            return "bridge_map"
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+            return "double_bubble_map"
+        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
+            return "bubble_map"
+        elif any(word in user_prompt.lower() for word in ["define", "context", "定义", "上下文"]):
+            return "circle_map"
+        elif any(word in user_prompt.lower() for word in ["process", "steps", "流程", "步骤", "sequence"]):
+            return "flow_map"
+        elif any(word in user_prompt.lower() for word in ["whole", "part", "整体", "部分", "组成"]):
+            return "brace_map"
+        elif any(word in user_prompt.lower() for word in ["categorize", "classify", "分类", "归类"]):
+            return "tree_map"
+        elif any(word in user_prompt.lower() for word in ["cause", "effect", "原因", "影响", "因果"]):
+            return "multi_flow_map"
+        elif any(word in user_prompt.lower() for word in ["concept", "relationship", "概念", "关系"]):
+            return "concept_map"
+        elif any(word in user_prompt.lower() for word in ["semantic", "web", "语义", "网络"]):
+            return "semantic_web"
+        elif any(word in user_prompt.lower() for word in ["mind", "organize", "思维", "组织", "整理"]):
+            return "mindmap"
+        elif any(word in user_prompt.lower() for word in ["radial", "径向"]):
+            return "radial_mindmap"
+        elif any(word in user_prompt.lower() for word in ["venn", "overlap", "维恩", "重叠"]):
+            return "venn_diagram"
+        elif any(word in user_prompt.lower() for word in ["fishbone", "ishikawa", "鱼骨", "石川"]):
+            return "fishbone_diagram"
+        elif any(word in user_prompt.lower() for word in ["flowchart", "flow chart", "流程图"]):
+            return "flowchart"
+        elif any(word in user_prompt.lower() for word in ["org", "organization", "组织", "架构"]):
+            return "org_chart"
+        elif any(word in user_prompt.lower() for word in ["timeline", "time line", "时间线", "时间线"]):
+            return "timeline"
+        else:
+            return "bubble_map"  # Default fallback
+            
+    except Exception as e:
+        logger.error(f"LLM classification failed: {e}")
+        # Fallback classification
+        if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
+            return "bridge_map"
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+            return "double_bubble_map"
+        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
+            return "bubble_map"
+        elif any(word in user_prompt.lower() for word in ["define", "context", "定义", "上下文"]):
+            return "circle_map"
+        elif any(word in user_prompt.lower() for word in ["process", "steps", "流程", "步骤", "sequence"]):
+            return "flow_map"
+        elif any(word in user_prompt.lower() for word in ["whole", "part", "整体", "部分", "组成"]):
+            return "brace_map"
+        elif any(word in user_prompt.lower() for word in ["categorize", "classify", "分类", "归类"]):
+            return "tree_map"
+        elif any(word in user_prompt.lower() for word in ["cause", "effect", "原因", "影响", "因果"]):
+            return "multi_flow_map"
+        elif any(word in user_prompt.lower() for word in ["concept", "relationship", "概念", "关系"]):
+            return "concept_map"
+        elif any(word in user_prompt.lower() for word in ["semantic", "web", "语义", "网络"]):
+            return "semantic_web"
+        elif any(word in user_prompt.lower() for word in ["mind", "organize", "思维", "组织", "整理"]):
+            return "mindmap"
+        elif any(word in user_prompt.lower() for word in ["radial", "径向"]):
+            return "radial_mindmap"
+        elif any(word in user_prompt.lower() for word in ["venn", "overlap", "维恩", "重叠"]):
+            return "venn_diagram"
+        elif any(word in user_prompt.lower() for word in ["fishbone", "ishikawa", "鱼骨", "石川"]):
+            return "fishbone_diagram"
+        elif any(word in user_prompt.lower() for word in ["flowchart", "flow chart", "流程图"]):
+            return "flowchart"
+        elif any(word in user_prompt.lower() for word in ["org", "organization", "组织", "架构"]):
+            return "org_chart"
+        elif any(word in user_prompt.lower() for word in ["timeline", "time line", "时间线", "时间线"]):
+            return "timeline"
+        else:
+            return "bubble_map"
 
 
 # Removed duplicate function - using classify_graph_type_with_llm instead
@@ -368,76 +522,28 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
     Returns:
         dict: JSON serializable graph specification
     """
-    # LLM prompt logic for each graph type, modularized
-    if graph_type == "double_bubble_map":
-        prompt_text = (
-            "请为以下用户需求生成一个双气泡图的JSON规范。\n"
-            "需求：{user_prompt}\n"
-            "请输出一个包含以下字段的JSON对象：\n"
-            "left: \"主题1\"\n"
-            "right: \"主题2\"\n"
-            "similarities: [\"特征1\", \"特征2\", \"特征3\", \"特征4\", \"特征5\"]\n"
-            "left_differences: [\"特点1\", \"特点2\", \"特点3\", \"特点4\", \"特点5\"]\n"
-            "right_differences: [\"特点1\", \"特点2\", \"特点3\", \"特点4\", \"特点5\"]\n"
-            "要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。\n"
-            "请确保JSON格式正确，不要包含任何代码块标记。\n"
-        ) if language == 'zh' else (
-            "Please generate a JSON specification for a double bubble map for the following user request.\n"
-            "Request: {user_prompt}\n"
-            "Please output a JSON object containing the following fields:\n"
-            "left: \"Topic1\"\n"
-            "right: \"Topic2\"\n"
-            "similarities: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\"]\n"
-            "left_differences: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\"]\n"
-            "right_differences: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\"]\n"
-            "Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.\n"
-            "Please ensure the JSON format is correct, do not include any code block markers.\n"
-        )
+    # Use centralized prompt registry
+    try:
+        from prompts import get_prompt
+        
+        # Get the appropriate prompt template
+        prompt_text = get_prompt(graph_type, language, 'generation')
+        
+        if not prompt_text:
+            logger.error(f"Agent: No prompt found for graph type: {graph_type}")
+            return {"error": f"No prompt template found for {graph_type}"}
+        
+        # Create prompt template and generate response
         prompt = PromptTemplate(
             input_variables=["user_prompt"],
             template=prompt_text
         )
-        yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
-        yaml_text_clean = extract_yaml_from_code_block(yaml_text)
-        try:
-            spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "left" not in spec or "right" not in spec or "similarities" not in spec or "left_differences" not in spec or "right_differences" not in spec:
-                raise Exception("YAML parse failed or JSON structure incorrect")
-            # Optionally use graph_specs.py for schema/validation
-            valid, msg = validate_double_bubble_map(spec)
-            if not valid:
-                raise Exception(f"Generated JSON does not match double bubble map schema: {msg}")
-        except Exception as e:
-            logger.error(f"Agent: Double bubble map JSON generation failed: {e}")
-            spec = {"error": "Failed to generate valid double bubble map JSON"}
-        return spec
-    elif graph_type == "circle_map":
-        prompt_text = (
-            "请为以下用户需求生成一个圆圈图的JSON规范。\n"
-            "需求：{user_prompt}\n"
-            "请输出一个包含以下字段的JSON对象：\n"
-            "topic: \"主题\"\n"
-            "context: [\"特征1\", \"特征2\", \"特征3\", \"特征4\", \"特征5\", \"特征6\"]\n"
-            "要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。\n"
-            "请确保JSON格式正确，不要包含任何代码块标记。\n"
-        ) if language == 'zh' else (
-            "Please generate a JSON specification for a circle map for the following user request.\n"
-            "Request: {user_prompt}\n"
-            "Please output a JSON object containing the following fields:\n"
-            "topic: \"Topic\"\n"
-            "context: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\", \"Feature6\"]\n"
-            "Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.\n"
-            "Please ensure the JSON format is correct, do not include any code block markers.\n"
-        )
-        prompt = PromptTemplate(
-            input_variables=["user_prompt"],
-            template=prompt_text
-        )
+        
         yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
         yaml_text_clean = extract_yaml_from_code_block(yaml_text)
         
-        # Debug: Log the raw response
-        logger.debug(f"Raw Qwen response for circle_map: {yaml_text}")
+        # Debug logging
+        logger.debug(f"Raw LLM response for {graph_type}: {yaml_text}")
         logger.debug(f"Cleaned response: {yaml_text_clean}")
         
         try:
@@ -447,165 +553,30 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             except json.JSONDecodeError:
                 spec = yaml.safe_load(yaml_text_clean)
             
-            if not spec or "topic" not in spec or "context" not in spec:
-                logger.error(f"Generated spec missing required fields: {spec}")
-                raise Exception("YAML/JSON parse failed or structure incorrect")
+            if not spec:
+                raise Exception("JSON/YAML parse failed")
             
-            # Optionally use graph_specs.py for schema/validation
-            valid, msg = validate_circle_map(spec)
-            if not valid:
-                raise Exception(f"Generated JSON does not match circle map schema: {msg}")
+            # Validate the generated spec
+            from graph_specs import DIAGRAM_VALIDATORS
+            if graph_type in DIAGRAM_VALIDATORS:
+                validator = DIAGRAM_VALIDATORS[graph_type]
+                valid, msg = validator(spec)
+                if not valid:
+                    raise Exception(f"Generated JSON does not match {graph_type} schema: {msg}")
+            
+            logger.info(f"Agent: Successfully generated {graph_type} specification")
+            return spec
+            
         except Exception as e:
-            logger.error(f"Agent: Circle map JSON generation failed: {e}")
-            spec = {"error": "Failed to generate valid circle map JSON"}
-        return spec
-    elif graph_type == "bubble_map":
-        prompt_text = (
-            "请为以下用户需求生成一个气泡图的JSON规范。\n"
-            "需求：{user_prompt}\n"
-            "请输出一个包含以下字段的JSON对象：\n"
-            "topic: \"主题\"\n"
-            "attributes: [\"特征1\", \"特征2\", \"特征3\", \"特征4\", \"特征5\", \"特征6\", \"特征7\", \"特征8\"]\n"
-            "要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。\n"
-            "请确保JSON格式正确，不要包含任何代码块标记。\n"
-        ) if language == 'zh' else (
-            "Please generate a JSON specification for a bubble map for the following user request.\n"
-            "Request: {user_prompt}\n"
-            "Please output a JSON object containing the following fields:\n"
-            "topic: \"Topic\"\n"
-            "attributes: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\", \"Feature6\", \"Feature7\", \"Feature8\"]\n"
-            "Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.\n"
-            "Please ensure the JSON format is correct, do not include any code block markers.\n"
-        )
-        prompt = PromptTemplate(
-            input_variables=["user_prompt"],
-            template=prompt_text
-        )
-        yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
-        yaml_text_clean = extract_yaml_from_code_block(yaml_text)
-        logger.debug(f"Raw Qwen response for bubble_map: {yaml_text}")
-        logger.debug(f"Cleaned response: {yaml_text_clean}")
-        try:
-            # Try JSON first, then YAML as fallback
-            try:
-                spec = json.loads(yaml_text_clean)
-            except json.JSONDecodeError:
-                spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "topic" not in spec or "attributes" not in spec:
-                logger.error(f"Generated spec missing required fields: {spec}")
-                raise Exception("YAML/JSON parse failed or structure incorrect")
-            # Use graph_specs.py for schema/validation
-            valid, msg = validate_bubble_map(spec)
-            if not valid:
-                raise Exception(f"Generated JSON does not match bubble map schema: {msg}")
-        except Exception as e:
-            logger.error(f"Agent: Bubble map JSON generation failed: {e}")
-            spec = {"error": "Failed to generate valid bubble map JSON"}
-        return spec
-    elif graph_type == "tree_map":
-        prompt_text = (
-            "请为以下用户需求生成一个树形图的JSON规范。\n"
-            "需求：{user_prompt}\n"
-            "请输出一个包含以下字段的JSON对象：\n"
-            "topic: \"主题\"\n"
-            "children: [{{\"name\": \"子主题1\", \"children\": [{{\"name\": \"子主题1.1\"}}]}}]\n"
-            "请确保JSON格式正确，不要包含任何代码块标记。\n"
-        ) if language == 'zh' else (
-            "Please generate a JSON specification for a tree map for the following user request.\n"
-            "Request: {user_prompt}\n"
-            "Please output a JSON object containing the following fields:\n"
-            "topic: \"Topic\"\n"
-            "children: [{{\"name\": \"Subtopic1\", \"children\": [{{\"name\": \"Subtopic1.1\"}}]}}]\n"
-            "Please ensure the JSON format is correct, do not include any code block markers.\n"
-        )
-        prompt = PromptTemplate(
-            input_variables=["user_prompt"],
-            template=prompt_text
-        )
-        yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
-        yaml_text_clean = extract_yaml_from_code_block(yaml_text)
-        try:
-            spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "topic" not in spec or "children" not in spec:
-                raise Exception("YAML parse failed or JSON structure incorrect")
-            # Optionally use graph_specs.py for schema/validation
-            valid, msg = validate_tree_map(spec)
-            if not valid:
-                raise Exception(f"Generated JSON does not match tree map schema: {msg}")
-        except Exception as e:
-            logger.error(f"Agent: Tree map JSON generation failed: {e}")
-            spec = {"error": "Failed to generate valid tree map JSON"}
-        return spec
-    elif graph_type == "concept_map":
-        prompt_text = (
-            "请为以下用户需求生成一个概念图的JSON规范。\n"
-            "需求：{user_prompt}\n"
-            "请输出一个包含以下字段的JSON对象：\n"
-            "topic: \"主题\"\n"
-            "concepts: [{{\"name\": \"概念1\", \"children\": [{{\"name\": \"概念1.1\"}}]}}]\n"
-            "请确保JSON格式正确，不要包含任何代码块标记。\n"
-        ) if language == 'zh' else (
-            "Please generate a JSON specification for a concept map for the following user request.\n"
-            "Request: {user_prompt}\n"
-            "Please output a JSON object containing the following fields:\n"
-            "topic: \"Topic\"\n"
-            "concepts: [{{\"name\": \"Concept1\", \"children\": [{{\"name\": \"Concept1.1\"}}]}}]\n"
-            "Please ensure the JSON format is correct, do not include any code block markers.\n"
-        )
-        prompt = PromptTemplate(
-            input_variables=["user_prompt"],
-            template=prompt_text
-        )
-        yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
-        yaml_text_clean = extract_yaml_from_code_block(yaml_text)
-        try:
-            spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "topic" not in spec or "concepts" not in spec:
-                raise Exception("YAML parse failed or JSON structure incorrect")
-            # Optionally use graph_specs.py for schema/validation
-            valid, msg = validate_concept_map(spec)
-            if not valid:
-                raise Exception(f"Generated JSON does not match concept map schema: {msg}")
-        except Exception as e:
-            logger.error(f"Agent: Concept map JSON generation failed: {e}")
-            spec = {"error": "Failed to generate valid concept map JSON"}
-        return spec
-    elif graph_type == "mindmap":
-        prompt_text = (
-            "请为以下用户需求生成一个思维导图的JSON规范。\n"
-            "需求：{user_prompt}\n"
-            "请输出一个包含以下字段的JSON对象：\n"
-            "topic: \"主题\"\n"
-            "children: [{\"name\": \"子主题1\", \"children\": [{\"name\": \"子主题1.1\"}]}]\n"
-            "请确保JSON格式正确，不要包含任何代码块标记。\n"
-        ) if language == 'zh' else (
-            "Please generate a JSON specification for a mind map for the following user request.\n"
-            "Request: {user_prompt}\n"
-            "Please output a JSON object containing the following fields:\n"
-            "topic: \"Topic\"\n"
-            "children: [{\"name\": \"Subtopic1\", \"children\": [{\"name\": \"Subtopic1.1\"}]}]\n"
-            "Please ensure the JSON format is correct, do not include any code block markers.\n"
-        )
-        prompt = PromptTemplate(
-            input_variables=["user_prompt"],
-            template=prompt_text
-        )
-        yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
-        yaml_text_clean = extract_yaml_from_code_block(yaml_text)
-        try:
-            spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "topic" not in spec or "children" not in spec:
-                raise Exception("YAML parse failed or JSON structure incorrect")
-            # Optionally use graph_specs.py for schema/validation
-            valid, msg = validate_mindmap(spec)
-            if not valid:
-                raise Exception(f"Generated JSON does not match mind map schema: {msg}")
-        except Exception as e:
-            logger.error(f"Agent: Mind map JSON generation failed: {e}")
-            spec = {"error": "Failed to generate valid mind map JSON"}
-        return spec
-    else:
-        return {"error": f"Unsupported graph type: {graph_type}"}
+            logger.error(f"Agent: {graph_type} JSON generation failed: {e}")
+            return {"error": f"Failed to generate valid {graph_type} JSON"}
+            
+    except ImportError:
+        logger.error("Agent: Failed to import centralized prompt registry")
+        return {"error": "Prompt registry not available"}
+    except Exception as e:
+        logger.error(f"Agent: Unexpected error in generate_graph_spec: {e}")
+        return {"error": f"Unexpected error generating {graph_type}"}
 
 
 def agent_graph_workflow(user_prompt, language='zh'):

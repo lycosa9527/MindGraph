@@ -1,6 +1,6 @@
 # D3.js_Dify Documentation
 
-**Version 2.2.0** - AI-Powered Graph Generation Application
+**Version 2.3.0** - AI-Powered Graph Generation Application
 
 This directory contains comprehensive documentation for the D3.js_Dify project, featuring enhanced startup sequences, comprehensive dependency validation, and professional configuration management.
 
@@ -33,6 +33,13 @@ This directory contains comprehensive documentation for the D3.js_Dify project, 
 - **[Architecture Overview](ARCHITECTURE.md)** - System design and components
 - **[Performance Guide](PERFORMANCE.md)** - Optimization and scaling
 
+## 🆕 Version 2.3.0 Highlights
+
+### **Bridge Map Enhancement**
+- ✅ **Improved Bridge Map Rendering** - Vertical connection lines made invisible for cleaner presentation
+- ✅ **Enhanced Visual Clarity** - Better user experience with cleaner bridge map appearance
+- ✅ **Maintained Functionality** - All bridge map elements remain functional while improving aesthetics
+
 ## 🆕 Version 2.2.0 Highlights
 
 ### **Enhanced Startup Sequence**
@@ -62,22 +69,26 @@ This directory contains comprehensive documentation for the D3.js_Dify project, 
 4. **Using Docker?** See [Docker Guide](DOCKER.md)
 5. **Developing features?** Review [Development Guide](DEVELOPMENT.md)
 
-> **🚀 Version 2.2.0 Feature**: The application now includes comprehensive dependency validation, professional startup sequences, and enhanced Thinking Maps® support (Bubble Maps, Circle Maps, Bridge Maps). No manual Playwright installation required - it's handled automatically!
+> **🚀 Version 2.3.0 Feature**: Enhanced bridge map rendering with invisible vertical lines for cleaner visual presentation. The application includes comprehensive dependency validation, professional startup sequences, and enhanced Thinking Maps® support (Bubble Maps, Circle Maps, Bridge Maps). No manual Playwright installation required - it's handled automatically!
 
 ## 📋 Documentation Status
 
 | Document | Status | Version | Last Updated |
 |----------|--------|---------|--------------|
-| Quick Start Guide | ✅ Complete | 2.2.0 | Current |
-| Installation Guide | ✅ Complete | 2.2.0 | Current |
-| Configuration Guide | ✅ Complete | 2.2.0 | Current |
-| Deployment Guide | ✅ Complete | 2.2.0 | Current |
-| Agent Documentation | ✅ Complete | 2.2.0 | Current |
-| Docker Guide | ✅ Complete | 2.2.0 | Current |
-| API Reference | ✅ Complete | 2.2.0 | Current |
-| Code Review Report | ✅ Complete | 2.2.0 | Current |
+| Quick Start Guide | ✅ Complete | 2.3.0 | Current |
+| Installation Guide | ✅ Complete | 2.3.0 | Current |
+| Configuration Guide | ✅ Complete | 2.3.0 | Current |
+| Deployment Guide | ✅ Complete | 2.3.0 | Current |
+| Agent Documentation | ✅ Complete | 2.3.0 | Current |
+| Docker Guide | ✅ Complete | 2.3.0 | Current |
+| API Reference | ✅ Complete | 2.3.0 | Current |
+| Code Review Report | ✅ Complete | 2.3.0 | Current |
 
 ## 🔄 Migration from Version 1.x
+
+### **Key Changes in 2.3.0**
+- **Bridge Map Enhancement** - Improved visual clarity with invisible vertical lines
+- **Better User Experience** - Cleaner bridge map presentation while maintaining functionality
 
 ### **Key Changes in 2.2.0**
 - **Python 3.8+ Required** - Updated minimum Python version

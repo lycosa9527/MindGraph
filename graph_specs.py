@@ -254,30 +254,21 @@ def validate_bridge_map(spec: Dict) -> Tuple[bool, str]:
         if not isinstance(analogy, dict):
             return False, f"analogies[{i}] must be a dictionary"
         
-        if "left_pair" not in analogy or "right_pair" not in analogy:
-            return False, f"analogies[{i}] must have 'left_pair' and 'right_pair' fields"
+        if "left" not in analogy or "right" not in analogy:
+            return False, f"analogies[{i}] must have 'left' and 'right' fields"
         
-        # Validate left_pair
-        if not isinstance(analogy["left_pair"], dict):
-            return False, f"analogies[{i}].left_pair must be a dictionary"
+        # Validate left field
+        if not isinstance(analogy["left"], str) or not analogy["left"].strip():
+            return False, f"analogies[{i}].left must be a non-empty string"
         
-        if "top" not in analogy["left_pair"] or "bottom" not in analogy["left_pair"]:
-            return False, f"analogies[{i}].left_pair must have 'top' and 'bottom' fields"
+        # Validate right field
+        if not isinstance(analogy["right"], str) or not analogy["right"].strip():
+            return False, f"analogies[{i}].right must be a non-empty string"
         
-        for field in ["top", "bottom"]:
-            if not isinstance(analogy["left_pair"][field], str) or not analogy["left_pair"][field].strip():
-                return False, f"analogies[{i}].left_pair.{field} must be a non-empty string"
-        
-        # Validate right_pair
-        if not isinstance(analogy["right_pair"], dict):
-            return False, f"analogies[{i}].right_pair must be a dictionary"
-        
-        if "top" not in analogy["right_pair"] or "bottom" not in analogy["right_pair"]:
-            return False, f"analogies[{i}].right_pair must have 'top' and 'bottom' fields"
-        
-        for field in ["top", "bottom"]:
-            if not isinstance(analogy["right_pair"][field], str) or not analogy["right_pair"][field].strip():
-                return False, f"analogies[{i}].right_pair.{field} must be a non-empty string"
+        # Validate id field (optional but recommended)
+        if "id" in analogy:
+            if not isinstance(analogy["id"], int):
+                return False, f"analogies[{i}].id must be an integer"
     
     return True, ""
 

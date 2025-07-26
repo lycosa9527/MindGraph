@@ -882,171 +882,125 @@ function renderTimeline(spec, theme = null, dimensions = null) {
     addWatermark(svg, theme);
 }
 
-function renderBridgeMap(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
+function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd3-container') {
+    d3.select(`#${containerId}`).html('');
     
     // Validate spec
-    if (!spec || !spec.relating_factor || !Array.isArray(spec.analogies) || spec.analogies.length === 0) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for bridge map');
+    if (!spec || !Array.isArray(spec.analogies) || spec.analogies.length === 0) {
+        d3.select(`#${containerId}`).append('div').style('color', 'red').text('Invalid spec for bridge map');
         return;
     }
     
-    // Set up dimensions
-    const width = dimensions?.baseWidth || 800;
-    const height = dimensions?.baseHeight || 600;
-    const padding = 50;
+    // Calculate optimal dimensions based on content
+    const numAnalogies = spec.analogies.length;
+    const minWidthPerAnalogy = 120; // Minimum width needed per analogy pair
+    const minPadding = 40; // Minimum padding on sides
+    
+    // Calculate optimal width: enough space for all analogies + separators + padding
+    const contentWidth = (numAnalogies * minWidthPerAnalogy) + ((numAnalogies - 1) * 60); // 60px for separator spacing
+    const optimalWidth = Math.max(contentWidth + (2 * minPadding), dimensions?.baseWidth || 600);
+    
+    // Calculate optimal height: enough space for text + vertical lines + padding
+    const textHeight = 40; // Height for text elements
+    const lineHeight = 50; // Height for vertical connection lines
+    const optimalHeight = Math.max(textHeight + lineHeight + (2 * minPadding), dimensions?.baseHeight || 200);
+    
+    // Use calculated dimensions or fall back to provided dimensions
+    const width = optimalWidth;
+    const height = optimalHeight;
+    const padding = minPadding; // Use minimal padding to reduce empty space
     
     // Create SVG
-    const svg = d3.select('#d3-container')
+    const svg = d3.select(`#${containerId}`)
         .append('svg')
         .attr('width', width)
         .attr('height', height)
-        .attr('viewBox', `0 0 ${width} ${height}`);
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .style('background-color', '#f8f8f8'); // Light background to see boundaries
     
     // Apply theme
     const THEME = theme || {
         backgroundColor: '#ffffff',
-        relatingFactorColor: '#4e79a7',
-        relatingFactorTextColor: '#ffffff',
-        relatingFactorFontSize: 16,
-        analogyColor: '#a7c7e7',
         analogyTextColor: '#2c3e50',
         analogyFontSize: 14,
-        bridgeColor: '#2c3e50',
+        bridgeColor: '#000000', // Use black for better visibility
         bridgeWidth: 3,
         stroke: '#2c3e50',
-        strokeWidth: 2
+        strokeWidth: 1
     };
     
-    // Calculate layout
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const bridgeWidth = 200;
-    const analogySpacing = 80;
-    const totalHeight = (spec.analogies.length - 1) * analogySpacing;
-    const startY = centerY - totalHeight / 2;
+    // 1. Create horizontal main line (ensure it's visible)
+    const mainLine = svg.append("line")
+        .attr("x1", padding)
+        .attr("y1", height/2)
+        .attr("x2", width - padding)
+        .attr("y2", height/2)
+        .attr("stroke", "#000000") // Use attr instead of style
+        .attr("stroke-width", 4); // Use attr instead of style
     
-    // Draw bridge structure
-    const bridgeGroup = svg.append('g').attr('class', 'bridge');
+    // 2. Calculate separator positions with better spacing
+    const availableWidth = width - (2 * padding);
+    const sectionWidth = availableWidth / (spec.analogies.length + 1);
     
-    // Draw horizontal bridge line
-    bridgeGroup.append('line')
-        .attr('x1', centerX - bridgeWidth / 2)
-        .attr('y1', centerY)
-        .attr('x2', centerX + bridgeWidth / 2)
-        .attr('y2', centerY)
-        .attr('stroke', THEME.bridgeColor)
-        .attr('stroke-width', THEME.bridgeWidth);
-    
-    // Draw vertical support lines
-    bridgeGroup.append('line')
-        .attr('x1', centerX - bridgeWidth / 2)
-        .attr('y1', centerY - 20)
-        .attr('x2', centerX - bridgeWidth / 2)
-        .attr('y2', centerY + 20)
-        .attr('stroke', THEME.bridgeColor)
-        .attr('stroke-width', THEME.bridgeWidth);
-    
-    bridgeGroup.append('line')
-        .attr('x1', centerX + bridgeWidth / 2)
-        .attr('y1', centerY - 20)
-        .attr('x2', centerX + bridgeWidth / 2)
-        .attr('y2', centerY + 20)
-        .attr('stroke', THEME.bridgeColor)
-        .attr('stroke-width', THEME.bridgeWidth);
-    
-    // Draw relating factor
-    svg.append('text')
-        .attr('x', centerX)
-        .attr('y', centerY + 40)
-        .attr('text-anchor', 'middle')
-        .attr('fill', THEME.relatingFactorTextColor)
-        .attr('font-size', THEME.relatingFactorFontSize)
-        .attr('font-weight', 'bold')
-        .text(spec.relating_factor);
-    
-    // Draw analogies
-    spec.analogies.forEach((analogy, index) => {
-        const y = startY + index * analogySpacing;
+    // 3. Draw analogy pairs first
+    spec.analogies.forEach((analogy, i) => {
+        const xPos = padding + (sectionWidth * (i + 1));
         
-        // Left pair
-        const leftGroup = svg.append('g').attr('class', 'left-pair');
+        // 3.1 Add upstream item (left)
+        svg.append("text")
+            .attr("x", xPos)
+            .attr("y", height/2 - 30)
+            .attr("text-anchor", "middle")
+            .text(analogy.left)
+            .style("font-size", THEME.analogyFontSize)
+            .style("fill", THEME.analogyTextColor)
+            .style("font-weight", "bold");
         
-        // Left top item
-        leftGroup.append('circle')
-            .attr('cx', centerX - bridgeWidth / 2 - 80)
-            .attr('cy', y - 20)
-            .attr('r', 30)
-            .attr('fill', THEME.analogyColor)
-            .attr('stroke', THEME.stroke)
-            .attr('stroke-width', THEME.strokeWidth);
+        // 3.2 Add downstream item (right)
+        svg.append("text")
+            .attr("x", xPos)
+            .attr("y", height/2 + 40)
+            .attr("text-anchor", "middle")
+            .text(analogy.right)
+            .style("font-size", THEME.analogyFontSize)
+            .style("fill", THEME.analogyTextColor)
+            .style("font-weight", "bold");
         
-        leftGroup.append('text')
-            .attr('x', centerX - bridgeWidth / 2 - 80)
-            .attr('y', y - 20)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.analogyTextColor)
-            .attr('font-size', THEME.analogyFontSize)
-            .text(analogy.left_pair.top);
-        
-        // Left bottom item
-        leftGroup.append('circle')
-            .attr('cx', centerX - bridgeWidth / 2 - 80)
-            .attr('cy', y + 20)
-            .attr('r', 30)
-            .attr('fill', THEME.analogyColor)
-            .attr('stroke', THEME.stroke)
-            .attr('stroke-width', THEME.strokeWidth);
-        
-        leftGroup.append('text')
-            .attr('x', centerX - bridgeWidth / 2 - 80)
-            .attr('y', y + 20)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.analogyTextColor)
-            .attr('font-size', THEME.analogyFontSize)
-            .text(analogy.left_pair.bottom);
-        
-        // Right pair
-        const rightGroup = svg.append('g').attr('class', 'right-pair');
-        
-        // Right top item
-        rightGroup.append('circle')
-            .attr('cx', centerX + bridgeWidth / 2 + 80)
-            .attr('cy', y - 20)
-            .attr('r', 30)
-            .attr('fill', THEME.analogyColor)
-            .attr('stroke', THEME.stroke)
-            .attr('stroke-width', THEME.strokeWidth);
-        
-        rightGroup.append('text')
-            .attr('x', centerX + bridgeWidth / 2 + 80)
-            .attr('y', y - 20)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.analogyTextColor)
-            .attr('font-size', THEME.analogyFontSize)
-            .text(analogy.right_pair.top);
-        
-        // Right bottom item
-        rightGroup.append('circle')
-            .attr('cx', centerX + bridgeWidth / 2 + 80)
-            .attr('cy', y + 20)
-            .attr('r', 30)
-            .attr('fill', THEME.analogyColor)
-            .attr('stroke', THEME.stroke)
-            .attr('stroke-width', THEME.strokeWidth);
-        
-        rightGroup.append('text')
-            .attr('x', centerX + bridgeWidth / 2 + 80)
-            .attr('y', y + 20)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.analogyTextColor)
-            .attr('font-size', THEME.analogyFontSize)
-            .text(analogy.right_pair.bottom);
+                   // 3.3 Add vertical connection line (made invisible)
+           svg.append("line")
+               .attr("x1", xPos)
+               .attr("y1", height/2 - 20) // Connect to upstream item
+               .attr("x2", xPos)
+               .attr("y2", height/2 + 30) // Connect to downstream item
+               .attr("stroke", "transparent") // Make vertical lines invisible
+               .attr("stroke-width", 3); // Use attr instead of style
     });
+    
+    // 4. Draw "as" separators (one less than analogy pairs) - positioned to the right of analogy pairs
+    for (let i = 0; i < spec.analogies.length - 1; i++) {
+        // Position separator between analogy pairs (to the right of current pair)
+        const xPos = padding + (sectionWidth * (i + 1.5)); // Position between pairs
+        
+        // 4.1 Add little triangle separator on the main line
+        const triangleSize = 8; // Back to normal size
+        const trianglePath = `M ${xPos - triangleSize} ${height/2} L ${xPos} ${height/2 - triangleSize} L ${xPos + triangleSize} ${height/2} Z`;
+        
+        svg.append("path")
+            .attr("d", trianglePath)
+            .attr("fill", "#000000") // Use attr instead of style
+            .attr("stroke", "#000000") // Use attr instead of style
+            .attr("stroke-width", 2); // Use attr instead of style
+        
+        // 4.2 Add "as" text above the triangle
+        svg.append("text")
+            .attr("x", xPos)
+            .attr("y", height/2 - triangleSize - 8) // Closer to triangle
+            .attr("text-anchor", "middle")
+            .text("as")
+            .style("font-weight", "bold")
+            .style("font-size", THEME.analogyFontSize + 2)
+            .style("fill", THEME.analogyTextColor);
+    }
     
     // Watermark
     addWatermark(svg, theme);
@@ -1102,7 +1056,7 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
             renderTimeline(spec, integratedTheme, dimensions);
             break;
         case 'bridge_map':
-            renderBridgeMap(spec, integratedTheme, dimensions);
+            renderBridgeMap(spec, integratedTheme, dimensions, 'd3-container');
             break;
         default:
             console.error('Unknown graph type:', type);

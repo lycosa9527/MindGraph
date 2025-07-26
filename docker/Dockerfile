@@ -1,5 +1,5 @@
 # D3.js_Dify - AI-Powered Graph Generation Application
-# Version: 2.2.0
+# Version: 2.3.0
 # 
 # Features:
 # - AI-powered graph generation with Qwen and DeepSeek LLMs

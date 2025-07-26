@@ -290,22 +290,17 @@ Thinking Maps® are consistent visual patterns linked directly to eight specific
 ### 8. Bridge Map - For Analogies
 **Cognitive Process**: Reasoning by analogy
 
-**Purpose**: Used to show analogies and similarities between relationships. The relating factor is on the left, with pairs of related items on either side of the bridge.
+**Purpose**: Used to show analogies and similarities between relationships. The relating factor is fixed as "as" (standard bridge map format), with pairs of related items in the format a:b, c:d, e:f, etc.
 
 **Data Structure**:
 ```json
 {
-  "relating_factor": "The common relationship",
+  "relating_factor": "relationship word or phrase",
   "analogies": [
     {
-      "left_pair": {
-        "top": "First item in left pair",
-        "bottom": "Second item in left pair"
-      },
-      "right_pair": {
-        "top": "First item in right pair",
-        "bottom": "Second item in right pair"
-      }
+      "left": "First item in analogy pair",
+      "right": "Second item in analogy pair",
+      "id": 0
     }
   ]
 }
@@ -314,31 +309,28 @@ Thinking Maps® are consistent visual patterns linked directly to eight specific
 **Example**:
 ```json
 {
-  "relating_factor": "is a type of",
+  "relating_factor": "as",
   "analogies": [
     {
-      "left_pair": {
-        "top": "Dog",
-        "bottom": "Animal"
-      },
-      "right_pair": {
-        "top": "Rose",
-        "bottom": "Flower"
-      }
+      "left": "手",
+      "right": "手套",
+      "id": 0
     },
     {
-      "left_pair": {
-        "top": "Car",
-        "bottom": "Vehicle"
-      },
-      "right_pair": {
-        "top": "Airplane",
-        "bottom": "Vehicle"
-      }
+      "left": "脚",
+      "right": "袜子",
+      "id": 1
+    },
+    {
+      "left": "头",
+      "right": "帽子",
+      "id": 2
     }
   ]
 }
 ```
+
+
 
 ## Implementation Notes
 

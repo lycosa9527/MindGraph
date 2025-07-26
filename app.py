@@ -5,7 +5,7 @@ D3.js_Dify - AI-Powered Graph Generation Application
 A Flask-based web application that generates interactive D3.js graphs using AI agents.
 Supports both Qwen and DeepSeek LLMs for intelligent graph generation and enhancement.
 
-Version: 2.2.0
+Version: 2.3.0
 Author: MindSpring Team
 License: MIT
 

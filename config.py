@@ -2,7 +2,7 @@
 D3.js_Dify Configuration Module
 ==============================
 
-Version: 2.2.0
+Version: 2.3.0
 
 This module provides centralized configuration management for the D3.js_Dify application.
 It handles environment variable loading, validation, and provides a clean interface

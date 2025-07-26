@@ -5,6 +5,28 @@ All notable changes to the D3.js_Dify project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-01-27
+
+### 🚀 Major Improvements
+
+#### Bridge Map Enhancement
+- **Bridge Map Vertical Lines**: Made vertical connection lines invisible for cleaner visual presentation
+- **Improved Bridge Map Rendering**: Enhanced visual clarity by removing distracting vertical connection lines
+- **Better User Experience**: Cleaner bridge map appearance while maintaining all functional elements
+
+### 🔧 Technical Enhancements
+
+#### Rendering Pipeline Optimization
+- **Bridge Map Styling**: Updated `renderBridgeMap` function to use transparent stroke for vertical lines
+- **Visual Consistency**: Maintained horizontal main line, triangle separators, and analogy text visibility
+- **Code Quality**: Improved bridge map rendering code for better maintainability
+
+### 📋 Documentation Updates
+
+#### User Documentation
+- **Bridge Map Guide**: Updated documentation to reflect the enhanced bridge map visualization
+- **Version Update**: Updated project version to 2.3.0 across all documentation files
+
 ## [2.2.0] - 2025-01-27
 
 ### 🚀 Major Improvements

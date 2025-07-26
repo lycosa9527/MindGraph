@@ -112,7 +112,7 @@ def extract_topics_and_styles_from_prompt(user_prompt: str, language: str = 'en'
 - brace_map: 显示整体/部分关系
 - tree_map: 分类和归类信息
 - multi_flow_map: 显示因果关系
-- bridge_map: 显示类比和相似性
+- bridge_map: 桥形图 - 显示类比和相似性
 - mindmap: 围绕中心主题组织想法
 - concept_map: 显示概念之间的关系
 
@@ -454,7 +454,7 @@ Please ensure the JSON format is correct, do not include any code block markers.
         
         "bridge_map": {
             "zh": f"""
-# 桥接图 - 开发阶段提示模板
+# 桥形图 - 开发阶段提示模板
 
 ## 原始用户需求
 {user_prompt}
@@ -463,33 +463,35 @@ Please ensure the JSON format is correct, do not include any code block markers.
 通过类比推理，帮助学生理解概念之间的相似关系和模式，培养类比思维能力。
 
 ## 增强要求
-- 生成4-6个类比关系对
+- 生成4-6个类比关系对，格式为 a:b, c:d, e:f 等
 - 每个类比对应该展示相同的关联因子
-- 关联因子应该清晰、简洁（如"是...的类型"、"导致"、"包含"等）
+- 关联因子固定为 "as" (标准桥形图格式)
 - 类比对应该具有教育价值和学习意义
-- 使用简洁的关键词，避免完整句子
+- 使用尽可能少的词汇 - 仅使用单个词汇或极短短语
+- 避免完整句子、长描述，或在单个词汇足够时使用多个词汇
 - 确保类比关系逻辑清晰，易于理解
 - 涵盖不同领域和概念，展示跨学科联系
+- 每个类比都应该有一个从0开始的唯一id
 
 ## 输出格式
 {{
-  "relating_factor": "关联因子",
+  "relating_factor": "关系词或短语",
   "analogies": [
     {{
-      "left_pair": {{
-        "top": "左侧对顶部",
-        "bottom": "左侧对底部"
-      }},
-      "right_pair": {{
-        "top": "右侧对顶部",
-        "bottom": "右侧对底部"
-      }}
+      "left": "类比对中的第一项",
+      "right": "类比对中的第二项",
+      "id": 0
+    }},
+    {{
+      "left": "类比对中的第一项",
+      "right": "类比对中的第二项",
+      "id": 1
     }}
   ]
 }}
 
 ## 使用说明
-此提示模板专为开发阶段设计，用于生成高质量的教育性桥接图。
+此提示模板专为开发阶段设计，用于生成高质量的教育性桥形图。
 请确保JSON格式正确，不要包含任何代码块标记。
 """,
             "en": f"""
@@ -502,27 +504,29 @@ Please ensure the JSON format is correct, do not include any code block markers.
 Through analogical reasoning, help students understand similar relationships and patterns between concepts, developing analogical thinking skills.
 
 ## Enhanced Requirements
-- Generate 4-6 analogy pairs
+- Generate 4-6 analogy pairs in the format a:b, c:d, e:f, etc.
 - Each analogy pair should demonstrate the same relating factor
-- The relating factor should be clear and concise (e.g., "is a type of", "causes", "contains", etc.)
+- The relating factor is fixed as "as" (standard bridge map format)
 - Analogy pairs should have educational value and learning significance
-- Use concise keywords, avoid complete sentences
+- Use AT LEAST WORDS AS POSSIBLE - single words or very short phrases only
+- Avoid complete sentences, long descriptions, or multiple words when one word suffices
 - Ensure analogy relationships are logically clear and easy to understand
 - Cover diverse fields and concepts, showing interdisciplinary connections
+- Each analogy should have a unique id starting from 0
 
 ## Output Format
 {{
-  "relating_factor": "relating_factor",
+  "relating_factor": "relationship word or phrase",
   "analogies": [
     {{
-      "left_pair": {{
-        "top": "left_pair_top",
-        "bottom": "left_pair_bottom"
-      }},
-      "right_pair": {{
-        "top": "right_pair_top",
-        "bottom": "right_pair_bottom"
-      }}
+      "left": "First item in analogy pair",
+      "right": "Second item in analogy pair",
+      "id": 0
+    }},
+    {{
+      "left": "First item in analogy pair",
+      "right": "Second item in analogy pair",
+      "id": 1
     }}
   ]
 }}
@@ -685,8 +689,14 @@ def classify_diagram_type_for_development(user_prompt: str, language: str = 'en'
 - 选择最适合的图表类型
 - 只输出图表类型名称，不要其他内容
 
+重要区分：
+- 比较/对比 (compare/contrast): 使用 double_bubble_map
+- 类比 (analogy): 使用 bridge_map
+
 示例：
 用户需求：比较猫和狗 → 输出：double_bubble_map
+用户需求：类比：手之于人，如同轮子之于车 → 输出：bridge_map
+用户需求：用桥形图类比光合作用和呼吸作用 → 输出：bridge_map
 用户需求：描述太阳系的特征 → 输出：bubble_map
 用户需求：展示水循环过程 → 输出：flow_map
 用户需求：分析全球变暖的原因和影响 → 输出：multi_flow_map
@@ -706,8 +716,14 @@ Rules:
 - Choose the most appropriate diagram type
 - Output only the diagram type name, nothing else
 
+Important distinction:
+- Compare/contrast: use double_bubble_map
+- Analogy: use bridge_map
+
 Examples:
 User request: Compare cats and dogs → Output: double_bubble_map
+User request: Analogy: hand is to person as wheel is to car → Output: bridge_map
+User request: Use bridge map to analogize photosynthesis and respiration → Output: bridge_map
 User request: Describe characteristics of solar system → Output: bubble_map
 User request: Show water cycle process → Output: flow_map
 User request: Analyze causes and effects of global warming → Output: multi_flow_map
@@ -730,7 +746,9 @@ Your output:
                 return diagram_type
         
         # Fallback to default types based on keywords
-        if any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+        if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
+            return "bridge_map"
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
             return "double_bubble_map"
         elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
             return "bubble_map"
@@ -744,7 +762,9 @@ Your output:
     except Exception as e:
         logger.error(f"DeepSeek classification failed: {e}")
         # Fallback classification
-        if any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+        if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
+            return "bridge_map"
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
             return "double_bubble_map"
         elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
             return "bubble_map"

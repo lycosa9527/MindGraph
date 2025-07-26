@@ -150,6 +150,26 @@ def generate_graph():
                 logger.warning(f"Generated invalid spec for {diagram_type}: {msg}")
                 return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
         
+        # Calculate optimized dimensions for bridge maps
+        dimensions = config.get_d3_dimensions()
+        if diagram_type == 'bridge_map' and spec and 'analogies' in spec:
+            num_analogies = len(spec['analogies'])
+            min_width_per_analogy = 120
+            min_padding = 40
+            content_width = (num_analogies * min_width_per_analogy) + ((num_analogies - 1) * 60)
+            optimal_width = max(content_width + (2 * min_padding), 600)
+            optimal_height = max(90 + (2 * min_padding), 200)  # 90px for text + lines
+            
+            dimensions = {
+                'baseWidth': optimal_width,
+                'baseHeight': optimal_height,
+                'padding': min_padding,
+                'width': optimal_width,
+                'height': optimal_height,
+                'topicFontSize': dimensions.get('topicFontSize', 18),
+                'charFontSize': dimensions.get('charFontSize', 14)
+            }
+        
         return jsonify({
             'type': diagram_type,
             'spec': spec,
@@ -159,7 +179,7 @@ def generate_graph():
             'diagram_type': diagram_type,
             'has_styles': '_style' in spec,
             'theme': config.get_d3_theme(),
-            'dimensions': config.get_d3_dimensions(),
+            'dimensions': dimensions,
             'watermark': config.get_watermark_config()
         })
         
@@ -215,6 +235,27 @@ def generate_png():
             # Load the correct D3.js renderers from the static file
             with open('static/js/d3-renderers.js', 'r', encoding='utf-8') as f:
                 d3_renderers = f.read()
+            
+            # Calculate optimized dimensions for bridge maps
+            dimensions = config.get_d3_dimensions()
+            if graph_type == 'bridge_map' and spec and 'analogies' in spec:
+                num_analogies = len(spec['analogies'])
+                min_width_per_analogy = 120
+                min_padding = 40
+                content_width = (num_analogies * min_width_per_analogy) + ((num_analogies - 1) * 60)
+                optimal_width = max(content_width + (2 * min_padding), 600)
+                optimal_height = max(90 + (2 * min_padding), 200)  # 90px for text + lines
+                
+                dimensions = {
+                    'baseWidth': optimal_width,
+                    'baseHeight': optimal_height,
+                    'padding': min_padding,
+                    'width': optimal_width,
+                    'height': optimal_height,
+                    'topicFontSize': dimensions.get('topicFontSize', 18),
+                    'charFontSize': dimensions.get('charFontSize', 14)
+                }
+            
             html = f'''
             <html><head>
             <meta charset="utf-8">
@@ -229,7 +270,7 @@ def generate_png():
             const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
             const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
             window.theme = {{...d3Theme, ...watermarkConfig}};
-            window.dimensions = {json.dumps(config.get_d3_dimensions(), ensure_ascii=False)};
+            window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
             {d3_renderers}
             renderGraph(window.graph_type, window.spec, window.theme, window.dimensions);
             </script>
