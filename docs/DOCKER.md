@@ -1,8 +1,8 @@
-# Docker Setup for D3.js_Dify - Version 2.0.0
+# Docker Setup for D3.js_Dify - Version 2.1.0
 
 **D3.js_Dify** - AI-Powered Graph Generation Application
 
-Complete Docker setup guide for D3.js_Dify version 2.0.0 with enhanced containerization, health checks, and production-ready configuration.
+Complete Docker setup guide for D3.js_Dify version 2.1.0 with enhanced containerization, health checks, and production-ready configuration.
 
 ## 🐳 Prerequisites
 
@@ -47,7 +47,7 @@ Complete Docker setup guide for D3.js_Dify version 2.0.0 with enhanced container
 
 1. **Build the image**
    ```bash
-   docker build -t d3js-dify:2.0.0 .
+   docker build -t d3js-dify:2.1.0 .
    ```
 
 2. **Run the container**
@@ -57,10 +57,10 @@ Complete Docker setup guide for D3.js_Dify version 2.0.0 with enhanced container
      -e DEEPSEEK_API_KEY=your_deepseek_api_key \
      -v $(pwd)/d3js_dify_exports:/app/d3js_dify_exports \
      -v $(pwd)/logs:/app/logs \
-     d3js-dify:2.0.0
+     d3js-dify:2.1.0
    ```
 
-## 🆕 Version 2.0.0 Docker Features
+## 🆕 Version 2.1.0 Docker Features
 
 ### **Enhanced Dockerfile**
 - **Multi-stage build** for optimized image size
@@ -205,7 +205,7 @@ docker-compose exec d3js-dify pip install new-package
 
 ```bash
 # Build production image
-docker build -t d3js-dify:2.0.0 .
+docker build -t d3js-dify:2.1.0 .
 
 # Run with resource limits
 docker run -d \
@@ -216,7 +216,7 @@ docker run -d \
   -e QWEN_API_KEY=your_key \
   -v $(pwd)/exports:/app/d3js_dify_exports \
   -v $(pwd)/logs:/app/logs \
-  d3js-dify:2.0.0
+  d3js-dify:2.1.0
 
 # Monitor container health
 docker inspect d3js-dify | grep -A 10 "Health"
@@ -461,7 +461,7 @@ docker inspect d3js-dify
 
 ## 🔄 Updating
 
-### **Update to Version 2.0.0**
+### **Update to Version 2.1.0**
 
 1. **Backup your data**
    ```bash
@@ -539,7 +539,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 ---
 
-**🎉 Docker Setup Complete!** Your D3.js_Dify version 2.0.0 is now running in a production-ready Docker container with enhanced monitoring and health checks.
+**🎉 Docker Setup Complete!** Your D3.js_Dify version 2.1.0 is now running in a production-ready Docker container with enhanced monitoring and health checks.
 
 **Made with ❤️ by the D3.js Dify Team**
 

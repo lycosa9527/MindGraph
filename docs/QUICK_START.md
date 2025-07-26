@@ -1,13 +1,13 @@
-# Quick Start Guide - Version 2.0.0
+# Quick Start Guide - Version 2.1.0
 
 **D3.js_Dify** - AI-Powered Graph Generation Application
 
-Get up and running with D3.js_Dify in minutes! This guide covers the enhanced startup sequence and new features in version 2.0.0.
+Get up and running with D3.js_Dify in minutes! This guide covers the enhanced startup sequence and new features in version 2.1.0.
 
 ## 🚀 Prerequisites
 
 ### **System Requirements**
-- **Python 3.8+** (required for version 2.0.0)
+- **Python 3.8+** (required for version 2.1.0)
 - **Node.js 18.19+** (for D3.js dependencies)
 - **Modern web browser** (Chrome, Firefox, Safari, Edge)
 - **4GB RAM minimum** (8GB recommended)
@@ -69,7 +69,7 @@ Get up and running with D3.js_Dify in minutes! This guide covers the enhanced st
 4. **Open your browser**
    Navigate to `http://localhost:9527`
 
-## 🆕 Version 2.0.0 Features
+## 🆕 Version 2.1.0 Features
 
 ### **Enhanced Startup Sequence**
 
@@ -214,11 +214,11 @@ D3_DIFF_FILL=#f4f6fb
 ### **Using Docker directly**
 
 ```bash
-docker build -t d3js-dify:2.0.0 .
+docker build -t d3js-dify:2.1.0 .
 docker run -p 9527:9527 \
   -e QWEN_API_KEY=your_key_here \
   -e DEEPSEEK_API_KEY=your_key_here \
-  d3js-dify:2.0.0
+  d3js-dify:2.1.0
 ```
 
 ## 🔍 Troubleshooting
@@ -318,7 +318,7 @@ docker-compose logs -f
 
 ---
 
-**🎉 Congratulations!** You're now running D3.js_Dify version 2.0.0 with enhanced startup sequences and professional configuration management.
+**🎉 Congratulations!** You're now running D3.js_Dify version 2.1.0 with enhanced startup sequences and professional configuration management.
 
 **Made with ❤️ by the D3.js Dify Team**
 

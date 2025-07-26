@@ -1,6 +1,6 @@
 # D3.js_Dify Documentation
 
-**Version 2.0.0** - AI-Powered Graph Generation Application
+**Version 2.1.0** - AI-Powered Graph Generation Application
 
 This directory contains comprehensive documentation for the D3.js_Dify project, featuring enhanced startup sequences, comprehensive dependency validation, and professional configuration management.
 
@@ -33,7 +33,7 @@ This directory contains comprehensive documentation for the D3.js_Dify project, 
 - **[Architecture Overview](ARCHITECTURE.md)** - System design and components
 - **[Performance Guide](PERFORMANCE.md)** - Optimization and scaling
 
-## 🆕 Version 2.0.0 Highlights
+## 🆕 Version 2.1.0 Highlights
 
 ### **Enhanced Startup Sequence**
 - ✅ **Comprehensive Dependency Validation** - Automatic checking of all required packages
@@ -62,24 +62,24 @@ This directory contains comprehensive documentation for the D3.js_Dify project, 
 4. **Using Docker?** See [Docker Guide](DOCKER.md)
 5. **Developing features?** Review [Development Guide](DEVELOPMENT.md)
 
-> **🚀 Version 2.0.0 Feature**: The application now includes comprehensive dependency validation and professional startup sequences. No manual Playwright installation required - it's handled automatically!
+> **🚀 Version 2.1.0 Feature**: The application now includes comprehensive dependency validation and professional startup sequences. No manual Playwright installation required - it's handled automatically!
 
 ## 📋 Documentation Status
 
 | Document | Status | Version | Last Updated |
 |----------|--------|---------|--------------|
-| Quick Start Guide | ✅ Complete | 2.0.0 | Current |
-| Installation Guide | ✅ Complete | 2.0.0 | Current |
-| Configuration Guide | ✅ Complete | 2.0.0 | Current |
-| Deployment Guide | ✅ Complete | 2.0.0 | Current |
-| Agent Documentation | ✅ Complete | 2.0.0 | Current |
-| Docker Guide | ✅ Complete | 2.0.0 | Current |
-| API Reference | ✅ Complete | 2.0.0 | Current |
-| Code Review Report | ✅ Complete | 2.0.0 | Current |
+| Quick Start Guide | ✅ Complete | 2.1.0 | Current |
+| Installation Guide | ✅ Complete | 2.1.0 | Current |
+| Configuration Guide | ✅ Complete | 2.1.0 | Current |
+| Deployment Guide | ✅ Complete | 2.1.0 | Current |
+| Agent Documentation | ✅ Complete | 2.1.0 | Current |
+| Docker Guide | ✅ Complete | 2.1.0 | Current |
+| API Reference | ✅ Complete | 2.1.0 | Current |
+| Code Review Report | ✅ Complete | 2.1.0 | Current |
 
 ## 🔄 Migration from Version 1.x
 
-### **Key Changes in 2.0.0**
+### **Key Changes in 2.1.0**
 - **Python 3.8+ Required** - Updated minimum Python version
 - **Flask 3.0+** - Enhanced web framework support
 - **Property-Based Configuration** - Configuration access changed
@@ -119,17 +119,17 @@ When updating documentation:
 2. Include code examples where helpful
 3. Update this index when adding new docs
 4. Use consistent formatting and structure
-5. Follow version 2.0.0 documentation standards
+5. Follow version 2.1.0 documentation standards
 
 ## 📞 Support
 
 For questions about the documentation or project:
 1. Check the relevant guide first
 2. Review the [Code Review Report](CODE_REVIEW_REPORT.md) for common issues
-3. Check the [Migration Guide](MIGRATION.md) for version 2.0.0 changes
+3. Check the [Migration Guide](MIGRATION.md) for version 2.1.0 changes
 4. Create an issue with specific questions
 
-## 🎯 What's New in 2.0.0
+## 🎯 What's New in 2.1.0
 
 ### **Startup Improvements**
 - Automatic dependency validation

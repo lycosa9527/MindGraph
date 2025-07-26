@@ -1,6 +1,6 @@
 # D3.js Dify - AI-Powered Data Visualization Generator
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![WakaTime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/D3.js_Dify.svg)](https://wakatime.com/@60ba0518-3829-457f-ae10-3eff184d5f69/projects/D3.js_Dify)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
@@ -14,13 +14,19 @@
 ### ✨ Key Features
 
 - **🤖 AI-Powered**: Uses LangChain agents to understand your requests and generate appropriate chart types
-- **📊 Multiple Chart Types**: Supports bar charts, line charts, pie charts, scatter plots, and more
+- **📊 Multiple Chart Types**: Supports bar charts, line charts, pie charts, scatter plots, bubble maps, and more
 - **🌐 Interactive**: Fully interactive D3.js visualizations with hover effects, animations, and zoom
 - **🎨 Beautiful Design**: Modern, responsive UI with customizable themes
 - **📱 Export Options**: Export charts as PNG images or interactive HTML
 - **🌍 Multi-language**: Supports both English and Chinese
 - **⚡ Real-time**: Instant chart generation with live preview
 - **🔧 Developer Friendly**: RESTful API, Docker support, and comprehensive documentation
+
+### 🆕 What's New in Version 2.1
+
+- **🔧 Enhanced Bubble Map Rendering**: Fixed bubble map layout to properly center topics and distribute attributes in a 360-degree circle
+- **🎯 Improved Rendering Pipeline**: Unified D3.js renderers across web interface and PNG export for consistent visualization quality
+- **⚡ Better Performance**: Optimized chart generation and rendering processes for faster response times
 
 ## 🚀 Quick Start
 
@@ -103,6 +109,7 @@ Export your charts as:
 | **Heatmap** | Color-coded grid | Matrix data visualization |
 | **Tree Map** | Nested rectangles | Hierarchical data |
 | **Network Graph** | Connected nodes | Relationships and connections |
+| **Bubble Map** | Centered topic with circular attribute distribution | Topic analysis and attribute relationships |
 
 ## 🔧 API Usage
 

@@ -79,6 +79,197 @@ llm = DeepSeekLLM()
 
 
 # ============================================================================
+# ENHANCED TOPIC AND STYLE EXTRACTION
+# ============================================================================
+
+def extract_topics_and_styles_from_prompt(user_prompt: str, language: str = 'en') -> dict:
+    """
+    Use DeepSeek to extract both topics and style preferences from user prompt in a single pass.
+    This is more efficient than separate hardcoded parsing.
+    
+    Args:
+        user_prompt: The user's input prompt
+        language: Language for processing ('en' or 'zh')
+    
+    Returns:
+        dict: Contains 'topics', 'style_preferences', and 'diagram_type'
+    """
+    
+    if language == 'zh':
+        prompt_text = f"""
+你是一个智能图表助手，用于从用户需求中同时提取主题内容和样式偏好。
+
+请分析以下用户需求，并提取：
+1. 主要主题和子主题
+2. 样式偏好（颜色、字体、布局等）
+3. 最适合的图表类型
+
+可用图表类型：
+- double_bubble_map: 比较和对比两个主题
+- bubble_map: 描述单个主题的特征
+- circle_map: 在上下文中定义主题
+- flow_map: 序列事件或过程
+- brace_map: 显示整体/部分关系
+- tree_map: 分类和归类信息
+- multi_flow_map: 显示因果关系
+- bridge_map: 显示类比和相似性
+- mindmap: 围绕中心主题组织想法
+- concept_map: 显示概念之间的关系
+
+样式偏好包括：
+- 颜色主题：classic, innovation, nature, corporate, vibrant, pastel, monochrome
+- 颜色名称：red, blue, green, yellow, purple, orange, pink, brown, gray, black, white
+- 字体大小：small, medium, large, extra-large
+- 重要性：center, main, sub
+- 背景：dark, light
+- 边框：bold, thin
+
+请以JSON格式输出：
+{{{{
+    "topics": ["主题1", "主题2", ...],
+    "style_preferences": {{{{
+        "color_theme": "主题名称",
+        "primary_color": "颜色名称",
+        "font_size": "字体大小",
+        "importance": "重要性级别",
+        "background": "背景偏好",
+        "stroke": "边框样式"
+    }}}},
+    "diagram_type": "图表类型"
+}}}}
+
+用户需求：{user_prompt}
+你的输出：
+"""
+    else:
+        prompt_text = f"""
+You are an intelligent diagram assistant that extracts both topics and style preferences from user requests in a single pass.
+
+Please analyze the following user request and extract:
+1. Main topics and subtopics
+2. Style preferences (colors, fonts, layout, etc.)
+3. Most suitable diagram type
+
+Available diagram types:
+- double_bubble_map: Compare and contrast two topics
+- bubble_map: Describe attributes of a single topic
+- circle_map: Define a topic in context
+- flow_map: Sequence events or processes
+- brace_map: Show whole/part relationships
+- tree_map: Categorize and classify information
+- multi_flow_map: Show cause and effect relationships
+- bridge_map: Show analogies and similarities
+- mindmap: Organize ideas around a central topic
+- concept_map: Show relationships between concepts
+
+Style preferences include:
+- Color themes: classic, innovation, nature, corporate, vibrant, pastel, monochrome
+- Color names: red, blue, green, yellow, purple, orange, pink, brown, gray, black, white
+- Font sizes: small, medium, large, extra-large
+- Importance levels: center, main, sub
+- Backgrounds: dark, light
+- Strokes: bold, thin
+
+Please output in JSON format:
+{{{{
+    "topics": ["topic1", "topic2", ...],
+    "style_preferences": {{{{
+        "color_theme": "theme_name",
+        "primary_color": "color_name",
+        "font_size": "font_size",
+        "importance": "importance_level",
+        "background": "background_preference",
+        "stroke": "stroke_style"
+    }}}},
+    "diagram_type": "diagram_type"
+}}}}
+
+User request: {user_prompt}
+Your output:
+"""
+    
+    prompt = PromptTemplate(
+        input_variables=["user_prompt"],
+        template=prompt_text
+    )
+    
+    try:
+        result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip()
+        
+        # Try to parse JSON response
+        try:
+            # Clean the result - remove markdown code blocks if present
+            cleaned_result = result.strip()
+            if cleaned_result.startswith('```json'):
+                cleaned_result = cleaned_result[7:]  # Remove ```json
+            if cleaned_result.startswith('```'):
+                cleaned_result = cleaned_result[3:]  # Remove ```
+            if cleaned_result.endswith('```'):
+                cleaned_result = cleaned_result[:-3]  # Remove trailing ```
+            cleaned_result = cleaned_result.strip()
+            
+            parsed_result = json.loads(cleaned_result)
+            
+            # Validate and clean the result
+            validated_result = {
+                "topics": parsed_result.get("topics", []),
+                "style_preferences": parsed_result.get("style_preferences", {}),
+                "diagram_type": parsed_result.get("diagram_type", "bubble_map")
+            }
+            
+            # Ensure diagram_type is valid
+            available_types = get_available_diagram_types()
+            if validated_result["diagram_type"] not in available_types:
+                validated_result["diagram_type"] = "bubble_map"  # Default fallback
+            
+            logger.info(f"Successfully extracted topics and styles: {validated_result}")
+            return validated_result
+            
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse JSON response: {result}")
+            # Fallback to basic extraction
+            return extract_topics_and_styles_fallback(user_prompt, language)
+            
+    except Exception as e:
+        logger.error(f"DeepSeek extraction failed: {e}")
+        return extract_topics_and_styles_fallback(user_prompt, language)
+
+
+def extract_topics_and_styles_fallback(user_prompt: str, language: str = 'en') -> dict:
+    """
+    Fallback method for extracting topics and styles when AI extraction fails.
+    Uses basic keyword matching and the existing hardcoded parser.
+    """
+    from diagram_styles import parse_style_from_prompt
+    
+    # Extract topics using basic keyword matching
+    topics = []
+    prompt_lower = user_prompt.lower()
+    
+    # Simple topic extraction based on common patterns
+    if "compare" in prompt_lower or "vs" in prompt_lower or "对比" in prompt_lower:
+        # Extract comparison topics
+        words = user_prompt.split()
+        for i, word in enumerate(words):
+            if word.lower() in ["compare", "vs", "对比", "比较"] and i + 1 < len(words):
+                if i + 2 < len(words):
+                    topics = [words[i+1], words[i+2]]
+                    break
+    
+    # Extract style preferences using the existing parser
+    style_preferences = parse_style_from_prompt(user_prompt)
+    
+    # Determine diagram type
+    diagram_type = classify_diagram_type_for_development(user_prompt, language)
+    
+    return {
+        "topics": topics,
+        "style_preferences": style_preferences,
+        "diagram_type": diagram_type
+    }
+
+
+# ============================================================================
 # DEVELOPMENT PHASE PROMPT GENERATION
 # ============================================================================
 
@@ -533,6 +724,157 @@ def development_workflow(user_prompt: str, language: str = 'en', save_to_file: b
             "language": language,
             "workflow_type": "development"
         }
+
+
+def enhanced_development_workflow(user_prompt: str, language: str = 'en', save_to_file: bool = True) -> dict:
+    """
+    Enhanced development phase workflow that extracts topics and styles in a single AI pass.
+    More efficient than the traditional workflow.
+    
+    Args:
+        user_prompt: The user's input prompt
+        language: Language for processing ('en' or 'zh')
+        save_to_file: Whether to save the prompt to a file
+    
+    Returns:
+        dict: Contains extracted topics, styles, diagram_type, and development_prompt
+    """
+    logger.info(f"DeepSeek Enhanced Development: Starting workflow for: {user_prompt}")
+    
+    try:
+        # Step 1: Extract topics and styles in a single AI pass
+        extraction_result = extract_topics_and_styles_from_prompt(user_prompt, language)
+        logger.info(f"DeepSeek Enhanced Development: Extracted topics and styles: {extraction_result}")
+        
+        # Step 2: Generate development prompt template with extracted information
+        diagram_type = extraction_result["diagram_type"]
+        topics = extraction_result["topics"]
+        style_preferences = extraction_result["style_preferences"]
+        
+        # Create enhanced prompt with extracted information
+        enhanced_prompt = create_enhanced_development_prompt(
+            user_prompt, diagram_type, topics, style_preferences, language
+        )
+        
+        result = {
+            "diagram_type": diagram_type,
+            "topics": topics,
+            "style_preferences": style_preferences,
+            "development_prompt": enhanced_prompt,
+            "original_prompt": user_prompt,
+            "language": language,
+            "workflow_type": "enhanced_development",
+            "extraction_method": "ai_combined"
+        }
+        
+        # Step 3: Save to file if requested
+        if save_to_file:
+            filename = save_enhanced_development_prompt_to_file(
+                enhanced_prompt, topics, style_preferences, diagram_type
+            )
+            if filename:
+                result["saved_filename"] = filename
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"DeepSeek Enhanced Development: Workflow failed: {e}")
+        # Fallback to traditional workflow
+        return development_workflow(user_prompt, language, save_to_file)
+
+
+def create_enhanced_development_prompt(user_prompt: str, diagram_type: str, 
+                                     topics: list, style_preferences: dict, language: str = 'en') -> str:
+    """
+    Create an enhanced development prompt that includes extracted topics and style preferences.
+    """
+    
+    if language == 'zh':
+        header = f"""
+# 增强开发阶段提示模板
+## 图表类型: {diagram_type}
+## 提取的主题: {', '.join(topics) if topics else '未指定'}
+## 样式偏好: {style_preferences}
+## 生成时间: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+此提示模板使用AI智能提取的主题和样式偏好，专为开发阶段设计。
+开发者可以将此模板保存并在生产环境中使用Qwen代理。
+
+## 原始用户需求
+{user_prompt}
+
+## AI提取的主题
+{topics}
+
+## AI提取的样式偏好
+{style_preferences}
+
+## 增强要求
+基于提取的主题和样式偏好，生成高质量的JSON图表规范。
+确保样式偏好得到正确应用。
+"""
+    else:
+        header = f"""
+# Enhanced Development Phase Prompt Template
+## Diagram Type: {diagram_type}
+## Extracted Topics: {', '.join(topics) if topics else 'Not specified'}
+## Style Preferences: {style_preferences}
+## Generated: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+This prompt template uses AI-extracted topics and style preferences, designed for the development phase.
+Developers can save this template and use it with the Qwen agent in production.
+
+## Original User Request
+{user_prompt}
+
+## AI-Extracted Topics
+{topics}
+
+## AI-Extracted Style Preferences
+{style_preferences}
+
+## Enhanced Requirements
+Based on the extracted topics and style preferences, generate a high-quality JSON diagram specification.
+Ensure style preferences are correctly applied.
+"""
+    
+    # Add the base development prompt template
+    base_prompt = create_development_prompt_template(diagram_type, user_prompt, language)
+    
+    return header + "\n" + base_prompt
+
+
+def save_enhanced_development_prompt_to_file(prompt: str, topics: list, 
+                                           style_preferences: dict, diagram_type: str, 
+                                           filename: str = None) -> str:
+    """
+    Save enhanced development prompt to a file with metadata.
+    """
+    if not filename:
+        timestamp = __import__('datetime').datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"development_prompts/enhanced_prompt_{diagram_type}_{timestamp}.md"
+    
+    # Create directory if it doesn't exist
+    os.makedirs("development_prompts", exist_ok=True)
+    
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(prompt)
+            
+            # Add metadata as comments
+            f.write(f"\n\n<!--\n")
+            f.write(f"Metadata:\n")
+            f.write(f"- Diagram Type: {diagram_type}\n")
+            f.write(f"- Topics: {topics}\n")
+            f.write(f"- Style Preferences: {style_preferences}\n")
+            f.write(f"- Generated: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"-->\n")
+            
+        logger.info(f"Enhanced development prompt saved to: {filename}")
+        return filename
+    except Exception as e:
+        logger.error(f"Failed to save enhanced development prompt: {e}")
+        return None
 
 
 # ============================================================================

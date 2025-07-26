@@ -49,6 +49,8 @@ from graph_specs import (
     validate_concept_map,
     validate_mindmap
 )
+import json
+from diagram_styles import parse_style_from_prompt
 
 
 class QwenLLM(LLM):
@@ -415,14 +417,16 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             "需求：{user_prompt}\n"
             "请输出一个包含以下字段的JSON对象：\n"
             "topic: \"主题\"\n"
-            "characteristics: [\"特征1\", \"特征2\", \"特征3\", \"特征4\", \"特征5\", \"特征6\"]\n"
+            "context: [\"特征1\", \"特征2\", \"特征3\", \"特征4\", \"特征5\", \"特征6\"]\n"
+            "要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。\n"
             "请确保JSON格式正确，不要包含任何代码块标记。\n"
         ) if language == 'zh' else (
             "Please generate a JSON specification for a circle map for the following user request.\n"
             "Request: {user_prompt}\n"
             "Please output a JSON object containing the following fields:\n"
             "topic: \"Topic\"\n"
-            "characteristics: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\", \"Feature6\"]\n"
+            "context: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\", \"Feature6\"]\n"
+            "Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.\n"
             "Please ensure the JSON format is correct, do not include any code block markers.\n"
         )
         prompt = PromptTemplate(
@@ -431,10 +435,22 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
         )
         yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
         yaml_text_clean = extract_yaml_from_code_block(yaml_text)
+        
+        # Debug: Log the raw response
+        logger.debug(f"Raw Qwen response for circle_map: {yaml_text}")
+        logger.debug(f"Cleaned response: {yaml_text_clean}")
+        
         try:
-            spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "topic" not in spec or "characteristics" not in spec:
-                raise Exception("YAML parse failed or JSON structure incorrect")
+            # Try JSON first, then YAML as fallback
+            try:
+                spec = json.loads(yaml_text_clean)
+            except json.JSONDecodeError:
+                spec = yaml.safe_load(yaml_text_clean)
+            
+            if not spec or "topic" not in spec or "context" not in spec:
+                logger.error(f"Generated spec missing required fields: {spec}")
+                raise Exception("YAML/JSON parse failed or structure incorrect")
+            
             # Optionally use graph_specs.py for schema/validation
             valid, msg = validate_circle_map(spec)
             if not valid:
@@ -449,16 +465,16 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             "需求：{user_prompt}\n"
             "请输出一个包含以下字段的JSON对象：\n"
             "topic: \"主题\"\n"
-            "left: [\"特征1\", \"特征2\", \"特征3\", \"特征4\"]\n"
-            "right: [\"特征5\", \"特征6\", \"特征7\", \"特征8\"]\n"
+            "attributes: [\"特征1\", \"特征2\", \"特征3\", \"特征4\", \"特征5\", \"特征6\", \"特征7\", \"特征8\"]\n"
+            "要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。\n"
             "请确保JSON格式正确，不要包含任何代码块标记。\n"
         ) if language == 'zh' else (
             "Please generate a JSON specification for a bubble map for the following user request.\n"
             "Request: {user_prompt}\n"
             "Please output a JSON object containing the following fields:\n"
             "topic: \"Topic\"\n"
-            "left: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\"]\n"
-            "right: [\"Feature5\", \"Feature6\", \"Feature7\", \"Feature8\"]\n"
+            "attributes: [\"Feature1\", \"Feature2\", \"Feature3\", \"Feature4\", \"Feature5\", \"Feature6\", \"Feature7\", \"Feature8\"]\n"
+            "Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.\n"
             "Please ensure the JSON format is correct, do not include any code block markers.\n"
         )
         prompt = PromptTemplate(
@@ -467,11 +483,18 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
         )
         yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
         yaml_text_clean = extract_yaml_from_code_block(yaml_text)
+        logger.debug(f"Raw Qwen response for bubble_map: {yaml_text}")
+        logger.debug(f"Cleaned response: {yaml_text_clean}")
         try:
-            spec = yaml.safe_load(yaml_text_clean)
-            if not spec or "topic" not in spec or "left" not in spec or "right" not in spec:
-                raise Exception("YAML parse failed or JSON structure incorrect")
-            # Optionally use graph_specs.py for schema/validation
+            # Try JSON first, then YAML as fallback
+            try:
+                spec = json.loads(yaml_text_clean)
+            except json.JSONDecodeError:
+                spec = yaml.safe_load(yaml_text_clean)
+            if not spec or "topic" not in spec or "attributes" not in spec:
+                logger.error(f"Generated spec missing required fields: {spec}")
+                raise Exception("YAML/JSON parse failed or structure incorrect")
+            # Use graph_specs.py for schema/validation
             valid, msg = validate_bubble_map(spec)
             if not valid:
                 raise Exception(f"Generated JSON does not match bubble map schema: {msg}")
@@ -727,3 +750,147 @@ def validate_agent_setup():
         return False
     finally:
         timer.cancel() 
+
+
+def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = 'en') -> dict:
+    """
+    Use Qwen to extract both topics and style preferences from user prompt in a single pass.
+    Fallback to hardcoded parser if extraction fails.
+    Returns a dict with 'topics', 'style_preferences', and 'diagram_type'.
+    """
+    from langchain.prompts import PromptTemplate
+    def get_default_result():
+        return {
+            "topics": [],
+            "style_preferences": {},
+            "diagram_type": "bubble_map"
+        }
+    def clean_llm_response(result):
+        cleaned = result.strip()
+        if cleaned.startswith('```json'):
+            cleaned = cleaned[7:]
+        if cleaned.startswith('```'):
+            cleaned = cleaned[3:]
+        if cleaned.endswith('```'):
+            cleaned = cleaned[:-3]
+        return cleaned.strip()
+    def validate_and_parse_json(json_str):
+        try:
+            parsed = json.loads(json_str)
+            if not isinstance(parsed, dict):
+                return None
+            return parsed
+        except (json.JSONDecodeError, TypeError):
+            return None
+    # Input validation
+    if not isinstance(user_prompt, str) or not user_prompt.strip():
+        return get_default_result()
+    if language not in ['zh', 'en']:
+        language = 'en'
+    if language == 'zh':
+        prompt_text = f"""
+你是一个智能图表助手，用于从用户需求中同时提取主题内容和样式偏好。
+请分析以下用户需求，并提取：
+1. 主要主题和子主题
+2. 样式偏好（颜色、字体、布局等）
+3. 最适合的图表类型
+可用图表类型：
+- double_bubble_map: 比较和对比两个主题
+- bubble_map: 描述单个主题的特征
+- circle_map: 在上下文中定义主题
+- flow_map: 序列事件或过程
+- brace_map: 显示整体/部分关系
+- tree_map: 分类和归类信息
+- multi_flow_map: 显示因果关系
+- bridge_map: 显示类比和相似性
+- mindmap: 围绕中心主题组织想法
+- concept_map: 显示概念之间的关系
+样式偏好包括：
+- 颜色主题：classic, innovation, nature, corporate, vibrant, pastel, monochrome
+- 颜色名称：red, blue, green, yellow, purple, orange, pink, brown, gray, black, white
+- 字体大小：small, medium, large, extra-large
+- 重要性：center, main, sub
+- 背景：dark, light
+- 边框：bold, thin
+请以JSON格式输出：
+{{{{
+    "topics": ["主题1", "主题2", ...],
+    "style_preferences": {{{{
+        "color_theme": "主题名称",
+        "primary_color": "颜色名称",
+        "font_size": "字体大小",
+        "importance": "重要性级别",
+        "background": "背景偏好",
+        "stroke": "边框样式"
+    }}}},
+    "diagram_type": "图表类型"
+}}}}
+用户需求：{user_prompt}
+你的输出：
+"""
+    else:
+        prompt_text = f"""
+You are an intelligent diagram assistant that extracts both topics and style preferences from user requests in a single pass.
+Please analyze the following user request and extract:
+1. Main topics and subtopics
+2. Style preferences (colors, fonts, layout, etc.)
+3. Most suitable diagram type
+Available diagram types:
+- double_bubble_map: Compare and contrast two topics
+- bubble_map: Describe attributes of a single topic
+- circle_map: Define a topic in context
+- flow_map: Sequence events or processes
+- brace_map: Show whole/part relationships
+- tree_map: Categorize and classify information
+- multi_flow_map: Show cause and effect relationships
+- bridge_map: Show analogies and similarities
+- mindmap: Organize ideas around a central topic
+- concept_map: Show relationships between concepts
+Style preferences include:
+- Color themes: classic, innovation, nature, corporate, vibrant, pastel, monochrome
+- Color names: red, blue, green, yellow, purple, orange, pink, brown, gray, black, white
+- Font sizes: small, medium, large, extra-large
+- Importance levels: center, main, sub
+- Backgrounds: dark, light
+- Strokes: bold, thin
+Please output in JSON format:
+{{{{
+    "topics": ["topic1", "topic2", ...],
+    "style_preferences": {{{{
+        "color_theme": "theme_name",
+        "primary_color": "color_name",
+        "font_size": "font_size",
+        "importance": "importance_level",
+        "background": "background_preference",
+        "stroke": "stroke_style"
+    }}}},
+    "diagram_type": "diagram_type"
+}}}}
+User request: {user_prompt}
+Your output:
+"""
+    prompt = PromptTemplate(
+        input_variables=["user_prompt"],
+        template=prompt_text
+    )
+    try:
+        result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip()
+        cleaned_result = clean_llm_response(result)
+        parsed_result = validate_and_parse_json(cleaned_result)
+        if not parsed_result:
+            return get_default_result()
+        style_prefs = parsed_result.get("style_preferences", {})
+        if not isinstance(style_prefs, dict):
+            style_prefs = {}
+        validated_result = {
+            "topics": parsed_result.get("topics", []),
+            "style_preferences": style_prefs,
+            "diagram_type": parsed_result.get("diagram_type", "bubble_map")
+        }
+        return validated_result
+    except (json.JSONDecodeError, ValueError, TypeError) as e:
+        logger.error(f"JSON parsing failed in enhanced extraction: {e}")
+        return get_default_result()
+    except Exception as e:
+        logger.error(f"Unexpected error in enhanced extraction: {e}")
+        return get_default_result() 

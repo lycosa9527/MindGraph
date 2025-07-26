@@ -5,6 +5,44 @@ All notable changes to the D3.js_Dify project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-01-27
+
+### 🚀 Major Improvements
+
+#### Enhanced Bubble Map Rendering
+- **Fixed Bubble Map Layout**: Topic now positioned exactly in the center with attributes spread 360 degrees around it
+- **Improved Connecting Lines**: Clean lines from topic edge to attribute edges for better visual clarity
+- **Enhanced D3.js Renderer**: Updated PNG generation route to use the correct, full-featured D3.js renderer
+- **Consistent Rendering Pipeline**: Both web interface and PNG generation now use the same high-quality renderer
+
+#### Rendering Pipeline Optimization
+- **Unified D3.js Renderers**: Eliminated duplicate renderer code by using the correct renderer from `static/js/d3-renderers.js`
+- **Enhanced Agent JSON Generation**: Improved bubble map specification generation for better visual output
+- **Comprehensive Validation**: Added validation tests to ensure bubble map pipeline works correctly
+- **Multi-language Support**: Bubble map generation works with both Chinese and English prompts
+
+### 🔧 Technical Enhancements
+
+#### Code Quality & Architecture
+- **Renderer Consistency**: Fixed inconsistency between web and PNG generation routes
+- **Layout Algorithm**: Improved circular layout algorithm for better attribute distribution
+- **Error Handling**: Enhanced error handling in bubble map rendering pipeline
+- **Code Organization**: Cleaner separation between different renderer implementations
+
+### 📋 Documentation Updates
+
+#### Technical Documentation
+- **Bubble Map Guide**: Updated documentation to reflect the improved layout and rendering
+- **Pipeline Documentation**: Enhanced documentation of the complete rendering pipeline
+- **Validation Guide**: Added documentation for bubble map specification validation
+
+### 🛡️ Security & Stability
+
+#### Rendering Stability
+- **Consistent Output**: Both web and PNG generation now produce identical high-quality output
+- **Error Recovery**: Improved error handling in rendering pipeline
+- **Validation**: Enhanced validation of bubble map specifications
+
 ## [2.0.0] - 2025-07-26
 
 ### 🚀 Major Improvements
@@ -43,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Timeout Handling**: Improved timeout management for API calls
 
 #### Docker Support
-- **Enhanced Dockerfile**: Updated with version 2.0.0 and comprehensive environment configuration
+- **Enhanced Dockerfile**: Updated with version 2.1.0 and comprehensive environment configuration
 - **Docker Compose**: Improved configuration with health checks and resource limits
 - **Production Ready**: Optimized for production deployment with proper logging
 
@@ -56,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Documentation**: Detailed explanation of all configuration options
 
 #### User Documentation
-- **README.md**: Updated with version 2.0.0 features and improved installation instructions
+- **README.md**: Updated with version 2.1.0 features and improved installation instructions
 - **Requirements.txt**: Enhanced with detailed dependency information
 - **Environment Configuration**: Clear documentation of required and optional settings
 
@@ -74,7 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔄 Migration Guide
 
-#### From Version 1.x to 2.0.0
+#### From Version 1.x to 2.1.0
 
 1. **Environment Variables**: Ensure your `.env` file includes all required variables
    ```bash
@@ -93,7 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 4. **Docker**: Update Docker deployment
    ```bash
-   docker build -t d3js-dify:2.0.0 .
+   docker build -t d3js-dify:2.1.0 .
    docker-compose up -d
    ```
 
@@ -102,10 +140,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Core Application Files
 - `app.py` - Complete rewrite with enhanced startup sequence and dependency validation
 - `config.py` - Property-based configuration management with comprehensive validation
-- `requirements.txt` - Updated dependencies with version 2.0.0 header
+- `requirements.txt` - Updated dependencies with version 2.1.0 header
 
 #### Docker Files
-- `docker/Dockerfile` - Enhanced with version 2.0.0 and comprehensive environment configuration
+- `docker/Dockerfile` - Enhanced with version 2.1.0 and comprehensive environment configuration
 - `docker/docker-compose.yml` - Improved with health checks and resource management
 
 #### Documentation

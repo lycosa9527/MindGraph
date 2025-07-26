@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background: #f4f6fb; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.10); padding: 32px 28px; }
+        .container { max-width: 800px; margin: 40px auto; background: #fff; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.10); padding: 32px 28px; }
         h1 { text-align: center; color: #4e79a7; margin-bottom: 24px; }
         label { font-weight: 600; color: #35506b; }
         textarea { width: 100%; min-height: 60px; font-size: 1.1rem; border-radius: 8px; border: 1.5px solid #cfd8dc; padding: 12px; margin-bottom: 16px; }
@@ -17,6 +17,78 @@
         .result { background: #f9fafd; color: #222; word-break: break-all; }
         .error { background: #fff3f3; color: #d32f2f; border: 1.5px solid #f8d7da; }
         img { display: block; margin: 18px auto 0 auto; max-width: 100%; border-radius: 10px; box-shadow: 0 2px 12px rgba(78,121,167,0.10); border: 2px solid #a7c7e7; }
+        
+        /* Enhanced UI for topics and styles */
+        .extraction-info { 
+            margin-top: 20px; 
+            padding: 16px; 
+            background: #f8f9fa; 
+            border-radius: 10px; 
+            border-left: 4px solid #4e79a7;
+            display: none;
+        }
+        .extraction-info h3 { 
+            color: #4e79a7; 
+            margin-top: 0; 
+            margin-bottom: 12px; 
+            font-size: 1.1rem; 
+        }
+        .topics-section, .styles-section { 
+            margin-bottom: 16px; 
+        }
+        .topics-section h4, .styles-section h4 { 
+            color: #35506b; 
+            margin: 8px 0 6px 0; 
+            font-size: 0.95rem; 
+        }
+        .topics-list { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 6px; 
+            margin-top: 6px; 
+        }
+        .topic-tag { 
+            background: #e3f2fd; 
+            color: #1976d2; 
+            padding: 4px 8px; 
+            border-radius: 12px; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+        }
+        .style-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
+            gap: 8px; 
+            margin-top: 6px; 
+        }
+        .style-item { 
+            background: #f5f5f5; 
+            padding: 6px 8px; 
+            border-radius: 6px; 
+            font-size: 0.85rem; 
+        }
+        .style-label { 
+            color: #666; 
+            font-weight: 500; 
+        }
+        .style-value { 
+            color: #333; 
+            font-weight: 600; 
+        }
+        .diagram-type { 
+            background: #e8f5e8; 
+            color: #2e7d32; 
+            padding: 6px 10px; 
+            border-radius: 6px; 
+            font-weight: 600; 
+            display: inline-block; 
+            margin-top: 6px; 
+        }
+        .no-extraction { 
+            color: #666; 
+            font-style: italic; 
+            font-size: 0.9rem; 
+        }
     </style>
 </head>
 <body>
@@ -33,10 +105,35 @@
         <button id="getPngBtn">Generate Diagram</button>
         <div id="infoMsg"></div>
         <div id="historyBox" style="margin-top:18px;"></div>
+        
+        <!-- Enhanced extraction info display -->
+        <div class="extraction-info" id="extractionInfo">
+            <h3>🎯 AI Extraction Results</h3>
+            <div class="topics-section">
+                <h4>📋 Extracted Topics:</h4>
+                <div id="topicsList" class="topics-list">
+                    <span class="no-extraction">No topics extracted</span>
+                </div>
+            </div>
+            <div class="styles-section">
+                <h4>🎨 Style Preferences:</h4>
+                <div id="stylesGrid" class="style-grid">
+                    <span class="no-extraction">No style preferences extracted</span>
+                </div>
+            </div>
+            <div>
+                <h4>📊 Diagram Type:</h4>
+                <div id="diagramType" class="diagram-type">bubble_map</div>
+            </div>
+        </div>
+        
         <div class="result" id="jsonResult" style="display:none;"></div>
         <div class="result" id="pngResult" style="display:none;"></div>
         <div class="error" id="errorMsg" style="display:none;"></div>
+        <div id="d3-container" style="margin-top: 20px; text-align: center;"></div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="/static/js/d3-renderers.js"></script>
     <script>
     const getJsonBtn = document.getElementById('getJsonBtn');
     const getPngBtn = document.getElementById('getPngBtn');
@@ -47,6 +144,12 @@
     const errorMsg = document.getElementById('errorMsg');
     const infoMsg = document.getElementById('infoMsg');
     const historyBox = document.getElementById('historyBox');
+    
+    // Enhanced extraction elements
+    const extractionInfo = document.getElementById('extractionInfo');
+    const topicsList = document.getElementById('topicsList');
+    const stylesGrid = document.getElementById('stylesGrid');
+    const diagramType = document.getElementById('diagramType');
 
     // --- History logic ---
     let history = JSON.parse(localStorage.getItem('d3js_dify_history') || '[]');
@@ -73,6 +176,149 @@
     };
     renderHistory();
 
+    // --- Style conversion and application ---
+    function convertStylePreferencesToTheme(stylePreferences) {
+        // Convert extracted style preferences to D3.js theme format
+        const theme = {};
+        
+        if (stylePreferences.color_theme) {
+            // Map color themes to D3.js theme colors
+            switch (stylePreferences.color_theme.toLowerCase()) {
+                case 'classic':
+                    theme.topicFill = '#4e79a7';
+                    theme.attributeFill = '#a7c7e7';
+                    break;
+                case 'innovation':
+                    theme.topicFill = '#59a14f';
+                    theme.attributeFill = '#8cd17d';
+                    break;
+                case 'nature':
+                    theme.topicFill = '#76b7b2';
+                    theme.attributeFill = '#b07aa1';
+                    break;
+                case 'corporate':
+                    theme.topicFill = '#f28e2c';
+                    theme.attributeFill = '#ffbe7d';
+                    break;
+                case 'vibrant':
+                    theme.topicFill = '#e15759';
+                    theme.attributeFill = '#ff9da7';
+                    break;
+                case 'pastel':
+                    theme.topicFill = '#b07aa1';
+                    theme.attributeFill = '#f7cac9';
+                    break;
+                case 'monochrome':
+                    theme.topicFill = '#4a4a4a';
+                    theme.attributeFill = '#9e9e9e';
+                    break;
+                default:
+                    // Default theme
+                    theme.topicFill = '#4e79a7';
+                    theme.attributeFill = '#a7c7e7';
+            }
+        }
+        
+        // Apply primary color if specified
+        if (stylePreferences.primary_color) {
+            const colorMap = {
+                'red': '#e15759',
+                'blue': '#4e79a7',
+                'green': '#59a14f',
+                'yellow': '#f28e2c',
+                'purple': '#b07aa1',
+                'orange': '#ff9da7',
+                'pink': '#ff9da7',
+                'brown': '#9c755f',
+                'gray': '#bab0ab',
+                'black': '#4a4a4a',
+                'white': '#ffffff'
+            };
+            const hexColor = colorMap[stylePreferences.primary_color.toLowerCase()];
+            if (hexColor) {
+                theme.topicFill = hexColor;
+                theme.attributeFill = hexColor + '80'; // Add transparency
+            }
+        }
+        
+        // Apply font size if specified
+        if (stylePreferences.font_size) {
+            const fontSizeMap = {
+                'small': 12,
+                'medium': 14,
+                'large': 16,
+                'extra-large': 18
+            };
+            const size = fontSizeMap[stylePreferences.font_size.toLowerCase()];
+            if (size) {
+                theme.fontTopic = size + 4;
+                theme.fontAttribute = size;
+            }
+        }
+        
+        // Apply background theme
+        if (stylePreferences.background === 'dark') {
+            theme.background = '#2d3748';
+            theme.topicText = '#ffffff';
+            theme.attributeText = '#e2e8f0';
+        } else if (stylePreferences.background === 'light') {
+            theme.background = '#ffffff';
+            theme.topicText = '#2d3748';
+            theme.attributeText = '#4a5568';
+        }
+        
+        // Apply stroke width
+        if (stylePreferences.stroke === 'bold') {
+            theme.topicStrokeWidth = 4;
+            theme.attributeStrokeWidth = 3;
+        } else if (stylePreferences.stroke === 'thin') {
+            theme.topicStrokeWidth = 1;
+            theme.attributeStrokeWidth = 1;
+        }
+        
+        return theme;
+    }
+    
+    // --- Enhanced extraction display functions ---
+    function displayExtractionResults(data) {
+        const topics = data.topics || [];
+        const stylePreferences = data.style_preferences || {};
+        const diagramTypeValue = data.diagram_type || 'bubble_map';
+        
+        // Display topics
+        if (topics.length > 0) {
+            topicsList.innerHTML = topics.map(topic => 
+                `<span class="topic-tag">${topic}</span>`
+            ).join('');
+        } else {
+            topicsList.innerHTML = '<span class="no-extraction">No topics extracted</span>';
+        }
+        
+        // Display style preferences
+        if (Object.keys(stylePreferences).length > 0) {
+            const styleItems = [];
+            for (const [key, value] of Object.entries(stylePreferences)) {
+                if (value) {
+                    styleItems.push(`
+                        <div class="style-item">
+                            <div class="style-label">${key.replace(/_/g, ' ')}:</div>
+                            <div class="style-value">${value}</div>
+                        </div>
+                    `);
+                }
+            }
+            stylesGrid.innerHTML = styleItems.join('');
+        } else {
+            stylesGrid.innerHTML = '<span class="no-extraction">Using default styles</span>';
+        }
+        
+        // Display diagram type
+        diagramType.textContent = diagramTypeValue;
+        
+        // Show the extraction info section
+        extractionInfo.style.display = 'block';
+    }
+
     function showError(msg) {
         errorMsg.textContent = msg;
         errorMsg.style.display = msg ? 'block' : 'none';
@@ -83,7 +329,36 @@
     function showJsonResult(data) {
         jsonResult.style.display = 'block';
         pngResult.style.display = 'none';
-        jsonResult.textContent = JSON.stringify(data, null, 2);
+        let jsonString = '';
+        try {
+            jsonString = JSON.stringify(data, null, 2);
+        } catch (e) {
+            showError('Failed to parse JSON response.');
+            jsonResult.textContent = '';
+            return;
+        }
+        jsonResult.textContent = jsonString;
+        // Clear previous D3 visualization
+        document.getElementById('d3-container').innerHTML = '';
+        // Validate data structure before using
+        if (typeof data !== 'object' || data === null) {
+            showError('Invalid response format.');
+            return;
+        }
+        // Display extraction results if available
+        if (data.topics !== undefined || data.style_preferences !== undefined) {
+            displayExtractionResults(data);
+        }
+        // Render the diagram with extracted styles
+        if (data.spec && data.type) {
+            const stylePreferences = data.style_preferences || {};
+            const theme = convertStylePreferencesToTheme(stylePreferences);
+            try {
+                renderGraph(data.type, data.spec, theme);
+            } catch (e) {
+                showError('Failed to render diagram: ' + e);
+            }
+        }
     }
     function showPngResult(blob) {
         jsonResult.style.display = 'none';
@@ -95,9 +370,12 @@
         img.onload = () => URL.revokeObjectURL(url);
         pngResult.appendChild(img);
     }
+    
     getJsonBtn.onclick = async function() {
         showError(''); showInfo('Requesting JSON spec...');
         jsonResult.style.display = 'none'; pngResult.style.display = 'none';
+        extractionInfo.style.display = 'none'; // Hide previous extraction results
+        
         try {
             const resp = await fetch('/generate_graph', {
                 method: 'POST',
@@ -121,6 +399,8 @@
     getPngBtn.onclick = async function() {
         showError(''); showInfo('Requesting PNG...');
         jsonResult.style.display = 'none'; pngResult.style.display = 'none';
+        extractionInfo.style.display = 'none'; // Hide previous extraction results
+        
         try {
             const resp = await fetch('/generate_png', {
                 method: 'POST',

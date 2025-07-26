@@ -2,7 +2,7 @@
 D3.js_Dify Configuration Module
 ==============================
 
-Version: 2.0.0
+Version: 2.1.0
 
 This module provides centralized configuration management for the D3.js_Dify application.
 It handles environment variable loading, validation, and provides a clean interface
@@ -38,105 +38,135 @@ logger = logging.getLogger(__name__)
 class Config:
     """
     Centralized configuration management for D3.js_Dify application.
-    
-    This class provides property-based access to all configuration values,
-    ensuring that environment variables are read dynamically on each access.
-    This allows for configuration changes without application restart.
-    
-    Features:
-    - Property-based configuration access
-    - Environment variable validation
-    - Default value management
-    - Configuration summary generation
-    - API request formatting
+    Now with caching and validation to prevent race conditions and ensure consistent values.
     """
-    
-    # ============================================================================
-    # QWEN API CONFIGURATION (Required for core functionality)
-    # ============================================================================
-    
+    def __init__(self):
+        self._cache = {}
+        self._cache_timestamp = 0
+        self._cache_duration = 30  # Cache for 30 seconds
+    def _get_cached_value(self, key: str, default=None):
+        import time
+        current_time = time.time()
+        if current_time - self._cache_timestamp > self._cache_duration:
+            self._cache.clear()
+            self._cache_timestamp = current_time
+        if key not in self._cache:
+            self._cache[key] = os.environ.get(key, default)
+        return self._cache[key]
     @property
     def QWEN_API_KEY(self):
-        """Qwen API key for AI-powered graph generation."""
-        return os.environ.get('QWEN_API_KEY')
-    
+        api_key = self._get_cached_value('QWEN_API_KEY')
+        if not api_key or not isinstance(api_key, str):
+            logger.warning("Invalid or missing QWEN_API_KEY")
+            return None
+        return api_key.strip()
     @property
     def QWEN_API_URL(self):
-        """Qwen API endpoint URL."""
-        return os.environ.get('QWEN_API_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions')
-    
+        return self._get_cached_value('QWEN_API_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions')
     @property
     def QWEN_MODEL(self):
-        """Qwen model name for API requests."""
-        return os.environ.get('QWEN_MODEL', 'qwen-turbo')
-    
+        return self._get_cached_value('QWEN_MODEL', 'qwen-turbo')
     @property
     def QWEN_TEMPERATURE(self):
-        """Qwen model temperature for response creativity (0.0-1.0)."""
-        return float(os.environ.get('QWEN_TEMPERATURE', '0.7'))
-    
+        try:
+            temp = float(self._get_cached_value('QWEN_TEMPERATURE', '0.7'))
+            if not 0.0 <= temp <= 1.0:
+                logger.warning(f"Temperature {temp} out of range [0.0, 1.0], using 0.7")
+                return 0.7
+            return temp
+        except (ValueError, TypeError):
+            logger.warning("Invalid temperature value, using 0.7")
+            return 0.7
     @property
     def QWEN_MAX_TOKENS(self):
-        """Maximum tokens for Qwen API responses."""
-        return int(os.environ.get('QWEN_MAX_TOKENS', '1000'))
-    
+        try:
+            val = int(self._get_cached_value('QWEN_MAX_TOKENS', '1000'))
+            if val < 100 or val > 4096:
+                logger.warning(f"QWEN_MAX_TOKENS {val} out of range, using 1000")
+                return 1000
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid QWEN_MAX_TOKENS value, using 1000")
+            return 1000
     @property
     def QWEN_TIMEOUT(self):
-        """Timeout for Qwen API requests in seconds."""
-        return int(os.environ.get('QWEN_TIMEOUT', '40'))
-    
-    # ============================================================================
-    # DEEPSEEK API CONFIGURATION (Optional for enhanced features)
-    # ============================================================================
-    
+        try:
+            val = int(self._get_cached_value('QWEN_TIMEOUT', '40'))
+            if val < 5 or val > 120:
+                logger.warning(f"QWEN_TIMEOUT {val} out of range, using 40")
+                return 40
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid QWEN_TIMEOUT value, using 40")
+            return 40
     @property
     def DEEPSEEK_API_KEY(self):
-        """DeepSeek API key for enhanced AI features."""
-        return os.environ.get('DEEPSEEK_API_KEY')
-    
+        return self._get_cached_value('DEEPSEEK_API_KEY')
     @property
     def DEEPSEEK_API_URL(self):
-        """DeepSeek API endpoint URL."""
-        return os.environ.get('DEEPSEEK_API_URL', 'https://api.deepseek.com/v1/chat/completions')
-    
+        return self._get_cached_value('DEEPSEEK_API_URL', 'https://api.deepseek.com/v1/chat/completions')
     @property
     def DEEPSEEK_MODEL(self):
         """DeepSeek model name for API requests."""
-        return os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
-    
+        return self._get_cached_value('DEEPSEEK_MODEL', 'deepseek-chat')
     @property
     def DEEPSEEK_TEMPERATURE(self):
         """DeepSeek model temperature for response creativity (0.0-1.0)."""
-        return float(os.environ.get('DEEPSEEK_TEMPERATURE', '0.7'))
-    
+        try:
+            temp = float(self._get_cached_value('DEEPSEEK_TEMPERATURE', '0.7'))
+            if not 0.0 <= temp <= 1.0:
+                logger.warning(f"DeepSeek Temperature {temp} out of range [0.0, 1.0], using 0.7")
+                return 0.7
+            return temp
+        except (ValueError, TypeError):
+            logger.warning("Invalid DeepSeek Temperature value, using 0.7")
+            return 0.7
     @property
     def DEEPSEEK_MAX_TOKENS(self):
         """Maximum tokens for DeepSeek API responses."""
-        return int(os.environ.get('DEEPSEEK_MAX_TOKENS', '2000'))
-    
+        try:
+            val = int(self._get_cached_value('DEEPSEEK_MAX_TOKENS', '2000'))
+            if val < 100 or val > 4096:
+                logger.warning(f"DeepSeek MAX_TOKENS {val} out of range, using 2000")
+                return 2000
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid DeepSeek MAX_TOKENS value, using 2000")
+            return 2000
     @property
     def DEEPSEEK_TIMEOUT(self):
         """Timeout for DeepSeek API requests in seconds."""
-        return int(os.environ.get('DEEPSEEK_TIMEOUT', '60'))
-    
-    # ============================================================================
-    # FLASK APPLICATION CONFIGURATION
-    # ============================================================================
-    
+        try:
+            val = int(self._get_cached_value('DEEPSEEK_TIMEOUT', '60'))
+            if val < 5 or val > 120:
+                logger.warning(f"DeepSeek TIMEOUT {val} out of range, using 60")
+                return 60
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid DeepSeek TIMEOUT value, using 60")
+            return 60
     @property
     def HOST(self):
         """Flask application host address."""
-        return os.environ.get('HOST', '0.0.0.0')
+        return self._get_cached_value('HOST', '0.0.0.0')
     
     @property
     def PORT(self):
         """Flask application port number."""
-        return int(os.environ.get('PORT', '9527'))
+        try:
+            val = int(self._get_cached_value('PORT', '9527'))
+            if not (1 <= val <= 65535):
+                logger.warning(f"PORT {val} out of range, using 9527")
+                return 9527
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid PORT value, using 9527")
+            return 9527
     
     @property
     def DEBUG(self):
         """Flask debug mode setting."""
-        return os.environ.get('DEBUG', 'False').lower() == 'true'
+        return self._get_cached_value('DEBUG', 'False').lower() == 'true'
     
     # ============================================================================
     # GRAPH LANGUAGE AND CONTENT SETTINGS
@@ -145,12 +175,12 @@ class Config:
     @property
     def GRAPH_LANGUAGE(self):
         """Language for graph generation (zh/en)."""
-        return os.environ.get('GRAPH_LANGUAGE', 'zh')
+        return self._get_cached_value('GRAPH_LANGUAGE', 'zh')
     
     @property
     def WATERMARK_TEXT(self):
         """Watermark text displayed on generated graphs."""
-        return os.environ.get('WATERMARK_TEXT', 'D3.js_Dify')
+        return self._get_cached_value('WATERMARK_TEXT', 'D3.js_Dify')
     
     # ============================================================================
     # D3.js VISUALIZATION CONFIGURATION
@@ -160,28 +190,68 @@ class Config:
     @property
     def TOPIC_FONT_SIZE(self):
         """Font size for topic nodes in pixels."""
-        return int(os.environ.get('TOPIC_FONT_SIZE', '18'))
+        try:
+            val = int(self._get_cached_value('TOPIC_FONT_SIZE', '18'))
+            if val <= 0:
+                logger.warning(f"TOPIC_FONT_SIZE {val} out of range, using 18")
+                return 18
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid TOPIC_FONT_SIZE value, using 18")
+            return 18
     
     @property
     def CHAR_FONT_SIZE(self):
         """Font size for characteristic nodes in pixels."""
-        return int(os.environ.get('CHAR_FONT_SIZE', '14'))
+        try:
+            val = int(self._get_cached_value('CHAR_FONT_SIZE', '14'))
+            if val <= 0:
+                logger.warning(f"CHAR_FONT_SIZE {val} out of range, using 14")
+                return 14
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid CHAR_FONT_SIZE value, using 14")
+            return 14
     
     # D3.js rendering dimensions
     @property
     def D3_BASE_WIDTH(self):
         """Base width for D3.js visualizations in pixels."""
-        return int(os.environ.get('D3_BASE_WIDTH', '700'))
+        try:
+            val = int(self._get_cached_value('D3_BASE_WIDTH', '700'))
+            if val <= 0:
+                logger.warning(f"D3_BASE_WIDTH {val} out of range, using 700")
+                return 700
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid D3_BASE_WIDTH value, using 700")
+            return 700
     
     @property
     def D3_BASE_HEIGHT(self):
         """Base height for D3.js visualizations in pixels."""
-        return int(os.environ.get('D3_BASE_HEIGHT', '500'))
+        try:
+            val = int(self._get_cached_value('D3_BASE_HEIGHT', '500'))
+            if val <= 0:
+                logger.warning(f"D3_BASE_HEIGHT {val} out of range, using 500")
+                return 500
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid D3_BASE_HEIGHT value, using 500")
+            return 500
     
     @property
     def D3_PADDING(self):
         """Padding around D3.js visualizations in pixels."""
-        return int(os.environ.get('D3_PADDING', '40'))
+        try:
+            val = int(self._get_cached_value('D3_PADDING', '40'))
+            if val < 0:
+                logger.warning(f"D3_PADDING {val} out of range, using 40")
+                return 40
+            return val
+        except (ValueError, TypeError):
+            logger.warning("Invalid D3_PADDING value, using 40")
+            return 40
     
     # ============================================================================
     # D3.js THEME COLOR CONFIGURATION
@@ -191,49 +261,49 @@ class Config:
     @property
     def D3_TOPIC_FILL(self):
         """Fill color for topic nodes."""
-        return os.environ.get('D3_TOPIC_FILL', '#4e79a7')
+        return self._get_cached_value('D3_TOPIC_FILL', '#4e79a7')
     
     @property
     def D3_TOPIC_TEXT(self):
         """Text color for topic nodes."""
-        return os.environ.get('D3_TOPIC_TEXT', '#ffffff')
+        return self._get_cached_value('D3_TOPIC_TEXT', '#ffffff')
     
     @property
     def D3_TOPIC_STROKE(self):
         """Stroke color for topic nodes."""
-        return os.environ.get('D3_TOPIC_STROKE', '#2c3e50')
+        return self._get_cached_value('D3_TOPIC_STROKE', '#2c3e50')
     
     # Similarity node colors
     @property
     def D3_SIM_FILL(self):
         """Fill color for similarity nodes."""
-        return os.environ.get('D3_SIM_FILL', '#a7c7e7')
+        return self._get_cached_value('D3_SIM_FILL', '#a7c7e7')
     
     @property
     def D3_SIM_TEXT(self):
         """Text color for similarity nodes."""
-        return os.environ.get('D3_SIM_TEXT', '#2c3e50')
+        return self._get_cached_value('D3_SIM_TEXT', '#2c3e50')
     
     @property
     def D3_SIM_STROKE(self):
         """Stroke color for similarity nodes."""
-        return os.environ.get('D3_SIM_STROKE', '#4e79a7')
+        return self._get_cached_value('D3_SIM_STROKE', '#4e79a7')
     
     # Difference node colors
     @property
     def D3_DIFF_FILL(self):
         """Fill color for difference nodes."""
-        return os.environ.get('D3_DIFF_FILL', '#f4f6fb')
+        return self._get_cached_value('D3_DIFF_FILL', '#f4f6fb')
     
     @property
     def D3_DIFF_TEXT(self):
         """Text color for difference nodes."""
-        return os.environ.get('D3_DIFF_TEXT', '#2c3e50')
+        return self._get_cached_value('D3_DIFF_TEXT', '#2c3e50')
     
     @property
     def D3_DIFF_STROKE(self):
         """Stroke color for difference nodes."""
-        return os.environ.get('D3_DIFF_STROKE', '#a7c7e7')
+        return self._get_cached_value('D3_DIFF_STROKE', '#a7c7e7')
     
     # ============================================================================
     # CONFIGURATION VALIDATION METHODS

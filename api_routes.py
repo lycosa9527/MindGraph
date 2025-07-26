@@ -39,9 +39,12 @@ def handle_api_errors(f):
             raise
         except Exception as e:
             logger.error(f"API error in {f.__name__}: {e}", exc_info=True)
+            error_message = "An unexpected error occurred. Please try again later."
+            if config.DEBUG:
+                error_message = f"{error_message} Details: {str(e)}"
             return jsonify({
-                'error': 'An unexpected error occurred. Please try again later.',
-                'details': str(e) if config.DEBUG else None
+                'error': error_message,
+                'type': 'internal_error'
             }), 500
     return decorated_function
 
@@ -113,7 +116,7 @@ def sanitize_prompt(prompt):
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
-    """Generate graph specification from user prompt using Qwen (default)."""
+    """Generate graph specification from user prompt using Qwen (default, with enhanced extraction)."""
     # Input validation
     data = request.json
     valid, msg = validate_request_data(data, ['prompt'])
@@ -130,8 +133,16 @@ def generate_graph():
     
     logger.info(f"Frontend /generate_graph (Qwen): prompt={prompt!r}, language={language!r}")
     
+    # Enhanced extraction using Qwen for topics, styles, and diagram type
+    extraction = agent.extract_topics_and_styles_from_prompt_qwen(prompt, language)
+    topics = extraction.get('topics', [])
+    style_preferences = extraction.get('style_preferences', {})
+    diagram_type = extraction.get('diagram_type', 'bubble_map')  # Default fallback
+    
+    # Use the diagram type from enhanced extraction
+    graph_type = diagram_type
+    
     # Generate graph specification using Qwen (default agent)
-    graph_type = agent.classify_graph_type_with_llm(prompt, language)
     spec = agent.generate_graph_spec(prompt, graph_type, language)
     
     # Validate the generated spec
@@ -142,7 +153,14 @@ def generate_graph():
             logger.warning(f"Generated invalid spec for {graph_type}: {msg}")
             return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
     
-    return jsonify({'type': graph_type, 'spec': spec, 'agent': 'qwen'})
+    return jsonify({
+        'type': graph_type,
+        'spec': spec,
+        'agent': 'qwen',
+        'topics': topics,
+        'style_preferences': style_preferences,
+        'diagram_type': diagram_type
+    })
 
 
 @api.route('/generate_png', methods=['POST'])
@@ -189,132 +207,9 @@ def generate_png():
         from playwright.async_api import async_playwright
         
         async def render_svg_to_png(spec, graph_type):
-            d3_renderers = '''
-function renderDoubleBubbleMap(spec) {
-    d3.select('#d3-container').html('');
-    if (!spec || !spec.left || !spec.right || !Array.isArray(spec.similarities) || !Array.isArray(spec.left_differences) || !Array.isArray(spec.right_differences)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for double_bubble_map');
-        return;
-    }
-    const baseWidth=700,baseHeight=500,padding=40;
-    const getTextRadius = (text, fontSize, padding) => {
-        var svg = d3.select('body').append('svg').style('position','absolute').style('visibility','hidden');
-        var t = svg.append('text').attr('font-size', fontSize).text(text);
-        var b = t.node().getBBox();
-        var radius = Math.ceil(Math.sqrt(b.width*b.width+b.height*b.height)/2+(padding||12));
-        svg.remove(); // Ensure cleanup
-        return radius;
-    };
-    const THEME={topicFill:'#4e79a7',topicText:'#fff',topicStroke:'#35506b',topicStrokeWidth:3,simFill:'#a7c7e7',simText:'#333',simStroke:'#4e79a7',simStrokeWidth:2,diffFill:'#f4f6fb',diffText:'#4e79a7',diffStroke:'#4e79a7',diffStrokeWidth:2,fontTopic:18,fontSim:14,fontDiff:13};
-    const leftTopicR=getTextRadius(spec.left,THEME.fontTopic,18),rightTopicR=getTextRadius(spec.right,THEME.fontTopic,18),topicR=Math.max(leftTopicR,rightTopicR,60);
-    const simFontSize=THEME.fontSim,diffFontSize=THEME.fontDiff;
-    const simR=Math.max(...spec.similarities.map(t=>getTextRadius(t,simFontSize,10)),28),leftDiffR=Math.max(...spec.left_differences.map(t=>getTextRadius(t,diffFontSize,8)),24),rightDiffR=Math.max(...spec.right_differences.map(t=>getTextRadius(t,diffFontSize,8)),24);
-    const simCount=spec.similarities.length,leftDiffCount=spec.left_differences.length,rightDiffCount=spec.right_differences.length;
-    const simColHeight=simCount>0?(simCount-1)*(simR*2+12)+simR*2:0,leftColHeight=leftDiffCount>0?(leftDiffCount-1)*(leftDiffR*2+10)+leftDiffR*2:0,rightColHeight=rightDiffCount>0?(rightDiffCount-1)*(rightDiffR*2+10)+rightDiffR*2:0,maxColHeight=Math.max(simColHeight,leftColHeight,rightColHeight,topicR*2),height=Math.max(baseHeight,maxColHeight+padding*2);
-    const leftX=padding+topicR,rightX=baseWidth-padding-topicR,simX=(leftX+rightX)/2;
-    const leftDiffX=leftX-topicR-90,rightDiffX=rightX+topicR+90;
-    const minX=Math.min(leftDiffX-leftDiffR,leftX-topicR,simX-simR,rightX-topicR,rightDiffX-rightDiffR)-padding,maxX=Math.max(leftDiffX+leftDiffR,leftX+topicR,simX+simR,rightX+topicR,rightDiffX+rightDiffR)+padding,width=Math.max(baseWidth,maxX-minX),topicY=height/2;
-    const svg=d3.select('#d3-container').append('svg').attr('width',width).attr('height',height).attr('viewBox',`${minX} 0 ${width} ${height}`).attr('preserveAspectRatio','xMinYMin meet');
-    // --- Draw all lines first ---
-    const simStartY=topicY-((simCount-1)*(simR*2+12))/2;
-    for(let i=0;i<simCount;i++){
-        const y=simStartY+i*(simR*2+12);
-        let dxL=leftX-simX,dyL=topicY-y,distL=Math.sqrt(dxL*dxL+dyL*dyL),x1L=simX+(dxL/distL)*simR,y1L=y+(dyL/distL)*simR,x2L=leftX-(dxL/distL)*topicR,y2L=topicY-(dyL/distL)*topicR;
-        svg.append('line').attr('x1',x1L).attr('y1',y1L).attr('x2',x2L).attr('y2',y2L).attr('stroke','#888').attr('stroke-width',2);
-        let dxR=rightX-simX,dyR=topicY-y,distR=Math.sqrt(dxR*dxR+dyR*dyR),x1R=simX+(dxR/distR)*simR,y1R=y+(dyR/distR)*simR,x2R=rightX-(dxR/distR)*topicR,y2R=topicY-(dyR/distR)*topicR;
-        svg.append('line').attr('x1',x1R).attr('y1',y1R).attr('x2',x2R).attr('y2',y2R).attr('stroke','#888').attr('stroke-width',2);
-    }
-    const leftDiffStartY=topicY-((leftDiffCount-1)*(leftDiffR*2+10))/2;
-    for(let i=0;i<leftDiffCount;i++){
-        const y=leftDiffStartY+i*(leftDiffR*2+10);
-        let dx=leftX-leftDiffX,dy=topicY-y,dist=Math.sqrt(dx*dx+dy*dy),x1=leftDiffX+(dx/dist)*leftDiffR,y1=y+(dy/dist)*leftDiffR,x2=leftX-(dx/dist)*topicR,y2=topicY-(dy/dist)*topicR;
-        svg.append('line').attr('x1',x1).attr('y1',y1).attr('x2',x2).attr('y2',y2).attr('stroke','#bbb').attr('stroke-width',2);
-    }
-    const rightDiffStartY=topicY-((rightDiffCount-1)*(rightDiffR*2+10))/2;
-    for(let i=0;i<rightDiffCount;i++){
-        const y=rightDiffStartY+i*(rightDiffR*2+10);
-        let dx=rightX-rightDiffX,dy=topicY-y,dist=Math.sqrt(dx*dx+dy*dy),x1=rightDiffX+(dx/dist)*rightDiffR,y1=y+(dy/dist)*rightDiffR,x2=rightX-(dx/dist)*topicR,y2=topicY-(dy/dist)*topicR;
-        svg.append('line').attr('x1',x1).attr('y1',y1).attr('x2',x2).attr('y2',y2).attr('stroke','#bbb').attr('stroke-width',2);
-    }
-    // --- Draw all circles next ---
-    svg.append('circle').attr('cx',leftX).attr('cy',topicY).attr('r',topicR).attr('fill',THEME.topicFill).attr('opacity',0.9).attr('stroke',THEME.topicStroke).attr('stroke-width',THEME.topicStrokeWidth);
-    svg.append('circle').attr('cx',rightX).attr('cy',topicY).attr('r',topicR).attr('fill',THEME.topicFill).attr('opacity',0.9).attr('stroke',THEME.topicStroke).attr('stroke-width',THEME.topicStrokeWidth);
-    for(let i=0;i<simCount;i++){
-        const y=simStartY+i*(simR*2+12);
-        svg.append('circle').attr('cx',simX).attr('cy',y).attr('r',simR).attr('fill',THEME.simFill).attr('stroke',THEME.simStroke).attr('stroke-width',THEME.simStrokeWidth);
-    }
-    for(let i=0;i<leftDiffCount;i++){
-        const y=leftDiffStartY+i*(leftDiffR*2+10);
-        svg.append('circle').attr('cx',leftDiffX).attr('cy',y).attr('r',leftDiffR).attr('fill',THEME.diffFill).attr('stroke',THEME.diffStroke).attr('stroke-width',THEME.diffStrokeWidth);
-    }
-    for(let i=0;i<rightDiffCount;i++){
-        const y=rightDiffStartY+i*(rightDiffR*2+10);
-        svg.append('circle').attr('cx',rightDiffX).attr('cy',y).attr('r',rightDiffR).attr('fill',THEME.diffFill).attr('stroke',THEME.diffStroke).attr('stroke-width',THEME.diffStrokeWidth);
-    }
-    // --- Draw all text last ---
-    svg.append('text').attr('x',leftX).attr('y',topicY).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('fill',THEME.topicText).attr('font-size',THEME.fontTopic).attr('font-weight',600).text(spec.left);
-    svg.append('text').attr('x',rightX).attr('y',topicY).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('fill',THEME.topicText).attr('font-size',THEME.fontTopic).attr('font-weight',600).text(spec.right);
-    for(let i=0;i<simCount;i++){
-        const y=simStartY+i*(simR*2+12);
-        svg.append('text').attr('x',simX).attr('y',y).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('fill',THEME.simText).attr('font-size',THEME.fontSim).text(spec.similarities[i]);
-    }
-    for(let i=0;i<leftDiffCount;i++){
-        const y=leftDiffStartY+i*(leftDiffR*2+10);
-        svg.append('text').attr('x',leftDiffX).attr('y',y).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('fill',THEME.diffText).attr('font-size',THEME.fontDiff).text(spec.left_differences[i]);
-    }
-    for(let i=0;i<rightDiffCount;i++){
-        const y=rightDiffStartY+i*(rightDiffR*2+10);
-        svg.append('text').attr('x',rightDiffX).attr('y',y).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('fill',THEME.diffText).attr('font-size',THEME.fontDiff).text(spec.right_differences[i]);
-    }
-    // Watermark
-    const w=+svg.attr('width'),h=+svg.attr('height');
-    svg.append('text').attr('x',w-18).attr('y',h-18).attr('text-anchor','end').attr('fill','#888').attr('font-size',18).attr('font-family','Inter, Segoe UI, sans-serif').attr('opacity',0.35).attr('pointer-events','none').text('D3.js_Dify');
-}
-
-function renderBubbleMap(spec){
-    d3.select('#d3-container').html('');
-    var svg=d3.select('#d3-container').append('svg').attr('width',400).attr('height',300);
-    svg.append('text').attr('x',200).attr('y',150).attr('text-anchor','middle').attr('fill','#333').attr('font-size',24).text('Bubble Map: '+spec.topic);
-    const w=+svg.attr('width'),h=+svg.attr('height');
-    svg.append('text').attr('x',w-18).attr('y',h-18).attr('text-anchor','end').attr('fill','#000').attr('font-size',18).attr('font-family','Inter, Segoe UI, sans-serif').attr('opacity',1).attr('pointer-events','none').text('D3.js_Dify');
-}
-function renderCircleMap(spec){
-    d3.select('#d3-container').html('');
-    var svg=d3.select('#d3-container').append('svg').attr('width',400).attr('height',300);
-    svg.append('text').attr('x',200).attr('y',150).attr('text-anchor','middle').attr('fill','#333').attr('font-size',24).text('Circle Map: '+spec.topic);
-    const w=+svg.attr('width'),h=+svg.attr('height');
-    svg.append('text').attr('x',w-18).attr('y',h-18).attr('text-anchor','end').attr('fill','#000').attr('font-size',18).attr('font-family','Inter, Segoe UI, sans-serif').attr('opacity',1).attr('pointer-events','none').text('D3.js_Dify');
-}
-function renderTreeMap(spec){
-    d3.select('#d3-container').html('');
-    var svg=d3.select('#d3-container').append('svg').attr('width',400).attr('height',300);
-    svg.append('text').attr('x',200).attr('y',150).attr('text-anchor','middle').attr('fill','#333').attr('font-size',24).text('Tree Map: '+spec.topic);
-    const w=+svg.attr('width'),h=+svg.attr('height');
-    svg.append('text').attr('x',w-18).attr('y',h-18).attr('text-anchor','end').attr('fill','#000').attr('font-size',18).attr('font-family','Inter, Segoe UI, sans-serif').attr('opacity',1).attr('pointer-events','none').text('D3.js_Dify');
-}
-function renderConceptMap(spec){
-    d3.select('#d3-container').html('');
-    var svg=d3.select('#d3-container').append('svg').attr('width',400).attr('height',300);
-    svg.append('text').attr('x',200).attr('y',150).attr('text-anchor','middle').attr('fill','#333').attr('font-size',24).text('Concept Map: '+spec.topic);
-    const w=+svg.attr('width'),h=+svg.attr('height');
-    svg.append('text').attr('x',w-18).attr('y',h-18).attr('text-anchor','end').attr('fill','#000').attr('font-size',18).attr('font-family','Inter, Segoe UI, sans-serif').attr('opacity',1).attr('pointer-events','none').text('D3.js_Dify');
-}
-function renderMindMap(spec){
-    d3.select('#d3-container').html('');
-    var svg=d3.select('#d3-container').append('svg').attr('width',400).attr('height',300);
-    svg.append('text').attr('x',200).attr('y',150).attr('text-anchor','middle').attr('fill','#333').attr('font-size',24).text('Mind Map: '+spec.topic);
-    const w=+svg.attr('width'),h=+svg.attr('height');
-    svg.append('text').attr('x',w-18).attr('y',h-18).attr('text-anchor','end').attr('fill','#000').attr('font-size',18).attr('font-family','Inter, Segoe UI, sans-serif').attr('opacity',1).attr('pointer-events','none').text('D3.js_Dify');
-}
-function renderGraph(type,spec){
-    if(type==='double_bubble_map')renderDoubleBubbleMap(spec);
-    else if(type==='bubble_map')renderBubbleMap(spec);
-    else if(type==='circle_map')renderCircleMap(spec);
-    else if(type==='tree_map')renderTreeMap(spec);
-    else if(type==='concept_map')renderConceptMap(spec);
-    else if(type==='mindmap')renderMindMap(spec);
-}
-'''
+            # Load the correct D3.js renderers from the static file
+            with open('static/js/d3-renderers.js', 'r', encoding='utf-8') as f:
+                d3_renderers = f.read()
             html = f'''
             <html><head>
             <meta charset="utf-8">
@@ -400,26 +295,23 @@ def generate_graph_deepseek():
     logger.info(f"Frontend /generate_graph_deepseek: prompt={prompt!r}, language={language!r}")
     
     try:
-        # Step 1: Use DeepSeek to enhance the prompt and classify diagram type
         import deepseek_agent
+        # Use enhanced agent for combined extraction
+        enhanced_result = deepseek_agent.enhanced_development_workflow(prompt, language, save_to_file=False)
+        if isinstance(enhanced_result, dict) and enhanced_result.get('error'):
+            logger.error(f"DeepSeek enhanced workflow failed: {enhanced_result['error']}")
+            return jsonify({'error': enhanced_result['error']}), 400
         
-        # Generate enhanced prompt using DeepSeek
-        deepseek_result = deepseek_agent.development_workflow(prompt, language, save_to_file=False)
-        
-        # Check if DeepSeek processing was successful
-        if isinstance(deepseek_result, dict) and deepseek_result.get('error'):
-            logger.error(f"DeepSeek prompt enhancement failed: {deepseek_result['error']}")
-            return jsonify({'error': deepseek_result['error']}), 400
-        
-        diagram_type = deepseek_result.get('diagram_type', 'bubble_map')
-        enhanced_prompt = deepseek_result.get('development_prompt', prompt)
+        diagram_type = enhanced_result.get('diagram_type', 'bubble_map')
+        enhanced_prompt = enhanced_result.get('development_prompt', prompt)
+        topics = enhanced_result.get('topics', [])
+        style_preferences = enhanced_result.get('style_preferences', {})
         
         logger.info(f"DeepSeek: Classified as {diagram_type}, enhanced prompt generated")
         
-        # Step 2: Use Qwen to generate the actual JSON specification
+        # Use Qwen to generate the actual JSON specification
         spec = agent.generate_graph_spec(enhanced_prompt, diagram_type, language)
         
-        # Check if Qwen generation was successful
         if isinstance(spec, dict) and spec.get('error'):
             logger.error(f"Qwen JSON generation failed: {spec['error']}")
             return jsonify({'error': spec['error']}), 400
@@ -427,10 +319,12 @@ def generate_graph_deepseek():
         logger.info(f"Qwen: Generated JSON specification for {diagram_type}")
         
         return jsonify({
-            'type': diagram_type, 
-            'spec': spec, 
+            'type': diagram_type,
+            'spec': spec,
             'agent': 'deepseek+qwen',
-            'enhanced_prompt': enhanced_prompt
+            'enhanced_prompt': enhanced_prompt,
+            'topics': topics,
+            'style_preferences': style_preferences
         })
         
     except ImportError:

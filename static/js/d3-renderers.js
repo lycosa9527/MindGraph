@@ -1,27 +1,83 @@
 // D3.js Renderers for D3.js_Dify Application
 // This file contains all the D3.js rendering functions for different graph types
 
+// --- Safe, memory-leak-free text radius measurement ---
+const measurementContainer = d3.select('body')
+    .append('div')
+    .attr('id', 'measurement-container')
+    .style('position', 'absolute')
+    .style('visibility', 'hidden')
+    .style('pointer-events', 'none');
+
+function getTextRadius(text, fontSize, padding) {
+    let textElement = null;
+    try {
+        textElement = measurementContainer
+            .append('svg')
+            .append('text')
+            .attr('font-size', fontSize)
+            .text(text);
+        const bbox = textElement.node().getBBox();
+        const radius = Math.ceil(Math.sqrt(bbox.width * bbox.width + bbox.height * bbox.height) / 2 + (padding || 12));
+        return Math.max(radius, 30); // Minimum radius
+    } catch (error) {
+        console.error('Error calculating text radius:', error);
+        return 30; // Default fallback
+    } finally {
+        if (textElement) {
+            textElement.remove();
+        }
+    }
+}
+
+window.addEventListener('beforeunload', () => {
+    measurementContainer.remove();
+});
+
+// --- End safe text radius ---
+
 function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
+    console.log('renderDoubleBubbleMap called with:', { spec, theme, dimensions });
+    
     d3.select('#d3-container').html('');
-    if (!spec || !spec.left || !spec.right || !Array.isArray(spec.similarities) || !Array.isArray(spec.left_differences) || !Array.isArray(spec.right_differences)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for double_bubble_map');
+    
+    // Enhanced validation with detailed error messages
+    if (!spec) {
+        console.error('renderDoubleBubbleMap: spec is null or undefined');
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: No specification provided');
         return;
     }
+    
+    if (!spec.left || !spec.right) {
+        console.error('renderDoubleBubbleMap: missing left or right topic', { left: spec.left, right: spec.right });
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Missing left or right topic');
+        return;
+    }
+    
+    if (!Array.isArray(spec.similarities)) {
+        console.error('renderDoubleBubbleMap: similarities is not an array', spec.similarities);
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Similarities must be an array');
+        return;
+    }
+    
+    if (!Array.isArray(spec.left_differences)) {
+        console.error('renderDoubleBubbleMap: left_differences is not an array', spec.left_differences);
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Left differences must be an array');
+        return;
+    }
+    
+    if (!Array.isArray(spec.right_differences)) {
+        console.error('renderDoubleBubbleMap: right_differences is not an array', spec.right_differences);
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Right differences must be an array');
+        return;
+    }
+    
+    console.log('renderDoubleBubbleMap: validation passed, proceeding with rendering');
     
     // Use provided theme and dimensions or defaults
     const baseWidth = dimensions?.baseWidth || 700;
     const baseHeight = dimensions?.baseHeight || 500;
     const padding = dimensions?.padding || 40;
-    const getTextRadius = (text, fontSize, padding) => {
-        var svg = d3.select('body').append('svg').style('position', 'absolute').style('visibility', 'hidden');
-        try {
-            var t = svg.append('text').attr('font-size', fontSize).text(text);
-            var b = t.node().getBBox();
-            return Math.ceil(Math.sqrt(b.width * b.width + b.height * b.height) / 2 + (padding || 12));
-        } finally {
-            svg.remove(); // Always cleanup
-        }
-    };
     
     const THEME = theme || {
         topicFill: '#4e79a7',
@@ -41,6 +97,8 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         fontDiff: 13
     };
     
+    console.log('renderDoubleBubbleMap: using theme:', THEME);
+    
     const leftTopicR = getTextRadius(spec.left, THEME.fontTopic, 18);
     const rightTopicR = getTextRadius(spec.right, THEME.fontTopic, 18);
     const topicR = Math.max(leftTopicR, rightTopicR, 60);
@@ -50,9 +108,13 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const leftDiffR = Math.max(...spec.left_differences.map(t => getTextRadius(t, diffFontSize, 8)), 24);
     const rightDiffR = Math.max(...spec.right_differences.map(t => getTextRadius(t, diffFontSize, 8)), 24);
     
+    console.log('renderDoubleBubbleMap: calculated radii:', { leftTopicR, rightTopicR, topicR, simR, leftDiffR, rightDiffR });
+    
     const simCount = spec.similarities.length;
     const leftDiffCount = spec.left_differences.length;
     const rightDiffCount = spec.right_differences.length;
+    
+    console.log('renderDoubleBubbleMap: counts:', { simCount, leftDiffCount, rightDiffCount });
     
     const simColHeight = simCount > 0 ? (simCount - 1) * (simR * 2 + 12) + simR * 2 : 0;
     const leftColHeight = leftDiffCount > 0 ? (leftDiffCount - 1) * (leftDiffR * 2 + 10) + leftDiffR * 2 : 0;
@@ -71,11 +133,15 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const width = Math.max(baseWidth, maxX - minX);
     const topicY = height / 2;
     
+    console.log('renderDoubleBubbleMap: layout calculated:', { width, height, leftX, rightX, simX, leftDiffX, rightDiffX, topicY });
+    
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `${minX} 0 ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMinYMin meet');
+    
+    console.log('renderDoubleBubbleMap: SVG created');
     
     // Draw all lines first
     const simStartY = topicY - ((simCount - 1) * (simR * 2 + 12)) / 2;
@@ -184,28 +250,270 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
 
 function renderBubbleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
-    const width = dimensions?.baseWidth || 400;
-    const height = dimensions?.baseHeight || 300;
-    var svg = d3.select('#d3-container').append('svg').attr('width', width).attr('height', height);
-    svg.append('text').attr('x', width/2).attr('y', height/2).attr('text-anchor', 'middle')
-        .attr('fill', '#333').attr('font-size', 24).text('Bubble Map: ' + spec.topic);
+    if (!spec || !spec.topic || !Array.isArray(spec.attributes)) {
+        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for bubble_map');
+        return;
+    }
+    
+    // Use provided theme and dimensions or defaults
+    const baseWidth = dimensions?.baseWidth || 700;
+    const baseHeight = dimensions?.baseHeight || 500;
+    const padding = dimensions?.padding || 40;
+    
+    const THEME = theme || {
+        topicFill: '#4e79a7',
+        topicText: '#fff',
+        topicStroke: '#35506b',
+        topicStrokeWidth: 3,
+        attributeFill: '#a7c7e7',
+        attributeText: '#333',
+        attributeStroke: '#4e79a7',
+        attributeStrokeWidth: 2,
+        fontTopic: 20,
+        fontAttribute: 14
+    };
+    
+    // Calculate sizes
+    const topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
+    const attributeR = Math.max(...spec.attributes.map(t => getTextRadius(t, THEME.fontAttribute, 10)), 30);
+    
+    // Calculate layout - topic in the center, attributes around it
+    const centerX = baseWidth / 2;
+    const centerY = baseHeight / 2;
+    
+    // Arrange attributes in a circle around the topic
+    const attributeCount = spec.attributes.length;
+    const radius = Math.max(topicR + attributeR + 40, 120);
+    const angleStep = (2 * Math.PI) / attributeCount;
+    
+    // Calculate total dimensions
+    const minX = centerX - radius - attributeR - padding;
+    const maxX = centerX + radius + attributeR + padding;
+    const minY = centerY - radius - attributeR - padding;
+    const maxY = centerY + radius + attributeR + padding;
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    const svg = d3.select('#d3-container').append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `${minX} ${minY} ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet');
+    
+    // Draw connecting lines from topic to attributes
+    for (let i = 0; i < attributeCount; i++) {
+        const angle = i * angleStep;
+        const attrX = centerX + radius * Math.cos(angle);
+        const attrY = centerY + radius * Math.sin(angle);
+        
+        // Calculate line endpoints
+        const dx = attrX - centerX;
+        const dy = attrY - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        const lineStartX = centerX + (dx / dist) * topicR;
+        const lineStartY = centerY + (dy / dist) * topicR;
+        const lineEndX = attrX - (dx / dist) * attributeR;
+        const lineEndY = attrY - (dy / dist) * attributeR;
+        
+        svg.append('line')
+            .attr('x1', lineStartX)
+            .attr('y1', lineStartY)
+            .attr('x2', lineEndX)
+            .attr('y2', lineEndY)
+            .attr('stroke', '#888')
+            .attr('stroke-width', 2);
+    }
+    
+    // Draw topic circle (center)
+    svg.append('circle')
+        .attr('cx', centerX)
+        .attr('cy', centerY)
+        .attr('r', topicR)
+        .attr('fill', THEME.topicFill)
+        .attr('stroke', THEME.topicStroke)
+        .attr('stroke-width', THEME.topicStrokeWidth);
+    
+    svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', THEME.topicText)
+        .attr('font-size', THEME.fontTopic)
+        .attr('font-weight', 'bold')
+        .text(spec.topic);
+    
+    // Draw attribute circles
+    for (let i = 0; i < attributeCount; i++) {
+        const angle = i * angleStep;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        
+        svg.append('circle')
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('r', attributeR)
+            .attr('fill', THEME.attributeFill)
+            .attr('stroke', THEME.attributeStroke)
+            .attr('stroke-width', THEME.attributeStrokeWidth);
+        
+        svg.append('text')
+            .attr('x', x)
+            .attr('y', y)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.attributeText)
+            .attr('font-size', THEME.fontAttribute)
+            .text(spec.attributes[i]);
+    }
+    
+    // Watermark
     const w = +svg.attr('width'), h = +svg.attr('height');
-    svg.append('text').attr('x', w - 18).attr('y', h - 18).attr('text-anchor', 'end')
-        .attr('fill', '#000').attr('font-size', 18).attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('opacity', 1).attr('pointer-events', 'none').text('D3.js_Dify');
+    svg.append('text')
+        .attr('x', w - 18)
+        .attr('y', h - 18)
+        .attr('text-anchor', 'end')
+        .attr('fill', '#888')
+        .attr('font-size', 18)
+        .attr('font-family', 'Inter, Segoe UI, sans-serif')
+        .attr('opacity', 0.35)
+        .attr('pointer-events', 'none')
+        .text('D3.js_Dify');
 }
 
 function renderCircleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
-    const width = dimensions?.baseWidth || 400;
-    const height = dimensions?.baseHeight || 300;
-    var svg = d3.select('#d3-container').append('svg').attr('width', width).attr('height', height);
-    svg.append('text').attr('x', width/2).attr('y', height/2).attr('text-anchor', 'middle')
-        .attr('fill', '#333').attr('font-size', 24).text('Circle Map: ' + spec.topic);
+    if (!spec || !spec.topic || !Array.isArray(spec.context)) {
+        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for circle_map');
+        return;
+    }
+    
+    // Use provided theme and dimensions or defaults
+    const baseWidth = dimensions?.baseWidth || 700;
+    const baseHeight = dimensions?.baseHeight || 500;
+    const padding = dimensions?.padding || 40;
+    
+    const THEME = theme || {
+        topicFill: '#4e79a7',
+        topicText: '#fff',
+        topicStroke: '#35506b',
+        topicStrokeWidth: 3,
+        contextFill: '#a7c7e7',
+        contextText: '#333',
+        contextStroke: '#4e79a7',
+        contextStrokeWidth: 2,
+        fontTopic: 20,
+        fontContext: 14
+    };
+    
+    // Calculate sizes
+    const topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
+    const contextR = Math.max(...spec.context.map(t => getTextRadius(t, THEME.fontContext, 10)), 30);
+    
+    // Calculate layout - circle map has topic in center, context around it
+    const centerX = baseWidth / 2;
+    const centerY = baseHeight / 2;
+    
+    // Arrange context items in a circle around the topic
+    const contextCount = spec.context.length;
+    const radius = Math.max(topicR + contextR + 40, 120);
+    const angleStep = (2 * Math.PI) / contextCount;
+    
+    // Calculate total dimensions
+    const minX = centerX - radius - contextR - padding;
+    const maxX = centerX + radius + contextR + padding;
+    const minY = centerY - radius - contextR - padding;
+    const maxY = centerY + radius + contextR + padding;
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    const svg = d3.select('#d3-container').append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `${minX} ${minY} ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet');
+    
+    // Draw connecting lines from topic to context
+    for (let i = 0; i < contextCount; i++) {
+        const angle = i * angleStep;
+        const contextX = centerX + radius * Math.cos(angle);
+        const contextY = centerY + radius * Math.sin(angle);
+        
+        // Calculate line endpoints
+        const dx = contextX - centerX;
+        const dy = contextY - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        const lineStartX = centerX + (dx / dist) * topicR;
+        const lineStartY = centerY + (dy / dist) * topicR;
+        const lineEndX = contextX - (dx / dist) * contextR;
+        const lineEndY = contextY - (dy / dist) * contextR;
+        
+        svg.append('line')
+            .attr('x1', lineStartX)
+            .attr('y1', lineStartY)
+            .attr('x2', lineEndX)
+            .attr('y2', lineEndY)
+            .attr('stroke', '#888')
+            .attr('stroke-width', 2);
+    }
+    
+    // Draw topic circle (center)
+    svg.append('circle')
+        .attr('cx', centerX)
+        .attr('cy', centerY)
+        .attr('r', topicR)
+        .attr('fill', THEME.topicFill)
+        .attr('stroke', THEME.topicStroke)
+        .attr('stroke-width', THEME.topicStrokeWidth);
+    
+    svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', THEME.topicText)
+        .attr('font-size', THEME.fontTopic)
+        .attr('font-weight', 'bold')
+        .text(spec.topic);
+    
+    // Draw context circles
+    for (let i = 0; i < contextCount; i++) {
+        const angle = i * angleStep;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        
+        svg.append('circle')
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('r', contextR)
+            .attr('fill', THEME.contextFill)
+            .attr('stroke', THEME.contextStroke)
+            .attr('stroke-width', THEME.contextStrokeWidth);
+        
+        svg.append('text')
+            .attr('x', x)
+            .attr('y', y)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.contextText)
+            .attr('font-size', THEME.fontContext)
+            .text(spec.context[i]);
+    }
+    
+    // Watermark
     const w = +svg.attr('width'), h = +svg.attr('height');
-    svg.append('text').attr('x', w - 18).attr('y', h - 18).attr('text-anchor', 'end')
-        .attr('fill', '#000').attr('font-size', 18).attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('opacity', 1).attr('pointer-events', 'none').text('D3.js_Dify');
+    svg.append('text')
+        .attr('x', w - 18)
+        .attr('y', h - 18)
+        .attr('text-anchor', 'end')
+        .attr('fill', '#888')
+        .attr('font-size', 18)
+        .attr('font-family', 'Inter, Segoe UI, sans-serif')
+        .attr('opacity', 0.35)
+        .attr('pointer-events', 'none')
+        .text('D3.js_Dify');
 }
 
 function renderTreeMap(spec, theme = null, dimensions = null) {
@@ -248,10 +556,34 @@ function renderMindMap(spec, theme = null, dimensions = null) {
 }
 
 function renderGraph(type, spec, theme = null, dimensions = null) {
-    if (type === 'double_bubble_map') renderDoubleBubbleMap(spec, theme, dimensions);
-    else if (type === 'bubble_map') renderBubbleMap(spec, theme, dimensions);
-    else if (type === 'circle_map') renderCircleMap(spec, theme, dimensions);
-    else if (type === 'tree_map') renderTreeMap(spec, theme, dimensions);
-    else if (type === 'concept_map') renderConceptMap(spec, theme, dimensions);
-    else if (type === 'mindmap') renderMindMap(spec, theme, dimensions);
+    console.log('renderGraph called with:', { type, spec, theme, dimensions });
+    
+    if (type === 'double_bubble_map') {
+        console.log('Calling renderDoubleBubbleMap');
+        renderDoubleBubbleMap(spec, theme, dimensions);
+    }
+    else if (type === 'bubble_map') {
+        console.log('Calling renderBubbleMap');
+        renderBubbleMap(spec, theme, dimensions);
+    }
+    else if (type === 'circle_map') {
+        console.log('Calling renderCircleMap');
+        renderCircleMap(spec, theme, dimensions);
+    }
+    else if (type === 'tree_map') {
+        console.log('Calling renderTreeMap');
+        renderTreeMap(spec, theme, dimensions);
+    }
+    else if (type === 'concept_map') {
+        console.log('Calling renderConceptMap');
+        renderConceptMap(spec, theme, dimensions);
+    }
+    else if (type === 'mindmap') {
+        console.log('Calling renderMindMap');
+        renderMindMap(spec, theme, dimensions);
+    }
+    else {
+        console.error('Unknown graph type:', type);
+        d3.select('#d3-container').html('<div style="color: red;">Unknown graph type: ' + type + '</div>');
+    }
 } 

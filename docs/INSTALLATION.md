@@ -1,8 +1,8 @@
-# Installation Guide - Version 2.0.0
+# Installation Guide - Version 2.1.0
 
 **D3.js_Dify** - AI-Powered Graph Generation Application
 
-Complete installation guide for D3.js_Dify version 2.0.0 with enhanced dependency validation and professional startup sequences.
+Complete installation guide for D3.js_Dify version 2.1.0 with enhanced dependency validation and professional startup sequences.
 
 ## 📋 Prerequisites
 
@@ -63,7 +63,7 @@ cd ..
 #### **Step 4: Install Playwright Browser**
 
 ```bash
-# Install Playwright browsers (handled automatically in v2.0.0)
+# Install Playwright browsers (handled automatically in v2.1.0)
 python -m playwright install chromium
 ```
 
@@ -492,7 +492,7 @@ Memory usage high: 85%
 
 ### **Update from Previous Versions**
 
-#### **From Version 1.x to 2.0.0**
+#### **From Version 1.x to 2.1.0**
 
 1. **Backup your configuration**
    ```bash
@@ -567,7 +567,7 @@ free -h
 
 ---
 
-**🎉 Installation Complete!** Your D3.js_Dify version 2.0.0 is now ready to generate beautiful AI-powered visualizations.
+**🎉 Installation Complete!** Your D3.js_Dify version 2.1.0 is now ready to generate beautiful AI-powered visualizations.
 
 **Made with ❤️ by the D3.js Dify Team**
 
