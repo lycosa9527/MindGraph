@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Major Improvements
 
+#### Team Update
+- **MindSpring Team**: Updated all documentation to reflect the MindSpring Team as the project maintainers
+- **Branding Consistency**: Updated package.json, README.md, and all documentation files with new team information
+
 #### Enhanced Circle Map Layout
 - **New Circle Map Design**: Implemented outer boundary circle with central topic and perimeter context circles
 - **Precise Geometric Positioning**: Replaced force simulation with trigonometric positioning for exact circle placement

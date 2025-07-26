@@ -569,6 +569,6 @@ free -h
 
 **🎉 Installation Complete!** Your D3.js_Dify version 2.1.0 is now ready to generate beautiful AI-powered visualizations.
 
-**Made with ❤️ by the D3.js Dify Team**
+**Made with ❤️ by the MindSpring Team**
 
 Transform your data into beautiful visualizations with the power of AI! 🚀 

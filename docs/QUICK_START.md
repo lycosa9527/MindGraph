@@ -320,6 +320,6 @@ docker-compose logs -f
 
 **🎉 Congratulations!** You're now running D3.js_Dify version 2.1.0 with enhanced startup sequences and professional configuration management.
 
-**Made with ❤️ by the D3.js Dify Team**
+**Made with ❤️ by the MindSpring Team**
 
 Transform your data into beautiful visualizations with the power of AI! 🚀 

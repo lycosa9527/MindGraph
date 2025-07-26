@@ -541,6 +541,6 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 **🎉 Docker Setup Complete!** Your D3.js_Dify version 2.1.0 is now running in a production-ready Docker container with enhanced monitoring and health checks.
 
-**Made with ❤️ by the D3.js Dify Team**
+**Made with ❤️ by the MindSpring Team**
 
 Transform your data into beautiful visualizations with the power of AI! 🚀 

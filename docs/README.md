@@ -152,6 +152,6 @@ For questions about the documentation or project:
 
 ---
 
-**Made with ❤️ by the D3.js Dify Team**
+**Made with ❤️ by the MindSpring Team**
 
 Transform your data into beautiful visualizations with the power of AI! 🚀 
