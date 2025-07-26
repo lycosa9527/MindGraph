@@ -1,0 +1,53 @@
+# D3.js_Dify Docker Compose Configuration
+# This file sets up a production-ready environment with simple logging and monitoring
+
+version: '3.8'
+
+services:
+  # Main D3.js_Dify application service
+  d3js-dify:
+    build: .
+    container_name: d3js-dify
+    ports:
+      # Expose the main application port
+      - "9527:9527"
+    environment:
+      # Qwen API configuration (required for AI graph generation)
+      # These must be set in your .env file or environment
+      - QWEN_API_KEY=${QWEN_API_KEY}
+      - QWEN_API_URL=${QWEN_API_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
+      - QWEN_MODEL=${QWEN_MODEL:-qwen-turbo}
+      - QWEN_TEMPERATURE=${QWEN_TEMPERATURE:-0.7}
+      - QWEN_MAX_TOKENS=${QWEN_MAX_TOKENS:-1000}
+      - QWEN_TIMEOUT=${QWEN_TIMEOUT:-40}
+      
+      # Application configuration
+      # DEBUG: Set to True for development, False for production
+      # GRAPH_LANGUAGE: Language for graph generation (zh/en)
+      # WATERMARK_TEXT: Text to display on generated graphs
+      - HOST=0.0.0.0
+      - PORT=9527
+      - DEBUG=${DEBUG:-False}
+      - GRAPH_LANGUAGE=${GRAPH_LANGUAGE:-zh}
+      - WATERMARK_TEXT=${WATERMARK_TEXT:-D3.js_Dify}
+      
+    volumes:
+      # Persist generated graph exports
+      # This allows you to access generated graphs from the host
+      - ./d3js_dify_exports:/app/d3js_dify_exports
+      
+      # Persist application logs
+      - ./logs:/app/logs
+      
+    restart: unless-stopped
+    
+    # Status check configuration
+
+      
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M 

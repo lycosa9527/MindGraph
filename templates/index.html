@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>D3.js_Dify</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        :root {
+            --primary: #4e79a7;
+            --primary-dark: #35506b;
+            --accent: #a7c7e7;
+            --background: #f4f6fb;
+            --container-bg: #fff;
+            --success: #388e3c;
+            --border-radius: 16px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.10);
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background);
+        }
+        .header {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            padding: 36px 0 24px 0;
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: 0 2px 12px rgba(78,121,167,0.08);
+        }
+        .center-layout {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: var(--container-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 40px 36px 32px 36px;
+            margin: 40px 0;
+            max-width: 500px;
+            width: 96vw;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-sizing: border-box;
+        }
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 18px;
+            color: var(--primary);
+        }
+        .status {
+            color: var(--success);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+        .message {
+            color: #333;
+            font-size: 1.13rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .api-info {
+            margin-top: 18px;
+            padding: 18px 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+        .api-info h3 {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 1.15rem;
+        }
+        .api-info p {
+            margin: 10px 0 6px 0;
+            color: #666;
+            font-size: 1rem;
+        }
+        .endpoint {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            margin: 5px 0 10px 0;
+            font-size: 1.01rem;
+        }
+        .author-info {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+            color: #666;
+            font-size: 0.98rem;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 18px 4vw 18px 4vw;
+                max-width: 99vw;
+            }
+            .header {
+                font-size: 1.2rem;
+                padding: 18px 0 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span style="vertical-align: middle;">🧠 {{ app_name }} Status</span>
+    </div>
+    <div class="center-layout">
+        <div class="container">
+            <div class="logo">🎯</div>
+            <div class="status">✓ {{ app_name }} is Running</div>
+            <div class="message">
+                If you are seeing this, <b>{{ app_name }}</b> is running successfully!
+            </div>
+            <div class="api-info">
+                <h3>API Endpoints</h3>
+                <p><strong>Convert Markdown to JPG:</strong></p>
+                <div class="endpoint">POST /convert</div>
+                <p><small>Send JSON with "markdown" field containing D3.js graph specifications</small></p>
+            </div>
+            <div class="author-info">
+                <p>Author: lyc9527</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
