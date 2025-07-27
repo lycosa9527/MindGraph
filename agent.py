@@ -1,5 +1,5 @@
 """
-LangChain Agent Module for D3.js_Dify
+LangChain Agent Module for MindGraph
 
 This module contains the core LangChain agent functionality for generating
 custom graph content using the Qwen LLM. It supports both double bubble maps
@@ -344,8 +344,13 @@ def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
             "- 仔细分析用户的需求和意图\n"
             "- 选择最适合的图表类型\n"
             "- 只输出图表类型名称，不要其他内容\n"
+            "- 必须使用下划线格式，如：double_bubble_map, bubble_map, bridge_map\n"
+            "- 不要使用空格或连字符，如：不要写 'double bubble map' 或 'double-bubble-map'\n"
             "\n【示例】\n"
             "用户需求：比较猫和狗\n输出：double_bubble_map\n"
+            "用户需求：生成一幅关于风电和水电的双气泡图\n输出：double_bubble_map\n"
+            "用户需求：制作双气泡图比较城市和乡村\n输出：double_bubble_map\n"
+            "用户需求：双气泡图：比较传统能源和可再生能源\n输出：double_bubble_map\n"
             "用户需求：类比：手之于人，如同轮子之于车\n输出：bridge_map\n"
             "用户需求：用桥形图类比光合作用和呼吸作用\n输出：bridge_map\n"
             "用户需求：描述太阳系的特征\n输出：bubble_map\n"
@@ -397,8 +402,13 @@ def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
             "- Carefully analyze the user's needs and intent\n"
             "- Choose the most appropriate diagram type\n"
             "- Output only the diagram type name, nothing else\n"
+            "- Must use underscore format, e.g.: double_bubble_map, bubble_map, bridge_map\n"
+            "- Do not use spaces or hyphens, e.g.: do not write 'double bubble map' or 'double-bubble-map'\n"
             "\n[Examples]\n"
             "User request: Compare cats and dogs\nOutput: double_bubble_map\n"
+            "User request: Generate a double bubble map about wind power and hydropower\nOutput: double_bubble_map\n"
+            "User request: Create double bubble map comparing cities and rural areas\nOutput: double_bubble_map\n"
+            "User request: Double bubble map: compare traditional and renewable energy\nOutput: double_bubble_map\n"
             "User request: Analogy: hand is to person as wheel is to car\nOutput: bridge_map\n"
             "User request: Use bridge map to analogize photosynthesis and respiration\nOutput: bridge_map\n"
             "User request: Describe characteristics of solar system\nOutput: bubble_map\n"
@@ -423,17 +433,60 @@ def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
         # Refactored: Use RunnableSequence API
         result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip().lower()
         
-        # Extract the diagram type from the response
+        logger.info(f"LLM classification response: '{result}'")
+        
+        # First, try exact match with available types
         for diagram_type in available_types:
-            if diagram_type in result:
+            if diagram_type == result:
+                logger.info(f"LLM classified as: {diagram_type}")
                 return diagram_type
         
-        # Fallback to default types based on keywords
+        # If no exact match, try to extract from common variations
+        result_clean = result.replace(" ", "_").replace("-", "_")
+        for diagram_type in available_types:
+            if diagram_type == result_clean:
+                logger.info(f"LLM classified as (cleaned): {diagram_type}")
+                return diagram_type
+        
+        # If still no match, try to infer from the response content
+        if "double" in result and "bubble" in result:
+            logger.info("LLM response suggests double_bubble_map")
+            return "double_bubble_map"
+        elif "bubble" in result:
+            logger.info("LLM response suggests bubble_map")
+            return "bubble_map"
+        elif "bridge" in result:
+            logger.info("LLM response suggests bridge_map")
+            return "bridge_map"
+        elif "circle" in result:
+            logger.info("LLM response suggests circle_map")
+            return "circle_map"
+        elif "flow" in result:
+            logger.info("LLM response suggests flow_map")
+            return "flow_map"
+        elif "tree" in result:
+            logger.info("LLM response suggests tree_map")
+            return "tree_map"
+        elif "multi" in result and "flow" in result:
+            logger.info("LLM response suggests multi_flow_map")
+            return "multi_flow_map"
+        elif "brace" in result:
+            logger.info("LLM response suggests brace_map")
+            return "brace_map"
+        elif "concept" in result:
+            logger.info("LLM response suggests concept_map")
+            return "concept_map"
+        elif "mind" in result:
+            logger.info("LLM response suggests mindmap")
+            return "mindmap"
+        
+        # Only if LLM completely fails, use fallback logic
+        logger.warning(f"LLM classification failed to match any type, using fallback logic")
         if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
             return "bridge_map"
-        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较", "双气泡图", "双泡图"]):
             return "double_bubble_map"
-        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
+        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述", "气泡图", "单气泡图"]):
             return "bubble_map"
         elif any(word in user_prompt.lower() for word in ["define", "context", "定义", "上下文"]):
             return "circle_map"
@@ -468,12 +521,13 @@ def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
             
     except Exception as e:
         logger.error(f"LLM classification failed: {e}")
-        # Fallback classification
+        logger.info("Using fallback classification due to LLM error")
+        # Fallback classification - only used when LLM completely fails
         if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
             return "bridge_map"
-        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较", "双气泡图", "双泡图"]):
             return "double_bubble_map"
-        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
+        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述", "气泡图", "单气泡图"]):
             return "bubble_map"
         elif any(word in user_prompt.lower() for word in ["define", "context", "定义", "上下文"]):
             return "circle_map"

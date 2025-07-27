@@ -1,5 +1,5 @@
 """
-Agent Utilities Module for D3.js_Dify
+Agent Utilities Module for MindGraph
 
 This module contains utility functions that support the LangChain agent work,
 including parsing functions, fallback logic, and helper functions for

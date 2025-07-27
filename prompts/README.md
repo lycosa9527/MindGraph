@@ -1,6 +1,6 @@
 # Centralized Prompt Registry
 
-This directory contains a unified, organized system for all diagram prompts in the D3.js_Dify project.
+This directory contains a unified, organized system for all diagram prompts in the MindGraph project.
 
 ## 🎯 Problem Solved
 

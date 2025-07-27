@@ -1,5 +1,5 @@
-# D3.js_Dify - AI-Powered Graph Generation Application
-# Version: 2.3.0
+# MindGraph - AI-Powered Graph Generation Application
+# Version: 2.3.1
 # 
 # Features:
 # - AI-powered graph generation with Qwen and DeepSeek LLMs
@@ -54,7 +54,7 @@ WORKDIR /app
 COPY . .
 
 # Create necessary directories for logs and exports
-RUN mkdir -p logs d3js_dify_exports
+RUN mkdir -p logs mindgraph_exports
 
 # Expose the application port
 EXPOSE 9527
@@ -68,7 +68,7 @@ ENV HOST=0.0.0.0
 ENV PORT=9527
 ENV DEBUG=False
 ENV GRAPH_LANGUAGE=zh
-ENV WATERMARK_TEXT=MindSpring
+ENV WATERMARK_TEXT=MindGraph
 
 # Qwen API configuration (required for core functionality)
 # These must be provided at runtime via docker run or docker-compose

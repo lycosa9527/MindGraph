@@ -1,4 +1,4 @@
-# D3.js_Dify - AI-Powered Graph Generation Application
+# MindGraph - AI-Powered Graph Generation Application
 # Version: 2.1.0
 # Requirements for Python 3.8+
 # 

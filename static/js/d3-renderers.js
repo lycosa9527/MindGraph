@@ -1,4 +1,4 @@
-// D3.js Renderers for D3.js_Dify Application
+// D3.js Renderers for MindGraph Application
 // This file contains all the D3.js rendering functions for different graph types
 
 // --- Safe, memory-leak-free text radius measurement ---
@@ -38,7 +38,7 @@ window.addEventListener('beforeunload', () => {
 
 // Helper function to get watermark text from theme or use default
 function getWatermarkText(theme = null) {
-    return theme?.watermarkText || 'MindSpring';
+    return theme?.watermarkText || 'MindGraph';
 }
 
 // Helper function to add watermark with proper positioning and styling

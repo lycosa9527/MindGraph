@@ -1,5 +1,5 @@
 """
-Centralized Prompt Registry for D3.js_Dify
+Centralized Prompt Registry for MindGraph
 
 This module provides a unified interface for all diagram prompts,
 organizing them by diagram type and language.

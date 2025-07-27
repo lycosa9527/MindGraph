@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo D3.js_Dify Dependency Checker (GUI)
+echo MindGraph Dependency Checker (GUI)
 echo ========================================
 echo.
 

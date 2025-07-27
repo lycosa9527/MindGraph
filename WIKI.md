@@ -1,32 +1,32 @@
-# D3.js Dify - AI-Powered Data Visualization Generator
+# MindGraph - AI-Powered Data Visualization Generator
 
-[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![WakaTime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/D3.js_Dify.svg)](https://wakatime.com/@60ba0518-3829-457f-ae10-3eff184d5f69/projects/D3.js_Dify)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![WakaTime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/MindGraph.svg)](https://wakatime.com/@60ba0518-3829-457f-ae10-3eff184d5f69/projects/MindGraph)
 
-## 🎯 What is D3.js Dify?
+## 🎯 What is MindGraph?
 
-**D3.js Dify** is an intelligent data visualization platform that automatically generates interactive charts and graphs from natural language descriptions. Powered by AI (LangChain agents) and D3.js, it transforms your ideas into beautiful, interactive visualizations in seconds.
+**MindGraph** is an intelligent data visualization platform that automatically generates interactive charts and graphs from natural language descriptions. Powered by AI and D3.js, it transforms your ideas into beautiful, interactive visualizations in seconds.
 
 ### ✨ Key Features
 
-- **🤖 AI-Powered**: Uses LangChain agents to understand your requests and generate appropriate chart types
-- **📊 Multiple Chart Types**: Supports bar charts, line charts, pie charts, scatter plots, bubble maps, and more
+- **🤖 AI-Powered**: Uses AI to understand your requests and generate appropriate chart types
+- **🧠 Educational Focus**: Specializes in Thinking Maps® and educational diagram generation
+- **📊 Multiple Chart Types**: Supports Thinking Maps® (Bubble Maps, Circle Maps, Double Bubble Maps, Bridge Maps), concept maps, mind maps, and traditional charts
 - **🌐 Interactive**: Fully interactive D3.js visualizations with hover effects, animations, and zoom
 - **🎨 Beautiful Design**: Modern, responsive UI with customizable themes
 - **📱 Export Options**: Export charts as PNG images or interactive HTML
 - **🌍 Multi-language**: Supports both English and Chinese
 - **⚡ Real-time**: Instant chart generation with live preview
-- **🔧 Developer Friendly**: RESTful API, Docker support, and comprehensive documentation
 
-### 🆕 What's New in Version 2.1
+### 🆕 What's New in Version 2.3.1
 
-- **🔧 Enhanced Bubble Map Rendering**: Fixed bubble map layout to properly center topics and distribute attributes in a 360-degree circle
-- **🎯 Improved Rendering Pipeline**: Unified D3.js renderers across web interface and PNG export for consistent visualization quality
-- **⚡ Better Performance**: Optimized chart generation and rendering processes for faster response times
+- **🔧 Enhanced Bridge Maps**: Improved visual clarity with cleaner presentation
+- **🎯 Better User Experience**: Enhanced interface and performance
+- **⚡ Automatic Setup**: No manual configuration required
 
 ## 🚀 Quick Start
 
@@ -40,8 +40,8 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/lycosa9527/D3.js_Dify.git
-   cd D3.js_Dify
+   git clone https://github.com/lycosa9527/MindGraph.git
+   cd MindGraph
    ```
 
 2. **Install Python dependencies**
@@ -49,36 +49,31 @@
    pip install -r requirements.txt
    ```
 
-3. **Install Playwright for browser rendering**
-   ```bash
-   pip install playwright
-   python -m playwright install chromium
-   ```
-
-4. **Set up environment variables**
+3. **Set up environment variables**
    ```bash
    cp env.example .env
    # Edit .env with your API keys and configuration
    ```
 
-5. **Run the application**
+4. **Run the application**
    ```bash
    python app.py
    ```
 
-6. **Open your browser**
-   Navigate to `http://localhost:9527` to access the web interface.
+5. **Open your browser**
+   Navigate to `http://localhost:9527/debug` to access the web interface.
 
 ## 🎨 How It Works
 
 ### 1. Natural Language Input
 Simply describe what you want to visualize:
-- "Compare sales performance between Q1 and Q2"
-- "Show the distribution of customer ages"
-- "Create a timeline of project milestones"
+- "Compare cats and dogs"
+- "Define artificial intelligence"
+- "Show the relationship between cause and effect"
+- "Create a mind map about climate change"
 
 ### 2. AI Analysis
-The LangChain agent:
+The AI:
 - Analyzes your request
 - Determines the best chart type
 - Extracts relevant data characteristics
@@ -95,9 +90,19 @@ D3.js creates an interactive visualization with:
 Export your charts as:
 - Interactive HTML files
 - High-resolution PNG images
-- Embeddable code snippets
 
 ## 📊 Supported Chart Types
+
+### 🧠 Thinking Maps® (Educational Diagrams)
+
+| Chart Type | Description | Best For |
+|------------|-------------|----------|
+| **Bubble Map** | Central topic with connected attributes | Describing characteristics of a single topic |
+| **Circle Map** | Outer boundary with central topic and perimeter context | Defining topics in context |
+| **Double Bubble Map** | Two topics with shared and unique characteristics | Comparing and contrasting two topics |
+| **Bridge Map** | Analogical relationships with relating factors | Showing analogies and similarities |
+
+### 📈 Traditional Charts
 
 | Chart Type | Description | Best For |
 |------------|-------------|----------|
@@ -109,17 +114,26 @@ Export your charts as:
 | **Heatmap** | Color-coded grid | Matrix data visualization |
 | **Tree Map** | Nested rectangles | Hierarchical data |
 | **Network Graph** | Connected nodes | Relationships and connections |
-| **Bubble Map** | Centered topic with circular attribute distribution | Topic analysis and attribute relationships |
+
+## 🎨 Example Prompts
+
+Try these prompts to get started:
+
+- "Compare cats and dogs"
+- "Define artificial intelligence"
+- "Show the relationship between cause and effect"
+- "Create a mind map about climate change"
+- "Compare traditional and modern education"
 
 ## 🔧 API Usage
 
 ### Generate Chart from Text
 
 ```bash
-curl -X POST http://localhost:9527/api/generate \
+curl -X POST http://localhost:9527/generate_graph \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Compare sales performance between Q1 and Q2",
+    "prompt": "Compare cats and dogs",
     "language": "en"
   }'
 ```
@@ -127,66 +141,12 @@ curl -X POST http://localhost:9527/api/generate \
 ### Export as PNG
 
 ```bash
-curl -X POST http://localhost:9527/api/generate_png \
+curl -X POST http://localhost:9527/generate_png \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Show monthly revenue trends",
     "language": "en"
   }'
-```
-
-## 🏗️ Architecture
-
-```
-D3.js Dify
-├── Frontend (Web Interface)
-│   ├── Modern UI with real-time preview
-│   ├── Chart customization options
-│   └── Export functionality
-├── Backend (Flask API)
-│   ├── LangChain agent processing
-│   ├── D3.js chart generation
-│   └── Image export service
-├── AI Engine (LangChain)
-│   ├── Natural language processing
-│   ├── Chart type detection
-│   └── Data generation
-└── Visualization Engine (D3.js)
-    ├── Interactive charts
-    ├── Responsive design
-    └── Animation system
-```
-
-## 🛠️ Configuration
-
-### Environment Variables
-
-```bash
-# API Configuration
-API_KEY=your_api_key_here
-API_BASE_URL=https://api.example.com
-
-# Server Configuration
-HOST=0.0.0.0
-PORT=9527
-DEBUG=True
-
-# Chart Configuration
-DEFAULT_THEME=light
-CHART_WIDTH=800
-CHART_HEIGHT=600
-```
-
-### Custom Chart Themes
-
-Create custom themes by modifying the D3.js configuration:
-
-```javascript
-const customTheme = {
-  colors: ['#ff6b6b', '#4ecdc4', '#45b7d1'],
-  background: '#ffffff',
-  textColor: '#333333'
-};
 ```
 
 ## 🐳 Docker Deployment
@@ -195,51 +155,20 @@ const customTheme = {
 
 ```bash
 # Build and run with Docker Compose
-docker-compose -f docker/docker-compose.yml up -d
+cd docker
+docker-compose up -d
 
 # Or build manually
-docker build -t d3-dify docker/
-docker run -p 9527:9527 d3-dify
-
-# Or use the convenience scripts
-# Linux/macOS
-./docker/run-docker.sh
-
-# Windows
-docker\run-docker.bat
+docker build -t mindgraph .
+docker run -p 9527:9527 mindgraph
 ```
-
-### Production Deployment
-
-```bash
-# Production build
-docker build -f docker/Dockerfile -t d3-dify-prod docker/
-
-# Run with environment variables
-docker run -d \
-  -p 9527:9527 \
-  -e API_KEY=your_key \
-  -e DEBUG=False \
-  d3-dify-prod
-```
-
-### Docker Configuration
-
-All Docker-related files are organized in the `docker/` folder:
-- **Dockerfile** - Main image definition
-- **docker-compose.yml** - Multi-service orchestration
-- **run-docker.sh** - Linux/macOS deployment script
-- **run-docker.bat** - Windows deployment script
-- **.dockerignore** - Build context exclusions
-
-See [docker/README.md](docker/README.md) for detailed Docker documentation.
 
 ## 📚 Documentation
 
-- **[Agent Guide](docs/AGENT.md)** - LangChain agent functionality
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Installation and deployment
-- **[Graph Specs](docs/GRAPH_SPECS.md)** - Custom chart specifications
-- **[API Reference](docs/API.md)** - Complete API documentation
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in minutes
+- **[Thinking Maps Guide](docs/THINKING_MAPS_GUIDE.md)** - Learn about Thinking Maps®
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
+- **[Complete Documentation](docs/README.md)** - Full documentation index
 
 ## 🤝 Contributing
 
@@ -250,20 +179,6 @@ We welcome contributions! Here's how you can help:
 3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
 4. **Push to the branch** (`git push origin feature/amazing-feature`)
 5. **Open a Pull Request**
-
-### Development Setup
-
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-python -m pytest tests/
-
-# Run linting
-flake8 .
-black .
-```
 
 ## 🐛 Troubleshooting
 
@@ -294,12 +209,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/lycosa9527/D3.js_Dify/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lycosa9527/D3.js_Dify/discussions)
-- **Documentation**: [Wiki](https://github.com/lycosa9527/D3.js_Dify/wiki)
+- **Issues**: [GitHub Issues](https://github.com/lycosa9527/MindGraph/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/lycosa9527/MindGraph/discussions)
+- **Documentation**: [Wiki](https://github.com/lycosa9527/MindGraph/wiki)
 
 ---
 
 **Made with ❤️ by the MindSpring Team**
 
-Transform your data into beautiful visualizations with the power of AI! 🚀 
+Transform your ideas into beautiful visualizations with the power of AI! 🚀 

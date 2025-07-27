@@ -1,11 +1,11 @@
 """
-D3.js_Dify - AI-Powered Graph Generation Application
+MindGraph - AI-Powered Graph Generation Application
 ===================================================
 
 A Flask-based web application that generates interactive D3.js graphs using AI agents.
 Supports both Qwen and DeepSeek LLMs for intelligent graph generation and enhancement.
 
-Version: 2.3.0
+Version: 2.3.1
 Author: MindSpring Team
 License: MIT
 
@@ -316,9 +316,9 @@ def get_local_ip():
     except Exception:
         return "127.0.0.1"
 
-def open_browser_demo(host, port):
+def open_browser_debug(host, port):
     """
-    Automatically open the demo page in browser with server readiness check.
+    Automatically open the debug page in browser with server readiness check.
     
     Features:
     - Waits for server to be ready before opening browser
@@ -328,9 +328,9 @@ def open_browser_demo(host, port):
     try:
         # Determine the correct URL based on host configuration
         if host == '0.0.0.0':
-            url = f"http://localhost:{port}/demo"
+            url = f"http://localhost:{port}/debug"
         else:
-            url = f"http://{host}:{port}/demo"
+            url = f"http://{host}:{port}/debug"
         
         def open_browser():
             """Open browser after confirming server is ready."""
@@ -405,7 +405,7 @@ def print_setup_instructions():
     """
     logger.info("""
 ================================================================================
-🚀 D3.js_Dify Setup Instructions
+🚀 MindGraph Setup Instructions
 
 If you are seeing this message, you may be missing required dependencies.
 
@@ -433,9 +433,9 @@ If you are seeing this message, you may be missing required dependencies.
 
 1. Install Docker: https://www.docker.com/products/docker-desktop
 2. Build the Docker image:
-   docker build -t d3js-dify .
+   docker build -t mindgraph .
 3. Run the Docker container:
-   docker run -p 9527:9527 d3js-dify
+   docker run -p 9527:9527 mindgraph
 4. Open your browser and visit: http://localhost:9527
 
 📋 Manual Dependency Check
@@ -457,7 +457,7 @@ if __name__ == '__main__':
     # Record application start time for uptime tracking
     app.start_time = time.time()
     
-    logger.info("🚀 Starting D3.js_Dify application...")
+    logger.info("🚀 Starting MindGraph application...")
     
     # Display configuration summary
     config.print_config_summary()
@@ -466,7 +466,7 @@ if __name__ == '__main__':
     print_banner(config.HOST, config.PORT)
     
     # Automatically open browser (non-blocking)
-    open_browser_demo(config.HOST, config.PORT)
+    open_browser_debug(config.HOST, config.PORT)
     
     # Suppress Flask development server messages for cleaner output
     logging.getLogger('werkzeug').setLevel(logging.WARNING)

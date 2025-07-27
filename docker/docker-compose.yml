@@ -1,5 +1,5 @@
-# D3.js_Dify - AI-Powered Graph Generation Application
-# Version: 2.3.0
+# MindGraph - AI-Powered Graph Generation Application
+# Version: 2.3.1
 # 
 # Features:
 # - AI-powered graph generation with Qwen and DeepSeek LLMs
@@ -15,12 +15,12 @@
 version: '3.8'
 
 services:
-  # Main D3.js_Dify application service
-  d3js-dify:
+  # Main MindGraph application service
+      mindgraph:
     build: 
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: d3js-dify
+          container_name: mindgraph
     ports:
       # Expose the main application port
       - "9527:9527"
@@ -60,7 +60,7 @@ services:
       - PORT=9527
       - DEBUG=${DEBUG:-False}
       - GRAPH_LANGUAGE=${GRAPH_LANGUAGE:-zh}
-      - WATERMARK_TEXT=${WATERMARK_TEXT:-MindSpring}
+      - WATERMARK_TEXT=${WATERMARK_TEXT:-MindGraph}
       
       # D3.js visualization configuration
       - TOPIC_FONT_SIZE=${TOPIC_FONT_SIZE:-18}
@@ -83,7 +83,7 @@ services:
     volumes:
       # Persist generated graph exports
       # This allows you to access generated graphs from the host
-      - ../d3js_dify_exports:/app/d3js_dify_exports
+      - ../mindgraph_exports:/app/mindgraph_exports
       
       # Persist application logs
       - ../logs:/app/logs

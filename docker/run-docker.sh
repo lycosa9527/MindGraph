@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# D3.js_Dify Docker Runner Script
-# This script helps you run the D3.js_Dify application using Docker
+# MindGraph Docker Runner Script
+# This script helps you run the MindGraph application using Docker
 
 set -e
 
-echo "🚀 D3.js_Dify Docker Setup"
+echo "🚀 MindGraph Docker Setup"
 echo "=========================="
 
 # Check if .env file exists
@@ -39,12 +39,12 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # Create necessary directories
-mkdir -p d3js_dify_exports logs
+mkdir -p mindgraph_exports logs
 
 echo "🔧 Building Docker image..."
 docker-compose build
 
-echo "🚀 Starting D3.js_Dify application..."
+echo "🚀 Starting MindGraph application..."
 docker-compose up -d
 
 echo "⏳ Waiting for application to start..."

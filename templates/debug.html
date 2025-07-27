@@ -93,7 +93,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>D3.js_Dify debug tool</h1>
+        <h1>MindGraph debug tool</h1>
         <label for="prompt">Prompt:</label>
         <textarea id="prompt" placeholder="Enter your graph prompt..."></textarea>
         <label for="language">Language:</label>
@@ -152,13 +152,13 @@
     const diagramType = document.getElementById('diagramType');
 
     // --- History logic ---
-    let history = JSON.parse(localStorage.getItem('d3js_dify_history') || '[]');
+    let history = JSON.parse(localStorage.getItem('mindgraph_history') || '[]');
     function saveHistory(prompt, lang) {
         if (!prompt.trim()) return;
         history = history.filter(h => h.prompt !== prompt || h.lang !== lang);
         history.unshift({prompt, lang});
         if (history.length > 10) history = history.slice(0, 10);
-        localStorage.setItem('d3js_dify_history', JSON.stringify(history));
+        localStorage.setItem('mindgraph_history', JSON.stringify(history));
         renderHistory();
     }
     function renderHistory() {

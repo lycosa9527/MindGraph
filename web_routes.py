@@ -12,10 +12,10 @@ def index():
         logger.error(f"/ route failed: {e}", exc_info=True)
         return "An unexpected error occurred. Please try again later.", 500
 
-@web.route('/demo')
-def demo():
+@web.route('/debug')
+def debug():
     try:
-        return render_template('demo.html')
+        return render_template('debug.html')
     except Exception as e:
-        logger.error(f"/demo route failed: {e}", exc_info=True)
+        logger.error(f"/debug route failed: {e}", exc_info=True)
         return "An unexpected error occurred. Please try again later.", 500 

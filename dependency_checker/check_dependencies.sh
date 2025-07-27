@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "========================================"
-echo "D3.js_Dify Dependency Checker"
+echo "MindGraph Dependency Checker"
 echo "========================================"
 echo
 

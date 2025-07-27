@@ -1,6 +1,6 @@
 # Dependency Checker
 
-This folder contains all the dependency checking and installation tools for D3.js_Dify.
+This folder contains all the dependency checking and installation tools for MindGraph.
 
 ## Files
 

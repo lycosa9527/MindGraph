@@ -1,9 +1,94 @@
 # Changelog
 
-All notable changes to the D3.js_Dify project will be documented in this file.
+All notable changes to the MindGraph project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.3.1] - 2025-01-27
+
+### 🚀 Major Improvements
+
+#### Application Name Migration
+- **Complete Branding Update**: Migrated from "D3.js_Dify" to "MindGraph" across all project files
+- **Consistent Naming**: Updated application name in frontend files, backend routes, Docker configurations, and environment examples
+- **User Interface Updates**: Updated debug.html with new application name and localStorage keys
+- **Docker Configuration**: Updated all Docker files to use "mindgraph_exports" directory instead of "d3js_dify_exports"
+
+#### Enhanced Diagram Type Classification
+- **Improved LLM Response Parsing**: Fixed exact matching logic in diagram type classification to prevent substring conflicts
+- **Precise Classification**: Changed from substring matching (`in`) to exact matching (`==`) for diagram type detection
+- **Better Chinese Support**: Enhanced support for Chinese diagram type requests like "双气泡图" (double bubble map)
+- **Reduced Fallback Usage**: Prioritizes LLM classification over hardcoded fallback logic when LLM provides clear answers
+
+### 🔧 Technical Enhancements
+
+#### Code Quality & Architecture
+- **Exact String Matching**: Updated `classify_graph_type_with_llm` in `agent.py` to use exact matching
+- **Enhanced DeepSeek Agent**: Updated `classify_diagram_type_for_development` in `deepseek_agent.py` with improved parsing
+- **Removed Redundant Logic**: Eliminated duplicate diagram type extraction loops for cleaner code
+- **Content-Based Inference**: Added intelligent content analysis before falling back to keyword matching
+
+#### File System Updates
+- **Frontend Consistency**: Updated `templates/debug.html` with new application name and localStorage keys
+- **Backend Routes**: Verified and updated application name references in `web_routes.py`, `api_routes.py`, and `app.py`
+- **Docker Files**: Updated `docker/run-docker.sh`, `docker/run-docker.bat`, `docker/Dockerfile`, and `docker/docker-compose.yml`
+- **Environment Configuration**: Updated `env.example` with correct application name in comments
+
+### 📋 Documentation Updates
+
+#### User Documentation
+- **Application Name**: All documentation now reflects the new "MindGraph" branding
+- **Debug Interface**: Updated debug tool interface with new application name
+- **Docker Documentation**: Updated Docker deployment instructions with new naming conventions
+
+### 🛡️ Security & Stability
+
+#### Classification Accuracy
+- **Reliable Diagram Detection**: Fixed critical issue where "double bubble map" requests were incorrectly classified as "bubble map"
+- **LLM Trust**: Enhanced system to trust LLM classification when output is clear and unambiguous
+- **Fallback Logic**: Improved fallback mechanism to only trigger when LLM output cannot be parsed
+
+### 🔄 Migration Guide
+
+#### From Version 2.3.0 to 2.3.1
+
+1. **Application Name**: The application is now consistently named "MindGraph" throughout
+2. **Docker Exports**: Export directory changed from `d3js_dify_exports` to `mindgraph_exports`
+3. **Local Storage**: Debug interface now uses `mindgraph_history` instead of `d3js_dify_history`
+4. **No Breaking Changes**: All existing functionality remains the same, only naming has been updated
+
+### 📦 Files Changed
+
+#### Core Application Files
+- `agent.py` - Enhanced diagram type classification with exact matching logic
+- `deepseek_agent.py` - Improved LLM response parsing and removed redundant loops
+- `templates/debug.html` - Updated application name and localStorage keys
+
+#### Docker Files
+- `docker/run-docker.sh` - Updated export directory name
+- `docker/run-docker.bat` - Updated export directory name
+- `docker/Dockerfile` - Updated export directory name
+- `docker/docker-compose.yml` - Updated export directory name
+
+#### Configuration Files
+- `env.example` - Updated application name in comments
+
+### 🐛 Bug Fixes
+
+- **Diagram Classification**: Fixed critical bug where "double bubble map" requests were incorrectly classified as "bubble map"
+- **String Matching**: Resolved substring matching conflicts in diagram type detection
+- **Application Naming**: Eliminated all references to old application name "D3.js_Dify"
+
+### 🔮 Future Roadmap
+
+#### Planned Features for Version 2.4.0
+- **Enhanced Testing**: Comprehensive unit and integration tests for diagram classification
+- **Performance Monitoring**: Advanced performance metrics for LLM response times
+- **User Interface Improvements**: Enhanced debug interface with better error reporting
+- **Multi-language Enhancement**: Improved support for additional languages
+
+---
 
 ## [2.3.0] - 2025-01-27
 
@@ -220,7 +305,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 4. **Docker**: Update Docker deployment
    ```bash
-   docker build -t d3js-dify:2.1.0 .
+   docker build -t mindgraph:2.1.0 .
    docker-compose up -d
    ```
 

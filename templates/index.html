@@ -1,143 +1,156 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>D3.js_Dify</title>
+    <title>MindGraph</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <style>
-        :root {
-            --primary: #4e79a7;
-            --primary-dark: #35506b;
-            --accent: #a7c7e7;
-            --background: #f4f6fb;
-            --container-bg: #fff;
-            --success: #388e3c;
-            --border-radius: 16px;
-            --shadow: 0 8px 32px rgba(0,0,0,0.10);
-        }
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--background);
-        }
-        .header {
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-            color: #fff;
-            padding: 36px 0 24px 0;
-            text-align: center;
-            font-size: 2.2rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            border-radius: 0 0 var(--border-radius) var(--border-radius);
-            box-shadow: 0 2px 12px rgba(78,121,167,0.08);
-        }
-        .center-layout {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            background: var(--container-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 40px 36px 32px 36px;
-            margin: 40px 0;
-            max-width: 500px;
-            width: 96vw;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            box-sizing: border-box;
-        }
-        .logo {
-            font-size: 2.5rem;
-            margin-bottom: 18px;
-            color: var(--primary);
-        }
-        .status {
-            color: var(--success);
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: 0.5px;
-        }
-        .message {
-            color: #333;
-            font-size: 1.13rem;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-        .api-info {
-            margin-top: 18px;
-            padding: 18px 16px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            border-left: 4px solid var(--primary);
-        }
-        .api-info h3 {
-            color: var(--primary);
-            margin-top: 0;
-            font-size: 1.15rem;
-        }
-        .api-info p {
-            margin: 10px 0 6px 0;
-            color: #666;
-            font-size: 1rem;
-        }
-        .endpoint {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 6px;
-            font-family: monospace;
-            margin: 5px 0 10px 0;
-            font-size: 1.01rem;
-        }
-        .author-info {
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #e9ecef;
-            text-align: center;
-            color: #666;
-            font-size: 0.98rem;
-        }
-        @media (max-width: 600px) {
-            .container {
-                padding: 18px 4vw 18px 4vw;
-                max-width: 99vw;
-            }
-            .header {
-                font-size: 1.2rem;
-                padding: 18px 0 10px 0;
-            }
-        }
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        .api-section { margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+        .api-section h2 { color: #555; margin-top: 0; }
+        code { background: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        .endpoint { margin: 15px 0; }
+        .method { font-weight: bold; color: #007acc; }
+        .url { color: #333; }
+        .description { color: #666; margin: 5px 0; }
+        .example { margin: 10px 0; }
+        .response { background: #e8f5e8; border-left: 4px solid #4caf50; padding: 10px; margin: 10px 0; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; padding: 10px; margin: 10px 0; }
+        .nav { text-align: center; margin: 20px 0; }
+        .nav a { display: inline-block; margin: 0 10px; padding: 10px 20px; background: #007acc; color: white; text-decoration: none; border-radius: 5px; }
+        .nav a:hover { background: #005a9e; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <span style="vertical-align: middle;">🧠 {{ app_name }} Status</span>
-    </div>
-    <div class="center-layout">
-        <div class="container">
-            <div class="logo">🎯</div>
-            <div class="status">✓ {{ app_name }} is Running</div>
-            <div class="message">
-                If you are seeing this, <b>{{ app_name }}</b> is running successfully!
+    <div class="container">
+        <h1>MindGraph API Documentation</h1>
+        
+        <div class="nav">
+            <a href="/debug">Debug Interface</a>
+            <a href="/status">Health Check</a>
+        </div>
+
+        <div class="api-section">
+            <h2>🎯 Generate Graph from Text</h2>
+            <div class="endpoint">
+                <div class="method">POST</div>
+                <div class="url">/generate_graph</div>
+                <div class="description">Generate an interactive graph from natural language description</div>
+                
+                <div class="example">
+                    <strong>Request:</strong>
+                    <pre>{
+  "prompt": "Compare cats and dogs",
+  "language": "en"
+}</pre>
+                </div>
+                
+                <div class="response">
+                    <strong>Response:</strong>
+                    <pre>{
+  "type": "double_bubble_map",
+  "spec": {
+    "left": "cats",
+    "right": "dogs", 
+    "similarities": ["mammals", "pets", "four legs"],
+    "left_differences": ["independent", "clean", "quiet"],
+    "right_differences": ["loyal", "active", "social"]
+  }
+}</pre>
+                </div>
             </div>
-            <div class="api-info">
-                <h3>API Endpoints</h3>
-                <p><strong>Convert Markdown to JPG:</strong></p>
-                <div class="endpoint">POST /convert</div>
-                <p><small>Send JSON with "markdown" field containing D3.js graph specifications</small></p>
+        </div>
+
+        <div class="api-section">
+            <h2>📸 Export as PNG Image</h2>
+            <div class="endpoint">
+                <div class="method">POST</div>
+                <div class="url">/generate_png</div>
+                <div class="description">Generate a PNG image from natural language description</div>
+                
+                <div class="example">
+                    <strong>Request:</strong>
+                    <pre>{
+  "prompt": "Show monthly revenue trends",
+  "language": "en"
+}</pre>
+                </div>
+                
+                <div class="response">
+                    <strong>Response:</strong> Binary PNG image data
+                </div>
             </div>
-            <div class="author-info">
-                <p>Author: lyc9527</p>
+        </div>
+
+        <div class="api-section">
+            <h2>🏥 Health Check</h2>
+            <div class="endpoint">
+                <div class="method">GET</div>
+                <div class="url">/status</div>
+                <div class="description">Check application health and status</div>
+                
+                <div class="response">
+                    <strong>Response:</strong>
+                    <pre>{
+  "status": "running",
+  "uptime_seconds": 45.2,
+  "memory_percent": 12.3,
+  "timestamp": 1640995200.0
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <h2>🎨 Example Prompts</h2>
+            <ul>
+                <li>"Compare cats and dogs"</li>
+                <li>"Define artificial intelligence"</li>
+                <li>"Show the relationship between cause and effect"</li>
+                <li>"Create a mind map about climate change"</li>
+                <li>"Compare traditional and modern education"</li>
+            </ul>
+        </div>
+
+        <div class="api-section">
+            <h2>🔧 Supported Chart Types</h2>
+            <h3>Thinking Maps® (Educational Diagrams)</h3>
+            <ul>
+                <li><strong>Bubble Map</strong> - Central topic with connected attributes</li>
+                <li><strong>Circle Map</strong> - Outer boundary with central topic and perimeter context</li>
+                <li><strong>Double Bubble Map</strong> - Two topics with shared and unique characteristics</li>
+                <li><strong>Bridge Map</strong> - Analogical relationships with relating factors</li>
+            </ul>
+            
+            <h3>Traditional Charts</h3>
+            <ul>
+                <li><strong>Bar Chart</strong> - Vertical or horizontal bars</li>
+                <li><strong>Line Chart</strong> - Connected data points</li>
+                <li><strong>Pie Chart</strong> - Circular segments</li>
+                <li><strong>Scatter Plot</strong> - Points on X-Y axes</li>
+                <li><strong>Area Chart</strong> - Filled areas under lines</li>
+                <li><strong>Heatmap</strong> - Color-coded grid</li>
+                <li><strong>Tree Map</strong> - Nested rectangles</li>
+                <li><strong>Network Graph</strong> - Connected nodes</li>
+            </ul>
+        </div>
+
+        <div class="api-section">
+            <h2>❌ Error Responses</h2>
+            <div class="error">
+                <strong>400 Bad Request:</strong>
+                <pre>{
+  "error": "Invalid request format"
+}</pre>
+            </div>
+            
+            <div class="error">
+                <strong>500 Internal Server Error:</strong>
+                <pre>{
+  "error": "An unexpected error occurred. Please try again later."
+}</pre>
             </div>
         </div>
     </div>

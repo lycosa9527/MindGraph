@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-D3.js_Dify Dependency Checker - GUI Version
+MindGraph Dependency Checker - GUI Version
 
 A graphical interface for checking and installing dependencies.
 """
@@ -17,7 +17,7 @@ import requests
 class DependencyCheckerGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("D3.js_Dify Dependency Checker")
+        self.root.title("MindGraph Dependency Checker")
         self.root.geometry("600x500")
         self.root.resizable(True, True)
         
@@ -43,7 +43,7 @@ class DependencyCheckerGUI:
         main_frame.rowconfigure(2, weight=1)
         
         # Title
-        title_label = ttk.Label(main_frame, text="D3.js_Dify Dependency Checker", 
+        title_label = ttk.Label(main_frame, text="MindGraph Dependency Checker", 
                                font=("Arial", 16, "bold"))
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
         
@@ -553,10 +553,10 @@ After installing Node.js, you may need to:
         if self.is_server_running():
             self.log("✅ Server is already running!")
             self.load_webpage()
-            messagebox.showinfo("Server Running", "D3.js_Dify application is already running!\nThe webpage will be opened in your browser.")
+            messagebox.showinfo("Server Running", "MindGraph application is already running!\nThe webpage will be opened in your browser.")
             return
         
-        self.log("\n🚀 Starting D3.js_Dify application...")
+        self.log("\n🚀 Starting MindGraph application...")
         
         # Disable the start button to prevent multiple clicks
         self.start_app_btn.config(state=tk.DISABLED)
@@ -600,14 +600,14 @@ After installing Node.js, you may need to:
                     # Re-enable the button
                     self.start_app_btn.config(state=tk.NORMAL)
                     self.start_app_btn.config(text="Start")
-                    messagebox.showinfo("Success", "D3.js_Dify application is running!\nThe webpage has been opened in your browser.")
+                    messagebox.showinfo("Success", "MindGraph application is running!\nThe webpage has been opened in your browser.")
                 else:
                     # Server responded but with an error status, still consider it ready
                     self.log("✅ Server is ready!")
                     self.load_webpage()
                     self.start_app_btn.config(state=tk.NORMAL)
                     self.start_app_btn.config(text="Start")
-                    messagebox.showinfo("Success", "D3.js_Dify application is running!\nThe webpage has been opened in your browser.")
+                    messagebox.showinfo("Success", "MindGraph application is running!\nThe webpage has been opened in your browser.")
             except requests.exceptions.ConnectionError:
                 # Server not ready yet, check again in 1 second
                 if timeout_counter < max_timeout:

@@ -1,45 +1,97 @@
-# D3.js_Dify Deployment Guide
+# MindGraph Deployment Guide
 
-This guide explains how to deploy D3.js_Dify using Docker with the unified configuration system.
+This guide explains how to deploy MindGraph for production use, including both local and Docker deployment options.
 
 ## 🚀 Quick Start
 
-### 1. Prerequisites
+### **Option 1: Local Deployment (Recommended for Development)**
 
-- Docker and Docker Compose installed
-- Qwen API key from DashScope
-- Playwright Python package and browsers (for local runs)
+1. **Prerequisites**
+   - Python 3.8+
+   - Node.js 18.19+
+   - Qwen API key
 
-### 2. Environment Configuration
+2. **Install and Run**
+   ```bash
+   # Install dependencies
+   pip install -r requirements.txt
+   
+   # Set up environment
+   cp env.example .env
+   # Edit .env with your API keys
+   
+   # Run the application
+   python app.py
+   ```
 
-Copy the example environment file and configure your settings:
+3. **Access the Application**
+   - Open `http://localhost:9527` in your browser
+   - Use the debug interface at `http://localhost:9527/debug`
 
-```bash
-cp env.example .env
-```
+### **Option 2: Docker Deployment (Recommended for Production)**
 
-Edit `.env` and set your Qwen API key:
+1. **Prerequisites**
+   - Docker and Docker Compose installed
+   - Qwen API key
+
+2. **Deploy with Docker Compose**
+   ```bash
+   # Set up environment
+   cp env.example .env
+   # Edit .env with your API keys
+   
+   # Deploy
+   cd docker
+   docker-compose up -d
+   ```
+
+3. **Access the Application**
+   - Open `http://localhost:9527` in your browser
+   - Use the debug interface at `http://localhost:9527/debug`
+
+## 🔧 Configuration
+
+### **Required Environment Variables**
+
+Create a `.env` file in the project root:
 
 ```bash
 # REQUIRED: Your Qwen API key
 QWEN_API_KEY=your_actual_api_key_here
 
-# Optional: Override other settings as needed
-GRAPH_LANGUAGE=en
+# Application settings
+HOST=0.0.0.0
+PORT=9527
 DEBUG=False
+GRAPH_LANGUAGE=zh
 ```
 
-### 3. Install Python Dependencies (for local runs)
+### **Optional Configuration**
 
 ```bash
-pip install -r requirements.txt
-python -m playwright install
+# DeepSeek settings (optional for enhanced features)
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# D3.js visualization settings
+TOPIC_FONT_SIZE=18
+CHAR_FONT_SIZE=14
+D3_BASE_WIDTH=700
+D3_BASE_HEIGHT=500
+
+# Color theme
+D3_TOPIC_FILL=#4e79a7
+D3_SIM_FILL=#a7c7e7
+D3_DIFF_FILL=#f4f6fb
 ```
 
-### 4. Deploy with Docker Compose
+## 🐳 Docker Options
+
+### **Docker Compose (Recommended)**
+
+The easiest way to deploy with Docker:
 
 ```bash
-# Build and start the application
+# Start the application
 docker-compose up -d
 
 # View logs
@@ -49,84 +101,27 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### 4. Access the Application
+### **Direct Docker Run**
 
-- **Web Demo**: http://localhost:9527/demo
-- **API Documentation**: http://localhost:9527
-
-## 🔧 Configuration Options
-
-### Qwen API Configuration (Required)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `QWEN_API_KEY` | - | Your Qwen API key from DashScope |
-| `QWEN_API_URL` | `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions` | Qwen API endpoint |
-| `QWEN_MODEL` | `qwen-plus` | Qwen model to use |
-| `QWEN_TEMPERATURE` | `0.7` | Temperature for LLM responses (0.0-1.0) |
-| `QWEN_MAX_TOKENS` | `1000` | Maximum tokens for responses |
-
-### Flask Application Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Host to bind to |
-| `PORT` | `9527` | Port to run on |
-| `DEBUG` | `False` | Debug mode (set to `True` for development) |
-
-### Graph Language Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GRAPH_LANGUAGE` | `zh` | Default language for graphs (`zh` or `en`) |
-
-### Watermark Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `WATERMARK_TEXT` | `MindSpring` | Watermark text on images |
-| `WATERMARK_OPACITY` | `80` | Watermark opacity (0-255) |
-| `WATERMARK_FONT_SCALE` | `40` | Font scale for watermark |
-| `WATERMARK_BG_OPACITY` | `30` | Background opacity (0-255) |
-
-### Export Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `EXPORT_DIR` | `d3js_dify_exports` | Directory for exported images |
-| `EXPORT_CLEANUP_HOURS` | `24` | Hours to keep exported files |
-
-## 🐳 Docker Deployment Options
-
-### Option 1: Docker Compose (Recommended)
-
-```bash
-# Start with default settings
-docker-compose up -d
-
-# Start with custom environment file
-docker-compose --env-file .env.production up -d
-```
-
-### Option 2: Docker Run
+For more control over the deployment:
 
 ```bash
 # Build the image
-docker build -t d3js-dify .
+docker build -t mindgraph .
 
 # Run with environment variables
 docker run -d \
-  --name d3js-dify \
+  --name mindgraph \
   -p 9527:9527 \
   -e QWEN_API_KEY=your_api_key \
   -e GRAPH_LANGUAGE=en \
-  -v $(pwd)/d3js_dify_exports:/app/d3js_dify_exports \
-  d3js-dify
+  -v $(pwd)/mindgraph_exports:/app/mindgraph_exports \
+  mindgraph
 ```
 
-### Option 3: Production Deployment
+### **Production Docker Setup**
 
-For production, create a `.env.production` file:
+For production environments, create a `.env.production` file:
 
 ```bash
 # Production settings
@@ -147,26 +142,35 @@ docker-compose --env-file .env.production up -d
 
 ## 🔍 Monitoring
 
-The application includes basic monitoring:
+### **Health Checks**
+
+Check application status:
+```bash
+curl http://localhost:9527/status
+```
+
+Expected response:
+```json
+{
+  "status": "running",
+  "uptime_seconds": 45.2,
+  "memory_percent": 12.3,
+  "timestamp": 1640995200.0
+}
+```
+
+### **Docker Monitoring**
 
 ```bash
-# View Docker status
+# View container status
 docker-compose ps
 
 # View logs
-docker-compose logs -f d3js-dify
+docker-compose logs -f mindgraph
+
+# Monitor resources
+docker stats mindgraph
 ```
-
-## 📁 Volume Mounts
-
-The application mounts the export directory to persist generated images:
-
-```yaml
-volumes:
-  - ./d3js_dify_exports:/app/d3js_dify_exports
-```
-
-This ensures generated images persist between container restarts.
 
 ## 🔒 Security Considerations
 
@@ -179,7 +183,7 @@ Example production docker-compose with security:
 ```yaml
 version: '3.8'
 services:
-  d3js-dify:
+  mindgraph:
     build: .
     ports:
       - "127.0.0.1:9527:9527"  # Only bind to localhost
@@ -187,7 +191,7 @@ services:
       - QWEN_API_KEY=${QWEN_API_KEY}
       - DEBUG=False
     volumes:
-      - ./d3js_dify_exports:/app/d3js_dify_exports:ro
+      - ./mindgraph_exports:/app/mindgraph_exports:ro
     restart: unless-stopped
     deploy:
       resources:
@@ -198,7 +202,7 @@ services:
 
 ## 🚨 Troubleshooting
 
-### Common Issues
+### **Common Issues**
 
 1. **Qwen API Key Not Set**
    ```
@@ -214,15 +218,15 @@ services:
 
 3. **Permission Denied**
    ```
-   Permission denied: ./d3js_dify_exports
+   Permission denied: ./mindgraph_exports
    ```
    Solution: Create directory with proper permissions:
    ```bash
-   mkdir -p d3js_dify_exports
-   chmod 755 d3js_dify_exports
+   mkdir -p mindgraph_exports
+   chmod 755 mindgraph_exports
    ```
 
-### Debug Mode
+### **Debug Mode**
 
 Enable debug mode for troubleshooting:
 
@@ -239,20 +243,20 @@ docker-compose restart
 Once deployed, you can use the API:
 
 ```bash
-# Generate a double bubble map
-curl -X POST http://localhost:9527/agent_double_bubble \
+# Generate a graph
+curl -X POST http://localhost:9527/generate_graph \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Compare cats and dogs", "language": "en"}'
 
-# Convert markdown to image
-curl -X POST http://localhost:9527/convert \
+# Generate PNG image
+curl -X POST http://localhost:9527/generate_png \
   -H "Content-Type: application/json" \
-  -d '{"markdown": "```json\n{\"type\": \"force\", \"nodes\": [{\"id\": \"A\", \"name\": \"Test\"}, {\"id\": \"B\", \"name\": \"Success\"}], \"links\": [{\"source\": \"A\", \"target\": \"B\"}]}\n```"}'
+  -d '{"prompt": "Compare cats and dogs", "language": "en"}'
 ```
 
 ## 🔄 Updates and Maintenance
 
-To update the application:
+### **Updating the Application**
 
 ```bash
 # Pull latest changes
@@ -264,10 +268,15 @@ docker-compose build --no-cache
 docker-compose up -d
 ```
 
-To clean up old exports:
+### **Cleaning Up**
+
+The application automatically cleans up old export files. You can also manually clean up:
 
 ```bash
-# The application automatically cleans up old files
-# You can also manually clean up:
-docker-compose exec d3js-dify find /app/d3js_dify_exports -mtime +1 -delete
-``` 
+# Clean old exports
+docker-compose exec mindgraph find /app/mindgraph_exports -mtime +1 -delete
+```
+
+---
+
+**Made with ❤️ by the MindSpring Team** 

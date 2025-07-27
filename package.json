@@ -1,7 +1,7 @@
 {
-  "name": "d3-dify",
-  "version": "2.3.0",
-  "description": "AI-Powered Data Visualization Generator using D3.js and LangChain",
+  "name": "mindgraph",
+  "version": "2.3.1",
+  "description": "AI-Powered Data Visualization Generator using D3.js",
   "author": "MindSpring Team",
   "license": "MIT",
   "dependencies": {

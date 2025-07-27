@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-D3.js_Dify Dependency Checker
+MindGraph Dependency Checker
 
 This script checks if all required dependencies are installed:
 - Python packages from requirements.txt
@@ -214,7 +214,7 @@ def print_setup_instructions():
     """Print setup instructions for missing dependencies."""
     logger.info("""
 ================================================================================
-🚀 D3.js_Dify Setup Instructions
+🚀 MindGraph Setup Instructions
 
 If you are seeing this message, you may be missing required dependencies.
 
@@ -242,9 +242,9 @@ If you are seeing this message, you may be missing required dependencies.
 
 1. Install Docker: https://www.docker.com/products/docker-desktop
 2. Build the Docker image:
-   docker build -t d3js-dify .
+   docker build -t mindgraph .
 3. Run the Docker container:
-   docker run -p 9527:9527 d3js-dify
+   docker run -p 9527:9527 mindgraph
 4. Open your browser and visit: http://localhost:9527
 
 📋 Manual Dependency Check
@@ -450,7 +450,7 @@ def prompt_user_installation():
 
 def main():
     """Main function to run all dependency checks."""
-    logger.info("🔍 D3.js_Dify Dependency Checker")
+    logger.info("🔍 MindGraph Dependency Checker")
     
     # Check Python packages
     python_ok = check_python_packages(verbose=True)

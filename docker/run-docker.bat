@@ -1,8 +1,8 @@
 @echo off
-REM D3.js_Dify Docker Runner Script for Windows
-REM This script helps you run the D3.js_Dify application using Docker
+REM MindGraph Docker Runner Script for Windows
+REM This script helps you run the MindGraph application using Docker
 
-echo 🚀 D3.js_Dify Docker Setup
+echo 🚀 MindGraph Docker Setup
 echo ==========================
 
 REM Check if .env file exists
@@ -38,13 +38,13 @@ if errorlevel 1 (
 )
 
 REM Create necessary directories
-if not exist d3js_dify_exports mkdir d3js_dify_exports
+if not exist mindgraph_exports mkdir mindgraph_exports
 if not exist logs mkdir logs
 
 echo 🔧 Building Docker image...
 docker-compose build
 
-echo 🚀 Starting D3.js_Dify application...
+echo 🚀 Starting MindGraph application...
 docker-compose up -d
 
 echo ⏳ Waiting for application to start...

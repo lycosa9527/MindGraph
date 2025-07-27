@@ -1,6 +1,6 @@
 # Docker Configuration
 
-This folder contains all Docker-related files for the D3.js Dify project.
+This folder contains all Docker-related files for the MindGraph project.
 
 ## 📁 Files Overview
 
@@ -16,7 +16,7 @@ The main Docker image definition that:
 
 ### **docker-compose.yml**
 Docker Compose configuration for easy deployment:
-- Defines the D3.js Dify service
+- Defines the MindGraph service
 - Maps port 9527 to host
 - Mounts environment variables
 - Sets up volume for logs

@@ -1,5 +1,5 @@
 """
-DeepSeek Agent Module for D3.js_Dify - Development Phase Tool
+DeepSeek Agent Module for MindGraph - Development Phase Tool
 
 This module contains the DeepSeek LLM functionality for generating enhanced prompts
 during the development phase. DeepSeek is used by developers to create better prompts
@@ -693,13 +693,16 @@ def classify_diagram_type_for_development(user_prompt: str, language: str = 'en'
 - 比较/对比 (compare/contrast): 使用 double_bubble_map
 - 类比 (analogy): 使用 bridge_map
 
-示例：
-用户需求：比较猫和狗 → 输出：double_bubble_map
-用户需求：类比：手之于人，如同轮子之于车 → 输出：bridge_map
-用户需求：用桥形图类比光合作用和呼吸作用 → 输出：bridge_map
-用户需求：描述太阳系的特征 → 输出：bubble_map
-用户需求：展示水循环过程 → 输出：flow_map
-用户需求：分析全球变暖的原因和影响 → 输出：multi_flow_map
+        示例：
+        用户需求：比较猫和狗 → 输出：double_bubble_map
+        用户需求：生成一幅关于风电和水电的双气泡图 → 输出：double_bubble_map
+        用户需求：制作双气泡图比较城市和乡村 → 输出：double_bubble_map
+        用户需求：双气泡图：比较传统能源和可再生能源 → 输出：double_bubble_map
+        用户需求：类比：手之于人，如同轮子之于车 → 输出：bridge_map
+        用户需求：用桥形图类比光合作用和呼吸作用 → 输出：bridge_map
+        用户需求：描述太阳系的特征 → 输出：bubble_map
+        用户需求：展示水循环过程 → 输出：flow_map
+        用户需求：分析全球变暖的原因和影响 → 输出：multi_flow_map
 
 用户需求：{{user_prompt}}
 你的输出：
@@ -722,6 +725,9 @@ Important distinction:
 
 Examples:
 User request: Compare cats and dogs → Output: double_bubble_map
+User request: Generate a double bubble map about wind power and hydropower → Output: double_bubble_map
+User request: Create double bubble map comparing cities and rural areas → Output: double_bubble_map
+User request: Double bubble map: compare traditional and renewable energy → Output: double_bubble_map
 User request: Analogy: hand is to person as wheel is to car → Output: bridge_map
 User request: Use bridge map to analogize photosynthesis and respiration → Output: bridge_map
 User request: Describe characteristics of solar system → Output: bubble_map
@@ -740,17 +746,61 @@ Your output:
     try:
         result = (prompt | llm).invoke({"user_prompt": user_prompt}).strip().lower()
         
-        # Extract the diagram type from the response
+        # Enhanced LLM response parsing
+        logger.info(f"DeepSeek classification response: '{result}'")
+        
+        # First, try exact match with available types
         for diagram_type in available_types:
-            if diagram_type in result:
+            if diagram_type == result:
+                logger.info(f"DeepSeek classified as: {diagram_type}")
                 return diagram_type
         
-        # Fallback to default types based on keywords
+        # If no exact match, try to extract from common variations
+        result_clean = result.replace(" ", "_").replace("-", "_")
+        for diagram_type in available_types:
+            if diagram_type == result_clean:
+                logger.info(f"DeepSeek classified as (cleaned): {diagram_type}")
+                return diagram_type
+        
+        # If still no match, try to infer from the response content
+        if "double" in result and "bubble" in result:
+            logger.info("DeepSeek response suggests double_bubble_map")
+            return "double_bubble_map"
+        elif "bubble" in result:
+            logger.info("DeepSeek response suggests bubble_map")
+            return "bubble_map"
+        elif "bridge" in result:
+            logger.info("DeepSeek response suggests bridge_map")
+            return "bridge_map"
+        elif "circle" in result:
+            logger.info("DeepSeek response suggests circle_map")
+            return "circle_map"
+        elif "flow" in result:
+            logger.info("DeepSeek response suggests flow_map")
+            return "flow_map"
+        elif "tree" in result:
+            logger.info("DeepSeek response suggests tree_map")
+            return "tree_map"
+        elif "multi" in result and "flow" in result:
+            logger.info("DeepSeek response suggests multi_flow_map")
+            return "multi_flow_map"
+        elif "brace" in result:
+            logger.info("DeepSeek response suggests brace_map")
+            return "brace_map"
+        elif "concept" in result:
+            logger.info("DeepSeek response suggests concept_map")
+            return "concept_map"
+        elif "mind" in result:
+            logger.info("DeepSeek response suggests mindmap")
+            return "mindmap"
+        
+        # Only if LLM completely fails, use fallback logic
+        logger.warning(f"DeepSeek classification failed to match any type, using fallback logic")
         if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
             return "bridge_map"
-        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较", "双气泡图", "双泡图"]):
             return "double_bubble_map"
-        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
+        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述", "气泡图", "单气泡图"]):
             return "bubble_map"
         elif any(word in user_prompt.lower() for word in ["process", "steps", "流程", "步骤"]):
             return "flow_map"
@@ -761,12 +811,13 @@ Your output:
             
     except Exception as e:
         logger.error(f"DeepSeek classification failed: {e}")
-        # Fallback classification
+        logger.info("Using fallback classification due to DeepSeek error")
+        # Fallback classification - only used when LLM completely fails
         if any(word in user_prompt.lower() for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
             return "bridge_map"
-        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较"]):
+        elif any(word in user_prompt.lower() for word in ["compare", "vs", "difference", "对比", "比较", "双气泡图", "双泡图"]):
             return "double_bubble_map"
-        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述"]):
+        elif any(word in user_prompt.lower() for word in ["describe", "characteristics", "特征", "描述", "气泡图", "单气泡图"]):
             return "bubble_map"
         else:
             return "bubble_map"

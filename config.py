@@ -1,10 +1,10 @@
 """
-D3.js_Dify Configuration Module
+MindGraph Configuration Module
 ==============================
 
-Version: 2.3.0
+Version: 2.3.1
 
-This module provides centralized configuration management for the D3.js_Dify application.
+This module provides centralized configuration management for the MindGraph application.
 It handles environment variable loading, validation, and provides a clean interface
 for accessing configuration values throughout the application.
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class Config:
     """
-    Centralized configuration management for D3.js_Dify application.
+    Centralized configuration management for MindGraph application.
     Now with caching and validation to prevent race conditions and ensure consistent values.
     """
     def __init__(self):
@@ -180,7 +180,7 @@ class Config:
     @property
     def WATERMARK_TEXT(self):
         """Watermark text displayed on generated graphs."""
-        return self._get_cached_value('WATERMARK_TEXT', 'MindSpring')
+        return self._get_cached_value('WATERMARK_TEXT', 'MindGraph')
     
     # ============================================================================
     # D3.js VISUALIZATION CONFIGURATION
