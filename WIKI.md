@@ -4,15 +4,16 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
 [![WakaTime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/MindGraph.svg)](https://wakatime.com/@60ba0518-3829-457f-ae10-3eff184d5f69/projects/MindGraph)
 
 ## 🎯 What is MindGraph?
 
-**MindGraph** is an intelligent data visualization platform that automatically generates interactive charts and graphs from natural language descriptions. Powered by AI and D3.js, it transforms your ideas into beautiful, interactive visualizations in seconds.
+**MindGraph** is an intelligent data visualization API and plugin solution designed specifically for workflow platforms like Dify, Coze, Zapier, and other automation tools. It automatically generates interactive charts and graphs from natural language descriptions, making it easy to add visual content to your AI workflows and chatbots. Powered by AI and D3.js, it transforms text prompts into beautiful, interactive visualizations that can be seamlessly integrated into your applications.
 
 ### ✨ Key Features
 
+- **🔌 API-First Design**: Built as a RESTful API for easy integration with workflow platforms
 - **🤖 AI-Powered**: Uses AI to understand your requests and generate appropriate chart types
 - **🧠 Educational Focus**: Specializes in Thinking Maps® and educational diagram generation
 - **📊 Multiple Chart Types**: Supports Thinking Maps® (Bubble Maps, Circle Maps, Double Bubble Maps, Bridge Maps), concept maps, mind maps, and traditional charts
@@ -21,6 +22,7 @@
 - **📱 Export Options**: Export charts as PNG images or interactive HTML
 - **🌍 Multi-language**: Supports both English and Chinese
 - **⚡ Real-time**: Instant chart generation with live preview
+- **🔗 Workflow Integration**: Optimized for Dify, Coze, Zapier, Make, and other automation platforms
 
 ### 🆕 What's New in Version 2.3.1
 
@@ -63,6 +65,141 @@
 5. **Open your browser**
    Navigate to `http://localhost:9527/debug` to access the web interface.
 
+## 🛠️ Using the Debug Interface
+
+The debug interface is your primary tool for testing and exploring MindGraph's capabilities before integrating it into your workflow platforms. Here's how to use it effectively:
+
+### 📍 Accessing the Debug Interface
+
+After launching the application, visit: `http://localhost:9527/debug`
+
+### 🎯 Step-by-Step Example
+
+Let's walk through a complete example of generating a diagram:
+
+#### Step 1: Enter Your Prompt
+In the debug interface, you'll see a text input field. Try this example:
+```
+Compare traditional education and online learning
+```
+
+#### Step 2: Select Language
+Choose your preferred language (English or Chinese) from the dropdown.
+
+#### Step 3: Generate the Diagram
+Click the "Generate" button. The system will:
+- Analyze your prompt using AI
+- Determine the best chart type (likely a Double Bubble Map for comparison)
+- Generate the interactive visualization
+
+#### Step 4: View the Results
+You'll see:
+- **Interactive Diagram**: A fully interactive D3.js visualization
+- **Chart Type**: The AI-selected visualization type
+- **Generated Data**: The structured data used to create the diagram
+
+#### Step 5: Export Options
+- **Download PNG**: Click to save a high-resolution image
+- **View JSON**: See the raw data structure
+- **Regenerate**: Try different variations
+
+### 🎨 Example Prompts to Try
+
+Here are some tested prompts that work well with MindGraph:
+
+#### Educational Comparisons
+```
+Compare cats and dogs
+```
+*Result: Double Bubble Map showing similarities and differences*
+
+```
+Compare traditional and modern education methods
+```
+*Result: Double Bubble Map with detailed educational comparisons*
+
+#### Concept Definitions
+```
+Define artificial intelligence
+```
+*Result: Bubble Map with AI characteristics and applications*
+
+```
+Explain the concept of climate change
+```
+*Result: Circle Map with central topic and surrounding context*
+
+#### Process and Relationships
+```
+Show the relationship between cause and effect
+```
+*Result: Bridge Map showing analogical relationships*
+
+```
+Create a mind map about renewable energy
+```
+*Result: Network Graph showing interconnected concepts*
+
+#### Business and Data
+```
+Show quarterly sales performance trends
+```
+*Result: Line Chart with time-series data*
+
+```
+Compare features of different software platforms
+```
+*Result: Bar Chart comparing platform capabilities*
+
+### 🔍 Understanding the Output
+
+#### Interactive Features
+- **Hover Effects**: Move your mouse over elements to see details
+- **Zoom**: Use mouse wheel or pinch gestures to zoom in/out
+- **Pan**: Click and drag to move around the diagram
+- **Tooltips**: Detailed information appears on hover
+
+#### Chart Types Explained
+- **Double Bubble Map**: Perfect for comparing two concepts
+- **Bubble Map**: Great for describing characteristics of a single topic
+- **Circle Map**: Ideal for defining topics in context
+- **Bridge Map**: Excellent for showing analogies and relationships
+- **Network Graph**: Best for complex interconnected concepts
+
+### 📸 PNG Export Feature
+
+The debug interface includes a powerful PNG export feature:
+
+1. **Generate your diagram** using any prompt
+2. **Click "Download PNG"** button
+3. **High-resolution image** is automatically downloaded
+4. **Perfect for**: Presentations, documents, social media, embedding in workflow platforms, or API responses
+
+#### PNG Export Example
+```
+Prompt: "Compare traditional and online education"
+↓
+Interactive Double Bubble Map
+↓
+Click "Download PNG"
+↓
+High-resolution image saved to your computer
+```
+
+### 🔧 Debug Interface Tips
+
+#### For Best Results:
+- **Be Specific**: "Compare cats and dogs" works better than "animals"
+- **Use Clear Language**: Simple, direct descriptions work best
+- **Try Variations**: If one prompt doesn't work, try rephrasing
+- **Check Language**: Ensure you've selected the correct language
+
+#### Troubleshooting:
+- **No Response**: Check if the application is running on the correct port
+- **Slow Generation**: Complex prompts may take a few seconds
+- **Wrong Chart Type**: Try rephrasing your prompt to be more specific
+- **Export Issues**: Ensure your browser allows downloads
+
 ## 🎨 How It Works
 
 ### 1. Natural Language Input
@@ -86,10 +223,11 @@ D3.js creates an interactive visualization with:
 - Interactive tooltips
 - Zoom and pan capabilities
 
-### 4. Export & Share
-Export your charts as:
-- Interactive HTML files
-- High-resolution PNG images
+### 4. API Response & Integration
+The system returns:
+- **JSON specification** for interactive visualizations (via `/generate_graph`)
+- **PNG image data** for immediate use in workflows (via `/generate_png`)
+- **Ready for integration** with Dify, Coze, Zapier, and other platforms
 
 ## 📊 Supported Chart Types
 
@@ -115,17 +253,9 @@ Export your charts as:
 | **Tree Map** | Nested rectangles | Hierarchical data |
 | **Network Graph** | Connected nodes | Relationships and connections |
 
-## 🎨 Example Prompts
-
-Try these prompts to get started:
-
-- "Compare cats and dogs"
-- "Define artificial intelligence"
-- "Show the relationship between cause and effect"
-- "Create a mind map about climate change"
-- "Compare traditional and modern education"
-
 ## 🔧 API Usage
+
+MindGraph is designed as a RESTful API for seamless integration with workflow platforms. Here are the core endpoints:
 
 ### Generate Chart from Text
 
@@ -148,6 +278,32 @@ curl -X POST http://localhost:9527/generate_png \
     "language": "en"
   }'
 ```
+
+## 🔌 Workflow Platform Integration
+
+### 🤖 Dify Integration
+Add visual diagram generation to your AI workflows and chatbots:
+- Use the `/generate_graph` endpoint to create interactive visualizations
+- Use the `/generate_png` endpoint for static images in chat responses
+- Perfect for educational content, business analysis, and concept explanations
+
+### ⚡ Coze Integration
+Enhance your bot responses with dynamic visual content:
+- Generate diagrams based on user queries
+- Export PNG images for immediate sharing
+- Support for both English and Chinese prompts
+
+### 🔗 Zapier Integration
+Automate diagram creation in your business processes:
+- Connect to your existing workflows
+- Generate visual content automatically
+- Export images for reports and presentations
+
+### 🔄 Make Integration
+Integrate visual generation into your automation scenarios:
+- Create diagrams as part of your workflow
+- Use generated images in subsequent steps
+- Perfect for content creation automation
 
 ## 🐳 Docker Deployment
 
@@ -196,9 +352,31 @@ A: This is normal for complex charts. Consider using the async API for better pe
 **Q: Export not working?**
 A: Verify that the export directory has write permissions
 
+**Q: Debug interface not loading?**
+A: Make sure you're accessing `http://localhost:9527/debug` (not just the root URL)
+
+**Q: PNG export fails?**
+A: Check browser download settings and ensure the application has proper permissions
+
+**Q: Integration with workflow platforms not working?**
+A: Ensure your MindGraph instance is accessible via HTTPS for production deployments, and check CORS settings if needed
+
+**Q: API responses too slow for real-time workflows?**
+A: Consider using the PNG endpoint for faster responses, or implement caching for frequently requested diagrams
+
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3) - see the [LICENSE](LICENSE) file for details.
+
+### 🔒 AGPLv3 Key Requirements
+
+The AGPLv3 license includes additional requirements beyond the standard GPLv3:
+
+- **Network Use**: If you run a modified version of this software on a server and let other users communicate with it there, your server must also allow them to download the source code corresponding to the modified version running there.
+- **Source Code Availability**: Users interacting with the software over a network must be able to receive the source code.
+- **Copyleft**: Any derivative works must also be licensed under AGPLv3.
+
+This ensures that improvements to MindGraph remain open source and available to the community, especially when used in network services.
 
 ## 🙏 Acknowledgments
 
