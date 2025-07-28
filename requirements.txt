@@ -1,5 +1,5 @@
 # MindGraph - AI-Powered Graph Generation Application
-# Version: 2.1.0
+# Version: 2.3.4
 # Requirements for Python 3.8+
 # 
 # Core Features:

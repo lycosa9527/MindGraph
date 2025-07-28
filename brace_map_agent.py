@@ -13,6 +13,29 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any, Union
 from enum import Enum
 
+# Configuration constants
+BRACE_SPACING_CONFIG = {
+    'main_brace_from_topic': 20,
+    'main_brace_to_parts': 20,
+    'part_brace_from_part': 15,
+    'part_brace_to_subparts': 15,
+    'topic_left_offset': 200,
+    'minimum_brace_height': 20,
+    'minimum_spacing': 10
+}
+
+FONT_WEIGHT_CONFIG = {
+    'topic': 'bold',
+    'part': 'bold',
+    'subpart': 'normal'
+}
+
+CHAR_WIDTH_CONFIG = {
+    'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
+    'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
+    'default': 0.6
+}
+
 # Import required components
 from config import Config
 
@@ -114,6 +137,46 @@ class SpacingInfo:
     subpart_spacing: float
     brace_offset: float
     content_density: float
+
+
+@dataclass
+class BraceParameters:
+    """Parameters for brace creation"""
+    start_x: float
+    start_y: float
+    end_x: float
+    end_y: float
+    height: float
+    is_main_brace: bool = True
+    stroke_width: Optional[int] = None
+    stroke_color: Optional[str] = None
+
+
+@dataclass
+class Block:
+    """Represents a block in the block-based positioning system"""
+    id: str
+    x: float
+    y: float
+    width: float
+    height: float
+    text: str
+    node_type: str  # 'topic', 'part', 'subpart'
+    part_index: Optional[int] = None
+    subpart_index: Optional[int] = None
+    parent_block_id: Optional[str] = None  # For subparts belonging to parts
+
+
+@dataclass
+class BlockUnit:
+    """Represents a unit of blocks (part + its subparts)"""
+    unit_id: str
+    part_block: Block
+    subpart_blocks: List[Block]
+    x: float
+    y: float
+    width: float
+    height: float
 
 
 class ContextManager:
@@ -296,6 +359,233 @@ class ContextAwareAlgorithmSelector:
         """Select the appropriate layout algorithm"""
         # With the new flexible algorithm, we always use FLEXIBLE_DYNAMIC
         return LayoutAlgorithm.FLEXIBLE_DYNAMIC
+
+
+class BlockBasedPositioningSystem:
+    """Block-based positioning system that arranges nodes like LEGO pieces"""
+    
+    def __init__(self, debugger: DiagramDebugger):
+        self.debugger = debugger
+    
+    def arrange_blocks(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[BlockUnit]:
+        """Arrange blocks using LEGO-like positioning"""
+        # Step 1: Create blocks from specification
+        blocks = self._create_blocks_from_spec(spec, theme)
+        
+        # Step 2: Group blocks into units
+        units = self._group_blocks_into_units(blocks)
+        
+        # Step 3: Calculate optimal spacing and padding
+        spacing_config = self._calculate_spacing_config(spec, dimensions, theme)
+        
+        # Step 4: Position blocks using block-based algorithm
+        positioned_units = self._position_blocks(units, spacing_config, dimensions)
+        
+        return positioned_units
+    
+    def _create_blocks_from_spec(self, spec: Dict, theme: Dict) -> List[Block]:
+        """Create blocks from specification with standard heights for each block type"""
+        blocks = []
+        
+        # Define standard block heights (only width varies based on text)
+        topic_height = theme['fontTopic'] + 20
+        part_height = theme['fontPart'] + 20
+        subpart_height = theme['fontSubpart'] + 20
+        
+        # Create topic block
+        topic = spec.get('topic', 'Main Topic')
+        topic_width = self._calculate_text_width(topic, theme['fontTopic'])
+        
+        topic_block = Block(
+            id='topic',
+            x=0, y=0,  # Will be positioned later
+            width=topic_width,
+            height=topic_height,  # Standard height for all topic blocks
+            text=topic,
+            node_type='topic'
+        )
+        blocks.append(topic_block)
+        
+        # Create part and subpart blocks
+        for i, part in enumerate(spec.get('parts', [])):
+            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
+            
+            part_block = Block(
+                id=f'part_{i}',
+                x=0, y=0,  # Will be positioned later
+                width=part_width,
+                height=part_height,  # Standard height for all part blocks
+                text=part['name'],
+                node_type='part',
+                part_index=i
+            )
+            blocks.append(part_block)
+            
+            # Create subpart blocks
+            for j, subpart in enumerate(part.get('subparts', [])):
+                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
+                
+                subpart_block = Block(
+                    id=f'subpart_{i}_{j}',
+                    x=0, y=0,  # Will be positioned later
+                    width=subpart_width,
+                    height=subpart_height,  # Standard height for all subpart blocks
+                    text=subpart['name'],
+                    node_type='subpart',
+                    part_index=i,
+                    subpart_index=j,
+                    parent_block_id=f'part_{i}'
+                )
+                blocks.append(subpart_block)
+        
+        return blocks
+    
+    def _group_blocks_into_units(self, blocks: List[Block]) -> List[BlockUnit]:
+        """Group blocks into units (part + subparts)"""
+        units = []
+        
+        # Find all part blocks
+        part_blocks = [block for block in blocks if block.node_type == 'part']
+        
+        for part_block in part_blocks:
+            # Find subpart blocks belonging to this part
+            subpart_blocks = [block for block in blocks 
+                            if block.node_type == 'subpart' and 
+                            block.parent_block_id == part_block.id]
+            
+            unit = BlockUnit(
+                unit_id=part_block.id,
+                part_block=part_block,
+                subpart_blocks=subpart_blocks,
+                x=0, y=0, width=0, height=0  # Will be calculated later
+            )
+            units.append(unit)
+        
+        return units
+    
+    def _calculate_spacing_config(self, spec: Dict, dimensions: Dict, theme: Dict) -> Dict:
+        """Calculate dynamic spacing configuration based on content"""
+        parts = spec.get('parts', [])
+        total_parts = len(parts)
+        total_subparts = sum(len(part.get('subparts', [])) for part in parts)
+        
+        # Calculate complexity score
+        complexity_score = total_parts * 2 + total_subparts * 1.5
+        
+        # Dynamic spacing based on complexity (reduced values to prevent excessive Y coordinates)
+        if complexity_score > 50:
+            block_spacing = 20.0  # Reduced from 40.0
+            unit_spacing = 30.0   # Reduced from 60.0
+            brace_padding = 40.0  # Reduced from 80.0
+        elif complexity_score > 25:
+            block_spacing = 15.0  # Reduced from 30.0
+            unit_spacing = 25.0   # Reduced from 45.0
+            brace_padding = 30.0  # Reduced from 60.0
+        else:
+            block_spacing = 12.0  # Reduced from 25.0
+            unit_spacing = 20.0   # Reduced from 35.0
+            brace_padding = 25.0  # Reduced from 50.0
+        
+        # Calculate available space
+        available_width = dimensions['width'] - 2 * dimensions['padding']
+        available_height = dimensions['height'] - 2 * dimensions['padding']
+        
+        return {
+            'block_spacing': block_spacing,
+            'unit_spacing': unit_spacing,
+            'brace_padding': brace_padding,
+            'available_width': available_width,
+            'available_height': available_height,
+            'complexity_score': complexity_score
+        }
+    
+    def _position_blocks(self, units: List[BlockUnit], spacing_config: Dict, dimensions: Dict) -> List[BlockUnit]:
+        """Position blocks using fixed column layout to prevent horizontal crashes"""
+        if not units:
+            return units
+        
+        # Step 1: Calculate unit dimensions
+        for unit in units:
+            self._calculate_unit_dimensions(unit, spacing_config)
+        
+        # Step 2: Define fixed column layout (like in the image)
+        canvas_width = dimensions['width']
+        padding = dimensions['padding']
+        
+        # Calculate column positions based on canvas width
+        # Column 1: Topic (left column)
+        topic_column_x = padding + 50
+        
+        # Column 2: Parts (middle column) 
+        part_column_x = canvas_width * 0.4  # 40% from left
+        
+        # Column 3: Subparts (right column)
+        subpart_column_x = canvas_width * 0.7  # 70% from left
+        
+        # Step 3: Position units vertically with proper column separation
+        current_y = dimensions['padding']
+        
+        for i, unit in enumerate(units):
+            # Position unit at current_y
+            unit.y = current_y
+            
+            # Position part block in middle column (Column 2)
+            unit.part_block.x = part_column_x
+            unit.part_block.y = unit.y + (unit.height - unit.part_block.height) / 2  # Center vertically in unit
+            
+            # Position subpart blocks in right column (Column 3)
+            if unit.subpart_blocks:
+                # Calculate total subpart height for centering
+                total_subpart_height = len(unit.subpart_blocks) * unit.subpart_blocks[0].height
+                total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config['block_spacing']
+                total_height = total_subpart_height + total_spacing
+                
+                # Start position to center subparts within unit
+                start_y = unit.y + (unit.height - total_height) / 2
+                
+                for j, subpart_block in enumerate(unit.subpart_blocks):
+                    subpart_block.x = subpart_column_x
+                    subpart_block.y = start_y + j * (subpart_block.height + spacing_config['block_spacing'])
+            
+            # Update current_y for next unit
+            current_y = unit.y + unit.height + spacing_config['unit_spacing']
+        
+        return units
+    
+    def _calculate_unit_dimensions(self, unit: BlockUnit, spacing_config: Dict):
+        """Calculate unit dimensions based on its blocks with standard heights"""
+        if not unit.subpart_blocks:
+            # Unit with only part block
+            unit.width = unit.part_block.width + spacing_config['brace_padding']
+            unit.height = unit.part_block.height  # Standard part height
+        else:
+            # Unit with part and subpart blocks
+            # Calculate width: part width + spacing + max subpart width
+            max_subpart_width = max(block.width for block in unit.subpart_blocks)
+            unit.width = (unit.part_block.width + spacing_config['block_spacing'] + 
+                         max_subpart_width + spacing_config['brace_padding'])
+            
+            # Calculate height: total height of all subpart blocks + spacing
+            # All subpart blocks have the same height, so just multiply by count
+            subpart_height = unit.subpart_blocks[0].height  # Standard subpart height
+            total_subpart_height = len(unit.subpart_blocks) * subpart_height
+            total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config['block_spacing']
+            unit.height = max(unit.part_block.height, total_subpart_height + total_spacing)
+    
+    def _calculate_text_width(self, text: str, font_size: int) -> float:
+        """Calculate text width based on font size and character count"""
+        char_widths = {
+            'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
+            'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
+            'default': 0.6
+        }
+        
+        total_width = 0
+        for char in text:
+            char_width = char_widths.get(char, char_widths['default'])
+            total_width += char_width * font_size
+        
+        return total_width
 
 
 class FlexibleLayoutCalculator:
@@ -735,24 +1025,36 @@ class FlexibleLayoutCalculator:
         )
     
     def _calculate_text_width(self, text: str, font_size: int) -> float:
-        """Calculate text width based on font size and character count"""
-        # Improved approximation with better character width estimation
-        char_widths = {
-            'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
-            'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
-            'default': 0.6
-        }
+        """Calculate text width based on font size and character count with caching"""
+        if not text or font_size <= 0:
+            return 0
+        
+        # Simple caching - could be enhanced with proper cache decorator
+        cache_key = f"{text}_{font_size}"
+        if hasattr(self, '_text_width_cache') and cache_key in self._text_width_cache:
+            return self._text_width_cache[cache_key]
         
         total_width = 0
         for char in text:
-            char_width = char_widths.get(char, char_widths['default'])
+            char_width = CHAR_WIDTH_CONFIG.get(char, CHAR_WIDTH_CONFIG['default'])
             total_width += char_width * font_size
         
+        # Initialize cache if not exists
+        if not hasattr(self, '_text_width_cache'):
+            self._text_width_cache = {}
+        
+        # Cache the result
+        self._text_width_cache[cache_key] = total_width
+        
         return total_width
+    
+    def _get_font_weight(self, node_type: str) -> str:
+        """Get font weight for node type using configuration"""
+        return FONT_WEIGHT_CONFIG.get(node_type, 'normal')
 
 
 class BraceMapAgent:
-    """Brace Map Agent with flexible dynamic layout"""
+    """Brace Map Agent with block-based positioning system"""
     
     def __init__(self):
         self.debugger = DiagramDebugger()
@@ -760,6 +1062,7 @@ class BraceMapAgent:
         self.llm_processor = LLMHybridProcessor()
         self.algorithm_selector = ContextAwareAlgorithmSelector(self.context_manager)
         self.layout_calculator = FlexibleLayoutCalculator(self.debugger)
+        self.block_positioning = BlockBasedPositioningSystem(self.debugger)
         
         # Initialize with default theme
         self.default_theme = {
@@ -774,12 +1077,12 @@ class BraceMapAgent:
         }
     
     def generate_diagram(self, spec: Dict, user_id: str = None) -> Dict:
-        """Generate brace map diagram using flexible dynamic layout"""
+        """Generate brace map diagram using block-based positioning with enhanced validation"""
         start_time = datetime.now()
-        self.debugger.log("Starting brace map generation")
+        self.debugger.log("Starting block-based brace map generation")
         
         try:
-            # Validate input spec
+            # Enhanced input validation
             if not spec or not isinstance(spec, dict):
                 return {
                     'success': False,
@@ -787,8 +1090,8 @@ class BraceMapAgent:
                     'debug_logs': self.debugger.get_logs()
                 }
             
-            # Validate required fields
-            if 'topic' not in spec:
+            # Validate required fields with defaults
+            if 'topic' not in spec or not spec['topic']:
                 spec['topic'] = 'Main Topic'
             
             if 'parts' not in spec or not isinstance(spec['parts'], list):
@@ -798,12 +1101,19 @@ class BraceMapAgent:
                     'debug_logs': self.debugger.get_logs()
                 }
             
-            # Validate parts structure
+            # Validate parts structure with enhanced error messages
             for i, part in enumerate(spec['parts']):
-                if not isinstance(part, dict) or 'name' not in part:
+                if not isinstance(part, dict):
                     return {
                         'success': False,
-                        'error': f'Invalid part at index {i}: missing "name" field',
+                        'error': f'Invalid part at index {i}: must be a dictionary',
+                        'debug_logs': self.debugger.get_logs()
+                    }
+                
+                if 'name' not in part or not part['name']:
+                    return {
+                        'success': False,
+                        'error': f'Invalid part at index {i}: missing or empty "name" field',
                         'debug_logs': self.debugger.get_logs()
                     }
                 
@@ -813,14 +1123,29 @@ class BraceMapAgent:
                 elif not isinstance(part['subparts'], list):
                     part['subparts'] = []
                 
-                # Validate subparts
+                # Validate subparts with enhanced error messages
                 for j, subpart in enumerate(part['subparts']):
-                    if not isinstance(subpart, dict) or 'name' not in subpart:
+                    if not isinstance(subpart, dict):
                         return {
                             'success': False,
-                            'error': f'Invalid subpart at part {i}, subpart {j}: missing "name" field',
+                            'error': f'Invalid subpart at part {i}, subpart {j}: must be a dictionary',
                             'debug_logs': self.debugger.get_logs()
                         }
+                    
+                    if 'name' not in subpart or not subpart['name']:
+                        return {
+                            'success': False,
+                            'error': f'Invalid subpart at part {i}, subpart {j}: missing or empty "name" field',
+                            'debug_logs': self.debugger.get_logs()
+                        }
+            
+            # Validate empty specification
+            if not spec['parts']:
+                return {
+                    'success': False,
+                    'error': 'Invalid specification: must have at least one part',
+                    'debug_logs': self.debugger.get_logs()
+                }
             
             # Store user context if user_id provided
             if user_id and 'prompt' in spec:
@@ -838,17 +1163,57 @@ class BraceMapAgent:
             
             self.debugger.log(f"Complexity: {complexity.value}, Strategy: {strategy.value}")
             
-            # Select layout algorithm (always flexible dynamic now)
+            # Select layout algorithm
             algorithm = self.algorithm_selector.select_algorithm(spec, user_id)
             
             # Calculate dimensions
             dimensions = self._calculate_dimensions(spec)
             
-            # Handle positioning with flexible algorithm
-            layout_result = self._handle_positioning(spec, dimensions, self.default_theme)
+            # Use block-based positioning system
+            self.debugger.log("Using block-based positioning system")
+            block_units = self.block_positioning.arrange_blocks(spec, dimensions, self.default_theme)
+            
+            # Convert block units to NodePosition format for compatibility
+            nodes, units = self._convert_blocks_to_nodes(block_units, spec, dimensions)
+            
+            # Validate that we have nodes
+            if not nodes:
+                return {
+                    'success': False,
+                    'error': 'Failed to generate nodes from specification',
+                    'debug_logs': self.debugger.get_logs()
+                }
+            
+            # Calculate optimal canvas dimensions
+            optimal_dimensions = self._calculate_optimal_dimensions(nodes, dimensions)
+            
+            # Adjust node positions to center them in the optimal canvas
+            nodes = self._adjust_node_positions_for_optimal_canvas(nodes, dimensions, optimal_dimensions)
+            
+            # Create layout data
+            layout_data = {
+                'units': self._serialize_units(units),
+                'spacing_info': self._serialize_spacing_info(SpacingInfo(
+                    unit_spacing=50.0,
+                    subpart_spacing=20.0,
+                    brace_offset=50.0,
+                    content_density=1.0
+                )),
+                'text_dimensions': self.layout_calculator.calculate_text_dimensions(spec, self.default_theme),
+                'canvas_dimensions': optimal_dimensions,
+                'nodes': self._serialize_nodes(nodes)
+            }
             
             # Generate SVG data
-            svg_data = self._generate_svg_data(layout_result, self.default_theme)
+            svg_data = self._generate_svg_data_from_layout(layout_data, self.default_theme)
+            
+            # Validate SVG data
+            if not svg_data or 'elements' not in svg_data:
+                return {
+                    'success': False,
+                    'error': 'Failed to generate SVG data',
+                    'debug_logs': self.debugger.get_logs()
+                }
             
             # Calculate performance metrics
             processing_time = (datetime.now() - start_time).total_seconds()
@@ -856,7 +1221,7 @@ class BraceMapAgent:
             result = {
                 'success': True,
                 'svg_data': svg_data,
-                'layout_data': layout_result.layout_data,
+                'layout_data': layout_data,
                 'algorithm_used': algorithm.value,
                 'complexity': complexity.value,
                 'strategy': strategy.value,
@@ -864,25 +1229,158 @@ class BraceMapAgent:
                 'debug_logs': self.debugger.get_logs()
             }
             
-            self.debugger.log(f"Generation completed in {processing_time:.3f}s")
+            self.debugger.log(f"Block-based generation completed in {processing_time:.3f}s")
             return result
             
         except Exception as e:
-            self.debugger.log(f"Error in diagram generation: {str(e)}")
+            self.debugger.log(f"Error in block-based diagram generation: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
                 'debug_logs': self.debugger.get_logs()
             }
     
+    def _convert_blocks_to_nodes(self, block_units: List[BlockUnit], spec: Dict, dimensions: Dict) -> Tuple[List[NodePosition], List[UnitPosition]]:
+        """Convert block units to NodePosition and UnitPosition format with fixed column layout"""
+        nodes = []
+        units = []
+        
+        # Create topic node with enhanced height to prevent squeezing
+        topic = spec.get('topic', 'Main Topic')
+        topic_width = self._calculate_text_width(topic, self.default_theme['fontTopic'])
+        
+        # Set topic height to be larger than standard blocks but not full canvas
+        # This prevents squeezing while maintaining proper positioning
+        topic_height = self.default_theme['fontTopic'] + 60  # Enhanced height for topic blocks
+        
+        # Position topic in left column (Column 1) - like in the image
+        canvas_width = dimensions['width']
+        padding = dimensions['padding']
+        
+        # Topic goes in left column (Column 1) - exactly at padding + 50
+        # Since text is centered within the block, we need to adjust for the block width
+        topic_x = padding + 50  # Same as topic_column_x in _position_blocks
+        
+        # Calculate topic Y position to be center-aligned with the group of parts
+        if block_units:
+            # Calculate the center of all part blocks
+            part_centers = []
+            for unit in block_units:
+                # Part blocks are centered vertically within their units
+                # Use the actual part block position: unit.y + (unit.height - part_block.height) / 2
+                part_center_y = unit.y + (unit.height - unit.part_block.height) / 2 + unit.part_block.height / 2
+                part_centers.append(part_center_y)
+            
+            # Find the center of all part centers
+            parts_center_y = sum(part_centers) / len(part_centers)
+            
+            # Position topic so its center aligns with the parts center
+            topic_y = parts_center_y - topic_height / 2
+        else:
+            # Fallback: center in canvas if no parts
+            topic_y = (dimensions['height'] - topic_height) / 2
+        
+        # Ensure topic doesn't extend beyond canvas bounds
+        if topic_x + topic_width > dimensions['width'] - dimensions['padding']:
+            topic_x = dimensions['width'] - dimensions['padding'] - topic_width
+        
+        topic_node = NodePosition(
+            x=topic_x, y=topic_y,
+            width=topic_width, height=topic_height,
+            text=topic, node_type='topic'
+        )
+        nodes.append(topic_node)
+        
+        # Convert block units to UnitPosition format
+        for i, block_unit in enumerate(block_units):
+            # Convert part block
+            part_node = NodePosition(
+                x=block_unit.part_block.x, y=block_unit.part_block.y,
+                width=block_unit.part_block.width, height=block_unit.part_block.height,
+                text=block_unit.part_block.text, node_type='part', part_index=i
+            )
+            nodes.append(part_node)
+            
+            # Convert subpart blocks
+            subpart_nodes = []
+            for j, subpart_block in enumerate(block_unit.subpart_blocks):
+                subpart_node = NodePosition(
+                    x=subpart_block.x, y=subpart_block.y,
+                    width=subpart_block.width, height=subpart_block.height,
+                    text=subpart_block.text, node_type='subpart',
+                    part_index=i, subpart_index=j
+                )
+                subpart_nodes.append(subpart_node)
+                nodes.append(subpart_node)
+            
+            # Create UnitPosition
+            unit = UnitPosition(
+                unit_index=i,
+                x=block_unit.x, y=block_unit.y,
+                width=block_unit.width, height=block_unit.height,
+                part_position=part_node,
+                subpart_positions=subpart_nodes
+            )
+            units.append(unit)
+        
+        return nodes, units
+    
+    def _generate_svg_data_from_layout(self, layout_data: Dict, theme: Dict) -> Dict:
+        """Generate SVG data from layout data with improved text alignment within blocks"""
+        svg_elements = []
+        
+        # Generate nodes from layout data
+        nodes_data = layout_data.get('nodes', [])
+        
+        # Add text elements for all nodes with improved alignment
+        for node_data in nodes_data:
+            # Calculate text position to center it within the block
+            node_x = node_data['x']
+            node_y = node_data['y']
+            node_width = node_data['width']
+            node_height = node_data['height']
+            
+            # Center text within the block
+            text_x = node_x + node_width / 2
+            text_y = node_y + node_height / 2
+            
+            element = {
+                'type': 'text',
+                'x': text_x,
+                'y': text_y,
+                'text': node_data['text'],
+                'node_type': node_data['node_type'],
+                'font_size': self._get_font_size(node_data['node_type'], theme),
+                'fill': self._get_node_color(node_data['node_type'], theme),
+                'text_anchor': 'middle',  # Center horizontally
+                'dominant_baseline': 'middle',  # Center vertically
+                'font_weight': self._get_font_weight(node_data['node_type'])
+            }
+            svg_elements.append(element)
+        
+        # Use canvas dimensions from layout data
+        canvas_dimensions = layout_data.get('canvas_dimensions', {})
+        
+        return {
+            'elements': svg_elements,
+            'width': canvas_dimensions.get('width', 800),
+            'height': canvas_dimensions.get('height', 600),
+            'background': '#ffffff',
+            'layout_data': layout_data
+        }
+    
+    # Brace rendering methods removed - only text elements are generated now
+    
+    def _get_font_weight(self, node_type: str) -> str:
+        """Get font weight for node type using configuration"""
+        return FONT_WEIGHT_CONFIG.get(node_type, 'normal')
+    
     def _calculate_dimensions(self, spec: Dict) -> Dict:
-        """Calculate initial canvas dimensions based on content analysis"""
+        """Calculate initial canvas dimensions based on actual content analysis"""
         parts = spec.get('parts', [])
         topic = spec.get('topic', 'Main Topic')
         total_subparts = sum(len(part.get('subparts', [])) for part in parts)
-        
-        # Analyze content complexity for initial sizing
-        total_elements = len(parts) + total_subparts
+        total_parts = len(parts)
         
         # Calculate max text length safely
         text_lengths = [len(topic)]
@@ -894,35 +1392,53 @@ class BraceMapAgent:
         
         max_text_length = max(text_lengths) if text_lengths else len(topic)
         
-        # Initial canvas sizing based on content analysis
-        base_width = 800
-        base_height = 600
+        # Calculate dimensions based on actual content
+        # Base dimensions per element type
+        topic_height = 84  # fontTopic + 60
+        part_height = 38   # fontPart + 20
+        subpart_height = 34  # fontSubpart + 20
         
-        # Adjust initial size based on content complexity
-        if max_text_length > 30 or total_elements > 15:
-            base_width = 1400
-            base_height = 900
-        elif max_text_length > 20 or total_elements > 10:
-            base_width = 1200
-            base_height = 800
-        elif max_text_length > 15 or total_elements > 5:
-            base_width = 1000
-            base_height = 700
-        elif len(parts) > 3 or total_subparts > 3:
-            base_width = 900
-            base_height = 650
+        # Calculate required height based on content
+        if total_subparts == 0:
+            # Only topic and parts
+            required_height = topic_height + (total_parts * part_height) + (total_parts * 20)  # 20px spacing between parts
+        else:
+            # Topic + parts + subparts
+            required_height = topic_height + (total_parts * part_height) + (total_subparts * subpart_height) + (total_parts * 30) + (total_subparts * 15)  # Spacing
         
-        # Initial padding - reduced for less blank space
-        padding = 25  # Reduced from 40
+        # Calculate required width based on text lengths
+        # Estimate width: topic width + max part width + max subpart width + spacing
+        estimated_topic_width = max_text_length * 12  # Approximate character width
+        estimated_part_width = max(len(part['name']) for part in parts) * 10 if parts else 100
+        estimated_subpart_width = max(len(subpart['name']) for part in parts for subpart in part.get('subparts', [])) * 8 if total_subparts > 0 else 100
+        
+        required_width = estimated_topic_width + estimated_part_width + estimated_subpart_width + 200  # Spacing
+        
+        # Add watermark space (bottom and right margins)
+        watermark_margin = 80  # Space for watermark
+        
+        # Calculate final dimensions with minimal padding
+        final_width = max(required_width + watermark_margin, 600)  # Minimum width
+        final_height = max(required_height + watermark_margin, 400)  # Minimum height
+        
+        # Ensure reasonable aspect ratio
+        aspect_ratio = final_width / final_height
+        if aspect_ratio > 3:  # Too wide
+            final_width = final_height * 2.5
+        elif aspect_ratio < 0.5:  # Too tall
+            final_height = final_width * 0.8
+        
+        # Minimal padding for content
+        padding = 20  # Reduced padding for tighter layout
         
         return {
-            'width': base_width,
-            'height': base_height,
+            'width': int(final_width),
+            'height': int(final_height),
             'padding': padding
         }
     
     def _calculate_optimal_dimensions(self, nodes: List[NodePosition], initial_dimensions: Dict) -> Dict:
-        """Calculate optimal canvas dimensions based on actual node positions"""
+        """Calculate optimal canvas dimensions based on actual node positions with watermark space"""
         if not nodes:
             return initial_dimensions
         
@@ -942,16 +1458,19 @@ class BraceMapAgent:
         content_width = max_x - min_x
         content_height = max_y - min_y
         
-        # Add padding and ensure minimum size
-        padding = initial_dimensions['padding']
-        optimal_width = max(content_width + 2 * padding, 600)  # Reduced from 800 to 600
-        optimal_height = max(content_height + 2 * padding, 500)  # Reduced from 600 to 500
+        # Add minimal padding for content
+        content_padding = 40  # Minimal padding around content
         
-        # Add extra space for visual comfort and to prevent cutoff
-        # Reduced padding for less blank space
-        extra_padding = max(15, len(valid_nodes) * 2)  # Further reduced from 25 + 3*node_count
-        optimal_width += extra_padding
-        optimal_height += extra_padding
+        # Add watermark space (bottom and right margins)
+        watermark_margin = 80  # Space for watermark
+        
+        # Calculate optimal dimensions with content padding and watermark space
+        optimal_width = content_width + 2 * content_padding + watermark_margin
+        optimal_height = content_height + 2 * content_padding + watermark_margin
+        
+        # Ensure minimum size
+        optimal_width = max(optimal_width, 600)
+        optimal_height = max(optimal_height, 400)
         
         # Ensure reasonable aspect ratio
         aspect_ratio = optimal_width / optimal_height
@@ -963,7 +1482,7 @@ class BraceMapAgent:
         return {
             'width': int(optimal_width),
             'height': int(optimal_height),
-            'padding': padding,
+            'padding': initial_dimensions['padding'],
             'content_bounds': {
                 'min_x': min_x,
                 'max_x': max_x,
@@ -973,20 +1492,36 @@ class BraceMapAgent:
         }
     
     def _adjust_node_positions_for_optimal_canvas(self, nodes: List[NodePosition], initial_dimensions: Dict, optimal_dimensions: Dict) -> List[NodePosition]:
-        """Adjust node positions to center them in the optimal canvas"""
+        """Adjust node positions to center them in the optimal canvas while preserving topic alignment"""
         if not nodes:
             return nodes
         
         content_bounds = optimal_dimensions['content_bounds']
-        padding = optimal_dimensions['padding']
         
-        # Calculate offset to center content
+        # Calculate content dimensions
         content_width = content_bounds['max_x'] - content_bounds['min_x']
         content_height = content_bounds['max_y'] - content_bounds['min_y']
         
-        # Calculate centering offsets
-        offset_x = padding - content_bounds['min_x']
-        offset_y = padding - content_bounds['min_y']
+        # Calculate minimal padding for centering
+        content_padding = 40  # Minimal padding around content
+        
+        # Calculate centering offsets with minimal padding
+        offset_x = content_padding - content_bounds['min_x']
+        offset_y = content_padding - content_bounds['min_y']
+        
+        # Find topic and part nodes
+        topic_nodes = [node for node in nodes if node.node_type == 'topic']
+        part_nodes = [node for node in nodes if node.node_type == 'part']
+        
+        # Calculate the original alignment between topic and parts
+        original_topic_part_alignment = None
+        if topic_nodes and part_nodes:
+            topic_node = topic_nodes[0]
+            part_centers = [part.y + part.height / 2 for part in part_nodes]
+            parts_center_y = sum(part_centers) / len(part_centers)
+            topic_center_y = topic_node.y + topic_node.height / 2
+            original_topic_part_alignment = topic_center_y - parts_center_y
+            print(f"DEBUG: Original topic-part alignment: {original_topic_part_alignment:.1f}")
         
         # Apply offset to all nodes
         adjusted_nodes = []
@@ -1002,6 +1537,32 @@ class BraceMapAgent:
                 subpart_index=node.subpart_index
             )
             adjusted_nodes.append(adjusted_node)
+        
+        # If we had topic-part alignment, preserve it after adjustment
+        if original_topic_part_alignment is not None and topic_nodes and part_nodes:
+            adjusted_topic = next((node for node in adjusted_nodes if node.node_type == 'topic'), None)
+            adjusted_parts = [node for node in adjusted_nodes if node.node_type == 'part']
+            
+            if adjusted_topic and adjusted_parts:
+                # Calculate new parts center after adjustment
+                new_part_centers = [part.y + part.height / 2 for part in adjusted_parts]
+                new_parts_center_y = sum(new_part_centers) / len(new_part_centers)
+                
+                # Calculate what the topic center should be to maintain alignment
+                target_topic_center_y = new_parts_center_y + original_topic_part_alignment
+                
+                # Calculate the new topic Y position
+                new_topic_y = target_topic_center_y - adjusted_topic.height / 2
+                
+                print(f"DEBUG: New parts center: {new_parts_center_y:.1f}")
+                print(f"DEBUG: Target topic center: {target_topic_center_y:.1f}")
+                print(f"DEBUG: New topic Y: {new_topic_y:.1f}")
+                print(f"DEBUG: Before adjustment - topic Y: {adjusted_topic.y:.1f}")
+                
+                # Update topic position
+                adjusted_topic.y = new_topic_y
+                
+                print(f"DEBUG: After adjustment - topic Y: {adjusted_topic.y:.1f}")
         
         return adjusted_nodes
     
@@ -1080,7 +1641,12 @@ class BraceMapAgent:
         # Create layout data with optimal dimensions
         layout_data = {
             'units': self._serialize_units(adjusted_units),
-            'spacing_info': self._serialize_spacing_info(spacing_info),
+            'spacing_info': self._serialize_spacing_info(SpacingInfo(
+                unit_spacing=50.0,
+                subpart_spacing=20.0,
+                brace_offset=50.0,
+                content_density=1.0
+            )),
             'text_dimensions': text_dimensions,
             'canvas_dimensions': optimal_dimensions,
             'nodes': self._serialize_nodes(nodes)
@@ -1227,6 +1793,21 @@ class BraceMapAgent:
             'subpart': theme['subpartColor']
         }
         return color_map.get(node_type, theme['partColor'])
+    
+    def _calculate_text_width(self, text: str, font_size: int) -> float:
+        """Calculate text width based on font size and character count"""
+        char_widths = {
+            'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
+            'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
+            'default': 0.6
+        }
+        
+        total_width = 0
+        for char in text:
+            char_width = char_widths.get(char, char_widths['default'])
+            total_width += char_width * font_size
+        
+        return total_width
 
 
 # Export the main agent class

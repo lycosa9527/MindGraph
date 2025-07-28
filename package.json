@@ -1,6 +1,6 @@
 {
   "name": "mindgraph",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "AI-Powered Data Visualization Generator using D3.js",
   "author": "MindSpring Team",
   "license": "MIT",
