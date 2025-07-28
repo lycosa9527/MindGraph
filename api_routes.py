@@ -264,6 +264,13 @@ def generate_png():
             with open('static/js/d3-renderers.js', 'r', encoding='utf-8') as f:
                 d3_renderers = f.read()
             
+            # Log spec data for debugging
+            logger.info(f"Spec data keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            if isinstance(spec, dict) and 'svg_data' in spec:
+                logger.info(f"SVG data keys: {list(spec['svg_data'].keys()) if isinstance(spec['svg_data'], dict) else 'Not a dict'}")
+                if isinstance(spec['svg_data'], dict) and 'elements' in spec['svg_data']:
+                    logger.info(f"Number of SVG elements: {len(spec['svg_data']['elements'])}")
+            
             # Calculate optimized dimensions for different graph types
             dimensions = config.get_d3_dimensions()
             
@@ -284,35 +291,35 @@ def generate_png():
                     'topicFontSize': dimensions.get('topicFontSize', 18),
                     'charFontSize': dimensions.get('charFontSize', 14)
                 }
-            elif graph_type == 'brace_map' and spec and 'parts' in spec:
-                # Optimize dimensions for brace maps
-                num_parts = len(spec['parts'])
-                max_subparts = max([len(part.get('subparts', [])) for part in spec['parts']], default=0)
-                
-                # Calculate optimal dimensions based on content
-                min_width_per_part = 150
-                min_width_per_subpart = 120
-                min_padding = 40
-                
-                # Width calculation: topic + parts + subparts + braces
-                content_width = 200 + (num_parts * min_width_per_part) + (max_subparts * min_width_per_subpart)
-                optimal_width = max(content_width + (2 * min_padding), 800)
-                
-                # Height calculation: based on number of subparts
-                base_height = 100  # topic + parts
-                subpart_height = max_subparts * 40 + 20  # subparts with spacing
-                optimal_height = max(base_height + subpart_height + (2 * min_padding), 400)
-                
-                dimensions = {
-                    'baseWidth': optimal_width,
-                    'baseHeight': optimal_height,
-                    'padding': min_padding,
-                    'width': optimal_width,
-                    'height': optimal_height,
-                    'topicFontSize': dimensions.get('topicFontSize', 20),
-                    'partFontSize': dimensions.get('partFontSize', 16),
-                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
-                }
+            elif graph_type == 'brace_map' and spec and spec.get('success') and 'svg_data' in spec:
+                # Use agent's optimal dimensions for brace maps
+                svg_data = spec['svg_data']
+                if 'width' in svg_data and 'height' in svg_data:
+                    # Use the agent's calculated optimal dimensions
+                    dimensions = {
+                        'baseWidth': svg_data['width'],
+                        'baseHeight': svg_data['height'],
+                        'padding': 50,
+                        'width': svg_data['width'],
+                        'height': svg_data['height'],
+                        'topicFontSize': dimensions.get('topicFontSize', 20),
+                        'partFontSize': dimensions.get('partFontSize', 16),
+                        'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                    }
+                    logger.info(f"Using agent's optimal dimensions: {svg_data['width']}x{svg_data['height']}")
+                else:
+                    # Fallback to default dimensions if agent data is not available
+                    dimensions = {
+                        'baseWidth': 800,
+                        'baseHeight': 600,
+                        'padding': 50,
+                        'width': 800,
+                        'height': 600,
+                        'topicFontSize': dimensions.get('topicFontSize', 20),
+                        'partFontSize': dimensions.get('partFontSize', 16),
+                        'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                    }
+                    logger.warning("Agent dimensions not available, using fallback dimensions")
             
             html = f'''
             <html><head>
@@ -374,6 +381,13 @@ def generate_png():
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
+                
+                # Log HTML size for debugging
+                html_size = len(html)
+                logger.info(f"HTML content size: {html_size} characters")
+                if html_size > 100000:  # Log if HTML is very large
+                    logger.warning(f"Large HTML content: {html_size} characters")
+                
                 await page.set_content(html)
                 
                 # Wait for rendering
