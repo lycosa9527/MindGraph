@@ -1,6 +1,6 @@
 # MindGraph - AI-Powered Data Visualization Generator
 
-[![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.2-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
@@ -24,11 +24,13 @@
 - **⚡ Real-time**: Instant chart generation with live preview
 - **🔗 Workflow Integration**: Optimized for Dify, Coze, Zapier, Make, and other automation platforms
 
-### 🆕 What's New in Version 2.3.1
+### 🆕 What's New in Version 2.3.2
 
-- **🔧 Enhanced Bridge Maps**: Improved visual clarity with cleaner presentation
-- **🎯 Better User Experience**: Enhanced interface and performance
-- **⚡ Automatic Setup**: No manual configuration required
+- **🏗️ Comprehensive Agent Architecture**: Advanced multi-agent system with 6 specialized agents
+- **🤖 New Brace Map Agent**: Dynamic positioning with content-aware layout algorithms
+- **🧠 Intelligent Features**: Hybrid LLM + Python approach with collision detection
+- **📋 Enhanced Documentation**: Complete agent workflow documentation with Chinese translations
+- **🔧 Technical Improvements**: Fixed all indentation errors and JSON serialization issues
 
 ## 🚀 Quick Start
 

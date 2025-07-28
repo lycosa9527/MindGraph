@@ -224,7 +224,7 @@ Please generate a JSON specification for a flow map for the following user reque
 Request: {user_prompt}
 
 Please output a JSON object containing the following fields:
-topic: "Main topic"
+title: "Main topic"
 steps: ["Step1", "Step2", "Step3", "Step4", "Step5"]
 
 Please ensure the JSON format is correct, do not include any code block markers.
@@ -236,7 +236,7 @@ FLOW_MAP_GENERATION_ZH = """
 需求：{user_prompt}
 
 请输出一个包含以下字段的JSON对象：
-topic: "主题"
+title: "主题"
 steps: ["步骤1", "步骤2", "步骤3", "步骤4", "步骤5"]
 
 请确保JSON格式正确，不要包含任何代码块标记。

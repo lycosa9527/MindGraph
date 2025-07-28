@@ -807,11 +807,13 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
             return parsed
         except (json.JSONDecodeError, TypeError):
             return None
+    
     # Input validation
     if not isinstance(user_prompt, str) or not user_prompt.strip():
         return get_default_result()
     if language not in ['zh', 'en']:
         language = 'en'
+    
     if language == 'zh':
         prompt_text = f"""
 你是一个智能图表助手，用于从用户需求中同时提取主题内容和样式偏好。
@@ -821,14 +823,36 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
 3. 最适合的图表类型
 
 可用图表类型：
+# 思维导图 (Thinking Maps)
 - double_bubble_map: 比较和对比两个主题
 - bubble_map: 描述单个主题的特征
 - circle_map: 在上下文中定义主题
-- tree_map: 层次结构图
-- mindmap: 思维导图
-- concept_map: 概念图
-- flowchart: 流程图
-- venn_diagram: 维恩图
+- flow_map: 序列事件或过程
+- brace_map: 显示整体/部分关系
+- tree_map: 分类和归类信息
+- multi_flow_map: 显示因果关系
+- bridge_map: 桥形图 - 显示类比和相似性
+
+# 概念图 (Concept Maps)
+- concept_map: 显示概念之间的关系
+- semantic_web: 创建相关概念的网络
+
+# 思维导图 (Mind Maps)
+- mindmap: 围绕中心主题组织想法
+- radial_mindmap: 创建径向思维导图结构
+
+# 常用图表 (Common Diagrams)
+- venn_diagram: 显示重叠集合
+- fishbone_diagram: 分析因果关系
+- flowchart: 显示流程过程
+- org_chart: 显示组织结构
+- timeline: 显示时间顺序事件
+
+重要区分：
+- 比较/对比 (compare/contrast): 使用 double_bubble_map
+- 类比 (analogy): 使用 bridge_map
+- 概念关系 (concept relationships): 使用 concept_map
+- 思维组织 (idea organization): 使用 mindmap
 
 样式偏好包括：
 - colorTheme: 颜色主题 (classic, innovation, colorful, monochromatic, dark, light, print, display)
@@ -861,14 +885,36 @@ Please analyze the following user request and extract:
 3. Most suitable diagram type
 
 Available diagram types:
+# Thinking Maps
 - double_bubble_map: Compare and contrast two topics
-- bubble_map: Describe characteristics of a single topic
-- circle_map: Define topic in context
-- tree_map: Hierarchical structure
-- mindmap: Mind mapping
-- concept_map: Concept mapping
-- flowchart: Process flow
-- venn_diagram: Set relationships
+- bubble_map: Describe attributes of a single topic
+- circle_map: Define a topic in context
+- flow_map: Sequence events or processes
+- brace_map: Show whole/part relationships
+- tree_map: Categorize and classify information
+- multi_flow_map: Show cause and effect relationships
+- bridge_map: Show analogies and similarities
+
+# Concept Maps
+- concept_map: Show relationships between concepts
+- semantic_web: Create a web of related concepts
+
+# Mind Maps
+- mindmap: Organize ideas around a central topic
+- radial_mindmap: Create a radial mind map structure
+
+# Common Diagrams
+- venn_diagram: Show overlapping sets
+- fishbone_diagram: Analyze cause and effect
+- flowchart: Show process flow
+- org_chart: Show organizational structure
+- timeline: Show chronological events
+
+Important distinctions:
+- Compare/contrast: use double_bubble_map
+- Analogy: use bridge_map
+- Concept relationships: use concept_map
+- Idea organization: use mindmap
 
 Style preferences include:
 - colorTheme: Color theme (classic, innovation, colorful, monochromatic, dark, light, print, display)
@@ -925,27 +971,53 @@ User request: {{user_prompt}}
     except Exception as e:
         logger.error(f"Qwen style extraction failed: {e}")
     
-    # Fallback to hardcoded parser
+    # Fallback to hardcoded parser with comprehensive diagram type support
     try:
         from diagram_styles import parse_style_from_prompt
         style_preferences = parse_style_from_prompt(user_prompt)
         
-        # Simple topic extraction fallback
+        # Use the same comprehensive fallback logic as classify_graph_type_with_llm
         topics = []
-        if "vs" in user_prompt.lower() or "compare" in user_prompt.lower() or "对比" in user_prompt:
+        prompt_lower = user_prompt.lower()
+        
+        # Comprehensive fallback logic matching classify_graph_type_with_llm
+        if any(word in prompt_lower for word in ["analogy", "analogize", "类比", "桥形图", "桥接图"]):
+            diagram_type = "bridge_map"
+        elif any(word in prompt_lower for word in ["compare", "vs", "difference", "对比", "比较", "双气泡图", "双泡图"]):
             diagram_type = "double_bubble_map"
-        elif "mind" in user_prompt.lower() or "思维" in user_prompt:
-            diagram_type = "mindmap"
-        elif "tree" in user_prompt.lower() or "树" in user_prompt:
-            diagram_type = "tree_map"
-        elif "concept" in user_prompt.lower() or "概念" in user_prompt:
-            diagram_type = "concept_map"
-        elif "flow" in user_prompt.lower() or "流程" in user_prompt:
-            diagram_type = "flowchart"
-        elif "venn" in user_prompt.lower() or "维恩" in user_prompt:
-            diagram_type = "venn_diagram"
-        else:
+        elif any(word in prompt_lower for word in ["describe", "characteristics", "特征", "描述", "气泡图", "单气泡图"]):
             diagram_type = "bubble_map"
+        elif any(word in prompt_lower for word in ["define", "context", "定义", "上下文"]):
+            diagram_type = "circle_map"
+        elif any(word in prompt_lower for word in ["process", "steps", "流程", "步骤", "sequence"]):
+            diagram_type = "flow_map"
+        elif any(word in prompt_lower for word in ["whole", "part", "整体", "部分", "组成"]):
+            diagram_type = "brace_map"
+        elif any(word in prompt_lower for word in ["categorize", "classify", "分类", "归类"]):
+            diagram_type = "tree_map"
+        elif any(word in prompt_lower for word in ["cause", "effect", "原因", "影响", "因果"]):
+            diagram_type = "multi_flow_map"
+        elif any(word in prompt_lower for word in ["concept", "relationship", "概念", "关系"]):
+            diagram_type = "concept_map"
+        elif any(word in prompt_lower for word in ["semantic", "web", "语义", "网络"]):
+            diagram_type = "semantic_web"
+        elif any(word in prompt_lower for word in ["mind", "organize", "思维", "组织", "整理"]):
+            if "radial" in prompt_lower or "径向" in prompt_lower:
+                diagram_type = "radial_mindmap"
+            else:
+                diagram_type = "mindmap"
+        elif any(word in prompt_lower for word in ["venn", "overlap", "维恩", "重叠"]):
+            diagram_type = "venn_diagram"
+        elif any(word in prompt_lower for word in ["fishbone", "ishikawa", "鱼骨", "石川"]):
+            diagram_type = "fishbone_diagram"
+        elif any(word in prompt_lower for word in ["flowchart", "flow chart", "流程图"]):
+            diagram_type = "flowchart"
+        elif any(word in prompt_lower for word in ["org", "organization", "组织", "架构"]):
+            diagram_type = "org_chart"
+        elif any(word in prompt_lower for word in ["timeline", "time line", "时间线", "时间线"]):
+            diagram_type = "timeline"
+        else:
+            diagram_type = "bubble_map"  # Default fallback
         
         return {
             "topics": topics,

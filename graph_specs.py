@@ -165,19 +165,51 @@ def validate_flow_map(spec: Dict) -> Tuple[bool, str]:
 def validate_brace_map(spec: Dict) -> Tuple[bool, str]:
     """Validation for brace map (thinking map)."""
     # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["main_topic", "parts"])
+    is_valid, error = validate_required_fields(spec, ["topic", "parts"])
     if not is_valid:
         return False, error
     
-    # Validate main topic field
-    is_valid, error = validate_string_field(spec, "main_topic")
+    # Validate topic field
+    is_valid, error = validate_string_field(spec, "topic")
     if not is_valid:
         return False, error
     
-    # Validate parts list
-    is_valid, error = validate_list_field(spec, "parts", max_items=10)
-    if not is_valid:
-        return False, error
+    # Validate parts structure
+    if not isinstance(spec["parts"], list):
+        return False, "parts must be a list"
+    
+    if len(spec["parts"]) == 0:
+        return False, "parts cannot be empty"
+    
+    if len(spec["parts"]) > 10:
+        return False, "parts cannot have more than 10 items"
+    
+    # Validate each part structure
+    for i, part in enumerate(spec["parts"]):
+        if not isinstance(part, dict):
+            return False, f"parts[{i}] must be a dictionary"
+        
+        if "name" not in part:
+            return False, f"parts[{i}] must have 'name' field"
+        
+        # Validate part name
+        if not isinstance(part["name"], str) or not part["name"].strip():
+            return False, f"parts[{i}].name must be a non-empty string"
+        
+        # Validate subparts if present
+        if "subparts" in part:
+            if not isinstance(part["subparts"], list):
+                return False, f"parts[{i}].subparts must be a list"
+            
+            for j, subpart in enumerate(part["subparts"]):
+                if not isinstance(subpart, dict):
+                    return False, f"parts[{i}].subparts[{j}] must be a dictionary"
+                
+                if "name" not in subpart:
+                    return False, f"parts[{i}].subparts[{j}] must have 'name' field"
+                
+                if not isinstance(subpart["name"], str) or not subpart["name"].strip():
+                    return False, f"parts[{i}].subparts[{j}].name must be a non-empty string"
     
     return True, ""
 
@@ -314,12 +346,12 @@ def validate_concept_map(spec: Dict) -> Tuple[bool, str]:
 def validate_semantic_web(spec: Dict) -> Tuple[bool, str]:
     """Validation for semantic web (concept map variant)."""
     # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["central_concept", "branches"])
+    is_valid, error = validate_required_fields(spec, ["topic", "branches"])
     if not is_valid:
         return False, error
     
-    # Validate central concept
-    is_valid, error = validate_string_field(spec, "central_concept")
+    # Validate topic field
+    is_valid, error = validate_string_field(spec, "topic")
     if not is_valid:
         return False, error
     
@@ -327,21 +359,34 @@ def validate_semantic_web(spec: Dict) -> Tuple[bool, str]:
     if not isinstance(spec["branches"], list):
         return False, "branches must be a list"
     
+    if len(spec["branches"]) == 0:
+        return False, "branches cannot be empty"
+    
     for i, branch in enumerate(spec["branches"]):
         if not isinstance(branch, dict):
             return False, f"branches[{i}] must be a dictionary"
         
-        if "concept" not in branch or "sub_concepts" not in branch:
-            return False, f"branches[{i}] must have 'concept' and 'sub_concepts' fields"
+        if "name" not in branch:
+            return False, f"branches[{i}] must have 'name' field"
         
-        # Validate concept
-        if not isinstance(branch["concept"], str) or not branch["concept"].strip():
-            return False, f"branches[{i}].concept must be a non-empty string"
+        # Validate name
+        if not isinstance(branch["name"], str) or not branch["name"].strip():
+            return False, f"branches[{i}].name must be a non-empty string"
         
-        # Validate sub_concepts
-        is_valid, error = validate_list_field(branch, "sub_concepts", max_items=8)
-        if not is_valid:
-            return False, f"branches[{i}].{error}"
+        # Validate children if present
+        if "children" in branch:
+            if not isinstance(branch["children"], list):
+                return False, f"branches[{i}].children must be a list"
+            
+            for j, child in enumerate(branch["children"]):
+                if not isinstance(child, dict):
+                    return False, f"branches[{i}].children[{j}] must be a dictionary"
+                
+                if "name" not in child:
+                    return False, f"branches[{i}].children[{j}] must have 'name' field"
+                
+                if not isinstance(child["name"], str) or not child["name"].strip():
+                    return False, f"branches[{i}].children[{j}].name must be a non-empty string"
     
     return True, ""
 
@@ -379,29 +424,50 @@ def validate_mindmap(spec: Dict) -> Tuple[bool, str]:
 def validate_radial_mindmap(spec: Dict) -> Tuple[bool, str]:
     """Validation for radial mind map."""
     # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["central_topic", "main_branches"])
+    is_valid, error = validate_required_fields(spec, ["topic", "branches"])
     if not is_valid:
         return False, error
     
-    # Validate central topic
-    is_valid, error = validate_string_field(spec, "central_topic")
+    # Validate topic field
+    is_valid, error = validate_string_field(spec, "topic")
     if not is_valid:
         return False, error
     
-    # Validate main branches
-    if not isinstance(spec["main_branches"], list):
-        return False, "main_branches must be a list"
+    # Validate branches
+    if not isinstance(spec["branches"], list):
+        return False, "branches must be a list"
     
-    if len(spec["main_branches"]) == 0:
-        return False, "main_branches cannot be empty"
+    if len(spec["branches"]) == 0:
+        return False, "branches cannot be empty"
     
-    if len(spec["main_branches"]) > 8:  # Limit for radial layout
-        return False, "main_branches cannot have more than 8 items"
+    if len(spec["branches"]) > 8:  # Limit for radial layout
+        return False, "branches cannot have more than 8 items"
     
-    for i, branch in enumerate(spec["main_branches"]):
-        is_valid, error = validate_node_structure(branch, f"main_branches[{i}]")
-        if not is_valid:
-            return False, error
+    for i, branch in enumerate(spec["branches"]):
+        if not isinstance(branch, dict):
+            return False, f"branches[{i}] must be a dictionary"
+        
+        if "name" not in branch:
+            return False, f"branches[{i}] must have 'name' field"
+        
+        # Validate name
+        if not isinstance(branch["name"], str) or not branch["name"].strip():
+            return False, f"branches[{i}].name must be a non-empty string"
+        
+        # Validate children if present
+        if "children" in branch:
+            if not isinstance(branch["children"], list):
+                return False, f"branches[{i}].children must be a list"
+            
+            for j, child in enumerate(branch["children"]):
+                if not isinstance(child, dict):
+                    return False, f"branches[{i}].children[{j}] must be a dictionary"
+                
+                if "name" not in child:
+                    return False, f"branches[{i}].children[{j}] must have 'name' field"
+                
+                if not isinstance(child["name"], str) or not child["name"].strip():
+                    return False, f"branches[{i}].children[{j}].name must be a non-empty string"
     
     return True, ""
 
@@ -444,7 +510,7 @@ def validate_venn_diagram(spec: Dict) -> Tuple[bool, str]:
 def validate_fishbone_diagram(spec: Dict) -> Tuple[bool, str]:
     """Validation for fishbone (Ishikawa) diagram."""
     # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["problem", "categories", "causes"])
+    is_valid, error = validate_required_fields(spec, ["problem", "categories"])
     if not is_valid:
         return False, error
     
@@ -454,95 +520,117 @@ def validate_fishbone_diagram(spec: Dict) -> Tuple[bool, str]:
         return False, error
     
     # Validate categories
-    is_valid, error = validate_list_field(spec, "categories", max_items=6)
-    if not is_valid:
-        return False, error
+    if not isinstance(spec["categories"], list):
+        return False, "categories must be a list"
     
-    # Validate causes
-    if not isinstance(spec["causes"], dict):
-        return False, "causes must be a dictionary"
+    if len(spec["categories"]) == 0:
+        return False, "categories cannot be empty"
     
-    for category in spec["categories"]:
-        if category not in spec["causes"]:
-            return False, f"causes must include category: {category}"
+    if len(spec["categories"]) > 6:  # Limit for fishbone layout
+        return False, "categories cannot have more than 6 items"
+    
+    for i, category in enumerate(spec["categories"]):
+        if not isinstance(category, dict):
+            return False, f"categories[{i}] must be a dictionary"
         
-        is_valid, error = validate_list_field(spec["causes"], category, max_items=8)
-        if not is_valid:
-            return False, f"causes.{category}: {error}"
+        if "name" not in category or "causes" not in category:
+            return False, f"categories[{i}] must have 'name' and 'causes' fields"
+        
+        # Validate category name
+        if not isinstance(category["name"], str) or not category["name"].strip():
+            return False, f"categories[{i}].name must be a non-empty string"
+        
+        # Validate causes
+        if not isinstance(category["causes"], list):
+            return False, f"categories[{i}].causes must be a list"
+        
+        for j, cause in enumerate(category["causes"]):
+            if not isinstance(cause, str) or not cause.strip():
+                return False, f"categories[{i}].causes[{j}] must be a non-empty string"
     
     return True, ""
 
 def validate_flowchart(spec: Dict) -> Tuple[bool, str]:
     """Validation for flowchart."""
     # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["nodes", "edges"])
+    is_valid, error = validate_required_fields(spec, ["title", "steps"])
     if not is_valid:
         return False, error
     
-    # Validate nodes
-    if not isinstance(spec["nodes"], list):
-        return False, "nodes must be a list"
+    # Validate title
+    is_valid, error = validate_string_field(spec, "title")
+    if not is_valid:
+        return False, error
     
-    if len(spec["nodes"]) == 0:
-        return False, "nodes cannot be empty"
+    # Validate steps
+    if not isinstance(spec["steps"], list):
+        return False, "steps must be a list"
     
-    for i, node in enumerate(spec["nodes"]):
-        if not isinstance(node, dict):
-            return False, f"nodes[{i}] must be a dictionary"
+    if len(spec["steps"]) == 0:
+        return False, "steps cannot be empty"
+    
+    for i, step in enumerate(spec["steps"]):
+        if not isinstance(step, dict):
+            return False, f"steps[{i}] must be a dictionary"
         
-        if "id" not in node or "label" not in node or "type" not in node:
-            return False, f"nodes[{i}] must have 'id', 'label', and 'type' fields"
+        if "id" not in step or "type" not in step or "text" not in step:
+            return False, f"steps[{i}] must have 'id', 'type', and 'text' fields"
         
-        # Validate node fields
-        for field in ["id", "label"]:
-            if not isinstance(node[field], str) or not node[field].strip():
-                return False, f"nodes[{i}].{field} must be a non-empty string"
+        # Validate step fields
+        for field in ["id", "text"]:
+            if not isinstance(step[field], str) or not step[field].strip():
+                return False, f"steps[{i}].{field} must be a non-empty string"
         
         # Validate type
         valid_types = ["start", "process", "decision", "end", "input", "output"]
-        if node["type"] not in valid_types:
-            return False, f"nodes[{i}].type must be one of: {valid_types}"
-    
-    # Validate edges
-    if not isinstance(spec["edges"], list):
-        return False, "edges must be a list"
-    
-    for i, edge in enumerate(spec["edges"]):
-        if not isinstance(edge, dict):
-            return False, f"edges[{i}] must be a dictionary"
-        
-        if "from" not in edge or "to" not in edge:
-            return False, f"edges[{i}] must have 'from' and 'to' fields"
-        
-        # Validate edge fields
-        for field in ["from", "to"]:
-            if not isinstance(edge[field], str) or not edge[field].strip():
-                return False, f"edges[{i}].{field} must be a non-empty string"
+        if step["type"] not in valid_types:
+            return False, f"steps[{i}].type must be one of: {valid_types}"
     
     return True, ""
 
 def validate_org_chart(spec: Dict) -> Tuple[bool, str]:
     """Validation for organizational chart."""
     # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["root", "hierarchy"])
+    is_valid, error = validate_required_fields(spec, ["title", "structure"])
     if not is_valid:
         return False, error
     
-    # Validate root
-    is_valid, error = validate_node_structure(spec["root"], "root")
+    # Validate title
+    is_valid, error = validate_string_field(spec, "title")
     if not is_valid:
         return False, error
     
-    # Validate hierarchy
-    if not isinstance(spec["hierarchy"], list):
-        return False, "hierarchy must be a list"
+    # Validate structure
+    if not isinstance(spec["structure"], dict):
+        return False, "structure must be a dictionary"
     
-    for i, level in enumerate(spec["hierarchy"]):
-        if not isinstance(level, list):
-            return False, f"hierarchy[{i}] must be a list"
+    # Validate root node structure
+    is_valid, error = validate_org_node_structure(spec["structure"], "structure")
+    if not is_valid:
+        return False, error
+    
+    return True, ""
+
+def validate_org_node_structure(node: Dict, node_type: str = "node") -> Tuple[bool, str]:
+    """Validate organizational chart node structure."""
+    if not isinstance(node, dict):
+        return False, f"{node_type} must be a dictionary"
+    
+    if "name" not in node or "title" not in node:
+        return False, f"{node_type} must have 'name' and 'title' fields"
+    
+    # Validate name and title
+    for field in ["name", "title"]:
+        if not isinstance(node[field], str) or not node[field].strip():
+            return False, f"{node_type}.{field} must be a non-empty string"
+    
+    # Validate children if present
+    if "children" in node:
+        if not isinstance(node["children"], list):
+            return False, f"{node_type}.children must be a list"
         
-        for j, node in enumerate(level):
-            is_valid, error = validate_node_structure(node, f"hierarchy[{i}][{j}]")
+        for i, child in enumerate(node["children"]):
+            is_valid, error = validate_org_node_structure(child, f"{node_type}.children[{i}]")
             if not is_valid:
                 return False, error
     

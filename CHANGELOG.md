@@ -5,6 +5,133 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2025-01-27
+
+### 🚀 Major Improvements
+
+#### Comprehensive Agent Architecture Development
+- **Complete Agent Architecture Document**: Created comprehensive `docs/AGENT_ARCHITECTURE_COMPREHENSIVE.md` with detailed agent development guidelines
+- **Dynamic Positioning System**: Implemented content-aware positioning algorithms that adapt to actual content structure
+- **Hybrid LLM + Python Approach**: Combined deterministic Python algorithms with LLM intelligence for optimal results
+- **Anti-Hardcoding Principles**: Established guidelines to prevent hardcoded layouts and promote dynamic positioning
+
+#### New Brace Map Agent Implementation
+- **Complete Brace Map Agent**: Built new `brace_map_agent.py` from scratch following architectural guidelines
+- **Dynamic Layout Algorithms**: Implemented 4 different layout algorithms (VERTICAL_STACK, HORIZONTAL_BRACE, VERTICAL_NODE_GROUP, GROUPED_SEQUENTIAL)
+- **Content-Aware Algorithm Selection**: Automatic algorithm selection based on content characteristics (number of parts/subparts)
+- **Collision Detection & Resolution**: Advanced collision detection and boundary validation systems
+- **Context Management**: User preference storage and session management for personalized diagram generation
+
+#### Enhanced Agent Workflow System
+- **6 Active Agents**: Implemented modular agent architecture with specialized responsibilities
+- **Main Agent Coordination**: Central coordinator managing entire diagram generation workflow
+- **Qwen LLM Agent**: Primary LLM for routine tasks (classification, topic extraction, spec generation)
+- **DeepSeek Agent**: Development tool for enhanced prompts and educational context analysis
+- **Agent Utils**: Utility functions for topic extraction, characteristics generation, and language detection
+- **LLM Clients**: Async interfaces for DeepSeek and Qwen API clients
+
+#### Agent Behavior Documentation
+- **Agent Behavior Flowcharts**: Created comprehensive flowcharts showing agent interaction patterns
+- **Decision Hierarchy**: Documented agent decision-making processes and behavioral patterns
+- **Communication Flow**: Detailed sequence diagrams showing inter-agent communication
+- **Chinese Documentation**: Complete Chinese translation of agent workflow documentation
+
+### 🔧 Technical Enhancements
+
+#### Brace Map Agent Features
+- **JSON Serialization**: Fixed LayoutResult serialization for proper API integration
+- **SVG Data Generation**: Corrected SVG data format for D3.js renderer compatibility
+- **Error Handling**: Comprehensive error handling with fallback mechanisms
+- **Performance Optimization**: Efficient layout algorithms with collision detection
+
+#### API Integration
+- **Seamless Integration**: Brace map agent integrates with existing API routes
+- **PNG Generation**: Fixed blank PNG issue by correcting SVG data format
+- **D3.js Compatibility**: Ensured SVG data matches D3.js renderer expectations
+- **Error Recovery**: Robust error handling with graceful fallbacks
+
+#### Code Quality Improvements
+- **Indentation Fixes**: Resolved all indentation errors in brace map agent
+- **Import Structure**: Clean import hierarchy with proper module organization
+- **Type Safety**: Comprehensive type hints and dataclass implementations
+- **Documentation**: Extensive inline documentation and method descriptions
+
+### 📋 Documentation Updates
+
+#### Comprehensive Architecture Documentation
+- **Agent Development Guidelines**: Complete guide for building new diagram agents
+- **Layout Algorithm Specifications**: Detailed specifications for all layout algorithms
+- **Implementation Patterns**: Established patterns for agent development
+- **Testing Strategies**: Comprehensive testing approaches for agent validation
+
+#### Agent Workflow Documentation
+- **Behavior Flowcharts**: Visual representation of agent decision processes
+- **Communication Diagrams**: Sequence diagrams showing agent interactions
+- **Chinese Translations**: Complete Chinese documentation for all agent workflows
+- **Responsibility Matrix**: Clear definition of each agent's role and responsibilities
+
+#### Updated Project Documentation
+- **README Updates**: Enhanced project description with agent architecture details
+- **Development Guidelines**: Clear guidelines for extending the agent system
+- **API Documentation**: Updated API documentation with brace map agent integration
+
+### 🛡️ Security & Stability
+
+#### Agent System Reliability
+- **Modular Architecture**: Isolated agent responsibilities for better error containment
+- **Fallback Mechanisms**: Multiple fallback strategies for robust operation
+- **Error Recovery**: Graceful error handling with detailed logging
+- **Performance Monitoring**: Built-in performance metrics for agent operations
+
+#### Code Quality Assurance
+- **Comprehensive Testing**: Thorough testing of brace map agent functionality
+- **Import Validation**: Verified all module imports work correctly
+- **JSON Compatibility**: Ensured all agent outputs are JSON-serializable
+- **Error Boundary**: Clear error boundaries between different agent components
+
+### 🔄 Migration Guide
+
+#### From Version 2.3.1 to 2.3.2
+
+1. **New Brace Map Agent**: Completely new brace map generation system with dynamic positioning
+2. **Agent Architecture**: New comprehensive agent architecture with 6 specialized agents
+3. **Enhanced Documentation**: Complete documentation of agent workflows and behaviors
+4. **Improved API Integration**: Better integration with existing API routes and D3.js renderer
+
+### 📦 Files Changed
+
+#### New Files Added
+- `docs/AGENT_ARCHITECTURE_COMPREHENSIVE.md` - Complete agent architecture documentation
+- `brace_map_agent.py` - New brace map agent with dynamic positioning
+- `agent_behavior_flowchart.md` - Agent behavior documentation and flowcharts
+
+#### Core Application Files
+- `api_routes.py` - Updated to integrate brace map agent
+- `agent.py` - Enhanced with improved agent coordination
+- `agent_utils.py` - Updated utility functions for agent operations
+
+#### Documentation Files
+- `README.md` - Updated with agent architecture information
+- `CHANGELOG.md` - Updated with comprehensive version 2.3.2 details
+
+### 🐛 Bug Fixes
+
+- **Indentation Errors**: Fixed all indentation errors in brace map agent
+- **JSON Serialization**: Resolved LayoutResult serialization issues
+- **SVG Data Format**: Fixed SVG data format for D3.js renderer compatibility
+- **Blank PNG Issue**: Resolved blank PNG generation by correcting SVG data structure
+- **Import Errors**: Fixed all import and module loading issues
+
+### 🔮 Future Roadmap
+
+#### Planned Features for Version 2.4.0
+- **Additional Diagram Agents**: Implement agents for concept maps, mind maps, and other diagram types
+- **Advanced LLM Integration**: Enhanced LLM processing with more sophisticated strategies
+- **Performance Optimization**: Advanced caching and optimization for agent operations
+- **User Interface Enhancements**: Improved debug interface with agent status monitoring
+
+---
+
 ## [2.3.1] - 2025-01-27
 
 ### 🚀 Major Improvements

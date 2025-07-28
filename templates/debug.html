@@ -388,7 +388,7 @@
         extractionInfo.style.display = 'none'; // Hide previous extraction results
         
         try {
-            const resp = await fetch('/generate_graph', {
+            const resp = await fetch('/api/generate_graph', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
@@ -413,7 +413,7 @@
         extractionInfo.style.display = 'none'; // Hide previous extraction results
         
         try {
-            const resp = await fetch('/generate_png', {
+            const resp = await fetch('/api/generate_png', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })

@@ -11,7 +11,7 @@ from werkzeug.exceptions import HTTPException
 from functools import wraps
 from config import config
 
-api = Blueprint('api', __name__)
+api = Blueprint('api', __name__, url_prefix='/api')
 logger = logging.getLogger(__name__)
 
 # Track temporary files for cleanup
@@ -143,12 +143,15 @@ def generate_graph():
         style_preferences = result.get('style_preferences', {})
         
         # Validate the generated spec
-        if hasattr(graph_specs, f'validate_{diagram_type}'):
-            validate_fn = getattr(graph_specs, f'validate_{diagram_type}')
+        from graph_specs import DIAGRAM_VALIDATORS
+        if diagram_type in DIAGRAM_VALIDATORS:
+            validate_fn = DIAGRAM_VALIDATORS[diagram_type]
             valid, msg = validate_fn(spec)
             if not valid:
                 logger.warning(f"Generated invalid spec for {diagram_type}: {msg}")
                 return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
+        else:
+            logger.warning(f"No validator found for diagram type: {diagram_type}")
         
         # Calculate optimized dimensions for bridge maps
         dimensions = config.get_d3_dimensions()
@@ -208,17 +211,42 @@ def generate_png():
     
     logger.info(f"Frontend /generate_png: prompt={prompt!r}, language={language!r}")
     
-    # Generate graph specification
-    graph_type = agent.classify_graph_type_with_llm(prompt, language)
-    spec = agent.generate_graph_spec(prompt, graph_type, language)
+    # Generate graph specification using the same workflow as generate_graph
+    try:
+        result = agent.agent_graph_workflow_with_styles(prompt, language)
+        
+        spec = result.get('spec', {})
+        graph_type = result.get('diagram_type', 'bubble_map')
+    except Exception as e:
+        logger.error(f"Agent workflow failed: {e}")
+        return jsonify({'error': 'Failed to generate graph specification'}), 500
     
-    # Validate the generated spec before rendering
-    if hasattr(graph_specs, f'validate_{graph_type}'):
-        validate_fn = getattr(graph_specs, f'validate_{graph_type}')
+    # Validate the generated spec before processing
+    from graph_specs import DIAGRAM_VALIDATORS
+    if graph_type in DIAGRAM_VALIDATORS:
+        validate_fn = DIAGRAM_VALIDATORS[graph_type]
         valid, msg = validate_fn(spec)
         if not valid:
             logger.warning(f"Generated invalid spec for {graph_type}: {msg}")
             return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
+    else:
+        logger.warning(f"No validator found for diagram type: {graph_type}")
+    
+    # Use brace map agent for brace maps
+    if graph_type == 'brace_map':
+        try:
+            from brace_map_agent import BraceMapAgent
+            brace_agent = BraceMapAgent()
+            agent_result = brace_agent.generate_diagram(spec)
+            if agent_result['success']:
+                # Use agent result instead of spec for brace maps
+                spec = agent_result
+            else:
+                logger.warning(f"Brace map agent failed: {agent_result.get('error')}")
+                # Fall back to original spec
+        except Exception as e:
+            logger.error(f"Error using brace map agent: {e}")
+            # Fall back to original spec
     
     # Check if spec has required structure for rendering
     if not spec or isinstance(spec, dict) and spec.get('error'):
@@ -236,8 +264,9 @@ def generate_png():
             with open('static/js/d3-renderers.js', 'r', encoding='utf-8') as f:
                 d3_renderers = f.read()
             
-            # Calculate optimized dimensions for bridge maps
+            # Calculate optimized dimensions for different graph types
             dimensions = config.get_d3_dimensions()
+            
             if graph_type == 'bridge_map' and spec and 'analogies' in spec:
                 num_analogies = len(spec['analogies'])
                 min_width_per_analogy = 120
@@ -255,24 +284,90 @@ def generate_png():
                     'topicFontSize': dimensions.get('topicFontSize', 18),
                     'charFontSize': dimensions.get('charFontSize', 14)
                 }
+            elif graph_type == 'brace_map' and spec and 'parts' in spec:
+                # Optimize dimensions for brace maps
+                num_parts = len(spec['parts'])
+                max_subparts = max([len(part.get('subparts', [])) for part in spec['parts']], default=0)
+                
+                # Calculate optimal dimensions based on content
+                min_width_per_part = 150
+                min_width_per_subpart = 120
+                min_padding = 40
+                
+                # Width calculation: topic + parts + subparts + braces
+                content_width = 200 + (num_parts * min_width_per_part) + (max_subparts * min_width_per_subpart)
+                optimal_width = max(content_width + (2 * min_padding), 800)
+                
+                # Height calculation: based on number of subparts
+                base_height = 100  # topic + parts
+                subpart_height = max_subparts * 40 + 20  # subparts with spacing
+                optimal_height = max(base_height + subpart_height + (2 * min_padding), 400)
+                
+                dimensions = {
+                    'baseWidth': optimal_width,
+                    'baseHeight': optimal_height,
+                    'padding': min_padding,
+                    'width': optimal_width,
+                    'height': optimal_height,
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
             
             html = f'''
             <html><head>
             <meta charset="utf-8">
             <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-            <style>body {{ margin:0; background:#fff; }}</style>
+            <style>
+                body {{ margin:0; background:#fff; }}
+                #d3-container {{ 
+                    width: 100%; 
+                    height: 100vh; 
+                    display: block; 
+                    background: #f0f0f0; 
+                }}
+            </style>
             </head><body>
             <div id="d3-container"></div>
             <script>
-            window.spec = {json.dumps(spec, ensure_ascii=False)};
-            window.graph_type = '{graph_type}';
-            // Merge D3 theme with watermark config
-            const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
-            const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
-            window.theme = {{...d3Theme, ...watermarkConfig}};
-            window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
-            {d3_renderers}
-            renderGraph(window.graph_type, window.spec, window.theme, window.dimensions);
+            console.log('Page loaded, waiting for D3.js...');
+            
+            // Wait for D3.js to load
+            function waitForD3() {{
+                if (typeof d3 !== 'undefined') {{
+                    console.log('D3.js loaded, starting rendering...');
+                    try {{
+                        window.spec = {json.dumps(spec, ensure_ascii=False)};
+                        window.graph_type = '{graph_type}';
+                        
+                        // Merge D3 theme with watermark config
+                        const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
+                        const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
+                        window.theme = {{...d3Theme, ...watermarkConfig}};
+                        window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
+                        
+                        console.log('Rendering graph:', window.graph_type, window.spec);
+                        
+                        {d3_renderers}
+                        
+                        // Use agent renderer for brace maps
+                        if (window.graph_type === 'brace_map' && window.spec.success) {{
+                            console.log('Using brace map agent renderer');
+                            renderBraceMapAgent(window.spec, window.theme, window.dimensions);
+                        }} else {{
+                            renderGraph(window.graph_type, window.spec, window.theme, window.dimensions);
+                        }}
+                        
+                        console.log('Graph rendering completed');
+                    }} catch (error) {{
+                        console.error('Render error:', error);
+                        document.body.innerHTML += '<div style="color: red; padding: 20px;">Render error: ' + error.message + '</div>';
+                    }}
+                }} else {{
+                    setTimeout(waitForD3, 100);
+                }}
+            }}
+            waitForD3();
             </script>
             </body></html>
             '''
@@ -280,17 +375,39 @@ def generate_png():
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
                 await page.set_content(html)
-                await asyncio.sleep(1.5)
+                
+                # Wait for rendering
+                await asyncio.sleep(2.0)
+                
+                # Wait for rendering
+                await asyncio.sleep(2.0)
+                
+                # Wait a bit more for rendering to complete
+                await asyncio.sleep(1.0)
+                
+                # Check if SVG exists and has content
                 element = await page.query_selector('svg')
                 if element is None:
                     logger.error("SVG element not found in rendered page.")
+                    # Log page content for debugging
+                    page_content = await page.content()
+                    logger.error(f"Page content: {page_content[:1000]}...")
                     raise ValueError("SVG element not found. The graph could not be rendered.")
-                png_bytes = await element.screenshot(omit_background=False)
+                
+                # Check SVG dimensions
+                svg_width = await element.get_attribute('width')
+                svg_height = await element.get_attribute('height')
+                logger.info(f"SVG dimensions: width={svg_width}, height={svg_height}")
+                
+                # Ensure element is visible before screenshot
+                await element.scroll_into_view_if_needed()
+                await page.wait_for_timeout(1000)  # Wait for any animations to complete
+                
+                png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 await browser.close()
                 return png_bytes
         
-        loop = asyncio.get_event_loop()
-        png_bytes = loop.run_until_complete(render_svg_to_png(spec, graph_type))
+        png_bytes = asyncio.run(render_svg_to_png(spec, graph_type))
         
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.png', mode='wb') as tmp:

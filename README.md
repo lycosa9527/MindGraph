@@ -1,6 +1,6 @@
 # MindGraph - AI-Powered Data Visualization Generator
 
-[![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.2-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
@@ -15,6 +15,7 @@
 
 - **🤖 AI-Powered**: Uses AI to understand your requests and generate appropriate chart types
 - **🧠 Educational Focus**: Specializes in Thinking Maps® and educational diagram generation
+- **🏗️ Agent Architecture**: Advanced multi-agent system with 6 specialized agents for intelligent diagram generation
 - **📊 Multiple Chart Types**: Supports Thinking Maps® (Bubble Maps, Circle Maps, Double Bubble Maps, Bridge Maps), concept maps, mind maps, and traditional charts
 - **🌐 Interactive**: Fully interactive D3.js visualizations with hover effects, animations, and zoom
 - **🎨 Beautiful Design**: Modern, responsive UI with customizable themes
@@ -87,6 +88,38 @@ D3.js creates an interactive visualization with:
 Export your charts as:
 - Interactive HTML files
 - High-resolution PNG images
+
+## 🏗️ Agent Architecture
+
+MindGraph v2.3.2 introduces a sophisticated multi-agent system with 6 specialized agents:
+
+### 🤖 Agent System Overview
+
+| Agent | Role | Responsibilities |
+|-------|------|------------------|
+| **Main Agent** | Central Coordinator | Orchestrates entire workflow, manages other agents |
+| **Qwen LLM Agent** | Primary AI Processor | Handles classification, topic extraction, spec generation |
+| **DeepSeek Agent** | Development Tool | Creates enhanced prompts for educational context |
+| **Brace Map Agent** | Specialized Diagram Agent | Dynamic positioning, layout algorithms, collision detection |
+| **Agent Utils** | Utility Functions | Topic extraction, characteristics generation, language detection |
+| **LLM Clients** | API Interfaces | Async interfaces for DeepSeek and Qwen APIs |
+
+### 🧠 Intelligent Features
+
+- **Dynamic Positioning**: Content-aware algorithms that adapt to actual data structure
+- **Hybrid LLM + Python**: Combines AI intelligence with deterministic algorithms
+- **Context Management**: User preference storage and session management
+- **Collision Detection**: Advanced algorithms to prevent overlapping elements
+- **Multi-Language Support**: Seamless Chinese and English processing
+
+### 📋 Agent Workflow
+
+1. **User Input** → Main Agent receives and validates request
+2. **AI Analysis** → Qwen LLM Agent classifies diagram type and extracts topics
+3. **Algorithm Selection** → Brace Map Agent chooses optimal layout algorithm
+4. **Dynamic Positioning** → Content-aware positioning with collision detection
+5. **SVG Generation** → D3.js compatible SVG data creation
+6. **Export Options** → PNG or interactive HTML output
 
 ## 📊 Supported Chart Types
 
@@ -163,6 +196,7 @@ docker run -p 9527:9527 mindgraph
 ## 📚 Documentation
 
 - **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in minutes
+- **[Agent Architecture](docs/AGENT_ARCHITECTURE_COMPREHENSIVE.md)** - Complete agent system documentation
 - **[Thinking Maps Guide](docs/THINKING_MAPS_GUIDE.md)** - Learn about Thinking Maps®
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
 - **[Complete Documentation](docs/README.md)** - Full documentation index

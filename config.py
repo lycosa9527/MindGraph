@@ -2,7 +2,7 @@
 MindGraph Configuration Module
 ==============================
 
-Version: 2.3.1
+Version: 2.3.2
 
 This module provides centralized configuration management for the MindGraph application.
 It handles environment variable loading, validation, and provides a clean interface
@@ -108,7 +108,7 @@ class Config:
     @property
     def DEEPSEEK_MODEL(self):
         """DeepSeek model name for API requests."""
-        return self._get_cached_value('DEEPSEEK_MODEL', 'deepseek-chat')
+        return self._get_cached_value('DEEPSEEK_MODEL', 'deepseek-r1')
     @property
     def DEEPSEEK_TEMPERATURE(self):
         """DeepSeek model temperature for response creativity (0.0-1.0)."""
