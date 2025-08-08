@@ -160,48 +160,66 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 500;
     const padding = dimensions?.padding || 40;
     
-    // Map integrated styles to theme structure
-    const THEME = {
-        topicFill: '#4e79a7',
-        topicText: '#fff',
-        topicStroke: '#35506b',
-        topicStrokeWidth: 3,
-        simFill: '#a7c7e7',
-        simText: '#333',
-        simStroke: '#4e79a7',
-        simStrokeWidth: 2,
-        diffFill: '#f4f6fb',
-        diffText: '#4e79a7',
-        diffStroke: '#4e79a7',
-        diffStrokeWidth: 2,
-        fontTopic: 18,
-        fontSim: 14,
-        fontDiff: 13,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        // Map style properties to theme structure
-        if (theme.leftTopicColor) THEME.topicFill = theme.leftTopicColor;
-        if (theme.topicTextColor) THEME.topicText = theme.topicTextColor;
-        if (theme.stroke) THEME.topicStroke = theme.stroke;
-        if (theme.strokeWidth) THEME.topicStrokeWidth = theme.strokeWidth;
-        if (theme.similarityColor) THEME.simFill = theme.similarityColor;
-        if (theme.similarityTextColor) THEME.simText = theme.similarityTextColor;
-        if (theme.leftDiffColor) THEME.diffFill = theme.leftDiffColor;
-        if (theme.diffTextColor) THEME.diffText = theme.diffTextColor;
-        if (theme.topicFontSize) THEME.fontTopic = theme.topicFontSize;
-        if (theme.similarityFontSize) THEME.fontSim = theme.similarityFontSize;
-        if (theme.diffFontSize) THEME.fontDiff = theme.diffFontSize;
-        
-        // Apply background if specified
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get complete theme using centralized configuration
+    let THEME;
+    try {
+        // Use centralized theme configuration if available
+        if (typeof getD3Theme === 'function') {
+            THEME = getD3Theme('double_bubble_map');
+            console.log('Using centralized theme configuration for double bubble map');
+        } else if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('double_bubble_map', theme, theme);
+            console.log('Using style manager theme (fallback)');
+        } else {
+            console.warn('Using fallback theme');
+            THEME = {
+                centralTopicFill: '#1976d2',  // Deeper blue
+                centralTopicText: '#ffffff',   // White text for contrast
+                centralTopicStroke: '#000000', // Black border for central topic
+                leftTopicFill: '#1976d2',      // Deeper blue
+                leftTopicText: '#ffffff',       // White text for contrast
+                leftTopicStroke: '#000000',    // Black border for left topic
+                rightTopicFill: '#1976d2',     // Deeper blue
+                rightTopicText: '#ffffff',      // White text for contrast
+                rightTopicStroke: '#000000',   // Black border for right topic
+                attributeFill: '#e3f2fd', // Light blue for feature nodes
+                attributeText: '#333333',
+                attributeStroke: '#000000',  // Black border
+                fontTopic: '18px Inter, sans-serif',
+                fontAttribute: '14px Inter, sans-serif',
+                background: '#ffffff'
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme:', error);
+        THEME = {
+            centralTopicFill: '#1976d2',  // Deeper blue
+            centralTopicText: '#ffffff',   // White text for contrast
+            centralTopicStroke: '#000000', // Black border for central topic
+            leftTopicFill: '#1976d2',      // Deeper blue
+            leftTopicText: '#ffffff',       // White text for contrast
+            leftTopicStroke: '#000000',    // Black border for left topic
+            rightTopicFill: '#1976d2',     // Deeper blue
+            rightTopicText: '#ffffff',      // White text for contrast
+            rightTopicStroke: '#000000',   // Black border for right topic
+            attributeFill: '#e3f2fd', // Light blue for feature nodes
+            attributeText: '#333333',
+            attributeStroke: '#000000',  // Black border
+            fontTopic: '18px Inter, sans-serif',
+            fontAttribute: '14px Inter, sans-serif',
+            background: '#ffffff'
+        };
+    }
+    
+    // Apply background if specified
+    if (theme && theme.background) {
+        d3.select('#d3-container').style('background-color', theme.background);
     }
     
     console.log('renderDoubleBubbleMap: using theme:', THEME);
+    console.log('attributeFill value:', THEME.attributeFill);
+    console.log('attributeText value:', THEME.attributeText);
+    console.log('attributeStroke value:', THEME.attributeStroke);
     
     const leftTopicR = getTextRadius(spec.left, THEME.fontTopic, 18);
     const rightTopicR = getTextRadius(spec.right, THEME.fontTopic, 18);
@@ -226,23 +244,59 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const maxColHeight = Math.max(simColHeight, leftColHeight, rightColHeight, topicR * 2);
     const height = Math.max(baseHeight, maxColHeight + padding * 2);
     
-    const leftX = padding + topicR;
-    const rightX = baseWidth - padding - topicR;
-    const simX = (leftX + rightX) / 2;
-    const leftDiffX = leftX - topicR - 90;
-    const rightDiffX = rightX + topicR + 90;
+    // Position topic nodes in the middle between left differences and similarities
+    const leftDiffX = padding + leftDiffR;
+    const simX = baseWidth / 2;
+    const rightDiffX = baseWidth - padding - rightDiffR;
     
-    const minX = Math.min(leftDiffX - leftDiffR, leftX - topicR, simX - simR, rightX - topicR, rightDiffX - rightDiffR) - padding;
-    const maxX = Math.max(leftDiffX + leftDiffR, leftX + topicR, simX + simR, rightX + topicR, rightDiffX + rightDiffR) + padding;
+    // Position all columns with 50px spacing between columns
+    const columnSpacing = 50; // Fixed 50 pixel spacing between columns
+    
+    // Calculate column positions (center of each column)
+    const leftDiffColumnX = leftDiffX; // Left differences column center
+    const leftTopicColumnX = leftDiffX + leftDiffR + columnSpacing + topicR; // Left topic column center
+    const similaritiesColumnX = leftTopicColumnX + topicR + columnSpacing + simR; // Similarities column center
+    const rightTopicColumnX = similaritiesColumnX + simR + columnSpacing + topicR; // Right topic column center
+    const rightDiffColumnX = rightTopicColumnX + topicR + columnSpacing + rightDiffR; // Right differences column center
+    
+    // Position individual elements within their columns
+    const leftTopicX = leftTopicColumnX;
+    const leftSimX = similaritiesColumnX;
+    const rightTopicX = rightTopicColumnX;
+    const calculatedRightDiffX = rightDiffColumnX;
+    
+    // Calculate width to accommodate all elements with proper spacing
+    const minX = Math.min(leftDiffX - leftDiffR, leftTopicX - topicR, leftSimX - simR, rightTopicX - topicR, calculatedRightDiffX - rightDiffR) - padding;
+    const maxX = Math.max(leftDiffX + leftDiffR, leftTopicX + topicR, leftSimX + simR, rightTopicX + topicR, calculatedRightDiffX + rightDiffR) + padding;
     const width = Math.max(baseWidth, maxX - minX);
+    
+    // Calculate required width based on new positioning
+    const requiredWidth = calculatedRightDiffX + rightDiffR + padding * 2;
+    const finalWidth = Math.max(width, requiredWidth);
     const topicY = height / 2;
     
-    console.log('renderDoubleBubbleMap: layout calculated:', { width, height, leftX, rightX, simX, leftDiffX, rightDiffX, topicY });
+    console.log('renderDoubleBubbleMap: layout calculated:', { 
+        width: finalWidth, 
+        height, 
+        leftTopicX, 
+        leftSimX, 
+        rightTopicX, 
+        calculatedRightDiffX, 
+        leftDiffX, 
+        rightDiffX, 
+        topicY,
+        columnSpacing,
+        leftDiffColumnX,
+        leftTopicColumnX,
+        similaritiesColumnX,
+        rightTopicColumnX,
+        rightDiffColumnX
+    });
     
     const svg = d3.select('#d3-container').append('svg')
-        .attr('width', width)
+        .attr('width', finalWidth)
         .attr('height', height)
-        .attr('viewBox', `${minX} 0 ${width} ${height}`)
+        .attr('viewBox', `${minX} 0 ${finalWidth} ${height}`)
         .attr('preserveAspectRatio', 'xMinYMin meet');
     
     console.log('renderDoubleBubbleMap: SVG created');
@@ -251,15 +305,15 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const simStartY = topicY - ((simCount - 1) * (simR * 2 + 12)) / 2;
     for (let i = 0; i < simCount; i++) {
         const y = simStartY + i * (simR * 2 + 12);
-        let dxL = leftX - simX, dyL = topicY - y, distL = Math.sqrt(dxL * dxL + dyL * dyL);
-        let x1L = simX + (dxL / distL) * simR, y1L = y + (dyL / distL) * simR;
-        let x2L = leftX - (dxL / distL) * topicR, y2L = topicY - (dyL / distL) * topicR;
+        let dxL = leftTopicX - leftSimX, dyL = topicY - y, distL = Math.sqrt(dxL * dxL + dyL * dyL);
+        let x1L = leftSimX + (dxL / distL) * simR, y1L = y + (dyL / distL) * simR;
+        let x2L = leftTopicX - (dxL / distL) * topicR, y2L = topicY - (dyL / distL) * topicR;
         svg.append('line').attr('x1', x1L).attr('y1', y1L).attr('x2', x2L).attr('y2', y2L)
             .attr('stroke', '#888').attr('stroke-width', 2);
         
-        let dxR = rightX - simX, dyR = topicY - y, distR = Math.sqrt(dxR * dxR + dyR * dyR);
-        let x1R = simX + (dxR / distR) * simR, y1R = y + (dyR / distR) * simR;
-        let x2R = rightX - (dxR / distR) * topicR, y2R = topicY - (dyR / distR) * topicR;
+        let dxR = rightTopicX - leftSimX, dyR = topicY - y, distR = Math.sqrt(dxR * dxR + dyR * dyR);
+        let x1R = leftSimX + (dxR / distR) * simR, y1R = y + (dyR / distR) * simR;
+        let x2R = rightTopicX - (dxR / distR) * topicR, y2R = topicY - (dyR / distR) * topicR;
         svg.append('line').attr('x1', x1R).attr('y1', y1R).attr('x2', x2R).attr('y2', y2R)
             .attr('stroke', '#888').attr('stroke-width', 2);
     }
@@ -267,9 +321,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const leftDiffStartY = topicY - ((leftDiffCount - 1) * (leftDiffR * 2 + 10)) / 2;
     for (let i = 0; i < leftDiffCount; i++) {
         const y = leftDiffStartY + i * (leftDiffR * 2 + 10);
-        let dx = leftX - leftDiffX, dy = topicY - y, dist = Math.sqrt(dx * dx + dy * dy);
+        let dx = leftTopicX - leftDiffX, dy = topicY - y, dist = Math.sqrt(dx * dx + dy * dy);
         let x1 = leftDiffX + (dx / dist) * leftDiffR, y1 = y + (dy / dist) * leftDiffR;
-        let x2 = leftX - (dx / dist) * topicR, y2 = topicY - (dy / dist) * topicR;
+        let x2 = leftTopicX - (dx / dist) * topicR, y2 = topicY - (dy / dist) * topicR;
         svg.append('line').attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2)
             .attr('stroke', '#bbb').attr('stroke-width', 2);
     }
@@ -277,24 +331,24 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const rightDiffStartY = topicY - ((rightDiffCount - 1) * (rightDiffR * 2 + 10)) / 2;
     for (let i = 0; i < rightDiffCount; i++) {
         const y = rightDiffStartY + i * (rightDiffR * 2 + 10);
-        let dx = rightX - rightDiffX, dy = topicY - y, dist = Math.sqrt(dx * dx + dy * dy);
-        let x1 = rightDiffX + (dx / dist) * rightDiffR, y1 = y + (dy / dist) * rightDiffR;
-        let x2 = rightX - (dx / dist) * topicR, y2 = topicY - (dy / dist) * topicR;
+        let dx = rightTopicX - calculatedRightDiffX, dy = topicY - y, dist = Math.sqrt(dx * dx + dy * dy);
+        let x1 = calculatedRightDiffX + (dx / dist) * rightDiffR, y1 = y + (dy / dist) * rightDiffR;
+        let x2 = rightTopicX - (dx / dist) * topicR, y2 = topicY - (dy / dist) * topicR;
         svg.append('line').attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2)
             .attr('stroke', '#bbb').attr('stroke-width', 2);
     }
     
     // Draw all circles next
-    svg.append('circle').attr('cx', leftX).attr('cy', topicY).attr('r', topicR)
+    svg.append('circle').attr('cx', leftTopicX).attr('cy', topicY).attr('r', topicR)
         .attr('fill', THEME.topicFill).attr('opacity', 0.9)
         .attr('stroke', THEME.topicStroke).attr('stroke-width', THEME.topicStrokeWidth);
-    svg.append('circle').attr('cx', rightX).attr('cy', topicY).attr('r', topicR)
+    svg.append('circle').attr('cx', rightTopicX).attr('cy', topicY).attr('r', topicR)
         .attr('fill', THEME.topicFill).attr('opacity', 0.9)
         .attr('stroke', THEME.topicStroke).attr('stroke-width', THEME.topicStrokeWidth);
     
     for (let i = 0; i < simCount; i++) {
         const y = simStartY + i * (simR * 2 + 12);
-        svg.append('circle').attr('cx', simX).attr('cy', y).attr('r', simR)
+        svg.append('circle').attr('cx', leftSimX).attr('cy', y).attr('r', simR)
             .attr('fill', THEME.simFill).attr('stroke', THEME.simStroke).attr('stroke-width', THEME.simStrokeWidth);
     }
     
@@ -306,23 +360,23 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     
     for (let i = 0; i < rightDiffCount; i++) {
         const y = rightDiffStartY + i * (rightDiffR * 2 + 10);
-        svg.append('circle').attr('cx', rightDiffX).attr('cy', y).attr('r', rightDiffR)
+        svg.append('circle').attr('cx', calculatedRightDiffX).attr('cy', y).attr('r', rightDiffR)
             .attr('fill', THEME.diffFill).attr('stroke', THEME.diffStroke).attr('stroke-width', THEME.diffStrokeWidth);
     }
     
     // Draw all text last
-    svg.append('text').attr('x', leftX).attr('y', topicY)
+    svg.append('text').attr('x', leftTopicX).attr('y', topicY)
         .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
         .attr('fill', THEME.topicText).attr('font-size', THEME.fontTopic).attr('font-weight', 600)
         .text(spec.left);
-    svg.append('text').attr('x', rightX).attr('y', topicY)
+    svg.append('text').attr('x', rightTopicX).attr('y', topicY)
         .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
         .attr('fill', THEME.topicText).attr('font-size', THEME.fontTopic).attr('font-weight', 600)
         .text(spec.right);
     
     for (let i = 0; i < simCount; i++) {
         const y = simStartY + i * (simR * 2 + 12);
-        svg.append('text').attr('x', simX).attr('y', y)
+        svg.append('text').attr('x', leftSimX).attr('y', y)
             .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
             .attr('fill', THEME.simText).attr('font-size', THEME.fontSim)
             .text(spec.similarities[i]);
@@ -338,7 +392,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     
     for (let i = 0; i < rightDiffCount; i++) {
         const y = rightDiffStartY + i * (rightDiffR * 2 + 10);
-        svg.append('text').attr('x', rightDiffX).attr('y', y)
+        svg.append('text').attr('x', calculatedRightDiffX).attr('y', y)
             .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
             .attr('fill', THEME.diffText).attr('font-size', THEME.fontDiff)
             .text(spec.right_differences[i]);
@@ -360,37 +414,62 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 500;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        topicFill: '#4e79a7',
-        topicText: '#fff',
-        topicStroke: '#35506b',
-        topicStrokeWidth: 3,
-        attributeFill: '#a7c7e7',
-        attributeText: '#333',
-        attributeStroke: '#4e79a7',
-        attributeStrokeWidth: 2,
-        fontTopic: 20,
-        fontAttribute: 14,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        // Map style properties to theme structure
-        if (theme.topicColor) THEME.topicFill = theme.topicColor;
-        if (theme.topicTextColor) THEME.topicText = theme.topicTextColor;
-        if (theme.stroke) THEME.topicStroke = theme.stroke;
-        if (theme.strokeWidth) THEME.topicStrokeWidth = theme.strokeWidth;
-        if (theme.charColor) THEME.attributeFill = theme.charColor;
-        if (theme.charTextColor) THEME.attributeText = theme.charTextColor;
-        if (theme.topicFontSize) THEME.fontTopic = theme.topicFontSize;
-        if (theme.charFontSize) THEME.fontAttribute = theme.charFontSize;
-        
-        // Apply background if specified
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get complete theme using centralized configuration
+    let THEME;
+    try {
+        // Use centralized theme configuration if available
+        if (typeof getD3Theme === 'function') {
+            THEME = getD3Theme('bubble_map');
+            console.log('Using centralized theme configuration');
+            console.log('Converted theme:', THEME);
+            console.log('attributeFill:', THEME.attributeFill);
+        } else if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('bubble_map', theme, theme);
+            console.log('Using style manager theme');
+        } else {
+            console.warn('Using fallback theme');
+            console.log('getD3Theme available:', typeof getD3Theme === 'function');
+            console.log('styleManager available:', typeof styleManager !== 'undefined');
+            THEME = {
+                topicFill: '#1976d2',  // Deep blue background
+                topicText: '#ffffff',   // White text for contrast
+                topicStroke: '#000000', // Black border for topic nodes
+                topicStrokeWidth: 3,
+                attributeFill: '#e3f2fd',  // Light blue for attributes
+                attributeText: '#333333', // Dark text for readability
+                attributeStroke: '#000000',  // Black border
+                attributeStrokeWidth: 2,
+                fontTopic: 20,
+                fontAttribute: 14,
+                background: '#ffffff'
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme:', error);
+        THEME = {
+            topicFill: '#1976d2',  // Deep blue background
+            topicText: '#ffffff',   // White text for contrast
+            topicStroke: '#000000', // Black border for topic nodes
+            topicStrokeWidth: 3,
+            attributeFill: '#e3f2fd',  // Light blue for attributes
+            attributeText: '#333333', // Dark text for readability
+            attributeStroke: '#000000',  // Black border
+            attributeStrokeWidth: 2,
+            fontTopic: 20,
+            fontAttribute: 14,
+            background: '#ffffff'
+        };
     }
+    
+    // Apply background if specified
+    if (theme && theme.background) {
+        d3.select('#d3-container').style('background-color', theme.background);
+    }
+    
+    console.log('Bubble map final theme:', THEME);
+    console.log('attributeFill value:', THEME.attributeFill);
+    console.log('attributeText value:', THEME.attributeText);
+    console.log('attributeStroke value:', THEME.attributeStroke);
     
     // Calculate sizes
     const topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
@@ -684,42 +763,50 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 600;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        rootFill: '#4e79a7',
-        rootText: '#fff',
-        rootStroke: '#35506b',
-        rootStrokeWidth: 3,
-        branchFill: '#a7c7e7',
-        branchText: '#333',
-        branchStroke: '#4e79a7',
-        branchStrokeWidth: 2,
-        leafFill: '#f4f6fb',
-        leafText: '#333',
-        leafStroke: '#4e79a7',
-        leafStrokeWidth: 1,
-        fontRoot: 20,
-        fontBranch: 16,
-        fontLeaf: 14,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        if (theme.rootColor) THEME.rootFill = theme.rootColor;
-        if (theme.rootTextColor) THEME.rootText = theme.rootTextColor;
-        if (theme.stroke) THEME.rootStroke = theme.stroke;
-        if (theme.strokeWidth) THEME.rootStrokeWidth = theme.strokeWidth;
-        if (theme.branchColor) THEME.branchFill = theme.branchColor;
-        if (theme.branchTextColor) THEME.branchText = theme.branchTextColor;
-        if (theme.leafColor) THEME.leafFill = theme.leafColor;
-        if (theme.leafTextColor) THEME.leafText = theme.leafTextColor;
-        if (theme.rootFontSize) THEME.fontRoot = theme.rootFontSize;
-        if (theme.branchFontSize) THEME.fontBranch = theme.branchFontSize;
-        if (theme.leafFontSize) THEME.fontLeaf = theme.leafFontSize;
-        
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get theme using style manager
+    let THEME;
+    try {
+        if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('tree_map', theme, theme);
+        } else {
+            console.warn('Style manager not available, using fallback theme');
+            THEME = {
+                rootFill: '#1976d2',  // Deeper blue
+                rootText: '#ffffff',   // White text for contrast
+                rootStroke: '#0d47a1', // Darker blue border
+                rootStrokeWidth: 3,
+                branchFill: '#e3f2fd', // Light blue for branches
+                branchText: '#333333',  // Dark text
+                branchStroke: '#1976d2', // Blue border
+                branchStrokeWidth: 2,
+                leafFill: '#f8f9fa',   // Very light blue for leaves
+                leafText: '#333333',    // Dark text
+                leafStroke: '#1976d2',  // Blue border
+                leafStrokeWidth: 1,
+                fontRoot: 20,
+                fontBranch: 16,
+                fontLeaf: 14
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme from style manager:', error);
+        THEME = {
+            rootFill: '#1976d2',  // Deeper blue
+            rootText: '#ffffff',   // White text for contrast
+            rootStroke: '#0d47a1', // Darker blue border
+            rootStrokeWidth: 3,
+            branchFill: '#e3f2fd', // Light blue for branches
+            branchText: '#333333',  // Dark text
+            branchStroke: '#1976d2', // Blue border
+            branchStrokeWidth: 2,
+            leafFill: '#f8f9fa',   // Very light blue for leaves
+            leafText: '#333333',    // Dark text
+            leafStroke: '#1976d2',  // Blue border
+            leafStrokeWidth: 1,
+            fontRoot: 20,
+            fontBranch: 16,
+            fontLeaf: 14
+        };
     }
     
     const width = baseWidth;
@@ -863,38 +950,37 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 600;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        topicFill: '#4e79a7',
-        topicText: '#fff',
-        topicStroke: '#35506b',
-        topicStrokeWidth: 3,
-        conceptFill: '#a7c7e7',
-        conceptText: '#333',
-        conceptStroke: '#4e79a7',
-        conceptStrokeWidth: 2,
-        relationshipColor: '#666',
-        relationshipStrokeWidth: 1,
-        fontTopic: 20,
-        fontConcept: 14,
-        fontRelationship: 12,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        if (theme.topicColor) THEME.topicFill = theme.topicColor;
-        if (theme.topicTextColor) THEME.topicText = theme.topicTextColor;
-        if (theme.stroke) THEME.topicStroke = theme.stroke;
-        if (theme.strokeWidth) THEME.topicStrokeWidth = theme.strokeWidth;
-        if (theme.conceptColor) THEME.conceptFill = theme.conceptColor;
-        if (theme.conceptTextColor) THEME.conceptText = theme.conceptTextColor;
-        if (theme.relationshipColor) THEME.relationshipColor = theme.relationshipColor;
-        if (theme.topicFontSize) THEME.fontTopic = theme.topicFontSize;
-        if (theme.conceptFontSize) THEME.fontConcept = theme.conceptFontSize;
-        
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get complete theme using robust style manager
+    let THEME;
+    try {
+        if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('concept_map', theme, theme);
+        } else {
+            console.warn('Style manager not available, using fallback theme');
+            THEME = {
+                nodeFill: '#e3f2fd',
+                nodeText: '#000000',
+                nodeStroke: '#35506b',
+                linkStroke: '#cccccc',
+                fontNode: '16px Inter, sans-serif',
+                background: '#ffffff'
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme from style manager:', error);
+        THEME = {
+            nodeFill: '#e3f2fd',
+            nodeText: '#000000',
+            nodeStroke: '#35506b',
+            linkStroke: '#cccccc',
+            fontNode: '16px Inter, sans-serif',
+            background: '#ffffff'
+        };
+    }
+    
+    // Apply background if specified
+    if (theme && theme.background) {
+        d3.select('#d3-container').style('background-color', theme.background);
     }
     
     const width = baseWidth;
@@ -1017,44 +1103,45 @@ function renderMindMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 500;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        centralTopicFill: '#4e79a7',
-        centralTopicText: '#fff',
-        centralTopicStroke: '#35506b',
-        centralTopicStrokeWidth: 3,
-        mainBranchFill: '#a7c7e7',
-        mainBranchText: '#333',
-        mainBranchStroke: '#4e79a7',
-        mainBranchStrokeWidth: 2,
-        subBranchFill: '#f4f6fb',
-        subBranchText: '#333',
-        subBranchStroke: '#4e79a7',
-        subBranchStrokeWidth: 1,
-        fontCentralTopic: 20,
-        fontMainBranch: 16,
-        fontSubBranch: 14,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        // Map style properties to theme structure
-        if (theme.centralTopicColor) THEME.centralTopicFill = theme.centralTopicColor;
-        if (theme.centralTopicTextColor) THEME.centralTopicText = theme.centralTopicTextColor;
-        if (theme.stroke) THEME.centralTopicStroke = theme.stroke;
-        if (theme.strokeWidth) THEME.centralTopicStrokeWidth = theme.strokeWidth;
-        if (theme.mainBranchColor) THEME.mainBranchFill = theme.mainBranchColor;
-        if (theme.mainBranchTextColor) THEME.mainBranchText = theme.mainBranchTextColor;
-        if (theme.subBranchColor) THEME.subBranchFill = theme.subBranchColor;
-        if (theme.subBranchTextColor) THEME.subBranchText = theme.subBranchTextColor;
-        if (theme.centralTopicFontSize) THEME.fontCentralTopic = theme.centralTopicFontSize;
-        if (theme.mainBranchFontSize) THEME.fontMainBranch = theme.mainBranchFontSize;
-        if (theme.subBranchFontSize) THEME.fontSubBranch = theme.subBranchFontSize;
-        
-        // Apply background if specified
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get complete theme using robust style manager
+    let THEME;
+    try {
+        if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('mindmap', theme, theme);
+        } else {
+            console.warn('Style manager not available, using fallback theme');
+            THEME = {
+                centralNodeFill: '#e3f2fd',
+                centralNodeText: '#000000',
+                centralNodeStroke: '#35506b',
+                childNodeFill: '#f5f5f5',
+                childNodeText: '#333333',
+                childNodeStroke: '#cccccc',
+                linkStroke: '#cccccc',
+                fontCentral: '18px Inter, sans-serif',
+                fontChild: '14px Inter, sans-serif',
+                background: '#ffffff'
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme from style manager:', error);
+        THEME = {
+            centralNodeFill: '#e3f2fd',
+            centralNodeText: '#000000',
+            centralNodeStroke: '#35506b',
+            childNodeFill: '#f5f5f5',
+            childNodeText: '#333333',
+            childNodeStroke: '#cccccc',
+            linkStroke: '#cccccc',
+            fontCentral: '18px Inter, sans-serif',
+            fontChild: '14px Inter, sans-serif',
+            background: '#ffffff'
+        };
+    }
+    
+    // Apply background if specified
+    if (theme && theme.background) {
+        d3.select('#d3-container').style('background-color', theme.background);
     }
     
     const width = baseWidth;
@@ -1332,41 +1419,52 @@ function renderVennDiagram(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 600;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        set1Fill: '#ff6b6b',
-        set1Text: '#fff',
-        set1Stroke: '#c44569',
-        set1StrokeWidth: 2,
-        set2Fill: '#4ecdc4',
-        set2Text: '#fff',
-        set2Stroke: '#26a69a',
-        set2StrokeWidth: 2,
-        set3Fill: '#45b7d1',
-        set3Text: '#fff',
-        set3Stroke: '#2c3e50',
-        set3StrokeWidth: 2,
-        intersectionFill: '#a8e6cf',
-        intersectionText: '#333',
-        fontSet: 16,
-        fontIntersection: 14,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        if (theme.set1Color) THEME.set1Fill = theme.set1Color;
-        if (theme.set1TextColor) THEME.set1Text = theme.set1TextColor;
-        if (theme.set2Color) THEME.set2Fill = theme.set2Color;
-        if (theme.set2TextColor) THEME.set2Text = theme.set2TextColor;
-        if (theme.set3Color) THEME.set3Fill = theme.set3Color;
-        if (theme.set3TextColor) THEME.set3Text = theme.set3TextColor;
-        if (theme.intersectionColor) THEME.intersectionFill = theme.intersectionColor;
-        if (theme.intersectionTextColor) THEME.intersectionText = theme.intersectionTextColor;
-        if (theme.setFontSize) THEME.fontSet = theme.setFontSize;
-        
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get theme using style manager
+    let THEME;
+    try {
+        if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('venn_diagram', theme, theme);
+        } else {
+            console.warn('Style manager not available, using fallback theme');
+            THEME = {
+                set1Fill: '#ff6b6b',   // Red for first set
+                set1Text: '#ffffff',    // White text
+                set1Stroke: '#c44569',  // Darker red border
+                set1StrokeWidth: 2,
+                set2Fill: '#4ecdc4',   // Teal for second set
+                set2Text: '#ffffff',    // White text
+                set2Stroke: '#26a69a',  // Darker teal border
+                set2StrokeWidth: 2,
+                set3Fill: '#45b7d1',   // Blue for third set
+                set3Text: '#ffffff',    // White text
+                set3Stroke: '#2c3e50',  // Darker blue border
+                set3StrokeWidth: 2,
+                intersectionFill: '#a8e6cf', // Light green for intersections
+                intersectionText: '#333333',  // Dark text
+                fontSet: 16,
+                fontIntersection: 14
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme from style manager:', error);
+        THEME = {
+            set1Fill: '#ff6b6b',   // Red for first set
+            set1Text: '#ffffff',    // White text
+            set1Stroke: '#c44569',  // Darker red border
+            set1StrokeWidth: 2,
+            set2Fill: '#4ecdc4',   // Teal for second set
+            set2Text: '#ffffff',    // White text
+            set2Stroke: '#26a69a',  // Darker teal border
+            set2StrokeWidth: 2,
+            set3Fill: '#45b7d1',   // Blue for third set
+            set3Text: '#ffffff',    // White text
+            set3Stroke: '#2c3e50',  // Darker blue border
+            set3StrokeWidth: 2,
+            intersectionFill: '#a8e6cf', // Light green for intersections
+            intersectionText: '#333333',  // Dark text
+            fontSet: 16,
+            fontIntersection: 14
+        };
     }
     
     const width = baseWidth;
@@ -1531,39 +1629,56 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 600;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        startFill: '#4caf50',
-        startText: '#fff',
-        startStroke: '#388e3c',
-        startStrokeWidth: 2,
-        processFill: '#2196f3',
-        processText: '#fff',
-        processStroke: '#1976d2',
-        processStrokeWidth: 2,
-        decisionFill: '#ff9800',
-        decisionText: '#fff',
-        decisionStroke: '#f57c00',
-        decisionStrokeWidth: 2,
-        endFill: '#f44336',
-        endText: '#fff',
-        endStroke: '#d32f2f',
-        endStrokeWidth: 2,
-        fontNode: 14,
-        fontEdge: 12,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        if (theme.startColor) THEME.startFill = theme.startColor;
-        if (theme.processColor) THEME.processFill = theme.processColor;
-        if (theme.decisionColor) THEME.decisionFill = theme.decisionColor;
-        if (theme.endColor) THEME.endFill = theme.endColor;
-        if (theme.nodeFontSize) THEME.fontNode = theme.nodeFontSize;
-        
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get theme using style manager
+    let THEME;
+    try {
+        if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('flowchart', theme, theme);
+        } else {
+            console.warn('Style manager not available, using fallback theme');
+            THEME = {
+                startFill: '#4caf50',   // Green for start
+                startText: '#ffffff',    // White text
+                startStroke: '#388e3c',  // Darker green border
+                startStrokeWidth: 2,
+                processFill: '#2196f3',  // Blue for process
+                processText: '#ffffff',  // White text
+                processStroke: '#1976d2', // Darker blue border
+                processStrokeWidth: 2,
+                decisionFill: '#ff9800', // Orange for decision
+                decisionText: '#ffffff',  // White text
+                decisionStroke: '#f57c00', // Darker orange border
+                decisionStrokeWidth: 2,
+                endFill: '#f44336',     // Red for end
+                endText: '#ffffff',      // White text
+                endStroke: '#d32f2f',   // Darker red border
+                endStrokeWidth: 2,
+                fontNode: 14,
+                fontEdge: 12
+            };
         }
+    } catch (error) {
+        console.error('Error getting theme from style manager:', error);
+        THEME = {
+            startFill: '#4caf50',   // Green for start
+            startText: '#ffffff',    // White text
+            startStroke: '#388e3c',  // Darker green border
+            startStrokeWidth: 2,
+            processFill: '#2196f3',  // Blue for process
+            processText: '#ffffff',  // White text
+            processStroke: '#1976d2', // Darker blue border
+            processStrokeWidth: 2,
+            decisionFill: '#ff9800', // Orange for decision
+            decisionText: '#ffffff',  // White text
+            decisionStroke: '#f57c00', // Darker orange border
+            decisionStrokeWidth: 2,
+            endFill: '#f44336',     // Red for end
+            endText: '#ffffff',      // White text
+            endStroke: '#d32f2f',   // Darker red border
+            endStrokeWidth: 2,
+            fontNode: 14,
+            fontEdge: 12
+        };
     }
     
     const width = baseWidth;
@@ -2434,347 +2549,219 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     }
     
     // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 800;
+    const baseWidth = dimensions?.baseWidth || 1000;
     const baseHeight = dimensions?.baseHeight || 600;
     const padding = dimensions?.padding || 40;
     
-    const THEME = {
-        topicFill: '#4e79a7',
-        topicText: '#fff',
-        topicStroke: '#35506b',
-        topicStrokeWidth: 3,
-        partText: '#333',
-        subpartText: '#333',
-        fontTopic: 20,
-        fontPart: 16,
-        fontSubpart: 14,
-        braceColor: '#666',
-        braceWidth: 3,
-        ...theme
-    };
-    
-    // Apply integrated styles if available
-    if (theme) {
-        if (theme.topicColor) THEME.topicFill = theme.topicColor;
-        if (theme.topicTextColor) THEME.topicText = theme.topicTextColor;
-        if (theme.stroke) THEME.topicStroke = theme.stroke;
-        if (theme.strokeWidth) THEME.topicStrokeWidth = theme.strokeWidth;
-        if (theme.partTextColor) THEME.partText = theme.partTextColor;
-        if (theme.subpartTextColor) THEME.subpartText = theme.subpartTextColor;
-        if (theme.topicFontSize) THEME.fontTopic = theme.topicFontSize;
-        if (theme.partFontSize) THEME.fontPart = theme.partFontSize;
-        if (theme.subpartFontSize) THEME.fontSubpart = theme.subpartFontSize;
-        if (theme.braceColor) THEME.braceColor = theme.braceColor;
-        if (theme.braceWidth) THEME.braceWidth = theme.braceWidth;
-        
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
+    // Get complete theme using robust style manager
+    let THEME;
+    try {
+        if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            THEME = styleManager.getTheme('brace_map', theme, theme);
+        } else {
+            console.warn('Style manager not available, using fallback theme');
+            THEME = {
+                topicFill: '#e3f2fd',
+                topicText: '#000000',
+                topicStroke: '#35506b',
+                partFill: '#f5f5f5',
+                partText: '#333333',
+                partStroke: '#cccccc',
+                subpartFill: '#fafafa',
+                subpartText: '#666666',
+                subpartStroke: '#dddddd',
+                fontTopic: '24px Inter, sans-serif',
+                fontPart: '18px Inter, sans-serif',
+                fontSubpart: '14px Inter, sans-serif',
+                background: '#ffffff',
+                braceColor: '#666666',
+                braceWidth: 3
+            };
         }
-    }
-    
-    // Step 1: Calculate all content dimensions first
-    const topicWidth = getTextRadius(spec.topic, THEME.fontTopic, 20) * 2;
-    const topicHeight = THEME.fontTopic + 20;
-    
-    // Calculate part dimensions and subpart dimensions
-    const partDimensions = spec.parts.map(part => {
-        const partWidth = getTextRadius(part.name, THEME.fontPart, 15) * 2;
-        const partHeight = THEME.fontPart + 15;
-        
-        let subpartDimensions = [];
-    let maxSubpartWidth = 0;
-        let totalSubpartHeight = 0;
-        
-        if (part.subparts && part.subparts.length > 0) {
-            subpartDimensions = part.subparts.map(subpart => {
-                const subpartWidth = getTextRadius(subpart.name, THEME.fontSubpart, 10) * 2;
-                const subpartHeight = THEME.fontSubpart + 10;
-                maxSubpartWidth = Math.max(maxSubpartWidth, subpartWidth);
-                return { width: subpartWidth, height: subpartHeight };
-            });
-            
-            // Calculate total height needed for subparts with spacing
-            const subpartSpacing = 20;
-            totalSubpartHeight = subpartDimensions.reduce((sum, dim) => sum + dim.height, 0) + 
-                               (subpartDimensions.length - 1) * subpartSpacing;
-        }
-        
-        return {
-            width: partWidth,
-            height: partHeight,
-            subpartDimensions,
-            maxSubpartWidth,
-            totalSubpartHeight
+    } catch (error) {
+        console.error('Error getting theme from style manager:', error);
+        THEME = {
+            topicFill: '#e3f2fd',
+            topicText: '#000000',
+            topicStroke: '#35506b',
+            partFill: '#f5f5f5',
+            partText: '#333333',
+            partStroke: '#cccccc',
+            subpartFill: '#fafafa',
+            subpartText: '#666666',
+            subpartStroke: '#dddddd',
+            fontTopic: '24px Inter, sans-serif',
+            fontPart: '18px Inter, sans-serif',
+            fontSubpart: '14px Inter, sans-serif',
+            background: '#ffffff',
+            braceColor: '#666666',
+            braceWidth: 3
         };
-    });
+    }
     
-    // Step 2: Calculate optimal spacing and layout
-    const minSpacing = 30; // Minimum spacing between elements
-    const braceWidth = 20; // Width of main brace
-    const partBraceWidth = 12; // Width of part braces
+    // Apply background if specified
+    if (theme && theme.background) {
+        d3.select('#d3-container').style('background-color', theme.background);
+    }
     
-    // Calculate total width needed for main topic + parts group
-    const totalPartsWidth = partDimensions.reduce((sum, part) => sum + part.width, 0);
-    const partsSpacing = Math.max(minSpacing, (baseWidth - topicWidth - totalPartsWidth - braceWidth - padding * 2) / (spec.parts.length + 1));
+    // Calculate 5-column layout positions
+    const column1X = padding + 100; // Topic column
+    const column2X = column1X + 150; // Big brace column
+    const column3X = column2X + 100; // Parts column
+    const column4X = column3X + 150; // Small brace column
+    const column5X = column4X + 100; // Subparts column
     
-    // Calculate positions for main topic + parts group
-    const topicX = padding + topicWidth / 2;
-    const topicY = baseHeight / 2;
+    // Calculate vertical spacing
+    const partSpacing = 80;
+    const subpartSpacing = 30;
     
-    const partPositions = [];
-    let currentX = topicX + topicWidth / 2 + braceWidth + partsSpacing;
-    
-    spec.parts.forEach((part, partIndex) => {
-        const partX = currentX + part.width / 2;
-        partPositions.push({
-            x: partX,
-            y: topicY,
-            width: part.width,
-            height: part.height,
-            subpartDimensions: part.subpartDimensions,
-            maxSubpartWidth: part.maxSubpartWidth,
-            totalSubpartHeight: part.totalSubpartHeight
-        });
-        console.log(`Part ${partIndex} positioned:`, {
-            name: part.name,
-            x: partX,
-            y: topicY,
-            width: part.width,
-            height: part.height,
-            subpartCount: part.subparts ? part.subparts.length : 0
-        });
-        currentX += part.width + partsSpacing;
-    });
-    
-    // Step 3: Calculate subpart positions (Group 2)
-    const subpartPositions = [];
-    let maxSubpartY = 0;
-    let minSubpartY = Infinity; // Initialize to Infinity so Math.min works correctly
-    
-    partPositions.forEach((partPos, partIndex) => {
-        const part = spec.parts[partIndex];
+    // Calculate total height needed
+    let totalHeight = 0;
+    spec.parts.forEach(part => {
+        totalHeight += partSpacing;
         if (part.subparts && part.subparts.length > 0) {
-            // Position subparts to the right of the part with adequate spacing
-            const subpartStartX = partPos.x + part.width / 2 + partBraceWidth + minSpacing;
-            const subpartSpacing = 20;
-            
-            // Calculate vertical positioning for subparts
-            const subpartGroupHeight = part.totalSubpartHeight;
-            const subpartGroupStartY = partPos.y - subpartGroupHeight / 2;
-            
-            console.log(`Part ${partIndex} subpart positioning:`, {
-                partName: part.name,
-                subpartCount: part.subparts.length,
-                subpartGroupHeight,
-                subpartGroupStartY,
-                partPosY: partPos.y
-            });
-            
-            part.subparts.forEach((subpart, subpartIndex) => {
-                const subpartX = subpartStartX + part.maxSubpartWidth / 2;
-                const subpartY = subpartGroupStartY + subpartIndex * (part.subpartDimensions[subpartIndex].height + subpartSpacing) + 
-                               part.subpartDimensions[subpartIndex].height / 2;
-                
-                console.log(`Subpart ${subpartIndex}:`, {
-                    name: subpart.name,
-                    x: subpartX,
-                    y: subpartY,
-                    width: part.subpartDimensions[subpartIndex].width,
-                    height: part.subpartDimensions[subpartIndex].height
-                });
-                
-                subpartPositions.push({
-                    x: subpartX,
-                    y: subpartY,
-                    width: part.subpartDimensions[subpartIndex].width,
-                    height: part.subpartDimensions[subpartIndex].height,
-                    partIndex: partIndex
-                });
-                
-                maxSubpartY = Math.max(maxSubpartY, subpartY + part.subpartDimensions[subpartIndex].height / 2);
-                minSubpartY = Math.min(minSubpartY, subpartY - part.subpartDimensions[subpartIndex].height / 2);
-            });
+            totalHeight += part.subparts.length * subpartSpacing;
         }
     });
     
-    // Step 4: Calculate final dimensions based on actual content positioning
-    let maxSubpartX = 0;
-    if (subpartPositions.length > 0) {
-        maxSubpartX = Math.max(...subpartPositions.map(sp => sp.x + sp.width / 2));
-    } else if (partPositions.length > 0) {
-        maxSubpartX = Math.max(...partPositions.map(pp => pp.x + pp.width / 2));
-    } else {
-        // Fallback when no parts exist
-        maxSubpartX = topicX + topicWidth / 2 + padding;
-    }
+    // Adjust canvas height if needed
+    const finalHeight = Math.max(baseHeight, totalHeight + padding * 2);
+    const finalWidth = Math.max(baseWidth, column5X + 200 + padding);
     
-    // Ensure we have valid dimensions and fallback to minimum values
-    const minWidth = Math.max(baseWidth, 400);
-    const minHeight = Math.max(baseHeight, 300);
-    
-    let finalWidth = Math.max(minWidth, maxSubpartX + padding);
-    
-    // Calculate height with proper fallbacks
-    let finalHeight;
-    if (subpartPositions.length > 0 && isFinite(minSubpartY) && maxSubpartY > minSubpartY) {
-        finalHeight = Math.max(minHeight, maxSubpartY - minSubpartY + padding * 2);
-    } else if (subpartPositions.length > 0 && maxSubpartY > 0) {
-        // If we have subparts but minSubpartY wasn't updated, use maxSubpartY as reference
-        finalHeight = Math.max(minHeight, maxSubpartY + padding * 2);
-    } else if (partPositions.length > 0) {
-        // If no subparts, use topic height as minimum
-        finalHeight = Math.max(minHeight, topicHeight + padding * 2);
-    } else {
-        // Fallback when no content
-        finalHeight = minHeight;
-    }
-    
-    // Handle edge cases where calculations might result in invalid values
-    if (!isFinite(finalWidth) || finalWidth <= 0) {
-        finalWidth = minWidth;
-    }
-    if (!isFinite(finalHeight) || finalHeight <= 0) {
-        finalHeight = minHeight;
-    }
-    
-    // Ensure minimum dimensions for visibility
-    finalWidth = Math.max(finalWidth, 400);
-    finalHeight = Math.max(finalHeight, 300);
-    
-    // Final safety check - if dimensions are still invalid, use defaults
-    if (!isFinite(finalWidth) || finalWidth <= 0) {
-        console.warn('Invalid finalWidth, using default:', finalWidth);
-        finalWidth = 800;
-    }
-    if (!isFinite(finalHeight) || finalHeight <= 0) {
-        console.warn('Invalid finalHeight, using default:', finalHeight);
-        finalHeight = 600;
-    }
-    
-    // Step 5: Create SVG with calculated dimensions
-    console.log('Brace map dimensions:', { finalWidth, finalHeight, maxSubpartX, maxSubpartY, minSubpartY });
-    
+    // Create SVG
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', finalWidth)
         .attr('height', finalHeight)
         .attr('viewBox', `0 0 ${finalWidth} ${finalHeight}`)
         .attr('preserveAspectRatio', 'xMinYMin meet')
-        .style('display', 'block') // Ensure SVG is visible
-        .style('background-color', '#ffffff'); // Add background for debugging
+        .style('display', 'block')
+        .style('background-color', '#ffffff');
     
-    // Validate SVG was created
-    if (svg.empty()) {
-        console.error('Failed to create SVG element');
-        return;
-    }
+    // Calculate center Y for topic
+    const centerY = finalHeight / 2;
     
-    console.log('SVG created successfully with dimensions:', { width: finalWidth, height: finalHeight });
-    
-    // Add a test rectangle to ensure SVG has content and is visible
-    svg.append('rect')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', finalWidth)
-        .attr('height', finalHeight)
-        .attr('fill', 'none')
-        .attr('stroke', '#ddd')
-        .attr('stroke-width', 1);
-    
-    // Step 6: Draw main topic
+    // Draw topic (Column 1)
     svg.append('text')
-        .attr('x', topicX)
-        .attr('y', topicY)
+        .attr('x', column1X)
+        .attr('y', centerY)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.partText)
+        .attr('fill', THEME.topicText)
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 'bold')
         .text(spec.topic);
     
-    // Step 7: Draw main brace connecting topic to parts
+    // Calculate part positions
+    const partPositions = [];
+    let currentY = padding + 60;
+    
+    spec.parts.forEach((part, partIndex) => {
+        partPositions.push({
+            x: column3X,
+            y: currentY,
+            part: part,
+            partIndex: partIndex
+        });
+        
+        // Calculate subpart positions for this part
+        if (part.subparts && part.subparts.length > 0) {
+            const subpartStartY = currentY - (part.subparts.length - 1) * subpartSpacing / 2;
+            part.subparts.forEach((subpart, subpartIndex) => {
+                partPositions.push({
+                    x: column5X,
+                    y: subpartStartY + subpartIndex * subpartSpacing,
+                    subpart: subpart,
+                    partIndex: partIndex,
+                    subpartIndex: subpartIndex
+                });
+            });
+        }
+        
+        currentY += partSpacing;
+    });
+    
+    // Draw big brace (Column 2) - connects topic to all parts
     if (partPositions.length > 0) {
-        const mainBraceX = topicX + topicWidth / 2 + braceWidth / 2;
         const firstPartY = partPositions[0].y;
         const lastPartY = partPositions[partPositions.length - 1].y;
-        const mainBraceHeight = lastPartY - firstPartY;
+        const braceHeight = lastPartY - firstPartY;
         
-        const mainBracePath = `M ${mainBraceX} ${firstPartY} 
-                              L ${mainBraceX - braceWidth} ${firstPartY} 
-                              L ${mainBraceX - braceWidth} ${firstPartY + mainBraceHeight * 0.1} 
-                              L ${mainBraceX - braceWidth * 0.5} ${firstPartY + mainBraceHeight * 0.1} 
-                              L ${mainBraceX - braceWidth * 0.5} ${firstPartY + mainBraceHeight * 0.9} 
-                              L ${mainBraceX - braceWidth} ${firstPartY + mainBraceHeight * 0.9} 
-                              L ${mainBraceX - braceWidth} ${lastPartY} 
-                              L ${mainBraceX} ${lastPartY}`;
-    
-    svg.append('path')
-            .attr('d', mainBracePath)
-        .attr('fill', 'none')
-        .attr('stroke', THEME.braceColor)
-        .attr('stroke-width', THEME.braceWidth)
-        .attr('stroke-linecap', 'round')
-        .attr('stroke-linejoin', 'round');
+        const bigBracePath = `M ${column2X} ${firstPartY} 
+                              L ${column2X - 20} ${firstPartY} 
+                              L ${column2X - 20} ${firstPartY + braceHeight * 0.1} 
+                              L ${column2X - 10} ${firstPartY + braceHeight * 0.1} 
+                              L ${column2X - 10} ${firstPartY + braceHeight * 0.9} 
+                              L ${column2X - 20} ${firstPartY + braceHeight * 0.9} 
+                              L ${column2X - 20} ${lastPartY} 
+                              L ${column2X} ${lastPartY}`;
+        
+        svg.append('path')
+            .attr('d', bigBracePath)
+            .attr('fill', 'none')
+            .attr('stroke', THEME.braceColor)
+            .attr('stroke-width', THEME.braceWidth)
+            .attr('stroke-linecap', 'round')
+            .attr('stroke-linejoin', 'round');
     }
     
-    // Step 8: Draw parts and their subpart braces
+    // Draw parts (Column 3)
     spec.parts.forEach((part, partIndex) => {
-        const partPos = partPositions[partIndex];
-        
-        // Draw part text
+        const partPos = partPositions.find(p => p.part && p.partIndex === partIndex);
+        if (partPos) {
             svg.append('text')
-            .attr('x', partPos.x)
-            .attr('y', partPos.y)
-            .attr('text-anchor', 'middle')
+                .attr('x', partPos.x)
+                .attr('y', partPos.y)
+                .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.partText)
                 .attr('font-size', THEME.fontPart)
                 .attr('font-weight', 'bold')
                 .text(part.name);
-            
-        // Draw subpart brace if subparts exist
+        }
+    });
+    
+    // Draw small braces (Column 4) - connect each part to its subparts
+    spec.parts.forEach((part, partIndex) => {
         if (part.subparts && part.subparts.length > 0) {
-            const partSubparts = subpartPositions.filter(sp => sp.partIndex === partIndex);
-            if (partSubparts.length > 0) {
+            const partPos = partPositions.find(p => p.part && p.partIndex === partIndex);
+            const partSubparts = partPositions.filter(p => p.subpart && p.partIndex === partIndex);
+            
+            if (partPos && partSubparts.length > 0) {
                 const firstSubpartY = partSubparts[0].y;
                 const lastSubpartY = partSubparts[partSubparts.length - 1].y;
                 const subpartBraceHeight = lastSubpartY - firstSubpartY;
                 
-                const partBraceX = partPos.x + part.width / 2 + partBraceWidth / 2;
-                const partBracePath = `M ${partBraceX} ${firstSubpartY} 
-                                      L ${partBraceX - partBraceWidth} ${firstSubpartY} 
-                                      L ${partBraceX - partBraceWidth} ${firstSubpartY + subpartBraceHeight * 0.1} 
-                                      L ${partBraceX - partBraceWidth * 0.5} ${firstSubpartY + subpartBraceHeight * 0.1} 
-                                      L ${partBraceX - partBraceWidth * 0.5} ${firstSubpartY + subpartBraceHeight * 0.9} 
-                                      L ${partBraceX - partBraceWidth} ${firstSubpartY + subpartBraceHeight * 0.9} 
-                                      L ${partBraceX - partBraceWidth} ${lastSubpartY} 
-                                      L ${partBraceX} ${lastSubpartY}`;
-            
-            svg.append('path')
-                .attr('d', partBracePath)
-                .attr('fill', 'none')
-                .attr('stroke', THEME.braceColor)
-                .attr('stroke-width', THEME.braceWidth)
-                .attr('stroke-linecap', 'round')
-                .attr('stroke-linejoin', 'round');
+                const smallBracePath = `M ${column4X} ${firstSubpartY} 
+                                       L ${column4X - 15} ${firstSubpartY} 
+                                       L ${column4X - 15} ${firstSubpartY + subpartBraceHeight * 0.1} 
+                                       L ${column4X - 7.5} ${firstSubpartY + subpartBraceHeight * 0.1} 
+                                       L ${column4X - 7.5} ${firstSubpartY + subpartBraceHeight * 0.9} 
+                                       L ${column4X - 15} ${firstSubpartY + subpartBraceHeight * 0.9} 
+                                       L ${column4X - 15} ${lastSubpartY} 
+                                       L ${column4X} ${lastSubpartY}`;
+                
+                svg.append('path')
+                    .attr('d', smallBracePath)
+                    .attr('fill', 'none')
+                    .attr('stroke', THEME.braceColor)
+                    .attr('stroke-width', THEME.braceWidth * 0.8)
+                    .attr('stroke-linecap', 'round')
+                    .attr('stroke-linejoin', 'round');
             }
         }
     });
     
-    // Step 9: Draw subparts
-    subpartPositions.forEach(subpartPos => {
-        const subpart = spec.parts[subpartPos.partIndex].subparts.find(
-            (_, index) => subpartPositions.filter(sp => sp.partIndex === subpartPos.partIndex)[index] === subpartPos
-        );
-        
-        if (subpart) {
-                svg.append('text')
-                .attr('x', subpartPos.x)
-                .attr('y', subpartPos.y)
+    // Draw subparts (Column 5)
+    partPositions.forEach(pos => {
+        if (pos.subpart) {
+            svg.append('text')
+                .attr('x', pos.x)
+                .attr('y', pos.y)
                 .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', THEME.subpartText)
-                    .attr('font-size', THEME.fontSubpart)
-                    .text(subpart.name);
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.subpartText)
+                .attr('font-size', THEME.fontSubpart)
+                .text(pos.subpart.name);
         }
     });
     

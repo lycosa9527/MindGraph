@@ -133,7 +133,9 @@
         <div id="d3-container" style="margin-top: 20px; text-align: center;"></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="/static/js/theme-config.js"></script>
     <script src="/static/js/d3-renderers.js"></script>
+    <script src="/static/js/style-manager.js"></script>
     <script>
     const getJsonBtn = document.getElementById('getJsonBtn');
     const getPngBtn = document.getElementById('getPngBtn');
@@ -178,105 +180,49 @@
 
     // --- Style conversion and application ---
     function convertStylePreferencesToTheme(stylePreferences) {
-        // Convert extracted style preferences to D3.js theme format
-        const theme = {};
+        // Use style manager for clean, professional theme handling
+        const diagramType = 'bubble_map'; // Default, can be made dynamic
+        const userTheme = {
+            colorTheme: stylePreferences.color_theme,
+            topicFill: stylePreferences.primary_color ? getColorFromName(stylePreferences.primary_color) : null,
+            fontTopic: stylePreferences.font_size ? getFontSizeFromName(stylePreferences.font_size) + 4 : null,
+            fontAttribute: stylePreferences.font_size ? getFontSizeFromName(stylePreferences.font_size) : null,
+            background: stylePreferences.background === 'dark' ? '#2d3748' : 
+                       stylePreferences.background === 'light' ? '#ffffff' : null,
+            topicStrokeWidth: stylePreferences.stroke === 'bold' ? 4 : 
+                             stylePreferences.stroke === 'thin' ? 1 : null,
+            attributeStrokeWidth: stylePreferences.stroke === 'bold' ? 3 : 
+                                 stylePreferences.stroke === 'thin' ? 1 : null
+        };
         
-        if (stylePreferences.color_theme) {
-            // Map color themes to D3.js theme colors
-            switch (stylePreferences.color_theme.toLowerCase()) {
-                case 'classic':
-                    theme.topicFill = '#4e79a7';
-                    theme.attributeFill = '#a7c7e7';
-                    break;
-                case 'innovation':
-                    theme.topicFill = '#59a14f';
-                    theme.attributeFill = '#8cd17d';
-                    break;
-                case 'nature':
-                    theme.topicFill = '#76b7b2';
-                    theme.attributeFill = '#b07aa1';
-                    break;
-                case 'corporate':
-                    theme.topicFill = '#f28e2c';
-                    theme.attributeFill = '#ffbe7d';
-                    break;
-                case 'vibrant':
-                    theme.topicFill = '#e15759';
-                    theme.attributeFill = '#ff9da7';
-                    break;
-                case 'pastel':
-                    theme.topicFill = '#b07aa1';
-                    theme.attributeFill = '#f7cac9';
-                    break;
-                case 'monochrome':
-                    theme.topicFill = '#4a4a4a';
-                    theme.attributeFill = '#9e9e9e';
-                    break;
-                default:
-                    // Default theme
-                    theme.topicFill = '#4e79a7';
-                    theme.attributeFill = '#a7c7e7';
-            }
-        }
-        
-        // Apply primary color if specified
-        if (stylePreferences.primary_color) {
-            const colorMap = {
-                'red': '#e15759',
-                'blue': '#4e79a7',
-                'green': '#59a14f',
-                'yellow': '#f28e2c',
-                'purple': '#b07aa1',
-                'orange': '#ff9da7',
-                'pink': '#ff9da7',
-                'brown': '#9c755f',
-                'gray': '#bab0ab',
-                'black': '#4a4a4a',
-                'white': '#ffffff'
-            };
-            const hexColor = colorMap[stylePreferences.primary_color.toLowerCase()];
-            if (hexColor) {
-                theme.topicFill = hexColor;
-                theme.attributeFill = hexColor + '80'; // Add transparency
-            }
-        }
-        
-        // Apply font size if specified
-        if (stylePreferences.font_size) {
-            const fontSizeMap = {
-                'small': 12,
-                'medium': 14,
-                'large': 16,
-                'extra-large': 18
-            };
-            const size = fontSizeMap[stylePreferences.font_size.toLowerCase()];
-            if (size) {
-                theme.fontTopic = size + 4;
-                theme.fontAttribute = size;
-            }
-        }
-        
-        // Apply background theme
-        if (stylePreferences.background === 'dark') {
-            theme.background = '#2d3748';
-            theme.topicText = '#ffffff';
-            theme.attributeText = '#e2e8f0';
-        } else if (stylePreferences.background === 'light') {
-            theme.background = '#ffffff';
-            theme.topicText = '#2d3748';
-            theme.attributeText = '#4a5568';
-        }
-        
-        // Apply stroke width
-        if (stylePreferences.stroke === 'bold') {
-            theme.topicStrokeWidth = 4;
-            theme.attributeStrokeWidth = 3;
-        } else if (stylePreferences.stroke === 'thin') {
-            theme.topicStrokeWidth = 1;
-            theme.attributeStrokeWidth = 1;
-        }
-        
-        return theme;
+        return styleManager.getTheme(diagramType, userTheme);
+    }
+    
+    function getColorFromName(colorName) {
+        const colorMap = {
+            'red': '#e15759',
+            'blue': '#4e79a7',
+            'green': '#59a14f',
+            'yellow': '#f28e2c',
+            'purple': '#b07aa1',
+            'orange': '#ff9da7',
+            'pink': '#ff9da7',
+            'brown': '#9c755f',
+            'gray': '#bab0ab',
+            'black': '#4a4a4a',
+            'white': '#ffffff'
+        };
+        return colorMap[colorName.toLowerCase()] || null;
+    }
+    
+    function getFontSizeFromName(sizeName) {
+        const fontSizeMap = {
+            'small': 12,
+            'medium': 14,
+            'large': 16,
+            'extra-large': 18
+        };
+        return fontSizeMap[sizeName.toLowerCase()] || 14;
     }
     
     // --- Enhanced extraction display functions ---
@@ -359,13 +305,27 @@
             const backendDimensions = data.dimensions || {};
             const backendWatermark = data.watermark || {};
             
-            // Merge watermark into theme
-            if (backendWatermark.watermarkText) {
-                theme.watermarkText = backendWatermark.watermarkText;
+            // Use centralized theme configuration if available, otherwise fallback to style manager
+            let finalTheme;
+            if (typeof getD3Theme === 'function') {
+                const baseTheme = getD3Theme(data.type || 'bubble_map');
+                // Merge user and backend themes with base theme
+                finalTheme = { ...baseTheme, ...theme, ...backendTheme };
+                console.log('Using centralized theme configuration');
+            } else {
+                finalTheme = styleManager.getTheme(data.type || 'bubble_map', theme, backendTheme);
+                console.log('Using style manager theme (fallback)');
             }
             
+            // Merge watermark into theme
+            if (backendWatermark.watermarkText) {
+                finalTheme.watermarkText = backendWatermark.watermarkText;
+            }
+            
+            console.log('Final theme:', finalTheme);
+            
             try {
-                renderGraph(data.type, data.spec, theme, backendDimensions);
+                renderGraph(data.type, data.spec, finalTheme, backendDimensions);
             } catch (e) {
                 showError('Failed to render diagram: ' + e);
             }

@@ -5,6 +5,76 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.5] - 2025-01-27
+
+### 🚀 Major Improvements
+
+#### Brace Map 5-Column Layout Implementation
+- **5-Column Layout**: Implemented clear 5-column structure: Topic | Big Brace | Parts | Small Brace | Subparts
+- **Modern Brace Rendering**: Option 7 - Thick brace with rounded corners for professional appearance
+- **Visual Hierarchy**: Main brace (1.5x thicker) clearly distinguished from small braces (0.6x thickness)
+- **Rounded Corners**: 8px radius for main brace, 6px radius for small braces with smooth curves
+- **Consistent Styling**: Both brace types follow same design language with modern appearance
+
+#### Enhanced Brace Map Prompts
+- **Updated Generation Prompts**: Clear 5-column layout description in both English and Chinese
+- **Improved Requirements**: 3-6 main parts with 2-5 subparts each for optimal structure
+- **Better Language Guidelines**: Concise, clear language avoiding long sentences
+- **Logical Relationships**: Ensures proper whole-to-part relationships
+
+#### Technical Implementation
+- **Simplified D3.js Renderer**: Clean 5-column layout with fixed column positioning
+- **Optimized Spacing**: 100px topic column, 150px brace columns, 100px content columns
+- **Professional Appearance**: Modern design suitable for educational and professional use
+- **Scalable Layout**: Adapts to different content sizes while maintaining structure
+
+### 🔧 Technical Enhancements
+
+#### Brace Rendering System
+- **Main Brace**: 12px width, 8px corner radius, 4.5px stroke width
+- **Small Braces**: 8px width, 6px corner radius, 1.8px stroke width
+- **Smooth Curves**: Quadratic Bézier curves for elegant corner transitions
+- **Visual Distinction**: Clear hierarchy between main and sub-braces
+
+#### Layout Structure
+- **Column 1**: Topic (left-aligned, centered vertically)
+- **Column 2**: Big brace (connects topic to all parts)
+- **Column 3**: Parts (main categories/divisions)
+- **Column 4**: Small braces (connect each part to its subparts)
+- **Column 5**: Subparts (detailed components)
+
+#### Code Quality
+- **Clean Implementation**: Removed complex dynamic positioning in favor of clear structure
+- **Consistent Theming**: Integrated with existing theme system
+- **Error-Free Rendering**: Simplified logic reduces potential issues
+- **Maintainable Design**: Clear separation of concerns
+
+### 🛡️ Stability & Reliability
+
+#### Layout Reliability
+- **Fixed Column Positioning**: Eliminates positioning conflicts and overlaps
+- **Consistent Spacing**: Predictable layout regardless of content complexity
+- **Professional Appearance**: Modern design suitable for all use cases
+- **Scalable Structure**: Works with varying numbers of parts and subparts
+
+#### Documentation Updates
+- **Enhanced Brace Map Documentation**: Updated with 5-column layout details
+- **Test Files**: Created comprehensive test specifications
+- **Version Consistency**: All files updated to version 2.3.5
+- **Clear Examples**: Provided test cases demonstrating new layout
+
+### 📋 Migration Guide
+
+#### From Version 2.3.4 to 2.3.5
+
+1. **Brace Map Layout**: Updated to 5-column structure with modern brace rendering
+2. **Visual Improvements**: Professional appearance with rounded corners and proper hierarchy
+3. **Prompt Updates**: Enhanced generation prompts for better brace map creation
+4. **Documentation**: Updated all documentation to reflect new layout system
+5. **Testing**: Comprehensive test files for validation
+
+## [2.3.4] - 2025-01-27
+
 ## [2.3.4] - 2025-01-27
 
 ### 🚀 Major Improvements

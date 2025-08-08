@@ -191,32 +191,32 @@ DEFAULT_STYLES = {
     
     # Thinking Maps
     "bubble_map": {
-        "topicColor": "#4e79a7",
-        "topicTextColor": "#ffffff",
+        "topicColor": "#1976d2",  # Deeper blue for topic nodes
+        "topicTextColor": "#ffffff",  # White text for contrast
         "topicFontSize": 18,
         "topicFontWeight": "bold",
-        "charColor": "#a7c7e7",
-        "charTextColor": "#2c3e50",
+        "charColor": "#e3f2fd",  # Light blue for feature nodes
+        "charTextColor": "#333333",
         "charFontSize": 14,
-        "stroke": "#2c3e50",
-        "strokeWidth": 2
+        "stroke": "#000000",  # Black border for topic nodes
+        "strokeWidth": 3
     },
     
     "double_bubble_map": {
-        "leftTopicColor": "#4e79a7",
-        "rightTopicColor": "#f28e2b",
-        "topicTextColor": "#ffffff",
+        "leftTopicColor": "#1976d2",  # Deeper blue for left topic
+        "rightTopicColor": "#1976d2",  # Deeper blue for right topic
+        "topicTextColor": "#ffffff",  # White text for contrast
         "topicFontSize": 18,
         "topicFontWeight": "bold",
-        "similarityColor": "#76b7b2",
-        "similarityTextColor": "#ffffff",
+        "similarityColor": "#e3f2fd",  # Light blue for similarities
+        "similarityTextColor": "#333333",
         "similarityFontSize": 14,
-        "leftDiffColor": "#e15759",
-        "rightDiffColor": "#59a14f",
-        "diffTextColor": "#ffffff",
+        "leftDiffColor": "#e3f2fd",  # Light blue for left differences
+        "rightDiffColor": "#e3f2fd",  # Light blue for right differences
+        "diffTextColor": "#333333",
         "diffFontSize": 13,
-        "stroke": "#2c3e50",
-        "strokeWidth": 2
+        "stroke": "#000000",  # Black border for topic nodes
+        "strokeWidth": 3
     },
     
     "tree_map": {

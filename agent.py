@@ -12,6 +12,7 @@ graph type.
 import os
 import logging
 import re
+import time
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -52,12 +53,36 @@ from graph_specs import (
 import json
 from diagram_styles import parse_style_from_prompt
 
+# Global timing tracking
+llm_timing_stats = {
+    'total_calls': 0,
+    'total_time': 0.0,
+    'call_times': [],
+    'last_call_time': 0.0
+}
+
+def get_llm_timing_stats():
+    """Get current LLM timing statistics."""
+    if llm_timing_stats['total_calls'] > 0:
+        avg_time = llm_timing_stats['total_time'] / llm_timing_stats['total_calls']
+    else:
+        avg_time = 0.0
+    
+    return {
+        'total_calls': llm_timing_stats['total_calls'],
+        'total_time': llm_timing_stats['total_time'],
+        'average_time': avg_time,
+        'last_call_time': llm_timing_stats['last_call_time'],
+        'call_times': llm_timing_stats['call_times'][-10:]  # Last 10 calls
+    }
+
 
 class QwenLLM(LLM):
     """
-    Custom LangChain LLM wrapper for Qwen API
+    Custom LangChain LLM wrapper for Qwen API with timing tracking
     """
     def _call(self, prompt, stop=None):
+        start_time = time.time()
         logger.info(f"QwenLLM._call() - Model: {config.QWEN_MODEL}")
         logger.debug(f"Prompt sent to Qwen:\n{prompt[:1000]}{'...' if len(prompt) > 1000 else ''}")
 
@@ -74,11 +99,30 @@ class QwenLLM(LLM):
             resp.raise_for_status()
             result = resp.json()
             content = result["choices"][0]["message"]["content"]
-            logger.info(f"QwenLLM response received - Length: {len(content)} characters")
+            
+            # Calculate timing
+            call_time = time.time() - start_time
+            llm_timing_stats['total_calls'] += 1
+            llm_timing_stats['total_time'] += call_time
+            llm_timing_stats['last_call_time'] = call_time
+            llm_timing_stats['call_times'].append(call_time)
+            
+            # Keep only last 100 call times to prevent memory bloat
+            if len(llm_timing_stats['call_times']) > 100:
+                llm_timing_stats['call_times'] = llm_timing_stats['call_times'][-100:]
+            
+            logger.info(f"QwenLLM response received - Length: {len(content)} characters - Time: {call_time:.3f}s")
             logger.debug(f"Qwen Output:\n{content[:1000]}{'...' if len(content) > 1000 else ''}")
             return content
         except Exception as e:
-            logger.error(f"QwenLLM API call failed: {e}", exc_info=True)
+            # Still track timing even on error
+            call_time = time.time() - start_time
+            llm_timing_stats['total_calls'] += 1
+            llm_timing_stats['total_time'] += call_time
+            llm_timing_stats['last_call_time'] = call_time
+            llm_timing_stats['call_times'].append(call_time)
+            
+            logger.error(f"QwenLLM API call failed: {e} - Time: {call_time:.3f}s", exc_info=True)
             raise
 
     @property

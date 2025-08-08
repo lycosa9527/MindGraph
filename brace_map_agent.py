@@ -16,12 +16,15 @@ from enum import Enum
 # Configuration constants
 BRACE_SPACING_CONFIG = {
     'main_brace_from_topic': 20,
-    'main_brace_to_parts': 20,
+    'main_brace_to_secondary_brace': 20,
+    'secondary_brace_to_parts': 20,
     'part_brace_from_part': 15,
-    'part_brace_to_subparts': 15,
+    'tertiary_brace_to_subparts': 15,
     'topic_left_offset': 200,
     'minimum_brace_height': 20,
-    'minimum_spacing': 10
+    'minimum_spacing': 10,
+    'secondary_brace_width': 10,
+    'tertiary_brace_width': 8
 }
 
 FONT_WEIGHT_CONFIG = {

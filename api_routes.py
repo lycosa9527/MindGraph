@@ -7,12 +7,75 @@ import asyncio
 import re
 import os
 import atexit
+import json
+import time
 from werkzeug.exceptions import HTTPException
 from functools import wraps
 from config import config
 
+# URL configuration (fallback if url_config module doesn't exist)
+try:
+    from url_config import get_api_urls
+    URLS = get_api_urls()
+except ImportError:
+    # Fallback URL configuration
+    URLS = {
+        'generate_graph': '/api/generate_graph',
+        'render_svg_to_png': '/api/render_svg_to_png',
+        'update_style': '/api/update_style'
+    }
+
 api = Blueprint('api', __name__, url_prefix='/api')
 logger = logging.getLogger(__name__)
+
+# Global timing tracking for rendering
+rendering_timing_stats = {
+    'total_renders': 0,
+    'total_render_time': 0.0,
+    'render_times': [],
+    'last_render_time': 0.0,
+    'llm_time_per_render': 0.0,
+    'pure_render_time_per_render': 0.0
+}
+
+def get_rendering_timing_stats():
+    """Get current rendering timing statistics."""
+    if rendering_timing_stats['total_renders'] > 0:
+        avg_render_time = rendering_timing_stats['total_render_time'] / rendering_timing_stats['total_renders']
+        avg_llm_time = rendering_timing_stats['llm_time_per_render'] / rendering_timing_stats['total_renders']
+        avg_pure_render_time = rendering_timing_stats['pure_render_time_per_render'] / rendering_timing_stats['total_renders']
+    else:
+        avg_render_time = 0.0
+        avg_llm_time = 0.0
+        avg_pure_render_time = 0.0
+    
+    return {
+        'total_renders': rendering_timing_stats['total_renders'],
+        'total_render_time': rendering_timing_stats['total_render_time'],
+        'average_render_time': avg_render_time,
+        'average_llm_time': avg_llm_time,
+        'average_pure_render_time': avg_pure_render_time,
+        'last_render_time': rendering_timing_stats['last_render_time'],
+        'render_times': rendering_timing_stats['render_times'][-10:]  # Last 10 renders
+    }
+
+def get_comprehensive_timing_stats():
+    """Get comprehensive timing statistics including both LLM and rendering."""
+    llm_stats = agent.get_llm_timing_stats()
+    render_stats = get_rendering_timing_stats()
+    
+    return {
+        'llm': llm_stats,
+        'rendering': render_stats,
+        'summary': {
+            'total_llm_calls': llm_stats['total_calls'],
+            'total_llm_time': llm_stats['total_time'],
+            'total_renders': render_stats['total_renders'],
+            'total_render_time': render_stats['total_render_time'],
+            'llm_percentage': (llm_stats['total_time'] / (llm_stats['total_time'] + render_stats['total_render_time']) * 100) if (llm_stats['total_time'] + render_stats['total_render_time']) > 0 else 0,
+            'render_percentage': (render_stats['total_render_time'] / (llm_stats['total_time'] + render_stats['total_render_time']) * 100) if (llm_stats['total_time'] + render_stats['total_render_time']) > 0 else 0
+        }
+    }
 
 # Track temporary files for cleanup
 temp_files = set()
@@ -133,9 +196,22 @@ def generate_graph():
     
     logger.info(f"Frontend /generate_graph (Qwen with styles): prompt={prompt!r}, language={language!r}")
     
+    # Track timing for LLM processing
+    start_time = time.time()
+    
     # Use enhanced agent workflow with integrated style system
     try:
         result = agent.agent_graph_workflow_with_styles(prompt, language)
+        
+        # Calculate LLM processing time
+        llm_time = time.time() - start_time
+        logger.info(f"LLM processing completed in {llm_time:.3f}s")
+        
+        # Add timing information to response
+        timing_info = {
+            'llm_processing_time': llm_time,
+            'llm_stats': agent.get_llm_timing_stats()
+        }
         
         spec = result.get('spec', {})
         diagram_type = result.get('diagram_type', 'bubble_map')
@@ -183,7 +259,8 @@ def generate_graph():
             'has_styles': '_style' in spec,
             'theme': config.get_d3_theme(),
             'dimensions': dimensions,
-            'watermark': config.get_watermark_config()
+            'watermark': config.get_watermark_config(),
+            'timing': timing_info
         })
         
     except Exception as e:
@@ -211,12 +288,19 @@ def generate_png():
     
     logger.info(f"Frontend /generate_png: prompt={prompt!r}, language={language!r}")
     
+    # Track timing for the entire process
+    total_start_time = time.time()
+    
     # Generate graph specification using the same workflow as generate_graph
     try:
+        llm_start_time = time.time()
         result = agent.agent_graph_workflow_with_styles(prompt, language)
+        llm_time = time.time() - llm_start_time
         
         spec = result.get('spec', {})
         graph_type = result.get('diagram_type', 'bubble_map')
+        
+        logger.info(f"LLM processing completed in {llm_time:.3f}s")
     except Exception as e:
         logger.error(f"Agent workflow failed: {e}")
         return jsonify({'error': 'Failed to generate graph specification'}), 500
@@ -259,10 +343,21 @@ def generate_png():
         import json
         from playwright.async_api import async_playwright
         
+        # Track rendering start time
+        render_start_time = time.time()
+        
         async def render_svg_to_png(spec, graph_type):
+            # Load the theme configuration
+            with open('static/js/theme-config.js', 'r', encoding='utf-8') as f:
+                theme_config = f.read()
+            
             # Load the correct D3.js renderers from the static file
             with open('static/js/d3-renderers.js', 'r', encoding='utf-8') as f:
                 d3_renderers = f.read()
+            
+            # Load the style manager
+            with open('static/js/style-manager.js', 'r', encoding='utf-8') as f:
+                style_manager = f.read()
             
             # Log spec data for debugging
             logger.info(f"Spec data keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
@@ -337,38 +432,74 @@ def generate_png():
             </head><body>
             <div id="d3-container"></div>
             <script>
-            console.log('Page loaded, waiting for D3.js...');
+            {theme_config}
+            {style_manager}
+            {d3_renderers}
+            console.log("Page loaded, waiting for D3.js...");
             
             // Wait for D3.js to load
             function waitForD3() {{
-                if (typeof d3 !== 'undefined') {{
-                    console.log('D3.js loaded, starting rendering...');
+                if (typeof d3 !== "undefined") {{
+                    console.log("D3.js loaded, starting rendering...");
                     try {{
                         window.spec = {json.dumps(spec, ensure_ascii=False)};
-                        window.graph_type = '{graph_type}';
+                        window.graph_type = "{graph_type}";
                         
-                        // Merge D3 theme with watermark config
-                        const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
+                        // Get theme using centralized configuration
+                        let theme;
+                        let backendTheme;
+                        if (typeof getD3Theme === "function") {{
+                            theme = getD3Theme(graph_type);
+                            console.log("Using centralized theme configuration");
+                        }} else {{
+                            // Fallback to style manager
+                            const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
+                            theme = d3Theme;
+                            console.log("Using style manager theme");
+                        }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
-                        window.theme = {{...d3Theme, ...watermarkConfig}};
+                        backendTheme = {{...theme, ...watermarkConfig}};
                         window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
                         
-                        console.log('Rendering graph:', window.graph_type, window.spec);
-                        
+                        {style_manager}
                         {d3_renderers}
                         
-                        // Use agent renderer for brace maps
-                        if (window.graph_type === 'brace_map' && window.spec.success) {{
-                            console.log('Using brace map agent renderer');
-                            renderBraceMapAgent(window.spec, window.theme, window.dimensions);
+                        console.log("Rendering graph:", window.graph_type, window.spec);
+                        console.log("Style manager loaded:", typeof styleManager);
+                        console.log("Backend theme:", backendTheme);
+                        
+                        // Ensure style manager is available
+                        if (typeof styleManager === "undefined") {{
+                            console.error("Style manager not loaded!");
+                            document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Style manager not loaded!</div>";
+                            throw new Error("Style manager not available");
                         }} else {{
-                            renderGraph(window.graph_type, window.spec, window.theme, window.dimensions);
+                            console.log("Style manager is available");
                         }}
                         
-                        console.log('Graph rendering completed');
+                        // Use agent renderer for brace maps
+                        if (window.graph_type === "brace_map" && window.spec.success) {{
+                            console.log("Using brace map agent renderer");
+                            renderBraceMapAgent(window.spec, backendTheme, window.dimensions);
+                        }} else {{
+                            renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions);
+                        }}
+                        
+                        console.log("Graph rendering completed");
+                        
+                        // Wait a moment for SVG to be created
+                        setTimeout(() => {{
+                            const svg = document.querySelector("svg");
+                            if (svg) {{
+                                console.log("SVG found with dimensions:", svg.getAttribute("width"), "x", svg.getAttribute("height"));
+                            }} else {{
+                                console.error("No SVG element found after rendering");
+                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">No SVG created after rendering</div>";
+                            }}
+                        }}, 1000);
                     }} catch (error) {{
-                        console.error('Render error:', error);
-                        document.body.innerHTML += '<div style="color: red; padding: 20px;">Render error: ' + error.message + '</div>';
+                        console.error("Render error:", error);
+                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
                     }}
                 }} else {{
                     setTimeout(waitForD3, 100);
@@ -382,6 +513,13 @@ def generate_png():
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
                 
+                # Set up console and error logging BEFORE loading content
+                console_messages = []
+                page_errors = []
+                
+                page.on("console", lambda msg: console_messages.append(f"{msg.type}: {msg.text}"))
+                page.on("pageerror", lambda err: page_errors.append(str(err)))
+                
                 # Log HTML size for debugging
                 html_size = len(html)
                 logger.info(f"HTML content size: {html_size} characters")
@@ -390,22 +528,52 @@ def generate_png():
                 
                 await page.set_content(html)
                 
-                # Wait for rendering
-                await asyncio.sleep(2.0)
+                # Wait for rendering and check for console errors
+                await asyncio.sleep(3.0)
                 
-                # Wait for rendering
-                await asyncio.sleep(2.0)
+                # Log all console messages and errors
+                for msg in console_messages:
+                    logger.info(f"Browser console: {msg}")
+                for error in page_errors:
+                    logger.error(f"Browser error: {error}")
                 
                 # Wait a bit more for rendering to complete
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(2.0)
+                
+                # Wait for SVG element to be created with timeout
+                try:
+                    element = await page.wait_for_selector("svg", timeout=10000)
+                    logger.info("SVG element found successfully")
+                except Exception as e:
+                    logger.error(f"Timeout waiting for SVG element: {e}")
+                    element = await page.query_selector("svg")  # Try one more time
                 
                 # Check if SVG exists and has content
-                element = await page.query_selector('svg')
                 if element is None:
                     logger.error("SVG element not found in rendered page.")
+                    
+                    # Check if d3-container has any content
+                    container = await page.query_selector("#d3-container")
+                    if container:
+                        container_content = await container.inner_html()
+                        logger.error(f"Container content: {container_content[:500]}...")
+                    else:
+                        logger.error("d3-container element not found")
+                    
                     # Log page content for debugging
                     page_content = await page.content()
                     logger.error(f"Page content: {page_content[:1000]}...")
+                    
+                    # Check if any JavaScript functions are available
+                    try:
+                        d3_available = await page.evaluate("typeof d3 !== \"undefined\"")
+                        style_manager_available = await page.evaluate("typeof styleManager !== \"undefined\"")
+                        render_graph_available = await page.evaluate("typeof renderGraph !== \"undefined\"")
+                        
+                        logger.error(f"JavaScript availability - D3: {d3_available}, StyleManager: {style_manager_available}, renderGraph: {render_graph_available}")
+                    except Exception as e:
+                        logger.error(f"Could not check JavaScript availability: {e}")
+                    
                     raise ValueError("SVG element not found. The graph could not be rendered.")
                 
                 # Check SVG dimensions
@@ -422,6 +590,24 @@ def generate_png():
                 return png_bytes
         
         png_bytes = asyncio.run(render_svg_to_png(spec, graph_type))
+        
+        # Calculate rendering time
+        render_time = time.time() - render_start_time
+        total_time = time.time() - total_start_time
+        
+        # Update rendering statistics
+        rendering_timing_stats['total_renders'] += 1
+        rendering_timing_stats['total_render_time'] += render_time
+        rendering_timing_stats['last_render_time'] = render_time
+        rendering_timing_stats['render_times'].append(render_time)
+        rendering_timing_stats['llm_time_per_render'] += llm_time
+        rendering_timing_stats['pure_render_time_per_render'] += render_time
+        
+        # Keep only last 100 render times to prevent memory bloat
+        if len(rendering_timing_stats['render_times']) > 100:
+            rendering_timing_stats['render_times'] = rendering_timing_stats['render_times'][-100:]
+        
+        logger.info(f"PNG generation completed - LLM: {llm_time:.3f}s, Rendering: {render_time:.3f}s, Total: {total_time:.3f}s")
         
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.png', mode='wb') as tmp:
@@ -572,3 +758,77 @@ def generate_development_prompt():
     except Exception as e:
         logger.error(f"DeepSeek development workflow failed: {e}", exc_info=True)
         return jsonify({'error': f'Development workflow failed: {str(e)}'}), 500 
+
+@api.route('/update_style', methods=['POST'])
+@handle_api_errors
+def update_style():
+    """Update diagram style instantly - demonstrates the flexibility of the new style system."""
+    data = request.json
+    valid, msg = validate_request_data(data, ['diagram_type', 'element', 'color'])
+    if not valid:
+        return jsonify({'error': msg}), 400
+    
+    diagram_type = data['diagram_type']
+    element = data['element']  # e.g., 'topicFill', 'topicText', 'attributeFill'
+    color = data['color']
+    
+    # Validate color format
+    if not color.startswith('#') or len(color) != 7:
+        return jsonify({'error': 'Invalid color format. Use hex format (e.g., #ff0000)'}), 400
+    
+    # Get current style for the diagram type
+    from diagram_styles import get_style
+    current_style = get_style(diagram_type)
+    
+    # Update the specific element
+    current_style[element] = color
+    
+    # Ensure readability is maintained
+    from diagram_styles import get_contrasting_text_color
+    if 'Fill' in element and 'Text' not in element:
+        # If we're changing a fill color, ensure text color is readable
+        text_element = element.replace('Fill', 'TextColor')
+        if text_element not in current_style:
+            current_style[text_element] = get_contrasting_text_color(color)
+    
+    return jsonify({
+        'success': True,
+        'message': f'Updated {element} to {color}',
+        'updated_style': current_style
+    })
+
+@api.route('/timing_stats', methods=['GET'])
+@handle_api_errors
+def get_timing_stats():
+    """Get comprehensive timing statistics for LLM calls and rendering."""
+    stats = get_comprehensive_timing_stats()
+    
+    # Format the response for better readability
+    formatted_stats = {
+        'llm': {
+            'total_calls': stats['llm']['total_calls'],
+            'total_time_seconds': round(stats['llm']['total_time'], 3),
+            'average_time_seconds': round(stats['llm']['average_time'], 3),
+            'last_call_time_seconds': round(stats['llm']['last_call_time'], 3),
+            'recent_call_times': [round(t, 3) for t in stats['llm']['call_times']]
+        },
+        'rendering': {
+            'total_renders': stats['rendering']['total_renders'],
+            'total_render_time_seconds': round(stats['rendering']['total_render_time'], 3),
+            'average_render_time_seconds': round(stats['rendering']['average_render_time'], 3),
+            'average_llm_time_per_render_seconds': round(stats['rendering']['average_llm_time'], 3),
+            'average_pure_render_time_seconds': round(stats['rendering']['average_pure_render_time'], 3),
+            'last_render_time_seconds': round(stats['rendering']['last_render_time'], 3),
+            'recent_render_times': [round(t, 3) for t in stats['rendering']['render_times']]
+        },
+        'summary': {
+            'total_llm_calls': stats['summary']['total_llm_calls'],
+            'total_llm_time_seconds': round(stats['summary']['total_llm_time'], 3),
+            'total_renders': stats['summary']['total_renders'],
+            'total_render_time_seconds': round(stats['summary']['total_render_time'], 3),
+            'llm_percentage': round(stats['summary']['llm_percentage'], 1),
+            'render_percentage': round(stats['summary']['render_percentage'], 1)
+        }
+    }
+    
+    return jsonify(formatted_stats) 

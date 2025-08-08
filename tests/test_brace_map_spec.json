@@ -1,0 +1,41 @@
+{
+  "topic": "Computer System",
+  "parts": [
+    {
+      "name": "Hardware",
+      "subparts": [
+        {"name": "CPU"},
+        {"name": "RAM"},
+        {"name": "Storage"},
+        {"name": "Motherboard"}
+      ]
+    },
+    {
+      "name": "Software",
+      "subparts": [
+        {"name": "Operating System"},
+        {"name": "Applications"},
+        {"name": "Drivers"},
+        {"name": "Utilities"}
+      ]
+    },
+    {
+      "name": "Peripherals",
+      "subparts": [
+        {"name": "Monitor"},
+        {"name": "Keyboard"},
+        {"name": "Mouse"},
+        {"name": "Printer"}
+      ]
+    },
+    {
+      "name": "Network",
+      "subparts": [
+        {"name": "Router"},
+        {"name": "Cables"},
+        {"name": "WiFi Adapter"},
+        {"name": "Firewall"}
+      ]
+    }
+  ]
+}

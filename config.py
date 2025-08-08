@@ -2,7 +2,7 @@
 MindGraph Configuration Module
 ==============================
 
-Version: 2.3.4
+Version: 2.3.5
 
 This module provides centralized configuration management for the MindGraph application.
 It handles environment variable loading, validation, and provides a clean interface
@@ -261,17 +261,17 @@ class Config:
     @property
     def D3_TOPIC_FILL(self):
         """Fill color for topic nodes."""
-        return self._get_cached_value('D3_TOPIC_FILL', '#4e79a7')
+        return self._get_cached_value('D3_TOPIC_FILL', '#e3f2fd')
     
     @property
     def D3_TOPIC_TEXT(self):
         """Text color for topic nodes."""
-        return self._get_cached_value('D3_TOPIC_TEXT', '#ffffff')
+        return self._get_cached_value('D3_TOPIC_TEXT', '#000000')
     
     @property
     def D3_TOPIC_STROKE(self):
         """Stroke color for topic nodes."""
-        return self._get_cached_value('D3_TOPIC_STROKE', '#2c3e50')
+        return self._get_cached_value('D3_TOPIC_STROKE', '#000000')
     
     # Similarity node colors
     @property

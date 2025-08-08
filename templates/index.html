@@ -65,6 +65,57 @@
         .debug-button a:hover {
             background: #c0392b;
         }
+        .timing-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #27ae60;
+        }
+        .timing-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .timing-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .timing-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+        .timing-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .timing-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .timing-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: #27ae60;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        .timing-link:hover {
+            background: #229954;
+        }
         .api-section { 
             margin: 30px 0; 
             padding: 25px; 
@@ -374,6 +425,30 @@
             </ul>
         </div>
 
+        <div class="timing-section">
+            <h3>⚡ Performance Statistics</h3>
+            <p>Real-time performance metrics for LLM processing and rendering</p>
+            <div class="timing-stats" id="timing-stats">
+                <div class="timing-card">
+                    <div class="timing-value">--</div>
+                    <div class="timing-label">LLM Calls</div>
+                </div>
+                <div class="timing-card">
+                    <div class="timing-value">--</div>
+                    <div class="timing-label">Avg LLM Time</div>
+                </div>
+                <div class="timing-card">
+                    <div class="timing-value">--</div>
+                    <div class="timing-label">Renders</div>
+                </div>
+                <div class="timing-card">
+                    <div class="timing-value">--</div>
+                    <div class="timing-label">Avg Render Time</div>
+                </div>
+            </div>
+            <a href="/timing-stats" class="timing-link">📊 View Detailed Performance Dashboard</a>
+        </div>
+
         <div class="api-section">
             <h2>⚠️ Error Handling</h2>
             <div class="error">
@@ -393,5 +468,31 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Load timing statistics
+        function loadTimingStats() {
+            fetch('/api/timing_stats')
+                .then(response => response.json())
+                .then(data => {
+                    const statsContainer = document.getElementById('timing-stats');
+                    const cards = statsContainer.querySelectorAll('.timing-card');
+                    
+                    cards[0].querySelector('.timing-value').textContent = data.llm.total_calls;
+                    cards[1].querySelector('.timing-value').textContent = data.llm.average_time_seconds + 's';
+                    cards[2].querySelector('.timing-value').textContent = data.rendering.total_renders;
+                    cards[3].querySelector('.timing-value').textContent = data.rendering.average_render_time_seconds + 's';
+                })
+                .catch(error => {
+                    console.error('Error loading timing stats:', error);
+                });
+        }
+
+        // Load stats on page load
+        loadTimingStats();
+        
+        // Refresh stats every 30 seconds
+        setInterval(loadTimingStats, 30000);
+    </script>
 </body>
 </html> 
