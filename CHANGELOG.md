@@ -5,6 +5,23 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.6] - 2025-08-09
+
+### 🎯 Brace Map Finalization and Canvas Tightening
+
+- **Adaptive Column Widths**: Columns now adapt to the longest text using real text measurement, preventing clipping.
+- **Curly Braces**: Switched both main and small braces to smooth curly paths; small braces correctly span their subparts with font-aware padding and minimum height.
+- **Right-Side Spacing Fix**: Trimmed excess right whitespace by tightening SVG width to content bounds in both the agent and D3 renderers.
+- **Balanced Corridors**: Introduced dedicated brace corridors and consistent inter-column spacing to avoid crowding.
+
+### 🧹 Project Cleanup
+
+- Cleaned root-level clutter; consolidated manual test HTML under tests.
+
+### 📦 Version
+
+- Bumped to 2.3.6.
+
 ## [2.3.5] - 2025-01-27
 
 ### 🚀 Major Improvements

@@ -2604,12 +2604,80 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         d3.select('#d3-container').style('background-color', theme.background);
     }
     
-    // Calculate 5-column layout positions
-    const column1X = padding + 100; // Topic column
-    const column2X = column1X + 150; // Big brace column
-    const column3X = column2X + 100; // Parts column
-    const column4X = column3X + 150; // Small brace column
-    const column5X = column4X + 100; // Subparts column
+    // Calculate 5-column layout positions adaptively based on content widths
+    // Helpers to measure text width using a temporary hidden SVG text node
+    function parseFontSpec(fontSpec) {
+        // Expect formats like "24px Inter, sans-serif"
+        const match = typeof fontSpec === 'string' ? fontSpec.match(/^(\d+)px\s+(.+)$/) : null;
+        if (match) {
+            return { size: parseInt(match[1], 10), family: match[2] };
+        }
+        // Fallbacks
+        return { size: 16, family: 'Inter, sans-serif' };
+    }
+    function measureTextWidth(text, fontSpec, fontWeight = 'normal') {
+        const { size, family } = parseFontSpec(fontSpec);
+        // Create a temporary hidden SVG for measurement
+        const tempSvg = d3.select('#d3-container')
+            .append('svg')
+            .attr('width', 0)
+            .attr('height', 0)
+            .style('position', 'absolute')
+            .style('visibility', 'hidden');
+        const tempText = tempSvg.append('text')
+            .text(text || '')
+            .attr('font-size', size)
+            .attr('font-family', family)
+            .style('font-weight', fontWeight);
+        const bbox = tempText.node().getBBox();
+        tempSvg.remove();
+        return Math.max(0, bbox?.width || 0);
+    }
+
+    // Helper to build a curly brace path opening to the right
+    function buildCurlyBracePath(braceX, yTop, yBottom, depth) {
+        const height = Math.max(0, yBottom - yTop);
+        if (height <= 0 || depth <= 0) return '';
+        const yMid = (yTop + yBottom) / 2;
+        const d1 = height * 0.18;
+        const d2 = height * 0.12;
+        const mid = height * 0.08;
+        return `M ${braceX} ${yTop}
+                C ${braceX} ${yTop + d2} ${braceX + depth} ${yTop + d1} ${braceX + depth} ${yMid - mid}
+                C ${braceX + depth} ${yMid - mid/2} ${braceX} ${yMid} ${braceX} ${yMid}
+                C ${braceX} ${yMid} ${braceX + depth} ${yMid + mid/2} ${braceX + depth} ${yBottom - d1}
+                C ${braceX + depth} ${yBottom - d2} ${braceX} ${yBottom - d2/2} ${braceX} ${yBottom}`;
+    }
+
+    // Measure content widths
+    const topicWidth = measureTextWidth(spec.topic, THEME.fontTopic, 'bold');
+    const partWidths = (spec.parts || []).map(p => measureTextWidth(p?.name || '', THEME.fontPart, 'bold'));
+    const maxPartWidth = Math.max(100, ...(partWidths.length ? partWidths : [0]));
+    const subpartWidths = [];
+    (spec.parts || []).forEach(p => {
+        (p.subparts || []).forEach(sp => {
+            subpartWidths.push(measureTextWidth(sp?.name || '', THEME.fontSubpart));
+        });
+    });
+    const maxSubpartWidth = Math.max(100, ...(subpartWidths.length ? subpartWidths : [0]));
+
+    // Define brace corridors and inter-column spacing
+    const mainBraceCorridor = 40;  // space allocated for the big brace visuals
+    const smallBraceCorridor = 30; // space allocated for small braces
+    const columnSpacing = 30;      // spacing between columns
+
+    // Compute X positions by summing column widths and spacing
+    let runningX = padding;
+    const column1X = runningX + topicWidth / 2; // Topic
+    runningX += topicWidth + columnSpacing;
+    const column2X = runningX + mainBraceCorridor / 2; // Big brace
+    runningX += mainBraceCorridor + columnSpacing;
+    const column3X = runningX + maxPartWidth / 2; // Parts
+    runningX += maxPartWidth + columnSpacing;
+    const column4X = runningX + smallBraceCorridor / 2; // Small brace
+    runningX += smallBraceCorridor + columnSpacing;
+    const column5X = runningX + maxSubpartWidth / 2; // Subparts
+    runningX += maxSubpartWidth;
     
     // Calculate vertical spacing
     const partSpacing = 80;
@@ -2624,9 +2692,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         }
     });
     
-    // Adjust canvas height if needed
+    // Adjust canvas size based on content
     const finalHeight = Math.max(baseHeight, totalHeight + padding * 2);
-    const finalWidth = Math.max(baseWidth, column5X + 200 + padding);
+    const rightPadding = Math.min(padding, 8); // keep right buffer small
+    const contentWidth = runningX + rightPadding; // sum of all columns + small right padding
+    const finalWidth = contentWidth;
     
     // Create SVG
     const svg = d3.select('#d3-container').append('svg')
@@ -2641,13 +2711,15 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const centerY = finalHeight / 2;
     
     // Draw topic (Column 1)
+    const topicFontParsed = parseFontSpec(THEME.fontTopic);
     svg.append('text')
         .attr('x', column1X)
         .attr('y', centerY)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('fill', THEME.topicText)
-        .attr('font-size', THEME.fontTopic)
+        .attr('font-size', topicFontParsed.size)
+        .attr('font-family', topicFontParsed.family)
         .attr('font-weight', 'bold')
         .text(spec.topic);
     
@@ -2680,73 +2752,75 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         currentY += partSpacing;
     });
     
-    // Draw big brace (Column 2) - connects topic to all parts
-    if (partPositions.length > 0) {
-        const firstPartY = partPositions[0].y;
-        const lastPartY = partPositions[partPositions.length - 1].y;
-        const braceHeight = lastPartY - firstPartY;
-        
-        const bigBracePath = `M ${column2X} ${firstPartY} 
-                              L ${column2X - 20} ${firstPartY} 
-                              L ${column2X - 20} ${firstPartY + braceHeight * 0.1} 
-                              L ${column2X - 10} ${firstPartY + braceHeight * 0.1} 
-                              L ${column2X - 10} ${firstPartY + braceHeight * 0.9} 
-                              L ${column2X - 20} ${firstPartY + braceHeight * 0.9} 
-                              L ${column2X - 20} ${lastPartY} 
-                              L ${column2X} ${lastPartY}`;
-        
-        svg.append('path')
-            .attr('d', bigBracePath)
-            .attr('fill', 'none')
-            .attr('stroke', THEME.braceColor)
-            .attr('stroke-width', THEME.braceWidth)
-            .attr('stroke-linecap', 'round')
-            .attr('stroke-linejoin', 'round');
+    // Draw big brace (Column 2) - connects topic to all parts (curly style)
+    const partOnlyPositions = partPositions.filter(p => p.part).sort((a, b) => a.y - b.y);
+    if (partOnlyPositions.length > 0) {
+        const partFontSize = parseFontSpec(THEME.fontPart).size;
+        const firstPartY = partOnlyPositions[0].y - partFontSize * 0.6;
+        const lastPartY = partOnlyPositions[partOnlyPositions.length - 1].y + partFontSize * 0.6;
+        const depth = Math.max(8, mainBraceCorridor * 0.8);
+        const braceX = column2X - depth / 2; // Keep within corridor centered at column2X
+        const bigBracePath = buildCurlyBracePath(braceX, firstPartY, lastPartY, depth);
+        if (bigBracePath) {
+            svg.append('path')
+                .attr('d', bigBracePath)
+                .attr('fill', 'none')
+                .attr('stroke', THEME.braceColor)
+                .attr('stroke-width', 1.5)
+                .attr('stroke-linecap', 'round')
+                .attr('stroke-linejoin', 'round');
+        }
     }
     
     // Draw parts (Column 3)
     spec.parts.forEach((part, partIndex) => {
         const partPos = partPositions.find(p => p.part && p.partIndex === partIndex);
         if (partPos) {
+            const partFontParsed = parseFontSpec(THEME.fontPart);
             svg.append('text')
                 .attr('x', partPos.x)
                 .attr('y', partPos.y)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.partText)
-                .attr('font-size', THEME.fontPart)
+                .attr('font-size', partFontParsed.size)
+                .attr('font-family', partFontParsed.family)
                 .attr('font-weight', 'bold')
                 .text(part.name);
         }
     });
     
-    // Draw small braces (Column 4) - connect each part to its subparts
+    // Draw small braces (Column 4) - connect each part to its subparts (curly style)
     spec.parts.forEach((part, partIndex) => {
         if (part.subparts && part.subparts.length > 0) {
             const partPos = partPositions.find(p => p.part && p.partIndex === partIndex);
-            const partSubparts = partPositions.filter(p => p.subpart && p.partIndex === partIndex);
+            const partSubparts = partPositions
+                .filter(p => p.subpart && p.partIndex === partIndex)
+                .sort((a, b) => a.y - b.y);
             
             if (partPos && partSubparts.length > 0) {
-                const firstSubpartY = partSubparts[0].y;
-                const lastSubpartY = partSubparts[partSubparts.length - 1].y;
-                const subpartBraceHeight = lastSubpartY - firstSubpartY;
-                
-                const smallBracePath = `M ${column4X} ${firstSubpartY} 
-                                       L ${column4X - 15} ${firstSubpartY} 
-                                       L ${column4X - 15} ${firstSubpartY + subpartBraceHeight * 0.1} 
-                                       L ${column4X - 7.5} ${firstSubpartY + subpartBraceHeight * 0.1} 
-                                       L ${column4X - 7.5} ${firstSubpartY + subpartBraceHeight * 0.9} 
-                                       L ${column4X - 15} ${firstSubpartY + subpartBraceHeight * 0.9} 
-                                       L ${column4X - 15} ${lastSubpartY} 
-                                       L ${column4X} ${lastSubpartY}`;
-                
-                svg.append('path')
-                    .attr('d', smallBracePath)
-                    .attr('fill', 'none')
-                    .attr('stroke', THEME.braceColor)
-                    .attr('stroke-width', THEME.braceWidth * 0.8)
-                    .attr('stroke-linecap', 'round')
-                    .attr('stroke-linejoin', 'round');
+                const subpartFontSize = parseFontSpec(THEME.fontSubpart).size;
+                let yTop = partSubparts[0].y - subpartFontSize * 0.6;
+                let yBottom = partSubparts[partSubparts.length - 1].y + subpartFontSize * 0.6;
+                // Ensure a reasonable minimum height (helps when only one subpart)
+                const minBraceHeight = Math.max(12, subpartFontSize * 1.2);
+                if ((yBottom - yTop) < minBraceHeight) {
+                    const centerY = (yTop + yBottom) / 2;
+                    yTop = centerY - minBraceHeight / 2;
+                    yBottom = centerY + minBraceHeight / 2;
+                }
+                const sDepth = Math.max(6, smallBraceCorridor * 0.8);
+                const sBraceX = column4X - sDepth / 2; // Center within small brace corridor
+                const smallBracePath = buildCurlyBracePath(sBraceX, yTop, yBottom, sDepth);
+                if (smallBracePath) {
+                    svg.append('path')
+                        .attr('d', smallBracePath)
+                        .attr('fill', 'none')
+                        .attr('stroke', THEME.braceColor)
+                        .attr('stroke-width', 1.0)
+                        .attr('stroke-linecap', 'round')
+                        .attr('stroke-linejoin', 'round');
+                }
             }
         }
     });
@@ -2754,13 +2828,15 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     // Draw subparts (Column 5)
     partPositions.forEach(pos => {
         if (pos.subpart) {
+            const subpartFontParsed = parseFontSpec(THEME.fontSubpart);
             svg.append('text')
                 .attr('x', pos.x)
                 .attr('y', pos.y)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.subpartText)
-                .attr('font-size', THEME.fontSubpart)
+                .attr('font-size', subpartFontParsed.size)
+                .attr('font-family', subpartFontParsed.family)
                 .text(pos.subpart.name);
         }
     });
@@ -3294,20 +3370,13 @@ function renderBraceMapAgent(agent_result, theme = null, dimensions = null) {
     
     console.log('SVG created successfully with dimensions:', { width: finalWidth, height: finalHeight });
     
-    // Add a test rectangle to ensure SVG has content and is visible
-    svg.append('rect')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', finalWidth)
-        .attr('height', finalHeight)
-        .attr('fill', 'none')
-        .attr('stroke', '#ddd')
-        .attr('stroke-width', 1);
+    // Group for all content to compute tight bounding box after rendering
+    const contentGroup = svg.append('g').attr('class', 'content-group');
     
     // Render SVG elements from agent data
     svg_data.elements.forEach(element => {
         if (element.type === 'text') {
-            const textElement = svg.append('text')
+            const textElement = contentGroup.append('text')
                 .attr('x', element.x)
                 .attr('y', element.y)
                 .attr('text-anchor', element.text_anchor || 'middle')
@@ -3323,7 +3392,7 @@ function renderBraceMapAgent(agent_result, theme = null, dimensions = null) {
             console.log(`Rendered text element: ${element.text} at (${element.x}, ${element.y})`);
             
         } else if (element.type === 'rect') {
-            const rectElement = svg.append('rect')
+            const rectElement = contentGroup.append('rect')
                 .attr('x', element.x)
                 .attr('y', element.y)
                 .attr('width', element.width)
@@ -3341,7 +3410,7 @@ function renderBraceMapAgent(agent_result, theme = null, dimensions = null) {
             console.log(`Rendered rect element at (${element.x}, ${element.y}) with size (${element.width}, ${element.height})`);
             
         } else if (element.type === 'path') {
-            svg.append('path')
+            contentGroup.append('path')
                 .attr('d', element.d)
                 .attr('fill', element.fill || 'none')
                 .attr('stroke', element.stroke || THEME.braceColor)
@@ -3353,6 +3422,20 @@ function renderBraceMapAgent(agent_result, theme = null, dimensions = null) {
         }
     });
     
+    // After rendering, tighten SVG width to content bounds
+    try {
+        const bbox = contentGroup.node().getBBox();
+        const rightPadding = 8; // small buffer on the right
+        // Keep left padding as-is by including bbox.x
+        const tightWidth = Math.ceil(bbox.x + bbox.width + rightPadding);
+        if (Number.isFinite(tightWidth) && tightWidth > 0 && tightWidth < finalWidth) {
+            svg.attr('width', tightWidth).attr('viewBox', `0 0 ${tightWidth} ${finalHeight}`);
+            console.log('Adjusted SVG width to tight content bounds:', { tightWidth });
+        }
+    } catch (e) {
+        console.warn('Could not compute tight content bounds:', e);
+    }
+
     // Add watermark
     addWatermark(svg, theme);
     

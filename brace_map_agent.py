@@ -511,19 +511,62 @@ class BlockBasedPositioningSystem:
         for unit in units:
             self._calculate_unit_dimensions(unit, spacing_config)
         
-        # Step 2: Define fixed column layout (like in the image)
+        # Step 2: Define column layout with fixed brace columns and flexible node columns
         canvas_width = dimensions['width']
         padding = dimensions['padding']
-        
-        # Calculate column positions based on canvas width
-        # Column 1: Topic (left column)
-        topic_column_x = padding + 50
-        
-        # Column 2: Parts (middle column) 
-        part_column_x = canvas_width * 0.4  # 40% from left
-        
-        # Column 3: Subparts (right column)
-        subpart_column_x = canvas_width * 0.7  # 70% from left
+
+        # Fixed brace visual width (column thickness perception)
+        const_main_brace_visual_width = 16.0
+        const_small_brace_visual_width = 12.0
+
+        # Gaps around braces
+        gap_topic_to_main_brace = 30.0
+        gap_main_brace_to_part = 30.0
+        gap_part_to_small_brace = 30.0
+        gap_small_brace_to_subpart = 30.0
+
+        # Compute max widths of topic, part and subpart blocks to avoid overlap
+        max_part_block_width = max((unit.part_block.width for unit in units), default=100.0)
+        max_subpart_block_width = 100.0
+        max_topic_block_width = 100.0
+        for unit in units:
+            # topic width approximated as the longest of part/subpart widths if not directly available yet
+            if unit.part_block and unit.part_block.width > max_topic_block_width:
+                max_topic_block_width = unit.part_block.width
+            if unit.subpart_blocks:
+                for sb in unit.subpart_blocks:
+                    if sb.width > max_subpart_block_width:
+                        max_subpart_block_width = sb.width
+                    if sb.width > max_topic_block_width:
+                        max_topic_block_width = sb.width
+
+        # Column 1: Topic center (keep near left padding). Approximate topic width from part widths if unavailable.
+        approx_topic_width = max(60.0, max_topic_block_width)
+        topic_column_x = padding + approx_topic_width / 2.0
+
+        # Estimate curly brace corridor widths (adaptive, conservative so parts never overlap brace)
+        estimated_main_depth = min(max(24.0, canvas_width * 0.08), 100.0)
+        estimated_small_depth = min(max(18.0, canvas_width * 0.06), 80.0)
+
+        # Column 2: Main brace center X (use estimated depth/2 past topic-right + gap)
+        main_brace_x = (
+            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth / 2.0
+        )
+
+        # Column 3: Parts center depends on estimated brace depth + gap + half of max part width
+        part_column_x = (
+            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth + gap_main_brace_to_part + max_part_block_width / 2.0
+        )
+
+        # Column 4: Small brace X (use estimated small depth/2 past part-right + gap)
+        small_brace_x = (
+            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace + estimated_small_depth / 2.0
+        )
+
+        # Column 5: Subparts center depends on estimated small brace depth + gap + half of max subpart width
+        subpart_column_x = (
+            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace + estimated_small_depth + gap_small_brace_to_subpart + max_subpart_block_width / 2.0
+        )
         
         # Step 3: Position units vertically with proper column separation
         current_y = dimensions['padding']
@@ -532,7 +575,7 @@ class BlockBasedPositioningSystem:
             # Position unit at current_y
             unit.y = current_y
             
-            # Position part block in middle column (Column 2)
+            # Position part block at computed parts column center
             unit.part_block.x = part_column_x
             unit.part_block.y = unit.y + (unit.height - unit.part_block.height) / 2  # Center vertically in unit
             
@@ -1361,6 +1404,10 @@ class BraceMapAgent:
             }
             svg_elements.append(element)
         
+        # Generate brace elements using minimalist design (adaptive to canvas size)
+        brace_elements = self._generate_brace_elements(nodes_data, theme, layout_data.get('canvas_dimensions', {}))
+        svg_elements.extend(brace_elements)
+        
         # Use canvas dimensions from layout data
         canvas_dimensions = layout_data.get('canvas_dimensions', {})
         
@@ -1372,7 +1419,179 @@ class BraceMapAgent:
             'layout_data': layout_data
         }
     
-    # Brace rendering methods removed - only text elements are generated now
+    def _generate_brace_elements(self, nodes_data: List[Dict], theme: Dict, canvas_dimensions: Dict) -> List[Dict]:
+        """Generate brace path elements (curly style) with adaptive widths and outline (Option 3)"""
+        brace_elements = []
+
+        # Determine adaptive stroke widths based on canvas size
+        canvas_width = float(canvas_dimensions.get('width', 1000))
+        canvas_height = float(canvas_dimensions.get('height', 600))
+        # Base on height for visual consistency; clamp to sensible bounds
+        scale_h = max(0.5, min(2.0, canvas_height / 600.0))
+        main_stroke_width = max(1.5, min(5.5, 3.2 * scale_h))
+        small_stroke_width = max(1.0, min(4.5, main_stroke_width * 0.66))
+
+        # Outline widths slightly larger than main strokes
+        main_outline_width = min(main_stroke_width * 1.6, main_stroke_width + 3.0)
+        small_outline_width = min(small_stroke_width * 1.6, small_stroke_width + 3.0)
+
+        # Colors
+        outline_color = theme.get('braceOutlineColor', '#333333')
+        brace_color = theme.get('braceColor', '#666666')
+        
+        # Separate nodes by type
+        topic_nodes = [n for n in nodes_data if n['node_type'] == 'topic']
+        part_nodes = [n for n in nodes_data if n['node_type'] == 'part']
+        subpart_nodes = [n for n in nodes_data if n['node_type'] == 'subpart']
+        
+        if not topic_nodes or not part_nodes:
+            return brace_elements
+        
+        topic_node = topic_nodes[0]
+        topic_center_x = topic_node['x'] + topic_node['width'] / 2
+        topic_center_y = topic_node['y'] + topic_node['height'] / 2
+        
+        # Generate main brace (connects topic to all parts)
+        if part_nodes:
+            # Find the full vertical extent of all parts (top to bottom)
+            parts_top_y = min(n['y'] for n in part_nodes)
+            parts_bottom_y = max(n['y'] + n['height'] for n in part_nodes)
+            first_part_y = parts_top_y
+            last_part_y = parts_bottom_y
+            brace_height = last_part_y - first_part_y
+            
+            # Overlap-safe main brace placement between topic and parts
+            topic_right = topic_node['x'] + topic_node['width']
+            parts_left = min(n['x'] for n in part_nodes)
+
+            # Curly (math-style) main brace opening to the right (adaptive, balanced spacing)
+            safety_gap = max(40.0, canvas_width * 0.05)
+            total_lane = max(0.0, (parts_left - safety_gap) - (topic_right + safety_gap))
+            depth = min(max(12.0, total_lane * 0.40), 80.0)
+            # Compute lane available for placing brace anchor X (excluding depth)
+            min_x = topic_right + safety_gap
+            max_x = parts_left - safety_gap - depth
+            if min_x > max_x:
+                # Very tight lane: reduce depth and pin to safe position
+                depth = max(6.0, total_lane * 0.25)
+                max_x = parts_left - safety_gap - depth
+                brace_x = max(min_x, max_x)
+            else:
+                # Center within lane segment for equal left/right spacing
+                brace_x = (min_x + max_x) / 2.0
+
+            y_top = first_part_y
+            y_bot = last_part_y
+            y_mid = (y_top + y_bot) / 2.0
+            d1 = brace_height * 0.18
+            d2 = brace_height * 0.12
+            mid = brace_height * 0.08
+
+            brace_path = (
+                f"M {brace_x:.2f} {y_top:.2f} "
+                f"C {brace_x:.2f} {y_top + d2:.2f} {brace_x + depth:.2f} {y_top + d1:.2f} {brace_x + depth:.2f} {y_mid - mid:.2f} "
+                f"C {brace_x + depth:.2f} {y_mid - mid/2:.2f} {brace_x:.2f} {y_mid:.2f} {brace_x:.2f} {y_mid:.2f} "
+                f"C {brace_x:.2f} {y_mid:.2f} {brace_x + depth:.2f} {y_mid + mid/2:.2f} {brace_x + depth:.2f} {y_bot - d1:.2f} "
+                f"C {brace_x + depth:.2f} {y_bot - d2:.2f} {brace_x:.2f} {y_bot - d2/2:.2f} {brace_x:.2f} {y_bot:.2f}"
+            )
+            
+            # Outline (draw first)
+            brace_elements.append({
+                'type': 'path',
+                'd': brace_path,
+                'fill': 'none',
+                'stroke': outline_color,
+                'stroke_width': main_outline_width,
+                'stroke_linecap': 'round',
+                'stroke_linejoin': 'round'
+            })
+            # Main stroke (on top)
+            brace_elements.append({
+                'type': 'path',
+                'd': brace_path,
+                'fill': 'none',
+                'stroke': brace_color,
+                'stroke_width': main_stroke_width,
+                'stroke_linecap': 'round',
+                'stroke_linejoin': 'round'
+            })
+        
+        # Generate small braces (connect each part to its subparts)
+        for part_node in part_nodes:
+            part_center_x = part_node['x'] + part_node['width'] / 2
+            part_center_y = part_node['y'] + part_node['height'] / 2
+            part_index = part_node.get('part_index', 0)
+            
+            # Find subparts for this part
+            part_subparts = [n for n in subpart_nodes if n.get('part_index') == part_index]
+            
+            if part_subparts:
+                # Find the full vertical extent of subparts for this part (top to bottom)
+                subparts_top_y = min(n['y'] for n in part_subparts)
+                subparts_bottom_y = max(n['y'] + n['height'] for n in part_subparts)
+                first_subpart_y = subparts_top_y
+                last_subpart_y = subparts_bottom_y
+                subpart_brace_height = last_subpart_y - first_subpart_y
+                
+                # Overlap-safe small brace placement between part and subparts
+                part_right = part_node['x'] + part_node['width']
+                subparts_left = min(n['x'] for n in part_subparts)
+
+                small_brace_width = 6
+                small_safety_gap = max(32.0, canvas_width * 0.04)
+
+                # Compute available lane between part and subparts
+                small_total_lane = max(0.0, (subparts_left - small_safety_gap) - (part_right + small_safety_gap))
+                s_depth = min(max(10.0, small_total_lane * 0.40), 60.0)
+
+                # Clamp small brace x so that x >= part_right+gap and x+s_depth <= subparts_left-gap
+                min_sx = part_right + small_safety_gap
+                max_sx = subparts_left - small_safety_gap - s_depth
+                if min_sx > max_sx:
+                    s_depth = max(6.0, small_total_lane * 0.25)
+                    max_sx = subparts_left - small_safety_gap - s_depth
+                    small_brace_x = max(min_sx, max_sx)
+                else:
+                    # Center within lane segment for equal left/right spacing
+                    small_brace_x = (min_sx + max_sx) / 2.0
+
+                yt = first_subpart_y
+                yb = last_subpart_y
+                ym = (yt + yb) / 2.0
+                sd1 = subpart_brace_height * 0.18
+                sd2 = subpart_brace_height * 0.12
+                smid = subpart_brace_height * 0.08
+
+                small_brace_path = (
+                    f"M {small_brace_x:.2f} {yt:.2f} "
+                    f"C {small_brace_x:.2f} {yt + sd2:.2f} {small_brace_x + s_depth:.2f} {yt + sd1:.2f} {small_brace_x + s_depth:.2f} {ym - smid:.2f} "
+                    f"C {small_brace_x + s_depth:.2f} {ym - smid/2:.2f} {small_brace_x:.2f} {ym:.2f} {small_brace_x:.2f} {ym:.2f} "
+                    f"C {small_brace_x:.2f} {ym:.2f} {small_brace_x + s_depth:.2f} {ym + smid/2:.2f} {small_brace_x + s_depth:.2f} {yb - sd1:.2f} "
+                    f"C {small_brace_x + s_depth:.2f} {yb - sd2:.2f} {small_brace_x:.2f} {yb - sd2/2:.2f} {small_brace_x:.2f} {yb:.2f}"
+                )
+                
+                # Outline (draw first)
+                brace_elements.append({
+                    'type': 'path',
+                    'd': small_brace_path,
+                    'fill': 'none',
+                    'stroke': outline_color,
+                    'stroke_width': small_outline_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
+                # Main stroke (on top)
+                brace_elements.append({
+                    'type': 'path',
+                    'd': small_brace_path,
+                    'fill': 'none',
+                    'stroke': brace_color,
+                    'stroke_width': small_stroke_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
+        
+        return brace_elements
     
     def _get_font_weight(self, node_type: str) -> str:
         """Get font weight for node type using configuration"""
@@ -1409,30 +1628,31 @@ class BraceMapAgent:
             # Topic + parts + subparts
             required_height = topic_height + (total_parts * part_height) + (total_subparts * subpart_height) + (total_parts * 30) + (total_subparts * 15)  # Spacing
         
-        # Calculate required width based on text lengths
-        # Estimate width: topic width + max part width + max subpart width + spacing
+        # Calculate required width for 5-column layout
+        # Column 1: Topic, Column 2: Main brace, Column 3: Parts, Column 4: Small braces, Column 5: Subparts
         estimated_topic_width = max_text_length * 12  # Approximate character width
         estimated_part_width = max(len(part['name']) for part in parts) * 10 if parts else 100
         estimated_subpart_width = max(len(subpart['name']) for part in parts for subpart in part.get('subparts', [])) * 8 if total_subparts > 0 else 100
         
-        required_width = estimated_topic_width + estimated_part_width + estimated_subpart_width + 200  # Spacing
+        # 5-column layout requires more width
+        required_width = estimated_topic_width + 150 + estimated_part_width + 150 + estimated_subpart_width + 120  # Tighter trailing spacing
         
         # Add watermark space (bottom and right margins)
-        watermark_margin = 80  # Space for watermark
+        watermark_margin = 24  # Tighter watermark margin
         
         # Calculate final dimensions with minimal padding
-        final_width = max(required_width + watermark_margin, 600)  # Minimum width
+        final_width = max(required_width + watermark_margin, 800)  # Increased minimum width for 5-column layout
         final_height = max(required_height + watermark_margin, 400)  # Minimum height
         
-        # Ensure reasonable aspect ratio
+        # Ensure reasonable aspect ratio without shrinking content width/height
         aspect_ratio = final_width / final_height
-        if aspect_ratio > 3:  # Too wide
-            final_width = final_height * 2.5
-        elif aspect_ratio < 0.5:  # Too tall
-            final_height = final_width * 0.8
+        if aspect_ratio > 3:  # Too wide: increase height instead of reducing width
+            final_height = max(final_height, int(final_width / 2.5))
+        elif aspect_ratio < 0.5:  # Too tall: increase width instead of reducing height
+            final_width = max(final_width, int(final_height * 0.8))
         
         # Minimal padding for content
-        padding = 20  # Reduced padding for tighter layout
+        padding = 16  # Tighter padding for brace map
         
         return {
             'width': int(final_width),
@@ -1461,26 +1681,29 @@ class BraceMapAgent:
         content_width = max_x - min_x
         content_height = max_y - min_y
         
-        # Add minimal padding for content
-        content_padding = 40  # Minimal padding around content
+        # Add minimal padding for content (left padding target)
+        content_padding = 24  # Tighter left margin
         
         # Add watermark space (bottom and right margins)
         watermark_margin = 80  # Space for watermark
         
-        # Calculate optimal dimensions with content padding and watermark space
-        optimal_width = content_width + 2 * content_padding + watermark_margin
-        optimal_height = content_height + 2 * content_padding + watermark_margin
+        # Calculate optimal dimensions with asymmetric margins
+        # Left: content_padding, Right: very small fixed spacing to trim trailing gap
+        right_spacing = 12  # keep a small buffer after subparts
+        optimal_width = int(content_width + content_padding + right_spacing)
+        # Height keeps additional space for watermark at bottom
+        optimal_height = int(content_height + 2 * content_padding + watermark_margin)
         
-        # Ensure minimum size
-        optimal_width = max(optimal_width, 600)
-        optimal_height = max(optimal_height, 400)
+        # Ensure minimum size and trim excessive right-side whitespace by fitting to content bounds
+        optimal_width = max(int(optimal_width), 600)
+        optimal_height = max(int(optimal_height), 400)
         
-        # Ensure reasonable aspect ratio
+        # Ensure reasonable aspect ratio without shrinking content; expand the smaller side
         aspect_ratio = optimal_width / optimal_height
-        if aspect_ratio > 3:  # Too wide
-            optimal_width = optimal_height * 2.5
-        elif aspect_ratio < 0.5:  # Too tall
-            optimal_height = optimal_width * 0.8
+        if aspect_ratio > 3:  # Too wide: expand height
+            optimal_height = max(optimal_height, int(optimal_width / 2.5))
+        elif aspect_ratio < 0.5:  # Too tall: expand width
+            optimal_width = max(optimal_width, int(optimal_height * 0.8))
         
         return {
             'width': int(optimal_width),
@@ -1508,9 +1731,9 @@ class BraceMapAgent:
         # Calculate minimal padding for centering
         content_padding = 40  # Minimal padding around content
         
-        # Calculate centering offsets with minimal padding
-        offset_x = content_padding - content_bounds['min_x']
-        offset_y = content_padding - content_bounds['min_y']
+        # Calculate centering offsets with minimal padding (never negative)
+        offset_x = max(0, content_padding - content_bounds['min_x'])
+        offset_y = max(0, content_padding - content_bounds['min_y'])
         
         # Find topic and part nodes
         topic_nodes = [node for node in nodes if node.node_type == 'topic']
@@ -1641,7 +1864,19 @@ class BraceMapAgent:
             )
             adjusted_units.append(adjusted_unit)
         
-        # Create layout data with optimal dimensions
+        # After adjustments, recompute tight canvas width to trim right-side spacing
+        if nodes:
+            adjusted_max_x = max(node.x + node.width for node in nodes)
+            # Keep a small right buffer; do not re-add left padding (nodes are absolute)
+            tight_right_buffer = 12
+            tight_width = int(max(adjusted_max_x + tight_right_buffer, 600))
+            # Update optimal dimensions width only (preserve height and padding)
+            optimal_dimensions = {
+                **optimal_dimensions,
+                'width': tight_width,
+            }
+
+        # Create layout data with updated optimal dimensions
         layout_data = {
             'units': self._serialize_units(adjusted_units),
             'spacing_info': self._serialize_spacing_info(SpacingInfo(
@@ -1660,7 +1895,7 @@ class BraceMapAgent:
         return LayoutResult(
             nodes=nodes,
             braces=[],  # Braces will be handled in rendering phase
-            dimensions=optimal_dimensions,  # Use optimal dimensions
+            dimensions=optimal_dimensions,  # Use updated optimal dimensions
             algorithm_used=LayoutAlgorithm.FLEXIBLE_DYNAMIC,
             performance_metrics={'processing_time': processing_time},
             layout_data=layout_data

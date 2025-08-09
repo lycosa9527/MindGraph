@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brace Map Fixed Positioning Test</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Brace Map Fixed Positioning Test</h1>
+    
+    <div class="test-container">
+        <div class="test-title">Test: Fixed 5-Column Layout with Proper Brace Positioning</div>
+        <div id="test-result"></div>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Test with fixed 5-column layout positioning
+        function testFixedPositioning() {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('test-result');
+            
+            // Test data with proper 5-column layout
+            const agentResult = {
+                success: true,
+                svg_data: {
+                    width: 1000,  // Increased width for 5-column layout
+                    height: 600,
+                    background: '#ffffff',
+                    elements: [
+                        // Column 1: Topic
+                        {
+                            type: 'text',
+                            x: 100,
+                            y: 300,
+                            text: 'Computer',
+                            font_size: 24,
+                            fill: '#000000',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'bold'
+                        },
+                        // Column 3: Parts
+                        {
+                            type: 'text',
+                            x: 400,
+                            y: 150,
+                            text: 'Hardware',
+                            font_size: 18,
+                            fill: '#333333',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'bold'
+                        },
+                        {
+                            type: 'text',
+                            x: 400,
+                            y: 250,
+                            text: 'Software',
+                            font_size: 18,
+                            fill: '#333333',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'bold'
+                        },
+                        {
+                            type: 'text',
+                            x: 400,
+                            y: 350,
+                            text: 'Peripherals',
+                            font_size: 18,
+                            fill: '#333333',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'bold'
+                        },
+                        // Column 5: Subparts
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 100,
+                            text: 'CPU',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 130,
+                            text: 'RAM',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 160,
+                            text: 'Storage',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 220,
+                            text: 'OS',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 250,
+                            text: 'Apps',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 320,
+                            text: 'Monitor',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 350,
+                            text: 'Keyboard',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        {
+                            type: 'text',
+                            x: 700,
+                            y: 380,
+                            text: 'Mouse',
+                            font_size: 14,
+                            fill: '#666666',
+                            text_anchor: 'middle',
+                            dominant_baseline: 'middle',
+                            font_weight: 'normal'
+                        },
+                        // Column 2: Main Brace (between topic and parts)
+                        {
+                            type: 'path',
+                            d: 'M 250 150 L 225 150 L 225 165 L 233 165 L 233 335 L 225 335 L 225 350 L 250 350',
+                            fill: 'none',
+                            stroke: '#666666',
+                            stroke_width: 3.0,
+                            stroke_linecap: 'round',
+                            stroke_linejoin: 'round'
+                        },
+                        // Column 4: Small Braces (between parts and subparts)
+                        {
+                            type: 'path',
+                            d: 'M 550 100 L 530 100 L 530 115 L 536 115 L 536 175 L 530 175 L 530 190 L 550 190',
+                            fill: 'none',
+                            stroke: '#666666',
+                            stroke_width: 2.0,
+                            stroke_linecap: 'round',
+                            stroke_linejoin: 'round'
+                        },
+                        {
+                            type: 'path',
+                            d: 'M 550 220 L 530 220 L 530 235 L 536 235 L 536 265 L 530 265 L 530 270 L 550 270',
+                            fill: 'none',
+                            stroke: '#666666',
+                            stroke_width: 2.0,
+                            stroke_linecap: 'round',
+                            stroke_linejoin: 'round'
+                        },
+                        {
+                            type: 'path',
+                            d: 'M 550 320 L 530 320 L 530 335 L 536 335 L 536 395 L 530 395 L 530 410 L 550 410',
+                            fill: 'none',
+                            stroke: '#666666',
+                            stroke_width: 2.0,
+                            stroke_linecap: 'round',
+                            stroke_linejoin: 'round'
+                        }
+                    ]
+                }
+            };
+            
+            // Render using the agent renderer
+            try {
+                renderBraceMapAgent(agentResult, null, null);
+                statusDiv.innerHTML = '<div class="status success">✅ Fixed 5-column layout rendered successfully!</div>';
+                statusDiv.innerHTML += '<div class="status success">✅ Column 1: Topic (left)</div>';
+                statusDiv.innerHTML += '<div class="status success">✅ Column 2: Main brace (between topic and parts)</div>';
+                statusDiv.innerHTML += '<div class="status success">✅ Column 3: Parts (middle)</div>';
+                statusDiv.innerHTML += '<div class="status success">✅ Column 4: Small braces (between parts and subparts)</div>';
+                statusDiv.innerHTML += '<div class="status success">✅ Column 5: Subparts (right)</div>';
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="status error">❌ Error rendering brace map: ' + error.message + '</div>';
+            }
+        }
+        
+        // Test the rendering
+        testFixedPositioning();
+        
+        console.log('✅ Brace Map Fixed Positioning Test Complete');
+    </script>
+</body>
+</html>

@@ -24,16 +24,16 @@ Request: {user_prompt}
 Please output a JSON object containing the following fields:
 relating_factor: "as" (fixed relationship identifier)
 analogies: [
-  {{
+  {
     "left": "First item in analogy pair",
     "right": "Second item in analogy pair",
     "id": 0
-  }},
-  {{
+  },
+  {
     "left": "First item in analogy pair", 
     "right": "Second item in analogy pair",
     "id": 1
-  }}
+  }
 ]
 
 Requirements:
@@ -58,16 +58,16 @@ BRIDGE_MAP_GENERATION_ZH = """
 请输出一个包含以下字段的JSON对象：
 relating_factor: "as" (固定关系标识符)
 analogies: [
-  {{
+  {
     "left": "类比对中的第一项",
     "right": "类比对中的第二项", 
     "id": 0
-  }},
-  {{
+  },
+  {
     "left": "类比对中的第一项",
     "right": "类比对中的第二项", 
     "id": 1
-  }}
+  }
 ]
 
 要求：
@@ -197,7 +197,7 @@ Request: {user_prompt}
 
 Please output a JSON object containing the following fields:
 topic: "Topic"
-children: [{{"id": "subtopic1", "label": "Subtopic1", "children": [{{"id": "subtopic1.1", "label": "Subtopic1.1"}}]}}]
+children: [{"id": "subtopic1", "label": "Subtopic1", "children": [{"id": "subtopic1.1", "label": "Subtopic1.1"}]}]
 
 Please ensure the JSON format is correct, do not include any code block markers.
 """
@@ -209,7 +209,7 @@ TREE_MAP_GENERATION_ZH = """
 
 请输出一个包含以下字段的JSON对象：
 topic: "主题"
-children: [{{"id": "subtopic1", "label": "子主题1", "children": [{{"id": "subtopic1.1", "label": "子主题1.1"}}]}}]
+children: [{"id": "subtopic1", "label": "子主题1", "children": [{"id": "subtopic1.1", "label": "子主题1.1"}]}]
 
 请确保JSON格式正确，不要包含任何代码块标记。
 """
@@ -247,16 +247,9 @@ steps: ["步骤1", "步骤2", "步骤3", "步骤4", "步骤5"]
 # ============================================================================
 
 BRACE_MAP_GENERATION_EN = """
-Please generate a JSON specification for a brace map with 5-column layout for the following user request.
+Please generate a JSON specification for a brace map for the following user request.
 
 Request: {user_prompt}
-
-The brace map follows a 5-column layout structure:
-1. Topic (left column) - The main subject/concept
-2. Big Brace (main brace) - Connects topic to all parts
-3. Parts (main components) - The major divisions/categories
-4. Small Brace (sub-braces) - Individual braces for each part's subparts
-5. Subparts (detailed components) - The detailed items under each part
 
 Please output a JSON object containing the following fields:
 topic: "Main topic"
@@ -266,24 +259,19 @@ Requirements:
 - Generate 3-6 main parts with clear, descriptive names
 - Each part should have 2-5 subparts that are specific and detailed
 - Use concise, clear language - avoid long sentences
-- Ensure logical whole-to-part relationships
+- Ensure logical whole-to-part relationships (whole → parts → subparts)
 - Parts should be major categories or divisions of the topic
 - Subparts should be specific components, features, or elements of each part
+
+Do not include any information about visual layout or braces; only provide the hierarchical data.
 
 Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 BRACE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个括号图的JSON规范，采用5列布局。
+请为以下用户需求生成一个括号图（Brace Map）的JSON规范。
 
 需求：{user_prompt}
-
-括号图遵循5列布局结构：
-1. 主题（左列）- 主要主题/概念
-2. 大括号（主括号）- 连接主题到所有部分
-3. 部分（主要组件）- 主要分类/类别
-4. 小括号（子括号）- 每个部分的子部分的单独括号
-5. 子部分（详细组件）- 每个部分下的详细项目
 
 请输出一个包含以下字段的JSON对象：
 topic: "主题"
@@ -292,10 +280,12 @@ parts: [{{"name": "部分1", "subparts": [{{"name": "子部分1.1"}}]}}]
 要求：
 - 生成3-6个主要部分，名称清晰、描述性强
 - 每个部分应有2-5个子部分，具体且详细
-- 使用简洁、清晰的语言 - 避免长句
-- 确保逻辑的整体-部分关系
-- 部分应该是主题的主要类别或分类
-- 子部分应该是每个部分的具体组件、特征或元素
+- 使用简洁、清晰的语言，避免长句
+- 确保逻辑的整体→部分→子部分关系
+- 部分应为主题的主要类别或分支
+- 子部分应为每个部分的具体组件、特征或元素
+
+不要包含任何关于可视化布局或括号形状的说明；只提供层级数据。
 
 请确保JSON格式正确，不要包含任何代码块标记。
 """

@@ -2,7 +2,7 @@
 MindGraph Configuration Module
 ==============================
 
-Version: 2.3.5
+Version: 2.3.6
 
 This module provides centralized configuration management for the MindGraph application.
 It handles environment variable loading, validation, and provides a clean interface
