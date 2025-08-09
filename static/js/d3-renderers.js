@@ -480,7 +480,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     
     // Calculate layout with collision detection
     const centerX = baseWidth / 2;
-    const centerY = baseHeight / 2;
+    let centerY = baseHeight / 2;
     
     // Calculate even distribution around the topic
     const targetDistance = topicR + uniformAttributeR + 50; // Distance from center
@@ -655,7 +655,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     
     // Calculate layout
     const centerX = baseWidth / 2;
-    const centerY = baseHeight / 2;
+    centerY = baseHeight / 2;
     
             // Calculate outer circle radius to accommodate all context circles
         // Context circles should be adjacent to the outer circle but inside it
@@ -812,125 +812,221 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     const width = baseWidth;
     const height = baseHeight;
     var svg = d3.select('#d3-container').append('svg').attr('width', width).attr('height', height);
+
+    // Helpers to measure text accurately for width-adaptive rectangles
+    const avgCharPx = 0.6; // fallback approximation
+    function measureTextApprox(text, fontPx, hPad = 14, vPad = 10) {
+        const tw = Math.max(1, (text ? text.length : 0) * fontPx * avgCharPx);
+        const th = Math.max(1, fontPx * 1.2);
+        return { w: Math.ceil(tw + hPad * 2), h: Math.ceil(th + vPad * 2) };
+    }
+    function measureSvgTextBox(svg, text, fontPx, hPad = 14, vPad = 10) {
+        try {
+            const temp = svg.append('text')
+                .attr('x', -10000)
+                .attr('y', -10000)
+                .attr('font-size', fontPx)
+                .attr('font-family', 'Inter, sans-serif')
+                .attr('visibility', 'hidden')
+                .text(text || '');
+            const node = temp.node();
+            let textWidth = 0;
+            if (node && node.getComputedTextLength) {
+                textWidth = node.getComputedTextLength();
+            } else if (node && node.getBBox) {
+                textWidth = node.getBBox().width || 0;
+            }
+            temp.remove();
+            const textHeight = Math.max(1, fontPx * 1.2);
+            return { w: Math.ceil(textWidth + hPad * 2), h: Math.ceil(textHeight + vPad * 2) };
+        } catch (e) {
+            // Fallback to approximation if DOM measurement fails
+            return measureTextApprox(text, fontPx, hPad, vPad);
+        }
+    }
     
     // Calculate layout
     const rootX = width / 2;
     const rootY = 80;
-    const rootRadius = getTextRadius(spec.topic, THEME.fontRoot, 20);
-    
-    // Draw root node
-    svg.append('circle')
-        .attr('cx', rootX)
-        .attr('cy', rootY)
-        .attr('r', rootRadius)
+    const rootFont = THEME.fontRoot || 20;
+    const rootBox = measureSvgTextBox(svg, spec.topic, rootFont, 16, 12);
+    // Draw root node as rectangle
+    svg.append('rect')
+        .attr('x', rootX - rootBox.w / 2)
+        .attr('y', rootY - rootBox.h / 2)
+        .attr('width', rootBox.w)
+        .attr('height', rootBox.h)
+        .attr('rx', 6)
+        .attr('ry', 6)
         .attr('fill', THEME.rootFill)
         .attr('stroke', THEME.rootStroke)
         .attr('stroke-width', THEME.rootStrokeWidth);
-    
     svg.append('text')
         .attr('x', rootX)
         .attr('y', rootY)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('fill', THEME.rootText)
-        .attr('font-size', THEME.fontRoot)
+        .attr('font-size', rootFont)
         .attr('font-weight', 'bold')
         .text(spec.topic);
     
     // Draw branches
-    const branchCount = spec.children.length;
-    const branchSpacing = (width - 2 * padding) / (branchCount + 1);
-    const branchY = rootY + rootRadius + 60;
-    
-    spec.children.forEach((child, i) => {
-        const branchX = padding + (i + 1) * branchSpacing;
-        const branchRadius = getTextRadius(child.label, THEME.fontBranch, 15);
-        
-        // Draw branch node
-        svg.append('circle')
-            .attr('cx', branchX)
-            .attr('cy', branchY)
-            .attr('r', branchRadius)
+    const branchY = rootY + rootBox.h / 2 + 60;
+    let requiredBottomY = branchY + 40;
+
+    // First pass: measure branches and leaves, compute per-column width
+    const branchLayouts = spec.children.map((child) => {
+        const branchFont = THEME.fontBranch || 16;
+        const branchBox = measureSvgTextBox(svg, child.label, branchFont, 14, 10);
+        const leafFont = THEME.fontLeaf || 14;
+        let maxLeafW = 0;
+        const leafBoxes = (Array.isArray(child.children) ? child.children : []).map(leaf => {
+            const b = measureSvgTextBox(svg, leaf.label, leafFont, 12, 8);
+            if (b.w > maxLeafW) maxLeafW = b.w;
+            return b;
+        });
+        const columnContentW = Math.max(branchBox.w, maxLeafW);
+        const columnWidth = columnContentW + 60; // padding within column to avoid overlap
+        return { child, branchFont, branchBox, leafFont, leafBoxes, maxLeafW, columnWidth };
+    });
+
+    // Second pass: assign x positions cumulatively to prevent overlap
+    let runningX = padding;
+    branchLayouts.forEach((layout) => {
+        const xCenter = runningX + layout.columnWidth / 2;
+        layout.branchX = xCenter;
+        runningX += layout.columnWidth; // advance to next column start
+    });
+
+    // Compute content width and adapt canvas width if needed; otherwise center within available space
+    const totalColumnsWidth = runningX - padding;
+    const contentWidth = padding * 2 + totalColumnsWidth;
+    let offsetX = 0;
+    if (contentWidth <= width) {
+        offsetX = (width - contentWidth) / 2;
+    } else {
+        // Expand SVG canvas to fit content
+        d3.select(svg.node()).attr('width', contentWidth);
+    }
+    branchLayouts.forEach(layout => { layout.branchX += offsetX; });
+
+    // Render branches and children stacked vertically with straight connectors
+    branchLayouts.forEach(layout => {
+        const { child, branchFont, branchBox, leafFont, leafBoxes, maxLeafW } = layout;
+        const branchX = layout.branchX;
+
+        // Draw branch rectangle and label with width adaptive to characters
+        svg.append('rect')
+            .attr('x', branchX - branchBox.w / 2)
+            .attr('y', branchY - branchBox.h / 2)
+            .attr('width', branchBox.w)
+            .attr('height', branchBox.h)
+            .attr('rx', 6)
+            .attr('ry', 6)
             .attr('fill', THEME.branchFill)
             .attr('stroke', THEME.branchStroke)
             .attr('stroke-width', THEME.branchStrokeWidth);
-        
+
         svg.append('text')
             .attr('x', branchX)
             .attr('y', branchY)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.branchText)
-            .attr('font-size', THEME.fontBranch)
+            .attr('font-size', branchFont)
             .text(child.label);
-        
-        // Draw connecting line from root to branch
-        const dx = branchX - rootX;
-        const dy = branchY - rootY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        const lineStartX = rootX + (dx / dist) * rootRadius;
-        const lineStartY = rootY + (dy / dist) * rootRadius;
-        const lineEndX = branchX - (dx / dist) * branchRadius;
-        const lineEndY = branchY - (dy / dist) * branchRadius;
-        
+
+        // Root to branch straight connector
         svg.append('line')
-            .attr('x1', lineStartX)
-            .attr('y1', lineStartY)
-            .attr('x2', lineEndX)
-            .attr('y2', lineEndY)
+            .attr('x1', rootX)
+            .attr('y1', rootY + rootBox.h / 2)
+            .attr('x2', branchX)
+            .attr('y2', branchY - branchBox.h / 2)
             .attr('stroke', '#bbb')
             .attr('stroke-width', 2);
-        
-        // Draw leaves (children of branches)
-        if (child.children && child.children.length > 0) {
-            const leafCount = child.children.length;
-            const leafSpacing = 40;
-            const leafY = branchY + branchRadius + 40;
-            const leafStartX = branchX - (leafCount - 1) * leafSpacing / 2;
-            
-            child.children.forEach((leaf, j) => {
-                const leafX = leafStartX + j * leafSpacing;
-                const leafRadius = getTextRadius(leaf.label, THEME.fontLeaf, 10);
-                
-                // Draw leaf node
-                svg.append('circle')
-                    .attr('cx', leafX)
-                    .attr('cy', leafY)
-                    .attr('r', leafRadius)
-                    .attr('fill', THEME.leafFill)
-                    .attr('stroke', THEME.leafStroke)
-                    .attr('stroke-width', THEME.leafStrokeWidth);
-                
+
+        // Children: stacked vertically, centered, with straight vertical connectors
+        const leaves = Array.isArray(child.children) ? child.children : [];
+        if (leaves.length > 0) {
+            const vGap = 12;
+            const startY = branchY + branchBox.h / 2 + 20;
+
+            // Compute vertical centers bottom-up using actual heights (center-aligned at branchX)
+            const centersY = [];
+            let cy = startY + (leafBoxes[0]?.h || (leafFont * 1.2 + 10)) / 2;
+            leaves.forEach((_, j) => {
+                const prevH = j === 0 ? 0 : (leafBoxes[j - 1]?.h || (leafFont * 1.2 + 10));
+                const h = leafBoxes[j]?.h || (leafFont * 1.2 + 10);
+                if (j === 0) {
+                    centersY.push(cy);
+                } else {
+                    cy = centersY[j - 1] + prevH / 2 + vGap + h / 2;
+                    centersY.push(cy);
+                }
+            });
+
+            // Draw child rectangles and labels centered at branchX
+            leaves.forEach((leaf, j) => {
+                const box = leafBoxes[j] || measureSvgTextBox(svg, leaf.label, leafFont, 12, 8);
+                const leafY = centersY[j];
+                // Width adaptive to characters for each node
+                const rectW = box.w;
+                svg.append('rect')
+                    .attr('x', branchX - rectW / 2)
+                    .attr('y', leafY - box.h / 2)
+                    .attr('width', rectW)
+                    .attr('height', box.h)
+                    .attr('rx', 4)
+                    .attr('ry', 4)
+                    .attr('fill', THEME.leafFill || '#ffffff')
+                    .attr('stroke', THEME.leafStroke || '#c8d6e5')
+                    .attr('stroke-width', THEME.leafStrokeWidth != null ? THEME.leafStrokeWidth : 1);
+
                 svg.append('text')
-                    .attr('x', leafX)
+                    .attr('x', branchX)
                     .attr('y', leafY)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.leafText)
-                    .attr('font-size', THEME.fontLeaf)
+                    .attr('font-size', leafFont)
                     .text(leaf.label);
-                
-                // Draw connecting line from branch to leaf
-                const leafDx = leafX - branchX;
-                const leafDy = leafY - branchY;
-                const leafDist = Math.sqrt(leafDx * leafDx + leafDy * leafDy);
-                
-                const leafLineStartX = branchX + (leafDx / leafDist) * branchRadius;
-                const leafLineStartY = branchY + (leafDy / leafDist) * branchRadius;
-                const leafLineEndX = leafX - (leafDx / leafDist) * leafRadius;
-                const leafLineEndY = leafY - (leafDy / leafDist) * leafRadius;
-                
-                svg.append('line')
-                    .attr('x1', leafLineStartX)
-                    .attr('y1', leafLineStartY)
-                    .attr('x2', leafLineEndX)
-                    .attr('y2', leafLineEndY)
-                    .attr('stroke', '#ddd')
-                    .attr('stroke-width', 1);
             });
+
+            // Draw straight vertical connectors: branch -> first child, then between consecutive children
+            const firstTop = centersY[0] - (leafBoxes[0]?.h || (leafFont * 1.2 + 10)) / 2;
+            svg.append('line')
+                .attr('x1', branchX)
+                .attr('y1', branchY + branchBox.h / 2)
+                .attr('x2', branchX)
+                .attr('y2', firstTop)
+                .attr('stroke', '#cccccc')
+                .attr('stroke-width', 1.5);
+
+            for (let j = 0; j < centersY.length - 1; j++) {
+                const thisBottom = centersY[j] + (leafBoxes[j]?.h || (leafFont * 1.2 + 10)) / 2;
+                const nextTop = centersY[j + 1] - (leafBoxes[j + 1]?.h || (leafFont * 1.2 + 10)) / 2;
+                svg.append('line')
+                    .attr('x1', branchX)
+                    .attr('y1', thisBottom)
+                    .attr('x2', branchX)
+                    .attr('y2', nextTop)
+                    .attr('stroke', '#cccccc')
+                    .attr('stroke-width', 1.5);
+            }
+
+            const lastBottom = centersY[centersY.length - 1] + (leafBoxes[leafBoxes.length - 1]?.h || (leafFont * 1.2 + 10)) / 2;
+            requiredBottomY = Math.max(requiredBottomY, lastBottom + 30);
+        } else {
+            requiredBottomY = Math.max(requiredBottomY, branchY + branchBox.h / 2 + 40);
         }
     });
+
+    // Expand SVG height if content exceeds current height
+    const finalNeededHeight = Math.ceil(requiredBottomY + padding);
+    if (finalNeededHeight > height) {
+        svg.attr('height', finalNeededHeight);
+    }
     
     // Watermark
     addWatermark(svg, theme);
@@ -1617,18 +1713,16 @@ function renderVennDiagram(spec, theme = null, dimensions = null) {
 
 function renderFlowchart(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
-    
+
     // Validate spec
     if (!spec || !spec.title || !Array.isArray(spec.steps)) {
         d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for flowchart');
         return;
     }
-    
-    // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 800;
-    const baseHeight = dimensions?.baseHeight || 600;
+
+    // Use provided padding; width/height will be derived from content
     const padding = dimensions?.padding || 40;
-    
+
     // Get theme using style manager
     let THEME;
     try {
@@ -1637,21 +1731,21 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         } else {
             console.warn('Style manager not available, using fallback theme');
             THEME = {
-                startFill: '#4caf50',   // Green for start
-                startText: '#ffffff',    // White text
-                startStroke: '#388e3c',  // Darker green border
+                startFill: '#4caf50',
+                startText: '#ffffff',
+                startStroke: '#388e3c',
                 startStrokeWidth: 2,
-                processFill: '#2196f3',  // Blue for process
-                processText: '#ffffff',  // White text
-                processStroke: '#1976d2', // Darker blue border
+                processFill: '#2196f3',
+                processText: '#ffffff',
+                processStroke: '#1976d2',
                 processStrokeWidth: 2,
-                decisionFill: '#ff9800', // Orange for decision
-                decisionText: '#ffffff',  // White text
-                decisionStroke: '#f57c00', // Darker orange border
+                decisionFill: '#ff9800',
+                decisionText: '#ffffff',
+                decisionStroke: '#f57c00',
                 decisionStrokeWidth: 2,
-                endFill: '#f44336',     // Red for end
-                endText: '#ffffff',      // White text
-                endStroke: '#d32f2f',   // Darker red border
+                endFill: '#f44336',
+                endText: '#ffffff',
+                endStroke: '#d32f2f',
                 endStrokeWidth: 2,
                 fontNode: 14,
                 fontEdge: 12
@@ -1660,136 +1754,172 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
         THEME = {
-            startFill: '#4caf50',   // Green for start
-            startText: '#ffffff',    // White text
-            startStroke: '#388e3c',  // Darker green border
+            startFill: '#4caf50',
+            startText: '#ffffff',
+            startStroke: '#388e3c',
             startStrokeWidth: 2,
-            processFill: '#2196f3',  // Blue for process
-            processText: '#ffffff',  // White text
-            processStroke: '#1976d2', // Darker blue border
+            processFill: '#2196f3',
+            processText: '#ffffff',
+            processStroke: '#1976d2',
             processStrokeWidth: 2,
-            decisionFill: '#ff9800', // Orange for decision
-            decisionText: '#ffffff',  // White text
-            decisionStroke: '#f57c00', // Darker orange border
+            decisionFill: '#ff9800',
+            decisionText: '#ffffff',
+            decisionStroke: '#f57c00',
             decisionStrokeWidth: 2,
-            endFill: '#f44336',     // Red for end
-            endText: '#ffffff',      // White text
-            endStroke: '#d32f2f',   // Darker red border
+            endFill: '#f44336',
+            endText: '#ffffff',
+            endStroke: '#d32f2f',
             endStrokeWidth: 2,
             fontNode: 14,
             fontEdge: 12
         };
     }
-    
-    const width = baseWidth;
-    const height = baseHeight;
-    var svg = d3.select('#d3-container').append('svg').attr('width', width).attr('height', height);
-    
+
+    // Measurement SVG (off-screen)
+    const tempSvg = d3.select('body').append('svg')
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('position', 'absolute')
+        .style('left', '-9999px')
+        .style('top', '-9999px');
+
+    function measureTextSize(text, fontSize) {
+        const t = tempSvg.append('text')
+            .attr('x', -9999)
+            .attr('y', -9999)
+            .attr('font-size', fontSize)
+            .attr('dominant-baseline', 'hanging')
+            .text(text || '');
+        const bbox = t.node().getBBox();
+        t.remove();
+        return { w: Math.ceil(bbox.width), h: Math.ceil(bbox.height || fontSize) };
+    }
+
+    // Measure title
+    const titleFont = 20;
+    const titleSize = measureTextSize(spec.title, titleFont);
+
+    // Measure each step's text and compute adaptive node sizes
+    const hPad = 14;
+    const vPad = 10;
+    const stepSpacing = 40;
+    const nodeRadius = 5;
+
+    const nodes = spec.steps.map(step => {
+        const txt = step.text || '';
+        const m = measureTextSize(txt, THEME.fontNode);
+        const w = Math.max(100, m.w + hPad * 2);
+        const h = Math.max(40, m.h + vPad * 2);
+        return { step, text: txt, w, h };
+    });
+
+    // Compute required canvas from content
+    const maxNodeWidth = nodes.reduce((acc, n) => Math.max(acc, n.w), 0);
+    const requiredWidth = Math.max(titleSize.w, maxNodeWidth) + padding * 2;
+    const totalNodesHeight = nodes.reduce((sum, n) => sum + n.h, 0);
+    const totalSpacing = Math.max(0, nodes.length - 1) * stepSpacing;
+    const requiredHeight = padding + (titleSize.h + 30) + totalNodesHeight + totalSpacing + padding;
+
+    // Apply dimensions by sizing container explicitly
+    d3.select('#d3-container')
+        .style('width', requiredWidth + 'px')
+        .style('height', requiredHeight + 'px');
+
+    // Create visible SVG
+    const svg = d3.select('#d3-container').append('svg')
+        .attr('width', requiredWidth)
+        .attr('height', requiredHeight)
+        .attr('viewBox', `0 0 ${requiredWidth} ${requiredHeight}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet');
+
+    // Remove temp svg
+    tempSvg.remove();
+
     // Draw title
-    const titleY = padding + 30;
+    const titleY = padding + titleSize.h;
     svg.append('text')
-        .attr('x', width / 2)
+        .attr('x', requiredWidth / 2)
         .attr('y', titleY)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('fill', '#333')
-        .attr('font-size', 20)
+        .attr('font-size', titleFont)
         .attr('font-weight', 'bold')
         .text(spec.title);
-    
-    // Simple layout - arrange steps in a vertical flow
-    const stepWidth = 120;
-    const stepHeight = 60;
-    const stepSpacing = 40;
-    const startY = titleY + 60;
-    
-    // Draw steps
-    spec.steps.forEach((step, i) => {
-        const x = width / 2;
-        const y = startY + i * (stepHeight + stepSpacing);
-        
-        let fill, stroke, strokeWidth;
-        
-        // Determine step style based on type
-        switch (step.type) {
+
+    // Vertical layout
+    const centerX = requiredWidth / 2;
+    let yCursor = titleY + 40;
+
+    nodes.forEach((n, i) => {
+        const x = centerX;
+        const y = yCursor + n.h / 2;
+
+        let fill, stroke, strokeWidth, textColor;
+        switch (n.step.type) {
             case 'start':
-                fill = THEME.startFill;
-                stroke = THEME.startStroke;
-                strokeWidth = THEME.startStrokeWidth;
-                break;
+                fill = THEME.startFill; stroke = THEME.startStroke; strokeWidth = THEME.startStrokeWidth; textColor = THEME.startText; break;
             case 'decision':
-                fill = THEME.decisionFill;
-                stroke = THEME.decisionStroke;
-                strokeWidth = THEME.decisionStrokeWidth;
-                break;
+                fill = THEME.decisionFill; stroke = THEME.decisionStroke; strokeWidth = THEME.decisionStrokeWidth; textColor = THEME.decisionText; break;
             case 'end':
-                fill = THEME.endFill;
-                stroke = THEME.endStroke;
-                strokeWidth = THEME.endStrokeWidth;
-                break;
+                fill = THEME.endFill; stroke = THEME.endStroke; strokeWidth = THEME.endStrokeWidth; textColor = THEME.endText; break;
             default:
-                fill = THEME.processFill;
-                stroke = THEME.processStroke;
-                strokeWidth = THEME.processStrokeWidth;
+                fill = THEME.processFill; stroke = THEME.processStroke; strokeWidth = THEME.processStrokeWidth; textColor = THEME.processText; break;
         }
-        
-        // Draw step shape
-        if (step.type === 'decision') {
-            // Diamond shape for decisions
+
+        if (n.step.type === 'decision') {
+            // Diamond using adaptive width/height
             const points = [
-                `${x},${y - stepHeight/2}`,
-                `${x + stepWidth/2},${y}`,
-                `${x},${y + stepHeight/2}`,
-                `${x - stepWidth/2},${y}`
+                `${x},${y - n.h/2}`,
+                `${x + n.w/2},${y}`,
+                `${x},${y + n.h/2}`,
+                `${x - n.w/2},${y}`
             ].join(' ');
-            
             svg.append('polygon')
                 .attr('points', points)
                 .attr('fill', fill)
                 .attr('stroke', stroke)
                 .attr('stroke-width', strokeWidth);
         } else {
-            // Rectangle for other steps
             svg.append('rect')
-                .attr('x', x - stepWidth/2)
-                .attr('y', y - stepHeight/2)
-                .attr('width', stepWidth)
-                .attr('height', stepHeight)
-                .attr('rx', 5)
+                .attr('x', x - n.w/2)
+                .attr('y', y - n.h/2)
+                .attr('width', n.w)
+                .attr('height', n.h)
+                .attr('rx', nodeRadius)
                 .attr('fill', fill)
                 .attr('stroke', stroke)
                 .attr('stroke-width', strokeWidth);
         }
-        
-        // Draw step text
+
         svg.append('text')
             .attr('x', x)
             .attr('y', y)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
-            .attr('fill', '#fff')
+            .attr('fill', textColor || '#fff')
             .attr('font-size', THEME.fontNode)
-            .text(step.text);
-        
-        // Draw connecting arrow to next step
-        if (i < spec.steps.length - 1) {
-            const nextY = startY + (i + 1) * (stepHeight + stepSpacing);
-            
+            .text(n.text);
+
+        // Arrow to next node
+        if (i < nodes.length - 1) {
+            const nextTopY = y + n.h / 2 + 6;
+            const nextBottomY = nextTopY + stepSpacing - 12;
             svg.append('line')
                 .attr('x1', x)
-                .attr('y1', y + stepHeight/2)
+                .attr('y1', nextTopY)
                 .attr('x2', x)
-                .attr('y2', nextY - stepHeight/2)
+                .attr('y2', nextBottomY)
                 .attr('stroke', '#666')
                 .attr('stroke-width', 2);
-            
-            // Draw arrowhead
             svg.append('polygon')
-                .attr('points', `${x},${nextY - stepHeight/2} ${x - 5},${nextY - stepHeight/2 - 10} ${x + 5},${nextY - stepHeight/2 - 10}`)
+                .attr('points', `${x},${nextBottomY} ${x - 5},${nextBottomY - 10} ${x + 5},${nextBottomY - 10}`)
                 .attr('fill', '#666');
         }
+
+        yCursor += n.h + stepSpacing;
     });
-    
+
     // Watermark
     addWatermark(svg, theme);
 }
@@ -2218,18 +2348,16 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
 
 function renderFlowMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
-    
+
     // Validate spec
     if (!spec || !spec.title || !Array.isArray(spec.steps)) {
         d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for flow map');
         return;
     }
-    
-    // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 800;
-    const baseHeight = dimensions?.baseHeight || 400;
+
+    // Use provided padding from dimensions; width/height will be computed from content
     const padding = dimensions?.padding || 40;
-    
+
     const THEME = {
         titleFill: '#4e79a7',
         titleText: '#fff',
@@ -2241,9 +2369,15 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         stepStrokeWidth: 2,
         fontTitle: 18,
         fontStep: 14,
+        hPadTitle: 12,
+        vPadTitle: 8,
+        hPadStep: 14,
+        vPadStep: 10,
+        stepSpacing: 80,
+        rectRadius: 8,
         ...theme
     };
-    
+
     // Apply integrated styles if available
     if (theme) {
         if (theme.titleColor) THEME.titleFill = theme.titleColor;
@@ -2254,31 +2388,109 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         if (theme.stepTextColor) THEME.stepText = theme.stepTextColor;
         if (theme.titleFontSize) THEME.fontTitle = theme.titleFontSize;
         if (theme.stepFontSize) THEME.fontStep = theme.stepFontSize;
-        
+
         if (theme.background) {
             d3.select('#d3-container').style('background-color', theme.background);
         }
     }
-    
-    // Calculate layout
-    const stepCount = spec.steps.length;
-    const stepWidth = 120;
-    const stepHeight = 60;
-    const stepSpacing = 80;
-    
-    const totalWidth = stepCount * stepWidth + (stepCount - 1) * stepSpacing;
-    const startX = (baseWidth - totalWidth) / 2;
-    const centerY = baseHeight / 2;
-    
-    // Create SVG
+
+    // Create a temporary SVG for measuring text
+    const tempSvg = d3.select('body').append('svg')
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('position', 'absolute')
+        .style('left', '-9999px')
+        .style('top', '-9999px');
+
+    function measureTextSize(text, fontSize) {
+        const t = tempSvg.append('text')
+            .attr('x', -9999)
+            .attr('y', -9999)
+            .attr('font-size', fontSize)
+            .attr('dominant-baseline', 'hanging')
+            .text(text || '');
+        const bbox = t.node().getBBox();
+        t.remove();
+        return { w: Math.ceil(bbox.width), h: Math.ceil(bbox.height || fontSize) };
+    }
+
+    // Measure title and steps to compute adaptive sizes (vertical layout)
+    const titleSize = measureTextSize(spec.title, THEME.fontTitle);
+    const stepSizes = spec.steps.map(s => {
+        const m = measureTextSize(s, THEME.fontStep);
+        return {
+            text: s,
+            w: Math.max(100, m.w + THEME.hPadStep * 2),
+            h: Math.max(42, m.h + THEME.vPadStep * 2)
+        };
+    });
+
+    // Build substeps mapping and measurements per step
+    const stepToSubsteps = {};
+    if (Array.isArray(spec.substeps)) {
+        spec.substeps.forEach(entry => {
+            if (!entry || typeof entry !== 'object') return;
+            const stepName = entry.step;
+            const subs = Array.isArray(entry.substeps) ? entry.substeps : [];
+            if (typeof stepName === 'string' && subs.length) {
+                stepToSubsteps[stepName] = subs;
+            }
+        });
+    }
+    const subSpacing = 12;
+    const subOffsetX = 40; // gap between step rect and substeps group
+    const subNodesPerStep = stepSizes.map(stepObj => {
+        const subs = stepToSubsteps[stepObj.text] || [];
+        return subs.map(txt => {
+            const m = measureTextSize(txt, THEME.fontStep);
+            return {
+                text: txt,
+                w: Math.max(80, m.w + THEME.hPadStep * 2),
+                h: Math.max(28, m.h + THEME.vPadStep * 2)
+            };
+        });
+    });
+    const subGroupWidths = subNodesPerStep.map(nodes => nodes.length ? nodes.reduce((mx, n) => Math.max(mx, n.w), 0) : 0);
+    const subGroupHeights = subNodesPerStep.map(nodes => {
+        if (!nodes.length) return 0;
+        const totalH = nodes.reduce((sum, n) => sum + n.h, 0);
+        const spacing = Math.max(0, nodes.length - 1) * subSpacing;
+        return totalH + spacing;
+    });
+
+    const maxStepWidth = stepSizes.reduce((mw, s) => Math.max(mw, s.w), 0);
+    const maxSubGroupWidth = subGroupWidths.reduce((mw, w) => Math.max(mw, w), 0);
+    const totalStepsHeight = stepSizes.reduce((sum, s) => sum + s.h, 0);
+    const totalVerticalSpacing = Math.max(0, stepSizes.length - 1) * THEME.stepSpacing;
+
+    // Required canvas based on content (include right-side substeps if present)
+    const rightSideWidth = maxSubGroupWidth > 0 ? (subOffsetX + maxSubGroupWidth) : 0;
+    let requiredWidth = Math.max(titleSize.w, maxStepWidth + rightSideWidth) + padding * 2;
+    let requiredHeight = padding + (titleSize.h + THEME.vPadTitle) + 30 + totalStepsHeight + totalVerticalSpacing + padding;
+
+    const baseWidth = requiredWidth;
+    const baseHeight = requiredHeight;
+
+    // Clean up temp svg (measurement SVG)
+    tempSvg.remove();
+
+    const centerX = baseWidth / 2;
+    const startY = padding + titleSize.h + THEME.vPadTitle + 40;
+
+    // Size container to content to avoid external CSS constraining the SVG
+    d3.select('#d3-container')
+        .style('width', baseWidth + 'px')
+        .style('height', baseHeight + 'px');
+
+    // Create actual SVG
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', baseWidth)
         .attr('height', baseHeight)
         .attr('viewBox', `0 0 ${baseWidth} ${baseHeight}`)
         .attr('preserveAspectRatio', 'xMinYMin meet');
-    
+
     // Draw title at the top
-    const titleY = padding + 30;
+    const titleY = padding + titleSize.h; // baseline roughly below top padding
     svg.append('text')
         .attr('x', baseWidth / 2)
         .attr('y', titleY)
@@ -2287,52 +2499,144 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         .attr('font-size', THEME.fontTitle)
         .attr('font-weight', 'bold')
         .text(spec.title);
-    
-    // Draw steps
-    spec.steps.forEach((step, index) => {
-        const stepX = startX + index * (stepWidth + stepSpacing) + stepWidth / 2;
-        const stepY = centerY;
-        
-        // Draw step rectangle
+
+    // Draw steps vertically with adaptive block sizes and record centers
+    let yCursor = startY;
+    const stepCenters = [];
+    stepSizes.forEach((s, index) => {
+        const stepXCenter = centerX;
+        const stepYCenter = yCursor + s.h / 2;
+        stepCenters.push(stepYCenter);
+
+        // Rect
         svg.append('rect')
-            .attr('x', stepX - stepWidth / 2)
-            .attr('y', stepY - stepHeight / 2)
-            .attr('width', stepWidth)
-            .attr('height', stepHeight)
-            .attr('rx', 8)
+            .attr('x', stepXCenter - s.w / 2)
+            .attr('y', stepYCenter - s.h / 2)
+            .attr('width', s.w)
+            .attr('height', s.h)
+            .attr('rx', THEME.rectRadius)
             .attr('fill', THEME.stepFill)
             .attr('stroke', THEME.stepStroke)
             .attr('stroke-width', THEME.stepStrokeWidth);
-        
+
+        // Text
         svg.append('text')
-            .attr('x', stepX)
-            .attr('y', stepY)
+            .attr('x', stepXCenter)
+            .attr('y', stepYCenter)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.stepText)
             .attr('font-size', THEME.fontStep)
-            .text(step);
-        
-        // Draw arrow to next step (except for last step)
-        if (index < stepCount - 1) {
-            const arrowStartX = stepX + stepWidth / 2 + 10;
-            const arrowEndX = stepX + stepWidth / 2 + stepSpacing - 10;
-            
+            .text(s.text);
+
+        // Arrow to next step (vertical)
+        if (index < stepSizes.length - 1) {
+            const lineStartY = stepYCenter + s.h / 2 + 6;
+            const lineEndY = lineStartY + THEME.stepSpacing - 12;
+
             svg.append('line')
-                .attr('x1', arrowStartX)
-                .attr('y1', stepY)
-                .attr('x2', arrowEndX)
-                .attr('y2', stepY)
+                .attr('x1', stepXCenter)
+                .attr('y1', lineStartY)
+                .attr('x2', stepXCenter)
+                .attr('y2', lineEndY)
                 .attr('stroke', '#888')
                 .attr('stroke-width', 2);
-            
-            // Draw arrowhead
+
             svg.append('polygon')
-                .attr('points', `${arrowEndX - 8},${stepY - 4} ${arrowEndX},${stepY} ${arrowEndX - 8},${stepY + 4}`)
+                .attr('points', `${stepXCenter - 4},${lineEndY - 8} ${stepXCenter},${lineEndY} ${stepXCenter + 4},${lineEndY - 8}`)
                 .attr('fill', '#888');
         }
+
+        yCursor += s.h + THEME.stepSpacing;
     });
-    
+
+    // If substep groups extend beyond current bounds, increase height and resize SVG
+    if (stepCenters.length > 0) {
+        const firstTop = stepCenters[0] - stepSizes[0].h / 2;
+        const lastBottom = stepCenters[stepCenters.length - 1] + stepSizes[stepSizes.length - 1].h / 2;
+        let minTopSub = Infinity;
+        let maxBottomSub = -Infinity;
+        subNodesPerStep.forEach((nodes, idx) => {
+            if (!nodes.length) return;
+            const groupH = subGroupHeights[idx];
+            const top = stepCenters[idx] - groupH / 2;
+            const bottom = stepCenters[idx] + groupH / 2;
+            if (top < minTopSub) minTopSub = top;
+            if (bottom > maxBottomSub) maxBottomSub = bottom;
+        });
+        if (minTopSub !== Infinity && maxBottomSub !== -Infinity) {
+            const extraTop = Math.max(0, (startY - minTopSub));
+            const extraBottom = Math.max(0, (maxBottomSub - lastBottom));
+            const newHeight = baseHeight + extraTop + extraBottom;
+            if (newHeight > baseHeight) {
+                requiredHeight = newHeight;
+                d3.select('#d3-container').style('height', requiredHeight + 'px');
+                svg.attr('height', requiredHeight).attr('viewBox', `0 0 ${baseWidth} ${requiredHeight}`);
+            }
+        }
+    }
+
+    // Draw substeps to the right of each step
+    stepSizes.forEach((s, idx) => {
+        const nodes = subNodesPerStep[idx];
+        if (!nodes.length) return;
+        const stepYCenter = stepCenters[idx];
+        const groupW = subGroupWidths[idx];
+        const groupH = subGroupHeights[idx];
+        const stepRightX = centerX + s.w / 2;
+        const groupLeftX = stepRightX + subOffsetX;
+        let y = stepYCenter - groupH / 2;
+
+        nodes.forEach(n => {
+            const cy = y + n.h / 2;
+            // Rect
+            svg.append('rect')
+                .attr('x', groupLeftX)
+                .attr('y', cy - n.h / 2)
+                .attr('width', n.w)
+                .attr('height', n.h)
+                .attr('rx', Math.max(4, THEME.rectRadius - 2))
+                .attr('fill', d3.color(THEME.stepFill).brighter(0.5))
+                .attr('stroke', THEME.stepStroke)
+                .attr('stroke-width', Math.max(1, THEME.stepStrokeWidth - 1));
+            // Text
+            svg.append('text')
+                .attr('x', groupLeftX + n.w / 2)
+                .attr('y', cy)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.stepText)
+                .attr('font-size', Math.max(12, THEME.fontStep - 1))
+                .text(n.text);
+            // L-shaped connector
+            const startX = stepRightX;
+            const startYLine = stepYCenter;
+            const midX = startX + Math.max(8, subOffsetX / 2);
+            svg.append('line')
+                .attr('x1', startX)
+                .attr('y1', startYLine)
+                .attr('x2', midX)
+                .attr('y2', startYLine)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+            svg.append('line')
+                .attr('x1', midX)
+                .attr('y1', startYLine)
+                .attr('x2', midX)
+                .attr('y2', cy)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+            svg.append('line')
+                .attr('x1', midX)
+                .attr('y1', cy)
+                .attr('x2', groupLeftX)
+                .attr('y2', cy)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+
+            y += n.h + subSpacing;
+        });
+    });
     // Watermark
     addWatermark(svg, theme);
 }
@@ -2347,8 +2651,8 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     }
     
     // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 900;
-    const baseHeight = dimensions?.baseHeight || 500;
+    let baseWidth = dimensions?.baseWidth || 900;
+    let baseHeight = dimensions?.baseHeight || 500;
     const padding = dimensions?.padding || 40;
     
     const THEME = {
@@ -2367,6 +2671,13 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         fontEvent: 18,
         fontCause: 14,
         fontEffect: 14,
+        rectRadius: 8,
+        hPadEvent: 12,
+        vPadEvent: 8,
+        hPadNode: 10,
+        vPadNode: 6,
+        linkColorCause: '#ff7f0e',
+        linkColorEffect: '#2ca02c',
         ...theme
     };
     
@@ -2383,38 +2694,151 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         if (theme.eventFontSize) THEME.fontEvent = theme.eventFontSize;
         if (theme.causeFontSize) THEME.fontCause = theme.causeFontSize;
         if (theme.effectFontSize) THEME.fontEffect = theme.effectFontSize;
-        
-        if (theme.background) {
-            d3.select('#d3-container').style('background-color', theme.background);
-        }
+        if (theme.background) d3.select('#d3-container').style('background-color', theme.background);
     }
     
-    // Calculate layout
+    // Before SVG, measure sizes to adapt canvas height if needed
+    const tempSvg2 = d3.select('body').append('svg')
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('position', 'absolute')
+        .style('left', '-9999px')
+        .style('top', '-9999px');
+
+    function measureTextSize2(text, fontSize) {
+        const t = tempSvg2.append('text')
+            .attr('x', -9999)
+            .attr('y', -9999)
+            .attr('font-size', fontSize)
+            .attr('dominant-baseline', 'hanging')
+            .text(text || '');
+        const bbox = t.node().getBBox();
+        t.remove();
+        return { w: Math.ceil(bbox.width), h: Math.ceil(bbox.height || fontSize) };
+    }
+    
+    // Helpers
+    function measureTextSize(text, fontSize) {
+        const temp = svg.append('text')
+            .attr('x', -9999)
+            .attr('y', -9999)
+            .attr('font-size', fontSize)
+            .attr('dominant-baseline', 'hanging')
+            .text(text || '');
+        const bbox = temp.node().getBBox();
+        temp.remove();
+        return { w: Math.ceil(bbox.width), h: Math.ceil(bbox.height || fontSize) };
+    }
+    function sideCenterPoint(cx, cy, w, h, side) {
+        if (side === 'left') return { x: cx - w / 2, y: cy };
+        if (side === 'right') return { x: cx + w / 2, y: cy };
+        if (side === 'top') return { x: cx, y: cy - h / 2 };
+        if (side === 'bottom') return { x: cx, y: cy + h / 2 };
+        return { x: cx, y: cy };
+    }
+    function computeEdgeSlots(cx, cy, w, h, count, side, margin = 8) {
+        const slots = [];
+        if (count <= 0) return slots;
+        const x = side === 'left' ? cx - w / 2 : side === 'right' ? cx + w / 2 : cx;
+        let yStart = cy - h / 2 + margin;
+        let yEnd = cy + h / 2 - margin;
+        if (yEnd < yStart) {
+            yStart = cy;
+            yEnd = cy;
+        }
+        if (count === 1) {
+            slots.push({ x, y: cy });
+            return slots;
+        }
+        const totalSpan = Math.max(0, yEnd - yStart);
+        const step = count > 1 ? (totalSpan / (count - 1)) : 0;
+        for (let i = 0; i < count; i++) {
+            const y = yStart + step * i;
+            slots.push({ x, y });
+        }
+        return slots;
+    }
+    function drawArrow(x1, y1, x2, y2, color) {
+        svg.append('line')
+            .attr('x1', x1)
+            .attr('y1', y1)
+            .attr('x2', x2)
+            .attr('y2', y2)
+            .attr('stroke', color)
+            .attr('stroke-width', 2);
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const perpX = -uy, perpY = ux;
+        const tipX = x2, tipY = y2;
+        const baseX = tipX - ux * 10, baseY = tipY - uy * 10;
+        const p1x = baseX + perpX * 4, p1y = baseY + perpY * 4;
+        const p2x = baseX - perpX * 4, p2y = baseY - perpY * 4;
+        svg.append('polygon')
+            .attr('points', `${p1x},${p1y} ${tipX},${tipY} ${p2x},${p2y}`)
+            .attr('fill', color);
+    }
+    
+    // Layout centers
     const centerX = baseWidth / 2;
-    const centerY = baseHeight / 2;
-    const eventR = getTextRadius(spec.event, THEME.fontEvent, 20);
+    let centerY = baseHeight / 2;
     
-    const causeStartX = padding + 100;
-    const effectStartX = baseWidth - padding - 100;
-    const causeSpacing = 60;
-    const effectSpacing = 60;
+    // Measure sizes
+    const evSize = measureTextSize2(spec.event, THEME.fontEvent);
+    const eventW = evSize.w + THEME.hPadEvent * 2;
+    const eventH = evSize.h + THEME.vPadEvent * 2;
     
-    // Create SVG
+    const causes = (spec.causes || []).map(text => {
+        const s = measureTextSize2(text, THEME.fontCause);
+        return { text, w: s.w + THEME.hPadNode * 2, h: s.h + THEME.vPadNode * 2 };
+    });
+    const effects = (spec.effects || []).map(text => {
+        const s = measureTextSize2(text, THEME.fontEffect);
+        return { text, w: s.w + THEME.hPadNode * 2, h: s.h + THEME.vPadNode * 2 };
+    });
+    
+    // Horizontal positions with guaranteed gap from event
+    const minSideGap = 120;
+    const causeCX = Math.max(padding + 140, centerX - eventW / 2 - minSideGap);
+    const effectCX = Math.min(baseWidth - padding - 140, centerX + eventW / 2 + minSideGap);
+    
+    // Vertical positions (non-overlapping, content-aware)
+    const vSpacing = 20;
+    const totalCauseH = causes.reduce((sum, n) => sum + n.h, 0) + Math.max(0, causes.length - 1) * vSpacing;
+    const totalEffectH = effects.reduce((sum, n) => sum + n.h, 0) + Math.max(0, effects.length - 1) * vSpacing;
+    // Adapt baseHeight to fit tallest side if needed
+    const requiredHeight = Math.max(totalCauseH, totalEffectH) + 2 * padding + evSize.h + 80;
+    baseHeight = Math.max(baseHeight, requiredHeight);
+
+    // Create SVG after adapting height
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', baseWidth)
         .attr('height', baseHeight)
         .attr('viewBox', `0 0 ${baseWidth} ${baseHeight}`)
         .attr('preserveAspectRatio', 'xMinYMin meet');
+
+    // Recompute center after adapting height
+    centerY = baseHeight / 2;
+
+    let cy = centerY - totalCauseH / 2;
+    causes.forEach(n => { n.cx = causeCX; n.cy = cy + n.h / 2; cy += n.h + vSpacing; });
+    let ey = centerY - totalEffectH / 2;
+    effects.forEach(n => { n.cx = effectCX; n.cy = ey + n.h / 2; ey += n.h + vSpacing; });
+
+    // Cleanup temp svg
+    tempSvg2.remove();
     
-    // Draw central event
-    svg.append('circle')
-        .attr('cx', centerX)
-        .attr('cy', centerY)
-        .attr('r', eventR)
+    // Draw central event (rectangle)
+    svg.append('rect')
+        .attr('x', centerX - eventW / 2)
+        .attr('y', centerY - eventH / 2)
+        .attr('width', eventW)
+        .attr('height', eventH)
+        .attr('rx', THEME.rectRadius)
+        .attr('ry', THEME.rectRadius)
         .attr('fill', THEME.eventFill)
         .attr('stroke', THEME.eventStroke)
         .attr('stroke-width', THEME.eventStrokeWidth);
-    
     svg.append('text')
         .attr('x', centerX)
         .attr('y', centerY)
@@ -2425,106 +2849,60 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('font-weight', 'bold')
         .text(spec.event);
     
-    // Draw causes (left side)
-    const causeStartY = centerY - ((spec.causes.length - 1) * causeSpacing) / 2;
-    spec.causes.forEach((cause, index) => {
-        const causeX = causeStartX;
-        const causeY = causeStartY + index * causeSpacing;
-        const causeR = getTextRadius(cause, THEME.fontCause, 15);
-        
-        // Draw cause circle
-        svg.append('circle')
-            .attr('cx', causeX)
-            .attr('cy', causeY)
-            .attr('r', causeR)
+    // Pre-compute distinct attachment points on the event rectangle to avoid stacking
+    const eventLeftSlots = computeEdgeSlots(centerX, centerY, eventW, eventH, causes.length, 'left', 10);
+    const eventRightSlots = computeEdgeSlots(centerX, centerY, eventW, eventH, effects.length, 'right', 10);
+
+    // Draw causes and arrows to event (right center of cause -> distributed left edge of event)
+    causes.forEach(n => {
+        svg.append('rect')
+            .attr('x', n.cx - n.w / 2)
+            .attr('y', n.cy - n.h / 2)
+            .attr('width', n.w)
+            .attr('height', n.h)
+            .attr('rx', THEME.rectRadius)
+            .attr('ry', THEME.rectRadius)
             .attr('fill', THEME.causeFill)
             .attr('stroke', THEME.causeStroke)
             .attr('stroke-width', THEME.causeStrokeWidth);
-        
         svg.append('text')
-            .attr('x', causeX)
-            .attr('y', causeY)
+            .attr('x', n.cx)
+            .attr('y', n.cy)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.causeText)
             .attr('font-size', THEME.fontCause)
-            .text(cause);
-        
-        // Draw arrow from cause to event
-        const dx = centerX - causeX;
-        const dy = centerY - causeY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist > 0) {
-            const lineStartX = causeX + (dx / dist) * causeR;
-            const lineStartY = causeY + (dy / dist) * causeR;
-            const lineEndX = centerX - (dx / dist) * eventR;
-            const lineEndY = centerY - (dy / dist) * eventR;
-            
-            svg.append('line')
-                .attr('x1', lineStartX)
-                .attr('y1', lineStartY)
-                .attr('x2', lineEndX)
-                .attr('y2', lineEndY)
-                .attr('stroke', '#ff7f0e')
-                .attr('stroke-width', 2);
-            
-            // Draw arrowhead
-            svg.append('polygon')
-                .attr('points', `${lineEndX - 6},${lineEndY - 3} ${lineEndX},${lineEndY} ${lineEndX - 6},${lineEndY + 3}`)
-                .attr('fill', '#ff7f0e');
-        }
+            .text(n.text);
+        const start = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'right');
+        const slotIndex = Math.min(eventLeftSlots.length - 1, Math.max(0, causes.indexOf(n)));
+        const end = eventLeftSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'left');
+        drawArrow(start.x, start.y, end.x, end.y, THEME.linkColorCause);
     });
     
-    // Draw effects (right side)
-    const effectStartY = centerY - ((spec.effects.length - 1) * effectSpacing) / 2;
-    spec.effects.forEach((effect, index) => {
-        const effectX = effectStartX;
-        const effectY = effectStartY + index * effectSpacing;
-        const effectR = getTextRadius(effect, THEME.fontEffect, 15);
-        
-        // Draw effect circle
-        svg.append('circle')
-            .attr('cx', effectX)
-            .attr('cy', effectY)
-            .attr('r', effectR)
+    // Draw effects and arrows from event (distributed right edge of event -> left center of effect)
+    effects.forEach(n => {
+        svg.append('rect')
+            .attr('x', n.cx - n.w / 2)
+            .attr('y', n.cy - n.h / 2)
+            .attr('width', n.w)
+            .attr('height', n.h)
+            .attr('rx', THEME.rectRadius)
+            .attr('ry', THEME.rectRadius)
             .attr('fill', THEME.effectFill)
             .attr('stroke', THEME.effectStroke)
             .attr('stroke-width', THEME.effectStrokeWidth);
-        
         svg.append('text')
-            .attr('x', effectX)
-            .attr('y', effectY)
+            .attr('x', n.cx)
+            .attr('y', n.cy)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.effectText)
             .attr('font-size', THEME.fontEffect)
-            .text(effect);
-        
-        // Draw arrow from event to effect
-        const dx = effectX - centerX;
-        const dy = effectY - centerY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist > 0) {
-            const lineStartX = centerX + (dx / dist) * eventR;
-            const lineStartY = centerY + (dy / dist) * eventR;
-            const lineEndX = effectX - (dx / dist) * effectR;
-            const lineEndY = effectY - (dy / dist) * effectR;
-            
-            svg.append('line')
-                .attr('x1', lineStartX)
-                .attr('y1', lineStartY)
-                .attr('x2', lineEndX)
-                .attr('y2', lineEndY)
-                .attr('stroke', '#2ca02c')
-                .attr('stroke-width', 2);
-            
-            // Draw arrowhead
-            svg.append('polygon')
-                .attr('points', `${lineEndX - 6},${lineEndY - 3} ${lineEndX},${lineEndY} ${lineEndX - 6},${lineEndY + 3}`)
-                .attr('fill', '#2ca02c');
-        }
+            .text(n.text);
+        const slotIndex = Math.min(eventRightSlots.length - 1, Math.max(0, effects.indexOf(n)));
+        const start = eventRightSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'right');
+        const end = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'left');
+        drawArrow(start.x, start.y, end.x, end.y, THEME.linkColorEffect);
     });
     
     // Watermark

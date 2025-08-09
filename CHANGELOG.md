@@ -5,6 +5,24 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.7] - 2025-08-09
+
+### 🌳 New: Tree Map Agent and Renderer Enhancements
+
+- **Tree Map Agent**: Added `tree_map_agent.py` to normalize data, auto-generate IDs, enforce limits, and recommend dimensions.
+- **Qwen Recognition**: Updated classification and prompt sanitization so tree maps are reliably generated without template errors.
+- **Rendering**: Switched to rectangle nodes, vertically stacked children, straight connectors between branch→child and child→child.
+- **Width-Adaptive Nodes**: Accurate width via `getComputedTextLength()` for root/branches/children; per-node width adapts to label length.
+- **Canvas Auto-Size**: SVG width/height grow to fit content; horizontal centering when content is narrower than canvas.
+
+### 🧹 Cleanup
+
+- Pruned transient logs/caches in repo tree; consolidated themes and styles for tree map.
+
+### 📦 Version
+
+- Bumped to 2.3.7.
+
 ## [2.3.6] - 2025-08-09
 
 ### 🎯 Brace Map Finalization and Canvas Tightening

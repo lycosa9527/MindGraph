@@ -52,6 +52,7 @@ from graph_specs import (
 )
 import json
 from diagram_styles import parse_style_from_prompt
+import re
 
 # Global timing tracking
 llm_timing_stats = {
@@ -75,6 +76,74 @@ def get_llm_timing_stats():
         'last_call_time': llm_timing_stats['last_call_time'],
         'call_times': llm_timing_stats['call_times'][-10:]  # Last 10 calls
     }
+
+
+# ----------------------------------------------------------------------------
+# Explicit intent detection helpers (language-aware keyword mapping)
+# ----------------------------------------------------------------------------
+def _normalize_for_matching(text: str) -> str:
+    if not isinstance(text, str):
+        return ""
+    lowered = text.strip().lower()
+    lowered = re.sub(r"\s+", " ", lowered)
+    return lowered
+
+def _strip_spaces_for_cjk(text: str) -> str:
+    return text.replace(" ", "") if isinstance(text, str) else ""
+
+def detect_explicit_diagram_intent(user_prompt: str) -> str:
+    """
+    Return an explicit diagram type if the prompt clearly names it.
+    Prioritizes specific names/aliases before generic intent.
+    """
+    if not isinstance(user_prompt, str):
+        return ""
+    p_norm = _normalize_for_matching(user_prompt)
+    p_nospace = _strip_spaces_for_cjk(user_prompt)
+
+    multi_flow_aliases = [
+        "复流程图", "多重流程图", "因果关系图", "因果分析图", "多因果图",
+        "multi-flow map", "multi flow map", "multiflow",
+        "cause-effect map", "cause and effect map"
+    ]
+    fishbone_aliases = ["鱼骨图", "石川图", "ishikawa"]
+    flowchart_aliases = ["流程图", "flowchart", "flow chart"]
+    flow_map_aliases = [
+        "flow map", "flow-map", "flowmap",
+        # Heuristic Chinese indicators for Thinking Maps Flow Map
+        "流程思维图", "流程映射图", "流程图(思维)", "流程图（思维）"
+    ]
+    tree_map_aliases = [
+        "tree map", "tree-map", "treemap", "tree diagram",
+        "树形图", "树状图", "分类图", "归类图"
+    ]
+
+    # If the user explicitly mentions sub-steps/substeps, prefer the Thinking Maps flow_map
+    substep_indicators = ["sub-steps", "substeps", "子步骤", "子 步骤"]
+    if any(ind in p_norm for ind in substep_indicators) or any(ind in p_nospace for ind in substep_indicators):
+        return "flow_map"
+
+    if any(alias in user_prompt for alias in fishbone_aliases) or any(alias in p_norm for alias in fishbone_aliases):
+        return "fishbone_diagram"
+    if any(alias in user_prompt for alias in multi_flow_aliases) or any(alias in p_norm for alias in multi_flow_aliases) or any(alias in p_nospace for alias in multi_flow_aliases):
+        return "multi_flow_map"
+    if any(alias in user_prompt for alias in flow_map_aliases) or any(alias in p_norm for alias in flow_map_aliases) or any(alias in p_nospace for alias in flow_map_aliases):
+        return "flow_map"
+    if any(alias in user_prompt for alias in tree_map_aliases) or any(alias in p_norm for alias in tree_map_aliases) or any(alias in p_nospace for alias in tree_map_aliases):
+        return "tree_map"
+    # Ambiguous 'flowchart/流程图' handling: prefer flow_map when prompt talks about steps and not classic flowchart control-flow
+    contains_flowchart = any(alias in user_prompt for alias in flowchart_aliases) or any(alias in p_norm for alias in flowchart_aliases)
+    if contains_flowchart:
+        step_indicators = ["步骤", "工序", "过程", "steps", "step-by-step", "sequential", "sequence"]
+        flowchart_only_indicators = ["判断", "条件", "分支", "循环", "decision", "branch", "condition", "loop", "gateway", "yes/no"]
+        mentions_steps = any(ind in user_prompt for ind in step_indicators) or any(ind in p_norm for ind in step_indicators)
+        mentions_flowchart_controls = any(ind in user_prompt for ind in flowchart_only_indicators) or any(ind in p_norm for ind in flowchart_only_indicators)
+        if mentions_steps and not mentions_flowchart_controls:
+            return "flow_map"
+        return "flowchart"
+    if any(k in p_norm for k in ["因果", "原因", "影响", "后果", "cause", "effect"]):
+        return "multi_flow_map"
+    return ""
 
 
 class QwenLLM(LLM):
@@ -350,6 +419,11 @@ def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
     from prompts import get_available_diagram_types
     available_types = get_available_diagram_types()
     
+    # First, try explicit detection overrides
+    explicit = detect_explicit_diagram_intent(user_prompt)
+    if explicit:
+        return explicit
+
     # LLM prompt logic for type detection
     if language == 'zh':
         prompt_text = (
@@ -542,6 +616,8 @@ def classify_graph_type_with_llm(user_prompt: str, language: str = 'zh') -> str:
             return "tree_map"
         elif any(word in user_prompt.lower() for word in ["cause", "effect", "原因", "影响", "因果"]):
             return "multi_flow_map"
+        elif any(word in user_prompt for word in ["复流程图", "多重流程图"]) or any(word in user_prompt.lower() for word in ["multi-flow", "multi flow"]):
+            return "multi_flow_map"
         elif any(word in user_prompt.lower() for word in ["concept", "relationship", "概念", "关系"]):
             return "concept_map"
         elif any(word in user_prompt.lower() for word in ["semantic", "web", "语义", "网络"]):
@@ -631,12 +707,18 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             logger.error(f"Agent: No prompt found for graph type: {graph_type}")
             return {"error": f"No prompt template found for {graph_type}"}
         
-        # Create prompt template and generate response
+        # Sanitize template to ensure only {user_prompt} is a variable; all other braces become literal
+        def _sanitize_prompt_template_for_langchain(template: str) -> str:
+            placeholder = "<<USER_PROMPT_PLACEHOLDER>>"
+            temp = template.replace("{user_prompt}", placeholder)
+            temp = temp.replace("{", "{{").replace("}", "}}")
+            return temp.replace(placeholder, "{user_prompt}")
+
+        safe_template = _sanitize_prompt_template_for_langchain(prompt_text)
         prompt = PromptTemplate(
             input_variables=["user_prompt"],
-            template=prompt_text
+            template=safe_template
         )
-        
         yaml_text = (prompt | llm).invoke({"user_prompt": user_prompt})
         yaml_text_clean = extract_yaml_from_code_block(yaml_text)
         
@@ -993,20 +1075,21 @@ User request: {{user_prompt}}
         cleaned_result = clean_llm_response(result)
         parsed_result = validate_and_parse_json(cleaned_result)
         
+        # Apply explicit override even if LLM returns a different type
+        explicit = detect_explicit_diagram_intent(user_prompt)
+        
         if parsed_result:
-            # Validate and sanitize the parsed result
             topics = parsed_result.get('topics', [])
             if not isinstance(topics, list):
                 topics = []
-            
             style_preferences = parsed_result.get('style_preferences', {})
             if not isinstance(style_preferences, dict):
                 style_preferences = {}
-            
             diagram_type = parsed_result.get('diagram_type', 'bubble_map')
             if not isinstance(diagram_type, str):
                 diagram_type = 'bubble_map'
-            
+            if explicit:
+                diagram_type = explicit
             return {
                 "topics": topics,
                 "style_preferences": style_preferences,
@@ -1039,7 +1122,7 @@ User request: {{user_prompt}}
             diagram_type = "brace_map"
         elif any(word in prompt_lower for word in ["categorize", "classify", "分类", "归类"]):
             diagram_type = "tree_map"
-        elif any(word in prompt_lower for word in ["cause", "effect", "原因", "影响", "因果"]):
+        elif any(word in user_prompt for word in ["复流程图", "多重流程图"]) or any(word in prompt_lower for word in ["multi-flow", "multi flow"]) or any(word in prompt_lower for word in ["cause", "effect", "原因", "影响", "因果"]):
             diagram_type = "multi_flow_map"
         elif any(word in prompt_lower for word in ["concept", "relationship", "概念", "关系"]):
             diagram_type = "concept_map"

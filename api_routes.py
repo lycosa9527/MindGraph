@@ -229,8 +229,58 @@ def generate_graph():
         else:
             logger.warning(f"No validator found for diagram type: {diagram_type}")
         
-        # Calculate optimized dimensions for bridge maps
+        # Optionally enhance spec using specialized agents
+        if diagram_type == 'multi_flow_map':
+            try:
+                from multi_flow_map_agent import MultiFlowMapAgent
+                mf_agent = MultiFlowMapAgent()
+                agent_result = mf_agent.enhance_spec(spec)
+                if agent_result.get('success') and 'spec' in agent_result:
+                    spec = agent_result['spec']
+                else:
+                    logger.warning(f"MultiFlowMapAgent enhancement skipped: {agent_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error enhancing multi_flow_map spec: {e}")
+        elif diagram_type == 'flow_map':
+            try:
+                from flow_map_agent import FlowMapAgent
+                f_agent = FlowMapAgent()
+                agent_result = f_agent.enhance_spec(spec)
+                if agent_result.get('success') and 'spec' in agent_result:
+                    spec = agent_result['spec']
+                else:
+                    logger.warning(f"FlowMapAgent enhancement skipped: {agent_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error enhancing flow_map spec: {e}")
+        elif diagram_type == 'tree_map':
+            try:
+                from tree_map_agent import TreeMapAgent
+                t_agent = TreeMapAgent()
+                agent_result = t_agent.enhance_spec(spec)
+                if agent_result.get('success') and 'spec' in agent_result:
+                    spec = agent_result['spec']
+                else:
+                    logger.warning(f"TreeMapAgent enhancement skipped: {agent_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error enhancing tree_map spec: {e}")
+
+        # Calculate optimized dimensions
         dimensions = config.get_d3_dimensions()
+        # Use agent-recommended dimensions if provided
+        if diagram_type in ('multi_flow_map', 'flow_map', 'tree_map') and isinstance(spec, dict) and spec.get('_recommended_dimensions'):
+            rd = spec['_recommended_dimensions']
+            try:
+                dimensions = {
+                    'baseWidth': rd.get('baseWidth', dimensions.get('baseWidth', 900)),
+                    'baseHeight': rd.get('baseHeight', dimensions.get('baseHeight', 500)),
+                    'padding': rd.get('padding', dimensions.get('padding', 40)),
+                    'width': rd.get('width', rd.get('baseWidth', dimensions.get('baseWidth', 900))),
+                    'height': rd.get('height', rd.get('baseHeight', dimensions.get('baseHeight', 500))),
+                    'topicFontSize': dimensions.get('topicFontSize', 18),
+                    'charFontSize': dimensions.get('charFontSize', 14)
+                }
+            except Exception as e:
+                logger.warning(f"Failed to apply recommended dimensions: {e}")
         if diagram_type == 'bridge_map' and spec and 'analogies' in spec:
             num_analogies = len(spec['analogies'])
             min_width_per_analogy = 120
@@ -331,6 +381,42 @@ def generate_png():
         except Exception as e:
             logger.error(f"Error using brace map agent: {e}")
             # Fall back to original spec
+    elif graph_type == 'multi_flow_map':
+        # Enhance multi-flow map spec and optionally use recommended dimensions later
+        try:
+            from multi_flow_map_agent import MultiFlowMapAgent
+            mf_agent = MultiFlowMapAgent()
+            agent_result = mf_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"MultiFlowMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing multi_flow_map spec: {e}")
+    elif graph_type == 'flow_map':
+        # Enhance flow map spec and use recommended dimensions
+        try:
+            from flow_map_agent import FlowMapAgent
+            f_agent = FlowMapAgent()
+            agent_result = f_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"FlowMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing flow_map spec: {e}")
+    elif graph_type == 'tree_map':
+        # Enhance tree map spec and use recommended dimensions
+        try:
+            from tree_map_agent import TreeMapAgent
+            t_agent = TreeMapAgent()
+            agent_result = t_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"TreeMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing tree_map spec: {e}")
     
     # Check if spec has required structure for rendering
     if not spec or isinstance(spec, dict) and spec.get('error'):
@@ -415,6 +501,21 @@ def generate_png():
                         'subpartFontSize': dimensions.get('subpartFontSize', 14)
                     }
                     logger.warning("Agent dimensions not available, using fallback dimensions")
+            elif graph_type in ('multi_flow_map', 'flow_map', 'tree_map') and isinstance(spec, dict):
+                try:
+                    rd = spec.get('_recommended_dimensions') or {}
+                    if rd:
+                        dimensions = {
+                            'baseWidth': rd.get('baseWidth', dimensions.get('baseWidth', 900)),
+                            'baseHeight': rd.get('baseHeight', dimensions.get('baseHeight', 500)),
+                            'padding': rd.get('padding', dimensions.get('padding', 40)),
+                            'width': rd.get('width', rd.get('baseWidth', dimensions.get('baseWidth', 900))),
+                            'height': rd.get('height', rd.get('baseHeight', dimensions.get('baseHeight', 500))),
+                            'topicFontSize': dimensions.get('topicFontSize', 18),
+                            'charFontSize': dimensions.get('charFontSize', 14)
+                        }
+                except Exception as e:
+                    logger.warning(f"Failed to apply recommended dimensions: {e}")
             
             html = f'''
             <html><head>

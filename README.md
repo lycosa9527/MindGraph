@@ -1,6 +1,6 @@
 # MindGraph - AI-Powered Data Visualization Generator
 
-[![Version](https://img.shields.io/badge/version-2.3.4-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.7-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
@@ -92,7 +92,7 @@ Export your charts as:
 
 ## 🏗️ Agent Architecture
 
-MindGraph v2.3.4 features a sophisticated multi-agent system with 6 specialized agents and enhanced brace map layout optimization:
+MindGraph v2.3.7 features a sophisticated multi-agent system with 6 specialized agents and enhanced brace map layout optimization:
 
 ### 🤖 Agent System Overview
 

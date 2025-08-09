@@ -92,17 +92,18 @@ class StyleManager {
                 fontSubpart: 12
             },
             tree_map: {
-                rootFill: '#1976d2',  // Deeper blue for root
-                rootText: '#ffffff',   // White text for contrast
-                rootStroke: '#0d47a1', // Darker blue border
-                rootStrokeWidth: 3,
-                branchFill: '#e3f2fd', // Light blue for branches
-                branchText: '#333333',  // Dark text
-                branchStroke: '#1976d2', // Blue border
-                branchStrokeWidth: 2,
-                leafFill: '#f8f9fa',   // Very light blue for leaves
-                leafText: '#333333',    // Dark text
-                leafStroke: '#1976d2',  // Blue border
+                rootFill: '#1976d2',
+                rootText: '#ffffff',
+                rootStroke: '#0d47a1',
+                rootStrokeWidth: 2,
+                branchFill: '#e3f2fd',
+                branchText: '#333333',
+                branchStroke: '#1976d2',
+                branchStrokeWidth: 1.5,
+                // Children nodes now use rectangle borders and vertical alignment
+                leafFill: '#ffffff',
+                leafText: '#333333',
+                leafStroke: '#c8d6e5',
                 leafStrokeWidth: 1,
                 fontRoot: 20,
                 fontBranch: 16,

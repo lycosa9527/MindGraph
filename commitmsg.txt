@@ -1,0 +1,7 @@
+﻿chore(release): bump to v2.3.7
+
+- Add Tree Map Agent and robust Qwen prompt handling
+- Rectangle nodes, vertical stacking, straight connectors
+- Width-adaptive nodes via SVG text measurement
+- Auto-sizing canvas to fit content
+- Cleanup docs and repo
