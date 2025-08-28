@@ -61,38 +61,9 @@
 
 **Status**: 🔄 **PENDING** - Clean architecture foundation for future development
 
-### **4. Agent File Organization & Module Structure (20% improvement)** ✅ **COMPLETED**
-- **Problem**: 9+ agent files scattered in project root directory, creating clutter
-- **Fix**: Create dedicated `agents/` folder with organized subdirectories by diagram type
-- **Impact**: 20% faster development, cleaner project structure, easier maintenance
-- **Time**: 3-4 hours
 
-**Implemented Structure**:
-```
-agents/
-├── __init__.py                    # Main agent registry and imports
-├── core/                          # Core agent functionality
-│   ├── base_agent.py             # Base agent class
-│   └── agent_utils.py            # Shared agent utilities
-├── thinking_maps/                 # Thinking Maps agents
-│   ├── brace_map_agent.py        # Brace map implementation
-│   ├── bridge_map_agent.py       # Bridge map implementation
-│   ├── bubble_map_agent.py       # Bubble map implementation
-│   ├── circle_map_agent.py       # Circle map implementation
-│   ├── double_bubble_map_agent.py # Double bubble map implementation
-│   ├── flow_map_agent.py         # Flow map implementation
-│   ├── multi_flow_map_agent.py   # Multi-flow map implementation
-│   └── tree_map_agent.py         # Tree map implementation
-├── concept_maps/                  # Concept Map agents
-│   └── concept_map_agent.py      # Concept map implementation
-├── mind_maps/                     # Mind Map agents
-│   └── mind_map_agent.py         # Mind map implementation
-└── main_agent.py                  # Main agent orchestrator
-```
 
-**Status**: ✅ **COMPLETED** - Clean project organization foundation established
-
-### **5. Centralized Validation System**
+### **4. Centralized Validation System**
 - **Problem**: 200+ lines of duplicated validation code across renderers
 - **Fix**: Single validation registry with graph-specific validators
 - **Impact**: Consistent validation, eliminates duplication
@@ -102,25 +73,25 @@ agents/
 
 ## 📋 **MEDIUM PRIORITY FIXES (10-20% Impact)**
 
-### **6. Memory Leak Cleanup**
+### **5. Memory Leak Cleanup**
 - **Problem**: DOM elements accumulating in headless browser sessions
 - **Fix**: Resource cleanup manager with automatic cleanup callbacks
 - **Impact**: Stable long-running sessions, prevents memory bloat
 - **Time**: 3-4 hours
 
-### **7. Error Handling Standardization**
+### **6. Error Handling Standardization**
 - **Problem**: Mixed error strategies (graceful vs hard failure)
 - **Fix**: Consistent error classes with user-friendly messages
 - **Impact**: Better debugging, predictable behavior, security (XSS prevention)
 - **Time**: 2-3 hours
 
-### **8. JSON Schema Validation**
+### **7. JSON Schema Validation**
 - **Problem**: No deep structure validation, runtime errors slip through
 - **Fix**: Comprehensive schema validation for all graph types
 - **Impact**: Prevents 90% of runtime errors, early error detection
 - **Time**: 4-5 hours
 
-### **9. Performance Monitoring System**
+### **8. Performance Monitoring System**
 - **Problem**: No visibility into performance bottlenecks
 - **Fix**: Real-time monitoring with alerts for slow operations
 - **Impact**: Proactive optimization, identifies issues before users
@@ -130,19 +101,19 @@ agents/
 
 ## 🔧 **LOW PRIORITY FIXES (5-10% Impact)**
 
-### **10. Agent Workflow Optimization (15% improvement)**
+### **9. Agent Workflow Optimization (15% improvement)**
 - **Problem**: Multiple agent imports and conditional agent usage in PNG generation
 - **Fix**: Unified agent workflow with single entry point and lazy loading
 - **Impact**: 15% faster agent processing, cleaner code structure
 - **Time**: 3-4 hours
 
-### **11. Agent Import Optimization**
+### **10. Agent Import Optimization**
 - **Problem**: All agents loaded at startup even if unused
 - **Fix**: Lazy load agents only when specific graph type requested
 - **Impact**: 20-30% faster startup, reduced memory usage
 - **Time**: 1-2 hours
 
-### **12. D3.js Data URI Optimization (0.05% improvement + memory optimization)**
+### **11. D3.js Data URI Optimization (0.05% improvement + memory optimization)**
 - **Problem**: D3.js library (279KB) loaded from disk on every PNG request
 - **Fix**: Convert D3.js to data URI at startup, use cached URI in all HTML generation
 - **Impact**: 0.05% faster HTML generation, **78.6% smaller HTML size**
@@ -180,19 +151,18 @@ agents/
 ### **Week 2: High Priority**
 2. **Theme System Consolidation** (Day 1-2) - **30% improvement**
 3. **Prompt Centralization & Architecture Cleanup** (Day 3-4) - **25% improvement**
-4. **Agent File Organization & Module Structure** ✅ **COMPLETED** - **20% improvement**
-5. **Centralized Validation System** (Day 5) - **Consistent validation**
+4. **Centralized Validation System** (Day 5) - **Consistent validation**
 
 ### **Week 3: Medium Priority**
-6. **Memory Leak Cleanup** (Day 1) - **Stable sessions**
-7. **Error Handling Standardization** (Day 2) - **Better debugging**
-8. **JSON Schema Validation** (Day 3-4) - **Error prevention**
-9. **Performance Monitoring System** (Day 5) - **Proactive optimization**
+5. **Memory Leak Cleanup** (Day 1) - **Stable sessions**
+6. **Error Handling Standardization** (Day 2) - **Better debugging**
+7. **JSON Schema Validation** (Day 3-4) - **Error prevention**
+8. **Performance Monitoring System** (Day 5) - **Proactive optimization**
 
 ### **Week 4: Low Priority**
-10. **Agent Workflow Optimization** (Day 1-2) - **15% improvement**
-11. **Agent Import Optimization** (Day 3) - **20-30% faster startup**
-12. **D3.js Data URI Optimization** (Day 4-5) - **Memory optimization**
+9. **Agent Workflow Optimization** (Day 1-2) - **15% improvement**
+10. **Agent Import Optimization** (Day 3) - **20-30% faster startup**
+11. **D3.js Data URI Optimization** (Day 4-5) - **Memory optimization**
 
 ---
 
@@ -203,7 +173,6 @@ agents/
 | **Single Event Loop Architecture + PNG Context Pooling** | **47.1% faster PNG generation** | Context pooling + 4.2-6.2s saved |
 | **Theme Resolution** | **30% faster** | 0.3s saved |
 | **Prompt Centralization** | **25% faster development** | Maintenance confusion eliminated |
-| **Agent File Organization** | **20% faster development** | Clean project structure |
 | **D3.js Data URI** | **74% faster HTML generation** | 78.6% smaller HTML size |
 
 **Total Expected Impact**: 

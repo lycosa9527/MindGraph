@@ -46,7 +46,16 @@ function renderMindMap(spec, theme = null, dimensions = null) {
     // Load theme
     let THEME;
     try {
+        console.log('=== STYLE MANAGER AVAILABILITY CHECK ===');
+        console.log('typeof styleManager:', typeof styleManager);
+        console.log('window.styleManager:', typeof window.styleManager);
+        console.log('styleManager available:', typeof styleManager !== 'undefined');
+        
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            console.log('=== THEME PARAMETERS DEBUG ===');
+            console.log('userTheme (second param):', theme);
+            console.log('backendTheme (third param):', theme);
+            
             THEME = styleManager.getTheme('mindmap', theme, theme);
             console.log('=== MIND MAP THEME DEBUG ===');
             console.log('Mind Map Theme loaded from styleManager:', THEME);
@@ -65,17 +74,17 @@ function renderMindMap(spec, theme = null, dimensions = null) {
             console.warn('Style manager not available, using fallback theme');
             THEME = {
                 background: '#f5f5f5',
-                centralTopicFill: '#1976d2',
-                centralTopicText: '#ffffff',
-                centralTopicStroke: '#000000',
+                centralTopicFill: '#e3f2fd',
+                centralTopicText: '#333333',
+                centralTopicStroke: '#35506b',
                 centralTopicStrokeWidth: 3,
-                branchFill: '#1976d2',
-                branchText: '#ffffff',
-                branchStroke: '#000000',
+                branchFill: '#e3f2fd',
+                branchText: '#333333',
+                branchStroke: '#4e79a7',
                 branchStrokeWidth: 2,
-                childFill: '#e3f2fd',
+                childFill: '#f8f9fa',
                 childText: '#333333',
-                childStroke: '#1976d2',
+                childStroke: '#6c757d',
                 childStrokeWidth: 2,
                 fontTopic: 20,
                 fontBranch: 16,
@@ -89,17 +98,17 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         console.error('Error getting theme from style manager:', error);
         THEME = {
             background: '#f5f5f5',
-            centralTopicFill: '#1976d2',
-            centralTopicText: '#ffffff',
-            centralTopicStroke: '#000000',
+            centralTopicFill: '#e3f2fd',
+            centralTopicText: '#333333',
+            centralTopicStroke: '#35506b',
             centralTopicStrokeWidth: 3,
-            branchFill: '#1976d2',
-            branchText: '#ffffff',
-            branchStroke: '#000000',
+            branchFill: '#e3f2fd',
+            branchText: '#333333',
+            branchStroke: '#4e79a7',
             branchStrokeWidth: 2,
-            childFill: '#e3f2fd',
+            childFill: '#f8f9fa',
             childText: '#333333',
-            childStroke: '#1976d2',
+            childStroke: '#6c757d',
             childStrokeWidth: 2,
             fontTopic: 20,
             fontBranch: 16,
@@ -259,8 +268,16 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                         lineStartX = fromX;  // Always connect from center of topic
                         lineStartY = fromY;
                     } else if (fromPos.node_type === 'branch') {
-                        // Branch node - connect from CENTER POINT
-                        lineStartX = fromX;  // Center X
+                        // Branch node - connect from LEFT/RIGHT BORDER
+                        const branchWidth = fromPos.width || (fromPos.text ? Math.max(100, fromPos.text.length * 10) : 100);
+                        const branchIsOnLeft = fromX < centerX;
+                        if (branchIsOnLeft) {
+                            // Branch is on left, connect from right edge of branch
+                            lineStartX = fromX + (branchWidth / 2);  // Right border X
+                        } else {
+                            // Branch is on right, connect from left edge of branch
+                            lineStartX = fromX - (branchWidth / 2);  // Left border X
+                        }
                         lineStartY = fromY;  // Center Y
                     } else {
                         // Child is a rectangle - connect at left/right edge center
@@ -281,8 +298,16 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                         lineEndX = toX;  // Always connect to center of topic
                         lineEndY = toY;
                     } else if (toPos.node_type === 'branch') {
-                        // Branch node - connect to CENTER POINT
-                        lineEndX = toX;  // Center X
+                        // Branch node - connect to LEFT/RIGHT BORDER  
+                        const branchWidth = toPos.width || (toPos.text ? Math.max(100, toPos.text.length * 10) : 100);
+                        const branchIsOnLeft = toX < centerX;
+                        if (branchIsOnLeft) {
+                            // Branch is on left, connect to right edge of branch
+                            lineEndX = toX + (branchWidth / 2);  // Right border X
+                        } else {
+                            // Branch is on right, connect to left edge of branch
+                            lineEndX = toX - (branchWidth / 2);  // Left border X
+                        }
                         lineEndY = toY;  // Center Y
                     } else {
                         // Child is a rectangle - connect at left/right edge center
@@ -337,10 +362,15 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                         lineStartX = centerX;  // Always connect from center of topic
                         lineStartY = centerY;
                         
-                        // For branch (rectangle): connect to CENTER POINT of branch node  
+                        // For branch (rectangle): connect to LEFT/RIGHT BORDER of branch node  
                         let lineEndX, lineEndY;
-                        // Always connect to branch center point (consistent with child-to-branch connections)
-                        lineEndX = branchX;  // Center X
+                        if (branchIsOnLeft) {
+                            // Branch is on left, connect to right edge of branch
+                            lineEndX = branchX + (branchWidth / 2);  // Right border X
+                        } else {
+                            // Branch is on right, connect to left edge of branch
+                            lineEndX = branchX - (branchWidth / 2);  // Left border X
+                        }
                         lineEndY = branchY;  // Center Y
                         
                         console.log('=== CONNECTION LINE DEBUG (topic to branch) ===');
@@ -349,7 +379,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                         console.log('- Branch center:', { x: branchX, y: branchY });
                         console.log('- Branch is on left:', branchIsOnLeft);
                         console.log('- Line start (topic CENTER):', { x: lineStartX, y: lineStartY });
-                        console.log('- Line end (branch CENTER POINT):', { x: lineEndX, y: lineEndY });
+                        console.log('- Line end (branch BORDER):', { x: lineEndX, y: lineEndY });
                         console.log('=== END CONNECTION DEBUG ===');
                         
                         svg.append('line')
@@ -443,9 +473,9 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 // Calculate adaptive radius based on actual text dimensions using getTextRadius
                 const topicRadius = getTextRadius(pos.text || 'Topic', THEME.fontCentral || '16px', 20);
                 
-                const finalFill = pos.fill || THEME.centralTopicFill || '#1976d2';
-                const finalStroke = pos.stroke || THEME.centralTopicStroke || '#000000';
-                const finalTextColor = pos.text_color || THEME.centralTopicText || '#ffffff';
+                const finalFill = pos.fill || THEME.centralTopicFill || '#e3f2fd';
+                const finalStroke = pos.stroke || THEME.centralTopicStroke || '#35506b';
+                const finalTextColor = pos.text_color || THEME.centralTopicText || '#333333';
                 
                 console.log('=== TOPIC NODE COLOR DEBUG ===');
                 console.log('- Topic radius:', topicRadius);
@@ -483,9 +513,9 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 const branchWidth = pos.width || (pos.text ? Math.max(100, pos.text.length * 10) : 100);
                 const branchHeight = pos.height || 50;
                 
-                const finalBranchFill = pos.fill || THEME.branchFill || '#1976d2';
-                const finalBranchStroke = pos.stroke || THEME.branchStroke || '#000000';
-                const finalBranchTextColor = pos.text_color || THEME.branchText || '#ffffff';
+                const finalBranchFill = pos.fill || THEME.branchFill || '#e3f2fd';
+                const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
+                const finalBranchTextColor = pos.text_color || THEME.branchText || '#333333';
                 
                 console.log('=== BRANCH NODE COLOR DEBUG ===');
                 console.log('- Branch position:', { x: branchX, y: branchY });
@@ -526,8 +556,8 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 const childWidth = pos.width || (pos.text ? Math.max(80, pos.text.length * 8) : 100);
                 const childHeight = pos.height || 40;
                 
-                const finalChildFill = pos.fill || THEME.childFill || '#e3f2fd';
-                const finalChildStroke = pos.stroke || THEME.childStroke || '#1976d2';
+                const finalChildFill = pos.fill || THEME.childFill || '#f8f9fa';
+                const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';
                 const finalChildTextColor = pos.text_color || THEME.childText || '#333333';
                 
                 console.log('=== CHILD NODE COLOR DEBUG ===');

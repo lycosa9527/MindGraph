@@ -43,7 +43,7 @@ CRITICAL JSON Requirements:
 - ALL objects must be properly closed with }
 - IDs should be lowercase with underscores (e.g., "main_topic", "sub_item")
 - Labels should be descriptive text for display
-- Include 3-6 main branches, each with 2-4 sub-items
+- Generate EXACTLY 4, 6, or 8 main branches (ALWAYS EVEN numbers), each with 2-4 sub-items
 - Ensure every comma, bracket, and brace is correctly placed
 
 LOGICAL ORGANIZATION (IMPORTANT):
@@ -56,6 +56,11 @@ The mind map follows a clockwise layout starting from top-right. Organize subtop
 - Branch 5 (Bottom-Left): Add final or concluding concepts
 
 For 6+ branches, continue the logical flow while maintaining left-right balance.
+
+EVEN BRANCHES REQUIREMENT (CRITICAL):
+- Always generate an EVEN number of branches (4, 6, or 8)
+- This ensures perfect left-right visual balance in the mind map
+- Distribute content evenly: similar complexity and length across all branches
 
 Each branch should contain related subtopics that flow logically from the main concept.
 
@@ -112,7 +117,7 @@ MINDMAP_GENERATION_ZH = """
 - 所有对象必须用}正确闭合
 - ID应该使用小写字母和下划线（如："zhu_ti", "zi_xiang"）
 - Label应该是用于显示的描述性文本
-- 包含3-6个主要分支，每个分支包含2-4个子项
+- 生成恰好4、6或8个主要分支（始终为偶数），每个分支包含2-4个子项
 - 确保每个逗号、括号和大括号都正确放置
 
 逻辑组织（重要）：
@@ -125,6 +130,11 @@ MINDMAP_GENERATION_ZH = """
 - 分支5（左下）：添加最终或总结概念
 
 对于6个以上分支，继续逻辑流程同时保持左右平衡。
+
+偶数分支要求（关键）：
+- 始终生成偶数个分支（4、6或8个）
+- 这确保思维导图完美的左右视觉平衡
+- 内容分布均匀：所有分支的复杂性和长度相似
 
 每个分支应包含与主概念逻辑相关的子主题。
 

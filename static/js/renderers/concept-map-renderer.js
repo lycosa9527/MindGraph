@@ -13,27 +13,41 @@ console.log('🔍 Concept map renderer: Module loading started');
 function renderConceptMap(spec, theme = null, dimensions = null) {
     console.log('🚀 Concept map renderer: renderConceptMap called with:', { spec, theme, dimensions });
     
-    // Check dependencies when function is called
-    if (typeof window.MindGraphUtils === 'undefined') {
-        console.error('❌ Concept map renderer: MindGraphUtils not found! Please load shared-utilities.js first.');
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: MindGraphUtils not available');
-        return;
-    }
-    
-    // Resolve dependencies - CRITICAL FIX: Use const inside function scope to avoid redeclaration errors
-    console.log('🔍 Concept map renderer: Resolving dependencies...');
-    try {
-        const getMeasurementContainer = window.MindGraphUtils.getMeasurementContainer;
-        const addWatermark = window.MindGraphUtils.addWatermark;
-        
-        if (typeof getMeasurementContainer !== 'function' || typeof addWatermark !== 'function') {
-            throw new Error('Required functions not available from shared-utilities.js');
+    // Self-contained measurement utilities (from reference file)
+    let measurementContainer = null;
+
+    function getMeasurementContainer() {
+        if (!measurementContainer) {
+            const body = d3.select('body');
+            if (body.empty()) {
+                console.warn('Body element not found, creating measurement container in document');
+                measurementContainer = d3.select(document.documentElement)
+                    .append('div')
+                    .attr('id', 'measurement-container')
+                    .style('position', 'absolute')
+                    .style('visibility', 'hidden')
+                    .style('pointer-events', 'none');
+            } else {
+                measurementContainer = body
+                    .append('div')
+                    .attr('id', 'measurement-container')
+                    .style('position', 'absolute')
+                    .style('visibility', 'hidden')
+                    .style('pointer-events', 'none');
+            }
         }
-        console.log('✅ Concept map renderer: Dependencies resolved successfully');
-    } catch (error) {
-        console.error('❌ Concept map renderer: Failed to import required functions:', error);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Failed to load required functions');
-        return;
+        return measurementContainer;
+    }
+
+    // Try to use shared utilities if available, otherwise use self-contained functions
+    console.log('🔍 Concept map renderer: Checking for shared utilities...');
+    let useSharedUtilities = false;
+    if (typeof window.MindGraphUtils !== 'undefined' && 
+        typeof window.MindGraphUtils.getMeasurementContainer === 'function') {
+        useSharedUtilities = true;
+        console.log('✅ Using shared utilities from MindGraphUtils');
+    } else {
+        console.log('✅ Using self-contained utilities (fallback mode)');
     }
     
     d3.select('#d3-container').html('');
@@ -96,19 +110,31 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         };
     }
     
+    // Apply container background (matching reference file)
+    const containerBackground = THEME.background || '#f5f5f5';
+    d3.select('#d3-container')
+        .style('background-color', containerBackground, 'important')
+        .style('width', '100%')
+        .style('height', '100%');
+    
+    // Override with custom theme background if provided
     if (theme && theme.background) {
-        d3.select('#d3-container').style('background-color', theme.background);
+        d3.select('#d3-container').style('background-color', theme.background, 'important');
     }
     
-    // If layout positions are normalized and include extents, we'll size after computing positions.
     let width = baseWidth;
     let height = baseHeight;
     
-    // Use backend adaptive sizing - disable conflicting D3.js expansion
-    // The backend already calculates optimal canvas size based on SVG elements
-    // This old logic was creating oversized canvases that override backend calculations
-    
     const svg = d3.select('#d3-container').append('svg').attr('width', width).attr('height', height);
+
+    // Add background rectangle to cover entire canvas (from reference)
+    svg.append('rect')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('fill', THEME.background || '#f5f5f5')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('class', 'background-rect');
 
     // Arrowhead marker for directed relationships
     const defs = svg.append('defs');
@@ -188,82 +214,383 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         return { x, y, width: boxW, height: boxH, group };
     }
 
+    // Configuration constants for coordinate transformation
+    const LAYOUT_CONFIG = {
+        coordinateRange: 10.0,           // Maximum coordinate range for normalization
+        coordinateScaleDivisor: 12.0,    // Divisor for coordinate scaling
+        minSpacingScale: 0.8,           // Minimum spacing scale
+        maxSpacingScale: 2.0,           // Maximum spacing scale
+        defaultSpacingScale: 1.0,       // Default spacing scale
+        minValidCoordinate: -1000,       // Minimum valid coordinate value
+        maxValidCoordinate: 1000         // Maximum valid coordinate value
+    };
+
+    // Coordinate transformation functions from reference file
+    function isNormalized(p) {
+        if (typeof p.x !== 'number' || typeof p.y !== 'number') return false;
+        return p.x <= LAYOUT_CONFIG.coordinateRange && p.x >= -LAYOUT_CONFIG.coordinateRange && 
+               p.y <= LAYOUT_CONFIG.coordinateRange && p.y >= -LAYOUT_CONFIG.coordinateRange;
+    }
+
+    function transformToCanvas(p) {
+        if (!p || typeof p.x !== 'number' || typeof p.y !== 'number') {
+            console.warn('Invalid position data:', p);
+            return { x: width / 2, y: height / 2 };
+        }
+        
+        if (isNormalized(p)) {
+            const scaleX = (width - 2 * configPadding) / LAYOUT_CONFIG.coordinateScaleDivisor;
+            const scaleY = (height - 2 * configPadding) / LAYOUT_CONFIG.coordinateScaleDivisor;
+            const px = (width / 2) + (p.x * scaleX);
+            const py = (height / 2) + (p.y * scaleY);
+            
+            // Validate transformed coordinates
+            if (px < LAYOUT_CONFIG.minValidCoordinate || px > LAYOUT_CONFIG.maxValidCoordinate ||
+                py < LAYOUT_CONFIG.minValidCoordinate || py > LAYOUT_CONFIG.maxValidCoordinate) {
+                console.warn('Transformed coordinates out of bounds:', { input: p, output: { x: px, y: py } });
+                return { x: width / 2, y: height / 2 };
+            }
+            
+            return { x: px, y: py };
+        }
+        
+        // If not normalized, validate and return as-is
+        if (p.x < LAYOUT_CONFIG.minValidCoordinate || p.x > LAYOUT_CONFIG.maxValidCoordinate ||
+            p.y < LAYOUT_CONFIG.minValidCoordinate || p.y > LAYOUT_CONFIG.maxValidCoordinate) {
+            console.warn('Raw coordinates out of bounds:', p);
+            return { x: width / 2, y: height / 2 };
+        }
+        
+        return p;
+    }
+
     // Check if we have pre-computed positions from the backend
     if (spec._layout && spec._layout.positions) {
         // Using backend-calculated positions
         const positions = spec._layout.positions;
+        const params = spec._layout.params || {};
         const extents = spec._layout.extents;
         
-        // If we have extents, use them to set canvas size
-        if (extents) {
-            const margin = configPadding;
-            width = Math.ceil(extents.maxX - extents.minX + 2 * margin);
-            height = Math.ceil(extents.maxY - extents.minY + 2 * margin);
-            svg.attr('width', width).attr('height', height);
-            // Updated canvas size based on backend extents
-        }
+        console.log('🔍 Concept map renderer: Position data debug:', {
+            positionsKeys: Object.keys(positions),
+            topicKey: spec.topic,
+            conceptKeys: spec.concepts,
+            hasTopicPosition: !!positions[spec.topic],
+            samplePosition: positions[Object.keys(positions)[0]]
+        });
+        
+        // Apply spacing scale from agent or config
+        const config = spec._config || {};
+        let spacingScale = typeof params.nodeSpacing === 'number' ? 
+            Math.max(LAYOUT_CONFIG.minSpacingScale, Math.min(LAYOUT_CONFIG.maxSpacingScale, params.nodeSpacing)) : 
+            typeof config.nodeSpacing === 'number' ? 
+                Math.max(LAYOUT_CONFIG.minSpacingScale, Math.min(LAYOUT_CONFIG.maxSpacingScale, config.nodeSpacing)) : 
+                LAYOUT_CONFIG.defaultSpacingScale;
+        
+        console.log('🔧 Using spacing scale:', spacingScale);
         
         const boxes = {};
         
-        // Draw topic first
-        if (positions.topic) {
-            const pos = positions.topic;
-            boxes.topic = drawBox(pos.x, pos.y, spec.topic, true);
-        }
+        // Draw topic first - at canvas center
+        boxes.topic = drawBox(width / 2, height / 2, spec.topic, true);
+        console.log('🎯 Drawing topic at canvas center:', {x: width / 2, y: height / 2});
         
-        // Draw concepts
+        // Draw concepts - positions are keyed by concept text with coordinate transformation
         spec.concepts.forEach((concept, i) => {
-            const pos = positions.concepts && positions.concepts[i];
+            const pos = positions[concept];
             if (pos) {
-                boxes[`concept_${i}`] = drawBox(pos.x, pos.y, concept, false);
+                // Apply spacing scale to normalized coordinates
+                const scaled = { x: pos.x * spacingScale, y: pos.y * spacingScale };
+                const canvasPos = transformToCanvas(scaled);
+                
+                console.log('🔷 Drawing concept:', concept, {
+                    original: pos,
+                    scaled: scaled,
+                    canvas: canvasPos,
+                    spacingScale: spacingScale
+                });
+                
+                boxes[concept] = drawBox(canvasPos.x, canvasPos.y, concept, false);
+            } else {
+                console.warn('⚠️ No position found for concept:', concept);
             }
         });
         
-        // Draw relationships
-        spec.relationships.forEach((rel, i) => {
-            const pos = positions.relationships && positions.relationships[i];
+        // Add missing functions from old renderer for curved edges and advanced labels
+        function rectBorderPoint(rect, targetX, targetY) {
+            const halfW = rect.width / 2;
+            const halfH = rect.height / 2;
+            const dx = targetX - rect.x;
+            const dy = targetY - rect.y;
+            if (dx === 0 && dy === 0) return { x: rect.x, y: rect.y };
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            const scaleX = halfW / absDx;
+            const scaleY = halfH / absDy;
+            if (scaleX < scaleY) {
+                const x = rect.x + Math.sign(dx) * halfW;
+                const y = rect.y + dy * scaleX;
+                return { x, y };
+            } else {
+                const y = rect.y + Math.sign(dy) * halfH;
+                const x = rect.x + dx * scaleY;
+                return { x, y };
+            }
+        }
+
+        function drawEdgeLabel(x, y, text, fontSize, color) {
+            const paddingX = 4;
+            const paddingY = 2;
+            const group = svg.append('g');
+            const label = group.append('text')
+                .attr('x', x)
+                .attr('y', y)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', color)
+                .attr('font-size', fontSize)
+                .style('font-style', 'italic')
+                .text(text || '');
+            try {
+                const bbox = label.node().getBBox();
+                group.insert('rect', 'text')
+                    .attr('x', bbox.x - paddingX)
+                    .attr('y', bbox.y - paddingY)
+                    .attr('width', bbox.width + 2 * paddingX)
+                    .attr('height', bbox.height + 2 * paddingY)
+                    .attr('rx', 3)
+                    .attr('ry', 3)
+                    .attr('fill', '#ffffff')
+                    .attr('fill-opacity', 0.9);
+            } catch (e) {
+                // If bbox fails, fallback to stroke halo
+                label
+                    .style('paint-order', 'stroke')
+                    .style('stroke', '#ffffff')
+                    .style('stroke-width', '3px');
+            }
+        }
+
+        function measureLabelBox(text, fontSize) {
+            const paddingX = 4;
+            const paddingY = 2;
+            const width = measureLineWidth(text || '', fontSize) + 2 * paddingX;
+            const height = Math.round(fontSize * 1.2) + 2 * paddingY;
+            return { width, height };
+        }
+
+        function rectsOverlap(a, b) {
+            // a, b: {x, y, width, height} centered at a.x,a.y
+            const ax1 = a.x - a.width / 2; const ax2 = a.x + a.width / 2;
+            const ay1 = a.y - a.height / 2; const ay2 = a.y + a.height / 2;
+            const bx1 = b.x - b.width / 2; const bx2 = b.x + b.width / 2;
+            const by1 = b.y - b.height / 2; const by2 = b.y + b.height / 2;
+            return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+        }
+
+        function findNonOverlappingLabelPosition(midX, midY, nx, ny, tx, ty, labelW, labelH, nodeRects, placedRects) {
+            const attempts = [];
+            const distances = [0, 10, 20, 30, 40, 50, 60];
+            for (const d of distances) {
+                attempts.push({ x: midX + nx * d, y: midY + ny * d });  // along normal
+                attempts.push({ x: midX - nx * d, y: midY - ny * d });  // opposite normal
+                attempts.push({ x: midX + tx * d, y: midY + ty * d });  // along tangent
+                attempts.push({ x: midX - tx * d, y: midY - ty * d });  // opposite tangent
+                // small diagonal mixes
+                attempts.push({ x: midX + (nx + tx) * d * 0.7, y: midY + (ny + ty) * d * 0.7 });
+                attempts.push({ x: midX + (nx - tx) * d * 0.7, y: midY + (ny - ty) * d * 0.7 });
+            }
+            for (const p of attempts) {
+                const candidate = { x: p.x, y: p.y, width: labelW, height: labelH };
+                let overlaps = false;
+                for (const nr of nodeRects) {
+                    if (rectsOverlap(candidate, nr)) { overlaps = true; break; }
+                }
+                if (overlaps) continue;
+                for (const pr of placedRects) {
+                    if (rectsOverlap(candidate, pr)) { overlaps = true; break; }
+                }
+                if (!overlaps) return { x: p.x, y: p.y };
+            }
+            return { x: midX, y: midY }; // fallback
+        }
+
+        // Prepare node rectangles for label overlap checks
+        const nodeRects = [
+            { x: boxes.topic.x, y: boxes.topic.y, width: boxes.topic.width, height: boxes.topic.height },
+            ...Object.values(boxes).filter(b => b !== boxes.topic).map(b => ({ x: b.x, y: b.y, width: b.width, height: b.height }))
+        ];
+
+        // Draw relationships as curved, directed edges with labels (matching old renderer exactly)
+        const fontRel = THEME.fontRelationship || Math.max(12, Math.round((THEME.fontConcept || 14) * 0.9));
+        const placedLabelRects = [];
+        spec.relationships.forEach((rel, idx) => {
+            const from = rel.from === spec.topic ? { label: spec.topic, box: boxes.topic } : { label: rel.from, box: boxes[rel.from] };
+            const to = rel.to === spec.topic ? { label: spec.topic, box: boxes.topic } : { label: rel.to, box: boxes[rel.to] };
+            if (!from || !to || !from.box || !to.box) return;
+
+            const start = rectBorderPoint(from.box, to.box.x, to.box.y);
+            const end = rectBorderPoint(to.box, from.box.x, from.box.y);
+
+            const mx = (start.x + end.x) / 2;
+            const my = (start.y + end.y) / 2;
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const dist = Math.max(1, Math.hypot(dx, dy));
+            const nx = -dy / dist; // normal vector
+            const ny = dx / dist;
+            // Per-edge curvature hint to minimize overlaps
+            const curveHint = 0; // No edgeCurvatures in this version
+            const curve = Math.min(100, Math.max(-100, curveHint)) || Math.min(80, 0.18 * dist);
+            const cx = mx + nx * curve;
+            const cy = my + ny * curve;
+
+            const pathId = `cm_edge_${idx}`;
+            svg.append('path')
+                .attr('id', pathId)
+                .attr('d', `M ${start.x},${start.y} Q ${cx},${cy} ${end.x},${end.y}`)
+                .attr('fill', 'none')
+                .attr('stroke', THEME.relationshipColor)
+                .attr('stroke-width', THEME.relationshipStrokeWidth)
+                .attr('marker-end', 'url(#arrowhead)');
+
+            // Place a horizontal label near the curve midpoint, offset along normal, avoid overlaps
+            if (rel.label) {
+                const labelOffset = 12;
+                const midPreferredX = mx + nx * labelOffset;
+                const midPreferredY = my + ny * labelOffset;
+                const tLen = Math.max(1, Math.hypot(dx, dy));
+                const tx = dx / tLen; const ty = dy / tLen; // unit tangent
+                const size = measureLabelBox(rel.label || '', fontRel);
+                const pos = findNonOverlappingLabelPosition(
+                    midPreferredX, midPreferredY, nx, ny, tx, ty, size.width, size.height, nodeRects, placedLabelRects
+                );
+                drawEdgeLabel(pos.x, pos.y, rel.label, fontRel, THEME.relationshipColor);
+                placedLabelRects.push({ x: pos.x, y: pos.y, width: size.width, height: size.height });
+            }
+        });
+    } else {
+        // If no positions from agent, generate radial layout (from reference file)
+        console.log('🔄 No positions from agent, generating radial layout fallback...');
+        
+        // Generate fallback positions using radial layout
+        const N = Math.max(1, spec.concepts.length);
+        const keys = spec.concepts.slice(0, Math.min(6, N)); // Max 6 primary concepts
+        const sectorSpan = (2 * Math.PI) / Math.max(1, keys.length);
+        
+        const fallbackPositions = { [spec.topic]: { x: 0, y: 0 } };
+        
+        // Position primary concepts in optimal sectors  
+        keys.forEach((k, i) => {
+            const ang = -Math.PI / 2 + i * sectorSpan;
+            fallbackPositions[k] = { 
+                x: 0.35 * Math.cos(ang), 
+                y: 0.35 * Math.sin(ang) 
+            };
+        });
+        
+        // Position remaining concepts in secondary sectors
+        let idx = 0;
+        spec.concepts.forEach(c => {
+            if (keys.includes(c)) return;
+            
+            const i = idx % Math.max(1, keys.length);
+            const centerAng = -Math.PI / 2 + i * sectorSpan;
+            const half = (sectorSpan * 0.8) / 2;
+            const t = ((idx / keys.length) % 1);
+            const ang = centerAng - half + t * (2 * half);
+            
+            const radiusTier = Math.floor(idx / keys.length);
+            const radiusStep = (0.9 - 0.55) / Math.max(1, radiusTier + 1);
+            const rad = 0.55 + (radiusTier * radiusStep);
+            
+            fallbackPositions[c] = { x: rad * Math.cos(ang), y: rad * Math.sin(ang) };
+            idx++;
+        });
+        
+        // Now render using the generated positions
+        const boxes = {};
+        
+        // Draw topic at canvas center
+        boxes.topic = drawBox(width / 2, height / 2, spec.topic, true);
+        console.log('🎯 Drawing topic at canvas center (fallback)');
+        
+        // Draw concepts with coordinate transformation
+        spec.concepts.forEach((concept) => {
+            const pos = fallbackPositions[concept];
             if (pos) {
-                const from = boxes[rel.from] || boxes.topic;
-                const to = boxes[rel.to] || boxes[`concept_${spec.concepts.indexOf(rel.to.replace('concept_', ''))}`];
+                const scaleX = (width - 2 * configPadding) / 12.0;
+                const scaleY = (height - 2 * configPadding) / 12.0;
+                const canvasPos = {
+                    x: (width / 2) + (pos.x * scaleX),
+                    y: (height / 2) + (pos.y * scaleY)
+                };
                 
-                if (from && to) {
-                    // Draw connecting line
-                    svg.append('line')
-                        .attr('x1', from.x)
-                        .attr('y1', from.y)
-                        .attr('x2', to.x)
-                        .attr('y2', to.y)
+                console.log('🔷 Drawing concept (fallback):', concept, canvasPos);
+                boxes[concept] = drawBox(canvasPos.x, canvasPos.y, concept, false);
+            }
+        });
+        
+        // Draw relationships using same curved style as main renderer
+        const nodeRects = [
+            { x: boxes.topic.x, y: boxes.topic.y, width: boxes.topic.width, height: boxes.topic.height },
+            ...Object.values(boxes).filter(b => b !== boxes.topic).map(b => ({ x: b.x, y: b.y, width: b.width, height: b.height }))
+        ];
+        
+        const fontRel = THEME.fontRelationship || Math.max(12, Math.round((THEME.fontConcept || 14) * 0.9));
+        const placedLabelRects = [];
+        
+        spec.relationships.forEach((rel, idx) => {
+            const from = rel.from === spec.topic ? { label: spec.topic, box: boxes.topic } : { label: rel.from, box: boxes[rel.from] };
+            const to = rel.to === spec.topic ? { label: spec.topic, box: boxes.topic } : { label: rel.to, box: boxes[rel.to] };
+            if (!from || !to || !from.box || !to.box) return;
+
+            const start = rectBorderPoint(from.box, to.box.x, to.box.y);
+            const end = rectBorderPoint(to.box, from.box.x, from.box.y);
+
+            const mx = (start.x + end.x) / 2;
+            const my = (start.y + end.y) / 2;
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const dist = Math.max(1, Math.hypot(dx, dy));
+            const nx = -dy / dist; // normal vector
+            const ny = dx / dist;
+            const curve = Math.min(80, 0.18 * dist);
+            const cx = mx + nx * curve;
+            const cy = my + ny * curve;
+
+            const pathId = `cm_edge_fallback_${idx}`;
+            svg.append('path')
+                .attr('id', pathId)
+                .attr('d', `M ${start.x},${start.y} Q ${cx},${cy} ${end.x},${end.y}`)
+                .attr('fill', 'none')
                         .attr('stroke', THEME.relationshipColor)
                         .attr('stroke-width', THEME.relationshipStrokeWidth)
                         .attr('marker-end', 'url(#arrowhead)');
                     
-                    // Draw relationship label at midpoint
-                    const midX = (from.x + to.x) / 2;
-                    const midY = (from.y + to.y) / 2;
-                    
-                    svg.append('text')
-                        .attr('x', midX)
-                        .attr('y', midY)
-                        .attr('text-anchor', 'middle')
-                        .attr('dominant-baseline', 'middle')
-                        .attr('fill', THEME.relationshipColor)
-                        .attr('font-size', 12)
-                        .attr('font-weight', 'bold')
-                        .style('background', 'white')
-                        .text(rel.label || '');
-                }
+            // Advanced label positioning for fallback too
+            if (rel.label) {
+                const labelOffset = 12;
+                const midPreferredX = mx + nx * labelOffset;
+                const midPreferredY = my + ny * labelOffset;
+                const tLen = Math.max(1, Math.hypot(dx, dy));
+                const tx = dx / tLen; const ty = dy / tLen; // unit tangent
+                const size = measureLabelBox(rel.label || '', fontRel);
+                const pos = findNonOverlappingLabelPosition(
+                    midPreferredX, midPreferredY, nx, ny, tx, ty, size.width, size.height, nodeRects, placedLabelRects
+                );
+                drawEdgeLabel(pos.x, pos.y, rel.label, fontRel, THEME.relationshipColor);
+                placedLabelRects.push({ x: pos.x, y: pos.y, width: size.width, height: size.height });
             }
         });
-    } else {
-        // Fallback to D3 force layout
-        // Falling back to D3 force layout
-        renderConceptMapWithForceLayout(spec, svg, THEME, width, height);
     }
     
-    // Watermark - matching mindmap style
-    const watermarkText = 'MindGraph';
-    
-    // Get SVG dimensions
+    // Add watermark using shared utilities if available, otherwise self-contained
+    if (useSharedUtilities && typeof window.MindGraphUtils.addWatermark === 'function') {
+        window.MindGraphUtils.addWatermark(svg, theme);
+    } else {
+        // Self-contained watermark (from reference file)
+        const watermarkText = theme?.watermarkText || 'MindGraph';
     const w = +svg.attr('width');
     const h = +svg.attr('height');
     
@@ -290,130 +617,30 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         // SVG uses standard coordinate system
         watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
         const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
+            
+            // Position in lower right corner
         watermarkX = w - padding;
         watermarkY = h - padding;
     }
     
-    // Add watermark with proper styling - matching mindmap
+        // Add watermark text (matching reference file style)
     svg.append('text')
         .attr('x', watermarkX)
         .attr('y', watermarkY)
         .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
+            .attr('dominant-baseline', 'hanging')
+            .attr('fill', theme?.watermarkColor || '#999')
         .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
+            .attr('font-family', 'Arial, sans-serif')
+            .attr('opacity', 0.6)
         .text(watermarkText);
+    }
 }
 
 function renderConceptMapWithForceLayout(spec, svg, THEME, width, height) {
-    // Create nodes for topic and concepts
-    const nodes = [
-        { id: 'topic', text: spec.topic, isTopic: true, x: width / 2, y: height / 2 }
-    ];
-    
-    spec.concepts.forEach((concept, i) => {
-        nodes.push({
-            id: `concept_${i}`,
-            text: concept,
-            isTopic: false,
-            x: Math.random() * width,
-            y: Math.random() * height
-        });
-    });
-    
-    // Create links from relationships
-    const links = [];
-    spec.relationships.forEach(rel => {
-        const sourceId = rel.from === 'topic' ? 'topic' : `concept_${spec.concepts.indexOf(rel.from)}`;
-        const targetId = rel.to === 'topic' ? 'topic' : `concept_${spec.concepts.indexOf(rel.to)}`;
-        
-        if (sourceId !== targetId) {
-            links.push({
-                source: sourceId,
-                target: targetId,
-                label: rel.label || ''
-            });
-        }
-    });
-    
-    // Create force simulation
-    const simulation = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(200))
-        .force('charge', d3.forceManyBody().strength(-1000))
-        .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(60));
-    
-    // Draw links
-    const linkGroup = svg.append('g').attr('class', 'links');
-    const link = linkGroup.selectAll('line')
-        .data(links)
-        .enter().append('line')
-        .attr('stroke', THEME.relationshipColor)
-        .attr('stroke-width', THEME.relationshipStrokeWidth)
-        .attr('marker-end', 'url(#arrowhead)');
-    
-    // Draw nodes
-    const nodeGroup = svg.append('g').attr('class', 'nodes');
-    const node = nodeGroup.selectAll('g')
-        .data(nodes)
-        .enter().append('g');
-    
-    // Add circles to nodes
-    node.append('circle')
-        .attr('r', d => d.isTopic ? 40 : 30)
-        .attr('fill', d => d.isTopic ? THEME.topicFill : THEME.conceptFill)
-        .attr('stroke', d => d.isTopic ? THEME.topicStroke : THEME.conceptStroke)
-        .attr('stroke-width', d => d.isTopic ? THEME.topicStrokeWidth : THEME.conceptStrokeWidth);
-    
-    // Add text to nodes
-    node.append('text')
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', d => d.isTopic ? THEME.topicText : THEME.conceptText)
-        .attr('font-size', d => d.isTopic ? THEME.fontTopic : THEME.fontConcept)
-        .attr('font-weight', d => d.isTopic ? '600' : '400')
-        .text(d => d.text.length > 15 ? d.text.substring(0, 15) + '...' : d.text);
-    
-    // Update positions on simulation tick
-    simulation.on('tick', () => {
-        link
-            .attr('x1', d => d.source.x)
-            .attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x)
-            .attr('y2', d => d.target.y);
-        
-        node
-            .attr('transform', d => `translate(${d.x},${d.y})`);
-    });
-    
-    // Add drag behavior
-    node.call(d3.drag()
-        .on('start', dragstarted)
-        .on('drag', dragged)
-        .on('end', dragended));
-    
-    function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-    }
-    
-    function dragged(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
-    }
-    
-    function dragended(event, d) {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
-    }
-    
-    console.log('✅ Concept map renderer: Rendering completed successfully');
+    // This function is kept for compatibility but not actively used
+    // The main renderer now uses the radial layout fallback from the reference file
+    console.log('⚠️ Force layout function called - using radial fallback instead');
 }
 
 // Export functions for module system

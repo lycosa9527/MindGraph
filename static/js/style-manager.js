@@ -46,17 +46,17 @@ class StyleManager {
             },
             mindmap: {
                 background: '#f5f5f5',         // Light grey background
-                centralTopicFill: '#1976d2',   // Deep blue for central topic (matches double bubble)
-                centralTopicText: '#ffffff',   // White text for contrast
-                centralTopicStroke: '#000000', // Black border
+                centralTopicFill: '#e3f2fd',   // Light blue for central topic
+                centralTopicText: '#333333',   // Dark text for readability
+                centralTopicStroke: '#35506b', // Dark blue-grey border
                 centralTopicStrokeWidth: 3,
-                branchFill: '#1976d2',         // Deep blue for branches (matches double bubble)
-                branchText: '#ffffff',         // White text for contrast
-                branchStroke: '#000000',       // Black border
+                branchFill: '#e3f2fd',         // Light blue for branches (main branch)
+                branchText: '#333333',         // Dark text for readability
+                branchStroke: '#4e79a7',       // Medium blue border
                 branchStrokeWidth: 2,
-                childFill: '#e3f2fd',          // Light blue for children (matches double bubble attributes)
+                childFill: '#f8f9fa',          // Very light grey for children (sub-branch)
                 childText: '#333333',          // Dark text for readability
-                childStroke: '#1976d2',        // Deep blue border
+                childStroke: '#6c757d',        // Grey border
                 childStrokeWidth: 2,
                 fontTopic: 20,
                 fontBranch: 16,
@@ -194,10 +194,10 @@ class StyleManager {
             theme = this.mergeUserTheme(theme, userTheme);
         }
         
-        // Apply color theme if specified (but preserve our custom styling for bubble maps)
+        // Apply color theme if specified (but preserve our custom styling for bubble maps and mindmaps)
         if (userTheme && userTheme.colorTheme && this.colorThemes[userTheme.colorTheme]) {
-            // For bubble maps, only apply color theme if explicitly requested
-            if (diagramType === 'bubble_map' || diagramType === 'double_bubble_map') {
+            // For bubble maps and mindmaps, only apply color theme if explicitly requested
+            if (diagramType === 'bubble_map' || diagramType === 'double_bubble_map' || diagramType === 'mindmap') {
                 // Only apply if it's not our default styling
                 if (userTheme.colorTheme !== 'default') {
                     theme = this.applyColorTheme(theme, userTheme.colorTheme, diagramType);

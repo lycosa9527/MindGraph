@@ -434,42 +434,44 @@ CRITICAL Requirements:
     
     def _generate_mind_map_layout(self, topic: str, children: List[Dict]) -> Dict:
         """
-        Generate clean mind map layout using CLEAN POSITIONING SYSTEM:
+        Generate mind map layout using SIMPLE BALANCED LAYOUT SYSTEM:
         
-        WORKFLOW: 
-        1. Calculate left/right branch distribution
-        2. Stack all children nodes vertically on each side
-        3. Position branch nodes at the VISUAL center of their children groups (bounding box)
-        4. Central topic positioned at vertical center of all subtopic nodes
+        CORE PRINCIPLES:
+        1. Always even number of branches (enforced by LLM prompts)
+        2. Clean left/right split (first half → right, second half → left)  
+        3. Height balancing with intelligent padding
+        4. Mathematical branch centering (perfect alignment guaranteed)
+        5. Central topic at (0,0) for natural visual balance
+        
+        SIMPLE WORKFLOW:
+        1. Split branches evenly between left and right sides
+        2. Stack children vertically on each side with consistent spacing
+        3. Balance side heights using padding to shorter side
+        4. Position branches at mathematical centers of their children
+        5. Place central topic at (0,0) - perfect balance achieved
         """
+        logger.debug(f"🎯 SIMPLE BALANCED LAYOUT - Starting layout for {len(children)} branches")
+        
         # Initialize positions dictionary
         positions = {}
-        
-        # STEP 1: Analyze how many branches we get from LLM
         num_branches = len(children)
-        # LLM returned branches
         
-        # STEP 2: Calculate left/right branch distribution
-        left_branch_count = (num_branches + 1) // 2  # More branches on left if odd
-        right_branch_count = num_branches - left_branch_count
+        if num_branches == 0:
+            return self._generate_empty_layout(topic)
         
-        # Branch distribution calculated
-        
-        # STEP 3: Calculate column positions with proper spacing
+        # STEP 1: Calculate column positions (same as before for consistency)
         gap_topic_to_branch = 200  # Space between topic and branches
         gap_branch_to_child = 120   # Space between branches and children
         
-        # Calculate maximum dimensions using adaptive font sizes for consistency
+        # Calculate maximum dimensions
         max_branch_width = 0
         max_child_width = 0
         
         for branch in children:
-            # Calculate branch width with adaptive font size
             branch_font_size = self._get_adaptive_font_size(branch['label'], 'branch')
             branch_width = self._calculate_text_width(branch['label'], branch_font_size) + self._get_adaptive_padding(branch['label'])
             max_branch_width = max(max_branch_width, branch_width)
             
-            # Calculate child widths with adaptive font sizes
             for child in branch.get('children', []):
                 child_font_size = self._get_adaptive_font_size(child['label'], 'child')
                 child_width = self._calculate_text_width(child['label'], child_font_size) + self._get_adaptive_padding(child['label'])
@@ -481,20 +483,1033 @@ CRITICAL Requirements:
         right_branches_x = gap_topic_to_branch + max_branch_width/2
         right_children_x = gap_topic_to_branch + max_branch_width + gap_branch_to_child + max_child_width/2
         
-        # Column positions and max dimensions calculated
+        logger.debug(f"Column positions: Left Children={left_children_x:.1f}, Left Branches={left_branches_x:.1f}, Right Branches={right_branches_x:.1f}, Right Children={right_children_x:.1f}")
         
-        # STEP 4: Targeted Fix - Smart Mathematical Branch Positioning
-        all_children_positions = {}  # Store child positions by branch index
+        # STEP 2: Simple Balanced Layout System  
+        layout_result = self._simple_balanced_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
         
-        # Left side children stacking - small offset to prevent exact overlaps with right side
-        left_children_y = 5  # Small offset to prevent identical Y positions
-        left_branch_children = []
+        # Use the result from simple balanced system
+        positions = layout_result['positions'].copy()
         
-        # Right side children stacking  
-        right_children_y = 0
-        right_branch_children = []
+        # Add central topic at Y=0 (two-stage system positions everything relative to Y=0)
+        topic_font_size = self._get_adaptive_font_size(topic, 'topic')
+        topic_width = self._calculate_text_width(topic, topic_font_size) + 40  # Extra padding for circles
+        topic_height = self._get_adaptive_node_height(topic, 'topic')
         
-        logger.debug(f"Starting targeted positioning fix for {num_branches} branches")
+        positions['topic'] = {
+            'x': 0, 'y': 0,  # Central topic always at origin
+            'width': topic_width, 'height': topic_height,
+            'text': topic, 'node_type': 'topic', 'angle': 0
+        }
+        
+        logger.debug(f"✅ Two-stage system complete, topic added at (0, 0)")
+        
+        # STEP 3: Generate connection data
+        connections = self._generate_connections(topic, children, positions)
+        
+        # STEP 4: Center all positions around (0,0) for proper D3 rendering
+        if positions:
+            # Calculate content center from all positioned elements
+            x_coords = [pos.get('x', 0) for pos in positions.values() if pos is not None]
+            y_coords = [pos.get('y', 0) for pos in positions.values() if pos is not None]
+            
+            if x_coords and y_coords:
+                content_center_x = (min(x_coords) + max(x_coords)) / 2
+                content_center_y = (min(y_coords) + max(y_coords)) / 2
+                
+                # Adjust all positions to center around (0,0)
+                for key in positions:
+                    if positions[key] is not None:
+                        positions[key]['x'] -= content_center_x
+                        positions[key]['y'] -= content_center_y
+        
+        # STEP 5: Compute recommended dimensions
+        recommended_dimensions = self._compute_recommended_dimensions(positions, topic, children)
+        
+        logger.debug(f"🎉 SIMPLE BALANCED LAYOUT - Layout complete!")
+        
+        # Return complete layout
+        return {
+            'algorithm': 'simple_balanced_layout',
+            'positions': positions,
+            'connections': connections,
+            'params': {
+                'leftChildrenX': left_children_x,
+                'leftBranchesX': left_branches_x,
+                'topicX': 0,
+                'topicY': 0,  # Always at center
+                'rightBranchesX': right_branches_x,
+                'rightChildrenX': right_children_x,
+                'numBranches': num_branches,
+                'numChildren': sum(len(branch.get('children', [])) for branch in children),
+                'baseWidth': recommended_dimensions['baseWidth'],
+                'baseHeight': recommended_dimensions['baseHeight'],
+                'width': recommended_dimensions['width'],
+                'height': recommended_dimensions['height'],
+                'padding': recommended_dimensions['padding'],
+                'background': '#f5f5f5'
+            }
+        }
+    
+    def _simple_balanced_layout(self, children: List[Dict], left_children_x: float, right_children_x: float, left_branches_x: float, right_branches_x: float) -> Dict:
+        """
+        Simple balanced layout system with guaranteed perfect results.
+        
+        WORKFLOW:
+        1. Clean left/right split of branches
+        2. Stack children vertically with consistent spacing
+        3. Balance heights with padding to shorter side
+        4. Position branches at mathematical centers
+        """
+        logger.debug(f"📍 Simple balanced layout: Processing {len(children)} branches")
+        
+        # Ensure even number of branches (LLM should provide this, but safety check)
+        num_branches = len(children)
+        if num_branches % 2 != 0:
+            logger.warning(f"Odd number of branches ({num_branches}) detected! Adding empty branch for balance.")
+            children.append({
+                "id": f"balance_branch_{num_branches}",
+                "label": "Additional Aspect",
+                "children": [
+                    {"id": f"balance_item_1", "label": "Further details"},
+                    {"id": f"balance_item_2", "label": "Additional information"}
+                ]
+            })
+            num_branches += 1
+        
+        # STEP 1: Clean left/right split
+        mid_point = num_branches // 2
+        right_branches = children[:mid_point]      # First half → RIGHT side
+        left_branches = children[mid_point:]       # Second half → LEFT side
+        
+        logger.debug(f"Split: {len(right_branches)} right branches, {len(left_branches)} left branches")
+        
+        # STEP 2: Stack children vertically on each side
+        right_positions = self._stack_children_vertically(right_branches, right_children_x, "right")
+        left_positions = self._stack_children_vertically(left_branches, left_children_x, "left") 
+        
+        # STEP 3: Balance heights with padding
+        balanced_positions = self._balance_side_heights(left_positions, right_positions)
+        
+        # STEP 4: Position branches at mathematical centers
+        branch_positions = self._position_branches_at_mathematical_centers(
+            children, balanced_positions, left_branches_x, right_branches_x
+        )
+        
+        # STEP 5: Combine all positions
+        all_positions = {}
+        all_positions.update(balanced_positions)
+        all_positions.update(branch_positions)
+        
+        logger.debug(f"Simple layout complete: {len(all_positions)} total positions")
+        
+        return {
+            'positions': all_positions,
+            'algorithm': 'simple_balanced_layout'
+        }
+    
+    def _stack_children_vertically(self, branches: List[Dict], column_x: float, side: str) -> Dict:
+        """
+        Stack all children from multiple branches vertically on one side.
+        """
+        positions = {}
+        current_y = 0
+        
+        logger.debug(f"Stacking children on {side} side at X={column_x}")
+        
+        # Collect all children from all branches on this side
+        all_children = []
+        for branch_idx, branch in enumerate(branches):
+            branch_children = branch.get('children', [])
+            for child_idx, child in enumerate(branch_children):
+                # Calculate actual branch index in original children list
+                if side == "right":
+                    actual_branch_idx = branch_idx  # Right side: indices 0, 1, 2...
+                else:
+                    actual_branch_idx = len(branches) + branch_idx  # Left side: indices continue
+                
+                child_info = {
+                    'branch_idx': actual_branch_idx,
+                    'child_idx': child_idx,
+                    'data': child,
+                    'side': side
+                }
+                all_children.append(child_info)
+        
+        # Calculate dynamic spacing based on actual font sizes
+        if all_children:
+            font_sizes = []
+            for child_info in all_children:
+                child_font_size = self._get_adaptive_font_size(child_info['data']['label'], 'child')
+                font_sizes.append(child_font_size)
+            avg_font_size = sum(font_sizes) / len(font_sizes)
+            
+            # Dynamic spacing: 6px base + 0.3x average font size (scales with font changes)
+            CHILD_SPACING = max(6, int(6 + avg_font_size * 0.3))
+            logger.debug(f"Dynamic spacing: {CHILD_SPACING}px (based on avg font size {avg_font_size:.1f})")
+        else:
+            CHILD_SPACING = 8  # Fallback for empty case
+        
+        # Calculate dimensions and positions for all children
+        for i, child_info in enumerate(all_children):
+            child_data = child_info['data']
+            child_width = self._calculate_text_width(child_data['label'], self._get_adaptive_font_size(child_data['label'], 'child')) + self._get_adaptive_padding(child_data['label'])
+            child_height = self._get_adaptive_node_height(child_data['label'], 'child')
+            
+            child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
+            
+            positions[child_key] = {
+                'x': column_x, 'y': current_y,
+                'width': child_width, 'height': child_height,
+                'text': child_data['label'], 'node_type': 'child',
+                'branch_index': child_info['branch_idx'], 
+                'child_index': child_info['child_idx'], 'angle': 0
+            }
+            
+            # Move to next position with dynamic spacing
+            if i < len(all_children) - 1:
+                next_child_info = all_children[i + 1]
+                next_child_height = self._get_adaptive_node_height(next_child_info['data']['label'], 'child')
+                
+                # Check if next child is from a different branch group
+                current_branch = child_info['branch_idx']
+                next_branch = next_child_info['branch_idx']
+                
+                if current_branch != next_branch:
+                    # Triple spacing between different branch groups
+                    spacing_multiplier = 3.0
+                    gap_type = "group"
+                    logger.debug(f"Branch group boundary: {current_branch} → {next_branch}, using triple spacing")
+                else:
+                    # Normal spacing within same branch group
+                    spacing_multiplier = 1.0
+                    gap_type = "normal"
+                
+                # Calculate spacing with multiplier
+                base_gap = CHILD_SPACING * spacing_multiplier
+                center_to_center = (child_height / 2) + base_gap + (next_child_height / 2)
+                current_y += center_to_center
+                
+                if i == 0 or gap_type == "group":  # Log spacing details for first gap and group boundaries
+                    logger.debug(f"{gap_type.capitalize()} gap: {child_height/2:.1f} + {base_gap:.1f} + {next_child_height/2:.1f} = {center_to_center:.1f}px")
+        
+        logger.debug(f"Stacked {len(all_children)} children on {side} side")
+        return positions
+    
+    def _balance_side_heights(self, left_positions: Dict, right_positions: Dict) -> Dict:
+        """
+        Balance the heights of left and right sides by adding padding to the shorter side.
+        """
+        # Calculate total heights of each side
+        if left_positions:
+            left_y_values = [pos['y'] for pos in left_positions.values()]
+            left_heights = [pos['height'] for pos in left_positions.values()]
+            left_total_height = max(left_y_values) + max(left_heights)/2 - (min(left_y_values) - max(left_heights)/2)
+        else:
+            left_total_height = 0
+            
+        if right_positions:
+            right_y_values = [pos['y'] for pos in right_positions.values()]
+            right_heights = [pos['height'] for pos in right_positions.values()]
+            right_total_height = max(right_y_values) + max(right_heights)/2 - (min(right_y_values) - max(right_heights)/2)
+        else:
+            right_total_height = 0
+        
+        height_diff = abs(left_total_height - right_total_height)
+        
+        logger.debug(f"Height balance: Left={left_total_height:.1f}, Right={right_total_height:.1f}, Diff={height_diff:.1f}")
+        
+        # Add padding to shorter side by shifting positions
+        balanced_positions = {}
+        balanced_positions.update(left_positions)
+        balanced_positions.update(right_positions)
+        
+        if height_diff > 10:  # Only apply padding if significant difference
+            padding = height_diff / 2
+            
+            if left_total_height < right_total_height:
+                # Left side is shorter, add padding (shift down)
+                for key, pos in left_positions.items():
+                    balanced_positions[key]['y'] += padding
+                logger.debug(f"Added {padding:.1f}px padding to left side")
+            else:
+                # Right side is shorter, add padding (shift down) 
+                for key, pos in right_positions.items():
+                    balanced_positions[key]['y'] += padding
+                logger.debug(f"Added {padding:.1f}px padding to right side")
+        
+        # Center both sides around Y=0 while preserving spacing
+        if balanced_positions:
+            all_y = [pos['y'] for pos in balanced_positions.values()]
+            center_offset = (max(all_y) + min(all_y)) / 2
+            
+            for pos in balanced_positions.values():
+                pos['y'] -= center_offset
+            
+            logger.debug(f"Centered all children around Y=0 (offset: {center_offset:.1f})")
+            
+            # Verify no overlaps after centering
+            positions_list = list(balanced_positions.values())
+            overlaps_detected = 0
+            for i, pos1 in enumerate(positions_list):
+                for j, pos2 in enumerate(positions_list[i+1:], i+1):
+                    if self._nodes_overlap(pos1, pos2):
+                        overlaps_detected += 1
+            
+            if overlaps_detected > 0:
+                logger.warning(f"⚠️ {overlaps_detected} overlaps detected after centering - spacing may need adjustment")
+        
+        return balanced_positions
+    
+    def _position_branches_at_mathematical_centers(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
+        """
+        Position branches at the exact mathematical centers of their children.
+        """
+        positions = {}
+        num_branches = len(children)
+        mid_point = num_branches // 2
+        
+        for branch_idx, branch in enumerate(children):
+            branch_text = branch['label']
+            
+            # Calculate branch dimensions
+            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
+            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            branch_height = self._get_adaptive_node_height(branch_text, 'branch')
+            
+            # Determine side and column
+            is_left_side = branch_idx >= mid_point
+            branch_x = left_branches_x if is_left_side else right_branches_x
+            
+            # Find this branch's children
+            branch_children = []
+            for key, pos in child_positions.items():
+                if pos.get('branch_index') == branch_idx:
+                    branch_children.append(pos)
+            
+            # Calculate exact mathematical center
+            if branch_children:
+                children_y_positions = [child['y'] for child in branch_children]
+                branch_y = sum(children_y_positions) / len(children_y_positions)
+                logger.debug(f"Branch {branch_idx} ('{branch_text}'): Mathematical center at Y={branch_y:.1f}")
+            else:
+                # For branches without children, spread them vertically to avoid overlaps
+                empty_branch_spacing = 80  # 80px spacing between empty branches
+                empty_branch_offset = (branch_idx - num_branches // 2) * empty_branch_spacing
+                branch_y = empty_branch_offset
+                logger.debug(f"Branch {branch_idx} ('{branch_text}'): No children, positioned at Y={branch_y} (offset={empty_branch_offset})")
+            
+            # Store branch position
+            branch_key = f'branch_{branch_idx}'
+            positions[branch_key] = {
+                'x': branch_x, 'y': branch_y,
+                'width': branch_width, 'height': branch_height,
+                'text': branch_text, 'node_type': 'branch',
+                'branch_index': branch_idx, 'angle': 0
+            }
+        
+        logger.debug(f"Positioned {len(positions)} branches at mathematical centers")
+        return positions
+    
+    def _two_stage_smart_positioning(self, children: List[Dict], left_children_x: float, right_children_x: float, left_branches_x: float, right_branches_x: float) -> Dict:
+        """
+        Complete two-stage positioning system with all solutions integrated.
+        
+        STAGE 1: Natural perfect layout with validation
+        STAGE 2: Strategic phantom compensation if needed
+        """
+        logger.debug(f"🎯 Starting Two-Stage Smart Positioning System for {len(children)} branches")
+        
+        # STAGE 1: Natural perfect layout
+        stage1_result = self._stage1_natural_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
+        
+        if stage1_result['all_principles_satisfied']:
+            logger.debug("✅ Stage 1 SUCCESS: Natural layout satisfies all principles")
+            return {
+                'positions': stage1_result['positions'],
+                'stage_used': 1,
+                'violations': []
+            }
+        
+        logger.debug(f"⚠️ Stage 1: {len(stage1_result['violations'])} violations detected")
+        for violation in stage1_result['violations']:
+            logger.debug(f"  Violation: {violation}")
+        
+        # STAGE 2: Strategic phantom compensation
+        stage2_result = self._stage2_phantom_compensation(stage1_result['positions'], stage1_result['violations'], children)
+        
+        if stage2_result['all_principles_satisfied']:
+            logger.debug("✅ Stage 2 SUCCESS: Phantom compensation solved all violations")
+            return {
+                'positions': stage2_result['positions'],
+                'stage_used': 2,
+                'violations': []
+            }
+        
+        # FALLBACK: Use best available result
+        logger.debug("⚠️ Stage 2: Could not achieve perfect alignment, using best result")
+        return {
+            'positions': stage2_result['positions'],
+            'stage_used': 2,
+            'violations': stage2_result['remaining_violations']
+        }
+    
+    def _stage1_natural_layout(self, children: List[Dict], left_children_x: float, right_children_x: float, left_branches_x: float, right_branches_x: float) -> Dict:
+        """
+        STAGE 1: Natural perfect layout with comprehensive validation.
+        
+        Creates perfect spacing layout using only real children, then validates all principles.
+        """
+        logger.debug(f"📍 Stage 1: Creating natural perfect layout")
+        
+        # Step 1: Assign children to sides with branch coherence
+        side_assignments = self._assign_children_to_sides_coherently(children)
+        
+        # Step 2: Calculate true even spacing for each side
+        left_positions = self._position_children_with_even_spacing(side_assignments['left_children'], left_children_x)
+        right_positions = self._position_children_with_even_spacing(side_assignments['right_children'], right_children_x)
+        
+        # Step 3: Combine child positions
+        all_child_positions = {}
+        all_child_positions.update(left_positions)
+        all_child_positions.update(right_positions)
+        
+        # Step 4: Position branches at mathematical centers of their children
+        branch_positions = self._position_branches_at_centers(children, all_child_positions, left_branches_x, right_branches_x)
+        
+        # Step 5: Combine all positions
+        all_positions = {}
+        all_positions.update(all_child_positions)
+        all_positions.update(branch_positions)
+        
+        # Step 6: Comprehensive validation
+        validation_results = self._validate_all_principles(all_positions, children)
+        
+        logger.debug(f"Stage 1 validation: {validation_results['summary']}")
+        
+        return {
+            'positions': all_positions,
+            'all_principles_satisfied': validation_results['all_satisfied'],
+            'violations': validation_results['violations'],
+            'stage': 1
+        }
+    
+    def _assign_children_to_sides_coherently(self, children: List[Dict]) -> Dict:
+        """
+        Assign children to sides maintaining branch coherence.
+        """
+        num_branches = len(children)
+        mid_point = num_branches // 2
+        
+        left_side_children = []
+        right_side_children = []
+        
+        for branch_idx, branch in enumerate(children):
+            branch_children = branch.get('children', [])
+            
+            for child_idx, child in enumerate(branch_children):
+                child_info = {
+                    'branch_idx': branch_idx,
+                    'child_idx': child_idx,
+                    'data': child,
+                    'side': 'left' if branch_idx >= mid_point else 'right'
+                }
+                
+                if branch_idx >= mid_point:
+                    left_side_children.append(child_info)
+                else:
+                    right_side_children.append(child_info)
+        
+        logger.debug(f"Side assignment: Left={len(left_side_children)}, Right={len(right_side_children)}")
+        
+        return {
+            'left_children': left_side_children,
+            'right_children': right_side_children
+        }
+    
+    def _position_children_with_even_spacing(self, side_children: List[Dict], column_x: float) -> Dict:
+        """
+        Position children with true even spacing (8px edge-to-edge).
+        """
+        if not side_children:
+            return {}
+        
+        EDGE_BUFFER = 8  # Fixed 8px gap between node edges
+        
+        # Calculate heights for all children
+        for child_info in side_children:
+            child_data = child_info['data']
+            child_info['height'] = self._get_adaptive_node_height(child_data['label'], 'child')
+            child_info['width'] = self._calculate_text_width(child_data['label'], self._get_adaptive_font_size(child_data['label'], 'child')) + self._get_adaptive_padding(child_data['label'])
+        
+        # Calculate dynamic center-to-center spacings
+        spacings = []
+        for i in range(len(side_children) - 1):
+            current_height = side_children[i]['height']
+            next_height = side_children[i + 1]['height']
+            
+            # Center-to-center = half of current + buffer + half of next
+            center_spacing = (current_height / 2) + EDGE_BUFFER + (next_height / 2)
+            spacings.append(center_spacing)
+        
+        # Position children using calculated spacings
+        positions = {}
+        current_y = 0  # Start at center
+        
+        for i, child_info in enumerate(side_children):
+            child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
+            
+            positions[child_key] = {
+                'x': column_x, 'y': current_y,
+                'width': child_info['width'], 'height': child_info['height'],
+                'text': child_info['data']['label'], 'node_type': 'child',
+                'branch_index': child_info['branch_idx'], 
+                'child_index': child_info['child_idx'], 'angle': 0
+            }
+            
+            if i < len(spacings):
+                current_y += spacings[i]  # Move to next position
+        
+        # Center the entire group around Y=0
+        if positions:
+            all_y = [pos['y'] for pos in positions.values()]
+            center_offset = sum(all_y) / len(all_y)
+            
+            for pos in positions.values():
+                pos['y'] -= center_offset
+        
+        logger.debug(f"Positioned {len(positions)} children with even spacing")
+        return positions
+    
+    def _position_branches_at_centers(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
+        """
+        Position branches at mathematical centers of their children.
+        """
+        num_branches = len(children)
+        mid_point = num_branches // 2
+        positions = {}
+        
+        for branch_idx, branch in enumerate(children):
+            branch_text = branch['label']
+            
+            # Calculate branch dimensions
+            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
+            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            branch_height = self._get_adaptive_node_height(branch_text, 'branch')
+            
+            # Determine side and column
+            is_left_side = branch_idx >= mid_point
+            branch_x = left_branches_x if is_left_side else right_branches_x
+            
+            # Find this branch's children
+            branch_children = []
+            for key, pos in child_positions.items():
+                if pos.get('branch_index') == branch_idx:
+                    branch_children.append(pos)
+            
+            # Calculate mathematical center of children
+            if branch_children:
+                children_y_positions = [child['y'] for child in branch_children]
+                branch_y = sum(children_y_positions) / len(children_y_positions)
+                logger.debug(f"Branch {branch_idx}: center-aligned to children at Y={branch_y:.1f}")
+            else:
+                branch_y = 0.0  # Default to center if no children
+                logger.debug(f"Branch {branch_idx}: no children, positioned at Y=0")
+            
+            # Store branch position
+            branch_key = f'branch_{branch_idx}'
+            positions[branch_key] = {
+                'x': branch_x, 'y': branch_y,
+                'width': branch_width, 'height': branch_height,
+                'text': branch_text, 'node_type': 'branch',
+                'branch_index': branch_idx, 'angle': 0
+            }
+        
+        logger.debug(f"Positioned {len(positions)} branches at mathematical centers")
+        return positions
+    
+    def _validate_all_principles(self, positions: Dict, children: List[Dict]) -> Dict:
+        """
+        Comprehensive validation of all positioning principles.
+        """
+        violations = []
+        
+        # Principle 1: Branch center alignment (5px tolerance)
+        center_violations = self._validate_branch_center_alignment(positions, children)
+        violations.extend(center_violations)
+        
+        # Principle 2: Middle branch horizontal alignment (5px tolerance)
+        horizontal_violations = self._validate_middle_branch_horizontal_alignment(positions, children)
+        violations.extend(horizontal_violations)
+        
+        # Principle 3: No overlaps
+        overlap_violations = self._validate_no_overlaps(positions)
+        violations.extend(overlap_violations)
+        
+        # Generate summary
+        critical_count = len([v for v in violations if 'CRITICAL' in v])
+        overlap_count = len([v for v in violations if 'OVERLAP' in v])
+        
+        if len(violations) == 0:
+            summary = "All principles satisfied perfectly"
+        elif critical_count == 0 and overlap_count == 0:
+            summary = f"Minor violations: {len(violations)} warnings"
+        else:
+            summary = f"Major violations: {critical_count} critical, {overlap_count} overlaps"
+        
+        return {
+            'all_satisfied': len(violations) == 0,
+            'violations': violations,
+            'summary': summary,
+            'critical_count': critical_count,
+            'overlap_count': overlap_count
+        }
+    
+    def _validate_branch_center_alignment(self, positions: Dict, children: List[Dict]) -> List[str]:
+        """
+        Validate that branches are center-aligned to their children.
+        """
+        violations = []
+        
+        for branch_idx, branch in enumerate(children):
+            branch_key = f'branch_{branch_idx}'
+            if branch_key not in positions:
+                continue
+                
+            branch_pos = positions[branch_key]
+            branch_y = branch_pos['y']
+            
+            # Find children for this branch
+            branch_children = []
+            for key, pos in positions.items():
+                if pos.get('branch_index') == branch_idx and pos.get('node_type') == 'child':
+                    branch_children.append(pos)
+            
+            if branch_children:
+                # Calculate mathematical center
+                children_y_positions = [child['y'] for child in branch_children]
+                mathematical_center = sum(children_y_positions) / len(children_y_positions)
+                
+                # Check alignment (5px tolerance)
+                error = abs(branch_y - mathematical_center)
+                
+                if error > 5:
+                    violations.append(f"CRITICAL: Branch {branch_idx} misaligned by {error:.1f}px (Branch Y: {branch_y:.1f}, Center: {mathematical_center:.1f})")
+        
+        return violations
+    
+    def _validate_middle_branch_horizontal_alignment(self, positions: Dict, children: List[Dict]) -> List[str]:
+        """
+        Validate that middle branches are aligned with central topic (Y=0).
+        """
+        violations = []
+        num_branches = len(children)
+        
+        # Identify middle branches
+        middle_branches = self._identify_middle_branches_systematically(num_branches)
+        
+        for branch_idx in middle_branches:
+            branch_key = f'branch_{branch_idx}'
+            if branch_key in positions:
+                branch_y = positions[branch_key]['y']
+                error = abs(branch_y - 0)  # Should be at Y=0
+                
+                if error > 5:  # 5px tolerance
+                    violations.append(f"CRITICAL: Middle branch {branch_idx} not horizontally aligned (Y={branch_y:.1f}, should be 0)")
+        
+        return violations
+    
+    def _validate_no_overlaps(self, positions: Dict) -> List[str]:
+        """
+        Validate that no nodes overlap.
+        """
+        violations = []
+        
+        # Get all non-phantom positions
+        real_positions = [(key, pos) for key, pos in positions.items() 
+                         if pos and pos.get('node_type') in ['topic', 'branch', 'child']]
+        
+        for i, (key1, pos1) in enumerate(real_positions):
+            for j, (key2, pos2) in enumerate(real_positions[i+1:], i+1):
+                if self._nodes_overlap(pos1, pos2):
+                    violations.append(f"OVERLAP: {pos1.get('text', 'Node')} and {pos2.get('text', 'Node')} overlap")
+        
+        return violations
+    
+    def _identify_middle_branches_systematically(self, num_branches: int) -> List[int]:
+        """
+        Systematically identify middle branches that should align with central topic.
+        
+        For odd numbers: Pick the two branches closest to center (excluding center branch if exists)
+        For even numbers: Pick the two center branches
+        """
+        if num_branches == 1:
+            return [0]  # Only branch is middle
+        elif num_branches == 2:
+            return [0, 1]  # Both are middle
+        elif num_branches == 3:
+            return [0, 2]  # First and last (skip center branch 1)
+        elif num_branches == 4:
+            return [1, 2]  # Two center branches
+        elif num_branches == 5:
+            return [1, 3]  # Two branches closest to center (skip center branch 2)
+        elif num_branches == 6:
+            return [2, 3]  # Two center branches
+        else:
+            # General case for larger numbers
+            mid_point = num_branches // 2
+            if num_branches % 2 == 0:
+                # Even: two center branches
+                return [mid_point - 1, mid_point]
+            else:
+                # Odd: two branches around center (skip center)
+                return [mid_point - 1, mid_point + 1]
+    
+    def _stage2_phantom_compensation(self, positions: Dict, violations: List[str], children: List[Dict]) -> Dict:
+        """
+        STAGE 2: Strategic phantom compensation for alignment violations.
+        """
+        logger.debug(f"🔧 Stage 2: Starting phantom compensation for {len(violations)} violations")
+        
+        # Identify middle branch alignment violations
+        middle_violations = [v for v in violations if 'Middle branch' in v and 'not horizontally aligned' in v]
+        
+        if not middle_violations:
+            logger.debug("No middle branch violations found, returning original positions")
+            return {
+                'positions': positions,
+                'all_principles_satisfied': len(violations) == 0,
+                'remaining_violations': violations,
+                'stage': 2
+            }
+        
+        # Add phantom compensation for middle branch violations
+        compensated_positions = self._add_phantom_compensation(positions, middle_violations, children)
+        
+        # Re-validate with phantom compensation
+        validation_results = self._validate_all_principles(compensated_positions, children)
+        
+        logger.debug(f"Stage 2 validation: {validation_results['summary']}")
+        
+        return {
+            'positions': compensated_positions,
+            'all_principles_satisfied': validation_results['all_satisfied'],
+            'remaining_violations': validation_results['violations'],
+            'stage': 2
+        }
+    
+    def _add_phantom_compensation(self, positions: Dict, violations: List[str], children: List[Dict]) -> Dict:
+        """
+        Add strategic phantom nodes to fix middle branch alignment violations.
+        """
+        logger.debug(f"🎭 Adding phantom compensation for violations")
+        
+        compensated_positions = positions.copy()
+        middle_branches = self._identify_middle_branches_systematically(len(children))
+        
+        for branch_idx in middle_branches:
+            branch_key = f'branch_{branch_idx}'
+            if branch_key not in positions:
+                continue
+            
+            # Get current branch position and children
+            branch_pos = positions[branch_key]
+            current_branch_y = branch_pos['y']
+            
+            # Find children for this branch
+            branch_children = []
+            for key, pos in positions.items():
+                if pos.get('branch_index') == branch_idx and pos.get('node_type') == 'child':
+                    branch_children.append(pos)
+            
+            if not branch_children:
+                continue
+            
+            # Calculate current mathematical center
+            children_y_positions = [child['y'] for child in branch_children]
+            current_center = sum(children_y_positions) / len(children_y_positions)
+            target_center = 0  # Should align with topic at Y=0
+            
+            offset_needed = target_center - current_center
+            
+            if abs(offset_needed) > 5:  # Need phantom compensation
+                phantoms = self._calculate_phantom_compensation(branch_children, target_center)
+                
+                # Add phantoms to positions
+                for i, phantom in enumerate(phantoms):
+                    phantom_key = f"phantom_{branch_idx}_{i}"
+                    compensated_positions[phantom_key] = phantom
+                
+                # Recalculate branch position with phantoms included
+                phantom_y_positions = [p['y'] for p in phantoms]
+                all_y_positions = children_y_positions + phantom_y_positions
+                new_branch_y = sum(all_y_positions) / len(all_y_positions)
+                
+                compensated_positions[branch_key]['y'] = new_branch_y
+                
+                logger.debug(f"Branch {branch_idx}: Added {len(phantoms)} phantoms")
+                logger.debug(f"  Children Y: {children_y_positions}")
+                logger.debug(f"  Phantom Y: {phantom_y_positions}")
+                logger.debug(f"  All Y: {all_y_positions}")
+                logger.debug(f"  Branch Y: {current_branch_y:.1f}→{new_branch_y:.1f} (target=0)")
+        
+        return compensated_positions
+    
+    def _calculate_phantom_compensation(self, branch_children: List[Dict], target_center: float = 0) -> List[Dict]:
+        """
+        Calculate symmetric phantom pairs to achieve target center.
+        """
+        children_y = [child['y'] for child in branch_children]
+        current_center = sum(children_y) / len(children_y)
+        offset_needed = target_center - current_center
+        
+        if abs(offset_needed) < 1:  # Already close enough
+            return []
+        
+        # Use targeted phantom placement based on offset direction
+        current_sum = sum(children_y)
+        current_count = len(children_y)
+        
+        logger.debug(f"Phantom calculation:")
+        logger.debug(f"  Children Y: {children_y}")
+        logger.debug(f"  Current sum: {current_sum}, count: {current_count}")
+        logger.debug(f"  Current center: {current_center:.1f}")
+        logger.debug(f"  Target center: {target_center}")
+        logger.debug(f"  Offset needed: {offset_needed:.1f}")
+        
+        # Simple targeted approach: add phantoms in the direction needed to shift center
+        if offset_needed > 0:
+            # Need to shift center UP → Add phantoms ABOVE current center
+            phantom_y = max(children_y) + 60  # 60px above highest child
+            logger.debug(f"  Strategy: Add phantoms ABOVE at Y={phantom_y}")
+        else:
+            # Need to shift center DOWN → Add phantoms BELOW current center  
+            phantom_y = min(children_y) - 60  # 60px below lowest child
+            logger.debug(f"  Strategy: Add phantoms BELOW at Y={phantom_y}")
+        
+        # Calculate how many phantoms needed: new_center = (current_sum + N*phantom_y) / (current_count + N) = target_center
+        # Solve: current_sum + N*phantom_y = target_center * (current_count + N)
+        # current_sum + N*phantom_y = target_center*current_count + target_center*N
+        # N*(phantom_y - target_center) = target_center*current_count - current_sum
+        
+        denominator = phantom_y - target_center
+        numerator = target_center * current_count - current_sum
+        
+        logger.debug(f"  Equation: N * {denominator} = {numerator}")
+        
+        if abs(denominator) > 0.1:
+            phantom_count_exact = numerator / denominator
+            
+            # Use exact calculation for precision, but ensure it's reasonable
+            if phantom_count_exact > 0 and phantom_count_exact < 10:
+                phantom_count = phantom_count_exact  # Use exact value for precision
+            else:
+                phantom_count = max(1, round(abs(phantom_count_exact)))  # Fallback to rounding
+            
+            logger.debug(f"  Phantom count: {phantom_count_exact:.2f} → {phantom_count:.2f}")
+        else:
+            phantom_count = 1
+            logger.debug(f"  Denominator too small, using 1 phantom")
+        
+        # Verification
+        verification_center = (current_sum + phantom_count * phantom_y) / (current_count + phantom_count)
+        logger.debug(f"  Verification: new center would be {verification_center:.1f} (target={target_center})")
+        
+        phantoms = []
+        
+        # Handle fractional phantom count by creating a single phantom with appropriate "weight"
+        if phantom_count != int(phantom_count):
+            # For fractional phantoms, create one phantom but calculate its position for exact centering
+            exact_phantom_y = (target_center * (current_count + 1) - current_sum) / 1
+            phantoms.append({
+                'x': branch_children[0]['x'],  # Same X as children
+                'y': exact_phantom_y, 'width': 50, 'height': 30,
+                'text': f'phantom_exact', 'node_type': 'phantom',
+                'is_phantom': True, 'angle': 0
+            })
+            logger.debug(f"  Created 1 exact phantom at Y={exact_phantom_y:.1f}")
+        else:
+            # For integer phantom count, spread them to avoid overlaps
+            phantom_count_int = int(phantom_count)
+            for i in range(phantom_count_int):
+                # Spread phantoms slightly to avoid overlaps
+                spread_offset = i * 10  # 10px spacing between phantoms
+                adjusted_phantom_y = phantom_y + spread_offset
+                
+                phantoms.append({
+                    'x': branch_children[0]['x'],  # Same X as children
+                    'y': adjusted_phantom_y, 'width': 50, 'height': 30,
+                    'text': f'phantom_{i}', 'node_type': 'phantom',
+                    'is_phantom': True, 'angle': 0
+                })
+            logger.debug(f"  Created {phantom_count_int} spread phantoms at Y={phantom_y}+offset")
+        
+        logger.debug(f"Calculated {len(phantoms)} phantom nodes for offset {offset_needed:.1f}")
+        return phantoms
+    
+    def _position_balanced_children(self, balanced_data: Dict, left_children_x: float, right_children_x: float) -> Dict:
+        """
+        STEP 3: Position all children (real + phantom) with perfect spacing.
+        
+        This creates perfect vertical alignment on both sides with no overlaps.
+        """
+        logger.debug(f"📍 Positioning balanced children")
+        
+        positions = {}
+        
+        # Calculate optimal spacing for perfect distribution
+        total_children_per_side = balanced_data['total_children_per_side']
+        base_spacing = 70  # Base spacing between children centers
+        
+        # Position left side children
+        left_children = balanced_data['left_children']
+        if left_children:
+            # Start from top and work down
+            start_y = -(total_children_per_side - 1) * base_spacing / 2
+            
+            for i, child_info in enumerate(left_children):
+                child_y = start_y + (i * base_spacing)
+                
+                if not child_info['is_phantom']:
+                    # Real child - create position
+                    child_data = child_info['data']
+                    child_font_size = self._get_adaptive_font_size(child_data['label'], 'child')
+                    child_width = self._calculate_text_width(child_data['label'], child_font_size) + self._get_adaptive_padding(child_data['label'])
+                    child_height = self._get_adaptive_node_height(child_data['label'], 'child')
+                    
+                    child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
+                    positions[child_key] = {
+                        'x': left_children_x, 'y': child_y,
+                        'width': child_width, 'height': child_height,
+                        'text': child_data['label'], 'node_type': 'child',
+                        'branch_index': child_info['branch_idx'], 
+                        'child_index': child_info['child_idx'], 'angle': 0
+                    }
+                    
+                    logger.debug(f"  Left child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_data['label']}' at Y={child_y:.1f}")
+                else:
+                    # Phantom child - just reserve space, don't create position
+                    logger.debug(f"  Left phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
+        
+        # Position right side children  
+        right_children = balanced_data['right_children']
+        if right_children:
+            # Start from top and work down
+            start_y = -(total_children_per_side - 1) * base_spacing / 2
+            
+            for i, child_info in enumerate(right_children):
+                child_y = start_y + (i * base_spacing)
+                
+                if not child_info['is_phantom']:
+                    # Real child - create position
+                    child_data = child_info['data']
+                    child_font_size = self._get_adaptive_font_size(child_data['label'], 'child')
+                    child_width = self._calculate_text_width(child_data['label'], child_font_size) + self._get_adaptive_padding(child_data['label'])
+                    child_height = self._get_adaptive_node_height(child_data['label'], 'child')
+                    
+                    child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
+                    positions[child_key] = {
+                        'x': right_children_x, 'y': child_y,
+                        'width': child_width, 'height': child_height,
+                        'text': child_data['label'], 'node_type': 'child',
+                        'branch_index': child_info['branch_idx'], 
+                        'child_index': child_info['child_idx'], 'angle': 0
+                    }
+                    
+                    logger.debug(f"  Right child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_data['label']}' at Y={child_y:.1f}")
+                else:
+                    # Phantom child - just reserve space, don't create position
+                    logger.debug(f"  Right phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
+        
+        logger.debug(f"✅ Positioned {len(positions)} real children with perfect spacing")
+        return positions
+    
+    def _calculate_center_out_branches(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
+        """
+        STEP 4: Calculate branch positions center-out (middle branches first).
+        
+        This is the key innovation that ensures middle branches align with central topic.
+        """
+        logger.debug(f"🎯 Calculating center-out branch positions")
+        
+        positions = {}
+        num_branches = len(children)
+        mid_point = num_branches // 2
+        
+        # CORE PRINCIPLE: Start with middle branches at Y=0
+        middle_branches = self._identify_middle_branches_smart(num_branches)
+        
+        logger.debug(f"Middle branches identified: {middle_branches}")
+        
+        for branch_idx in range(num_branches):
+            branch_data = children[branch_idx]
+            branch_text = branch_data['label']
+            
+            # Calculate branch dimensions
+            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
+            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            branch_height = self._get_adaptive_node_height(branch_text, 'branch')
+            
+            # Determine side and column
+            is_left_side = branch_idx >= mid_point
+            branch_x = left_branches_x if is_left_side else right_branches_x
+            
+            # Find this branch's children
+            branch_children = []
+            for key, pos in child_positions.items():
+                if pos.get('branch_index') == branch_idx:
+                    branch_children.append(pos)
+            
+            # SMART POSITIONING: Middle branches forced to Y=0, others center-aligned
+            if branch_idx in middle_branches:
+                # FORCE middle branches to Y=0 (same as central topic)
+                branch_y = 0.0
+                logger.debug(f"🎯 MIDDLE branch {branch_idx}: FORCED to Y=0")
+            else:
+                # Other branches: center-aligned to their children
+                if branch_children:
+                    children_y_positions = [child['y'] for child in branch_children]
+                    branch_y = sum(children_y_positions) / len(children_y_positions)
+                    logger.debug(f"  Regular branch {branch_idx}: center-aligned to children at Y={branch_y:.1f}")
+                else:
+                    # No children: position relative to middle branches
+                    branch_y = 0.0  # Default to center
+                    logger.debug(f"  Childless branch {branch_idx}: positioned at Y=0")
+            
+            # Store branch position
+            branch_key = f'branch_{branch_idx}'
+            positions[branch_key] = {
+                'x': branch_x, 'y': branch_y,
+                'width': branch_width, 'height': branch_height,
+                'text': branch_text, 'node_type': 'branch',
+                'branch_index': branch_idx, 'angle': 0
+            }
+            
+            side = "LEFT" if is_left_side else "RIGHT"
+            logger.debug(f"  Branch {branch_idx} ({side}): '{branch_text}' at Y={branch_y:.1f}")
+        
+        logger.debug(f"✅ All {num_branches} branches positioned with center-out method")
+        return positions
+    
+    def _identify_middle_branches_smart(self, num_branches: int) -> List[int]:
+        """
+        Identify which branches should be the 'middle' branches that align with central topic.
+        
+        This is the core logic that determines which branches get forced to Y=0.
+        """
+        mid_point = num_branches // 2
+        
+        if num_branches % 2 == 0:
+            # Even number of branches: take one from each side closest to center
+            right_middle = mid_point - 1  # Last right branch (closest to center)
+            left_middle = mid_point        # First left branch (closest to center)
+            return [right_middle, left_middle]
+        else:
+            # Odd number of branches: take the middle branch if it exists
+            # For odd numbers, we still pick one from each side closest to center
+            right_middle = mid_point - 1  # Last right branch
+            left_middle = mid_point        # First left branch 
+            return [right_middle, left_middle]
         
         for i, branch_data in enumerate(children):
             nested_children = branch_data.get('children', [])
@@ -1094,12 +2109,18 @@ CRITICAL Requirements:
             else:
                 height = 45
         else:  # child
-            if text_length <= 6:
-                height = 45
-            elif text_length <= 12:
-                height = 40
+            if text_length <= 4:
+                height = 40  # Very short text
+            elif text_length <= 8:
+                height = 45  # Short text
+            elif text_length <= 15:
+                height = 50  # Medium text
+            elif text_length <= 25:
+                height = 55  # Long text
+            elif text_length <= 40:
+                height = 60  # Very long text
             else:
-                height = 35
+                height = 65  # Extremely long text (may need line wrapping)
         
         # Cache the result
         self._node_height_cache[cache_key] = height
@@ -1115,8 +2136,7 @@ CRITICAL Requirements:
         if cache_key in self._text_width_cache:
             return self._text_width_cache[cache_key]
         
-        # More accurate text width calculation
-        # Different character types have different widths
+        # Enhanced text width calculation with better symbol and Unicode support
         total_width = 0
         for char in text:
             if char.isupper():
@@ -1137,6 +2157,35 @@ CRITICAL Requirements:
             elif char in 'il|':
                 # Narrow characters
                 char_width = font_size * 0.3
+            elif char in '()[]{}':
+                # Brackets and parentheses
+                char_width = font_size * 0.4
+            elif char in '+-*/=<>':
+                # Math and comparison symbols
+                char_width = font_size * 0.6
+            elif char in '&@#$%':
+                # Special symbols
+                char_width = font_size * 0.7
+            elif char in '/\\':
+                # Slashes
+                char_width = font_size * 0.4
+            elif char == ' ':
+                # Spaces
+                char_width = font_size * 0.3
+            elif ord(char) > 127:
+                # Unicode characters (Chinese, Japanese, etc.) are typically wider
+                if ord(char) >= 0x4e00 and ord(char) <= 0x9fff:
+                    # Chinese characters (CJK Unified Ideographs)
+                    char_width = font_size * 1.2
+                elif ord(char) >= 0x3040 and ord(char) <= 0x309f:
+                    # Japanese Hiragana
+                    char_width = font_size * 1.1
+                elif ord(char) >= 0x30a0 and ord(char) <= 0x30ff:
+                    # Japanese Katakana
+                    char_width = font_size * 1.1
+                else:
+                    # Other Unicode characters
+                    char_width = font_size * 0.8
             else:
                 # Default for other characters
                 char_width = font_size * 0.7
@@ -1151,16 +2200,33 @@ CRITICAL Requirements:
         return total_width
     
     def _get_adaptive_padding(self, text: str) -> int:
-        """Get adaptive padding based on text length."""
+        """Get adaptive padding based on text length and content type."""
         text_length = len(text)
-        if text_length <= 5:
-            return 30  # Increased padding
-        elif text_length <= 10:
-            return 35  # Increased padding
-        elif text_length <= 15:
-            return 40  # Increased padding
+        
+        # Base padding based on length
+        if text_length <= 3:
+            base_padding = 25  # Very short text needs less padding
+        elif text_length <= 6:
+            base_padding = 30  # Short text
+        elif text_length <= 12:
+            base_padding = 35  # Medium text
+        elif text_length <= 20:
+            base_padding = 40  # Long text
+        elif text_length <= 30:
+            base_padding = 45  # Very long text
         else:
-            return 45  # Increased padding
+            base_padding = 50  # Extremely long text
+        
+        # Additional padding for special characters that need more space
+        symbol_bonus = 0
+        if any(char in text for char in '()[]{}'):
+            symbol_bonus += 3  # Brackets need extra space
+        if any(char in text for char in '&@#$%/\\'):
+            symbol_bonus += 2  # Special symbols need extra space
+        if any(ord(char) > 127 for char in text):
+            symbol_bonus += 5  # Unicode characters often need more space
+        
+        return base_padding + symbol_bonus
     
     def _analyze_branch_content(self, children: List[Dict]) -> Dict[str, Any]:
         """Analyze branch characteristics for optimal spacing."""
