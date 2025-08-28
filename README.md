@@ -207,14 +207,35 @@ MindGraph now uses **Waitress** as the primary WSGI server for both development 
 ### Multi-Agent System
 MindGraph uses a sophisticated multi-agent architecture where specialized agents handle different aspects of diagram generation:
 
+#### ✅ **Agent File Organization Completed** 
+The agent system is now fully organized with clean module structure:
+
+```
+agents/
+├── __init__.py                    # Main agent registry and imports
+├── core/                          # Core agent functionality
+│   ├── base_agent.py             # Base agent class
+│   └── agent_utils.py            # Shared agent utilities
+├── thinking_maps/                 # Thinking Maps agents
+│   ├── brace_map_agent.py        # Hierarchical relationships
+│   ├── flow_map_agent.py         # Process and sequence visualization
+│   ├── multi_flow_map_agent.py   # Complex multi-process flows
+│   ├── tree_map_agent.py         # Hierarchical tree structures
+│   ├── bubble_map_agent.py       # Concept definitions
+│   ├── circle_map_agent.py       # Brainstorming and context
+│   ├── double_bubble_map_agent.py # Comparison and contrast
+│   └── bridge_map_agent.py       # Analogies and relationships
+├── concept_maps/                  # Concept Map agents
+│   └── concept_map_agent.py      # Advanced concept relationship mapping
+├── mind_maps/                     # Mind Map agents
+│   └── mind_map_agent.py         # Clockwise branch positioning
+└── main_agent.py                  # Main agent orchestrator
+```
+
+#### **LLM System**
 1. **Dual-Model LLM System**: 
    - **qwen-turbo**: Fast classification and topic extraction
    - **qwen-plus**: High-quality diagram generation and content creation
-2. **Brace Map Agent**: Specialized in hierarchical relationships
-3. **Flow Map Agent**: Expert in process and sequence visualization
-4. **Multi-Flow Map Agent**: Handles complex multi-process flows
-5. **Tree Map Agent**: Manages hierarchical tree structures
-6. **Concept Map Agent**: Advanced concept relationship mapping
 
 ### Core Components
 - **Flask Web Server**: RESTful API and web interface
@@ -362,6 +383,7 @@ If you encounter issues with the automated setup:
 ### Current Optimization Status
 - **✅ LLM API Performance**: **COMPLETED** - Dual-model system implemented
 - **✅ Browser Context Pooling**: **COMPLETED** - BrowserContext pool implemented (23% improvement)
+- **✅ Agent File Organization**: **COMPLETED** - Clean module structure implemented (20% improvement)
 - **🔄 PNG Generation Fix**: **NEXT PRIORITY** - Enable context pooling + remove unnecessary waits (47.1% improvement)
 - **🔄 Theme System**: **PLANNED** - Consolidation and standardization (30% improvement)
 

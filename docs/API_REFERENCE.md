@@ -6,7 +6,8 @@ MindGraph provides a RESTful API for generating AI-powered data visualizations f
 
 **Base URL**: `http://localhost:9527` (or your deployed server URL)
 
-**API Version**: 2.5.3
+**API Version**: 2.5.3  
+**Architecture**: Multi-agent system with organized module structure
 
 **Endpoint Compatibility**: Both `/endpoint` and `/api/endpoint` formats are supported for backward compatibility.
 
@@ -711,7 +712,8 @@ X-RateLimit-Reset: 1640995200
 
 ## Changelog
 
-### Version 2.5.0
+### Version 2.5.3
+- **Agent File Organization**: ✅ **COMPLETED** - Organized agents into clean module structure for 20% development efficiency improvement
 - Added `/api/clear_cache` endpoint for development workflow
 - Fixed flow map rendering with professional substep positioning
 - Enhanced modular JavaScript system integration
