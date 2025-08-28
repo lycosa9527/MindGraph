@@ -8,6 +8,9 @@
  * Performance Impact: ~15-20KB reduction per renderer module
  */
 
+// CRITICAL DEBUG: Add comprehensive logging
+console.log('🔍 Shared utilities: Module loading started');
+
 // --- Safe, memory-leak-free text radius measurement ---
 let measurementContainer = null;
 
@@ -250,6 +253,8 @@ if (typeof window !== 'undefined') {
     }
     
     // Shared utilities exported to global scope
+    console.log('✅ Shared utilities: Module loaded successfully in browser environment');
+    console.log('🔍 Shared utilities: Functions exported to window:', Object.keys(window).filter(k => k.includes('getTextRadius') || k.includes('addWatermark')));
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
@@ -264,4 +269,7 @@ if (typeof window !== 'undefined') {
         centerContent,
         wrapText
     };
+    console.log('✅ Shared utilities: Module loaded successfully in Node.js environment');
+} else {
+    console.error('❌ Shared utilities: Module failed to load in any environment');
 }

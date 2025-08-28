@@ -21,7 +21,7 @@ Environment Variables:
 - See env.example for complete configuration options
 
 Usage:
-    from config import config
+    from settings import config
     api_key = config.QWEN_API_KEY
     is_valid = config.validate_qwen_config()
 """
@@ -89,15 +89,8 @@ class Config:
             return 0.7
     @property
     def QWEN_MAX_TOKENS(self):
-        try:
-            val = int(self._get_cached_value('QWEN_MAX_TOKENS', '1000'))
-            if val < 100 or val > 4096:
-                logger.warning(f"QWEN_MAX_TOKENS {val} out of range, using 1000")
-                return 1000
-            return val
-        except (ValueError, TypeError):
-            logger.warning("Invalid QWEN_MAX_TOKENS value, using 1000")
-            return 1000
+        """Unified max tokens setting for all LLM calls."""
+        return 1500
     @property
     def QWEN_TIMEOUT(self):
         try:

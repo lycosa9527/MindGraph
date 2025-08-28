@@ -32,11 +32,11 @@ Environment Variables:
 """
 
 from flask import Flask, request, jsonify, render_template, send_file
-import agent
+from agents import main_agent as agent
 import graph_specs
 import logging
 import time
-from config import config
+from settings import config
 import os
 import socket
 import webbrowser
@@ -52,7 +52,7 @@ import subprocess
 from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 from api_routes import api
-from web_routes import web
+from web_pages import web
 from pathlib import Path
 
 # ============================================================================

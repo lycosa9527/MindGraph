@@ -7,32 +7,45 @@
  * Performance Impact: Loads only ~95KB instead of full 213KB
  */
 
-// Check if shared utilities are available
-if (typeof window.MindGraphUtils === 'undefined') {
-    console.error('MindGraphUtils not found! Please load shared-utilities.js first.');
-}
-
-// Import required functions from shared utilities - with error handling
-let getMeasurementContainer, addWatermark;
-try {
-    getMeasurementContainer = window.MindGraphUtils.getMeasurementContainer;
-    addWatermark = window.MindGraphUtils.addWatermark;
-    
-    if (typeof getMeasurementContainer !== 'function' || typeof addWatermark !== 'function') {
-        throw new Error('Required functions not available from shared-utilities.js');
-    }
-} catch (error) {
-    console.error('Failed to import required functions:', error);
-    throw new Error('Failed to import required functions from shared-utilities.js');
-}
+// CRITICAL DEBUG: Add comprehensive logging
+console.log('🔍 Concept map renderer: Module loading started');
 
 function renderConceptMap(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
+    console.log('🚀 Concept map renderer: renderConceptMap called with:', { spec, theme, dimensions });
     
+    // Check dependencies when function is called
+    if (typeof window.MindGraphUtils === 'undefined') {
+        console.error('❌ Concept map renderer: MindGraphUtils not found! Please load shared-utilities.js first.');
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: MindGraphUtils not available');
+        return;
+    }
+    
+    // Resolve dependencies - CRITICAL FIX: Use const inside function scope to avoid redeclaration errors
+    console.log('🔍 Concept map renderer: Resolving dependencies...');
+    try {
+        const getMeasurementContainer = window.MindGraphUtils.getMeasurementContainer;
+        const addWatermark = window.MindGraphUtils.addWatermark;
+        
+        if (typeof getMeasurementContainer !== 'function' || typeof addWatermark !== 'function') {
+            throw new Error('Required functions not available from shared-utilities.js');
+        }
+        console.log('✅ Concept map renderer: Dependencies resolved successfully');
+    } catch (error) {
+        console.error('❌ Concept map renderer: Failed to import required functions:', error);
+        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Failed to load required functions');
+        return;
+    }
+    
+    d3.select('#d3-container').html('');
+    console.log('✅ Concept map renderer: Container cleared');
+    
+    console.log('🔍 Concept map renderer: Validating spec...');
     if (!spec || !spec.topic || !Array.isArray(spec.concepts) || !Array.isArray(spec.relationships)) {
+        console.error('❌ Concept map renderer: Invalid spec for concept map:', { spec, topic: spec?.topic, concepts: spec?.concepts, relationships: spec?.relationships });
         d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for concept map');
         return;
     }
+    console.log('✅ Concept map renderer: Spec validation passed');
     
     const baseWidth = dimensions?.baseWidth || 1600;
     const baseHeight = dimensions?.baseHeight || 1000;
@@ -399,6 +412,8 @@ function renderConceptMapWithForceLayout(spec, svg, THEME, width, height) {
         d.fx = null;
         d.fy = null;
     }
+    
+    console.log('✅ Concept map renderer: Rendering completed successfully');
 }
 
 // Export functions for module system
@@ -408,10 +423,22 @@ if (typeof window !== 'undefined') {
         renderConceptMap,
         renderConceptMapWithForceLayout
     };
+    
+    // CRITICAL FIX: Also expose renderConceptMap globally for backward compatibility
+    // This prevents the "renderConceptMap is not defined" error
+    if (typeof window.renderConceptMap === 'undefined') {
+        window.renderConceptMap = renderConceptMap;
+    }
+    
+    // ConceptMapRenderer exported to window.ConceptMapRenderer
+    console.log('✅ Concept map renderer: Module loaded successfully in browser environment');
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
         renderConceptMap,
         renderConceptMapWithForceLayout
     };
+    console.log('✅ Concept map renderer: Module loaded successfully in Node.js environment');
+} else {
+    console.error('❌ Concept map renderer: Module failed to load in any environment');
 }

@@ -6,43 +6,76 @@
  * @author MindGraph Team
  */
 
+// CRITICAL DEBUG: Add comprehensive logging
+console.log('🔍 Brace renderer: Module loading started');
+
 // Verify MindGraphUtils availability
 if (typeof window.MindGraphUtils === 'undefined') {
-    console.warn('MindGraphUtils not found! Please load shared-utilities.js first.');
-}
-
-// Verify required functions are available
-if (typeof window.getTextRadius !== 'function') {
-    throw new Error('getTextRadius function not available globally');
-}
-
-if (typeof window.addWatermark !== 'function') {
-    throw new Error('addWatermark function not available globally');
+    console.warn('⚠️ Brace renderer: MindGraphUtils not found! Please load shared-utilities.js first.');
+} else {
+    console.log('✅ Brace renderer: MindGraphUtils found');
 }
 
 // getThemeDefaults is optional - create fallback if needed
 if (window.MindGraphUtils && typeof window.MindGraphUtils.getThemeDefaults === 'function') {
-    // Use it from MindGraphUtils if available
+    console.log('✅ Brace renderer: MindGraphUtils.getThemeDefaults available');
 } else {
+    console.log('⚠️ Brace renderer: Creating fallback getThemeDefaults');
     // Create a fallback function
     window.getThemeDefaults = () => ({});
 }
 
-// Required functions verified successfully
+console.log('🔍 Brace renderer: Module initialization completed');
 
 function renderBraceMap(spec, theme = null, dimensions = null) {
+    console.log('🚀 Brace renderer: renderBraceMap called with:', { spec, theme, dimensions });
+    
     try {
+        // CRITICAL FIX: Move function validation inside the render function to prevent race conditions
+        // Verify required functions are available when actually needed
+        console.log('🔍 Brace renderer: Checking required functions...');
+        
+        if (typeof window.getTextRadius !== 'function') {
+            console.error('❌ Brace renderer: getTextRadius function not available globally');
+            console.log('🔍 Available functions on window:', Object.keys(window).filter(k => k.includes('Text') || k.includes('Radius')));
+            throw new Error('getTextRadius function not available globally');
+        } else {
+            console.log('✅ Brace renderer: getTextRadius function available');
+        }
+
+        if (typeof window.addWatermark !== 'function') {
+            console.error('❌ Brace renderer: addWatermark function not available globally');
+            console.log('🔍 Available functions on window:', Object.keys(window).filter(k => k.includes('Watermark') || k.includes('watermark')));
+            throw new Error('addWatermark function not available globally');
+        } else {
+            console.log('✅ Brace renderer: addWatermark function available');
+        }
+
+        // Check D3 availability
+        if (typeof d3 === 'undefined') {
+            console.error('❌ Brace renderer: D3.js not available');
+            throw new Error('D3.js not available');
+        } else {
+            console.log('✅ Brace renderer: D3.js available, version:', d3.version);
+        }
+
         // Function called with spec, theme, and dimensions
+        console.log('🔍 Brace renderer: Starting rendering process...');
     
     // Clear container and ensure it exists
+    console.log('🔍 Brace renderer: Looking for d3-container...');
     const container = d3.select('#d3-container');
     if (container.empty()) {
-        console.error('d3-container not found');
+        console.error('❌ Brace renderer: d3-container not found');
+        console.log('🔍 Available elements with id:', document.querySelectorAll('[id]'));
         return;
     }
+    console.log('✅ Brace renderer: d3-container found');
     container.html('');
+    console.log('✅ Brace renderer: Container cleared');
     
     // Validate spec with comprehensive error handling
+    console.log('🔍 Brace renderer: Validating spec...');
     
     if (!spec) {
         console.error('Brace renderer: Spec is null or undefined');
@@ -52,21 +85,27 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     
     // Handle different spec structures - check if data is nested
     let actualSpec = spec;
+    console.log('🔍 Brace renderer: Processing spec structure...');
     
     // Check for enhanced spec format (with agent data preserved)
     if (spec.topic && Array.isArray(spec.parts) && spec._agent_result) {
+        console.log('✅ Brace renderer: Using enhanced spec format with agent data');
         actualSpec = spec; // Use the original spec directly
     }
     // Check if we have the original spec structure directly
     else if (spec.topic && Array.isArray(spec.parts)) {
+        console.log('✅ Brace renderer: Using direct spec format');
         actualSpec = spec;
     }
     // Legacy format handling for backward compatibility
     else if (spec.success && spec.data) {
+        console.log('✅ Brace renderer: Using legacy success.data format');
         actualSpec = spec.data;
     } else if (spec.success && spec.svg_data && spec.svg_data.elements) {
+        console.log('✅ Brace renderer: Using legacy svg_data format');
         actualSpec = spec.svg_data;
     } else if (spec.success && spec.layout_data && spec.layout_data.nodes) {
+        console.log('✅ Brace renderer: Using layout_data format, extracting spec...');
         // Extract the original spec from layout data if available
         actualSpec = {
             topic: spec.layout_data.nodes.find(n => n.node_type === 'topic')?.text || 'Topic',
@@ -77,34 +116,42 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 }))
             }))
         };
+        console.log('✅ Brace renderer: Extracted spec:', actualSpec);
+    } else {
+        console.warn('⚠️ Brace renderer: Unknown spec format:', spec);
     }
     
     // Using actual spec for rendering
+    console.log('🔍 Brace renderer: Final spec to render:', actualSpec);
     
     if (!actualSpec.topic) {
-        console.error('Brace renderer: Spec missing topic:', actualSpec);
+        console.error('❌ Brace renderer: Spec missing topic:', actualSpec);
         d3.select('#d3-container').append('div').style('color', 'red').text('Error: Brace map specification missing topic');
         return;
     }
     
     if (!Array.isArray(actualSpec.parts)) {
-        console.error('Brace renderer: Spec parts is not an array:', actualSpec.parts);
+        console.error('❌ Brace renderer: Spec parts is not an array:', actualSpec.parts);
         d3.select('#d3-container').append('div').style('color', 'red').text('Error: Brace map specification missing parts array');
         return;
     }
     
     // Spec validation passed, starting rendering
+    console.log('✅ Brace renderer: Spec validation passed, starting rendering');
     
     // Use provided dimensions only - no hardcoded defaults
     const padding = dimensions?.padding || 40;
+    console.log('🔍 Brace renderer: Using padding:', padding);
     
     // Get complete theme using robust style manager
+    console.log('🔍 Brace renderer: Loading theme...');
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
+            console.log('✅ Brace renderer: Using styleManager.getTheme');
             THEME = styleManager.getTheme('brace_map', theme, theme);
         } else {
-            console.warn('Style manager not available, using fallback theme');
+            console.warn('⚠️ Brace renderer: Style manager not available, using fallback theme');
             THEME = {
                 topicFill: '#1976d2',
                 topicText: '#ffffff',
@@ -124,7 +171,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             };
         }
     } catch (error) {
-        console.error('Error getting theme from style manager:', error);
+        console.error('❌ Brace renderer: Error getting theme from style manager:', error);
         THEME = {
             topicFill: '#1976d2',
             topicText: '#ffffff',
@@ -145,6 +192,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     }
     
     // Theme loaded successfully
+    console.log('✅ Brace renderer: Theme loaded:', THEME);
     
     // Apply background if specified
     if (theme && theme.background) {
@@ -465,9 +513,10 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .text(watermarkText);
     
     // Rendering completed successfully
+    console.log('✅ Brace renderer: Rendering completed successfully');
     } catch (error) {
-        console.error('Brace renderer: Error during rendering:', error);
-        console.error('Brace renderer: Error stack:', error.stack);
+        console.error('❌ Brace renderer: Error during rendering:', error);
+        console.error('❌ Brace renderer: Error stack:', error.stack);
         d3.select('#d3-container').append('div').style('color', 'red').text('Error: ' + error.message);
     }
 }
@@ -487,9 +536,13 @@ if (typeof window !== 'undefined') {
     }
     
     // BraceRenderer exported to window.BraceRenderer
+    console.log('✅ Brace renderer: Module loaded successfully in browser environment.');
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
         renderBraceMap
     };
+    console.log('✅ Brace renderer: Module loaded successfully in Node.js environment.');
+} else {
+    console.error('❌ Brace renderer: Module failed to load in any environment.');
 }

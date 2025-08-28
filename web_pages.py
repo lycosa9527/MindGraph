@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 import logging
 from functools import wraps
-from url_config import (
+from urls import (
     WEB_INDEX, WEB_DEBUG, WEB_STYLE_DEMO, WEB_TEST_STYLE_MANAGER,
     WEB_TEST_PNG_GENERATION, WEB_SIMPLE_TEST, WEB_BROWSER_TEST,
     WEB_BUBBLE_MAP_TEST, WEB_DEBUG_THEME_CONVERSION, WEB_SIMPLE_THEME_TEST,

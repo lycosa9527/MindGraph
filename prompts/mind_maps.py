@@ -13,15 +13,38 @@ Please generate a JSON specification for a mind map for the following user reque
 
 Request: {user_prompt}
 
-Please output a JSON object containing the following fields:
-topic: "Topic"
-children: [{{"id": "subtopic1", "label": "Subtopic1", "children": [{{"id": "subtopic1_1", "label": "Subtopic1.1"}}]}}]
+Please output ONLY a valid JSON object with this exact structure:
 
-Requirements:
-- Each node must have both "id" and "label" fields
+{
+  "topic": "Central Topic Name",
+  "children": [
+    {
+      "id": "branch_1",
+      "label": "Branch 1 Label",
+      "children": [
+        {"id": "sub_1_1", "label": "Sub-item 1.1"},
+        {"id": "sub_1_2", "label": "Sub-item 1.2"}
+      ]
+    },
+    {
+      "id": "branch_2", 
+      "label": "Branch 2 Label",
+      "children": [
+        {"id": "sub_2_1", "label": "Sub-item 2.1"}
+      ]
+    }
+  ]
+}
+
+CRITICAL JSON Requirements:
+- Output ONLY valid JSON - no explanations, no code blocks, no extra text
+- Each node MUST have both "id" and "label" fields
+- ALL children arrays must be properly closed with ]
+- ALL objects must be properly closed with }
 - IDs should be lowercase with underscores (e.g., "main_topic", "sub_item")
 - Labels should be descriptive text for display
 - Include 3-6 main branches, each with 2-4 sub-items
+- Ensure every comma, bracket, and brace is correctly placed
 
 LOGICAL ORGANIZATION (IMPORTANT):
 The mind map follows a clockwise layout starting from top-right. Organize subtopics logically:
@@ -59,15 +82,38 @@ MINDMAP_GENERATION_ZH = """
 
 需求：{user_prompt}
 
-请输出一个包含以下字段的JSON对象：
-topic: "主题"
-children: [{{"id": "zhu_ti_1", "label": "子主题1", "children": [{{"id": "zi_xiang_1_1", "label": "子主题1.1"}}]}}]
+请输出一个有效的JSON对象，严格按照以下结构：
 
-要求：
+{
+  "topic": "中心主题名称",
+  "children": [
+    {
+      "id": "fen_zhi_1",
+      "label": "分支1标签",
+      "children": [
+        {"id": "zi_xiang_1_1", "label": "子项1.1"},
+        {"id": "zi_xiang_1_2", "label": "子项1.2"}
+      ]
+    },
+    {
+      "id": "fen_zhi_2",
+      "label": "分支2标签", 
+      "children": [
+        {"id": "zi_xiang_2_1", "label": "子项2.1"}
+      ]
+    }
+  ]
+}
+
+关键JSON要求：
+- 只输出有效的JSON - 不要解释，不要代码块，不要额外文字
 - 每个节点必须同时包含"id"和"label"字段
+- 所有children数组必须用]正确闭合
+- 所有对象必须用}正确闭合
 - ID应该使用小写字母和下划线（如："zhu_ti", "zi_xiang"）
 - Label应该是用于显示的描述性文本
 - 包含3-6个主要分支，每个分支包含2-4个子项
+- 确保每个逗号、括号和大括号都正确放置
 
 逻辑组织（重要）：
 思维导图遵循从右上角开始的顺时针布局。请按逻辑组织子主题：

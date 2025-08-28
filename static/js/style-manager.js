@@ -10,18 +10,19 @@ class StyleManager {
     constructor() {
         // Initialize default themes for all diagram types
         this.defaultThemes = {
-            bubble_map: {
-                topicFill: '#1976d2',  // Deep blue background
-                topicText: '#ffffff',   // White text for contrast
-                topicStroke: '#000000', // Black border for topic nodes
-                topicStrokeWidth: 3,
-                attributeFill: '#e3f2fd', // Light blue for feature nodes
-                attributeText: '#333333', // Dark text for readability
-                attributeStroke: '#000000',  // Black border
-                attributeStrokeWidth: 2,
-                fontTopic: 20,
-                fontAttribute: 14
-            },
+                    bubble_map: {
+            background: '#f5f5f5',    // Light grey background for entire canvas
+            topicFill: '#1976d2',  // Deep blue background
+            topicText: '#ffffff',   // White text for contrast
+            topicStroke: '#000000', // Black border for topic nodes
+            topicStrokeWidth: 2,
+            attributeFill: '#e3f2fd', // Light blue for feature nodes
+            attributeText: '#333333', // Dark text for readability
+            attributeStroke: '#000000',  // Black border
+            attributeStrokeWidth: 2,
+            fontTopic: 20,
+            fontAttribute: 14
+        },
             double_bubble_map: {
                 centralTopicFill: '#1976d2',  // Deeper blue
                 centralTopicText: '#ffffff',   // White text for contrast
@@ -44,23 +45,27 @@ class StyleManager {
                 fontAttribute: 12
             },
             mindmap: {
-                centralTopicFill: '#e3f2fd',
-                centralTopicText: '#000000',
-                centralTopicStroke: '#35506b',
+                background: '#f5f5f5',         // Light grey background
+                centralTopicFill: '#1976d2',   // Deep blue for central topic (matches double bubble)
+                centralTopicText: '#ffffff',   // White text for contrast
+                centralTopicStroke: '#000000', // Black border
                 centralTopicStrokeWidth: 3,
-                mainBranchFill: '#e3f2fd',
-                mainBranchText: '#333333',
-                mainBranchStroke: '#4e79a7',
-                mainBranchStrokeWidth: 2,
-                subBranchFill: '#f8f9fa',
-                subBranchText: '#666666',
-                subBranchStroke: '#6c757d',
-                subBranchStrokeWidth: 1,
-                fontCentralTopic: 20,
-                fontMainBranch: 16,
-                fontSubBranch: 12
+                branchFill: '#1976d2',         // Deep blue for branches (matches double bubble)
+                branchText: '#ffffff',         // White text for contrast
+                branchStroke: '#000000',       // Black border
+                branchStrokeWidth: 2,
+                childFill: '#e3f2fd',          // Light blue for children (matches double bubble attributes)
+                childText: '#333333',          // Dark text for readability
+                childStroke: '#1976d2',        // Deep blue border
+                childStrokeWidth: 2,
+                fontTopic: 20,
+                fontBranch: 16,
+                fontChild: 14,
+                linkStroke: '#888888',
+                linkStrokeWidth: 2
             },
             concept_map: {
+                background: '#f5f5f5',    // Light grey background for entire canvas
                 topicFill: '#e3f2fd',
                 topicText: '#000000',
                 topicStroke: '#35506b',
@@ -278,6 +283,11 @@ class StyleManager {
                 updated.attributeText = this.getContrastingTextColor(colorTheme.secondary);
                 break;
             case 'mindmap':
+                updated.centralNodeFill = colorTheme.primary;
+                updated.branchFill = colorTheme.secondary;
+                updated.centralNodeText = this.getContrastingTextColor(colorTheme.primary);
+                updated.branchText = this.getContrastingTextColor(colorTheme.secondary);
+                // Also update legacy property names for backward compatibility
                 updated.centralTopicFill = colorTheme.primary;
                 updated.mainBranchFill = colorTheme.secondary;
                 updated.centralTopicText = this.getContrastingTextColor(colorTheme.primary);

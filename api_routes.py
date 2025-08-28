@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_file
-import agent
+from agents import main_agent as agent
 import graph_specs
 import logging
 import tempfile
@@ -11,11 +11,11 @@ import json
 import time
 from werkzeug.exceptions import HTTPException
 from functools import wraps
-from config import config
+from settings import config
 
-# URL configuration (fallback if url_config module doesn't exist)
+# URL configuration (fallback if urls module doesn't exist)
 try:
-    from url_config import get_api_urls
+    from urls import get_api_urls
     URLS = get_api_urls()
 except ImportError:
     # Fallback URL configuration
@@ -28,6 +28,22 @@ except ImportError:
 api = Blueprint('api', __name__, url_prefix='/api')
 logger = logging.getLogger(__name__)
 
+# Shared agent enhancement functions to reduce code duplication
+def enhance_mindmap_spec(spec):
+    """Shared function to enhance mind map specs with layout data."""
+    try:
+        from agents.mind_maps.mind_map_agent import MindMapAgent
+        m_agent = MindMapAgent()
+        agent_result = m_agent.enhance_spec(spec)
+        if agent_result.get('success') and 'spec' in agent_result:
+            return agent_result['spec']
+        else:
+            logger.warning(f"MindMapAgent enhancement skipped: {agent_result.get('error')}")
+            return spec
+    except Exception as e:
+        logger.error(f"Error enhancing mindmap spec: {e}")
+        return spec
+
 # Global timing tracking for rendering
 rendering_timing_stats = {
     'total_renders': 0,
@@ -37,6 +53,37 @@ rendering_timing_stats = {
     'llm_time_per_render': 0.0,
     'pure_render_time_per_render': 0.0
 }
+
+# ---------------------------------------------------------------------------
+# Short-lived cache to avoid duplicate LLM runs between JSON and PNG endpoints
+# Keyed by (prompt + language). Stores final agent result: {'spec', 'diagram_type', 'language'}
+# ---------------------------------------------------------------------------
+_LLM_RESULT_CACHE = {}
+_LLM_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+def _llm_cache_key(prompt: str, language: str):
+    try:
+        return f"{language}:{prompt}".strip()
+    except Exception:
+        return f"{language}:".strip()
+
+def _llm_cache_get(prompt: str, language: str):
+    key = _llm_cache_key(prompt, language)
+    entry = _LLM_RESULT_CACHE.get(key)
+    if not entry:
+        return None
+    ts = entry.get('ts', 0)
+    if (time.time() - ts) > _LLM_CACHE_TTL_SECONDS:
+        try:
+            del _LLM_RESULT_CACHE[key]
+        except Exception:
+            pass
+        return None
+    return entry.get('result')
+
+def _llm_cache_set(prompt: str, language: str, result: dict):
+    key = _llm_cache_key(prompt, language)
+    _LLM_RESULT_CACHE[key] = {'ts': time.time(), 'result': result}
 
 def get_rendering_timing_stats():
     """Get current rendering timing statistics."""
@@ -277,6 +324,19 @@ def sanitize_prompt(prompt):
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
+    # Debug-only endpoint: block in non-debug environments
+    try:
+        if not config.DEBUG:
+            logger.warning("/api/generate_graph called in non-debug mode; returning 410 Gone. Use /api/generate_png instead.")
+            resp = jsonify({'error': '/api/generate_graph is debug-only. Use /api/generate_png for image generation.'})
+            return resp, 410
+        else:
+            logger.info("/api/generate_graph is running in DEBUG mode (debug-only endpoint)")
+    except Exception:
+        # If config.DEBUG isn't available for some reason, fail closed
+        logger.warning("/api/generate_graph debug check failed; returning 410 Gone by default")
+        resp = jsonify({'error': '/api/generate_graph is debug-only. Use /api/generate_png for image generation.'})
+        return resp, 410
     """Generate graph specification from user prompt using Qwen (default, with enhanced extraction and style integration)."""
     # Input validation
     data = request.json
@@ -299,7 +359,19 @@ def generate_graph():
     
     # Use enhanced agent workflow with integrated style system
     try:
-        result = agent.agent_graph_workflow_with_styles(prompt, language)
+        # Try cache first to avoid duplicate LLM work for identical prompt/language
+        cached = _llm_cache_get(prompt, language)
+        if cached:
+            logger.info("Cache hit for /generate_graph - returning cached spec")
+            result = cached
+        else:
+            result = agent.agent_graph_workflow_with_styles(prompt, language)
+            # Cache on success
+            try:
+                if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):
+                    _llm_cache_set(prompt, language, result)
+            except Exception:
+                pass
         
         # Calculate LLM processing time
         llm_time = time.time() - start_time
@@ -319,7 +391,7 @@ def generate_graph():
         # Optionally enhance spec using specialized agents FIRST
         if diagram_type == 'multi_flow_map':
             try:
-                from multi_flow_map_agent import MultiFlowMapAgent
+                from agents.thinking_maps import MultiFlowMapAgent
                 mf_agent = MultiFlowMapAgent()
                 agent_result = mf_agent.enhance_spec(spec)
                 if agent_result.get('success') and 'spec' in agent_result:
@@ -330,7 +402,7 @@ def generate_graph():
                 logger.error(f"Error enhancing multi_flow_map spec: {e}")
         elif diagram_type == 'flow_map':
             try:
-                from flow_map_agent import FlowMapAgent
+                from agents.thinking_maps import FlowMapAgent
                 f_agent = FlowMapAgent()
                 agent_result = f_agent.enhance_spec(spec)
                 if agent_result.get('success') and 'spec' in agent_result:
@@ -341,7 +413,7 @@ def generate_graph():
                 logger.error(f"Error enhancing flow_map spec: {e}")
         elif diagram_type == 'tree_map':
             try:
-                from tree_map_agent import TreeMapAgent
+                from agents.thinking_maps import TreeMapAgent
                 t_agent = TreeMapAgent()
                 agent_result = t_agent.enhance_spec(spec)
                 if agent_result.get('success') and 'spec' in agent_result:
@@ -352,7 +424,7 @@ def generate_graph():
                 logger.error(f"Error enhancing tree_map spec: {e}")
         elif diagram_type == 'concept_map':
             try:
-                from concept_map_agent import ConceptMapAgent
+                from agents.concept_maps.concept_map_agent import ConceptMapAgent
                 c_agent = ConceptMapAgent()
                 agent_result = c_agent.enhance_spec(spec)
                 if agent_result.get('success') and 'spec' in agent_result:
@@ -362,16 +434,51 @@ def generate_graph():
             except Exception as e:
                 logger.error(f"Error enhancing concept_map spec: {e}")
         elif diagram_type == 'mindmap':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'bubble_map':
             try:
-                from mind_map_agent import MindMapAgent
-                m_agent = MindMapAgent()
-                agent_result = m_agent.enhance_spec(spec)
+                from agents.thinking_maps import BubbleMapAgent
+                b_agent = BubbleMapAgent()
+                agent_result = b_agent.enhance_spec(spec)
                 if agent_result.get('success') and 'spec' in agent_result:
                     spec = agent_result['spec']
                 else:
-                    logger.warning(f"MindMapAgent enhancement skipped: {agent_result.get('error')}")
+                    logger.warning(f"BubbleMapAgent enhancement skipped: {agent_result.get('error')}")
             except Exception as e:
-                logger.error(f"Error enhancing mindmap spec: {e}")
+                logger.error(f"Error enhancing bubble_map spec: {e}")
+        elif diagram_type == 'double_bubble_map':
+            try:
+                from agents.thinking_maps import DoubleBubbleMapAgent
+                db_agent = DoubleBubbleMapAgent()
+                agent_result = db_agent.enhance_spec(spec)
+                if agent_result.get('success') and 'spec' in agent_result:
+                    spec = agent_result['spec']
+                else:
+                    logger.warning(f"DoubleBubbleMapAgent enhancement skipped: {agent_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error enhancing double_bubble_map spec: {e}")
+        elif diagram_type == 'circle_map':
+            try:
+                from agents.thinking_maps import CircleMapAgent
+                c_agent = CircleMapAgent()
+                agent_result = c_agent.enhance_spec(spec)
+                if agent_result.get('success') and 'spec' in agent_result:
+                    spec = agent_result['spec']
+                else:
+                    logger.warning(f"CircleMapAgent enhancement skipped: {agent_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error enhancing circle_map spec: {e}")
+        elif diagram_type == 'bridge_map':
+            try:
+                from agents.thinking_maps import BridgeMapAgent
+                br_agent = BridgeMapAgent()
+                agent_result = br_agent.enhance_spec(spec)
+                if agent_result.get('success') and 'spec' in agent_result:
+                    spec = agent_result['spec']
+                else:
+                    logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error enhancing bridge_map spec: {e}")
 
         # NOW validate the enhanced spec (after agent enhancement)
         from graph_specs import DIAGRAM_VALIDATORS
@@ -389,7 +496,7 @@ def generate_graph():
         # Calculate optimized dimensions
         dimensions = config.get_d3_dimensions()
         # Use agent-recommended dimensions if provided
-        if diagram_type in ('multi_flow_map', 'flow_map', 'tree_map', 'concept_map', 'mindmap') and isinstance(spec, dict) and spec.get('_recommended_dimensions'):
+        if diagram_type in ('multi_flow_map', 'flow_map', 'tree_map', 'concept_map', 'mindmap', 'bubble_map', 'double_bubble_map', 'circle_map', 'bridge_map') and isinstance(spec, dict) and spec.get('_recommended_dimensions'):
             rd = spec['_recommended_dimensions']
             try:
                 dimensions = {
@@ -466,7 +573,30 @@ def generate_png():
     # Generate graph specification using the same workflow as generate_graph
     try:
         llm_start_time = time.time()
-        result = agent.agent_graph_workflow_with_styles(prompt, language)
+        # Prefer client-provided spec to avoid LLM call
+        client_spec = data.get('spec') if isinstance(data, dict) else None
+        result = None
+        if isinstance(client_spec, dict) and client_spec:
+            logger.info("/generate_png received client spec; skipping LLM workflow")
+            result = {
+                'spec': client_spec,
+                'diagram_type': data.get('diagram_type', client_spec.get('diagram_type', 'concept_map')),
+                'language': language
+            }
+        else:
+            # Try cache next
+            cached = _llm_cache_get(prompt, language)
+            if cached:
+                logger.info("Cache hit for /generate_png - using cached spec")
+                result = cached
+            else:
+                result = agent.agent_graph_workflow_with_styles(prompt, language)
+                # Cache on success
+                try:
+                    if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):
+                        _llm_cache_set(prompt, language, result)
+                except Exception:
+                    pass
         llm_time = time.time() - llm_start_time
         
         spec = result.get('spec', {})
@@ -493,7 +623,7 @@ def generate_png():
     
     # Use brace map agent for brace maps
     if graph_type == 'brace_map':
-        from brace_map_agent import BraceMapAgent
+        from agents.thinking_maps import BraceMapAgent
         brace_agent = BraceMapAgent()
         agent_result = brace_agent.generate_diagram(spec)
         if agent_result['success']:
@@ -515,7 +645,7 @@ def generate_png():
     elif graph_type == 'multi_flow_map':
         # Enhance multi-flow map spec and optionally use recommended dimensions later
         try:
-            from multi_flow_map_agent import MultiFlowMapAgent
+            from agents.thinking_maps import MultiFlowMapAgent
             mf_agent = MultiFlowMapAgent()
             agent_result = mf_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
@@ -527,7 +657,7 @@ def generate_png():
     elif graph_type == 'flow_map':
         # Enhance flow map spec and use recommended dimensions
         try:
-            from flow_map_agent import FlowMapAgent
+            from agents.thinking_maps import FlowMapAgent
             f_agent = FlowMapAgent()
             agent_result = f_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
@@ -539,7 +669,7 @@ def generate_png():
     elif graph_type == 'tree_map':
         # Enhance tree map spec and use recommended dimensions
         try:
-            from tree_map_agent import TreeMapAgent
+            from agents.thinking_maps import TreeMapAgent
             t_agent = TreeMapAgent()
             agent_result = t_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
@@ -549,9 +679,8 @@ def generate_png():
         except Exception as e:
             logger.error(f"Error enhancing tree_map spec: {e}")
     elif graph_type == 'concept_map':
-        # Enhance concept map spec for quality and sizing
         try:
-            from concept_map_agent import ConceptMapAgent
+            from agents.concept_maps.concept_map_agent import ConceptMapAgent
             c_agent = ConceptMapAgent()
             agent_result = c_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
@@ -559,27 +688,53 @@ def generate_png():
             else:
                 logger.warning(f"ConceptMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
-            logger.error(f"Error enhancing concept_map spec: {e}")
+                            logger.error(f"Error enhancing concept_map spec: {e}")
     elif graph_type == 'mindmap':
-        # Check if spec is already enhanced by agent (has _layout and _recommended_dimensions)
-        if not (isinstance(spec, dict) and spec.get('_layout') and spec.get('_recommended_dimensions')):
-            # Only enhance if not already enhanced
-            try:
-                from mind_map_agent import MindMapAgent
-                m_agent = MindMapAgent()
-                agent_result = m_agent.enhance_spec(spec)
-                if agent_result.get('success') and 'spec' in agent_result:
-                    spec = agent_result['spec']
-                else:
-                    logger.warning(f"MindMapAgent enhancement skipped: {agent_result.get('error')}")
-            except Exception as e:
-                logger.error(f"Error enhancing mindmap spec: {e}")
-        else:
-            logger.info(f"Mind map spec already enhanced, skipping agent call")
-    
-    # Check if spec has required structure for rendering
-    if not spec or isinstance(spec, dict) and spec.get('error'):
-        return jsonify({'error': 'Failed to generate valid graph specification'}), 400
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'bubble_map':
+        try:
+            from agents.thinking_maps import BubbleMapAgent
+            b_agent = BubbleMapAgent()
+            agent_result = b_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"BubbleMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing bubble_map spec: {e}")
+    elif graph_type == 'double_bubble_map':
+        try:
+            from agents.thinking_maps import DoubleBubbleMapAgent
+            db_agent = DoubleBubbleMapAgent()
+            agent_result = db_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"DoubleBubbleMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing double_bubble_map spec: {e}")
+    elif graph_type == 'circle_map':
+        try:
+            from agents.thinking_maps import CircleMapAgent
+            c_agent = CircleMapAgent()
+            agent_result = c_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"CircleMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing circle_map spec: {e}")
+    elif graph_type == 'bridge_map':
+        try:
+            from agents.thinking_maps import BridgeMapAgent
+            br_agent = BridgeMapAgent()
+            agent_result = br_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing bridge_map spec: {e}")
     
     # Render SVG and convert to PNG using Playwright
     try:
@@ -592,45 +747,66 @@ def generate_png():
         render_start_time = time.time()
         
         async def render_svg_to_png(spec, graph_type):
-            # Use modular loading for optimal performance (Option 3: Code Splitting)
+            # Import config for dimensions
+            from settings import config
+            
+            # Use the old working approach - load D3 renderers directly
             try:
-                # Import the modular cache manager (Python wrapper)
-                from static.js.modular_cache_python import get_javascript_for_graph_type
+                # Load the theme configuration
+                with open('static/js/theme-config.js', 'r', encoding='utf-8') as f:
+                    theme_config = f.read()
+
+                # Load the modular D3.js renderers
+                renderer_files = [
+                    'static/js/renderers/shared-utilities.js',
+                    'static/js/renderers/renderer-dispatcher.js',
+                    'static/js/renderers/mind-map-renderer.js',
+                    'static/js/renderers/concept-map-renderer.js',
+                    'static/js/renderers/bubble-map-renderer.js',
+                    'static/js/renderers/tree-renderer.js',
+                    'static/js/renderers/flow-renderer.js',
+                    'static/js/renderers/brace-renderer.js'
+                ]
                 
-                # Get graph-type-specific JavaScript modules with performance stats
-                module_contents, modular_stats = get_javascript_for_graph_type(graph_type)
+                d3_renderers = ''
+                for renderer_file in renderer_files:
+                    try:
+                        with open(renderer_file, 'r', encoding='utf-8') as f:
+                            d3_renderers += f.read() + '\n\n'
+                    except FileNotFoundError:
+                        logger.warning(f"Renderer file not found: {renderer_file}")
+                        continue
+
+                # Load the style manager
+                with open('static/js/style-manager.js', 'r', encoding='utf-8') as f:
+                    style_manager = f.read()
                 
-                logger.info(f"Modular JavaScript loaded for {graph_type}: {modular_stats['module_names']} ({modular_stats['total_size_kb']}KB)")
+                # Use the old working approach - single script tag
+                renderer_scripts = f'<script>{d3_renderers}</script>'
                 
-                # Extract modules directly - no more regex parsing!
-                theme_config = module_contents.get('theme-config', '')
-                style_manager = module_contents.get('style-manager', '')
+                logger.info(f"Loading modular D3 renderers for {graph_type}")
                 
-                # Generate separate script tags for each module instead of concatenating
-                module_script_tags = []
-                for module_name, content in module_contents.items():
-                    if module_name not in ['theme-config', 'style-manager']:
-                        # Add cache-busting to prevent browser from loading cached renderers
-                        cache_buster = f"?v={int(time.time())}"
-                        module_script_tags.append(f'<script data-module="{module_name}" data-cache-buster="{cache_buster}">{content}</script>')
-                
-                renderer_scripts = '\n            '.join(module_script_tags) if module_script_tags else ""
-                
-                # Log what modules are being loaded for debugging
-                logger.info(f"Loading modules for {graph_type}: {[name for name in module_contents.keys() if name not in ['theme-config', 'style-manager']]}")
-                logger.info(f"Generated {len(module_script_tags)} script tags")
-                
-                # Debug: Log the actual script content being generated
-                for i, script_tag in enumerate(module_script_tags):
-                    logger.info(f"Script tag {i+1}: {script_tag[:100]}...")  # First 100 chars
-                
-                logger.info(f"Total HTML size will be approximately: {len(theme_config) + len(style_manager) + sum(len(tag) for tag in module_script_tags)} chars")
+                # Debug: Log layout information for concept maps
+                if graph_type == 'concept_map' and isinstance(spec, dict):
+                    layout_info = spec.get('_layout', {})
+                    algorithm = layout_info.get('algorithm', 'unknown')
+                    logger.info(f"=== CONCEPT MAP LAYOUT DEBUG ===")
+                    logger.info(f"Layout algorithm: {algorithm}")
+                    logger.info(f"Layout keys: {list(layout_info.keys())}")
+                    if 'positions' in layout_info:
+                        pos_count = len(layout_info['positions'])
+                        logger.info(f"Position count: {pos_count}")
+                    if 'rings' in layout_info:
+                        ring_count = len(layout_info['rings'])
+                        logger.info(f"Ring count: {ring_count}")
+                    if 'clusters' in layout_info:
+                        cluster_count = len(layout_info['clusters'])
+                        logger.info(f"Cluster count: {cluster_count}")
+                    logger.info(f"=== END LAYOUT DEBUG ===")
                 
             except Exception as e:
-                logger.error(f"Failed to load modular JavaScript for {graph_type}: {e}")
-                # NO FALLBACK - if modular system fails, show error
-                logger.error(f"Modular system failed for {graph_type}, no fallback available")
-                raise ValueError(f"Failed to load required JavaScript modules for {graph_type}")
+                logger.error(f"Failed to load D3 renderers for {graph_type}: {e}")
+                raise ValueError(f"Failed to load required JavaScript for {graph_type}")
             
             # Log spec data summary for debugging
             if isinstance(spec, dict):
@@ -745,7 +921,7 @@ def generate_png():
                     width: 100%; 
                     height: 100vh; 
                     display: block; 
-                    background: #f0f0f0; 
+                    /* background: #f0f0f0; */  /* Removed to fix concept map visibility */
                 }}
                 
                 /* Inter Font Loading for Ubuntu Server Compatibility */
@@ -913,6 +1089,14 @@ def generate_png():
                                 console.error("renderFlowMap function not available");
                                 document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Flow map renderer not loaded</div>";
                             }}
+                        }} else if (window.graph_type === "concept_map") {{
+                            console.log("Using concept map renderer directly");
+                            if (typeof renderConceptMap === "function") {{
+                                renderConceptMap(window.spec, backendTheme, window.dimensions);
+                            }} else {{
+                                console.error("renderConceptMap function not available");
+                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Concept map renderer not loaded</div>";
+                            }}
                         }} else {{
                             renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions);
                         }}
@@ -990,7 +1174,7 @@ def generate_png():
                 
                 # Wait for rendering and check for console errors
                 logger.info("Waiting for initial rendering...")
-                await asyncio.sleep(3.0)
+                await asyncio.sleep(2.0)  # Reduced from 5.0 to 2.0 seconds
                 
                 # Log console messages and errors (consolidated)
                 if console_messages:
@@ -1003,9 +1187,11 @@ def generate_png():
                     for i, error in enumerate(page_errors):
                         logger.error(f"Browser Error {i+1}: {error}")
                 
-                # Wait for rendering to complete
+                # Wait for rendering to complete with dynamic timing based on graph complexity
                 logger.info("Waiting for rendering to complete...")
-                await asyncio.sleep(4.0)  # Combined wait time
+                
+                # Simple wait for rendering to complete (no more complex calculations)
+                await asyncio.sleep(3.0)  # Reduced from 6.0 to 3.0 seconds
                 
                 # Check what functions are actually available in the browser
                 try:
@@ -1035,10 +1221,33 @@ def generate_png():
                 except Exception as e:
                     logger.error(f"Failed to check function availability: {e}")
                 
-                # Wait for SVG element to be created with timeout
+                # Wait for SVG element to be created with timeout and content
                 try:
-                    element = await page.wait_for_selector("svg", timeout=10000)
+                    element = await page.wait_for_selector("svg", timeout=15000)  # Increased timeout
                     logger.info("SVG element found successfully")
+                    
+                    # Wait for SVG to actually contain content (not just empty)
+                    logger.info("Waiting for SVG content to render...")
+                    for attempt in range(10):  # Try up to 10 times
+                        svg_content = await element.inner_html()
+                        if svg_content.strip() and len(svg_content) > 100:  # SVG has substantial content
+                            logger.info(f"SVG content rendered successfully (length: {len(svg_content)})")
+                            # Log a sample of the SVG content for debugging
+                            if attempt == 0:  # Only log on first successful attempt
+                                svg_sample = svg_content[:500] + "..." if len(svg_content) > 500 else svg_content
+                                logger.info(f"SVG content sample: {svg_sample}")
+                            break
+                        elif attempt < 9:  # Don't sleep on last attempt
+                            logger.info(f"SVG content not ready yet (attempt {attempt + 1}/10), waiting...")
+                            await asyncio.sleep(1.0)
+                        else:
+                            logger.warning("SVG content may not be fully rendered")
+                            # Log what we got for debugging
+                            if svg_content:
+                                logger.warning(f"Final SVG content (may be incomplete): {svg_content[:200]}...")
+                            else:
+                                logger.warning("SVG content is completely empty")
+                    
                 except Exception as e:
                     logger.error(f"Timeout waiting for SVG element: {e}")
                     element = await page.query_selector("svg")  # Try one more time
@@ -1076,9 +1285,13 @@ def generate_png():
                 svg_height = await element.get_attribute('height')
                 logger.info(f"SVG dimensions: width={svg_width}, height={svg_height}")
                 
+                # Final wait to ensure all rendering is complete
+                logger.info("Final wait for rendering completion...")
+                await asyncio.sleep(1.0)  # Reduced from 2.0 to 1.0 seconds
+                
                 # Ensure element is visible before screenshot
                 await element.scroll_into_view_if_needed()
-                await page.wait_for_timeout(1000)  # Wait for any animations to complete
+                await page.wait_for_timeout(500)  # Reduced from 1000 to 500ms
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
@@ -1224,7 +1437,7 @@ def generate_dingtalk():
     
     # Use brace map agent for brace maps
     if graph_type == 'brace_map':
-        from brace_map_agent import BraceMapAgent
+        from agents.thinking_maps import BraceMapAgent
         brace_agent = BraceMapAgent()
         agent_result = brace_agent.generate_diagram(spec)
         if agent_result['success']:
@@ -1251,7 +1464,7 @@ def generate_dingtalk():
     elif graph_type == 'multi_flow_map':
         # Enhance multi-flow map spec and optionally use recommended dimensions later
         try:
-            from multi_flow_map_agent import MultiFlowMapAgent
+            from agents.thinking_maps import MultiFlowMapAgent
             mf_agent = MultiFlowMapAgent()
             agent_result = mf_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
@@ -1263,7 +1476,7 @@ def generate_dingtalk():
     elif graph_type == 'flow_map':
         # Enhance flow map spec and use recommended dimensions
         try:
-            from flow_map_agent import FlowMapAgent
+            from agents.thinking_maps import FlowMapAgent
             f_agent = FlowMapAgent()
             agent_result = f_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
@@ -1273,21 +1486,51 @@ def generate_dingtalk():
         except Exception as e:
             logger.error(f"Error enhancing flow_map spec: {e}")
     elif graph_type == 'mindmap':
-        # Check if spec is already enhanced by agent (has _layout and _recommended_dimensions)
-        if not (isinstance(spec, dict) and spec.get('_layout') and spec.get('_recommended_dimensions')):
-            # Only enhance if not already enhanced
-            try:
-                from mind_map_agent import MindMapAgent
-                m_agent = MindMapAgent()
-                agent_result = m_agent.enhance_spec(spec)
-                if agent_result.get('success') and 'spec' in agent_result:
-                    spec = agent_result['spec']
-                else:
-                    logger.warning(f"MindMapAgent enhancement skipped: {agent_result.get('error')}")
-            except Exception as e:
-                logger.error(f"Error enhancing mindmap spec: {e}")
-        else:
-            logger.info(f"Mind map spec already enhanced, skipping agent call")
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'bubble_map':
+        try:
+            from agents.thinking_maps import BubbleMapAgent
+            b_agent = BubbleMapAgent()
+            agent_result = b_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"BubbleMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing bubble_map spec: {e}")
+    elif graph_type == 'double_bubble_map':
+        try:
+            from agents.thinking_maps import DoubleBubbleMapAgent
+            db_agent = DoubleBubbleMapAgent()
+            agent_result = db_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"DoubleBubbleMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing double_bubble_map spec: {e}")
+    elif graph_type == 'circle_map':
+        try:
+            from agents.thinking_maps import CircleMapAgent
+            c_agent = CircleMapAgent()
+            agent_result = c_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"CircleMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing circle_map spec: {e}")
+    elif graph_type == 'bridge_map':
+        try:
+            from agents.thinking_maps import BridgeMapAgent
+            br_agent = BridgeMapAgent()
+            agent_result = br_agent.enhance_spec(spec)
+            if agent_result.get('success') and 'spec' in agent_result:
+                spec = agent_result['spec']
+            else:
+                logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
+        except Exception as e:
+            logger.error(f"Error enhancing bridge_map spec: {e}")
     
     # Render SVG and convert to PNG using Playwright
     try:
@@ -1301,47 +1544,65 @@ def generate_dingtalk():
         
         async def render_svg_to_png(spec, graph_type):
             # Import config for dimensions
-            from config import config
+            from settings import config
             
-            # Use modular loading for optimal performance (Option 3: Code Splitting)
+            # Use the old working approach - load D3 renderers directly
             try:
-                # Import the modular cache manager (Python wrapper)
-                from static.js.modular_cache_python import get_javascript_for_graph_type
+                # Load the theme configuration
+                with open('static/js/theme-config.js', 'r', encoding='utf-8') as f:
+                    theme_config = f.read()
+
+                # Load the modular D3.js renderers
+                renderer_files = [
+                    'static/js/renderers/shared-utilities.js',
+                    'static/js/renderers/renderer-dispatcher.js',
+                    'static/js/renderers/mind-map-renderer.js',
+                    'static/js/renderers/concept-map-renderer.js',
+                    'static/js/renderers/bubble-map-renderer.js',
+                    'static/js/renderers/tree-renderer.js',
+                    'static/js/renderers/flow-renderer.js',
+                    'static/js/renderers/brace-renderer.js'
+                ]
                 
-                # Get graph-type-specific JavaScript modules with performance stats
-                module_contents, modular_stats = get_javascript_for_graph_type(graph_type)
+                d3_renderers = ''
+                for renderer_file in renderer_files:
+                    try:
+                        with open(renderer_file, 'r', encoding='utf-8') as f:
+                            d3_renderers += f.read() + '\n\n'
+                    except FileNotFoundError:
+                        logger.warning(f"Renderer file not found: {renderer_file}")
+                        continue
+
+                # Load the style manager
+                with open('static/js/style-manager.js', 'r', encoding='utf-8') as f:
+                    style_manager = f.read()
                 
-                logger.info(f"Modular JavaScript loaded for {graph_type}: {modular_stats['module_names']} ({modular_stats['total_size_kb']}KB)")
+                # Use the old working approach - single script tag
+                renderer_scripts = f'<script>{d3_renderers}</script>'
                 
-                # Extract modules directly - no more regex parsing!
-                theme_config = module_contents.get('theme-config', '')
-                style_manager = module_contents.get('style-manager', '')
+                logger.info(f"Loading modular D3 renderers for {graph_type}")
                 
-                # Generate separate script tags for each module instead of concatenating
-                module_script_tags = []
-                for module_name, content in module_contents.items():
-                    if module_name not in ['theme-config', 'style-manager']:
-                        # Add cache-busting to prevent browser from loading cached renderers
-                        cache_buster = f"?v={int(time.time())}"
-                        module_script_tags.append(f'<script data-module="{module_name}" data-cache-buster="{cache_buster}">{content}</script>')
-                
-                renderer_scripts = '\n            '.join(module_script_tags) if module_script_tags else ""
-                
-                # Log what modules are being loaded for debugging
-                logger.info(f"Loading modules for {graph_type}: {[name for name in module_contents.keys() if name not in ['theme-config', 'style-manager']]}")
-                logger.info(f"Generated {len(module_script_tags)} script tags")
-                
-                # Debug: Log the actual script content being generated
-                for i, script_tag in enumerate(module_script_tags):
-                    logger.info(f"Script tag {i+1}: {script_tag[:100]}...")  # First 100 chars
-                
-                logger.info(f"Total HTML size will be approximately: {len(theme_config) + len(style_manager) + sum(len(tag) for tag in module_script_tags)} chars")
+                # Debug: Log layout information for concept maps
+                if graph_type == 'concept_map' and isinstance(spec, dict):
+                    layout_info = spec.get('_layout', {})
+                    algorithm = layout_info.get('algorithm', 'unknown')
+                    logger.info(f"=== CONCEPT MAP LAYOUT DEBUG ===")
+                    logger.info(f"Layout algorithm: {algorithm}")
+                    logger.info(f"Layout keys: {list(layout_info.keys())}")
+                    if 'positions' in layout_info:
+                        pos_count = len(layout_info['positions'])
+                        logger.info(f"Position count: {pos_count}")
+                    if 'rings' in layout_info:
+                        ring_count = len(layout_info['rings'])
+                        logger.info(f"Ring count: {ring_count}")
+                    if 'clusters' in layout_info:
+                        cluster_count = len(layout_info['clusters'])
+                        logger.info(f"Cluster count: {cluster_count}")
+                    logger.info(f"=== END LAYOUT DEBUG ===")
                 
             except Exception as e:
-                logger.error(f"Failed to load modular JavaScript for {graph_type}: {e}")
-                # NO FALLBACK - if modular system fails, show error
-                logger.error(f"Modular system failed for {graph_type}, no fallback available")
-                raise ValueError(f"Failed to load required JavaScript modules for {graph_type}")
+                logger.error(f"Failed to load D3 renderers for {graph_type}: {e}")
+                raise ValueError(f"Failed to load required JavaScript for {graph_type}")
             
             # Log spec data summary for debugging
             if isinstance(spec, dict):
@@ -1456,7 +1717,7 @@ def generate_dingtalk():
                     width: 100%; 
                     height: 100vh; 
                     display: block; 
-                    background: #f0f0f0; 
+                    /* background: #f0f0f0; */  /* Removed to fix concept map visibility */
                 }}
                 
                 /* Inter Font Loading for Ubuntu Server Compatibility */
@@ -1624,6 +1885,14 @@ def generate_dingtalk():
                                 console.error("renderFlowMap function not available");
                                 document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Flow map renderer not loaded</div>";
                             }}
+                        }} else if (window.graph_type === "concept_map") {{
+                            console.log("Using concept map renderer directly");
+                            if (typeof renderConceptMap === "function") {{
+                                renderConceptMap(window.spec, backendTheme, window.dimensions);
+                            }} else {{
+                                console.error("renderConceptMap function not available");
+                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Concept map renderer not loaded</div>";
+                            }}
                         }} else {{
                             renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions);
                         }}
@@ -1716,7 +1985,7 @@ def generate_dingtalk():
                 
                 # Wait for rendering to complete
                 logger.info("Waiting for rendering to complete...")
-                await asyncio.sleep(4.0)  # Combined wait time
+                await asyncio.sleep(2.0)  # Reduced from 4.0 to 2.0 seconds
                 
                 # Check what functions are actually available in the browser
                 try:
@@ -1789,7 +2058,7 @@ def generate_dingtalk():
                 
                 # Ensure element is visible before screenshot
                 await element.scroll_into_view_if_needed()
-                await page.wait_for_timeout(1000)  # Wait for any animations to complete
+                await page.wait_for_timeout(500)  # Reduced from 1000 to 500ms
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
@@ -1871,7 +2140,7 @@ def generate_dingtalk():
             logger.info(f"Generated filename for URL: {filename}")
             
             # Get server URL for image access
-            from config import config
+            from settings import config
             server_url = config.SERVER_URL
             image_url = f"{server_url}/api/temp_images/{filename}"
             logger.info(f"Generated image URL: {image_url}")

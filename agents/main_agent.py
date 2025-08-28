@@ -13,6 +13,7 @@ import os
 import logging
 import re
 import time
+import traceback
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -24,7 +25,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "agent.log"), encoding="utf-8")
+        logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "agent.log"), encoding="utf-8")
     ]
 )
 logger = logging.getLogger(__name__)
@@ -32,8 +33,8 @@ logger = logging.getLogger(__name__)
 from langchain.prompts import PromptTemplate
 import requests
 import yaml
-from config import config
-from agent_utils import (
+from settings import config
+from .core.agent_utils import (
     extract_topics_with_agent,
     generate_characteristics_with_agent,
     parse_characteristics_result,
@@ -167,6 +168,8 @@ class QwenLLM:
             data = config.get_qwen_generation_data(prompt)
         
         logger.info(f"QwenLLM._call() - Model: {model_name} ({self.model_type})")
+        logger.info(f"QwenLLM._call() - Max tokens: {data.get('max_tokens', 'NOT_SET')}")
+        logger.info(f"QwenLLM._call() - Temperature: {data.get('temperature', 'NOT_SET')}")
         logger.debug(f"Prompt sent to Qwen:\n{prompt[:1000]}{'...' if len(prompt) > 1000 else ''}")
 
         headers = config.get_qwen_headers()
@@ -180,6 +183,10 @@ class QwenLLM:
             resp.raise_for_status()
             result = resp.json()
             content = result["choices"][0]["message"]["content"]
+            
+            # Log the full API response to debug token limits
+            logger.info(f"QwenLLM API response - Usage: {result.get('usage', 'NO_USAGE_INFO')}")
+            logger.info(f"QwenLLM API response - Finish reason: {result['choices'][0].get('finish_reason', 'NO_FINISH_REASON')}")
             
             # Calculate timing
             call_time = time.time() - start_time
@@ -691,6 +698,11 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
 - 概念关系 (concept relationships): 使用 concept_map
 - 思维组织 (idea organization): 使用 mindmap
 
+关键判断原则：
+- 如果用户说"生成/制作/创建思维导图"，无论主题是什么都使用 mindmap
+- 如果用户说"概念图"且没有提到"思维导图"，使用 concept_map
+- 当同时提到"概念图"和"思维导图"时，以"思维导图"为准使用 mindmap
+
 关键示例：
 - 比较猫和狗 → double_bubble_map
 - 描述太阳系特征 → bubble_map
@@ -703,6 +715,12 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
 - 教育系统的概念图 → concept_map
 
 - 制作思维导图 → mindmap
+- 生成思维导图 → mindmap
+- 创建思维导图 → mindmap
+- 有关...的思维导图 → mindmap
+- 关于...的思维导图 → mindmap
+- ...思维导图 → mindmap
+- 生成一张有关概念图的思维导图 → mindmap
 
 
 样式偏好包括：
@@ -946,6 +964,71 @@ def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
     return raw if isinstance(raw, str) else str(raw)
 
 
+def _salvage_truncated_json(text: str) -> str:
+    """Aggressively salvage truncated JSON by completing incomplete strings and structures."""
+    try:
+        # Find the last complete relationship entry
+        lines = text.split('\n')
+        salvaged_lines = []
+        in_relationships = False
+        brace_count = 0
+        
+        for line in lines:
+            if '"relationships"' in line:
+                in_relationships = True
+                salvaged_lines.append(line)
+                continue
+                
+            if in_relationships:
+                # Count braces to track structure
+                brace_count += line.count('{') - line.count('}')
+                
+                # Check if this line is complete (ends with } or ,)
+                if line.strip().endswith('},') or line.strip().endswith('}'):
+                    salvaged_lines.append(line)
+                elif line.strip().endswith(','):
+                    salvaged_lines.append(line)
+                elif '"from"' in line and '"to"' in line and '"label"' in line:
+                    # This looks like a complete relationship, add it
+                    if not line.strip().endswith(','):
+                        line = line.rstrip() + ','
+                    salvaged_lines.append(line)
+                elif line.strip().startswith('"from"') or line.strip().startswith('"to"') or line.strip().startswith('"label"'):
+                    # This is part of a relationship, try to complete it
+                    if '"from"' in line and '"to"' in line and '"label"' in line:
+                        # Looks complete, add comma if needed
+                        if not line.strip().endswith(','):
+                            line = line.rstrip() + ','
+                        salvaged_lines.append(line)
+                    else:
+                        # Incomplete, skip this line
+                        continue
+                else:
+                    salvaged_lines.append(line)
+            else:
+                salvaged_lines.append(line)
+        
+        # Close the relationships array and main object
+        if in_relationships:
+            # Remove trailing comma from last relationship
+            if salvaged_lines and salvaged_lines[-1].strip().endswith(','):
+                salvaged_lines[-1] = salvaged_lines[-1].rstrip(',')
+            
+            # Add closing brackets
+            salvaged_lines.append('  ]')
+            salvaged_lines.append('}')
+        
+        salvaged_text = '\n'.join(salvaged_lines)
+        
+        # Validate the salvaged JSON
+        json.loads(salvaged_text)
+        return salvaged_text
+        
+    except Exception as e:
+        logger.error(f"JSON salvage failed: {e}")
+        return None
+
+
 def _parse_strict_json(text: str) -> dict:
     """Parse JSON with robust extraction and salvage; raise on failure."""
     cleaned = extract_yaml_from_code_block(text)
@@ -981,7 +1064,7 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     
     # Use improved parsing for better error handling
     try:
-        from concept_map_agent import ConceptMapAgent
+        from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
         keys_obj = agent._parse_json_response(raw_keys)
         logger.info("Used ConceptMapAgent improved parsing for keys generation")
@@ -1024,7 +1107,7 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
             
             # Use improved parsing for better error handling
             try:
-                from concept_map_agent import ConceptMapAgent
+                from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
                 obj = agent._parse_json_response(raw)
                 logger.debug(f"Used ConceptMapAgent improved parsing for parts of key '{k}'")
@@ -1102,7 +1185,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     
     # Use the improved ConceptMapAgent parsing for better error handling
     try:
-        from concept_map_agent import ConceptMapAgent
+        from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
         obj = agent._parse_json_response(raw)
         logger.info("Used ConceptMapAgent improved parsing for unified generation")
@@ -1263,14 +1346,14 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
 Generate exactly 30 specific and meaningful concepts related to: {central_topic}
 
 Analysis Strategy - Cover these aspects:
-1. CORE COMPONENTS: What are the fundamental parts?
-2. KEY PROCESSES: What important procedures or actions?
-3. TYPES/CATEGORIES: What different forms exist?
-4. TOOLS/METHODS: What tools, techniques, or approaches?
-5. PEOPLE/ROLES: Who is involved or affected?
-6. APPLICATIONS: Where and how is it used?
-7. CHARACTERISTICS: What are the key properties?
-8. DEVELOPMENT: Important stages or evolution?
+1. Core Components - What are the fundamental elements?
+2. Key Processes - What important workflows are involved?
+3. Types/Categories - What different classifications exist?
+4. Tools/Methods - What tools and techniques are used?
+5. People/Roles - What roles and stakeholders are involved?
+6. Applications/Domains - In what areas is this applied?
+7. Properties/Features - What characteristics does it have?
+8. Development/History - What important stages of development?
 
 Output JSON format:
 {{
@@ -1278,298 +1361,160 @@ Output JSON format:
 }}
 
 Requirements:
-- EXACTLY 30 concepts, no more, no less
+- Exactly 30 concepts, no more, no less
 - Each concept should be 2-4 words
-- Be SPECIFIC and domain-relevant (not generic terms)
 - Cover the 8 aspects above
-- Directly related to "{central_topic}"
-- Output ONLY valid JSON, no other text
+- Specific and meaningful, avoid abstract terms
+- Ensure direct relevance to "{central_topic}"
 """
-        
+
+        # Get concepts from LLM
         concepts_response = _invoke_llm_prompt(concept_prompt, {'central_topic': central_topic})
-        logger.info(f"Agent: LLM concepts response length: {len(concepts_response)} chars")
         
-        # Parse concepts with better error handling
-        concepts = []
+        if not concepts_response:
+            raise ValueError("No response from LLM for concept generation")
+        
+        # Parse concepts response
         try:
             import json
-            # Clean the response first
-            cleaned_response = concepts_response.strip()
-            if cleaned_response.startswith('```json'):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.startswith('```'):
-                cleaned_response = cleaned_response[3:]
-            if cleaned_response.endswith('```'):
-                cleaned_response = cleaned_response[:-3]
-            cleaned_response = cleaned_response.strip()
-            
-            logger.info(f"Agent: Parsing concepts response: {cleaned_response[:200]}...")
-            concepts_data = json.loads(cleaned_response)
-            concepts = concepts_data.get('concepts', [])
-            logger.info(f"Agent: Successfully parsed {len(concepts)} concepts from LLM")
-            
-            # Ensure exactly 30 concepts
+            concepts_data = json.loads(concepts_response.strip())
+        except json.JSONDecodeError:
+            try:
+                from .concept_maps import ConceptMapAgent
+                agent = ConceptMapAgent()
+                concepts_data = agent._parse_json_response(concepts_response)
+                logger.info("Used ConceptMapAgent improved parsing for concepts")
+            except Exception as e:
+                logger.warning(f"ConceptMapAgent parsing failed for concepts: {e}")
+                concepts_data = _parse_strict_json(concepts_response)
+                logger.info("Used strict parsing for concepts")
+        
+        concepts = concepts_data.get('concepts', [])
+        
+        # Ensure exactly 30 concepts
+        if len(concepts) != 30:
             if len(concepts) > 30:
-                concepts = concepts[:30]
-            elif len(concepts) < 30:
-                logger.warning(f"Agent: Only got {len(concepts)} concepts, padding to 30")
-                # Use topic-specific padding instead of generic
-                topic_base = str(central_topic).lower()
-                padding_concepts = [
-                    f"{central_topic}相关技术", f"{central_topic}发展", f"{central_topic}应用",
-                    f"{central_topic}特点", f"{central_topic}优势", f"{central_topic}挑战",
-                    f"{central_topic}未来", f"{central_topic}标准", f"{central_topic}管理"
-                ]
-                base_count = len(concepts)
-                for i in range(30 - base_count):
-                    if i < len(padding_concepts):
-                        concepts.append(padding_concepts[i])
-                    else:
-                        concepts.append(f"{central_topic}方面{i+1}")
-                        
-        except json.JSONDecodeError as e:
-            logger.error(f"Agent: JSON parsing failed: {e}")
-            logger.error(f"Agent: Raw response: {concepts_response[:500]}...")
-            # Better fallback with topic-specific concepts
-            if language == 'zh' and '计算机' in str(central_topic):
-                concepts = [
-                    "硬件", "软件", "操作系统", "处理器", "内存", "存储器",
-                    "显卡", "主板", "网络", "安全", "编程", "算法",
-                    "数据库", "人工智能", "机器学习", "云计算", "大数据", "物联网",
-                    "网络协议", "编程语言", "开发工具", "用户界面", "系统架构", "数据结构",
-                    "网络安全", "软件工程", "计算机图形", "多媒体", "游戏开发", "移动应用"
-                ]
+                concepts = concepts[:30]  # Take first 30
+                logger.info(f"Trimmed concepts from {len(concepts_data.get('concepts', []))} to 30")
             else:
-                # Generic fallback (should rarely be used now)
-                concepts = [
-                    "Core components", "Basic principles", "Key processes", "Main features",
-                    "Essential tools", "Important methods", "Primary functions", "Basic structure",
-                    "Fundamental concepts", "Key relationships", "Main categories", "Core elements",
-                    "Essential aspects", "Important factors", "Basic requirements", "Key characteristics",
-                    "Main applications", "Primary uses", "Core benefits", "Essential properties",
-                    "Key advantages", "Main challenges", "Important considerations", "Basic limitations",
-                    "Essential requirements", "Key dependencies", "Main outcomes", "Important results",
-                    "Core objectives", "Essential goals"
-                ]
-            concepts = concepts[:30]  # Ensure exactly 30
+                # Pad with generic concepts if less than 30
+                while len(concepts) < 30:
+                    concepts.append(f"Related aspect {len(concepts) + 1}")
+                logger.info(f"Padded concepts from {len(concepts_data.get('concepts', []))} to 30")
         
-        # Generate relationships using LLM
-        logger.info(f"Agent: Generating relationships using LLM for {len(concepts)} concepts")
+        if not concepts:
+            raise ValueError("No concepts generated")
         
+        # Generate relationships using systematic approach
         if language == 'zh':
-            relationships_prompt = f"""
-你是一个领域专家，请分析主题"{central_topic}"与以下30个概念之间的精确关系，以及概念之间的具体联系。
+            rel_prompt = f"""
+现在为主题"{central_topic}"和这30个概念生成关系：
 
 概念列表：
 {', '.join(concepts)}
 
-请生成关系网络，包括：
-1. 主题与每个概念的关系（必须包含所有30个概念）
-2. 概念之间的重要关系（选择最有意义的15-25个关系）
-
-关系标签要求：
-- 使用领域特定的精确关系词汇，例如：
-  * 软件：继承、调用、编译、部署、封装、重构、编译、序列化
-  * 生物：进化、变异、选择、适应、遗传、分化、共生、捕食  
-  * 物理：相互作用、量子化、测量、干涉、衰变、激发、辐射、吸收
-  * 经济：供给、需求、投资、流动、调节、竞争、创新、交换
-- 严格避免过度使用通用词汇：包含、使用、基于、相关、涉及、实现、支持
-- 每个关系标签应该体现具体的因果、依赖、转换、影响等机制
-- 优先使用动词形式的关系描述
+关系生成策略：
+1. 主题-概念关系：为每个概念与主题创建有意义的关系
+2. 概念间关系：寻找概念之间的逻辑连接
+3. 分类关系：同类概念之间的关系
+4. 因果关系：存在因果链的概念
+5. 依赖关系：有依赖性的概念
 
 输出JSON格式：
 {{
   "relationships": [
-    {{"from": "源概念", "to": "目标概念", "label": "精确关系"}},
-    {{"from": "{central_topic}", "to": "概念1", "label": "定义"}},
-    {{"from": "概念A", "to": "概念B", "label": "触发"}}
+    {{"from": "{central_topic}", "to": "概念1", "label": "包含"}},
+    {{"from": "概念A", "to": "概念B", "label": "导致"}},
+    ...
   ]
 }}
 
 要求：
-- 关系标签必须具体、准确，体现真实的语义机制
-- 避免重复使用相同的关系类型，追求多样性
-- 每个关系都应该传达明确的因果或依赖信息
+- 每个概念至少与主题有一个关系
+- 总共生成40-60个关系
 - 关系标签简洁（1-3个字）
-- 确保包含主题到所有30个概念的关系
-- 概念间关系要体现真实的逻辑联系和机制
-- 输出纯JSON格式
+- 关系逻辑合理
+- 避免重复关系
 """
         else:
-            relationships_prompt = f"""
-You are a domain expert. Please analyze the precise relationships between the topic "{central_topic}" and the following 30 concepts, as well as specific connections between concepts.
+            rel_prompt = f"""
+Generate relationships for topic "{central_topic}" and these 30 concepts:
 
 Concepts:
 {', '.join(concepts)}
 
-Generate a relationship network including:
-1. Topic to each concept relationships (must include all 30 concepts)
-2. Important concept-to-concept relationships (select the most meaningful 15-25 relationships)
-
-Relationship label requirements:
-- Use domain-specific precise relationship vocabulary, examples:
-  * Software: inherits, invokes, compiles, deploys, encapsulates, refactors, serializes
-  * Biology: evolves, mutates, selects, adapts, inherits, differentiates, symbioses, predates  
-  * Physics: interacts, quantizes, measures, interferes, decays, excites, radiates, absorbs
-  * Economics: supplies, demands, invests, flows, regulates, competes, innovates, exchanges
-- Strictly avoid overusing generic terms: includes, uses, based on, relates, involves, implements, supports
-- Each relationship label should reflect specific causal, dependency, transformation, or influence mechanisms
-- Prefer verb forms for relationship descriptions
+Relationship Strategy:
+1. Topic-Concept relationships: Create meaningful connections between each concept and the topic
+2. Inter-concept relationships: Find logical connections between concepts
+3. Category relationships: Connect concepts within same categories
+4. Causal relationships: Identify cause-effect chains between concepts
+5. Dependency relationships: Connect concepts with dependencies
 
 Output JSON format:
 {{
   "relationships": [
-    {{"from": "source", "to": "target", "label": "precise_relationship"}},
-    {{"from": "{central_topic}", "to": "concept1", "label": "defines"}},
-    {{"from": "conceptA", "to": "conceptB", "label": "triggers"}}
+    {{"from": "{central_topic}", "to": "concept1", "label": "contains"}},
+    {{"from": "conceptA", "to": "conceptB", "label": "causes"}},
+    ...
   ]
 }}
 
 Requirements:
-- Relationship labels must be specific and accurate, reflecting real semantic mechanisms
-- Avoid repeating the same relationship types, pursue diversity
-- Each relationship should convey clear causal or dependency information
+- Each concept should have at least one relationship with the topic
+- Generate 40-60 total relationships
 - Relationship labels should be concise (1-3 words)
-- Ensure topic-to-concept relationships for all 30 concepts
-- Concept-to-concept relationships should reflect real logical connections and mechanisms
-- Output pure JSON format only
+- Relationships should be logical
+- Avoid duplicate relationships
 """
+
+        # Get relationships from LLM
+        relationships_response = _invoke_llm_prompt(rel_prompt, {'central_topic': central_topic, 'concepts': concepts})
         
-        relationships_response = _invoke_llm_prompt(relationships_prompt, {'central_topic': central_topic})
-        logger.info(f"Agent: LLM relationships response length: {len(relationships_response)} chars")
+        if not relationships_response:
+            raise ValueError("No response from LLM for relationship generation")
         
-        # Parse relationships with robust error handling
-        relationships = []
+        # Parse relationships response
         try:
             import json
-            # Clean the response
-            cleaned_response = relationships_response.strip()
-            if cleaned_response.startswith('```json'):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.startswith('```'):
-                cleaned_response = cleaned_response[3:]
-            if cleaned_response.endswith('```'):
-                cleaned_response = cleaned_response[:-3]
-            cleaned_response = cleaned_response.strip()
-            
-            logger.info(f"Agent: Parsing relationships response: {cleaned_response[:200]}...")
-            relationships_data = json.loads(cleaned_response)
-            relationships = relationships_data.get('relationships', [])
-            logger.info(f"Agent: Successfully parsed {len(relationships)} relationships from LLM")
-            
-            # Validate that we have topic->concept relationships for most concepts
-            topic_rels = [r for r in relationships if r.get('from') == str(central_topic)]
-            logger.info(f"Agent: Found {len(topic_rels)} topic-to-concept relationships")
-            
-            # If we're missing many topic relationships, add them
-            covered_concepts = set(r.get('to') for r in topic_rels)
-            missing_concepts = [c for c in concepts if c not in covered_concepts]
-            
-            if missing_concepts:
-                logger.warning(f"Agent: Adding missing topic relationships for {len(missing_concepts)} concepts")
-                basic_labels = ["包含", "涉及", "使用"] if language == 'zh' else ["includes", "involves", "uses"]
-                for i, concept in enumerate(missing_concepts):
-                    relationships.append({
-                        "from": str(central_topic),
-                        "to": concept,
-                        "label": basic_labels[i % len(basic_labels)]
-                    })
-                    
-        except json.JSONDecodeError as e:
-            logger.error(f"Agent: Relationships JSON parsing failed: {e}")
-            logger.error(f"Agent: Raw relationships response: {relationships_response[:500]}...")
-            
-            # Try to extract partial relationships from malformed JSON
-            logger.info(f"Agent: Attempting to extract partial relationships")
-            relationships = []
-            
+            rel_data = json.loads(relationships_response.strip())
+        except json.JSONDecodeError:
             try:
-                import re
-                # Find all relationship patterns in the response
-                rel_pattern = r'\{"from":\s*"([^"]+)",\s*"to":\s*"([^"]+)",\s*"label":\s*"([^"]+)"\}'
-                matches = re.findall(rel_pattern, relationships_response)
-                
-                for from_node, to_node, label in matches:
-                    relationships.append({
-                        "from": from_node,
-                        "to": to_node, 
-                        "label": label
-                    })
-                
-                logger.info(f"Agent: Extracted {len(relationships)} relationships from partial JSON")
-                
-                # Ensure we have topic relationships for all concepts
-                topic_rels = [r for r in relationships if r.get('from') == str(central_topic)]
-                covered_concepts = set(r.get('to') for r in topic_rels)
-                missing_concepts = [c for c in concepts if c not in covered_concepts]
-                
-                if missing_concepts:
-                    logger.info(f"Agent: Adding missing topic relationships for {len(missing_concepts)} concepts")
-                    basic_labels = ["包含", "涉及", "使用", "需要", "支持"] if language == 'zh' else ["includes", "involves", "uses", "requires", "supports"]
-                    for i, concept in enumerate(missing_concepts):
-                        relationships.append({
-                            "from": str(central_topic),
-                            "to": concept,
-                            "label": basic_labels[i % len(basic_labels)]
-                        })
-                
-            except Exception as parse_error:
-                logger.error(f"Agent: Partial extraction also failed: {parse_error}")
-                
-                # Ultimate fallback: create basic meaningful relationships
-                logger.info(f"Agent: Using ultimate fallback relationship generation")
-                relationships = []
-                
-                # Basic topic -> concept relationships
-                basic_labels = ["包含", "涉及", "使用", "需要", "支持"] if language == 'zh' else ["includes", "involves", "uses", "requires", "supports"]
-                for i, concept in enumerate(concepts):
-                    relationships.append({
-                        "from": str(central_topic),
-                        "to": concept,
-                        "label": basic_labels[i % len(basic_labels)]
-                    })
-                
-                # Basic concept -> concept relationships (fewer, but meaningful)
-                concept_labels = ["依赖", "支持", "连接"] if language == 'zh' else ["depends on", "supports", "connects to"]
-                for i in range(0, min(10, len(concepts)-1)):
-                    if i+1 < len(concepts):
-                        relationships.append({
-                            "from": concepts[i],
-                            "to": concepts[i+1],
-                            "label": concept_labels[i % len(concept_labels)]
-                        })
+                from .concept_maps import ConceptMapAgent
+                agent = ConceptMapAgent()
+                rel_data = agent._parse_json_response(relationships_response)
+                logger.info("Used ConceptMapAgent improved parsing for relationships")
+            except Exception as e:
+                logger.warning(f"ConceptMapAgent parsing failed for relationships: {e}")
+                rel_data = _parse_strict_json(relationships_response)
+                logger.info("Used strict parsing for relationships")
         
-        # Create the spec
+        relationships = rel_data.get('relationships', [])
+        
+        if not relationships:
+            raise ValueError("No relationships generated")
+        
+        # Build the final specification
         spec = {
-            'topic': str(central_topic),
-            'concepts': concepts[:30],  # Ensure exactly 30
+            'topic': central_topic,
+            'concepts': concepts,  # Exactly 30 concepts
             'relationships': relationships,
-            '_method': 'enhanced_30',
-            '_concept_count': len(concepts[:30])
+            '_method': 'enhanced_30',  # Mark for identification
+            '_concept_count': len(concepts),
+            '_stage_info': {
+                'original_prompt': user_prompt,
+                'extracted_topic': central_topic,
+                'concept_count': len(concepts),
+                'relationship_count': len(relationships)
+            }
         }
         
-        logger.info(f"Agent: Generated {len(spec['concepts'])} concepts and {len(spec['relationships'])} relationships")
-        
-        # Enhance the spec with layout and positioning using ConceptMapAgent
-        try:
-            from concept_map_agent import ConceptMapAgent
-            agent = ConceptMapAgent()
-            enhanced_result = agent.enhance_spec(spec)
-            
-            if enhanced_result.get('success'):
-                enhanced_spec = enhanced_result.get('spec', spec)
-                logger.info(f"Agent: Successfully enhanced spec with layout: {enhanced_spec.get('_layout', {}).get('algorithm', 'unknown')}")
-                return enhanced_spec
-            else:
-                logger.warning(f"Agent: ConceptMapAgent enhancement failed: {enhanced_result.get('error')}")
-                return spec
-                
-        except Exception as e:
-            logger.error(f"Agent: ConceptMapAgent enhancement failed: {e}")
-            return spec
+        logger.info(f"Agent: Enhanced 30-concept generation completed with {len(concepts)} concepts and {len(relationships)} relationships")
+        return spec
         
     except Exception as e:
-        logger.error(f"Agent: Enhanced 30-concept generation failed: {e}")
+        logger.error(f"Enhanced 30-concept generation failed: {e}")
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        
         # Fallback to original method
         return generate_concept_map_unified(user_prompt, language)
 
@@ -1592,11 +1537,24 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
             return generate_concept_map_enhanced_30(user_prompt, language)
         except Exception as e:
             logger.warning(f"Enhanced 30-concept generation failed: {e}")
+            # Try with fewer concepts as fallback
+            try:
+                logger.info("Agent: Attempting fallback with simplified two-stage generation...")
+                from .concept_maps import ConceptMapAgent
+                agent = ConceptMapAgent()
+                result = agent.generate_simplified_two_stage(user_prompt, llm_generation, language)
+                if isinstance(result, dict) and result.get('success'):
+                    return result.get('spec', {})
+                else:
+                    logger.warning(f"Simplified two-stage generation failed: {result.get('error')}")
+                    raise ValueError("All concept map generation methods failed")
+            except Exception as fallback_error:
+                logger.warning(f"Simplified two-stage fallback also failed: {fallback_error}")
     
     # If method is specified, try that first
     if method == 'network_first':
         try:
-            from concept_map_agent import ConceptMapAgent
+            from .concept_maps import ConceptMapAgent
             agent = ConceptMapAgent()
             # Use the global LLM client
             result = agent.generate_network_first(user_prompt, llm, language)
@@ -1607,23 +1565,11 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
         except Exception as e:
             logger.warning(f"Network-first generation failed: {e}")
     
-    # Fallback to original methods
-    if method in ['auto', 'unified']:
-        unified = generate_concept_map_unified(user_prompt, language)
-        if isinstance(unified, dict) and not unified.get('error'):
-            return unified
-        logger.warning(f"Unified concept map generation failed: {unified.get('error') if isinstance(unified, dict) else 'unknown'}")
-    
-    if method in ['auto', 'two_stage']:
-        try:
-            two_stage = generate_concept_map_two_stage(user_prompt, language)
-            if isinstance(two_stage, dict) and not two_stage.get('error'):
-                return two_stage
-            logger.warning("Two-stage concept map generation failed")
-        except Exception as e:
-            logger.warning(f"Two-stage concept map generation failed: {e}")
-    
-    return { 'error': 'All concept map generation methods failed' }
+    # With increased token limits, the enhanced method should work
+    # If it fails, there's a deeper issue that needs investigation
+    logger.error("Enhanced concept map generation failed despite increased token limits")
+    logger.error("This indicates a configuration or API issue that needs investigation")
+    raise ValueError("All concept map generation methods failed - check LLM configuration")
 
 
 def agent_graph_workflow_with_styles(user_prompt, language='zh'):

@@ -45,6 +45,8 @@ test_output.jpg
 temp/
 tmp/
 logs/*.log
+*.pid
+logs/*.pid
 
 # Node.js
 node_modules/
@@ -61,4 +63,10 @@ yarn-error.log*
 .env.*.local
 
 # Development temporary files
-development_prompts/*.md 
+development_prompts/*.md
+
+# Test outputs
+test/images/
+test/results/
+test/specs/
+test/html_viewer/ 

@@ -223,6 +223,15 @@
             margin-top: 2rem;
             display: none;
         }
+        
+        /* PNG Result Container - Force visibility when active */
+        #pngResult.result-container {
+            display: none; /* Default state */
+        }
+        
+        #pngResult.result-container.active {
+            display: block !important;
+        }
 
         .result-card {
             background: #f8fafc;
@@ -387,6 +396,11 @@
                 <div class="result-container" id="jsonResult"></div>
                 <div class="result-container" id="pngResult"></div>
                 
+                <!-- D3 Visualization Container -->
+                <div class="result-container">
+                    <h3>Diagram Visualization</h3>
+                    <div id="d3-container" style="width: 100%; height: 600px; border: 1px solid #ddd; margin-top: 10px;"></div>
+                </div>
 
             </div>
         </div>
@@ -398,15 +412,15 @@
     <script>
         // Module mapping for different graph types
         const graphTypeModules = {
-            'tree_map': ['theme-config', 'style-manager', 'shared-utilities', 'tree-renderer', 'renderer-dispatcher'],
-            'mindmap': ['theme-config', 'style-manager', 'shared-utilities', 'mind-map-renderer', 'renderer-dispatcher'],
-            'concept_map': ['theme-config', 'style-manager', 'shared-utilities', 'concept-map-renderer', 'renderer-dispatcher'],
-            'bubble_map': ['theme-config', 'style-manager', 'shared-utilities', 'bubble-map-renderer', 'renderer-dispatcher'],
-            'double_bubble_map': ['theme-config', 'style-manager', 'shared-utilities', 'bubble-map-renderer', 'renderer-dispatcher'],
-            'flow_map': ['theme-config', 'style-manager', 'shared-utilities', 'flow-renderer', 'renderer-dispatcher'],
-            'multi_flow_map': ['theme-config', 'style-manager', 'shared-utilities', 'flow-renderer', 'renderer-dispatcher'],
+            'tree_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'tree-renderer', 'renderer-dispatcher'],
+            'mindmap': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'mind-map-renderer', 'renderer-dispatcher'],
+            'concept_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'concept-map-renderer', 'renderer-dispatcher'],
+            'bubble_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'bubble-map-renderer', 'renderer-dispatcher'],
+            'double_bubble_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'bubble-map-renderer', 'renderer-dispatcher'],
+            'flow_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'flow-renderer', 'renderer-dispatcher'],
+            'multi_flow_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'flow-renderer', 'renderer-dispatcher'],
 
-            'brace_map': ['theme-config', 'style-manager', 'shared-utilities', 'brace-renderer', 'renderer-dispatcher']
+            'brace_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'brace-renderer', 'renderer-dispatcher']
         };
         
         // Track loaded modules to prevent duplicates
@@ -415,7 +429,9 @@
         // PROMISE-BASED MODULE LOADING - FIXES TIMING ISSUES
         function loadRequiredModules(graphType) {
             return new Promise((resolve, reject) => {
-                console.log(`Loading modules for: ${graphType}`);
+                console.log(`Loading modules for graphType: ${graphType}`);
+                console.log(`GraphType type: ${typeof graphType}`);
+                console.log(`Available graph types: ${Object.keys(graphTypeModules).join(', ')}`);
                 
                 const requiredModules = graphTypeModules[graphType] || [];
                 if (requiredModules.length === 0) {
@@ -425,8 +441,29 @@
                 
                 console.log(`Required modules: ${requiredModules.join(', ')}`);
                 
-                // Load modules sequentially with proper error handling
-                loadModulesSequentially(requiredModules, 0, resolve, reject);
+                // CRITICAL FIX: Check if modules are already loaded by backend
+                console.log('Checking if modules are already loaded by backend...');
+                const existingScripts = document.querySelectorAll('script[data-module]');
+                console.log(`Found ${existingScripts.length} existing inline scripts from backend`);
+                
+                if (existingScripts.length > 0) {
+                    console.log('Backend has already loaded modules, checking availability...');
+                    // Wait a bit for backend scripts to execute
+                    setTimeout(() => {
+                        console.log('Checking module availability after backend loading...');
+                        if (validateFunctions(graphType)) {
+                            console.log('✅ All required functions available from backend loading');
+                            resolve();
+                        } else {
+                            console.log('⚠️ Some functions missing, attempting frontend loading...');
+                            loadModulesSequentially(requiredModules, 0, resolve, reject);
+                        }
+                    }, 500);
+                } else {
+                    console.log('No backend modules found, using frontend loading...');
+                    // Load modules sequentially with proper error handling
+                    loadModulesSequentially(requiredModules, 0, resolve, reject);
+                }
             });
         }
         
@@ -466,7 +503,7 @@
             script.onerror = function() {
                 console.error(`❌ Failed to load ${moduleName} from ${modulePath}`);
                 // CRITICAL FIX: Stop loading if core modules fail
-                if (['theme-config', 'style-manager', 'shared-utilities'].includes(moduleName)) {
+                if (['d3', 'theme-config', 'style-manager', 'shared-utilities'].includes(moduleName)) {
                     reject(new Error(`Critical module ${moduleName} failed to load`));
                     return;
                 }
@@ -479,6 +516,7 @@
         // Get the correct path for each module
         function getModulePath(moduleName) {
             const modulePaths = {
+                'd3': '/static/js/d3.min.js',
                 'theme-config': '/static/js/theme-config.js',
                 'style-manager': '/static/js/style-manager.js',
                 'shared-utilities': '/static/js/renderers/shared-utilities.js',
@@ -545,7 +583,43 @@
                     requiredFunctions.renderMindMap = typeof renderMindMap;
                     break;
                 case 'concept_map':
+                    console.log('Checking concept_map function availability...');
+                    console.log('  - renderConceptMap (global):', typeof renderConceptMap);
+                    console.log('  - window.renderConceptMap:', typeof window.renderConceptMap);
+                    console.log('  - window.ConceptMapRenderer:', typeof window.ConceptMapRenderer);
+                    console.log('  - window.ConceptMapRenderer?.renderConceptMap:', window.ConceptMapRenderer ? typeof window.ConceptMapRenderer.renderConceptMap : 'N/A');
+                    
+                    // Check if functions exist in different scopes
+                    if (typeof renderConceptMap === 'function') {
+                        console.log('renderConceptMap (global) is available');
+                    } else {
+                        console.log('renderConceptMap (global) is NOT available');
+                    }
+                    
+                    if (typeof window.renderConceptMap === 'function') {
+                        console.log('window.renderConceptMap is available');
+                    } else {
+                        console.log('window.renderConceptMap is NOT available');
+                    }
+                    
+                    if (typeof window.ConceptMapRenderer === 'object' && window.ConceptMapRenderer) {
+                        console.log('window.ConceptMapRenderer is available');
+                        if (typeof window.ConceptMapRenderer.renderConceptMap === 'function') {
+                            console.log('window.ConceptMapRenderer.renderConceptMap is available');
+                        } else {
+                            console.log('window.ConceptMapRenderer.renderConceptMap is NOT available');
+                        }
+                    } else {
+                        console.log('window.ConceptMapRenderer is NOT available');
+                    }
+                    
                     requiredFunctions.renderConceptMap = typeof renderConceptMap;
+                    requiredFunctions.windowRenderConceptMap = typeof window.renderConceptMap;
+                    requiredFunctions.ConceptMapRenderer = typeof window.ConceptMapRenderer;
+                    requiredFunctions.renderGraph = typeof renderGraph;
+                    if (typeof window.ConceptMapRenderer === 'object' && window.ConceptMapRenderer) {
+                        requiredFunctions.ConceptMapRendererRenderConceptMap = typeof window.ConceptMapRenderer.renderConceptMap;
+                    }
                     break;
                 case 'bubble_map':
                     requiredFunctions.renderBubbleMap = typeof renderBubbleMap;
@@ -580,18 +654,29 @@
                 // 1. Load required modules first (PROACTIVE LOADING)
                 await loadRequiredModules(graphType);
                 
-                // 2. Add extra delay for tree_map to ensure proper initialization
+                // 2. Add extra delay for specific graph types to ensure proper initialization
                 if (graphType === 'tree_map') {
                     console.log('Tree map detected, adding extra initialization delay...');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } else if (graphType === 'concept_map') {
+                    console.log('Concept map detected, adding extra initialization delay...');
                     await new Promise(resolve => setTimeout(resolve, 200));
                 }
                 
                 // 3. Validate functions are available
                 if (!validateFunctions(graphType)) {
-                    // CRITICAL FIX: For tree_map, try to manually check and fix function availability
+                    // CRITICAL FIX: For specific graph types, try to manually check and fix function availability
                     if (graphType === 'tree_map') {
                         console.log('Attempting to fix tree_map function availability...');
                         await attemptTreeMapFunctionFix();
+                        
+                        // Re-validate after fix attempt
+                        if (!validateFunctions(graphType)) {
+                            throw new Error('Required functions not available after module loading and fix attempt');
+                        }
+                    } else if (graphType === 'concept_map') {
+                        console.log('Attempting to fix concept_map function availability...');
+                        await attemptConceptMapFunctionFix();
                         
                         // Re-validate after fix attempt
                         if (!validateFunctions(graphType)) {
@@ -684,6 +769,70 @@
                 }
             } catch (error) {
                                     console.error('Error during manual function exposure:', error);
+            }
+            
+            // Wait a bit more for any async operations
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // CRITICAL FIX: Function to attempt fixing concept_map function availability
+        async function attemptConceptMapFunctionFix() {
+            console.log('Attempting to fix concept_map function availability...');
+            
+            // CRITICAL FIX: Check script loading status
+            console.log('Checking script loading status...');
+            const scripts = document.querySelectorAll('script[src*="concept-map-renderer"]');
+            console.log('Found concept-map-renderer scripts:', scripts.length);
+            scripts.forEach((script, index) => {
+                console.log(`  Script ${index}:`, script.src, 'Loaded:', script.complete);
+            });
+            
+            // Check if functions exist in different scopes
+            const functionChecks = [
+                { name: 'window.renderConceptMap', func: window.renderConceptMap },
+                { name: 'window.ConceptMapRenderer.renderConceptMap', func: window.ConceptMapRenderer?.renderConceptMap }
+            ];
+            
+            for (const check of functionChecks) {
+                if (typeof check.func === 'function') {
+                    console.log(`Found ${check.name}:`, check.func);
+                    
+                    // Try to expose it globally if not already there
+                    if (check.name === 'window.renderConceptMap' && typeof window.renderConceptMap === 'function') {
+                        if (typeof window.renderConceptMap !== 'function') {
+                            window.renderConceptMap = window.renderConceptMap;
+                            console.log('Exposed window.renderConceptMap to global scope');
+                        }
+                    }
+                    
+                    if (check.name === 'window.ConceptMapRenderer.renderConceptMap' && window.ConceptMapRenderer?.renderConceptMap) {
+                        if (typeof window.ConceptMapRenderer !== 'object') {
+                            window.ConceptMapRenderer = window.ConceptMapRenderer;
+                            console.log('Exposed window.ConceptMapRenderer to global scope');
+                        }
+                    }
+                } else {
+                    console.log(`${check.name} not available:`, typeof check.func);
+                }
+            }
+            
+            // CRITICAL FIX: Try to manually trigger the export if it failed
+            console.log('Attempting manual function exposure...');
+            try {
+                // Check if the concept-map-renderer script has executed but failed to export
+                if (typeof window.renderConceptMap === 'undefined' && typeof window.ConceptMapRenderer === 'undefined') {
+                    console.log('No functions found, checking if script execution completed...');
+                    
+                    // Wait a bit more and check again
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    if (typeof window.renderConceptMap === 'undefined' && typeof window.ConceptMapRenderer === 'undefined') {
+                        console.error('CRITICAL: Concept map renderer functions still not available after delay');
+                        console.error('This suggests the concept-map-renderer.js script failed to execute properly');
+                    }
+                }
+            } catch (error) {
+                console.error('Error during manual function exposure:', error);
             }
             
             // Wait a bit more for any async operations
@@ -992,24 +1141,89 @@
     }
 
     function showPngResult(blob) {
+        console.log('🔍 Debug: showPngResult called with blob:', blob);
+        console.log('🔍 Debug: Blob size:', blob.size, 'bytes, type:', blob.type);
+        console.log('🔍 Debug: Blob constructor:', blob.constructor.name);
+        console.log('🔍 Debug: Blob instanceof Blob:', blob instanceof Blob);
+        console.log('🔍 Debug: Blob arrayBuffer available:', typeof blob.arrayBuffer === 'function');
+        console.log('🔍 Debug: Blob stream available:', typeof blob.stream === 'function');
+        console.log('🔍 Debug: Blob text available:', typeof blob.text === 'function');
+        
+        // Test if we can read the blob (non-interfering test)
+        blob.arrayBuffer().then(buffer => {
+            console.log('✅ Blob arrayBuffer read successfully, size:', buffer.byteLength);
+            console.log('✅ First few bytes:', new Uint8Array(buffer).slice(0, 8));
+            
+            // Verify PNG header (should start with 89 50 4E 47 0D 0A 1A 0A)
+            const header = new Uint8Array(buffer).slice(0, 8);
+            const pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+            const isPng = header.every((byte, i) => byte === pngHeader[i]);
+            console.log('✅ PNG header valid:', isPng);
+            console.log('✅ Header bytes:', Array.from(header).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+        }).catch(e => {
+            console.error('❌ Failed to read blob arrayBuffer:', e);
+        });
+        
+        console.log('🔍 Debug: Before DOM changes:');
+        console.log('  - jsonResult display:', jsonResult.style.display);
+        console.log('  - pngResult display:', pngResult.style.display);
+        console.log('  - pngResult children count:', pngResult.children.length);
+        
         jsonResult.style.display = 'none';
+        jsonResult.classList.remove('active');
         pngResult.style.display = 'block';
+        pngResult.classList.add('active');
         pngResult.innerHTML = '';
+        
+        console.log('🔍 Debug: After DOM changes:');
+        console.log('  - jsonResult display:', jsonResult.style.display);
+        console.log('  - pngResult display:', pngResult.style.display);
+        console.log('  - pngResult children count:', pngResult.children.length);
+        console.log('🔍 Debug: PNG result container made visible');
         
         // Create PNG container with proper styling
         const pngContainer = document.createElement('div');
         pngContainer.className = 'png-container';
+        // Removed debug styling - clean appearance
+        console.log('🔍 Debug: PNG container created with class:', pngContainer.className);
         
         // Create image element
         const img = document.createElement('img');
+        console.log('🔍 Debug: Image element created');
         
         // Create blob URL for display
         const url = URL.createObjectURL(blob);
-        img.src = url;
+        console.log('🔍 Debug: Blob URL created:', url);
+        console.log('🔍 Debug: Blob URL type:', typeof url);
+        console.log('🔍 Debug: Blob URL length:', url.length);
+        console.log('🔍 Debug: Blob URL starts with blob:', url.startsWith('blob:'));
         
-        // Clean up blob URL when image loads
+        img.src = url;
+        console.log('🔍 Debug: Image src set to:', img.src);
+        console.log('🔍 Debug: Image element:', img);
+        console.log('🔍 Debug: Image complete:', img.complete);
+        console.log('🔍 Debug: Image naturalWidth:', img.naturalWidth);
+        console.log('🔍 Debug: Image naturalHeight:', img.naturalHeight);
+        
+        // Clean up blob URL ONLY after image is fully displayed and user has seen it
         img.onload = () => {
-            URL.revokeObjectURL(url);
+            console.log('✅ Image loaded successfully');
+            console.log('✅ Image naturalWidth after load:', img.naturalWidth);
+            console.log('✅ Image naturalHeight after load:', img.naturalHeight);
+            console.log('✅ Image complete after load:', img.complete);
+            console.log('✅ Image should now be visible on screen');
+            
+            // Don't revoke URL immediately - let user see the image first
+            // URL will be cleaned up when user clicks download or opens in new tab
+        };
+        
+        img.onerror = (error) => {
+            console.error('❌ Image failed to load:', error);
+            console.error('❌ Image src:', img.src);
+            console.error('❌ Image element:', img);
+            console.error('❌ Image complete:', img.complete);
+            console.error('❌ Image naturalWidth:', img.naturalWidth);
+            console.error('❌ Image naturalHeight:', img.naturalHeight);
         };
         
         // Add click-to-expand functionality
@@ -1032,6 +1246,8 @@
         });
         
         pngContainer.appendChild(img);
+        console.log('🔍 Debug: Image appended to PNG container');
+        console.log('🔍 Debug: PNG container children count:', pngContainer.children.length);
         
         // Add download button and note
         const controls = document.createElement('div');
@@ -1080,68 +1296,122 @@
         pngContainer.appendChild(note);
         
         pngResult.appendChild(pngContainer);
+        console.log('🔍 Debug: PNG container appended to result');
+        console.log('🔍 Debug: Final PNG result children count:', pngResult.children.length);
+        console.log('🔍 Debug: PNG result display style:', pngResult.style.display);
+        console.log('🔍 Debug: PNG result classList:', pngResult.classList.toString());
+        console.log('🔍 Debug: PNG result has active class:', pngResult.classList.contains('active'));
+        console.log('🔍 Debug: PNG result visibility:', pngResult.style.visibility);
+        console.log('🔍 Debug: PNG result computed display:', window.getComputedStyle(pngResult).display);
+        console.log('🔍 Debug: PNG result computed visibility:', window.getComputedStyle(pngResult).visibility);
+        console.log('🔍 Debug: PNG result computed opacity:', window.getComputedStyle(pngResult).opacity);
+        console.log('🔍 Debug: PNG result computed height:', window.getComputedStyle(pngResult).height);
+        console.log('🔍 Debug: PNG result computed width:', window.getComputedStyle(pngResult).width);
+        
+        // Check the PNG container styles too
+        console.log('🔍 Debug: PNG container computed display:', window.getComputedStyle(pngContainer).display);
+        console.log('🔍 Debug: PNG container computed visibility:', window.getComputedStyle(pngContainer).visibility);
+        console.log('🔍 Debug: PNG container computed height:', window.getComputedStyle(pngContainer).height);
+        console.log('🔍 Debug: PNG container computed width:', window.getComputedStyle(pngContainer).width);
+        
+        // Force a reflow to ensure the image is visible
+        pngResult.offsetHeight;
+        console.log('🔍 Debug: Forced reflow, PNG result should now be visible');
+        
+        // Final check after reflow
+        setTimeout(() => {
+            console.log('🔍 Debug: Final check after timeout:');
+            console.log('  - PNG result computed display:', window.getComputedStyle(pngResult).display);
+            console.log('  - PNG result computed visibility:', window.getComputedStyle(pngResult).visibility);
+            console.log('  - PNG result children count:', pngResult.children.length);
+            console.log('  - PNG container children count:', pngContainer.children.length);
+            console.log('  - Image element:', pngContainer.querySelector('img'));
+            console.log('  - Image src:', pngContainer.querySelector('img')?.src);
+            console.log('  - Image complete:', pngContainer.querySelector('img')?.complete);
+            
+            // Additional debugging
+            console.log('🔍 Debug: PNG result element:', pngResult);
+            console.log('🔍 Debug: PNG result innerHTML length:', pngResult.innerHTML.length);
+            console.log('🔍 Debug: PNG result textContent length:', pngResult.textContent.length);
+            console.log('🔍 Debug: PNG result offsetHeight:', pngResult.offsetHeight);
+            console.log('🔍 Debug: PNG result offsetWidth:', pngResult.offsetWidth);
+            console.log('🔍 Debug: PNG result clientHeight:', pngResult.clientHeight);
+            console.log('🔍 Debug: PNG result clientWidth:', pngResult.clientWidth);
+            
+            // Final image visibility check
+            const finalImg = pngContainer.querySelector('img');
+            if (finalImg) {
+                console.log('🔍 Debug: Final image check:');
+                console.log('  - Image naturalWidth:', finalImg.naturalWidth);
+                console.log('  - Image naturalHeight:', finalImg.naturalHeight);
+                console.log('  - Image complete:', finalImg.complete);
+                console.log('  - Image currentSrc:', finalImg.currentSrc);
+                console.log('  - Image display style:', window.getComputedStyle(finalImg).display);
+                console.log('  - Image visibility style:', window.getComputedStyle(finalImg).visibility);
+                console.log('  - Image opacity style:', window.getComputedStyle(finalImg).opacity);
+                console.log('  - Image dimensions:', finalImg.offsetWidth, 'x', finalImg.offsetHeight);
+                
+                if (finalImg.naturalWidth > 0 && finalImg.naturalHeight > 0) {
+                    console.log('✅ Image has valid dimensions and should be visible!');
+                } else {
+                    console.error('❌ Image has zero dimensions - this is the problem!');
+                }
+            } else {
+                console.error('❌ No image element found in PNG container!');
+            }
+        }, 100);
     }
     
 
     
-        // Single Generate Diagram button handler
+        // Single Generate Diagram button handler - PNG-only, production-like flow
     generateDiagramBtn.onclick = async function() {
-        showError(''); 
-        showInfo('Generating diagram...');
-        jsonResult.style.display = 'none'; 
+        showError('');
+        showInfo('Generating PNG...');
+        jsonResult.style.display = 'none';
         pngResult.style.display = 'none';
-        
+        jsonResult.classList.remove('active');
+        pngResult.classList.remove('active');
+
         try {
-            // Get diagram data
-            showInfo('Getting diagram data...');
-            const resp = await fetch('/api/generate_graph', {
+            console.log('🔍 Debug: Calling /api/generate_png endpoint with prompt:', promptBox.value, 'language:', languageSelect.value);
+            console.log('🔍 Debug: Starting PNG generation...');
+            console.log('🔍 Debug: Request payload:', { prompt: promptBox.value, language: languageSelect.value });
+            const pngResp = await fetch('/api/generate_png', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
             });
-            
-            if (!resp.ok) {
-                const errorData = await resp.json().catch(() => ({}));
-                showError(errorData.error || 'Failed to generate diagram.');
-                showInfo('');
-                return;
-            }
-            
-            const data = await resp.json();
-            if (!data || !data.spec || !data.type) {
-                showError('Invalid diagram data received.');
-                showInfo('');
-                return;
-            }
-            
 
-            
-            // Skip D3 rendering since we only need PNG
-            showInfo('Generating PNG directly...');
-            try {
-                const pngResp = await fetch('/api/generate_png', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
-                });
-                
-                if (pngResp.ok) {
-                    const pngBlob = await pngResp.blob();
-                    showPngResult(pngBlob);
-                    showSuccess('PNG generated successfully!');
-                } else {
-                    const errorData = await pngResp.json().catch(() => ({}));
-                    showError('PNG generation failed: ' + (errorData.error || 'Unknown error'));
-                }
-            } catch (pngError) {
-                showError('PNG generation failed: ' + pngError);
+            if (!pngResp.ok) {
+                const errorText = await pngResp.text().catch(() => '');
+                console.error('❌ PNG generation failed with status:', pngResp.status);
+                console.error('❌ Error response:', errorText);
+                console.error('❌ Response headers:', Object.fromEntries(pngResp.headers.entries()));
+                showError(errorText || 'PNG generation failed.');
+                showInfo('');
+                return;
             }
+
+            console.log('✅ PNG generation successful, status:', pngResp.status);
+            console.log('✅ Response headers:', Object.fromEntries(pngResp.headers.entries()));
+            console.log('✅ Response type:', pngResp.type);
+            console.log('✅ Response URL:', pngResp.url);
             
+            const pngBlob = await pngResp.blob();
+            console.log('✅ PNG blob created:', pngBlob);
+            console.log('✅ Blob size:', pngBlob.size, 'bytes');
+            console.log('✅ Blob type:', pngBlob.type);
+            console.log('✅ Blob lastModified:', pngBlob.lastModified);
+            
+            showPngResult(pngBlob);
             showInfo('');
             saveHistory(promptBox.value, languageSelect.value);
-            
         } catch (e) {
-            showError('Failed to generate diagram: ' + e);
+            console.error('❌ Exception during PNG generation:', e);
+            console.error('❌ Exception stack:', e.stack);
+            console.error('❌ Exception message:', e.message);
+            showError('Failed to generate PNG: ' + e);
             showInfo('');
         }
     };

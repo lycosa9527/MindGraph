@@ -86,7 +86,7 @@ REQUIRED_LOG_FILES = [
 ESSENTIAL_FILES = [
     "app.py",
     "api_routes.py", 
-    "config.py",
+            "settings.py",
     "run_server.py",
     "requirements.txt"
 ]

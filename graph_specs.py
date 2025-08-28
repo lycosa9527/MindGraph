@@ -202,14 +202,20 @@ def validate_brace_map(spec: Dict) -> Tuple[bool, str]:
                 return False, f"parts[{i}].subparts must be a list"
             
             for j, subpart in enumerate(part["subparts"]):
-                if not isinstance(subpart, dict):
-                    return False, f"parts[{i}].subparts[{j}] must be a dictionary"
-                
-                if "name" not in subpart:
-                    return False, f"parts[{i}].subparts[{j}] must have 'name' field"
-                
-                if not isinstance(subpart["name"], str) or not subpart["name"].strip():
-                    return False, f"parts[{i}].subparts[{j}].name must be a non-empty string"
+                # Accept both strings and dictionaries for subparts
+                if isinstance(subpart, str):
+                    # If subpart is a string, validate it's not empty
+                    if not subpart.strip():
+                        return False, f"parts[{i}].subparts[{j}] cannot be empty"
+                elif isinstance(subpart, dict):
+                    # If subpart is a dictionary, validate it has required fields
+                    if "name" not in subpart:
+                        return False, f"parts[{i}].subparts[{j}] must have 'name' field"
+                    
+                    if not isinstance(subpart["name"], str) or not subpart["name"].strip():
+                        return False, f"parts[{i}].subparts[{j}].name must be a non-empty string"
+                else:
+                    return False, f"parts[{i}].subparts[{j}] must be a string or dictionary"
     
     return True, ""
 

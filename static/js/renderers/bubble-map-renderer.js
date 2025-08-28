@@ -66,10 +66,12 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         };
     }
     
-    // Apply background if specified
-    if (theme && theme.background) {
-        d3.select('#d3-container').style('background-color', theme.background);
-    }
+    // Apply background to container and store for SVG
+    const backgroundColor = theme?.background || THEME.background || '#f5f5f5';
+    d3.select('#d3-container').style('background-color', backgroundColor);
+    
+    // Ensure container has no padding/margin that could cause white space
+    d3.select('#d3-container').style('padding', '0').style('margin', '0');
     
     // Calculate sizes
     const topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
@@ -150,6 +152,18 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('height', height)
         .attr('viewBox', `${minX} ${minY} ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMinYMin meet');
+    
+    // Add background rectangle to cover entire SVG area
+    svg.append('rect')
+        .attr('x', minX)
+        .attr('y', minY)
+        .attr('width', width)
+        .attr('height', height)
+        .attr('fill', backgroundColor)
+        .attr('stroke', 'none');
+    
+    // Debug: Log the calculated dimensions
+    console.log(`Bubble Map SVG dimensions: ${width} x ${height}, bounds: [${minX}, ${minY}] to [${maxX}, ${maxY}]`);
     
     // Draw connecting lines from topic to attributes
     nodes.forEach(node => {

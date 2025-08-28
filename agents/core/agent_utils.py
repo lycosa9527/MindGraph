@@ -9,9 +9,74 @@ processing agent outputs and handling edge cases.
 import re
 import json
 import yaml
-from config import config
+from settings import config
 import logging
 logger = logging.getLogger(__name__)
+
+
+def get_llm_client():
+    """
+    Get the LLM client instance.
+    
+    Returns:
+        LLM client instance
+    """
+    try:
+        from llm_clients import get_llm_client as get_client
+        return get_client()
+    except ImportError:
+        logger.error("Failed to import get_llm_client from llm_clients")
+        return None
+
+
+def extract_json_from_response(response_content):
+    """
+    Extract JSON from LLM response content.
+    
+    Args:
+        response_content (str): Raw response content from LLM
+        
+    Returns:
+        dict or None: Extracted JSON data or None if failed
+    """
+    try:
+        # Clean the response content
+        content = response_content.strip()
+        
+        # Try to find JSON in markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*\n(.*?)\n```', content, re.DOTALL)
+        if json_match:
+            json_content = json_match.group(1).strip()
+            try:
+                return json.loads(json_content)
+            except json.JSONDecodeError:
+                pass
+        
+        # Try to find JSON in the content directly
+        # Look for content that starts with { and ends with }
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            json_content = json_match.group(0)
+            try:
+                return json.loads(json_content)
+            except json.JSONDecodeError:
+                pass
+        
+        # Try to find JSON array
+        json_match = re.search(r'\[.*\]', content, re.DOTALL)
+        if json_match:
+            json_content = json_match.group(0)
+            try:
+                return json.loads(json_content)
+            except json.JSONDecodeError:
+                pass
+        
+        logger.warning("Failed to extract JSON from response content")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error extracting JSON from response: {e}")
+        return None
 
 
 def parse_topic_extraction_result(result, language='zh'):
@@ -335,7 +400,7 @@ def extract_topics_with_agent(user_prompt, language='zh'):
     
     logger.info(f"🔍 Agent: Extracting topics from prompt: {user_prompt}")
     # Create the topic extraction chain
-    from agent import create_topic_extraction_chain
+    from ..main_agent import create_topic_extraction_chain
     topic_chain = create_topic_extraction_chain(language)
     try:
         # Run the chain (refactored to use .invoke())
@@ -375,7 +440,7 @@ def generate_characteristics_with_agent(topic1, topic2, language='zh'):
     
     logger.info(f"🎯 Agent: Generating characteristics for {topic1} vs {topic2}")
     # Create the characteristics generation chain
-    from agent import create_characteristics_chain
+    from ..main_agent import create_characteristics_chain
     char_chain = create_characteristics_chain(language)
     try:
         # Run the chain (refactored to use .invoke())

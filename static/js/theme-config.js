@@ -7,6 +7,8 @@
 const THEME_CONFIG = {
     // Bubble Map Configuration
     bubble_map: {
+        // Background color for the entire canvas
+        background: '#f5f5f5',        // Light grey background
         // Topic Node (Central Node)
         topic: {
             fill: '#1976d2',           // Deep blue background

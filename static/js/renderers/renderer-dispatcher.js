@@ -9,7 +9,7 @@
 
 // Main rendering dispatcher function
 function renderGraph(type, spec, theme = null, dimensions = null) {
-    // renderGraph called with parameters
+    console.log('🚀 Renderer dispatcher: renderGraph called with:', { type, spec: spec ? 'valid' : 'null', theme: theme ? 'valid' : 'null', dimensions });
     
     // Clear the container first
     d3.select('#d3-container').html('');
@@ -88,10 +88,35 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
             }
             break;
         case 'concept_map':
+            // CRITICAL FIX: Check all possible locations for the function
+            console.log('🔍 Renderer dispatcher: Looking for concept_map renderer...');
+            console.log('🔍 Available functions:', {
+                'renderConceptMap (global)': typeof renderConceptMap,
+                'window.ConceptMapRenderer': typeof window.ConceptMapRenderer,
+                'window.ConceptMapRenderer.renderConceptMap': window.ConceptMapRenderer ? typeof window.ConceptMapRenderer.renderConceptMap : 'N/A'
+            });
+            
+            let conceptMapRenderer = null;
             if (typeof renderConceptMap === 'function') {
-                renderConceptMap(spec, integratedTheme, dimensions);
+                conceptMapRenderer = renderConceptMap;
+                console.log('✅ Using global renderConceptMap function');
+            } else if (window.ConceptMapRenderer && typeof window.ConceptMapRenderer.renderConceptMap === 'function') {
+                conceptMapRenderer = window.ConceptMapRenderer.renderConceptMap;
+                console.log('✅ Using window.ConceptMapRenderer.renderConceptMap function');
+            }
+            
+            if (conceptMapRenderer) {
+                // Calling concept map renderer
+                try {
+                    console.log('🚀 Calling concept map renderer...');
+                    conceptMapRenderer(spec, integratedTheme, dimensions);
+                    console.log('✅ Concept map rendering completed');
+                } catch (error) {
+                    console.error('❌ Error rendering concept map:', error);
+                    showRendererError('concept_map', error.message);
+                }
             } else {
-                console.error('renderConceptMap function not found');
+                console.error('❌ renderConceptMap function not found anywhere');
                 showRendererError('concept_map');
             }
             break;

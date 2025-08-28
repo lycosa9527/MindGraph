@@ -14,11 +14,152 @@ ignore safely.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+import logging
+from typing import Dict, List, Tuple, Any, Optional
+from ..core.base_agent import BaseAgent
+
+logger = logging.getLogger(__name__)
 
 
-class FlowMapAgent:
+class FlowMapAgent(BaseAgent):
     """Utility agent to improve flow map specs before rendering."""
+    
+    def __init__(self):
+        super().__init__()
+        self.diagram_type = "flow_map"
+    
+    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+        """Generate a flow map from a prompt."""
+        try:
+            # Generate the initial flow map specification
+            spec = self._generate_flow_map_spec(prompt, language)
+            if not spec:
+                return {
+                    'success': False,
+                    'error': 'Failed to generate flow map specification'
+                }
+            
+            # Validate the generated spec
+            is_valid, validation_msg = self.validate_output(spec)
+            if not is_valid:
+                logger.warning(f"FlowMapAgent: Validation failed: {validation_msg}")
+                return {
+                    'success': False,
+                    'error': f'Generated invalid specification: {validation_msg}'
+                }
+            
+            # Enhance the spec with layout and dimensions
+            enhanced_spec = self.enhance_spec(spec)
+            
+            logger.info(f"✅ FlowMapAgent: Successfully generated flow map")
+            return {
+                'success': True,
+                'spec': enhanced_spec,
+                'diagram_type': self.diagram_type
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ FlowMapAgent: Error generating flow map: {e}")
+            return {
+                'success': False,
+                'error': f'Generation failed: {str(e)}'
+            }
+    
+    def _generate_flow_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+        """Generate the flow map specification using LLM."""
+        try:
+            if language == "zh":
+                system_prompt = """你是一个专业的思维导图专家，专门创建流程图。流程图用于展示过程和步骤的顺序。
+
+请根据用户的描述，创建一个详细的流程图规范。输出必须是有效的JSON格式，包含以下结构：
+
+{
+  "topic": "流程主题",
+  "steps": [
+    {"id": "step1", "label": "步骤1", "next": "step2"},
+    {"id": "step2", "label": "步骤2", "next": "step3"}
+  ]
+}
+
+要求：
+- 流程主题应该清晰明确
+- 每个步骤必须有id、label和next字段
+- 步骤应该按逻辑顺序组织
+- 使用简洁但描述性的文本
+- 确保JSON格式完全有效"""
+                
+                user_prompt = f"请为以下描述创建一个流程图：{prompt}"
+            else:
+                system_prompt = """You are a professional mind mapping expert specializing in flow maps. Flow maps are used to show the sequence of processes and steps.
+
+Please create a detailed flow map specification based on the user's description. The output must be valid JSON with the following structure:
+
+{
+  "topic": "Flow Topic",
+  "steps": [
+    {"id": "step1", "label": "Step 1", "next": "step2"},
+    {"id": "step2", "label": "Step 2", "next": "step3"}
+  ]
+}
+
+Requirements:
+- Flow topic should be clear and specific
+- Each step must have id, label, and next fields
+- Steps should be organized in logical sequence
+- Use concise but descriptive text
+- Ensure the JSON format is completely valid"""
+                
+                user_prompt = f"Please create a flow map for the following description: {prompt}"
+            
+            # Generate response from LLM
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            response = self.llm_client.chat_completion(messages)
+            
+            if not response:
+                logger.error("FlowMapAgent: No response from LLM")
+                return None
+            
+            # Extract JSON from response
+            from ..core.agent_utils import extract_json_from_response
+            
+            # Check if response is already a dictionary (from mock client)
+            if isinstance(response, dict):
+                spec = response
+            else:
+                # Try to extract JSON from string response
+                spec = extract_json_from_response(str(response))
+            
+            if not spec:
+                logger.error("FlowMapAgent: Failed to extract JSON from LLM response")
+                return None
+            
+            return spec
+            
+        except Exception as e:
+            logger.error(f"FlowMapAgent: Error in spec generation: {e}")
+            return None
+    
+    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+        """Validate a flow map specification."""
+        try:
+            if not isinstance(spec, dict):
+                return False, "Spec must as a dictionary"
+            
+            # Accept both 'title' and 'topic' fields for flexibility
+            title = spec.get("title") or spec.get("topic")
+            steps = spec.get("steps")
+            
+            if not title or not isinstance(title, str):
+                return False, "Missing or invalid title/topic"
+            if not steps or not isinstance(steps, list):
+                return False, "Missing or invalid steps"
+            
+            return True, "Valid flow map specification"
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
 
     MAX_STEPS: int = 15
     MAX_SUBSTEPS_PER_STEP: int = 8
@@ -39,7 +180,7 @@ class FlowMapAgent:
             if not isinstance(spec, dict):
                 return {"success": False, "error": "Spec must be a dictionary"}
 
-            title_raw = spec.get("title", "")
+            title_raw = spec.get("title", "") or spec.get("topic", "")
             steps_raw = spec.get("steps", [])
             substeps_raw = (
                 spec.get("substeps")
@@ -61,9 +202,15 @@ class FlowMapAgent:
             seen = set()
             normalized_steps: List[str] = []
             for item in steps_raw:
-                if not isinstance(item, str):
+                # Handle both string and object formats
+                if isinstance(item, str):
+                    step_text = item
+                elif isinstance(item, dict) and 'label' in item:
+                    step_text = item['label']
+                else:
                     continue
-                cleaned = clean_text(item)
+                
+                cleaned = clean_text(step_text)
                 if not cleaned or cleaned in seen:
                     continue
                 seen.add(cleaned)

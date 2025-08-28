@@ -7,6 +7,7 @@ import logging
 import math
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple, Union
+from ..core.base_agent import BaseAgent
 from dataclasses import dataclass
 from enum import Enum
 
@@ -43,7 +44,7 @@ CHAR_WIDTH_CONFIG = {
 }
 
 # Import required components
-from config import Config
+from settings import Config
 
 
 # Debug logging removed for production
@@ -1083,15 +1084,17 @@ class FlexibleLayoutCalculator:
         return FONT_WEIGHT_CONFIG.get(node_type, 'normal')
 
 
-class BraceMapAgent:
+class BraceMapAgent(BaseAgent):
     """Brace Map Agent with block-based positioning system"""
     
     def __init__(self):
+        super().__init__()
         self.context_manager = ContextManager()
         self.llm_processor = LLMHybridProcessor()
         self.algorithm_selector = ContextAwareAlgorithmSelector(self.context_manager)
         self.layout_calculator = FlexibleLayoutCalculator()
         self.block_positioning = BlockBasedPositioningSystem()
+        self.diagram_type = "brace_map"
         
         # Initialize with default theme
         self.default_theme = {
@@ -1104,6 +1107,216 @@ class BraceMapAgent:
             'strokeColor': '#95a5a6',
             'strokeWidth': 2
         }
+    
+    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+        """Generate a brace map from a prompt."""
+        try:
+            # Generate the initial brace map specification
+            spec = self._generate_brace_map_spec(prompt, language)
+            if not spec:
+                return {
+                    'success': False,
+                    'error': 'Failed to generate brace map specification'
+                }
+            
+            # Validate the generated spec
+            is_valid, validation_msg = self.validate_output(spec)
+            if not is_valid:
+                logger.warning(f"BraceMapAgent: Validation failed: {validation_msg}")
+                return {
+                    'success': False,
+                    'error': f'Generated invalid specification: {validation_msg}'
+                }
+            
+            # Enhance the spec with layout and dimensions
+            enhanced_result = self.enhance_spec(spec)
+            if not enhanced_result.get('success'):
+                return enhanced_result
+            
+            enhanced_spec = enhanced_result['spec']
+            
+            logger.info(f"✅ BraceMapAgent: Successfully generated brace map")
+            return {
+                'success': True,
+                'spec': enhanced_spec,
+                'diagram_type': self.diagram_type
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ BraceMapAgent: Error generating brace map: {e}")
+            return {
+                'success': False,
+                'error': f'Generation failed: {str(e)}'
+            }
+    
+    def _generate_brace_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+        """Generate the brace map specification using LLM."""
+        try:
+            if language == "zh":
+                system_prompt = """你是一个专业的思维导图专家，专门创建括号图。括号图用于展示主题的组成部分。
+
+请根据用户的描述，创建一个详细的括号图规范。输出必须是有效的JSON格式，包含以下结构：
+
+{
+  "topic": "中心主题",
+  "parts": [
+    {
+      "id": "part1",
+      "label": "部分1",
+      "subparts": [
+        {"id": "sub1", "label": "子部分1"}
+      ]
+    }
+  ]
+}
+
+要求：
+- 中心主题应该清晰明确
+- 每个部分必须有id和label字段
+- 部分应该按逻辑层次组织
+- 使用简洁但描述性的文本
+- 确保JSON格式完全有效"""
+                
+                user_prompt = f"请为以下描述创建一个括号图：{prompt}"
+            else:
+                system_prompt = """You are a professional mind mapping expert specializing in brace maps. Brace maps are used to show the parts of a topic.
+
+Please create a detailed brace map specification based on the user's description. The output must be valid JSON with the following structure:
+
+{
+  "topic": "Central Topic",
+  "parts": [
+    {
+      "id": "part1",
+      "label": "Part 1",
+      "subparts": [
+        {"id": "sub1", "label": "Sub-part 1"}
+      ]
+    }
+  ]
+}
+
+Requirements:
+- Central topic should be clear and specific
+- Each part must have both id and label fields
+- Parts should be organized in logical hierarchy
+- Use concise but descriptive text
+- Ensure the JSON format is completely valid"""
+                
+                user_prompt = f"Please create a brace map for the following description: {prompt}"
+            
+            # Generate response from LLM
+            response = self.llm_client.chat_completion([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ])
+            
+            if not response:
+                logger.error("BraceMapAgent: No response from LLM")
+                return None
+            
+            # Extract JSON from response
+            from ..core.agent_utils import extract_json_from_response
+            
+            # Check if response is already a dictionary (from mock client)
+            if isinstance(response, dict):
+                spec = response
+            else:
+                # Try to extract JSON from string response
+                spec = extract_json_from_response(str(response))
+            
+            if not spec:
+                logger.error("BraceMapAgent: Failed to extract JSON from LLM response")
+                return None
+            
+            return spec
+            
+        except Exception as e:
+            logger.error(f"BraceMapAgent: Error in spec generation: {e}")
+            return None
+    
+    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+        """Validate a brace map specification."""
+        try:
+            if not spec or not isinstance(spec, dict):
+                return False, "Invalid specification: must be a non-empty dictionary"
+            
+            if 'topic' not in spec or not spec['topic']:
+                return False, "Missing or empty topic field"
+            
+            if 'parts' not in spec or not isinstance(spec['parts'], list):
+                return False, "Missing or invalid parts field"
+            
+            if not spec['parts']:
+                return False, "Must have at least one part"
+            
+            return True, "Valid brace map specification"
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
+    
+    def enhance_spec(self, spec: Dict) -> Dict:
+        """Enhance a brace map specification with layout data."""
+        try:
+            if not spec or not isinstance(spec, dict):
+                return {"success": False, "error": "Invalid specification"}
+            
+            if 'topic' not in spec or not spec['topic']:
+                return {"success": False, "error": "Missing topic"}
+            
+            if 'parts' not in spec or not isinstance(spec['parts'], list):
+                return {"success": False, "error": "Missing parts"}
+            
+            if not spec['parts']:
+                return {"success": False, "error": "At least one part is required"}
+            
+            # Normalize field names: convert 'label' to 'name' for compatibility
+            spec = self._normalize_field_names(spec)
+            
+            # Generate layout data
+            dimensions = self._calculate_dimensions(spec)
+            block_units = self.block_positioning.arrange_blocks(spec, dimensions, self.default_theme)
+            nodes, units = self._convert_blocks_to_nodes(block_units, spec, dimensions)
+            
+            # Add layout to spec
+            spec['_layout'] = {
+                'nodes': [self._serialize_nodes(nodes)],
+                'units': self._serialize_units(units),
+                'dimensions': dimensions
+            }
+            spec['_recommended_dimensions'] = dimensions
+            spec['_agent'] = 'brace_map_agent'
+            
+            return {"success": True, "spec": spec}
+            
+        except Exception as e:
+            return {"success": False, "error": f"BraceMapAgent failed: {e}"}
+
+    def _normalize_field_names(self, spec: Dict) -> Dict:
+        """Normalize field names for compatibility with existing validation logic."""
+        try:
+            # Create a copy to avoid modifying the original
+            normalized_spec = spec.copy()
+            
+            # Normalize parts
+            if 'parts' in normalized_spec and isinstance(normalized_spec['parts'], list):
+                for part in normalized_spec['parts']:
+                    if isinstance(part, dict):
+                        # Convert 'label' to 'name' if 'name' doesn't exist
+                        if 'label' in part and 'name' not in part:
+                            part['name'] = part['label']
+                        
+                        # Normalize subparts
+                        if 'subparts' in part and isinstance(part['subparts'], list):
+                            for subpart in part['subparts']:
+                                if isinstance(subpart, dict):
+                                    if 'label' in subpart and 'name' not in subpart:
+                                        subpart['name'] = subpart['label']
+            
+            return normalized_spec
+            
+        except Exception as e:
+            logger.error(f"Error normalizing field names: {e}")
+            return spec
     
     def generate_diagram(self, spec: Dict, user_id: str = None) -> Dict:
         """Generate brace map diagram using block-based positioning with enhanced validation"""

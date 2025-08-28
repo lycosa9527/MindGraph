@@ -1,0 +1,273 @@
+"""
+Bubble Map Agent
+
+Specialized agent for generating bubble maps that describe attributes of a single topic.
+"""
+
+import logging
+from typing import Dict, List, Any, Optional, Tuple
+from ..core.base_agent import BaseAgent
+from ..core.agent_utils import get_llm_client, extract_json_from_response
+
+logger = logging.getLogger(__name__)
+
+class BubbleMapAgent(BaseAgent):
+    """Agent for generating bubble maps."""
+    
+    def __init__(self):
+        super().__init__()
+        self.llm_client = get_llm_client()
+        self.diagram_type = "bubble_map"
+        
+    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+        """
+        Generate a bubble map from a prompt.
+        
+        Args:
+            prompt: User's description of what they want
+            language: Language for generation ("en" or "zh")
+            
+        Returns:
+            Dict containing success status and generated spec
+        """
+        try:
+            logger.info(f"🎯 BubbleMapAgent: Generating bubble map for prompt: {prompt}")
+            
+            # Generate the bubble map specification
+            spec = self._generate_bubble_map_spec(prompt, language)
+            
+            if not spec:
+                return {
+                    'success': False,
+                    'error': 'Failed to generate bubble map specification'
+                }
+            
+            # Validate the generated spec
+            is_valid, validation_msg = self.validate_output(spec)
+            if not is_valid:
+                logger.warning(f"BubbleMapAgent: Validation failed: {validation_msg}")
+                return {
+                    'success': False,
+                    'error': f'Generated invalid specification: {validation_msg}'
+                }
+            
+            # Enhance the spec with layout and dimensions
+            enhanced_spec = self._enhance_spec(spec)
+            
+            logger.info(f"✅ BubbleMapAgent: Successfully generated bubble map")
+            return {
+                'success': True,
+                'spec': enhanced_spec,
+                'diagram_type': self.diagram_type
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ BubbleMapAgent: Error generating bubble map: {e}")
+            return {
+                'success': False,
+                'error': f'Generation failed: {str(e)}'
+            }
+    
+    def _generate_bubble_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+        """Generate the bubble map specification using LLM."""
+        try:
+            if language == "zh":
+                system_prompt = """你是一个专业的思维导图专家，专门创建气泡图。气泡图用于描述单个主题的特征和属性。
+
+请根据用户的描述，创建一个详细的气泡图规范。输出必须是有效的JSON格式，包含以下结构：
+
+{
+  "topic": "中心主题",
+  "attributes": [
+    {
+      "id": "attr1",
+      "text": "属性1",
+      "category": "类别1"
+    }
+  ],
+  "connections": [
+    {
+      "from": "topic",
+      "to": "attr1",
+      "label": "关系标签"
+    }
+  ]
+}
+
+要求：
+- 中心主题应该清晰明确
+- 属性应该具体且有意义
+- 每个属性都应该与中心主题有明确的连接
+- 使用简洁但描述性的文本
+- 确保JSON格式完全有效"""
+                
+                user_prompt = f"请为以下描述创建一个气泡图：{prompt}"
+            else:
+                system_prompt = """You are a professional mind mapping expert specializing in bubble maps. Bubble maps are used to describe attributes and characteristics of a single topic.
+
+Please create a detailed bubble map specification based on the user's description. The output must be valid JSON with the following structure:
+
+{
+  "topic": "Central Topic",
+  "attributes": [
+    {
+      "id": "attr1",
+      "text": "Attribute 1",
+      "category": "Category 1"
+    }
+  ],
+  "connections": [
+    {
+      "from": "topic",
+      "to": "attr1",
+      "label": "Relationship Label"
+    }
+  ]
+}
+
+Requirements:
+- Central topic should be clear and specific
+- Attributes should be concrete and meaningful
+- Each attribute should have a clear connection to the central topic
+- Use concise but descriptive text
+- Ensure the JSON format is completely valid"""
+                
+                user_prompt = f"Please create a bubble map for the following description: {prompt}"
+            
+            # Generate response from LLM
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            response = self.llm_client.chat_completion(messages)
+            
+            # Extract JSON from response
+            from ..core.agent_utils import extract_json_from_response
+            
+            # Check if response is already a dictionary (from mock client)
+            if isinstance(response, dict):
+                spec = response
+            else:
+                # Try to extract JSON from string response
+                spec = extract_json_from_response(str(response))
+            
+            if not spec:
+                logger.error("BubbleMapAgent: Failed to extract JSON from LLM response")
+                return None
+                
+            return spec
+            
+        except Exception as e:
+            logger.error(f"BubbleMapAgent: Error in spec generation: {e}")
+            return None
+    
+    def _enhance_spec(self, spec: Dict) -> Dict:
+        """Enhance the specification with layout and dimension recommendations."""
+        try:
+            # Add layout information
+            spec['_layout'] = {
+                'type': 'bubble_map',
+                'topic_position': 'center',
+                'attribute_spacing': 120,
+                'bubble_radius': 60
+            }
+            
+            # Add recommended dimensions
+            spec['_recommended_dimensions'] = {
+                'baseWidth': 800,
+                'baseHeight': 600,
+                'padding': 80,
+                'width': 800,
+                'height': 600
+            }
+            
+            # Add metadata
+            spec['_metadata'] = {
+                'generated_by': 'BubbleMapAgent',
+                'version': '1.0',
+                'enhanced': True
+            }
+            
+            return spec
+            
+        except Exception as e:
+            logger.error(f"BubbleMapAgent: Error enhancing spec: {e}")
+            return spec
+    
+    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+        """
+        Validate the generated bubble map specification.
+        
+        Args:
+            spec: The specification to validate
+            
+        Returns:
+            Tuple of (is_valid, validation_message)
+        """
+        try:
+            # Check required fields
+            if not isinstance(spec, dict):
+                return False, "Specification must be a dictionary"
+            
+            if 'topic' not in spec or not spec['topic']:
+                return False, "Missing or empty topic"
+            
+            if 'attributes' not in spec or not isinstance(spec['attributes'], list):
+                return False, "Missing or invalid attributes list"
+            
+            if 'connections' not in spec or not isinstance(spec['connections'], list):
+                return False, "Missing or invalid connections list"
+            
+            # Validate attributes
+            if len(spec['attributes']) < 3:
+                return False, "Must have at least 3 attributes"
+            
+            if len(spec['attributes']) > 15:
+                return False, "Too many attributes (max 15)"
+            
+            # Validate connections
+            if len(spec['connections']) < len(spec['attributes']):
+                return False, "Each attribute must have at least one connection"
+            
+            # Check for valid IDs
+            valid_ids = {'topic'} | {attr.get('id') for attr in spec['attributes']}
+            for conn in spec['connections']:
+                if conn.get('from') not in valid_ids or conn.get('to') not in valid_ids:
+                    return False, "Invalid connection references"
+            
+            return True, "Specification is valid"
+            
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
+    
+    def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
+        """
+        Enhance an existing bubble map specification.
+        
+        Args:
+            spec: Existing specification to enhance
+            
+        Returns:
+            Dict containing success status and enhanced spec
+        """
+        try:
+            logger.info("BubbleMapAgent: Enhancing existing specification")
+            
+            # If already enhanced, return as-is
+            if spec.get('_metadata', {}).get('enhanced'):
+                return {'success': True, 'spec': spec}
+            
+            # Enhance the spec
+            enhanced_spec = self._enhance_spec(spec)
+            
+            return {
+                'success': True,
+                'spec': enhanced_spec
+            }
+            
+        except Exception as e:
+            logger.error(f"BubbleMapAgent: Error enhancing spec: {e}")
+            return {
+                'success': False,
+                'error': f'Enhancement failed: {str(e)}'
+            }
