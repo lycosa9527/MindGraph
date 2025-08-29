@@ -49,7 +49,13 @@ class FlowMapAgent(BaseAgent):
                 }
             
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self.enhance_spec(spec)
+            enhanced_result = self.enhance_spec(spec)
+            if not enhanced_result.get('success'):
+                return {
+                    'success': False,
+                    'error': enhanced_result.get('error', 'Enhancement failed')
+                }
+            enhanced_spec = enhanced_result['spec']
             
             logger.info(f"✅ FlowMapAgent: Successfully generated flow map")
             return {
@@ -68,48 +74,22 @@ class FlowMapAgent(BaseAgent):
     def _generate_flow_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the flow map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建流程图。流程图用于展示过程和步骤的顺序。
-
-请根据用户的描述，创建一个详细的流程图规范。输出必须是有效的JSON格式，包含以下结构：
-
-{
-  "topic": "流程主题",
-  "steps": [
-    {"id": "step1", "label": "步骤1", "next": "step2"},
-    {"id": "step2", "label": "步骤2", "next": "step3"}
-  ]
-}
-
-要求：
-- 流程主题应该清晰明确
-- 每个步骤必须有id、label和next字段
-- 步骤应该按逻辑顺序组织
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system
+            # Use general format that works with renderer
+            system_prompt = get_prompt("flow_map", language, "generation")
+            
+            if not system_prompt:
+                # Fallback to agent-specific if general not found
+                system_prompt = get_prompt("flow_map_agent", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"FlowMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个流程图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in flow maps. Flow maps are used to show the sequence of processes and steps.
-
-Please create a detailed flow map specification based on the user's description. The output must be valid JSON with the following structure:
-
-{
-  "topic": "Flow Topic",
-  "steps": [
-    {"id": "step1", "label": "Step 1", "next": "step2"},
-    {"id": "step2", "label": "Step 2", "next": "step3"}
-  ]
-}
-
-Requirements:
-- Flow topic should be clear and specific
-- Each step must have id, label, and next fields
-- Steps should be organized in logical sequence
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid"""
-                
-                user_prompt = f"Please create a flow map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个流程图：{prompt}" if language == "zh" else f"Please create a flow map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [
@@ -117,6 +97,8 @@ Requirements:
                 {"role": "user", "content": user_prompt}
             ]
             response = self.llm_client.chat_completion(messages)
+            
+            # Response already generated above with centralized prompts
             
             if not response:
                 logger.error("FlowMapAgent: No response from LLM")

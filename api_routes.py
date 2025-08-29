@@ -9,6 +9,7 @@ import os
 import atexit
 import json
 import time
+import traceback
 from werkzeug.exceptions import HTTPException
 from functools import wraps
 from settings import config
@@ -470,28 +471,36 @@ def generate_graph():
                 logger.error(f"Error enhancing circle_map spec: {e}")
         elif diagram_type == 'bridge_map':
             try:
+                logger.info("=== API BRIDGE MAP ENHANCEMENT START ===")
+                logger.info(f"Input spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+                logger.info(f"Input spec type: {type(spec)}")
+                
                 from agents.thinking_maps import BridgeMapAgent
                 br_agent = BridgeMapAgent()
                 agent_result = br_agent.enhance_spec(spec)
+                
+                logger.info(f"BridgeMapAgent result: {agent_result}")
+                
                 if agent_result.get('success') and 'spec' in agent_result:
                     spec = agent_result['spec']
+                    logger.info(f"Enhanced spec keys: {list(spec.keys())}")
+                    logger.info(f"Enhanced analogies count: {len(spec.get('analogies', []))}")
+                    
+                    # Log each analogy for debugging
+                    analogies = spec.get('analogies', [])
+                    for i, analogy in enumerate(analogies):
+                        logger.info(f"API analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
                 else:
                     logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
+                
+                logger.info("=== API BRIDGE MAP ENHANCEMENT COMPLETE ===")
             except Exception as e:
                 logger.error(f"Error enhancing bridge_map spec: {e}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
 
-        # NOW validate the enhanced spec (after agent enhancement)
-        from graph_specs import DIAGRAM_VALIDATORS
+        # Check for generation errors (keep this essential error handling)
         if isinstance(spec, dict) and spec.get('error'):
             return jsonify({'error': spec.get('error')}), 400
-        if diagram_type in DIAGRAM_VALIDATORS:
-            validate_fn = DIAGRAM_VALIDATORS[diagram_type]
-            valid, msg = validate_fn(spec)
-            if not valid:
-                logger.warning(f"Generated invalid spec for {diagram_type}: {msg}")
-                return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
-        else:
-            logger.warning(f"No validator found for diagram type: {diagram_type}")
 
         # Calculate optimized dimensions
         dimensions = config.get_d3_dimensions()
@@ -527,6 +536,20 @@ def generate_graph():
                 'topicFontSize': dimensions.get('topicFontSize', 18),
                 'charFontSize': dimensions.get('charFontSize', 14)
             }
+        
+        # === API DEBUG: FINAL RESPONSE TO FRONTEND ===
+        if diagram_type == 'bridge_map':
+            logger.info("=== API DEBUG: FINAL RESPONSE TO FRONTEND ===")
+            logger.info(f"Final spec keys: {list(spec.keys())}")
+            logger.info(f"Final analogies count: {len(spec.get('analogies', []))}")
+            
+            # Log each analogy being sent to frontend
+            analogies = spec.get('analogies', [])
+            for i, analogy in enumerate(analogies):
+                logger.info(f"Frontend-bound analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+            
+            logger.info(f"Dimensions being sent: {dimensions}")
+            logger.info("=== API DEBUG: RESPONSE COMPLETE ===")
         
         return jsonify({
             'type': diagram_type,
@@ -607,19 +630,9 @@ def generate_png():
         logger.error(f"Agent workflow failed: {e}")
         return jsonify({'error': 'Failed to generate graph specification'}), 500
     
-    # Validate the generated spec before processing
-    from graph_specs import DIAGRAM_VALIDATORS
-    # Surface generation error without changing type
+    # Check for generation errors (keep this essential error handling)
     if isinstance(spec, dict) and spec.get('error'):
         return jsonify({'error': spec.get('error')}), 400
-    if graph_type in DIAGRAM_VALIDATORS:
-        validate_fn = DIAGRAM_VALIDATORS[graph_type]
-        valid, msg = validate_fn(spec)
-        if not valid:
-            logger.warning(f"Generated invalid spec for {graph_type}: {msg}")
-            return jsonify({'error': f'Failed to generate valid graph specification: {msg}'}), 400
-    else:
-        logger.warning(f"No validator found for diagram type: {graph_type}")
     
     # Use brace map agent for brace maps
     if graph_type == 'brace_map':
@@ -726,15 +739,44 @@ def generate_png():
             logger.error(f"Error enhancing circle_map spec: {e}")
     elif graph_type == 'bridge_map':
         try:
+            logger.info("=== PNG BRIDGE MAP ENHANCEMENT START ===")
+            logger.info(f"Input spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            logger.info(f"Input spec type: {type(spec)}")
+            
             from agents.thinking_maps import BridgeMapAgent
             br_agent = BridgeMapAgent()
             agent_result = br_agent.enhance_spec(spec)
+            
+            logger.info(f"PNG BridgeMapAgent result: {agent_result}")
+            
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                logger.info(f"PNG Enhanced spec keys: {list(spec.keys())}")
+                logger.info(f"PNG Enhanced analogies count: {len(spec.get('analogies', []))}")
+                
+                # Log each analogy for debugging
+                analogies = spec.get('analogies', [])
+                for i, analogy in enumerate(analogies):
+                    logger.info(f"PNG analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
             else:
-                logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
+                logger.warning(f"PNG BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
+            
+            logger.info("=== PNG BRIDGE MAP ENHANCEMENT COMPLETE ===")
+            
+            # === PNG DEBUG: FINAL SPEC BEFORE RENDERING ===
+            logger.info("=== PNG DEBUG: FINAL SPEC BEFORE RENDERING ===")
+            logger.info(f"Final PNG spec keys: {list(spec.keys())}")
+            logger.info(f"Final PNG analogies count: {len(spec.get('analogies', []))}")
+            
+            # Log each analogy before PNG rendering
+            analogies = spec.get('analogies', [])
+            for i, analogy in enumerate(analogies):
+                logger.info(f"PNG rendering analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+            
+            logger.info("=== PNG DEBUG: RENDERING START ===")
         except Exception as e:
             logger.error(f"Error enhancing bridge_map spec: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
     
     # Render SVG and convert to PNG using Playwright
     try:
@@ -1421,19 +1463,9 @@ def generate_dingtalk():
         logger.error(f"Agent workflow failed: {e}")
         return f"❌ 图表规格生成失败：{str(e)}", 500
     
-    # Validate the generated spec before processing
-    from graph_specs import DIAGRAM_VALIDATORS
-    # Surface generation error without changing type
+    # Check for generation errors (keep this essential error handling)
     if isinstance(spec, dict) and spec.get('error'):
         return f"❌ 图表规格验证失败：{spec.get('error')}", 400
-    if graph_type in DIAGRAM_VALIDATORS:
-        validate_fn = DIAGRAM_VALIDATORS[graph_type]
-        valid, msg = validate_fn(spec)
-        if not valid:
-            logger.warning(f"Generated invalid spec for {graph_type}: {msg}")
-            return f"❌ 图表规格验证失败：{msg}", 400
-    else:
-        logger.warning(f"No validator found for diagram type: {graph_type}")
     
     # Use brace map agent for brace maps
     if graph_type == 'brace_map':

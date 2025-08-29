@@ -86,27 +86,44 @@ def validate_node_structure(node: Dict, node_type: str = "node") -> Tuple[bool, 
 
 def validate_double_bubble_map(spec: Dict) -> Tuple[bool, str]:
     """Enhanced validation for double bubble map (thinking map)."""
-    # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["left", "right", "similarities", "left_differences", "right_differences"])
-    if not is_valid:
-        return False, error
+    # Support both formats: agent format (topic1/topic2) and renderer format (left/right)
     
-    # Validate string fields
-    for field in ["left", "right"]:
-        is_valid, error = validate_string_field(spec, field)
-        if not is_valid:
-            return False, error
+    # Check for agent format first (topic1/topic2/topic1_attributes/etc.)
+    has_agent_format = all(field in spec for field in ["topic1", "topic2", "topic1_attributes", "topic2_attributes", "shared_attributes"])
     
-    # Validate list fields
-    for field in ["similarities", "left_differences", "right_differences"]:
-        is_valid, error = validate_list_field(spec, field)
-        if not is_valid:
-            return False, error
+    # Check for renderer format (left/right/similarities/etc.)
+    has_renderer_format = all(field in spec for field in ["left", "right", "similarities", "left_differences", "right_differences"])
+    
+    if has_agent_format:
+        # Validate agent format
+        for field in ["topic1", "topic2"]:
+            is_valid, error = validate_string_field(spec, field)
+            if not is_valid:
+                return False, error
+        
+        for field in ["topic1_attributes", "topic2_attributes", "shared_attributes"]:
+            is_valid, error = validate_list_field(spec, field)
+            if not is_valid:
+                return False, error
+                
+    elif has_renderer_format:
+        # Validate renderer format
+        for field in ["left", "right"]:
+            is_valid, error = validate_string_field(spec, field)
+            if not is_valid:
+                return False, error
+        
+        for field in ["similarities", "left_differences", "right_differences"]:
+            is_valid, error = validate_list_field(spec, field)
+            if not is_valid:
+                return False, error
+    else:
+        return False, "Missing required fields for double bubble map. Expected either (topic1, topic2, topic1_attributes, topic2_attributes, shared_attributes) or (left, right, similarities, left_differences, right_differences)"
     
     return True, ""
 
 def validate_bubble_map(spec: Dict) -> Tuple[bool, str]:
-    """Enhanced validation for bubble map (thinking map) - for describing attributes."""
+    """Enhanced validation for bubble map (thinking map) - for describing attributes. Updated 2025-08-29 07:35"""
     # Validate required fields
     is_valid, error = validate_required_fields(spec, ["topic", "attributes"])
     if not is_valid:
@@ -117,7 +134,7 @@ def validate_bubble_map(spec: Dict) -> Tuple[bool, str]:
     if not is_valid:
         return False, error
     
-    # Validate attributes list
+    # Validate attributes list (renderer expects strings)
     is_valid, error = validate_list_field(spec, "attributes")
     if not is_valid:
         return False, error
@@ -268,45 +285,71 @@ def validate_multi_flow_map(spec: Dict) -> Tuple[bool, str]:
 
 def validate_bridge_map(spec: Dict) -> Tuple[bool, str]:
     """Validation for bridge map (thinking map) - for analogies and similarities between relationships."""
-    # Validate required fields
-    is_valid, error = validate_required_fields(spec, ["relating_factor", "analogies"])
-    if not is_valid:
-        return False, error
+    # Support both formats: agent format (analogy_bridge/left_side/right_side) and renderer format (relating_factor/analogies)
     
-    # Validate relating factor
-    is_valid, error = validate_string_field(spec, "relating_factor")
-    if not is_valid:
-        return False, error
+    # Check for agent format first (analogy_bridge/left_side/right_side/bridge_connections)
+    has_agent_format = all(field in spec for field in ["analogy_bridge", "left_side", "right_side", "bridge_connections"])
     
-    # Validate analogies list
-    if not isinstance(spec["analogies"], list):
-        return False, "analogies must be a list"
+    # Check for renderer format (relating_factor/analogies)
+    has_renderer_format = all(field in spec for field in ["relating_factor", "analogies"])
     
-    if len(spec["analogies"]) == 0:
-        return False, "analogies cannot be empty"
-    
-    if len(spec["analogies"]) > 10:  # Reasonable limit for analogies
-        return False, "analogies cannot have more than 10 items"
-    
-    for i, analogy in enumerate(spec["analogies"]):
-        if not isinstance(analogy, dict):
-            return False, f"analogies[{i}] must be a dictionary"
+    if has_agent_format:
+        # Validate agent format
+        is_valid, error = validate_string_field(spec, "analogy_bridge")
+        if not is_valid:
+            return False, error
         
-        if "left" not in analogy or "right" not in analogy:
-            return False, f"analogies[{i}] must have 'left' and 'right' fields"
+        # Validate left_side and right_side structures
+        for side in ["left_side", "right_side"]:
+            if not isinstance(spec[side], dict):
+                return False, f"{side} must be a dictionary"
+            if 'topic' not in spec[side] or not spec[side]['topic']:
+                return False, f"Missing or empty {side} topic"
+            if 'elements' not in spec[side] or not isinstance(spec[side]['elements'], list):
+                return False, f"Missing or invalid {side} elements"
         
-        # Validate left field
-        if not isinstance(analogy["left"], str) or not analogy["left"].strip():
-            return False, f"analogies[{i}].left must be a non-empty string"
+        # Validate bridge_connections
+        if not isinstance(spec["bridge_connections"], list):
+            return False, "bridge_connections must be a list"
+            
+    elif has_renderer_format:
+        # Validate renderer format
+        is_valid, error = validate_string_field(spec, "relating_factor")
+        if not is_valid:
+            return False, error
         
-        # Validate right field
-        if not isinstance(analogy["right"], str) or not analogy["right"].strip():
-            return False, f"analogies[{i}].right must be a non-empty string"
+        # Validate analogies list
+        if not isinstance(spec["analogies"], list):
+            return False, "analogies must be a list"
         
-        # Validate id field (optional but recommended)
-        if "id" in analogy:
-            if not isinstance(analogy["id"], int):
-                return False, f"analogies[{i}].id must be an integer"
+        if len(spec["analogies"]) == 0:
+            return False, "analogies cannot be empty"
+        
+        if len(spec["analogies"]) > 10:  # Reasonable limit for analogies
+            return False, "analogies cannot have more than 10 items"
+        
+        # Validate individual analogies
+        for i, analogy in enumerate(spec["analogies"]):
+            if not isinstance(analogy, dict):
+                return False, f"analogies[{i}] must be a dictionary"
+            
+            if "left" not in analogy or "right" not in analogy:
+                return False, f"analogies[{i}] must have 'left' and 'right' fields"
+            
+            # Validate left field
+            if not isinstance(analogy["left"], str) or not analogy["left"].strip():
+                return False, f"analogies[{i}].left must be a non-empty string"
+            
+            # Validate right field
+            if not isinstance(analogy["right"], str) or not analogy["right"].strip():
+                return False, f"analogies[{i}].right must be a non-empty string"
+            
+            # Validate id field (optional but recommended)
+            if "id" in analogy:
+                if not isinstance(analogy["id"], int):
+                    return False, f"analogies[{i}].id must be an integer"
+    else:
+        return False, "Missing required fields for bridge map. Expected either (analogy_bridge, left_side, right_side, bridge_connections) or (relating_factor, analogies)"
     
     return True, ""
 

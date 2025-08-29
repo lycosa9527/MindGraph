@@ -9,6 +9,7 @@ from typing import Dict, Any
 from .thinking_maps import THINKING_MAP_PROMPTS
 from .concept_maps import CONCEPT_MAP_PROMPTS
 from .mind_maps import MIND_MAP_PROMPTS
+from .main_agent import MAIN_AGENT_PROMPTS
 
 
 # Unified prompt registry
@@ -16,6 +17,7 @@ PROMPT_REGISTRY = {
     **THINKING_MAP_PROMPTS,
     **CONCEPT_MAP_PROMPTS,
     **MIND_MAP_PROMPTS,
+    **MAIN_AGENT_PROMPTS,
 }
 
 def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'generation') -> str:
@@ -34,17 +36,31 @@ def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'gene
     return PROMPT_REGISTRY.get(key, "")
 
 def get_available_diagram_types() -> list:
-    """Get list of all available diagram types."""
-    types = set()
-    for key in PROMPT_REGISTRY.keys():
-        if '_en' in key or '_zh' in key:
-            # Extract diagram type from keys like "bridge_map_generation_en"
-            parts = key.split('_')
-            if len(parts) >= 3:
-                # For keys like "bridge_map_generation_en", take "bridge_map"
-                diagram_type = '_'.join(parts[:-2])
-                types.add(diagram_type)
-    return sorted(list(types))
+    """Get list of all available diagram types that the application supports."""
+    # Return only the 11 core diagram types that the application actually supports
+    supported_types = [
+        'bubble_map',
+        'bridge_map', 
+        'tree_map',
+        'circle_map',
+        'double_bubble_map',
+        'flow_map',
+        'brace_map',
+        'multi_flow_map',
+        'concept_map',
+        'mindmap',
+        'mind_map'  # Note: both mindmap and mind_map are supported for compatibility
+    ]
+    
+    # Filter to only include types that have prompts in the registry
+    available_types = []
+    for diagram_type in supported_types:
+        # Check if we have at least one prompt for this diagram type
+        has_prompt = any(key.startswith(f"{diagram_type}_") for key in PROMPT_REGISTRY.keys())
+        if has_prompt:
+            available_types.append(diagram_type)
+    
+    return sorted(available_types)
 
 def get_prompt_metadata(diagram_type: str) -> Dict[str, Any]:
     """Get metadata about a diagram type's prompts."""

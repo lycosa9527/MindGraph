@@ -46,7 +46,13 @@ class MultiFlowMapAgent(BaseAgent):
                 }
             
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self.enhance_spec(spec)
+            enhanced_result = self.enhance_spec(spec)
+            if not enhanced_result.get('success'):
+                return {
+                    'success': False,
+                    'error': enhanced_result.get('error', 'Enhancement failed')
+                }
+            enhanced_spec = enhanced_result['spec']
             
             logger.info(f"✅ MultiFlowMapAgent: Successfully generated multi-flow map")
             return {
@@ -65,58 +71,22 @@ class MultiFlowMapAgent(BaseAgent):
     def _generate_multi_flow_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the multi-flow map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建多流程图。多流程图用于展示多个流程和它们之间的关系。
-
-请根据用户的描述，创建一个详细的多流程图规范。输出必须是有效的JSON格式，包含以下结构：
-
-{
-  "topic": "多流程主题",
-  "flows": [
-    {
-      "id": "flow1",
-      "label": "流程1",
-      "steps": [
-        {"id": "step1", "label": "步骤1", "next": "step2"}
-      ]
-    }
-  ]
-}
-
-要求：
-- 多流程主题应该清晰明确
-- 每个流程必须有id、label和steps字段
-- 步骤应该按逻辑顺序组织
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system
+            # Use general format that works with renderer
+            system_prompt = get_prompt("multi_flow_map", language, "generation")
+            
+            if not system_prompt:
+                # Fallback to agent-specific if general not found
+                system_prompt = get_prompt("multi_flow_map_agent", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"MultiFlowMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个多流程图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in multi-flow maps. Multi-flow maps are used to show multiple processes and their relationships.
-
-Please create a detailed multi-flow map specification based on the user's description. The output must be valid JSON with the following structure:
-
-{
-  "topic": "Multi-Flow Topic",
-  "flows": [
-    {
-      "id": "flow1",
-      "label": "Flow 1",
-      "steps": [
-        {"id": "step1", "label": "Step 1", "next": "step2"}
-      ]
-    }
-  ]
-}
-
-Requirements:
-- Multi-flow topic should be clear and specific
-- Each flow must have id, label, and steps fields
-- Steps should be organized in logical sequence
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid"""
-                
-                user_prompt = f"Please create a multi-flow map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个多流程图：{prompt}" if language == "zh" else f"Please create a multi-flow map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [
@@ -124,6 +94,8 @@ Requirements:
                 {"role": "user", "content": user_prompt}
             ]
             response = self.llm_client.chat_completion(messages)
+            
+            # Response already generated above with centralized prompts
             
             if not response:
                 logger.error("MultiFlowMapAgent: No response from LLM")

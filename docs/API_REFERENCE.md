@@ -2,12 +2,18 @@
 
 ## Overview
 
-MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API supports both interactive graph generation and direct PNG export, making it ideal for integration with platforms like Dify, chatbots, and web applications.
+MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features an advanced LLM-based classification system that intelligently understands user intent, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `http://localhost:9527` (or your deployed server URL)
 
 **API Version**: 2.5.3  
-**Architecture**: Multi-agent system with organized module structure
+**Architecture**: Multi-agent system with smart LLM classification and organized module structure
+
+**Key Features**:
+- 🧠 **Smart Intent Understanding**: Distinguishes between diagram type to create vs topic content
+- 🎯 **10 Diagram Types**: Complete coverage of Thinking Maps®, Mind Maps, and Concept Maps
+- 🚀 **High Performance**: Dual-model LLM system (qwen-turbo + qwen-plus)
+- 🌍 **Multi-language**: English and Chinese with automatic detection
 
 **Endpoint Compatibility**: Both `/endpoint` and `/api/endpoint` formats are supported for backward compatibility.
 
@@ -405,34 +411,152 @@ GET /status
 
 ## Integration Examples
 
-### Dify Integration
+### 🔗 Dify Integration (Complete Guide)
 
-#### 1. Webhook Configuration
+MindGraph provides seamless integration with Dify through HTTP POST requests. This guide covers all scenarios from basic to advanced usage.
 
-In your Dify workflow, configure a webhook node:
+#### 1. Basic HTTP Request Node Setup
 
-- **URL**: `http://your-mindgraph-server:9527/generate_png`
+**Step 1: Create HTTP Request Node**
+- **URL**: `http://your-mindgraph-server:9527/api/generate_png`
 - **Method**: `POST`
-- **Headers**: `Content-Type: application/json`
+- **Headers**: 
+  ```json
+  {
+    "Content-Type": "application/json"
+  }
+  ```
 
-#### 2. Request Body Template
+**Step 2: Basic Request Body**
+```json
+{
+  "prompt": "{{user_input}}"
+}
+```
+✅ **This works perfectly** - Uses automatic language detection and default styling
 
+#### 2. Advanced Configuration Options
+
+**Option A: With Language Detection**
 ```json
 {
   "prompt": "{{user_input}}",
-  "language": "{{detected_language}}",
+  "language": "{{#if contains user_input '中文'}}zh{{else}}en{{/if}}"
+}
+```
+
+**Option B: With Custom Styling**
+```json
+{
+  "prompt": "{{user_input}}",
+  "language": "en",
   "style": {
-    "theme": "{{selected_theme}}"
+    "theme": "dark",
+    "colors": {
+      "primary": "#1976d2",
+      "secondary": "#f28e2c"
+    }
   }
 }
 ```
 
-#### 3. Response Handling
+**Option C: Full Customization**
+```json
+{
+  "prompt": "{{user_input}}",
+  "language": "{{language_var}}",
+  "style": {
+    "theme": "{{theme_preference}}",
+    "colors": {
+      "primary": "{{primary_color}}",
+      "secondary": "{{secondary_color}}"
+    }
+  }
+}
+```
 
-The webhook will receive a PNG image that you can:
-- Display directly to the user
-- Save to a file
-- Send back through Dify's response
+#### 3. Response Handling in Dify
+
+**For PNG Images (Binary Response)**:
+- The response is a binary PNG image
+- Can be directly displayed or saved
+- Use Dify's image handling capabilities
+
+**For Interactive Diagrams (use `/api/generate_graph`)**:
+```json
+{
+  "prompt": "{{user_input}}",
+  "language": "en"
+}
+```
+
+Response structure:
+```json
+{
+  "success": true,
+  "data": {
+    "html": "<div class='mindgraph-container'>...</div>",
+    "graph_type": "mind_map",
+    "dimensions": { "width": 1200, "height": 800 }
+  },
+  "timing": { "total_time": 3.42 }
+}
+```
+
+#### 4. Error Handling in Dify
+
+**Configure Error Response Handling**:
+```javascript
+// In Dify's response processing
+if (response.status !== 200) {
+  return {
+    error: "Failed to generate diagram",
+    details: response.error || "Unknown error occurred",
+    suggestion: "Please try rephrasing your request"
+  };
+}
+```
+
+**Common Error Scenarios**:
+- **Empty Prompt**: `{"error": "Prompt cannot be empty"}`
+- **Invalid Language**: `{"error": "Language 'fr' not supported"}`
+- **API Timeout**: `{"error": "Request timeout"}`
+
+#### 5. Dify Workflow Examples
+
+**Example 1: Simple Diagram Generator**
+```
+[User Input] → [HTTP Request to MindGraph] → [Display PNG]
+```
+
+**Example 2: Educational Assistant**
+```
+[User Question] → [Classify Intent] → [Generate Educational Diagram] → [Return with Explanation]
+```
+
+**Example 3: Business Process Mapper** 
+```
+[Process Description] → [Extract Steps] → [Generate Flow Map] → [Export for Documentation]
+```
+
+#### 6. Best Practices for Dify Integration
+
+**Performance Optimization**:
+- Use `/api/generate_png` for final images
+- Use `/api/generate_graph` for interactive content
+- Cache responses when possible
+- Set appropriate timeouts (10-15 seconds)
+
+**User Experience**:
+- Show loading indicators during generation
+- Provide fallback messages for errors
+- Allow users to regenerate with different parameters
+
+**Production Considerations**:
+- Use environment variables for server URLs
+- Implement retry logic for failed requests
+- Monitor API usage and response times
+- Consider rate limiting for high-traffic scenarios
 
 ### Python Integration
 
@@ -516,7 +640,20 @@ generatePNG('Compare cats and dogs', 'en', { theme: 'modern' })
 
 ## Supported Visualization Types
 
-### Thinking Maps (Educational)
+MindGraph supports 10 diagram types with intelligent LLM-based classification that understands user intent vs topic content.
+
+### 🧠 Smart Classification Examples
+
+The system correctly distinguishes between what users want to **create** vs what the diagram is **about**:
+
+| User Input | Detected Type | Topic | Explanation |
+|------------|---------------|--------|-------------|
+| `"生成一个关于概念图的思维导图"` | `mind_map` | concept maps | User wants to CREATE a mind map ABOUT concept maps |
+| `"生成一个关于思维导图的概念图"` | `concept_map` | mind maps | User wants to CREATE a concept map ABOUT mind maps |
+| `"create a bubble map about double bubble maps"` | `bubble_map` | double bubble maps | User wants to CREATE a bubble map ABOUT double bubbles |
+| `"compare cats and dogs"` | `double_bubble_map` | cats vs dogs | Comparison intent automatically detected |
+
+### Thinking Maps (Complete Coverage)
 
 | Type | Description | Best For | Example Prompt |
 |------|-------------|----------|----------------|
@@ -566,18 +703,25 @@ The Flow Map has received major improvements for optimal visual presentation:
 }
 ```
 
-### Traditional Charts
+### Mind Maps & Concept Maps
 
 | Type | Description | Best For | Example Prompt |
 |------|-------------|----------|----------------|
-| **Bar Chart** | Vertical/horizontal bars | Comparing categories | "Sales by region" |
-| **Line Chart** | Connected data points | Trends over time | "Monthly revenue trends" |
-| **Pie Chart** | Circular segments | Proportions and percentages | "Market share distribution" |
-| **Scatter Plot** | Points on X-Y axes | Correlations and distributions | "Height vs weight correlation" |
-| **Area Chart** | Filled areas under lines | Cumulative data over time | "Cumulative sales growth" |
-| **Heatmap** | Color-coded grid | Matrix data visualization | "Correlation matrix" |
-| **Tree Map** | Nested rectangles | Hierarchical data | "Company organization structure" |
-| **Network Graph** | Connected nodes | Relationships and connections | "Social network connections" |
+| **Mind Map** | Clockwise branch positioning with smart alignment | Brainstorming and topic exploration | "Create a mind map about climate change" |
+| **Concept Map** | Advanced relationship mapping with optimized spacing | Complex concept relationships | "Show relationships in artificial intelligence" |
+| **Tree Map** | Hierarchical rectangles for nested data | Organizational structures and hierarchies | "Company organization structure" |
+
+### 🎯 Diagram Classification Intelligence
+
+The LLM classification system uses semantic understanding with robust fallback:
+
+1. **Primary**: LLM-based semantic classification using qwen-turbo (1.5s avg)
+2. **Fallback**: Intelligent keyword-based detection with priority patterns
+3. **Edge Cases**: Handles complex prompts like "生成关于X的Y图" correctly
+
+**Supported Languages**: 
+- **English**: Full support with native prompts
+- **Chinese**: Complete localization with cultural context understanding
 
 ## Error Handling
 

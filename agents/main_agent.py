@@ -1,12 +1,19 @@
 """
-LangChain Agent Module for MindGraph
+Main Agent Module for MindGraph
 
-This module contains the core LangChain agent functionality for generating
-custom graph content using the Qwen LLM. It supports both double bubble maps
-(comparison of two topics) and bubble maps (single topic with characteristics).
+This module contains the core agent functionality for generating custom graph content 
+using the Qwen LLM. It supports 10+ diagram types including bubble maps, flow maps,
+tree maps, concept maps, mind maps, and more through intelligent LLM-based classification.
+
+Features:
+- Semantic diagram type detection using LLM classification
+- Support for 10+ thinking map and concept map types  
+- Thread-safe statistics tracking
+- Centralized error handling and validation
+- Modular agent architecture with specialized diagram generators
+
 The agent uses LLM-based prompt analysis to classify the user's intent and
-generates the appropriate JSON spec and D3.js code block for the selected
-graph type.
+generates the appropriate JSON specification for D3.js rendering.
 """
 
 import os
@@ -17,43 +24,92 @@ import traceback
 from dotenv import load_dotenv
 load_dotenv()
 
-os.makedirs("logs", exist_ok=True)
-# Setup logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "agent.log"), encoding="utf-8")
-    ]
-)
-logger = logging.getLogger(__name__)
+# Use centralized logging configuration
+from logging_config import setup_agent_logging
+logger = setup_agent_logging()
 
 from langchain.prompts import PromptTemplate
 import requests
 import yaml
 from settings import config
-from .core.agent_utils import (
-    extract_topics_with_agent,
-    generate_characteristics_with_agent,
-    parse_characteristics_result,
-    detect_language
-)
-# Modular agent for D3.js graph generation
-# Provides LLM-based graph type detection and JSON spec generation for D3.js rendering
-from graph_specs import (
-    validate_double_bubble_map,
-    validate_bubble_map,
-    validate_circle_map,
-    validate_tree_map,
-    validate_concept_map,
-    validate_mindmap
-)
 import json
-from diagram_styles import parse_style_from_prompt
-import re
 from prompts import get_prompt
+
+# Late imports to avoid circular dependencies
+def _get_concept_map_agent():
+    """Lazy import to avoid circular dependencies."""
+    from agents.concept_maps.concept_map_agent import ConceptMapAgent
+    return ConceptMapAgent
+
+def create_error_response(message: str, error_type: str = "generation", context: dict = None) -> dict:
+    """
+    Create standardized error response format.
+    
+    Args:
+        message: Error message
+        error_type: Type of error (generation, validation, classification, etc.)
+        context: Additional context information
+        
+    Returns:
+        dict: Standardized error response
+    """
+    error_response = {
+        "error": message,
+        "error_type": error_type,
+        "timestamp": time.time()
+    }
+    
+    if context:
+        error_response["context"] = context
+    
+    return error_response
+
+def validate_inputs(user_prompt: str, language: str) -> None:
+    """
+    Validate input parameters for agent functions.
+    
+    Args:
+        user_prompt: User input prompt
+        language: Language code
+        
+    Raises:
+        ValueError: If inputs are invalid
+    """
+    if not user_prompt or not isinstance(user_prompt, str) or not user_prompt.strip():
+        raise ValueError("User prompt cannot be empty or None")
+    
+    if len(user_prompt.strip()) > 10000:  # Reasonable limit
+        raise ValueError("User prompt too long (max 10,000 characters)")
+    
+    if not language or language not in ['zh', 'en']:
+        raise ValueError("Language must be 'zh' or 'en'")
+
+def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = 'en') -> dict:
+    """
+    Simple replacement for the removed complex style extraction function.
+    Returns minimal data structure that existing code expects.
+    """
+    # Simple topic extraction
+    words = user_prompt.replace('生成', '').replace('图', '').replace('关于', '').replace('create', '').replace('generate', '').replace('about', '').strip().split()
+    central_topic = ' '.join(words[:3]) if words else user_prompt.strip()
+    
+    return {
+        "topics": [central_topic] if central_topic else [],
+        "style_preferences": {},
+        "diagram_type": "bubble_map",  # Default
+        "suggested_diagram_type": "concept_map"
+    }
+
+def generate_graph_spec_with_styles(user_prompt: str, graph_type: str, language: str = 'zh', style_preferences: dict = None) -> dict:
+    """
+    Simple replacement for the removed complex style generation function.
+    Uses the new simplified workflow.
+    """
+    try:
+        result = agent_graph_workflow_with_styles(user_prompt, language)
+        return result.get('spec', create_error_response("Failed to generate graph spec", "generation"))
+    except Exception as e:
+        return create_error_response(f"Generation failed: {str(e)}", "generation")
 
 def _salvage_json_string(raw: str) -> str:
     """Attempt to salvage a JSON object from messy LLM output."""
@@ -100,36 +156,53 @@ def _salvage_json_string(raw: str) -> str:
     candidate = re.sub(r',\s*(\]|\})', r'\1', candidate)
     return candidate.strip()
 
-# Global timing tracking
-llm_timing_stats = {
-    'total_calls': 0,
-    'total_time': 0.0,
-    'call_times': [],
-    'last_call_time': 0.0
-}
+import threading
+
+class LLMTimingStats:
+    """Thread-safe LLM timing statistics tracker."""
+    
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._total_calls = 0
+        self._total_time = 0.0
+        self._call_times = []
+        self._last_call_time = 0.0
+    
+    def add_call_time(self, call_time: float):
+        """Add a new call time to statistics."""
+        with self._lock:
+            self._total_calls += 1
+            self._total_time += call_time
+            self._last_call_time = call_time
+            self._call_times.append(call_time)
+            
+            # Keep only last 100 call times to prevent memory bloat
+            if len(self._call_times) > 100:
+                self._call_times = self._call_times[-100:]
+    
+    def get_stats(self) -> dict:
+        """Get current timing statistics."""
+        with self._lock:
+            avg_time = self._total_time / self._total_calls if self._total_calls > 0 else 0.0
+            return {
+                'total_calls': self._total_calls,
+                'total_time': self._total_time,
+                'average_time': avg_time,
+                'last_call_time': self._last_call_time,
+                'call_times': self._call_times[-10:]
+            }
+
+# Thread-safe global timing tracker
+llm_timing_stats = LLMTimingStats()
 
 def get_llm_timing_stats():
     """Get current LLM timing statistics."""
-    if llm_timing_stats['total_calls'] > 0:
-        avg_time = llm_timing_stats['total_time'] / llm_timing_stats['total_calls']
-    else:
-        avg_time = 0.0
-    
-    return {
-        'total_calls': llm_timing_stats['total_calls'],
-        'total_time': llm_timing_stats['total_time'],
-        'average_time': avg_time,
-        'last_call_time': llm_timing_stats['last_call_time'],
-        'call_times': llm_timing_stats['call_times'][-10:]  # Last 10 calls
-    }
+    return llm_timing_stats.get_stats()
 
 
 # ----------------------------------------------------------------------------
-# Explicit intent detection helpers (language-aware keyword mapping)
+# LLM Client Implementation
 # ----------------------------------------------------------------------------
-# Removed helper functions - no longer needed with clean LLM-only classification
-
-# Removed detect_explicit_diagram_intent - redundant with LLM classification
 
 
 class QwenLLM:
@@ -188,16 +261,9 @@ class QwenLLM:
             logger.info(f"QwenLLM API response - Usage: {result.get('usage', 'NO_USAGE_INFO')}")
             logger.info(f"QwenLLM API response - Finish reason: {result['choices'][0].get('finish_reason', 'NO_FINISH_REASON')}")
             
-            # Calculate timing
+            # Calculate timing and update thread-safe tracker
             call_time = time.time() - start_time
-            llm_timing_stats['total_calls'] += 1
-            llm_timing_stats['total_time'] += call_time
-            llm_timing_stats['last_call_time'] = call_time
-            llm_timing_stats['call_times'].append(call_time)
-            
-            # Keep only last 100 call times to prevent memory bloat
-            if len(llm_timing_stats['call_times']) > 100:
-                llm_timing_stats['call_times'] = llm_timing_stats['call_times'][-100:]
+            llm_timing_stats.add_call_time(call_time)
             
             logger.info(f"QwenLLM response received - Length: {len(content)} characters - Time: {call_time:.3f}s")
             logger.debug(f"Qwen Output:\n{content[:1000]}{'...' if len(content) > 1000 else ''}")
@@ -205,10 +271,7 @@ class QwenLLM:
         except Exception as e:
             # Still track timing even on error
             call_time = time.time() - start_time
-            llm_timing_stats['total_calls'] += 1
-            llm_timing_stats['total_time'] += call_time
-            llm_timing_stats['last_call_time'] = call_time
-            llm_timing_stats['call_times'].append(call_time)
+            llm_timing_stats.add_call_time(call_time)
             
             logger.error(f"QwenLLM API call failed: {e} - Time: {call_time:.3f}s", exc_info=True)
             raise
@@ -499,7 +562,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
         
         if not prompt_text:
             logger.error(f"Agent: No prompt found for graph type: {graph_type}")
-            return {"error": f"No prompt template found for {graph_type}"}
+            return create_error_response(f"No prompt template found for {graph_type}", "template", {"graph_type": graph_type})
         
         # Sanitize template to ensure only {user_prompt} is a variable; all other braces become literal
         def _sanitize_prompt_template_for_langchain(template: str) -> str:
@@ -549,27 +612,21 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             if not spec:
                 raise Exception("JSON/YAML parse failed")
             
-            # Validate the generated spec
-            from graph_specs import DIAGRAM_VALIDATORS
-            if graph_type in DIAGRAM_VALIDATORS:
-                validator = DIAGRAM_VALIDATORS[graph_type]
-                valid, msg = validator(spec)
-                if not valid:
-                    raise Exception(f"Generated JSON does not match {graph_type} schema: {msg}")
+            # Note: Agent validation is now handled by specialized agents, not here
             
             logger.info(f"Agent: Successfully generated {graph_type} specification")
             return spec
             
         except Exception as e:
             logger.error(f"Agent: {graph_type} JSON generation failed: {e}")
-            return {"error": f"Failed to generate valid {graph_type} JSON"}
+            return create_error_response(f"Failed to generate valid {graph_type} JSON", "generation", {"graph_type": graph_type})
             
     except ImportError:
         logger.error("Agent: Failed to import centralized prompt registry")
-        return {"error": "Prompt registry not available"}
+        return create_error_response("Prompt registry not available", "import", {"graph_type": graph_type})
     except Exception as e:
         logger.error(f"Agent: Unexpected error in generate_graph_spec: {e}")
-        return {"error": f"Unexpected error generating {graph_type}"}
+        return create_error_response(f"Unexpected error generating {graph_type}", "unexpected", {"graph_type": graph_type})
 
 
 # Legacy function removed - using agent_graph_workflow_with_styles instead
@@ -594,9 +651,6 @@ def get_agent_config():
         "default_language": config.GRAPH_LANGUAGE
     }
 
-
-import threading
-import time
 
 def validate_agent_setup():
     """
@@ -627,320 +681,161 @@ def validate_agent_setup():
         timer.cancel() 
 
 
-def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = 'en') -> dict:
+
+def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> str:
     """
-    Use Qwen to extract both topics and style preferences from user prompt in a single pass.
-    Fallback to hardcoded parser if extraction fails.
-    Returns a dict with 'topics', 'style_preferences', and 'diagram_type'.
-    """
-    from langchain.prompts import PromptTemplate
-    def get_default_result():
-        return {
-            "topics": [],
-            "style_preferences": {},
-            "diagram_type": "bubble_map"
-        }
-    def clean_llm_response(result):
-        cleaned = result.strip()
-        if cleaned.startswith('```json'):
-            cleaned = cleaned[7:]
-        if cleaned.startswith('```'):
-            cleaned = cleaned[3:]
-        if cleaned.endswith('```'):
-            cleaned = cleaned[:-3]
-        return cleaned.strip()
-    def validate_and_parse_json(json_str):
-        try:
-            parsed = json.loads(json_str)
-            if not isinstance(parsed, dict):
-                return None
-            return parsed
-        except (json.JSONDecodeError, TypeError):
-            return None
-    
-    # Input validation
-    if not isinstance(user_prompt, str) or not user_prompt.strip():
-        return get_default_result()
-    if language not in ['zh', 'en']:
-        language = 'en'
-    
-    if language == 'zh':
-        prompt_text = f"""
-你是一个智能图表助手，用于从用户需求中同时提取主题内容和样式偏好。
-请分析以下用户需求，并提取：
-1. 主要主题和子主题
-2. 样式偏好（颜色、字体、布局等）
-3. 最适合的图表类型
-
-可用图表类型：
-# 思维导图 (Thinking Maps)
-- double_bubble_map: 比较和对比两个主题
-- bubble_map: 描述单个主题的特征
-- circle_map: 在上下文中定义主题
-- flow_map: 序列事件或过程
-- brace_map: 显示整体/部分关系
-- tree_map: 分类和归类信息
-- multi_flow_map: 显示因果关系
-- bridge_map: 桥形图 - 显示类比和相似性
-
-# 概念图 (Concept Maps)
-- concept_map: 显示概念之间的关系
-
-
-# 思维导图 (Mind Maps)
-- mindmap: 围绕中心主题组织想法
-
-
-
-重要区分：
-- 比较/对比 (compare/contrast): 使用 double_bubble_map
-- 类比 (analogy): 使用 bridge_map
-- 概念关系 (concept relationships): 使用 concept_map
-- 思维组织 (idea organization): 使用 mindmap
-
-关键判断原则：
-- 如果用户说"生成/制作/创建思维导图"，无论主题是什么都使用 mindmap
-- 如果用户说"概念图"且没有提到"思维导图"，使用 concept_map
-- 当同时提到"概念图"和"思维导图"时，以"思维导图"为准使用 mindmap
-
-关键示例：
-- 比较猫和狗 → double_bubble_map
-- 描述太阳系特征 → bubble_map
-- 定义地球在宇宙中的圆圈图 → circle_map
-- 展示水循环过程 → flow_map
-- 分析酒精灯爆炸的复流程图 → multi_flow_map
-- 生成山东师范大学的括号图 → brace_map
-- 动物分类的树形图 → tree_map
-- 心脏像泵一样的桥形图 → bridge_map
-- 教育系统的概念图 → concept_map
-
-- 制作思维导图 → mindmap
-- 生成思维导图 → mindmap
-- 创建思维导图 → mindmap
-- 有关...的思维导图 → mindmap
-- 关于...的思维导图 → mindmap
-- ...思维导图 → mindmap
-- 生成一张有关概念图的思维导图 → mindmap
-
-
-样式偏好包括：
-- colorTheme: 颜色主题 (classic, innovation, colorful, monochromatic, dark, light, print, display)
-- primaryColor: 主色调 (颜色名称或十六进制)
-- fontSize: 字体大小
-- importance: 重要性级别 (center, main, sub, detail)
-- backgroundTheme: 背景主题 (dark, light)
-
-请以JSON格式输出：
-{{{{"topics": ["主题1", "主题2"],
-    "style_preferences": {{{{
-        "colorTheme": "主题名称",
-        "primaryColor": "颜色",
-        "fontSize": 数字,
-        "importance": "重要性级别",
-        "backgroundTheme": "背景主题"
-    }}}},
-    "diagram_type": "图表类型"
-}}}}
-
-用户需求：{{user_prompt}}
-"""
-    else:
-        prompt_text = f"""
-You are an intelligent diagram assistant that extracts both topic content and style preferences from user requirements.
-Please analyze the following user request and extract:
-1. Main topics and subtopics
-2. Style preferences (colors, fonts, layout, etc.)
-3. Most suitable diagram type
-
-Available diagram types:
-# Thinking Maps
-- double_bubble_map: Compare and contrast two topics
-- bubble_map: Describe attributes of a single topic
-- circle_map: Define a topic in context
-- flow_map: Sequence events or processes
-- brace_map: Show whole/part relationships
-- tree_map: Categorize and classify information
-- multi_flow_map: Show cause and effect relationships
-- bridge_map: Show analogies and similarities
-
-# Concept Maps
-- concept_map: Show relationships between concepts
-
-
-# Mind Maps
-- mindmap: Organize ideas around a central topic
-
-
-
-
-Important distinctions:
-- Compare/contrast: use double_bubble_map
-- Analogy: use bridge_map
-- Concept relationships: use concept_map
-- Idea organization: use mindmap
-
-Key Examples:
-- Compare cats and dogs → double_bubble_map
-- Describe solar system → bubble_map
-- Define Earth in context → circle_map
-- Show water cycle → flow_map
-- Analyze causes and effects of pollution → multi_flow_map
-- Break down university structure → brace_map
-- Classify animal species → tree_map
-- Heart is like a pump analogy → bridge_map
-- Map education concepts → concept_map
-
-- Make mind map → mindmap
-
-
-Style preferences include:
-- colorTheme: Color theme (classic, innovation, colorful, monochromatic, dark, light, print, display)
-- primaryColor: Primary color (color name or hex)
-- fontSize: Font size
-- importance: Importance level (center, main, sub, detail)
-- backgroundTheme: Background theme (dark, light)
-
-Please output in JSON format:
-{{{{"topics": ["topic1", "topic2"],
-    "style_preferences": {{{{
-        "colorTheme": "theme_name",
-        "primaryColor": "color",
-        "fontSize": number,
-        "importance": "importance_level",
-        "backgroundTheme": "background_theme"
-    }}}},
-    "diagram_type": "diagram_type"
-}}}}
-
-User request: {{user_prompt}}
-"""
-    
-    prompt = PromptTemplate(
-        input_variables=["user_prompt"],
-        template=prompt_text
-    )
-    
-    try:
-        # Use classification model for style/topic extraction (fast/cheap)
-        # Format the prompt template with the user prompt
-        formatted_prompt = prompt.format(user_prompt=user_prompt)
-        result = llm_classification._call(formatted_prompt)
-        cleaned_result = clean_llm_response(result)
-        parsed_result = validate_and_parse_json(cleaned_result)
-        
-        # Process LLM response without fallback overrides
-        if parsed_result:
-            topics = parsed_result.get('topics', [])
-            if not isinstance(topics, list):
-                topics = []
-            style_preferences = parsed_result.get('style_preferences', {})
-            if not isinstance(style_preferences, dict):
-                style_preferences = {}
-            diagram_type = parsed_result.get('diagram_type', 'bubble_map')
-            if not isinstance(diagram_type, str):
-                diagram_type = 'bubble_map'
-            return {
-                "topics": topics,
-                "style_preferences": style_preferences,
-                "diagram_type": diagram_type
-            }
-    except Exception as e:
-        logger.error(f"Qwen style extraction failed: {e}")
-    
-    # Fallback to simple style extraction with default diagram type
-    try:
-        from diagram_styles import parse_style_from_prompt
-        style_preferences = parse_style_from_prompt(user_prompt)
-        
-        # If LLM fails, default to bubble_map (most versatile thinking map)
-        # No hardcoded keyword logic - keep it clean and professional
-        return {
-            "topics": [],
-            "style_preferences": style_preferences,
-            "diagram_type": "bubble_map"
-        }
-    except Exception as e:
-        logger.error(f"Fallback style extraction failed: {e}")
-        return get_default_result()
-
-
-def generate_graph_spec_with_styles(user_prompt: str, graph_type: str, language: str = 'zh', style_preferences: dict = None) -> dict:
-    """
-    Generate graph specification with integrated style system.
+    LLM-based diagram type detection using semantic understanding.
     
     Args:
         user_prompt: User's input prompt
-        graph_type: Type of diagram to generate
-        language: Language for processing
-        style_preferences: User's style preferences
+        language: Language ('zh' or 'en')
     
     Returns:
-        dict: JSON specification with integrated styles for D3.js rendering
+        str: Detected diagram type
     """
-    logger.info(f"Agent: Generating graph spec with styles for type: {graph_type}")
-    
-    # Detect concept map generation method from user prompt
-    concept_map_method = 'auto'  # Now defaults to 3-stage approach!
-    if graph_type == 'concept_map':
-        user_prompt_lower = user_prompt.lower()
-        if any(word in user_prompt_lower for word in ['three-stage', 'three stage', '3-stage', '3 stage', 'extract topic', 'topic extraction']):
-            concept_map_method = 'three_stage'
-            logger.info("Agent: Detected three-stage approach for concept map")
-        elif any(word in user_prompt_lower for word in ['network', 'matrix', 'relationship matrix', 'network-first', 'network first']):
-            concept_map_method = 'network_first'
-            logger.info("Agent: Detected network-first approach for concept map")
-        elif any(word in user_prompt_lower for word in ['two-stage', 'two stage', 'staged', 'step by step']):
-            concept_map_method = 'two_stage'
-            logger.info("Agent: Detected two-stage approach for concept map")
-        elif any(word in user_prompt_lower for word in ['unified', 'one-shot', 'single step']):
-            concept_map_method = 'unified'
-            logger.info("Agent: Detected unified approach for concept map")
-    
-    # Generate the base specification
-    if graph_type == 'concept_map':
-        spec = generate_concept_map_robust(user_prompt, language, concept_map_method)
-    else:
-        spec = generate_graph_spec(user_prompt, graph_type, language)
-    
-    if not spec or isinstance(spec, dict) and spec.get('error'):
-        logger.error(f"Agent: Failed to generate base spec for {graph_type}")
-        return spec
-    
-    # Integrate style system
     try:
-        from diagram_styles import get_style, parse_style_from_prompt
+        # Validate inputs
+        validate_inputs(user_prompt, language)
+        # Get classification prompt from centralized system
+        classification_prompt = get_prompt("classification", language, "generation")
+        classification_prompt = classification_prompt.format(user_prompt=user_prompt)
         
-        # Parse additional styles from prompt if not provided
-        if not style_preferences:
-            style_preferences = parse_style_from_prompt(user_prompt)
+        # Use the classification LLM (already available in this module)
+        llm_classification = QwenLLM(model_type='classification')
         
-        # Get the complete style configuration
-        color_theme = style_preferences.get('colorTheme', 'classic')
-        variation = 'colorful'  # Default variation
-        if 'dark' in style_preferences.get('backgroundTheme', '').lower():
-            variation = 'dark'
-        elif 'light' in style_preferences.get('backgroundTheme', '').lower():
-            variation = 'light'
+        response = llm_classification._call(classification_prompt)
         
-        complete_style = get_style(graph_type, style_preferences, color_theme, variation)
+        # Extract diagram type from response
+        detected_type = response.strip().lower()
         
-        # Add style information to the spec
-        spec['_style'] = complete_style
-        spec['_style_metadata'] = {
-            'color_theme': color_theme,
-            'variation': variation,
-            'user_preferences': style_preferences
+        # Validate the detected type
+        valid_types = {
+            'bubble_map', 'bridge_map', 'tree_map', 'circle_map', 
+            'double_bubble_map', 'multi_flow_map', 'flow_map', 
+            'brace_map', 'concept_map', 'mind_map'
         }
         
-        logger.info(f"Agent: Successfully integrated styles for {graph_type}")
-        
+        if detected_type in valid_types:
+            logger.info(f"LLM Classification: '{user_prompt}' → {detected_type}")
+            return detected_type
+        else:
+            logger.warning(f"LLM returned invalid type '{detected_type}', falling back to semantic analysis")
+            return _detect_diagram_type_fallback(user_prompt, language)
+            
+    except ValueError as e:
+        logger.error(f"Input validation failed: {e}")
+        return 'bubble_map'  # Safe default
     except Exception as e:
-        logger.error(f"Agent: Style integration failed: {e}")
-        # Continue without styles if integration fails
-        spec['_style'] = {}
-        spec['_style_metadata'] = {}
+        logger.error(f"LLM classification failed: {e}, using fallback")
+        return _detect_diagram_type_fallback(user_prompt, language)
+
+
+def _detect_diagram_type_fallback(user_prompt: str, language: str) -> str:
+    """
+    Semantic fallback detection using longest-match-first approach.
+    Only used when LLM classification fails.
     
-    return spec
+    This function distinguishes between what the user wants to CREATE vs the TOPIC content.
+    """
+    prompt_lower = user_prompt.lower()
+    
+    # First, check for explicit creation intent patterns
+    if language == 'zh':
+        # Check for "生成/创建 X的Y图" patterns (user wants Y diagram about X topic)
+        creation_patterns = [
+            (r'生成.*的气泡图|创建.*的气泡图|做.*的气泡图', 'bubble_map'),
+            (r'生成.*的双气泡图|创建.*的双气泡图|做.*的双气泡图', 'double_bubble_map'),
+            (r'生成.*的流程图|创建.*的流程图|做.*的流程图', 'flow_map'),
+            (r'生成.*的复流程图|创建.*的复流程图|做.*的复流程图', 'multi_flow_map'),
+            (r'生成.*的树形图|创建.*的树形图|做.*的树形图', 'tree_map'),
+            (r'生成.*的圆圈图|创建.*的圆圈图|做.*的圆圈图', 'circle_map'),
+            (r'生成.*的桥梁图|创建.*的桥梁图|做.*的桥梁图', 'bridge_map'),
+            (r'生成.*的括号图|创建.*的括号图|做.*的括号图', 'brace_map'),
+            (r'生成.*的概念图|创建.*的概念图|做.*的概念图', 'concept_map'),
+            (r'生成.*的思维导图|创建.*的思维导图|做.*的思维导图', 'mind_map'),
+        ]
+    else:
+        creation_patterns = [
+            (r'create.*bubble map|generate.*bubble map|make.*bubble map', 'bubble_map'),
+            (r'create.*double bubble map|generate.*double bubble map|make.*double bubble map', 'double_bubble_map'),
+            (r'create.*flow map|generate.*flow map|make.*flow map', 'flow_map'),
+            (r'create.*multi flow map|generate.*multi flow map|make.*multi flow map', 'multi_flow_map'),
+            (r'create.*tree map|generate.*tree map|make.*tree map', 'tree_map'),
+            (r'create.*circle map|generate.*circle map|make.*circle map', 'circle_map'),
+            (r'create.*bridge map|generate.*bridge map|make.*bridge map', 'bridge_map'),
+            (r'create.*brace map|generate.*brace map|make.*brace map', 'brace_map'),
+            (r'create.*concept map|generate.*concept map|make.*concept map', 'concept_map'),
+            (r'create.*mind map|generate.*mind map|make.*mind map', 'mind_map'),
+        ]
+    
+    # Check creation intent patterns first
+    import re
+    for pattern, diagram_type in creation_patterns:
+        if re.search(pattern, prompt_lower):
+            logger.info(f"Fallback Creation Intent: '{user_prompt}' → {diagram_type}")
+            return diagram_type
+    
+    # Fallback to content-based detection if no clear creation intent
+    if language == 'zh':
+        keyword_patterns = [
+            ('double_bubble_map', ['双气泡图', '对比气泡图']),
+            ('multi_flow_map', ['复流程图', '多流程图', '因果流程图']),
+            ('bubble_map', ['气泡图', '属性图']),
+            ('bridge_map', ['桥梁图', '类比图', '对比桥']),
+            ('flow_map', ['流程图', '步骤图']),
+            ('tree_map', ['树形图', '分类图', '层次图']),
+            ('circle_map', ['圆圈图', '环形图', '上下文图']),
+            ('brace_map', ['括号图', '整体图', '部分图']),
+            ('concept_map', ['概念图', '关系图']),
+            ('mind_map', ['思维导图', '脑图', '发散图']),
+        ]
+    else:
+        keyword_patterns = [
+            ('double_bubble_map', ['double bubble map', 'comparison bubble']),
+            ('multi_flow_map', ['multi flow map', 'cause effect flow', 'multiple flow']),
+            ('bubble_map', ['bubble map', 'attribute map']),
+            ('bridge_map', ['bridge map', 'analogy map']),
+            ('flow_map', ['flow map', 'process map', 'sequence map']),
+            ('tree_map', ['tree map', 'hierarchy map', 'classification map']),
+            ('circle_map', ['circle map', 'context map']),
+            ('brace_map', ['brace map', 'part whole map']),
+            ('concept_map', ['concept map', 'relationship map']),
+            ('mind_map', ['mind map', 'brainstorm map']),
+        ]
+    
+    # Check patterns in order of specificity
+    for diagram_type, keywords in keyword_patterns:
+        if any(keyword in prompt_lower for keyword in keywords):
+            logger.info(f"Fallback Content Detection: '{user_prompt}' → {diagram_type}")
+            return diagram_type
+    
+    # Semantic analysis based on content intent
+    if language == 'zh':
+        if any(word in prompt_lower for word in ['属性', '特征', '特点', '性质']):
+            return 'bubble_map'
+        elif any(word in prompt_lower for word in ['对比', '比较', '异同']):
+            return 'double_bubble_map'
+        elif any(word in prompt_lower for word in ['原因', '结果', '因果', '影响']):
+            return 'multi_flow_map'
+        elif any(word in prompt_lower for word in ['步骤', '流程', '过程', '顺序']):
+            return 'flow_map'
+        elif any(word in prompt_lower for word in ['分类', '层次', '结构']):
+            return 'tree_map'
+    else:
+        if any(word in prompt_lower for word in ['attribute', 'characteristic', 'feature', 'property']):
+            return 'bubble_map'
+        elif any(word in prompt_lower for word in ['compare', 'contrast', 'difference', 'similarity']):
+            return 'double_bubble_map'
+        elif any(word in prompt_lower for word in ['cause', 'effect', 'result', 'consequence']):
+            return 'multi_flow_map'
+        elif any(word in prompt_lower for word in ['step', 'process', 'sequence', 'procedure']):
+            return 'flow_map'
+        elif any(word in prompt_lower for word in ['hierarchy', 'classification', 'structure']):
+            return 'tree_map'
+    
+    # Default to bubble_map (most versatile)
+    logger.info(f"Default Detection: '{user_prompt}' → bubble_map (no specific patterns found)")
+    return 'bubble_map'
 
 
 def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
@@ -1304,69 +1199,29 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
     to generate exactly 30 concepts + relationships, matching the desired workflow.
     """
     try:
-        # Use existing topic extraction (already works!)
-        extraction = extract_topics_and_styles_from_prompt_qwen(user_prompt, language)
-        topics = extraction.get('topics', [])
-        central_topic = topics[0] if topics else user_prompt.split()[:3]  # Use first topic or fallback
+        # Simple topic extraction from user prompt
+        words = user_prompt.replace('生成', '').replace('图', '').replace('关于', '').replace('create', '').replace('generate', '').replace('about', '').strip().split()
+        central_topic = ' '.join(words[:3]) if words else user_prompt.strip()  # Use first 3 words or fallback
         
         if isinstance(central_topic, list):
             central_topic = ' '.join(central_topic)
         
         logger.info(f"Agent: Using central topic for 30-concept generation: {central_topic}")
         
-        # Generate exactly 30 concepts using improved prompts
-        if language == 'zh':
-            concept_prompt = f"""
-请为主题"{central_topic}"生成恰好30个相关的关键概念。
-
-主题分析策略：
-1. 核心组成部分 - 有哪些基本要素？
-2. 重要过程 - 涉及哪些关键流程？
-3. 类型分类 - 有哪些不同类别？
-4. 工具方法 - 使用什么工具和方法？
-5. 相关人员 - 涉及哪些角色？
-6. 应用领域 - 在哪些方面应用？
-7. 特征属性 - 有什么特点？
-8. 发展历程 - 重要的发展阶段？
-
-输出JSON格式：
-{{
-  "concepts": ["概念1", "概念2", ..., "概念30"]
-}}
-
-要求：
-- 恰好30个概念，不多不少
-- 每个概念2-4个字
-- 覆盖上述8个方面
-- 具体且有意义，避免抽象术语
-- 确保与"{central_topic}"直接相关
-"""
+        # Generate exactly 30 concepts using centralized prompts
+        from prompts import get_prompt
+        
+        # Get appropriate prompt for language
+        concept_prompt = get_prompt("concept_30", language, "generation")
+        if concept_prompt:
+            concept_prompt = concept_prompt.format(central_topic=central_topic)
         else:
-            concept_prompt = f"""
-Generate exactly 30 specific and meaningful concepts related to: {central_topic}
-
-Analysis Strategy - Cover these aspects:
-1. Core Components - What are the fundamental elements?
-2. Key Processes - What important workflows are involved?
-3. Types/Categories - What different classifications exist?
-4. Tools/Methods - What tools and techniques are used?
-5. People/Roles - What roles and stakeholders are involved?
-6. Applications/Domains - In what areas is this applied?
-7. Properties/Features - What characteristics does it have?
-8. Development/History - What important stages of development?
-
-Output JSON format:
-{{
-  "concepts": ["concept1", "concept2", ..., "concept30"]
-}}
-
-Requirements:
-- Exactly 30 concepts, no more, no less
-- Each concept should be 2-4 words
-- Cover the 8 aspects above
-- Specific and meaningful, avoid abstract terms
-- Ensure direct relevance to "{central_topic}"
-"""
+            # Fallback if prompt not found
+            logger.warning("Concept 30 generation prompt not found in centralized system, using fallback")
+            if language == 'zh':
+                concept_prompt = f"为主题{central_topic}生成30个相关概念，输出JSON格式"
+            else:
+                concept_prompt = f"Generate 30 related concepts for topic {central_topic}, output JSON format"
 
         # Get concepts from LLM
         concepts_response = _invoke_llm_prompt(concept_prompt, {'central_topic': central_topic})
@@ -1389,18 +1244,24 @@ Requirements:
                 concepts_data = _parse_strict_json(concepts_response)
                 logger.info("Used strict parsing for concepts")
         
-        concepts = concepts_data.get('concepts', [])
+        # Handle both dict and list formats
+        if isinstance(concepts_data, dict):
+            concepts = concepts_data.get('concepts', [])
+        elif isinstance(concepts_data, list):
+            concepts = concepts_data
+        else:
+            concepts = []
         
         # Ensure exactly 30 concepts
         if len(concepts) != 30:
             if len(concepts) > 30:
                 concepts = concepts[:30]  # Take first 30
-                logger.info(f"Trimmed concepts from {len(concepts_data.get('concepts', []))} to 30")
+                logger.info(f"Trimmed concepts from {len(concepts)} to 30")
             else:
                 # Pad with generic concepts if less than 30
                 while len(concepts) < 30:
                     concepts.append(f"Related aspect {len(concepts) + 1}")
-                logger.info(f"Padded concepts from {len(concepts_data.get('concepts', []))} to 30")
+                logger.info(f"Padded concepts from {len(concepts)} to 30")
         
         if not concepts:
             raise ValueError("No concepts generated")
@@ -1423,7 +1284,7 @@ Requirements:
 输出JSON格式：
 {{
   "relationships": [
-    {{"from": "{central_topic}", "to": "概念1", "label": "包含"}},
+    {{"from": "{{central_topic}}", "to": "概念1", "label": "包含"}},
     {{"from": "概念A", "to": "概念B", "label": "导致"}},
     ...
   ]
@@ -1453,7 +1314,7 @@ Relationship Strategy:
 Output JSON format:
 {{
   "relationships": [
-    {{"from": "{central_topic}", "to": "concept1", "label": "contains"}},
+    {{"from": "{{central_topic}}", "to": "concept1", "label": "contains"}},
     {{"from": "conceptA", "to": "conceptB", "label": "causes"}},
     ...
   ]
@@ -1572,9 +1433,112 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
     raise ValueError("All concept map generation methods failed - check LLM configuration")
 
 
+def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str) -> dict:
+    """
+    Generate specification using the appropriate specialized agent.
+    
+    Args:
+        user_prompt: User's input prompt
+        diagram_type: Type of diagram to generate
+        language: Language for processing
+    
+    Returns:
+        dict: Generated specification
+    """
+    try:
+        # Import and instantiate the appropriate agent
+        if diagram_type == 'bubble_map':
+            from .thinking_maps.bubble_map_agent import BubbleMapAgent
+            agent = BubbleMapAgent()
+        elif diagram_type == 'bridge_map':
+            logger.info("=== MAIN AGENT: BRIDGE MAP AGENT SELECTION ===")
+            from .thinking_maps.bridge_map_agent import BridgeMapAgent
+            agent = BridgeMapAgent()
+            logger.info("BridgeMapAgent imported and instantiated successfully")
+        elif diagram_type == 'tree_map':
+            from .thinking_maps.tree_map_agent import TreeMapAgent
+            agent = TreeMapAgent()
+        elif diagram_type == 'circle_map':
+            from .thinking_maps.circle_map_agent import CircleMapAgent
+            agent = CircleMapAgent()
+        elif diagram_type == 'double_bubble_map':
+            from .thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
+            agent = DoubleBubbleMapAgent()
+        elif diagram_type == 'flow_map':
+            from .thinking_maps.flow_map_agent import FlowMapAgent
+            agent = FlowMapAgent()
+        elif diagram_type == 'brace_map':
+            from .thinking_maps.brace_map_agent import BraceMapAgent
+            agent = BraceMapAgent()
+        elif diagram_type == 'multi_flow_map':
+            from .thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
+            agent = MultiFlowMapAgent()
+        elif diagram_type == 'mind_map' or diagram_type == 'mindmap':
+            from .mind_maps.mind_map_agent import MindMapAgent
+            agent = MindMapAgent()
+        elif diagram_type == 'concept_map':
+            from .concept_maps.concept_map_agent import ConceptMapAgent
+            agent = ConceptMapAgent()
+        else:
+            # Fallback to bubble map
+            from .thinking_maps.bubble_map_agent import BubbleMapAgent
+            agent = BubbleMapAgent()
+        
+        # Generate using the agent
+        logger.info(f"=== MAIN AGENT: CALLING {diagram_type.upper()} AGENT ===")
+        logger.info(f"User prompt: {user_prompt}")
+        logger.info(f"Language: {language}")
+        
+        result = agent.generate_graph(user_prompt, language)
+        
+        logger.info(f"Agent result type: {type(result)}")
+        logger.info(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+        
+        # Extract spec from agent result if wrapped
+        if isinstance(result, dict):
+            if 'spec' in result:
+                logger.info("Result contains 'spec' key, returning spec")
+                return result['spec']
+            elif 'error' not in result:
+                logger.info("Result contains no error, returning as-is")
+                return result
+            else:
+                logger.error(f"Result contains error: {result.get('error')}")
+        
+        logger.info("Returning raw result")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Agent instantiation/generation failed for {diagram_type}: {e}")
+        return {'error': f'Failed to generate {diagram_type}: {str(e)}'}
+
+
+def _add_basic_styling(spec: dict, diagram_type: str):
+    """
+    Add basic default styling to the specification.
+    
+    Args:
+        spec: The diagram specification
+        diagram_type: Type of diagram
+    """
+    if not isinstance(spec, dict):
+        return
+    
+    # Add basic style metadata if not present
+    if '_style' not in spec:
+        spec['_style'] = {}
+    
+    if '_style_metadata' not in spec:
+        spec['_style_metadata'] = {
+            'color_theme': 'classic',
+            'variation': 'colorful',
+            'user_preferences': {}
+        }
+
+
 def agent_graph_workflow_with_styles(user_prompt, language='zh'):
     """
-    Enhanced agent workflow with integrated style system.
+    Simplified agent workflow that directly calls specialized agents.
     
     Args:
         user_prompt (str): User's input prompt
@@ -1583,40 +1547,121 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
     """
-    logger.info(f"Agent: Starting enhanced graph workflow for: {user_prompt}")
+    logger.info(f"Agent: Starting simplified graph workflow for: {user_prompt}")
     
     try:
-        # Extract topics, styles, and diagram type
-        extraction = extract_topics_and_styles_from_prompt_qwen(user_prompt, language)
-        topics = extraction.get('topics', [])
-        style_preferences = extraction.get('style_preferences', {})
-        diagram_type = extraction.get('diagram_type', 'bubble_map')
+        # Validate inputs
+        validate_inputs(user_prompt, language)
+        # LLM-based diagram type detection for semantic understanding
+        diagram_type = _detect_diagram_type_from_prompt(user_prompt, language)
+        logger.info(f"Agent: Detected diagram type: {diagram_type}")
         
-        logger.info(f"Agent: Extracted - topics: {topics}, diagram_type: {diagram_type}")
-        logger.info(f"Agent: Style preferences: {style_preferences}")
+        # Generate specification using the appropriate agent
+        spec = _generate_spec_with_agent(user_prompt, diagram_type, language)
         
-        # Generate specification with integrated styles
-        spec = generate_graph_spec_with_styles(user_prompt, diagram_type, language, style_preferences)
+        if not spec or (isinstance(spec, dict) and spec.get('error')):
+            logger.error(f"Agent: Failed to generate spec for {diagram_type}")
+            return {
+                'spec': spec or create_error_response('Failed to generate specification', 'generation', {'diagram_type': diagram_type}),
+                'diagram_type': diagram_type,
+                'topics': [],
+                'style_preferences': {},
+                'language': language
+            }
+        
+        # Add basic styling
+        _add_basic_styling(spec, diagram_type)
         
         # Add metadata to the result
         result = {
             'spec': spec,
             'diagram_type': diagram_type,
-            'topics': topics,
-            'style_preferences': style_preferences,
+            'topics': [],  # No longer extracted
+            'style_preferences': {},  # No longer extracted
             'language': language
         }
         
-        logger.info(f"Agent: Enhanced workflow completed successfully")
+        logger.info(f"Agent: Simplified workflow completed successfully")
         return result
         
-    except Exception as e:
-        logger.error(f"Agent: Enhanced workflow failed: {e}")
-        # Do not fallback to a different diagram type; surface the error with intended type
+    except ValueError as e:
+        logger.error(f"Agent: Input validation failed: {e}")
         return {
-            'spec': { 'error': f'Generation failed: {str(e)}' },
-            'diagram_type': 'concept_map',
+            'spec': create_error_response(f'Invalid input: {str(e)}', 'validation', {'language': language}),
+            'diagram_type': 'bubble_map',
             'topics': [],
             'style_preferences': {},
             'language': language
         }
+    except Exception as e:
+        logger.error(f"Agent: Simplified workflow failed: {e}")
+        return {
+            'spec': create_error_response(f'Generation failed: {str(e)}', 'workflow', {'language': language}),
+            'diagram_type': 'bubble_map',
+            'topics': [],
+            'style_preferences': {},
+            'language': language
+        }
+
+
+# ============================================================================
+# MAIN AGENT CLASS (for architectural consistency)
+# ============================================================================
+
+class MainAgent:
+    """
+    Main Agent class that provides the BaseAgent interface for the entry point module.
+    
+    This class wraps the functional approach used in this module to provide
+    architectural consistency with other agents while maintaining the existing
+    API that the application depends on.
+    """
+    
+    def __init__(self):
+        """Initialize the main agent."""
+        self.language = 'zh'  # Default language
+        self.logger = logger
+    
+    def generate_graph(self, user_prompt: str, language: str = "zh") -> dict:
+        """
+        Generate a graph specification from user prompt.
+        
+        This method implements the BaseAgent interface by delegating to the
+        existing functional API in this module.
+        
+        Args:
+            user_prompt: User's input prompt
+            language: Language for processing ('zh' or 'en')
+            
+        Returns:
+            dict: Graph specification with styling and metadata
+        """
+        try:
+            # Simple topic extraction from the prompt
+            words = user_prompt.replace('生成', '').replace('图', '').replace('关于', '').replace('create', '').replace('generate', '').replace('about', '').strip().split()
+            central_topic = ' '.join(words[:3]) if words else user_prompt.strip()
+            
+            if not central_topic.strip():
+                return create_error_response("Failed to extract topic from prompt", "extraction")
+            
+            # Use default diagram type and style preferences
+            diagram_type = 'concept_map'
+            style_preferences = {}
+            
+            # Generate the graph specification using the simplified workflow
+            ConceptMapAgent = _get_concept_map_agent()
+            agent = ConceptMapAgent()
+            result = agent.generate_graph(user_prompt, language)
+            return result.get('spec', create_error_response("Failed to generate concept map", "generation"))
+            
+        except Exception as e:
+            logger.error(f"MainAgent: Generation error: {e}")
+            return create_error_response(f"MainAgent generation failed: {str(e)}", "main_agent")
+    
+    def set_language(self, language: str):
+        """Set the language for this agent."""
+        self.language = language
+    
+    def get_language(self) -> str:
+        """Get the current language setting."""
+        return self.language

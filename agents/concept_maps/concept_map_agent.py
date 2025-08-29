@@ -10,7 +10,11 @@ Enhances concept map specifications by:
 - Providing recommended dimensions sized to fit all content
 """
 
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Any
+import logging
+from ..core.base_agent import BaseAgent
+
+logger = logging.getLogger(__name__)
 
 # Import configuration
 try:
@@ -31,7 +35,7 @@ except ImportError:
     ITERATIONS = 200
 
 
-class ConceptMapAgent:
+class ConceptMapAgent(BaseAgent):
     """Agent to enhance and sanitize concept map specifications."""
 
     MAX_CONCEPTS: int = 30
@@ -177,6 +181,48 @@ class ConceptMapAgent:
             return {"success": True, "spec": enhanced_spec}
         except Exception as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
+
+    def generate_graph(self, user_prompt: str, language: str = "en") -> Dict[str, Any]:
+        """
+        Generate a concept map graph specification from user prompt.
+        
+        This method implements the BaseAgent interface and delegates to the main
+        concept map generation functions in main_agent.py for consistency.
+        
+        Args:
+            user_prompt: User's input prompt
+            language: Language for processing ('zh' or 'en')
+            
+        Returns:
+            dict: Graph specification with styling and metadata
+        """
+        try:
+            logger.info(f"ConceptMapAgent: Generating concept map for prompt: {user_prompt[:100]}...")
+            
+            # Import the robust concept map generation from main_agent
+            from ..main_agent import generate_concept_map_robust
+            
+            # Use the robust generation method with auto-detection
+            spec = generate_concept_map_robust(user_prompt, language, method='auto')
+            
+            if not spec or isinstance(spec, dict) and spec.get('error'):
+                logger.error(f"ConceptMapAgent: Generation failed")
+                return {"error": "Failed to generate concept map specification"}
+            
+            # Enhance the specification using this agent's enhancement capabilities
+            enhanced_result = self.enhance_spec(spec)
+            
+            if not enhanced_result.get('success'):
+                logger.warning(f"ConceptMapAgent: Enhancement failed: {enhanced_result.get('error')}")
+                # Return original spec if enhancement fails
+                return spec
+            
+            # Return the enhanced specification
+            return enhanced_result.get('spec', spec)
+            
+        except Exception as e:
+            logger.error(f"ConceptMapAgent: Generation error: {e}")
+            return {"error": f"ConceptMapAgent generation failed: {str(e)}"}
 
     def generate_simplified_two_stage(self, user_prompt: str, llm_client, language: str = "en") -> Dict:
         """

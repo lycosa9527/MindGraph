@@ -71,100 +71,22 @@ class DoubleBubbleMapAgent(BaseAgent):
     def _generate_double_bubble_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the double bubble map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建双气泡图。双气泡图用于比较和对比两个主题的异同。
-
-请根据用户的描述，创建一个详细的双气泡图规范。输出必须是有效的JSON格式，包含以下结构：
-
-{
-  "topic1": "主题1",
-  "topic2": "主题2",
-  "topic1_attributes": [
-    {
-      "id": "t1_attr1",
-      "text": "主题1的属性1",
-      "category": "类别1"
-    }
-  ],
-  "topic2_attributes": [
-    {
-      "id": "t2_attr1",
-      "text": "主题2的属性1",
-      "category": "类别1"
-    }
-  ],
-  "shared_attributes": [
-    {
-      "id": "shared1",
-      "text": "共同属性1",
-      "category": "共同类别"
-    }
-  ],
-  "connections": [
-    {
-      "from": "topic1",
-      "to": "t1_attr1",
-      "label": "关系标签"
-    }
-  ]
-}
-
-要求：
-- 两个主题应该明确且可比较
-- 每个主题的属性应该具体且有意义
-- 共同属性应该反映两个主题的相似之处
-- 每个属性都应该有明确的连接
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system
+            # Use agent-specific format that matches validation
+            system_prompt = get_prompt("double_bubble_map_agent", language, "generation")
+            
+            if not system_prompt:
+                # Fallback to general format if agent-specific not found
+                system_prompt = get_prompt("double_bubble_map", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"DoubleBubbleMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个双气泡图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in double bubble maps. Double bubble maps are used to compare and contrast two topics.
-
-Please create a detailed double bubble map specification based on the user's description. The output must be valid JSON with the following structure:
-
-{
-  "topic1": "Topic 1",
-  "topic2": "Topic 2",
-  "topic1_attributes": [
-    {
-      "id": "t1_attr1",
-      "text": "Topic 1 Attribute 1",
-      "category": "Category 1"
-    }
-  ],
-  "topic2_attributes": [
-    {
-      "id": "t2_attr1",
-      "text": "Topic 2 Attribute 1",
-      "category": "Category 1"
-    }
-  ],
-  "shared_attributes": [
-    {
-      "id": "shared1",
-      "text": "Shared Attribute 1",
-      "category": "Shared Category"
-    }
-  ],
-  "connections": [
-    {
-      "from": "topic1",
-      "to": "t1_attr1",
-      "label": "Relationship Label"
-    }
-  ]
-}
-
-Requirements:
-- Both topics should be clear and comparable
-- Each topic's attributes should be concrete and meaningful
-- Shared attributes should reflect similarities between topics
-- Each attribute should have a clear connection
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid"""
-                
-                user_prompt = f"Please create a double bubble map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个双气泡图：{prompt}" if language == "zh" else f"Please create a double bubble map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [
@@ -172,6 +94,8 @@ Requirements:
                 {"role": "user", "content": user_prompt}
             ]
             response = self.llm_client.chat_completion(messages)
+            
+            # Response already generated above with centralized prompts
             
             # Extract JSON from response
             from ..core.agent_utils import extract_json_from_response
@@ -194,10 +118,50 @@ Requirements:
             return None
     
     def _enhance_spec(self, spec: Dict) -> Dict:
-        """Enhance the specification with layout and dimension recommendations."""
+        """Enhance the specification with layout and dimension recommendations and convert to renderer format."""
         try:
+            # Convert agent format (topic1/topic2) to renderer format (left/right) for D3.js
+            enhanced_spec = {}
+            
+            if 'topic1' in spec and 'topic2' in spec:
+                # Agent format - convert to renderer format
+                enhanced_spec['left'] = spec['topic1']
+                enhanced_spec['right'] = spec['topic2']
+                
+                # Convert attributes to simple arrays for renderer
+                enhanced_spec['similarities'] = []
+                if 'shared_attributes' in spec:
+                    for attr in spec['shared_attributes']:
+                        if isinstance(attr, dict) and 'text' in attr:
+                            enhanced_spec['similarities'].append(attr['text'])
+                        elif isinstance(attr, str):
+                            enhanced_spec['similarities'].append(attr)
+                
+                enhanced_spec['left_differences'] = []
+                if 'topic1_attributes' in spec:
+                    for attr in spec['topic1_attributes']:
+                        if isinstance(attr, dict) and 'text' in attr:
+                            enhanced_spec['left_differences'].append(attr['text'])
+                        elif isinstance(attr, str):
+                            enhanced_spec['left_differences'].append(attr)
+                
+                enhanced_spec['right_differences'] = []
+                if 'topic2_attributes' in spec:
+                    for attr in spec['topic2_attributes']:
+                        if isinstance(attr, dict) and 'text' in attr:
+                            enhanced_spec['right_differences'].append(attr['text'])
+                        elif isinstance(attr, str):
+                            enhanced_spec['right_differences'].append(attr)
+                            
+                # Preserve original agent data for debugging
+                enhanced_spec['_agent_data'] = spec.copy()
+                
+            else:
+                # Already in renderer format or unknown format
+                enhanced_spec = spec.copy()
+            
             # Add layout information
-            spec['_layout'] = {
+            enhanced_spec['_layout'] = {
                 'type': 'double_bubble_map',
                 'topic1_position': 'left',
                 'topic2_position': 'right',
@@ -207,7 +171,7 @@ Requirements:
             }
             
             # Add recommended dimensions
-            spec['_recommended_dimensions'] = {
+            enhanced_spec['_recommended_dimensions'] = {
                 'baseWidth': 1000,
                 'baseHeight': 700,
                 'padding': 100,
@@ -216,13 +180,14 @@ Requirements:
             }
             
             # Add metadata
-            spec['_metadata'] = {
+            enhanced_spec['_metadata'] = {
                 'generated_by': 'DoubleBubbleMapAgent',
                 'version': '1.0',
-                'enhanced': True
+                'enhanced': True,
+                'format_converted': 'topic1' in spec and 'topic2' in spec
             }
             
-            return spec
+            return enhanced_spec
             
         except Exception as e:
             logger.error(f"DoubleBubbleMapAgent: Error enhancing spec: {e}")

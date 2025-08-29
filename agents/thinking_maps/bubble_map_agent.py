@@ -71,68 +71,21 @@ class BubbleMapAgent(BaseAgent):
     def _generate_bubble_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the bubble map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建气泡图。气泡图用于描述单个主题的特征和属性。
-
-请根据用户的描述，创建一个详细的气泡图规范。输出必须是有效的JSON格式，包含以下结构：
-
-{
-  "topic": "中心主题",
-  "attributes": [
-    {
-      "id": "attr1",
-      "text": "属性1",
-      "category": "类别1"
-    }
-  ],
-  "connections": [
-    {
-      "from": "topic",
-      "to": "attr1",
-      "label": "关系标签"
-    }
-  ]
-}
-
-要求：
-- 中心主题应该清晰明确
-- 属性应该具体且有意义
-- 每个属性都应该与中心主题有明确的连接
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system - use general format that works with renderer
+            system_prompt = get_prompt("bubble_map", language, "generation")
+            
+            if not system_prompt:
+                # Fallback to agent-specific if general not found
+                system_prompt = get_prompt("bubble_map_agent", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"BubbleMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个气泡图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in bubble maps. Bubble maps are used to describe attributes and characteristics of a single topic.
-
-Please create a detailed bubble map specification based on the user's description. The output must be valid JSON with the following structure:
-
-{
-  "topic": "Central Topic",
-  "attributes": [
-    {
-      "id": "attr1",
-      "text": "Attribute 1",
-      "category": "Category 1"
-    }
-  ],
-  "connections": [
-    {
-      "from": "topic",
-      "to": "attr1",
-      "label": "Relationship Label"
-    }
-  ]
-}
-
-Requirements:
-- Central topic should be clear and specific
-- Attributes should be concrete and meaningful
-- Each attribute should have a clear connection to the central topic
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid"""
-                
-                user_prompt = f"Please create a bubble map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个气泡图：{prompt}" if language == "zh" else f"Please create a bubble map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [
@@ -215,25 +168,26 @@ Requirements:
             if 'attributes' not in spec or not isinstance(spec['attributes'], list):
                 return False, "Missing or invalid attributes list"
             
-            if 'connections' not in spec or not isinstance(spec['connections'], list):
-                return False, "Missing or invalid connections list"
+            # Connections are optional for simple bubble maps
+            if 'connections' in spec and not isinstance(spec['connections'], list):
+                return False, "Invalid connections list"
             
-            # Validate attributes
+            # Validate attributes (simple string format)
             if len(spec['attributes']) < 3:
                 return False, "Must have at least 3 attributes"
             
             if len(spec['attributes']) > 15:
                 return False, "Too many attributes (max 15)"
             
-            # Validate connections
-            if len(spec['connections']) < len(spec['attributes']):
-                return False, "Each attribute must have at least one connection"
+            # Validate each attribute is a non-empty string
+            for i, attr in enumerate(spec['attributes']):
+                if not isinstance(attr, str) or not attr.strip():
+                    return False, f"attributes[{i}] must be a non-empty string"
             
-            # Check for valid IDs
-            valid_ids = {'topic'} | {attr.get('id') for attr in spec['attributes']}
-            for conn in spec['connections']:
-                if conn.get('from') not in valid_ids or conn.get('to') not in valid_ids:
-                    return False, "Invalid connection references"
+            # Validate connections if present
+            if 'connections' in spec:
+                if len(spec['connections']) < len(spec['attributes']):
+                    return False, "Each attribute must have at least one connection"
             
             return True, "Specification is valid"
             

@@ -2,28 +2,50 @@
 
 This directory contains a unified, organized system for all diagram prompts in the MindGraph project.
 
+## 🚀 Latest Updates (v2.5.3)
+
+### Smart LLM Classification System
+- ✅ **Advanced Intent Understanding**: Distinguishes between diagram type to create vs topic content
+- ✅ **Edge Case Handling**: Correctly processes complex prompts like "生成关于概念图的思维导图" → `mind_map`
+- ✅ **Centralized Classification**: All LLM classification prompts moved to `main_agent.py`
+- ✅ **Enhanced Examples**: Specific patterns for better semantic understanding
+
 ## 🎯 Problem Solved
 
 **Before**: Prompts were scattered across multiple files:
 - Some in `agent.py` (bubble_map, double_bubble_map, circle_map)
 - Some in `deepseek_agent.py` (bridge_map, flow_map, etc.)
 - Inconsistent architecture and maintenance nightmare
+- Hardcoded keyword-based classification
 
 **After**: All prompts centralized in one organized system:
 - Single source of truth for all prompts
 - Consistent architecture and easy maintenance
 - All diagram types supported in main agent workflow
+- **Smart LLM-based classification** with semantic understanding
 
 ## 📁 Structure
 
 ```
 prompts/
 ├── __init__.py              # Main registry and interface
-├── thinking_maps.py         # All 8 Thinking Maps® prompts
+├── main_agent.py           # Main agent prompts (LLM classification, concept generation)
+├── thinking_maps.py         # All 7 Thinking Maps® prompts  
 ├── concept_maps.py          # Concept map prompts
-├── mind_maps.py            # Mind map prompts
+├── mind_maps.py            # Mind map prompts with clockwise positioning
 └── README.md               # This documentation
 ```
+
+## 🧠 Smart Classification Examples
+
+The LLM classification system in `main_agent.py` handles complex user intent:
+
+| User Input | Detected Type | Explanation |
+|------------|---------------|-------------|
+| `"生成一个关于概念图的思维导图"` | `mind_map` | User wants to CREATE a mind map ABOUT concept maps |
+| `"生成一个关于思维导图的概念图"` | `concept_map` | User wants to CREATE a concept map ABOUT mind maps |
+| `"create a bubble map about double bubble maps"` | `bubble_map` | User wants to CREATE a bubble map ABOUT double bubbles |
+| `"compare cats and dogs"` | `double_bubble_map` | Comparison intent automatically detected |
 
 ## 🚀 Usage
 

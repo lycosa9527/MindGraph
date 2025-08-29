@@ -1152,64 +1152,25 @@ class BraceMapAgent(BaseAgent):
     def _generate_brace_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建括号图。括号图用于展示主题的组成部分。
-
-请根据用户的描述，创建一个详细的括号图规范。输出必须是有效的JSON格式，包含以下结构：
-
-{
-  "topic": "中心主题",
-  "parts": [
-    {
-      "id": "part1",
-      "label": "部分1",
-      "subparts": [
-        {"id": "sub1", "label": "子部分1"}
-      ]
-    }
-  ]
-}
-
-要求：
-- 中心主题应该清晰明确
-- 每个部分必须有id和label字段
-- 部分应该按逻辑层次组织
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system
+            system_prompt = get_prompt("brace_map_agent", language, "generation") or get_prompt("brace_map", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"BraceMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个括号图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in brace maps. Brace maps are used to show the parts of a topic.
-
-Please create a detailed brace map specification based on the user's description. The output must be valid JSON with the following structure:
-
-{
-  "topic": "Central Topic",
-  "parts": [
-    {
-      "id": "part1",
-      "label": "Part 1",
-      "subparts": [
-        {"id": "sub1", "label": "Sub-part 1"}
-      ]
-    }
-  ]
-}
-
-Requirements:
-- Central topic should be clear and specific
-- Each part must have both id and label fields
-- Parts should be organized in logical hierarchy
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid"""
-                
-                user_prompt = f"Please create a brace map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
             
             # Generate response from LLM
             response = self.llm_client.chat_completion([
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ])
+            
+            # Response already generated above with centralized prompts
             
             if not response:
                 logger.error("BraceMapAgent: No response from LLM")

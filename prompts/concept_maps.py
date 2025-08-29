@@ -1753,6 +1753,7 @@ CONCEPT_MAP_PROMPTS = {
     "concept_map_quality_focused_en": CONCEPT_MAP_QUALITY_FOCUSED_EN,
     "concept_map_quality_focused_zh": CONCEPT_MAP_QUALITY_FOCUSED_ZH,
     
+
     # NEW: Relationship quality enhancement
     "concept_map_relationship_quality_en": CONCEPT_MAP_RELATIONSHIP_QUALITY_EN,
     "concept_map_relationship_quality_zh": CONCEPT_MAP_RELATIONSHIP_QUALITY_ZH,

@@ -90,7 +90,7 @@ class Config:
     @property
     def QWEN_MAX_TOKENS(self):
         """Unified max tokens setting for all LLM calls."""
-        return 1500
+        return 3000
     @property
     def QWEN_TIMEOUT(self):
         try:

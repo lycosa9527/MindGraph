@@ -59,7 +59,7 @@ def check_app_running():
     print("💡 Please start the application first with: python app.py")
     return False
 
-def generate_diagram_via_api(prompt, diagram_type, language="en"):
+def generate_diagram_via_api(prompt, language="en"):
     """Generate a diagram using the MindGraph API."""
     try:
         print(f"  📤 Sending request to API...")
@@ -71,14 +71,21 @@ def generate_diagram_via_api(prompt, diagram_type, language="en"):
         }
         
         print(f"  🎨 Generating PNG image...")
+        # Longer timeout for complex diagrams like concept maps
+        timeout = 180 if 'concept' in prompt.lower() or 'mind' in prompt.lower() else 120
         png_response = requests.post(
             f"{app_url}/api/generate_png",
             json=png_data,
-            timeout=120  # PNG generation takes longer
+            timeout=timeout
         )
         
         if png_response.status_code != 200:
             print(f"  ❌ PNG generation failed: {png_response.status_code}")
+            try:
+                error_detail = png_response.json().get('error', 'Unknown error')
+                print(f"  ❌ Error details: {error_detail}")
+            except:
+                print(f"  ❌ Response content: {png_response.text[:200]}...")
             return None
         
         # The PNG endpoint returns the image directly, not JSON
@@ -121,12 +128,25 @@ def test_agent_via_api(agent_name, diagram_type, images_dir):
         print(f"Testing {agent_name} via API...")
         print(f"{'='*60}")
         
-        # Create a specific prompt for this diagram type
-        test_prompt = f"Create a {agent_name.lower()} about 'Artificial Intelligence and Machine Learning' with detailed content and clear structure"
+        # Create a specific prompt tailored for this diagram type
+        prompt_templates = {
+            "Bubble Map": "Create a bubble map about 'Machine Learning Algorithms' showing the main topic and its key attributes and characteristics",
+            "Double Bubble Map": "Create a double bubble map comparing 'Artificial Intelligence' and 'Machine Learning' showing similarities and differences",
+            "Circle Map": "Create a circle map defining 'Deep Learning' in the context of artificial intelligence and data science",
+            "Bridge Map": "Create a bridge map showing the analogy between 'Neural Networks' and 'Human Brain' connections",
+            "Concept Map": "Create a concept map about 'Machine Learning' showing relationships between concepts like algorithms, data, training, and applications",
+            "Mind Map": "Create a mind map for 'Artificial Intelligence' with main branches covering applications, techniques, tools, and future trends",
+            "Flow Map": "Create a flow map showing the process of 'Machine Learning Model Development' from data to deployment",
+            "Tree Map": "Create a tree map for 'AI Technologies' breaking down into categories like ML, NLP, Computer Vision with subcategories",
+            "Brace Map": "Create a brace map showing 'Machine Learning' as the whole with parts like supervised, unsupervised, and reinforcement learning",
+            "Multi-Flow Map": "Create a multi-flow map showing causes and effects of 'AI Adoption in Business'"
+        }
+        
+        test_prompt = prompt_templates.get(agent_name, f"Create a {agent_name.lower()} about 'Artificial Intelligence and Machine Learning'")
         print(f"✓ Using prompt: '{test_prompt}'")
         
         # Generate diagram via API
-        image_data = generate_diagram_via_api(test_prompt, diagram_type, "en")
+        image_data = generate_diagram_via_api(test_prompt, "en")
         
         if not image_data:
             print(f"✗ Failed to generate image")
@@ -165,26 +185,37 @@ def main():
     print(f"  - Images: {images_dir}")
     
     # Define agent test cases with their diagram types
+    # Should match exactly with AGENT_REGISTRY in agents/__init__.py (10 core types)
     agents_to_test = [
         ("Bubble Map", "bubble_map"),
         ("Double Bubble Map", "double_bubble_map"),
         ("Circle Map", "circle_map"),
         ("Bridge Map", "bridge_map"),
         ("Concept Map", "concept_map"),
-        ("Mind Map", "mindmap"),
+        ("Mind Map", "mindmap"),  # Note: 'mindmap' not 'mind_map' per AGENT_REGISTRY
         ("Flow Map", "flow_map"),
         ("Tree Map", "tree_map"),
         ("Brace Map", "brace_map"),
         ("Multi-Flow Map", "multi_flow_map"),
     ]
     
+    # Validation: Ensure we test all 10 core diagram types
+    expected_count = 10
+    actual_count = len(agents_to_test)
+    if actual_count != expected_count:
+        print(f"⚠️  WARNING: Expected {expected_count} diagram types, but found {actual_count}")
+        print("Please update the test to include all supported diagram types")
+    else:
+        print(f"✓ Testing all {actual_count} supported diagram types")
+    
     # Test results
     results = []
     working_count = 0
     broken_count = 0
     
-    # Test each agent
-    for agent_name, diagram_type in agents_to_test:
+    # Test each agent with progress tracking
+    for index, (agent_name, diagram_type) in enumerate(agents_to_test, 1):
+        print(f"\n🔄 Progress: {index}/{len(agents_to_test)} - Testing {agent_name}...")
         success, message, image_file = test_agent_via_api(
             agent_name, diagram_type, images_dir
         )

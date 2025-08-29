@@ -117,80 +117,17 @@ class MindMapAgent(BaseAgent):
     def _generate_mind_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the mind map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建思维导图。思维导图用于展示主题的分支结构。
-
-请根据用户的描述，创建一个详细的思维导图规范。输出必须是有效的JSON格式，严格按照以下结构：
-
-{
-  "topic": "中心主题",
-  "children": [
-    {
-      "id": "fen_zhi_1",
-      "label": "分支1标签",
-      "children": [
-        {"id": "zi_xiang_1_1", "label": "子项1.1"},
-        {"id": "zi_xiang_1_2", "label": "子项1.2"}
-      ]
-    },
-    {
-      "id": "fen_zhi_2",
-      "label": "分支2标签",
-      "children": [
-        {"id": "zi_xiang_2_1", "label": "子项2.1"}
-      ]
-    }
-  ]
-}
-
-关键要求：
-- 只输出有效的JSON - 不要解释，不要代码块，不要额外文字
-- 中心主题应该清晰明确
-- 每个节点必须有id和label字段
-- 所有children数组必须用]正确闭合
-- 所有对象必须用}正确闭合
-- 分支应该按逻辑顺序组织
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效，没有语法错误"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system
+            system_prompt = get_prompt("mind_map", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"MindMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个思维导图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in mind maps. Mind maps are used to show the branch structure of topics.
-
-Please create a detailed mind map specification based on the user's description. The output must be valid JSON, strictly following this structure:
-
-{
-  "topic": "Central Topic",
-  "children": [
-    {
-      "id": "branch_1",
-      "label": "Branch 1 Label",
-      "children": [
-        {"id": "sub_1_1", "label": "Sub-item 1.1"},
-        {"id": "sub_1_2", "label": "Sub-item 1.2"}
-      ]
-    },
-    {
-      "id": "branch_2",
-      "label": "Branch 2 Label",
-      "children": [
-        {"id": "sub_2_1", "label": "Sub-item 2.1"}
-      ]
-    }
-  ]
-}
-
-CRITICAL Requirements:
-- Output ONLY valid JSON - no explanations, no code blocks, no extra text
-- Central topic should be clear and specific
-- Each node must have both id and label fields
-- ALL children arrays must be properly closed with ]
-- ALL objects must be properly closed with }
-- Branches should be organized in logical order
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid with no syntax errors"""
-                
-                user_prompt = f"Please create a mind map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个思维导图：{prompt}" if language == "zh" else f"Please create a mind map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [

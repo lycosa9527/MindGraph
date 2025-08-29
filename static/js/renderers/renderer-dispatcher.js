@@ -9,7 +9,28 @@
 
 // Main rendering dispatcher function
 function renderGraph(type, spec, theme = null, dimensions = null) {
-    console.log('🚀 Renderer dispatcher: renderGraph called with:', { type, spec: spec ? 'valid' : 'null', theme: theme ? 'valid' : 'null', dimensions });
+    console.log('=== RENDERER DISPATCHER: MAIN FUNCTION START ===');
+    console.log(`Graph type: ${type}`);
+    console.log('Spec:', spec);
+    console.log('Spec type:', typeof spec);
+    console.log('Spec keys:', Object.keys(spec || {}));
+    console.log('Theme:', theme);
+    console.log('Dimensions:', dimensions);
+    
+    // Special debug for bridge maps
+    if (type === 'bridge_map') {
+        console.log('=== BRIDGE MAP SPECIAL DEBUG ===');
+        console.log('Analogies array:', spec?.analogies);
+        console.log('Analogies count:', spec?.analogies?.length || 0);
+        
+        if (spec?.analogies && Array.isArray(spec.analogies)) {
+            spec.analogies.forEach((analogy, index) => {
+                console.log(`Main function analogy ${index}:`, analogy);
+                console.log(`  Left: "${analogy.left}"`);
+                console.log(`  Right: "${analogy.right}"`);
+            });
+        }
+    }
     
     // Clear the container first
     d3.select('#d3-container').html('');
@@ -121,11 +142,12 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
             }
             break;
         case 'mindmap':
+        case 'mind_map':
             if (typeof renderMindMap === 'function') {
                 renderMindMap(spec, integratedTheme, dimensions);
             } else {
                 console.error('renderMindMap function not found');
-                showRendererError('mindmap');
+                showRendererError('mind_map');
             }
             break;
         case 'flowchart':
@@ -138,8 +160,26 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
             break;
 
         case 'bridge_map':
+            console.log('=== RENDERER DISPATCHER: BRIDGE MAP CASE ===');
+            console.log('Spec received:', spec);
+            console.log('Spec type:', typeof spec);
+            console.log('Spec keys:', Object.keys(spec || {}));
+            console.log('Analogies array:', spec?.analogies);
+            console.log('Analogies count:', spec?.analogies?.length || 0);
+            
+            // Log each analogy before calling renderer
+            if (spec?.analogies && Array.isArray(spec.analogies)) {
+                spec.analogies.forEach((analogy, index) => {
+                    console.log(`Dispatcher Analogy ${index}:`, analogy);
+                    console.log(`  Left: "${analogy.left}"`);
+                    console.log(`  Right: "${analogy.right}"`);
+                });
+            }
+            
+            console.log('Calling renderBridgeMap...');
             if (typeof renderBridgeMap === 'function') {
                 renderBridgeMap(spec, integratedTheme, dimensions, 'd3-container');
+                console.log('renderBridgeMap call completed');
             } else {
                 console.error('renderBridgeMap function not found');
                 showRendererError('bridge_map');

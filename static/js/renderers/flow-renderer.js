@@ -650,10 +650,28 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
 }
 
 function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd3-container') {
+    // === FRONTEND DEBUG: BRIDGE MAP RENDERING START ===
+    console.log('=== FRONTEND DEBUG: BRIDGE MAP RENDERING START ===');
+    console.log('Input spec:', spec);
+    console.log('Spec type:', typeof spec);
+    console.log('Spec keys:', Object.keys(spec || {}));
+    console.log('Analogies array:', spec?.analogies);
+    console.log('Analogies count:', spec?.analogies?.length || 0);
+    
+    // Log each analogy for debugging
+    if (spec?.analogies && Array.isArray(spec.analogies)) {
+        spec.analogies.forEach((analogy, index) => {
+            console.log(`Frontend Analogy ${index}:`, analogy);
+            console.log(`  Left: "${analogy.left}" (type: ${typeof analogy.left})`);
+            console.log(`  Right: "${analogy.right}" (type: ${typeof analogy.right})`);
+        });
+    }
+    
     d3.select(`#${containerId}`).html('');
     
     // Validate spec
     if (!spec || !Array.isArray(spec.analogies) || spec.analogies.length === 0) {
+        console.error('Frontend Error: Invalid spec for bridge map');
         d3.select(`#${containerId}`).append('div').style('color', 'red').text('Invalid spec for bridge map');
         return;
     }
@@ -718,6 +736,13 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     
     // 3. Draw analogy pairs first - EXACTLY as in old renderer
     spec.analogies.forEach((analogy, i) => {
+        // === FRONTEND DEBUG: RENDERING ANALOGY ===
+        console.log(`=== FRONTEND DEBUG: RENDERING ANALOGY ${i} ===`);
+        console.log(`  Analogy data:`, analogy);
+        console.log(`  Left text: "${analogy.left}"`);
+        console.log(`  Right text: "${analogy.right}"`);
+        console.log(`  Position: x=${padding + (sectionWidth * (i + 1))}, y=${height/2}`);
+        
         const xPos = padding + (sectionWidth * (i + 1));
         const isFirstPair = i === 0; // Check if this is the first pair
         
@@ -840,6 +865,13 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     if (typeof window.MindGraphUtils !== 'undefined' && window.MindGraphUtils.addWatermark) {
         window.MindGraphUtils.addWatermark(svg, theme);
     }
+    
+    // === FRONTEND DEBUG: BRIDGE MAP RENDERING COMPLETE ===
+    console.log('=== FRONTEND DEBUG: BRIDGE MAP RENDERING COMPLETE ===');
+    console.log('Final rendered analogies count:', spec.analogies.length);
+    console.log('SVG dimensions:', { width, height });
+    console.log('Container ID:', containerId);
+    console.log('All rendered elements should be visible above');
 }
 
 function renderMultiFlowMap(spec, theme = null, dimensions = null) {

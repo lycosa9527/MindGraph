@@ -50,7 +50,13 @@ class TreeMapAgent(BaseAgent):
                 }
             
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self.enhance_spec(spec)
+            enhanced_result = self.enhance_spec(spec)
+            if not enhanced_result.get('success'):
+                return {
+                    'success': False,
+                    'error': enhanced_result.get('error', 'Enhancement failed')
+                }
+            enhanced_spec = enhanced_result['spec']
             
             logger.info(f"✅ TreeMapAgent: Successfully generated tree map")
             return {
@@ -69,78 +75,22 @@ class TreeMapAgent(BaseAgent):
     def _generate_tree_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
-            if language == "zh":
-                system_prompt = """你是一个专业的思维导图专家，专门创建树形图。树形图用于展示层次结构和分类。
-
-请根据用户的描述，创建一个详细的树形图规范。输出必须是有效的JSON格式，包含以下结构：
-
-{
-  "topic": "根主题",
-  "children": [
-    {
-      "id": "branch1",
-      "label": "分支1标签",
-      "children": [
-        {"id": "sub1", "label": "子项1"},
-        {"id": "sub2", "label": "子项2"}
-      ]
-    },
-    {
-      "id": "branch2", 
-      "label": "分支2标签",
-      "children": [
-        {"id": "sub3", "label": "子项3"}
-      ]
-    }
-  ]
-}
-
-CRITICAL要求：
-- 根主题应该清晰明确
-- 每个节点都必须是字典对象，包含"id"和"label"两个字段
-- 绝对不能使用字符串作为节点，必须是{"id": "xxx", "label": "xxx"}格式
-- 所有叶子节点也必须有id和label字段
-- 分支应该按逻辑层次组织
-- 使用简洁但描述性的文本
-- 确保JSON格式完全有效，没有语法错误"""
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get prompt from centralized system - try agent-specific first, then fallback to general
+            # Use general format that works with renderer
+            system_prompt = get_prompt("tree_map", language, "generation")
+            
+            if not system_prompt:
+                # Fallback to agent-specific if general not found
+                system_prompt = get_prompt("tree_map_agent", language, "generation")
+            
+            if not system_prompt:
+                logger.error(f"TreeMapAgent: No prompt found for language {language}")
+                return None
                 
-                user_prompt = f"请为以下描述创建一个树形图：{prompt}"
-            else:
-                system_prompt = """You are a professional mind mapping expert specializing in tree maps. Tree maps are used to show hierarchical structures and classifications.
-
-Please create a detailed tree map specification based on the user's description. The output must be valid JSON with the following structure:
-
-{
-  "topic": "Root Topic",
-  "children": [
-    {
-      "id": "branch1",
-      "label": "Branch 1 Label",
-      "children": [
-        {"id": "sub1", "label": "Sub-item 1"},
-        {"id": "sub2", "label": "Sub-item 2"}
-      ]
-    },
-    {
-      "id": "branch2",
-      "label": "Branch 2 Label", 
-      "children": [
-        {"id": "sub3", "label": "Sub-item 3"}
-      ]
-    }
-  ]
-}
-
-CRITICAL Requirements:
-- Root topic should be clear and specific
-- Every node must be a dictionary object with "id" and "label" fields
-- NEVER use strings as nodes - must be {"id": "xxx", "label": "xxx"} format
-- ALL leaf nodes must also have id and label fields
-- Branches should be organized in logical hierarchy
-- Use concise but descriptive text
-- Ensure the JSON format is completely valid with no syntax errors"""
-                
-                user_prompt = f"Please create a tree map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [
