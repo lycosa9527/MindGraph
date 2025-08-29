@@ -240,13 +240,13 @@ class QwenLLM:
             model_name = config.QWEN_MODEL_GENERATION
             data = config.get_qwen_generation_data(prompt)
         
-        logger.info(f"QwenLLM._call() - Model: {model_name} ({self.model_type})")
-        logger.info(f"QwenLLM._call() - Max tokens: {data.get('max_tokens', 'NOT_SET')}")
-        logger.info(f"QwenLLM._call() - Temperature: {data.get('temperature', 'NOT_SET')}")
+        logger.debug(f"QwenLLM._call() - Model: {model_name} ({self.model_type})")
+        logger.debug(f"QwenLLM._call() - Max tokens: {data.get('max_tokens', 'NOT_SET')}")
+        logger.debug(f"QwenLLM._call() - Temperature: {data.get('temperature', 'NOT_SET')}")
         logger.debug(f"Prompt sent to Qwen:\n{prompt[:1000]}{'...' if len(prompt) > 1000 else ''}")
 
         headers = config.get_qwen_headers()
-        logger.info(f"Making request to: {config.QWEN_API_URL}")
+        logger.debug(f"Making request to: {config.QWEN_API_URL}")
         try:
             resp = requests.post(
                 config.QWEN_API_URL,
@@ -258,14 +258,14 @@ class QwenLLM:
             content = result["choices"][0]["message"]["content"]
             
             # Log the full API response to debug token limits
-            logger.info(f"QwenLLM API response - Usage: {result.get('usage', 'NO_USAGE_INFO')}")
-            logger.info(f"QwenLLM API response - Finish reason: {result['choices'][0].get('finish_reason', 'NO_FINISH_REASON')}")
+            logger.debug(f"QwenLLM API response - Usage: {result.get('usage', 'NO_USAGE_INFO')}")
+            logger.debug(f"QwenLLM API response - Finish reason: {result['choices'][0].get('finish_reason', 'NO_FINISH_REASON')}")
             
             # Calculate timing and update thread-safe tracker
             call_time = time.time() - start_time
             llm_timing_stats.add_call_time(call_time)
             
-            logger.info(f"QwenLLM response received - Length: {len(content)} characters - Time: {call_time:.3f}s")
+            logger.debug(f"QwenLLM response received - Length: {len(content)} characters - Time: {call_time:.3f}s")
             logger.debug(f"Qwen Output:\n{content[:1000]}{'...' if len(content) > 1000 else ''}")
             return content
         except Exception as e:
@@ -614,7 +614,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             
             # Note: Agent validation is now handled by specialized agents, not here
             
-            logger.info(f"Agent: Successfully generated {graph_type} specification")
+            logger.info(f"Agent: {graph_type} specification generated successfully")
             return spec
             
         except Exception as e:
@@ -669,7 +669,7 @@ def validate_agent_setup():
         # Test LLM connection using classification model (fast/cheap)
         test_prompt = "Test"
         llm_classification._call(test_prompt)
-        logger.info("Agent: LLM connection validated")
+        logger.info("Agent: LLM connection validation completed successfully")
         return True
     except TimeoutError:
         logger.error("Agent: LLM validation timed out")
@@ -716,7 +716,7 @@ def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> str:
         }
         
         if detected_type in valid_types:
-            logger.info(f"LLM Classification: '{user_prompt}' → {detected_type}")
+            logger.info(f"LLM classification completed: '{user_prompt}' → {detected_type}")
             return detected_type
         else:
             logger.warning(f"LLM returned invalid type '{detected_type}', falling back to semantic analysis")
@@ -772,7 +772,7 @@ def _detect_diagram_type_fallback(user_prompt: str, language: str) -> str:
     import re
     for pattern, diagram_type in creation_patterns:
         if re.search(pattern, prompt_lower):
-            logger.info(f"Fallback Creation Intent: '{user_prompt}' → {diagram_type}")
+            logger.debug(f"Fallback creation intent detected: '{user_prompt}' → {diagram_type}")
             return diagram_type
     
     # Fallback to content-based detection if no clear creation intent
@@ -806,7 +806,7 @@ def _detect_diagram_type_fallback(user_prompt: str, language: str) -> str:
     # Check patterns in order of specificity
     for diagram_type, keywords in keyword_patterns:
         if any(keyword in prompt_lower for keyword in keywords):
-            logger.info(f"Fallback Content Detection: '{user_prompt}' → {diagram_type}")
+            logger.debug(f"Fallback content detection completed: '{user_prompt}' → {diagram_type}")
             return diagram_type
     
     # Semantic analysis based on content intent
@@ -962,12 +962,12 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
         from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
         keys_obj = agent._parse_json_response(raw_keys)
-        logger.info("Used ConceptMapAgent improved parsing for keys generation")
+        logger.debug("Used ConceptMapAgent improved parsing for keys generation")
     except Exception as e:
         logger.warning(f"ConceptMapAgent parsing failed for keys, falling back to strict parsing: {e}")
         # Fallback to strict parsing if ConceptMapAgent is not available
         keys_obj = _parse_strict_json(raw_keys)
-        logger.info("Used strict parsing fallback for keys generation")
+        logger.debug("Used strict parsing fallback for keys generation")
     topic = (keys_obj.get('topic') or user_prompt).strip()
     keys_raw = keys_obj.get('keys') or []
     keys = []
@@ -1083,13 +1083,13 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
         from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
         obj = agent._parse_json_response(raw)
-        logger.info("Used ConceptMapAgent improved parsing for unified generation")
+        logger.debug("Used ConceptMapAgent improved parsing for unified generation")
     except Exception as e:
         logger.warning(f"ConceptMapAgent parsing failed, falling back to strict parsing: {e}")
         # Fallback to strict parsing if ConceptMapAgent is not available
         try:
             obj = _parse_strict_json(raw)
-            logger.info("Used strict parsing fallback for unified generation")
+            logger.debug("Used strict parsing fallback for unified generation")
         except Exception as e2:
             logger.error(f"All parsing methods failed for unified generation: {e2}")
             return { 'error': f'Concept map parsing failed: {e2}' }
@@ -1112,7 +1112,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
                     concepts.append(name)
                     seen_all.add(low)
         allowed = set(concepts)
-        logger.info(f"Using concepts extracted by ConceptMapAgent: {concepts}")
+        logger.debug(f"Using concepts extracted by ConceptMapAgent: {concepts}")
     else:
         # Fallback: build concepts from keys and parts (original logic)
         # Normalize keys
@@ -1152,7 +1152,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
                 concepts.append(name)
                 seen_all.add(low)
         allowed = set(concepts)
-        logger.info(f"Built concepts from keys/parts: {concepts}")
+        logger.debug(f"Built concepts from keys/parts: {concepts}")
     # Relationships
     relationships = []
     pair_seen = set()
@@ -1206,7 +1206,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
         if isinstance(central_topic, list):
             central_topic = ' '.join(central_topic)
         
-        logger.info(f"Agent: Using central topic for 30-concept generation: {central_topic}")
+        logger.debug(f"Agent: Using central topic for 30-concept generation: {central_topic}")
         
         # Generate exactly 30 concepts using centralized prompts
         from prompts import get_prompt
@@ -1238,11 +1238,11 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
                 concepts_data = agent._parse_json_response(concepts_response)
-                logger.info("Used ConceptMapAgent improved parsing for concepts")
+                logger.debug("Used ConceptMapAgent improved parsing for concepts")
             except Exception as e:
                 logger.warning(f"ConceptMapAgent parsing failed for concepts: {e}")
                 concepts_data = _parse_strict_json(concepts_response)
-                logger.info("Used strict parsing for concepts")
+                logger.debug("Used strict parsing for concepts")
         
         # Handle both dict and list formats
         if isinstance(concepts_data, dict):
@@ -1256,12 +1256,12 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
         if len(concepts) != 30:
             if len(concepts) > 30:
                 concepts = concepts[:30]  # Take first 30
-                logger.info(f"Trimmed concepts from {len(concepts)} to 30")
+                logger.debug(f"Trimmed concepts from {len(concepts)} to 30")
             else:
                 # Pad with generic concepts if less than 30
                 while len(concepts) < 30:
                     concepts.append(f"Related aspect {len(concepts) + 1}")
-                logger.info(f"Padded concepts from {len(concepts)} to 30")
+                logger.debug(f"Padded concepts from {len(concepts)} to 30")
         
         if not concepts:
             raise ValueError("No concepts generated")
@@ -1343,11 +1343,11 @@ Requirements:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
                 rel_data = agent._parse_json_response(relationships_response)
-                logger.info("Used ConceptMapAgent improved parsing for relationships")
+                logger.debug("Used ConceptMapAgent improved parsing for relationships")
             except Exception as e:
                 logger.warning(f"ConceptMapAgent parsing failed for relationships: {e}")
                 rel_data = _parse_strict_json(relationships_response)
-                logger.info("Used strict parsing for relationships")
+                logger.debug("Used strict parsing for relationships")
         
         relationships = rel_data.get('relationships', [])
         
@@ -1369,7 +1369,7 @@ Requirements:
             }
         }
         
-        logger.info(f"Agent: Enhanced 30-concept generation completed with {len(concepts)} concepts and {len(relationships)} relationships")
+        logger.debug(f"Agent: Enhanced 30-concept generation completed successfully with {len(concepts)} concepts and {len(relationships)} relationships")
         return spec
         
     except Exception as e:
@@ -1400,7 +1400,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
             logger.warning(f"Enhanced 30-concept generation failed: {e}")
             # Try with fewer concepts as fallback
             try:
-                logger.info("Agent: Attempting fallback with simplified two-stage generation...")
+                logger.debug("Agent: Attempting fallback with simplified two-stage generation...")
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
                 result = agent.generate_simplified_two_stage(user_prompt, llm_generation, language)
@@ -1451,10 +1451,10 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
             from .thinking_maps.bubble_map_agent import BubbleMapAgent
             agent = BubbleMapAgent()
         elif diagram_type == 'bridge_map':
-            logger.info("=== MAIN AGENT: BRIDGE MAP AGENT SELECTION ===")
+            logger.debug("Bridge map agent selection started")
             from .thinking_maps.bridge_map_agent import BridgeMapAgent
             agent = BridgeMapAgent()
-            logger.info("BridgeMapAgent imported and instantiated successfully")
+            logger.debug("BridgeMapAgent imported and instantiated successfully")
         elif diagram_type == 'tree_map':
             from .thinking_maps.tree_map_agent import TreeMapAgent
             agent = TreeMapAgent()
@@ -1485,27 +1485,27 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
             agent = BubbleMapAgent()
         
         # Generate using the agent
-        logger.info(f"=== MAIN AGENT: CALLING {diagram_type.upper()} AGENT ===")
-        logger.info(f"User prompt: {user_prompt}")
-        logger.info(f"Language: {language}")
+        logger.debug(f"Calling {diagram_type} agent")
+        logger.debug(f"User prompt: {user_prompt}")
+        logger.debug(f"Language: {language}")
         
         result = agent.generate_graph(user_prompt, language)
         
-        logger.info(f"Agent result type: {type(result)}")
-        logger.info(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+        logger.debug(f"Agent result type: {type(result)}")
+        logger.debug(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
         
         # Extract spec from agent result if wrapped
         if isinstance(result, dict):
             if 'spec' in result:
-                logger.info("Result contains 'spec' key, returning spec")
+                logger.debug("Result contains 'spec' key, returning spec")
                 return result['spec']
             elif 'error' not in result:
-                logger.info("Result contains no error, returning as-is")
+                logger.debug("Result contains no error, returning as-is")
                 return result
             else:
                 logger.error(f"Result contains error: {result.get('error')}")
         
-        logger.info("Returning raw result")
+        logger.debug("Returning raw result")
         return result
         
     except Exception as e:
@@ -1547,7 +1547,7 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
     """
-    logger.info(f"Agent: Starting simplified graph workflow for: {user_prompt}")
+    logger.info(f"Agent: Starting simplified graph workflow")
     
     try:
         # Validate inputs

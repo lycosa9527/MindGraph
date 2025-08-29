@@ -54,7 +54,7 @@ class MultiFlowMapAgent(BaseAgent):
                 }
             enhanced_spec = enhanced_result['spec']
             
-            logger.info(f"✅ MultiFlowMapAgent: Successfully generated multi-flow map")
+            logger.info(f"MultiFlowMapAgent: Multi-flow map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -62,7 +62,7 @@ class MultiFlowMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ MultiFlowMapAgent: Error generating multi-flow map: {e}")
+            logger.error(f"MultiFlowMapAgent: Multi-flow map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

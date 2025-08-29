@@ -379,7 +379,7 @@ class Config:
         - D3.js visualization settings
         - Theme and styling options
         """
-        logger.info("📋 Configuration Summary:")
+        logger.info("Configuration Summary:")
         logger.info(f"   Flask: {self.HOST}:{self.PORT} (Debug: {self.DEBUG})")
         logger.info(f"   Qwen: {self.QWEN_API_URL}")
         logger.info(f"     - Classification: {self.QWEN_MODEL_CLASSIFICATION} (fast/cheap)")

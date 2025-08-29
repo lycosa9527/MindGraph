@@ -197,7 +197,7 @@ class ConceptMapAgent(BaseAgent):
             dict: Graph specification with styling and metadata
         """
         try:
-            logger.info(f"ConceptMapAgent: Generating concept map for prompt: {user_prompt[:100]}...")
+            logger.info(f"ConceptMapAgent: Starting concept map generation for prompt")
             
             # Import the robust concept map generation from main_agent
             from ..main_agent import generate_concept_map_robust

@@ -1135,7 +1135,7 @@ class BraceMapAgent(BaseAgent):
             
             enhanced_spec = enhanced_result['spec']
             
-            logger.info(f"✅ BraceMapAgent: Successfully generated brace map")
+            logger.info(f"BraceMapAgent: Brace map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -1143,7 +1143,7 @@ class BraceMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ BraceMapAgent: Error generating brace map: {e}")
+            logger.error(f"BraceMapAgent: Brace map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

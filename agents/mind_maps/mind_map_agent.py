@@ -387,7 +387,7 @@ class MindMapAgent(BaseAgent):
         4. Position branches at mathematical centers of their children
         5. Place central topic at (0,0) - perfect balance achieved
         """
-        logger.debug(f"🎯 SIMPLE BALANCED LAYOUT - Starting layout for {len(children)} branches")
+        logger.debug(f"Starting simple balanced layout for {len(children)} branches")
         
         # Initialize positions dictionary
         positions = {}
@@ -439,7 +439,7 @@ class MindMapAgent(BaseAgent):
             'text': topic, 'node_type': 'topic', 'angle': 0
         }
         
-        logger.debug(f"✅ Two-stage system complete, topic added at (0, 0)")
+        logger.debug(f"Two-stage system completed, topic added at (0, 0)")
         
         # STEP 3: Generate connection data
         connections = self._generate_connections(topic, children, positions)

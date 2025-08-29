@@ -58,7 +58,7 @@ class TreeMapAgent(BaseAgent):
                 }
             enhanced_spec = enhanced_result['spec']
             
-            logger.info(f"✅ TreeMapAgent: Successfully generated tree map")
+            logger.info(f"TreeMapAgent: Tree map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -66,7 +66,7 @@ class TreeMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ TreeMapAgent: Error generating tree map: {e}")
+            logger.error(f"TreeMapAgent: Tree map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

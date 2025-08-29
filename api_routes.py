@@ -353,7 +353,7 @@ def generate_graph():
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
     
-    logger.info(f"Frontend /generate_graph (Qwen with styles): prompt={prompt!r}, language={language!r}")
+    logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}")
     
     # Track timing for LLM processing
     start_time = time.time()
@@ -363,7 +363,7 @@ def generate_graph():
         # Try cache first to avoid duplicate LLM work for identical prompt/language
         cached = _llm_cache_get(prompt, language)
         if cached:
-            logger.info("Cache hit for /generate_graph - returning cached spec")
+            logger.debug("Cache hit for generate_graph - returning cached spec")
             result = cached
         else:
             result = agent.agent_graph_workflow_with_styles(prompt, language)
@@ -376,7 +376,7 @@ def generate_graph():
         
         # Calculate LLM processing time
         llm_time = time.time() - start_time
-        logger.info(f"LLM processing completed in {llm_time:.3f}s")
+        logger.info(f"LLM processing completed successfully in {llm_time:.3f}s")
         
         # Add timing information to response
         timing_info = {
@@ -471,29 +471,29 @@ def generate_graph():
                 logger.error(f"Error enhancing circle_map spec: {e}")
         elif diagram_type == 'bridge_map':
             try:
-                logger.info("=== API BRIDGE MAP ENHANCEMENT START ===")
-                logger.info(f"Input spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
-                logger.info(f"Input spec type: {type(spec)}")
+                logger.debug("Bridge map enhancement started")
+                logger.debug(f"Input spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+                logger.debug(f"Input spec type: {type(spec)}")
                 
                 from agents.thinking_maps import BridgeMapAgent
                 br_agent = BridgeMapAgent()
                 agent_result = br_agent.enhance_spec(spec)
                 
-                logger.info(f"BridgeMapAgent result: {agent_result}")
+                logger.debug(f"BridgeMapAgent result: {agent_result}")
                 
                 if agent_result.get('success') and 'spec' in agent_result:
                     spec = agent_result['spec']
-                    logger.info(f"Enhanced spec keys: {list(spec.keys())}")
-                    logger.info(f"Enhanced analogies count: {len(spec.get('analogies', []))}")
+                    logger.debug(f"Enhanced spec keys: {list(spec.keys())}")
+                    logger.debug(f"Enhanced analogies count: {len(spec.get('analogies', []))}")
                     
                     # Log each analogy for debugging
                     analogies = spec.get('analogies', [])
                     for i, analogy in enumerate(analogies):
-                        logger.info(f"API analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+                        logger.debug(f"API analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
                 else:
                     logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
                 
-                logger.info("=== API BRIDGE MAP ENHANCEMENT COMPLETE ===")
+                logger.debug("Bridge map enhancement completed")
             except Exception as e:
                 logger.error(f"Error enhancing bridge_map spec: {e}")
                 logger.error(f"Traceback: {traceback.format_exc()}")
@@ -539,17 +539,17 @@ def generate_graph():
         
         # === API DEBUG: FINAL RESPONSE TO FRONTEND ===
         if diagram_type == 'bridge_map':
-            logger.info("=== API DEBUG: FINAL RESPONSE TO FRONTEND ===")
-            logger.info(f"Final spec keys: {list(spec.keys())}")
-            logger.info(f"Final analogies count: {len(spec.get('analogies', []))}")
+            logger.debug("Final response preparation for frontend")
+            logger.debug(f"Final spec keys: {list(spec.keys())}")
+            logger.debug(f"Final analogies count: {len(spec.get('analogies', []))}")
             
             # Log each analogy being sent to frontend
             analogies = spec.get('analogies', [])
             for i, analogy in enumerate(analogies):
-                logger.info(f"Frontend-bound analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+                logger.debug(f"Frontend-bound analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
             
-            logger.info(f"Dimensions being sent: {dimensions}")
-            logger.info("=== API DEBUG: RESPONSE COMPLETE ===")
+            logger.debug(f"Dimensions being sent: {dimensions}")
+            logger.debug("Response preparation completed")
         
         return jsonify({
             'type': diagram_type,
@@ -588,7 +588,7 @@ def generate_png():
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
     
-    logger.info(f"Frontend /generate_png: prompt={prompt!r}, language={language!r}")
+    logger.info(f"Frontend generate_png request received: prompt={prompt!r}, language={language!r}")
     
     # Track timing for the entire process
     total_start_time = time.time()
@@ -600,7 +600,7 @@ def generate_png():
         client_spec = data.get('spec') if isinstance(data, dict) else None
         result = None
         if isinstance(client_spec, dict) and client_spec:
-            logger.info("/generate_png received client spec; skipping LLM workflow")
+            logger.debug("generate_png received client spec; skipping LLM workflow")
             result = {
                 'spec': client_spec,
                 'diagram_type': data.get('diagram_type', client_spec.get('diagram_type', 'concept_map')),
@@ -610,7 +610,7 @@ def generate_png():
             # Try cache next
             cached = _llm_cache_get(prompt, language)
             if cached:
-                logger.info("Cache hit for /generate_png - using cached spec")
+                logger.debug("Cache hit for generate_png - using cached spec")
                 result = cached
             else:
                 result = agent.agent_graph_workflow_with_styles(prompt, language)
@@ -739,41 +739,41 @@ def generate_png():
             logger.error(f"Error enhancing circle_map spec: {e}")
     elif graph_type == 'bridge_map':
         try:
-            logger.info("=== PNG BRIDGE MAP ENHANCEMENT START ===")
-            logger.info(f"Input spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
-            logger.info(f"Input spec type: {type(spec)}")
+            logger.debug("PNG bridge map enhancement started")
+            logger.debug(f"Input spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            logger.debug(f"Input spec type: {type(spec)}")
             
             from agents.thinking_maps import BridgeMapAgent
             br_agent = BridgeMapAgent()
             agent_result = br_agent.enhance_spec(spec)
             
-            logger.info(f"PNG BridgeMapAgent result: {agent_result}")
+            logger.debug(f"PNG BridgeMapAgent result: {agent_result}")
             
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
-                logger.info(f"PNG Enhanced spec keys: {list(spec.keys())}")
-                logger.info(f"PNG Enhanced analogies count: {len(spec.get('analogies', []))}")
+                logger.debug(f"PNG Enhanced spec keys: {list(spec.keys())}")
+                logger.debug(f"PNG Enhanced analogies count: {len(spec.get('analogies', []))}")
                 
                 # Log each analogy for debugging
                 analogies = spec.get('analogies', [])
                 for i, analogy in enumerate(analogies):
-                    logger.info(f"PNG analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+                    logger.debug(f"PNG analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
             else:
                 logger.warning(f"PNG BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
             
-            logger.info("=== PNG BRIDGE MAP ENHANCEMENT COMPLETE ===")
+            logger.debug("PNG bridge map enhancement completed")
             
             # === PNG DEBUG: FINAL SPEC BEFORE RENDERING ===
-            logger.info("=== PNG DEBUG: FINAL SPEC BEFORE RENDERING ===")
-            logger.info(f"Final PNG spec keys: {list(spec.keys())}")
-            logger.info(f"Final PNG analogies count: {len(spec.get('analogies', []))}")
+            logger.debug("PNG final spec preparation started")
+            logger.debug(f"Final PNG spec keys: {list(spec.keys())}")
+            logger.debug(f"Final PNG analogies count: {len(spec.get('analogies', []))}")
             
             # Log each analogy before PNG rendering
             analogies = spec.get('analogies', [])
             for i, analogy in enumerate(analogies):
-                logger.info(f"PNG rendering analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+                logger.debug(f"PNG rendering analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
             
-            logger.info("=== PNG DEBUG: RENDERING START ===")
+            logger.debug("PNG rendering preparation completed")
         except Exception as e:
             logger.error(f"Error enhancing bridge_map spec: {e}")
             logger.error(f"Traceback: {traceback.format_exc()}")
@@ -832,19 +832,19 @@ def generate_png():
                 if graph_type == 'concept_map' and isinstance(spec, dict):
                     layout_info = spec.get('_layout', {})
                     algorithm = layout_info.get('algorithm', 'unknown')
-                    logger.info(f"=== CONCEPT MAP LAYOUT DEBUG ===")
-                    logger.info(f"Layout algorithm: {algorithm}")
-                    logger.info(f"Layout keys: {list(layout_info.keys())}")
+                    logger.debug(f"=== CONCEPT MAP LAYOUT DEBUG ===")
+                    logger.debug(f"Layout algorithm: {algorithm}")
+                    logger.debug(f"Layout keys: {list(layout_info.keys())}")
                     if 'positions' in layout_info:
                         pos_count = len(layout_info['positions'])
-                        logger.info(f"Position count: {pos_count}")
+                        logger.debug(f"Position count: {pos_count}")
                     if 'rings' in layout_info:
                         ring_count = len(layout_info['rings'])
-                        logger.info(f"Ring count: {ring_count}")
+                        logger.debug(f"Ring count: {ring_count}")
                     if 'clusters' in layout_info:
                         cluster_count = len(layout_info['clusters'])
-                        logger.info(f"Cluster count: {cluster_count}")
-                    logger.info(f"=== END LAYOUT DEBUG ===")
+                        logger.debug(f"Cluster count: {cluster_count}")
+                    logger.debug(f"=== END LAYOUT DEBUG ===")
                 
             except Exception as e:
                 logger.error(f"Failed to load D3 renderers for {graph_type}: {e}")
@@ -1174,7 +1174,7 @@ def generate_png():
             # - For PNG generation, create a fresh context each time
             # - Reference: https://playwright.dev/docs/browser-contexts#isolation
             
-            logger.info("DEBUG: Creating fresh browser context for PNG generation (following Playwright isolation principles)")
+            logger.debug("Creating fresh browser context for PNG generation (following Playwright isolation principles)")
             
             # Create a fresh browser instance and context for this PNG generation
             # This ensures proper isolation and event loop compatibility
@@ -1189,7 +1189,7 @@ def generate_png():
                 ignore_https_errors=True
             )
             
-            logger.info(f"DEBUG: Fresh context created - type: {type(context)}, id: {id(context)}")
+            logger.debug(f"Fresh context created - type: {type(context)}, id: {id(context)}")
             
             try:
                 # Use the fresh context for PNG generation
@@ -1210,27 +1210,27 @@ def generate_png():
                 html_size = len(html)
                 timeout_ms = 60000  # 60 seconds for all content
                 if html_size > 100000:  # Log if HTML is very large
-                    logger.info(f"Large HTML content: {html_size} characters, setting timeout to {timeout_ms}ms")
+                    logger.debug(f"Large HTML content: {html_size} characters, setting timeout to {timeout_ms}ms")
                 
                 await page.set_content(html, timeout=timeout_ms)
                 
                 # Wait for rendering and check for console errors
-                logger.info("Waiting for initial rendering...")
+                logger.debug("Waiting for initial rendering...")
                 await asyncio.sleep(2.0)  # Reduced from 5.0 to 2.0 seconds
                 
                 # Log console messages and errors (consolidated)
                 if console_messages:
-                    logger.info(f"Browser console messages: {len(console_messages)}")
+                    logger.debug(f"Browser console messages: {len(console_messages)}")
                     # Log the actual console messages for debugging
                     for i, msg in enumerate(console_messages[-10:]):  # Last 10 messages
-                        logger.info(f"Console {i+1}: {msg}")
+                        logger.debug(f"Console {i+1}: {msg}")
                 if page_errors:
                     logger.error(f"Browser errors: {len(page_errors)}")
                     for i, error in enumerate(page_errors):
                         logger.error(f"Browser Error {i+1}: {error}")
                 
                 # Wait for rendering to complete with dynamic timing based on graph complexity
-                logger.info("Waiting for rendering to complete...")
+                logger.debug("Waiting for rendering to complete...")
                 
                 # Simple wait for rendering to complete (no more complex calculations)
                 await asyncio.sleep(3.0)  # Reduced from 6.0 to 3.0 seconds
@@ -1259,28 +1259,28 @@ def generate_png():
                             return functions;
                         }
                     """)
-                    logger.info(f"Function availability check: {function_check}")
+                    logger.debug(f"Function availability check: {function_check}")
                 except Exception as e:
                     logger.error(f"Failed to check function availability: {e}")
                 
                 # Wait for SVG element to be created with timeout and content
                 try:
                     element = await page.wait_for_selector("svg", timeout=15000)  # Increased timeout
-                    logger.info("SVG element found successfully")
+                    logger.debug("SVG element found successfully")
                     
                     # Wait for SVG to actually contain content (not just empty)
-                    logger.info("Waiting for SVG content to render...")
+                    logger.debug("Waiting for SVG content to render...")
                     for attempt in range(10):  # Try up to 10 times
                         svg_content = await element.inner_html()
                         if svg_content.strip() and len(svg_content) > 100:  # SVG has substantial content
-                            logger.info(f"SVG content rendered successfully (length: {len(svg_content)})")
+                            logger.debug(f"SVG content rendered successfully (length: {len(svg_content)})")
                             # Log a sample of the SVG content for debugging
                             if attempt == 0:  # Only log on first successful attempt
                                 svg_sample = svg_content[:500] + "..." if len(svg_content) > 500 else svg_content
-                                logger.info(f"SVG content sample: {svg_sample}")
+                                logger.debug(f"SVG content sample: {svg_sample}")
                             break
                         elif attempt < 9:  # Don't sleep on last attempt
-                            logger.info(f"SVG content not ready yet (attempt {attempt + 1}/10), waiting...")
+                            logger.debug(f"SVG content not ready yet (attempt {attempt + 1}/10), waiting...")
                             await asyncio.sleep(1.0)
                         else:
                             logger.warning("SVG content may not be fully rendered")
@@ -1325,10 +1325,10 @@ def generate_png():
                 # Check SVG dimensions
                 svg_width = await element.get_attribute('width')
                 svg_height = await element.get_attribute('height')
-                logger.info(f"SVG dimensions: width={svg_width}, height={svg_height}")
+                logger.debug(f"SVG dimensions: width={svg_width}, height={svg_height}")
                 
                 # Final wait to ensure all rendering is complete
-                logger.info("Final wait for rendering completion...")
+                logger.debug("Final wait for rendering completion...")
                 await asyncio.sleep(1.0)  # Reduced from 2.0 to 1.0 seconds
                 
                 # Ensure element is visible before screenshot
@@ -1339,22 +1339,22 @@ def generate_png():
                 return png_bytes
             finally:
                 # Clean up resources properly
-                logger.info("DEBUG: Cleaning up PNG generation resources")
+                logger.debug("Cleaning up PNG generation resources")
                 try:
                     if 'page' in locals():
                         await page.close()
-                        logger.info("DEBUG: Page closed")
+                        logger.debug("Page closed")
                     if 'context' in locals():
                         await context.close()
-                        logger.info("DEBUG: Context closed")
+                        logger.debug("Context closed")
                     if 'browser' in locals():
                         await browser.close()
-                        logger.info("DEBUG: Browser closed")
+                        logger.debug("Browser closed")
                     if 'playwright' in locals():
                         await playwright.stop()
-                        logger.info("DEBUG: Playwright stopped")
+                        logger.debug("Playwright stopped")
                 except Exception as cleanup_error:
-                    logger.warning(f"DEBUG: Error during cleanup: {cleanup_error}")
+                    logger.warning(f"Error during cleanup: {cleanup_error}")
         
         # Close the async function definition
         # Now call the async function with proper event loop handling
@@ -1618,19 +1618,19 @@ def generate_dingtalk():
                 if graph_type == 'concept_map' and isinstance(spec, dict):
                     layout_info = spec.get('_layout', {})
                     algorithm = layout_info.get('algorithm', 'unknown')
-                    logger.info(f"=== CONCEPT MAP LAYOUT DEBUG ===")
-                    logger.info(f"Layout algorithm: {algorithm}")
-                    logger.info(f"Layout keys: {list(layout_info.keys())}")
+                    logger.debug(f"=== CONCEPT MAP LAYOUT DEBUG ===")
+                    logger.debug(f"Layout algorithm: {algorithm}")
+                    logger.debug(f"Layout keys: {list(layout_info.keys())}")
                     if 'positions' in layout_info:
                         pos_count = len(layout_info['positions'])
-                        logger.info(f"Position count: {pos_count}")
+                        logger.debug(f"Position count: {pos_count}")
                     if 'rings' in layout_info:
                         ring_count = len(layout_info['rings'])
-                        logger.info(f"Ring count: {ring_count}")
+                        logger.debug(f"Ring count: {ring_count}")
                     if 'clusters' in layout_info:
                         cluster_count = len(layout_info['clusters'])
-                        logger.info(f"Cluster count: {cluster_count}")
-                    logger.info(f"=== END LAYOUT DEBUG ===")
+                        logger.debug(f"Cluster count: {cluster_count}")
+                    logger.debug(f"=== END LAYOUT DEBUG ===")
                 
             except Exception as e:
                 logger.error(f"Failed to load D3 renderers for {graph_type}: {e}")
@@ -1960,7 +1960,7 @@ def generate_dingtalk():
             # - For PNG generation, create a fresh context each time
             # - Reference: https://playwright.dev/docs/browser-contexts#isolation
             
-            logger.info("DEBUG: Creating fresh browser context for PNG generation (following Playwright isolation principles)")
+            logger.debug("Creating fresh browser context for PNG generation (following Playwright isolation principles)")
             
             # Create a fresh browser instance and context for this PNG generation
             # This ensures proper isolation and event loop compatibility
@@ -1975,7 +1975,7 @@ def generate_dingtalk():
                 ignore_https_errors=True
             )
             
-            logger.info(f"DEBUG: Fresh context created - type: {type(context)}, id: {id(context)}")
+            logger.debug(f"Fresh context created - type: {type(context)}, id: {id(context)}")
             
             try:
                 # Use the fresh context for PNG generation
@@ -1996,27 +1996,27 @@ def generate_dingtalk():
                 html_size = len(html)
                 timeout_ms = 60000  # 60 seconds for all content
                 if html_size > 100000:  # Log if HTML is very large
-                    logger.info(f"Large HTML content: {html_size} characters, setting timeout to {timeout_ms}ms")
+                    logger.debug(f"Large HTML content: {html_size} characters, setting timeout to {timeout_ms}ms")
                 
                 await page.set_content(html, timeout=timeout_ms)
                 
                 # Wait for rendering and check for console errors
-                logger.info("Waiting for initial rendering...")
+                logger.debug("Waiting for initial rendering...")
                 await asyncio.sleep(3.0)
                 
                 # Log console messages and errors (consolidated)
                 if console_messages:
-                    logger.info(f"Browser console messages: {len(console_messages)}")
+                    logger.debug(f"Browser console messages: {len(console_messages)}")
                     # Log the actual console messages for debugging
                     for i, msg in enumerate(console_messages[-10:]):  # Last 10 messages
-                        logger.info(f"Console {i+1}: {msg}")
+                        logger.debug(f"Console {i+1}: {msg}")
                 if page_errors:
                     logger.error(f"Browser errors: {len(page_errors)}")
                     for i, error in enumerate(page_errors):
                         logger.error(f"Browser Error {i+1}: {error}")
                 
                 # Wait for rendering to complete
-                logger.info("Waiting for rendering to complete...")
+                logger.debug("Waiting for rendering to complete...")
                 await asyncio.sleep(2.0)  # Reduced from 4.0 to 2.0 seconds
                 
                 # Check what functions are actually available in the browser
@@ -2024,6 +2024,7 @@ def generate_dingtalk():
                     function_check = await page.evaluate("""
                         () => {
                             const functions = {};
+                            functions.renderTreeMap = typeof renderTreeMap;
                             functions.renderTreeMap = typeof renderTreeMap;
                             functions.TreeRenderer = typeof TreeRenderer;
                             functions.MindGraphUtils = typeof MindGraphUtils;
@@ -2043,14 +2044,14 @@ def generate_dingtalk():
                             return functions;
                         }
                     """)
-                    logger.info(f"Function availability check: {function_check}")
+                    logger.debug(f"Function availability check: {function_check}")
                 except Exception as e:
                     logger.error(f"Failed to check function availability: {e}")
                 
                 # Wait for SVG element to be created with timeout
                 try:
                     element = await page.wait_for_selector("svg", timeout=10000)
-                    logger.info("SVG element found successfully")
+                    logger.debug("SVG element found successfully")
                 except Exception as e:
                     logger.error(f"Timeout waiting for SVG element: {e}")
                     element = await page.query_selector("svg")  # Try one more time

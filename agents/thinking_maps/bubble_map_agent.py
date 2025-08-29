@@ -31,7 +31,7 @@ class BubbleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"🎯 BubbleMapAgent: Generating bubble map for prompt: {prompt}")
+            logger.info(f"BubbleMapAgent: Starting bubble map generation for prompt")
             
             # Generate the bubble map specification
             spec = self._generate_bubble_map_spec(prompt, language)
@@ -54,7 +54,7 @@ class BubbleMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
             
-            logger.info(f"✅ BubbleMapAgent: Successfully generated bubble map")
+            logger.info(f"BubbleMapAgent: Bubble map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -62,7 +62,7 @@ class BubbleMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ BubbleMapAgent: Error generating bubble map: {e}")
+            logger.error(f"BubbleMapAgent: Bubble map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

@@ -32,7 +32,7 @@ class BridgeMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"🎯 BridgeMapAgent: Generating bridge map for prompt: {prompt}")
+            logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
             # Generate the bridge map specification
             spec = self._generate_bridge_map_spec(prompt, language)
@@ -44,7 +44,7 @@ class BridgeMapAgent(BaseAgent):
                 }
             
             # Basic validation
-            logger.info("=== BASIC VALIDATION ===")
+            logger.debug("Basic validation started")
             is_valid, validation_msg = self._basic_validation(spec)
             if not is_valid:
                 logger.warning(f"BridgeMapAgent: Basic validation failed: {validation_msg}")
@@ -53,15 +53,15 @@ class BridgeMapAgent(BaseAgent):
                     'error': f'Generated invalid specification: {validation_msg}'
                 }
             
-            logger.info("Basic validation passed, proceeding to enhancement...")
+            logger.debug("Basic validation passed, proceeding to enhancement...")
             
             # Enhance the spec with layout and dimensions
-            logger.info("=== ENHANCEMENT PHASE ===")
+            logger.debug("Enhancement phase started")
             enhanced_spec = self._enhance_spec(spec)
             
-            logger.info(f"✅ BridgeMapAgent: Successfully generated bridge map")
-            logger.info(f"Final result keys: {list(enhanced_spec.keys())}")
-            logger.info(f"Final analogies count: {len(enhanced_spec.get('analogies', []))}")
+            logger.info(f"BridgeMapAgent: Bridge map generation completed successfully")
+            logger.debug(f"Final result keys: {list(enhanced_spec.keys())}")
+            logger.debug(f"Final analogies count: {len(enhanced_spec.get('analogies', []))}")
             
             return {
                 'success': True,
@@ -70,7 +70,7 @@ class BridgeMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ BridgeMapAgent: Error generating bridge map: {e}")
+            logger.error(f"BridgeMapAgent: Bridge map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
@@ -132,9 +132,9 @@ class BridgeMapAgent(BaseAgent):
     def _generate_bridge_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the bridge map specification using LLM."""
         try:
-            logger.info(f"=== BRIDGE MAP SPEC GENERATION START ===")
-            logger.info(f"Prompt: {prompt}")
-            logger.info(f"Language: {language}")
+            logger.debug(f"=== BRIDGE MAP SPEC GENERATION START ===")
+            logger.debug(f"Prompt: {prompt}")
+            logger.debug(f"Language: {language}")
             
             # Import centralized prompt system
             from prompts import get_prompt
@@ -150,11 +150,11 @@ class BridgeMapAgent(BaseAgent):
                 logger.error(f"BridgeMapAgent: No prompt found for language {language}")
                 return None
             
-            logger.info(f"System prompt length: {len(system_prompt)}")
-            logger.info(f"System prompt preview: {system_prompt[:200]}...")
+            logger.debug(f"System prompt length: {len(system_prompt)}")
+            logger.debug(f"System prompt preview: {system_prompt[:200]}...")
                 
             user_prompt = f"请为以下描述创建一个桥形图：{prompt}" if language == "zh" else f"Please create a bridge map for the following description: {prompt}"
-            logger.info(f"User prompt: {user_prompt}")
+            logger.debug(f"User prompt: {user_prompt}")
             
             # Generate response from LLM
             messages = [
@@ -162,34 +162,34 @@ class BridgeMapAgent(BaseAgent):
                 {"role": "user", "content": user_prompt}
             ]
             
-            logger.info("Calling LLM for bridge map generation...")
+            logger.debug("Calling LLM for bridge map generation...")
             response = self.llm_client.chat_completion(messages)
             
-            logger.info(f"LLM response received: {response[:500] if response else 'None'}...")
+            logger.debug(f"LLM response received: {response[:500] if response else 'None'}...")
             
             # Extract JSON from response
             from ..core.agent_utils import extract_json_from_response
             
-            logger.info("=== JSON EXTRACTION START ===")
-            logger.info(f"Response type: {type(response)}")
+            logger.debug("=== JSON EXTRACTION START ===")
+            logger.debug(f"Response type: {type(response)}")
             
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
-                logger.info("Response is already a dictionary")
-                logger.info(f"Dictionary keys: {list(spec.keys())}")
+                logger.debug("Response is already a dictionary")
+                logger.debug(f"Dictionary keys: {list(spec.keys())}")
             else:
                 # Try to extract JSON from string response
-                logger.info("Response is string, extracting JSON...")
+                logger.debug("Response is string, extracting JSON...")
                 spec = extract_json_from_response(str(response))
-                logger.info(f"JSON extraction result type: {type(spec)}")
+                logger.debug(f"JSON extraction result type: {type(spec)}")
             
             if not spec:
                 logger.error("BridgeMapAgent: Failed to extract JSON from LLM response")
                 return None
             
-            logger.info(f"Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
-            logger.info("=== JSON EXTRACTION COMPLETE ===")
+            logger.debug(f"Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            logger.debug("=== JSON EXTRACTION COMPLETE ===")
                 
             return spec
             
@@ -200,30 +200,30 @@ class BridgeMapAgent(BaseAgent):
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations and convert to renderer format."""
         try:
-            logger.info("=== ENHANCE SPEC START ===")
-            logger.info(f"Input spec keys: {list(spec.keys())}")
-            logger.info(f"Input spec type: {type(spec)}")
+            logger.debug("=== ENHANCE SPEC START ===")
+            logger.debug(f"Input spec keys: {list(spec.keys())}")
+            logger.debug(f"Input spec type: {type(spec)}")
             
             # Convert agent format (analogy_bridge/left_side/right_side) to renderer format (relating_factor/analogies) for D3.js
             enhanced_spec = {}
             
             if 'analogy_bridge' in spec and 'left_side' in spec and 'right_side' in spec:
-                logger.info("Processing agent format (analogy_bridge/left_side/right_side)")
-                logger.info(f"Left side keys: {list(spec.get('left_side', {}).keys())}")
-                logger.info(f"Right side keys: {list(spec.get('right_side', {}).keys())}")
+                logger.debug("Processing agent format (analogy_bridge/left_side/right_side)")
+                logger.debug(f"Left side keys: {list(spec.get('left_side', {}).keys())}")
+                logger.debug(f"Right side keys: {list(spec.get('right_side', {}).keys())}")
                 
                 # Log the actual elements
                 left_elements = spec.get('left_side', {}).get('elements', [])
                 right_elements = spec.get('right_side', {}).get('elements', [])
-                logger.info(f"Left elements count: {len(left_elements)}")
-                logger.info(f"Right elements count: {len(right_elements)}")
+                logger.debug(f"Left elements count: {len(left_elements)}")
+                logger.debug(f"Right elements count: {len(right_elements)}")
                 
                 for i, elem in enumerate(left_elements):
-                    logger.info(f"Left element {i}: {elem}")
+                    logger.debug(f"Left element {i}: {elem}")
                 
                 # === SIMPLE DEDUPLICATION ===
                 # Use first 5 unique elements from each side (we have 6 elements, so 1 backup)
-                logger.info("Applying simple deduplication to get 5 unique elements per side...")
+                logger.debug("Applying simple deduplication to get 5 unique elements per side...")
                 
                 # Deduplicate left side
                 left_elements = self._simple_deduplicate(left_elements, "left", max_elements=5)
@@ -319,14 +319,14 @@ class BridgeMapAgent(BaseAgent):
                 'format_converted': 'analogy_bridge' in spec and 'left_side' in spec and 'right_side' in spec
             }
             
-            logger.info("=== ENHANCE SPEC COMPLETE ===")
-            logger.info(f"Final enhanced spec keys: {list(enhanced_spec.keys())}")
-            logger.info(f"Final analogies count: {len(enhanced_spec.get('analogies', []))}")
+            logger.debug("=== ENHANCE SPEC COMPLETE ===")
+            logger.debug(f"Final enhanced spec keys: {list(enhanced_spec.keys())}")
+            logger.debug(f"Final analogies count: {len(enhanced_spec.get('analogies', []))}")
             
             # Log each final analogy
             analogies = enhanced_spec.get('analogies', [])
             for i, analogy in enumerate(analogies):
-                logger.info(f"Final analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
+                logger.debug(f"Final analogy {i}: {analogy.get('left')} -> {analogy.get('right')}")
             
             return enhanced_spec
             
@@ -345,8 +345,8 @@ class BridgeMapAgent(BaseAgent):
             Tuple of (is_valid, validation_message)
         """
         try:
-            logger.info("=== VALIDATION START ===")
-            logger.info(f"Validating spec with keys: {list(spec.keys())}")
+            logger.debug("=== VALIDATION START ===")
+            logger.debug(f"Validating spec with keys: {list(spec.keys())}")
             
             # Check required fields
             if not isinstance(spec, dict):
@@ -414,8 +414,8 @@ class BridgeMapAgent(BaseAgent):
                     logger.error(f"Missing bridge_text in connection: {conn}")
                     return False, "Missing or empty bridge text"
             
-            logger.info("=== VALIDATION PASSED ===")
-            logger.info(f"Valid spec with {len(spec['left_side']['elements'])} left and {len(spec['right_side']['elements'])} right elements")
+            logger.debug("=== VALIDATION PASSED ===")
+            logger.debug(f"Valid spec with {len(spec['left_side']['elements'])} left and {len(spec['left_side']['elements'])} right elements")
             return True, "Specification is valid"
             
         except Exception as e:
@@ -466,7 +466,7 @@ class BridgeMapAgent(BaseAgent):
             List of first N unique elements
         """
         try:
-            logger.info(f"Starting simple deduplication for {side_name} side...")
+            logger.debug(f"Starting simple deduplication for {side_name} side...")
             
             seen = set()
             unique_elements = []

@@ -31,7 +31,7 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"🎯 CircleMapAgent: Generating circle map for prompt: {prompt}")
+            logger.info(f"CircleMapAgent: Starting circle map generation for prompt")
             
             # Generate the circle map specification
             spec = self._generate_circle_map_spec(prompt, language)
@@ -54,7 +54,7 @@ class CircleMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
             
-            logger.info(f"✅ CircleMapAgent: Successfully generated circle map")
+            logger.info(f"CircleMapAgent: Circle map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -62,7 +62,7 @@ class CircleMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ CircleMapAgent: Error generating circle map: {e}")
+            logger.error(f"CircleMapAgent: Circle map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

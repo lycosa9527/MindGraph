@@ -57,7 +57,7 @@ class FlowMapAgent(BaseAgent):
                 }
             enhanced_spec = enhanced_result['spec']
             
-            logger.info(f"✅ FlowMapAgent: Successfully generated flow map")
+            logger.info(f"FlowMapAgent: Flow map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -65,7 +65,7 @@ class FlowMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ FlowMapAgent: Error generating flow map: {e}")
+            logger.error(f"FlowMapAgent: Flow map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

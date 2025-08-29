@@ -9,9 +9,18 @@ processing agent outputs and handling edge cases.
 import re
 import json
 import yaml
+import os
 from settings import config
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables for logging configuration
+load_dotenv()
+
 logger = logging.getLogger(__name__)
+log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+logger.setLevel(log_level)
 
 
 def get_llm_client():
@@ -136,7 +145,7 @@ def parse_topic_extraction_result(result, language='zh'):
             return words[0], words[1]
     
     # If parsing completely failed, use fallback
-    logger.info("Topic extraction parsing failed, using fallback")
+    logger.debug("Topic extraction parsing failed, using fallback")
     return extract_topics_from_prompt(topics)
 
 

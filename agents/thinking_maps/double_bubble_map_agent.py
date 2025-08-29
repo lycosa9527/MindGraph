@@ -31,7 +31,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"🎯 DoubleBubbleMapAgent: Generating double bubble map for prompt: {prompt}")
+            logger.info(f"DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
             
             # Generate the double bubble map specification
             spec = self._generate_double_bubble_map_spec(prompt, language)
@@ -54,7 +54,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
             
-            logger.info(f"✅ DoubleBubbleMapAgent: Successfully generated double bubble map")
+            logger.info(f"DoubleBubbleMapAgent: Double bubble map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -62,7 +62,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ DoubleBubbleMapAgent: Error generating double bubble map: {e}")
+            logger.error(f"DoubleBubbleMapAgent: Double bubble map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template
 import logging
+import os
 from functools import wraps
+from dotenv import load_dotenv
 from urls import (
     WEB_INDEX, WEB_DEBUG, WEB_STYLE_DEMO, WEB_TEST_STYLE_MANAGER,
     WEB_TEST_PNG_GENERATION, WEB_SIMPLE_TEST, WEB_BROWSER_TEST,
@@ -8,8 +10,16 @@ from urls import (
     WEB_TIMING_STATS
 )
 
+# Load environment variables for logging configuration
+load_dotenv()
+
 web = Blueprint('web', __name__)
+
+# Configure logger with environment variable support
 logger = logging.getLogger(__name__)
+log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+logger.setLevel(log_level)
 
 
 def handle_template_errors(template_name):

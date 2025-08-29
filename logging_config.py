@@ -26,7 +26,10 @@ def setup_agent_logging():
     
     # Only configure if not already configured
     if not agent_logger.handlers:
-        agent_logger.setLevel(logging.INFO)
+        # Get log level from environment variable, default to INFO
+        log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+        log_level = getattr(logging, log_level_str, logging.INFO)
+        agent_logger.setLevel(log_level)
         
         # Create formatter
         formatter = logging.Formatter(

@@ -63,8 +63,12 @@ from pathlib import Path
 os.makedirs("logs", exist_ok=True)
 
 # Setup logging configuration
+# Get log level from environment variable, default to INFO
+log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
@@ -73,6 +77,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Log the configured log level
+logger.info(f"Logging level set to: {log_level_str}")
 
 # Dependency checker removed for simplicity
 
@@ -202,7 +209,7 @@ except Exception as e:
 def log_request():
     """Log incoming HTTP requests with timing information."""
     request.start_time = time.time()
-    logger.info(f"Request: {request.method} {request.path} from {request.remote_addr}")
+    logger.debug(f"Request: {request.method} {request.path} from {request.remote_addr}")
     
     # BLOCK ACCESS TO OLD D3-RENDERERS.JS - IT SHOULD NEVER BE SERVED
     if request.path == '/static/js/d3-renderers.js':
@@ -221,7 +228,7 @@ def log_response(response):
     """
     if hasattr(request, 'start_time'):
         response_time = time.time() - request.start_time
-        logger.info(f"Response: {response.status_code} in {response_time:.3f}s")
+        logger.debug(f"Response: {response.status_code} in {response_time:.3f}s")
         
         # Monitor slow requests with different thresholds
         if 'generate_png' in request.path and response_time > 20:
@@ -230,7 +237,7 @@ def log_response(response):
             logger.warning(f"Slow request: {request.method} {request.path} took {response_time:.3f}s")
             # Debug logging for PNG-related requests
             if 'png' in request.path.lower() or 'generate' in request.path.lower():
-                logger.info(f"DEBUG: PNG-related request path: {request.path}")
+                logger.debug(f"PNG-related request path: {request.path}")
     
     return response
 
@@ -647,21 +654,21 @@ def print_banner(host, port):
     
     # Display application URLs using dynamic server URL
     server_url = config.SERVER_URL
-    print(f"🌐 Application URL: {server_url}")
+    print(f"Application URL: {server_url}")
     
     # Display IP information
     lan_ip = get_local_ip()
     wan_ip = get_wan_ip()
     
-    print(f"🏠 Local Network (LAN): http://{lan_ip}:{port}")
+    print(f"Local Network (LAN): http://{lan_ip}:{port}")
     if wan_ip:
-        print(f"🌍 Public Network (WAN): http://{wan_ip}:{port}")
-        print(f"📱 External Access: Available via WAN IP")
+        print(f"Public Network (WAN): http://{wan_ip}:{port}")
+        print(f"External Access: Available via WAN IP")
     else:
-        print(f"🌍 Public Network (WAN): Detection failed")
-        print(f"📱 External Access: Limited (set EXTERNAL_HOST in .env)")
+        print(f"Public Network (WAN): Detection failed")
+        print(f"External Access: Limited (set EXTERNAL_HOST in .env)")
     
-    print(f"\n🌐 Open in browser: {server_url}\n")
+    print(f"\nOpen in browser: {server_url}\n")
 
 def print_setup_instructions():
     """
@@ -673,11 +680,11 @@ def print_setup_instructions():
     """
     logger.info("""
 ================================================================================
-🚀 MindGraph Setup Instructions
+MindGraph Setup Instructions
 
 If you are seeing this message, you may be missing required dependencies.
 
-🖥️ Option 1: Run Locally (Recommended for Developers)
+Option 1: Run Locally (Recommended for Developers)
 
 1. Install Python dependencies:
    pip install -r requirements.txt
@@ -697,10 +704,10 @@ If you are seeing this message, you may be missing required dependencies.
 
 6. Open your browser and visit: {config.SERVER_URL}
 
-    🐳 Option 2: Docker deployment (removed - will be added back later)
+Option 2: Docker deployment (removed - will be added back later)
 4. Open your browser and visit: {config.SERVER_URL}
 
-📋 Manual Dependency Check
+Manual Dependency Check
 
 If you want to check dependencies manually:
 - Python packages: pip list
@@ -719,7 +726,7 @@ if __name__ == '__main__':
     # Record application start time for uptime tracking
     app.start_time = time.time()
     
-    logger.info("🚀 Starting MindGraph application...")
+    logger.info("Starting MindGraph application...")
     
     # Display configuration summary
     config.print_config_summary()
@@ -733,5 +740,5 @@ if __name__ == '__main__':
     # Suppress Flask development server messages for cleaner output
     logging.getLogger('werkzeug').setLevel(logging.WARNING)
     
-    logger.info("🌐 Starting Flask development server...")
+    logger.info("Starting Flask development server...")
     app.run(debug=config.DEBUG, host=config.HOST, port=config.PORT) 
