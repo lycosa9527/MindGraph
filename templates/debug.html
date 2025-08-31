@@ -845,17 +845,14 @@
             const backendTheme = data.theme || {};
             const backendWatermark = data.watermark || {};
             
-            // Use centralized theme configuration if available
+            // Use centralized style manager theme system
             let baseTheme;
-            if (typeof getD3Theme === 'function') {
-                baseTheme = getD3Theme(graphType);
-                console.log('Using centralized theme configuration');
-            } else if (typeof styleManager !== 'undefined') {
-                baseTheme = styleManager.getTheme(graphType, {});
-                console.log('Using style manager theme');
+            if (typeof styleManager !== 'undefined' && typeof styleManager.getTheme === 'function') {
+                baseTheme = styleManager.getTheme(graphType);
+                console.log('Using centralized style manager theme');
             } else {
                 baseTheme = {};
-                console.warn('No theme system available, using defaults');
+                console.warn('Style manager not available, using empty theme');
             }
             
             // Merge themes in priority order

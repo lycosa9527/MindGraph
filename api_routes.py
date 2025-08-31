@@ -1049,17 +1049,17 @@ def generate_png():
                         window.spec = {json.dumps(spec, ensure_ascii=False)};
                         window.graph_type = "{graph_type}";
                         
-                        // Get theme using centralized configuration
+                        // Get theme using style manager (centralized theme system)
                         let theme;
                         let backendTheme;
-                        if (typeof getD3Theme === "function") {{
-                            theme = getD3Theme(graph_type);
-                            console.log("Using centralized theme configuration");
+                        if (typeof styleManager !== "undefined" && typeof styleManager.getTheme === "function") {{
+                            theme = styleManager.getTheme(graph_type);
+                            console.log("Using centralized style manager theme");
                         }} else {{
-                            // Fallback to style manager
+                            // Fallback to basic D3 theme
                             const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
                             theme = d3Theme;
-                            console.log("Using style manager theme");
+                            console.log("Using fallback D3 theme");
                         }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
                         backendTheme = {{...theme, ...watermarkConfig}};
@@ -1835,17 +1835,17 @@ def generate_dingtalk():
                         window.spec = {json.dumps(spec, ensure_ascii=False)};
                         window.graph_type = "{graph_type}";
                         
-                        // Get theme using centralized configuration
+                        // Get theme using style manager (centralized theme system)
                         let theme;
                         let backendTheme;
-                        if (typeof getD3Theme === "function") {{
-                            theme = getD3Theme(graph_type);
-                            console.log("Using centralized theme configuration");
+                        if (typeof styleManager !== "undefined" && typeof styleManager.getTheme === "function") {{
+                            theme = styleManager.getTheme(graph_type);
+                            console.log("Using centralized style manager theme");
                         }} else {{
-                            // Fallback to style manager
+                            // Fallback to basic D3 theme
                             const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
                             theme = d3Theme;
-                            console.log("Using style manager theme");
+                            console.log("Using fallback D3 theme");
                         }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
                         backendTheme = {{...theme, ...watermarkConfig}};
