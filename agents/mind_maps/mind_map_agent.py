@@ -1919,8 +1919,8 @@ class MindMapAgent(BaseAgent):
                     'from': {'x': topic_x, 'y': topic_y, 'type': 'topic'},
                     'to': {'x': branch_x, 'y': branch_y, 'type': 'branch'},
                     'branch_index': i,
-                    'stroke_width': 3,
-                    'stroke_color': '#000000'  # Black connection for better visibility
+                    'stroke_width': 3
+                    # Removed hardcoded stroke_color - let frontend theme system handle colors
                 })
                 
                 # Connections from branch to children
@@ -1937,8 +1937,8 @@ class MindMapAgent(BaseAgent):
                             'to': {'x': child_x, 'y': child_y, 'type': 'child'},
                             'branch_index': i,
                             'child_index': j,
-                            'stroke_width': 2,
-                            'stroke_color': '#000000'  # Black connection for better visibility
+                            'stroke_width': 2
+                            # Removed hardcoded stroke_color - let frontend theme system handle colors
                         })
         
         return connections
