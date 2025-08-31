@@ -36,6 +36,25 @@ def cleanup_previous_tests():
             print(f"  ⚠️  Warning cleaning images/: {e}")
     else:
         print(f"  ℹ️  images/ directory doesn't exist yet")
+    
+    # Also clean up temp images folder if it exists
+    temp_images_dir = Path("temp_images")
+    if temp_images_dir.exists():
+        try:
+            # Remove all files in the temp_images directory
+            for file_path in temp_images_dir.glob("*"):
+                if file_path.is_file():
+                    file_path.unlink()
+                    print(f"  🗑️  Deleted: {file_path.name}")
+                elif file_path.is_dir():
+                    import shutil
+                    shutil.rmtree(file_path)
+                    print(f"  🗑️  Deleted directory: {file_path.name}")
+            print(f"  ✅ Cleaned: temp_images/")
+        except Exception as e:
+            print(f"  ⚠️  Warning cleaning temp_images/: {e}")
+    else:
+        print(f"  ℹ️  temp_images/ directory doesn't exist")
 
 def ensure_test_directories():
     """Create necessary directories for test outputs."""
@@ -106,8 +125,10 @@ def generate_diagram_via_api(prompt, language="en"):
 
 def save_image_to_file(image_data, agent_name, images_dir):
     """Save the binary image data to a PNG file."""
-    safe_name = agent_name.lower().replace(" ", "_").replace("-", "_")
-    image_file = images_dir / f"{safe_name}_diagram.png"
+    # Create a clean filename with diagram type and timestamp
+    diagram_type = agent_name.lower().replace(" ", "_").replace("-", "_")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    image_file = images_dir / f"{diagram_type}_{timestamp}.png"
     
     try:
         # Save binary data directly
@@ -130,23 +151,23 @@ def test_agent_via_api(agent_name, diagram_type, images_dir):
         
         # Create a specific prompt tailored for this diagram type
         prompt_templates = {
-            "Bubble Map": "Create a bubble map about 'Machine Learning Algorithms' showing the main topic and its key attributes and characteristics",
-            "Double Bubble Map": "Create a double bubble map comparing 'Artificial Intelligence' and 'Machine Learning' showing similarities and differences",
-            "Circle Map": "Create a circle map defining 'Deep Learning' in the context of artificial intelligence and data science",
-            "Bridge Map": "Create a bridge map showing the analogy between 'Neural Networks' and 'Human Brain' connections",
-            "Concept Map": "Create a concept map about 'Machine Learning' showing relationships between concepts like algorithms, data, training, and applications",
-            "Mind Map": "Create a mind map for 'Artificial Intelligence' with main branches covering applications, techniques, tools, and future trends",
-            "Flow Map": "Create a flow map showing the process of 'Machine Learning Model Development' from data to deployment",
-            "Tree Map": "Create a tree map for 'AI Technologies' breaking down into categories like ML, NLP, Computer Vision with subcategories",
-            "Brace Map": "Create a brace map showing 'Machine Learning' as the whole with parts like supervised, unsupervised, and reinforcement learning",
-            "Multi-Flow Map": "Create a multi-flow map showing causes and effects of 'AI Adoption in Business'"
+            "Bubble Map": "创建一个关于'机器学习算法'的气泡图，显示主要主题及其关键属性和特征",
+            "Double Bubble Map": "创建一个双气泡图，比较'人工智能'和'机器学习'的异同",
+            "Circle Map": "创建一个圆圈图，在人工智能和数据科学的背景下定义'深度学习'",
+            "Bridge Map": "创建一个桥形图，展示'神经网络'和'人脑'连接之间的类比关系",
+            "Concept Map": "创建一个关于'机器学习'的概念图，展示算法、数据、训练和应用等概念之间的关系",
+            "Mind Map": "创建一个关于'人工智能'的思维导图，主要分支涵盖应用、技术、工具和未来趋势",
+            "Flow Map": "创建一个流程图，展示从数据到部署的'机器学习模型开发'过程",
+            "Tree Map": "创建一个树形图，将'AI技术'分解为机器学习、自然语言处理、计算机视觉等类别，并包含子类别",
+            "Brace Map": "创建一个括号图，将'机器学习'作为整体，展示监督学习、无监督学习和强化学习等部分",
+            "Multi-Flow Map": "创建一个复流程图，展示'AI在商业中采用'的原因和结果"
         }
         
-        test_prompt = prompt_templates.get(agent_name, f"Create a {agent_name.lower()} about 'Artificial Intelligence and Machine Learning'")
+        test_prompt = prompt_templates.get(agent_name, f"创建一个关于'人工智能和机器学习'的{agent_name.lower()}")
         print(f"✓ Using prompt: '{test_prompt}'")
         
         # Generate diagram via API
-        image_data = generate_diagram_via_api(test_prompt, "en")
+        image_data = generate_diagram_via_api(test_prompt, "zh")
         
         if not image_data:
             print(f"✗ Failed to generate image")
