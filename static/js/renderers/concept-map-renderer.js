@@ -78,41 +78,12 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
             THEME = styleManager.getTheme('concept_map', theme, theme);
             console.log('Concept Map: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using minimal fallback');
-            THEME = {
-                topicFill: '#e3f2fd',
-                topicText: '#000',
-                topicStroke: '#35506b',
-                topicStrokeWidth: 2,
-                conceptFill: '#e3f2fd',
-                conceptText: '#333',
-                conceptStroke: '#4e79a7',
-                conceptStrokeWidth: 2,
-                relationshipColor: '#666',
-                relationshipStrokeWidth: 2,
-                fontTopic: 26,
-                fontConcept: 22,
-                background: '#ffffff'
-            };
+            console.error('Style manager not available - this should not happen');
+            throw new Error('Style manager not available for concept map rendering');
         }
     } catch (e) {
         console.error('Error getting theme from style manager:', e);
-        // Minimal emergency fallback only if style manager completely fails
-        THEME = {
-            topicFill: '#e3f2fd',
-            topicText: '#000',
-            topicStroke: '#35506b',
-            topicStrokeWidth: 2,
-            conceptFill: '#e3f2fd',
-            conceptText: '#333',
-            conceptStroke: '#4e79a7',
-            conceptStrokeWidth: 2,
-            relationshipColor: '#666',
-            relationshipStrokeWidth: 2,
-            fontTopic: 18,
-            fontConcept: 14,
-            background: '#ffffff'
-        };
+        throw new Error('Failed to load theme from style manager');
     }
     
     // Apply container background (matching reference file)

@@ -150,45 +150,12 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             THEME = styleManager.getTheme('brace_map', theme, theme);
             console.log('Brace: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using minimal fallback');
-            THEME = {
-                topicFill: '#1976d2',
-                topicText: '#ffffff',
-                topicStroke: '#0d47a1',
-                partFill: '#e3f2fd',
-                partText: '#333333',
-                partStroke: '#4e79a7',
-                subpartFill: '#bbdefb',
-                subpartText: '#333333',
-                subpartStroke: '#90caf9',
-                fontTopic: '24px Inter, Segoe UI, sans-serif',
-                fontPart: '18px Inter, Segoe UI, sans-serif',
-                fontSubpart: '14px Inter, Segoe UI, sans-serif',
-                background: '#ffffff',
-                braceColor: '#666666',
-                braceWidth: 3
-            };
+            console.error('Style manager not available - this should not happen');
+            throw new Error('Style manager not available for brace map rendering');
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
-        // Minimal emergency fallback only if style manager completely fails
-        THEME = {
-            topicFill: '#1976d2',
-            topicText: '#ffffff',
-            topicStroke: '#0d47a1',
-            partFill: '#e3f2fd',
-            partText: '#333333',
-            partStroke: '#4e79a7',
-            subpartFill: '#bbdefb',
-            subpartText: '#333333',
-            subpartStroke: '#90caf9',
-            fontTopic: '24px Inter, Segoe UI, sans-serif',
-            fontPart: '18px Inter, Segoe UI, sans-serif',
-            fontSubpart: '14px Inter, Segoe UI, sans-serif',
-            background: '#ffffff',
-            braceColor: '#666666',
-            braceWidth: 3
-        };
+        throw new Error('Failed to load theme from style manager');
     }
     
     // Apply background if specified

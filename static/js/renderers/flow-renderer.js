@@ -34,51 +34,12 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
             THEME = styleManager.getTheme('flowchart', theme, theme);
             console.log('Flow: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using minimal fallback');
-            THEME = {
-                startFill: '#4caf50',
-                startText: '#ffffff',
-                startStroke: '#388e3c',
-                startStrokeWidth: 2,
-                processFill: '#1976d2',
-                processText: '#ffffff',
-                processStroke: '#1976d2',
-                processStrokeWidth: 2,
-                decisionFill: '#ff9800',
-                decisionText: '#ffffff',
-                decisionStroke: '#f57c00',
-                decisionStrokeWidth: 2,
-                endFill: '#f44336',
-                endText: '#ffffff',
-                endStroke: '#d32f2f',
-                endStrokeWidth: 2,
-                fontNode: 14,
-                fontEdge: 12
-            };
+            console.error('Style manager not available - this should not happen');
+            throw new Error('Style manager not available for flow map rendering');
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
-        // Minimal emergency fallback only if style manager completely fails
-        THEME = {
-            startFill: '#4caf50',
-            startText: '#ffffff',
-            startStroke: '#388e3c',
-            startStrokeWidth: 2,
-            processFill: '#1976d2',
-            processText: '#ffffff',
-            processStroke: '#1976d2',
-            processStrokeWidth: 2,
-            decisionFill: '#ff9800',
-            decisionText: '#ffffff',
-            decisionStroke: '#f57c00',
-            decisionStrokeWidth: 2,
-            endFill: '#f44336',
-            endText: '#ffffff',
-            endStroke: '#d32f2f',
-            endStrokeWidth: 2,
-            fontNode: 14,
-            fontEdge: 12
-        };
+        throw new Error('Failed to load theme from style manager');
     }
 
     // Measurement SVG (off-screen)

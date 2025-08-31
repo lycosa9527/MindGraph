@@ -50,47 +50,12 @@ function renderMindMap(spec, theme = null, dimensions = null) {
             THEME = styleManager.getTheme('mindmap', theme, theme);
             console.log('Mind Map: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using minimal fallback');
-            THEME = {
-                background: '#f5f5f5',
-                centralTopicFill: '#e3f2fd',
-                centralTopicText: '#333333',
-                centralTopicStroke: '#35506b',
-                centralTopicStrokeWidth: 3,
-                branchFill: '#e3f2fd',
-                branchText: '#333333',
-                branchStroke: '#4e79a7',
-                branchStrokeWidth: 2,
-                childFill: '#f8f9fa',
-                childText: '#333333',
-                childStroke: '#6c757d',
-                childStrokeWidth: 2,
-                fontTopic: 20,
-                fontBranch: 16,
-                fontChild: 14
-            };
+            console.error('Style manager not available - this should not happen');
+            throw new Error('Style manager not available for mindmap rendering');
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
-        // Minimal emergency fallback only if style manager completely fails
-        THEME = {
-            background: '#f5f5f5',
-            centralTopicFill: '#e3f2fd',
-            centralTopicText: '#333333',
-            centralTopicStroke: '#35506b',
-            centralTopicStrokeWidth: 3,
-            branchFill: '#e3f2fd',
-            branchText: '#333333',
-            branchStroke: '#4e79a7',
-            branchStrokeWidth: 2,
-            childFill: '#f8f9fa',
-            childText: '#333333',
-            childStroke: '#6c757d',
-            childStrokeWidth: 2,
-            fontTopic: 20,
-            fontBranch: 16,
-            fontChild: 14
-        };
+        throw new Error('Failed to load theme from style manager');
     }
     
     // Apply container background - use THEME object that was loaded above

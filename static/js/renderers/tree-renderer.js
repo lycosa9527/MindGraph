@@ -54,45 +54,12 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             THEME = styleManager.getTheme('tree_map', theme, theme);
             console.log('Tree: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using minimal fallback');
-            THEME = {
-                rootFill: '#1976d2',
-                rootText: '#ffffff',
-                rootStroke: '#0d47a1',
-                rootStrokeWidth: 3,
-                branchFill: '#e3f2fd',
-                branchText: '#333333',
-                branchStroke: '#1976d2',
-                branchStrokeWidth: 2,
-                leafFill: '#f8f9fa',
-                leafText: '#333333',
-                leafStroke: '#1976d2',
-                leafStrokeWidth: 1,
-                fontRoot: 20,
-                fontBranch: 16,
-                fontLeaf: 14
-            };
+            console.error('Style manager not available - this should not happen');
+            throw new Error('Style manager not available for tree map rendering');
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
-        // Minimal emergency fallback only if style manager completely fails
-        THEME = {
-            rootFill: '#1976d2',
-            rootText: '#ffffff',
-            rootStroke: '#0d47a1',
-            rootStrokeWidth: 3,
-            branchFill: '#e3f2fd',
-            branchText: '#333333',
-            branchStroke: '#1976d2',
-            branchStrokeWidth: 2,
-            leafFill: '#f8f9fa',
-            leafText: '#333333',
-            leafStroke: '#1976d2',
-            leafStrokeWidth: 1,
-            fontRoot: 20,
-            fontBranch: 16,
-            fontLeaf: 14
-        };
+        throw new Error('Failed to load theme from style manager');
     }
     
     const width = baseWidth;

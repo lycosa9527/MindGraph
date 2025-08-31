@@ -448,30 +448,7 @@ class Config:
     # D3.js THEME AND DIMENSION HELPERS
     # ============================================================================
     
-    def get_d3_theme(self) -> dict:
-        """
-        Get complete D3.js theme configuration.
-        
-        Returns:
-            dict: Complete theme configuration for D3.js visualizations
-        """
-        return {
-            'topic': {
-                'fill': self.D3_TOPIC_FILL,
-                'text': self.D3_TOPIC_TEXT,
-                'stroke': self.D3_TOPIC_STROKE
-            },
-            'similarity': {
-                'fill': self.D3_SIM_FILL,
-                'text': self.D3_SIM_TEXT,
-                'stroke': self.D3_SIM_STROKE
-            },
-            'difference': {
-                'fill': self.D3_DIFF_FILL,
-                'text': self.D3_DIFF_TEXT,
-                'stroke': self.D3_DIFF_STROKE
-            }
-        }
+    # Removed get_d3_theme() - themes are now handled by style-manager.js
     
     def get_d3_dimensions(self) -> dict:
         """

@@ -33,37 +33,12 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             THEME = styleManager.getTheme('bubble_map', theme, theme);
             console.log('Bubble Map: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using minimal fallback');
-            THEME = {
-                topicFill: '#1976d2',
-                topicText: '#ffffff',
-                topicStroke: '#000000',
-                topicStrokeWidth: 3,
-                attributeFill: '#e3f2fd',
-                attributeText: '#333333',
-                attributeStroke: '#1976d2',
-                attributeStrokeWidth: 2,
-                fontTopic: 20,
-                fontAttribute: 14,
-                background: '#ffffff'
-            };
+            console.error('Style manager not available - this should not happen');
+            throw new Error('Style manager not available for bubble map rendering');
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
-        // Minimal emergency fallback only if style manager completely fails
-        THEME = {
-            topicFill: '#1976d2',
-            topicText: '#ffffff',
-            topicStroke: '#000000',
-            topicStrokeWidth: 3,
-            attributeFill: '#e3f2fd',
-            attributeText: '#333333',
-            attributeStroke: '#1976d2',
-            attributeStrokeWidth: 2,
-            fontTopic: 20,
-            fontAttribute: 14,
-            background: '#ffffff'
-        };
+        throw new Error('Failed to load theme from style manager');
     }
     
     // Apply background to container and store for SVG

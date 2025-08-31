@@ -558,7 +558,7 @@ def generate_graph():
             'style_preferences': style_preferences,
             'diagram_type': diagram_type,
             'has_styles': '_style' in spec,
-            'theme': config.get_d3_theme(),
+            'theme': {},  # Frontend uses style-manager.js for themes
             'dimensions': dimensions,
             'watermark': config.get_watermark_config(),
             'timing': timing_info
