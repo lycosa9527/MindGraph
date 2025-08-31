@@ -1056,10 +1056,9 @@ def generate_png():
                             theme = styleManager.getTheme(graph_type);
                             console.log("Using centralized style manager theme");
                         }} else {{
-                            // Fallback to basic D3 theme
-                            const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
-                            theme = d3Theme;
-                            console.log("Using fallback D3 theme");
+                            // No fallback - style manager should always be available
+                            theme = {};
+                            console.error("Style manager not available - this should not happen");
                         }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
                         backendTheme = {{...theme, ...watermarkConfig}};
@@ -1842,10 +1841,9 @@ def generate_dingtalk():
                             theme = styleManager.getTheme(graph_type);
                             console.log("Using centralized style manager theme");
                         }} else {{
-                            // Fallback to basic D3 theme
-                            const d3Theme = {json.dumps(config.get_d3_theme(), ensure_ascii=False)};
-                            theme = d3Theme;
-                            console.log("Using fallback D3 theme");
+                            // No fallback - style manager should always be available
+                            theme = {};
+                            console.error("Style manager not available - this should not happen");
                         }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
                         backendTheme = {{...theme, ...watermarkConfig}};
