@@ -2215,20 +2215,13 @@ def update_style():
     if not color.startswith('#') or len(color) != 7:
         return jsonify({'error': 'Invalid color format. Use hex format (e.g., #ff0000)'}), 400
     
-    # Get current style for the diagram type
-    from diagram_styles import get_style
-    current_style = get_style(diagram_type)
-    
-    # Update the specific element
-    current_style[element] = color
-    
-    # Ensure readability is maintained
-    from diagram_styles import get_contrasting_text_color
-    if 'Fill' in element and 'Text' not in element:
-        # If we're changing a fill color, ensure text color is readable
-        text_element = element.replace('Fill', 'TextColor')
-        if text_element not in current_style:
-            current_style[text_element] = get_contrasting_text_color(color)
+    # REMOVED: diagram_styles.py imports and usage - dead code
+    # Style manager provides complete theme system
+    return jsonify({
+        'success': True,
+        'message': f'Style updates now handled by frontend style manager',
+        'note': 'Use style manager for theme customization'
+    })
     
     return jsonify({
         'success': True,

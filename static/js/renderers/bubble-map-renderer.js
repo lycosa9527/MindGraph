@@ -26,39 +26,39 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 500;
     const padding = dimensions?.padding || 40;
     
-    // Load theme with proper bubble map colors
+    // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('bubble_map', theme, theme);
+            console.log('Bubble Map: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using fallback theme');
+            console.warn('Style manager not available, using minimal fallback');
+            THEME = {
+                topicFill: '#1976d2',
+                topicText: '#ffffff',
+                topicStroke: '#000000',
+                topicStrokeWidth: 3,
+                attributeFill: '#e3f2fd',
+                attributeText: '#333333',
+                attributeStroke: '#1976d2',
+                attributeStrokeWidth: 2,
+                fontTopic: 20,
+                fontAttribute: 14,
+                background: '#ffffff'
+            };
         }
-        
-        // Always use our preferred bubble map colors (matching original d3-renderers.js)
-        THEME = {
-            topicFill: '#1976d2',      // Deep blue central topic
-            topicText: '#ffffff',       // White text for contrast
-            topicStroke: '#000000',     // Black border for topic nodes (matching original)
-            topicStrokeWidth: 3,
-            attributeFill: '#e3f2fd',  // Light blue attribute nodes (matching flow map substeps)
-            attributeText: '#333333',   // Dark text for readability
-            attributeStroke: '#1976d2', // Blue border (matching flow map substeps)
-            attributeStrokeWidth: 2,
-            fontTopic: 20,
-            fontAttribute: 14,
-            background: '#ffffff'
-        };
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
+        // Minimal emergency fallback only if style manager completely fails
         THEME = {
-            topicFill: '#1976d2',      // Deep blue central topic
-            topicText: '#ffffff',       // White text for contrast
-            topicStroke: '#000000',     // Black border for topic nodes (matching original)
+            topicFill: '#1976d2',
+            topicText: '#ffffff',
+            topicStroke: '#000000',
             topicStrokeWidth: 3,
-            attributeFill: '#e3f2fd',  // Light blue attribute nodes (matching flow map substeps)
-            attributeText: '#333333',   // Dark text for readability
-            attributeStroke: '#1976d2', // Blue border (matching flow map substeps)
+            attributeFill: '#e3f2fd',
+            attributeText: '#333333',
+            attributeStroke: '#1976d2',
             attributeStrokeWidth: 2,
             fontTopic: 20,
             fontAttribute: 14,

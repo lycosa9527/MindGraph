@@ -71,11 +71,14 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     const earlyConfig = spec._config || {};
     const configPadding = earlyConfig.canvasPadding || padding;
 
+    // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('concept_map', theme, theme);
+            console.log('Concept Map: Using centralized theme from style manager');
         } else {
+            console.warn('Style manager not available, using minimal fallback');
             THEME = {
                 topicFill: '#e3f2fd',
                 topicText: '#000',
@@ -93,6 +96,8 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
             };
         }
     } catch (e) {
+        console.error('Error getting theme from style manager:', e);
+        // Minimal emergency fallback only if style manager completely fails
         THEME = {
             topicFill: '#e3f2fd',
             topicText: '#000',

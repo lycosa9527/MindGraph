@@ -143,15 +143,14 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const padding = dimensions?.padding || 40;
     console.log('🔍 Brace renderer: Using padding:', padding);
     
-    // Get complete theme using robust style manager
-    console.log('🔍 Brace renderer: Loading theme...');
+    // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
-            console.log('✅ Brace renderer: Using styleManager.getTheme');
             THEME = styleManager.getTheme('brace_map', theme, theme);
+            console.log('Brace: Using centralized theme from style manager');
         } else {
-            console.warn('⚠️ Brace renderer: Style manager not available, using fallback theme');
+            console.warn('Style manager not available, using minimal fallback');
             THEME = {
                 topicFill: '#1976d2',
                 topicText: '#ffffff',
@@ -171,7 +170,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             };
         }
     } catch (error) {
-        console.error('❌ Brace renderer: Error getting theme from style manager:', error);
+        console.error('Error getting theme from style manager:', error);
+        // Minimal emergency fallback only if style manager completely fails
         THEME = {
             topicFill: '#1976d2',
             topicText: '#ffffff',
@@ -190,9 +190,6 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             braceWidth: 3
         };
     }
-    
-    // Theme loaded successfully
-    console.log('✅ Brace renderer: Theme loaded:', THEME);
     
     // Apply background if specified
     if (theme && theme.background) {

@@ -1512,27 +1512,8 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
         return {'error': f'Failed to generate {diagram_type}: {str(e)}'}
 
 
-def _add_basic_styling(spec: dict, diagram_type: str):
-    """
-    Add basic default styling to the specification.
-    
-    Args:
-        spec: The diagram specification
-        diagram_type: Type of diagram
-    """
-    if not isinstance(spec, dict):
-        return
-    
-    # Add basic style metadata if not present
-    if '_style' not in spec:
-        spec['_style'] = {}
-    
-    if '_style_metadata' not in spec:
-        spec['_style_metadata'] = {
-            'color_theme': 'classic',
-            'variation': 'colorful',
-            'user_preferences': {}
-        }
+# REMOVED: _add_basic_styling function - was only creating empty objects
+# Style manager provides complete themes, no backend theme generation needed
 
 
 def agent_graph_workflow_with_styles(user_prompt, language='zh'):
@@ -1568,8 +1549,7 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
                 'language': language
             }
         
-        # Add basic styling
-        _add_basic_styling(spec, diagram_type)
+        # REMOVED: _add_basic_styling call - style manager provides themes
         
         # Add metadata to the result
         result = {

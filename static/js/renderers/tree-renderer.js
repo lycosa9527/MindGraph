@@ -47,25 +47,26 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     const baseHeight = dimensions?.baseHeight || 600;
     const padding = dimensions?.padding || 40;
     
-    // Get theme using style manager
+    // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('tree_map', theme, theme);
+            console.log('Tree: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using fallback theme');
+            console.warn('Style manager not available, using minimal fallback');
             THEME = {
-                rootFill: '#1976d2',  // Deeper blue
-                rootText: '#ffffff',   // White text for contrast
-                rootStroke: '#0d47a1', // Darker blue border
+                rootFill: '#1976d2',
+                rootText: '#ffffff',
+                rootStroke: '#0d47a1',
                 rootStrokeWidth: 3,
-                branchFill: '#e3f2fd', // Light blue for branches
-                branchText: '#333333',  // Dark text
-                branchStroke: '#1976d2', // Blue border
+                branchFill: '#e3f2fd',
+                branchText: '#333333',
+                branchStroke: '#1976d2',
                 branchStrokeWidth: 2,
-                leafFill: '#f8f9fa',   // Very light blue for leaves
-                leafText: '#333333',    // Dark text
-                leafStroke: '#1976d2',  // Blue border
+                leafFill: '#f8f9fa',
+                leafText: '#333333',
+                leafStroke: '#1976d2',
                 leafStrokeWidth: 1,
                 fontRoot: 20,
                 fontBranch: 16,
@@ -74,27 +75,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
-        THEME = {
-            rootFill: '#1976d2',
-            rootText: '#ffffff',
-            rootStroke: '#0d47a1',
-            rootStrokeWidth: 3,
-            branchFill: '#e3f2fd',
-            branchText: '#333333',
-            branchStroke: '#1976d2',
-            branchStrokeWidth: 2,
-            leafFill: '#f8f9fa',
-            leafText: '#333333',
-            leafStroke: '#1976d2',
-            leafStrokeWidth: 1,
-            fontRoot: 20,
-            fontBranch: 16,
-            fontLeaf: 14
-        };
-    }
-    
-    // Ensure THEME is always defined
-    if (!THEME) {
+        // Minimal emergency fallback only if style manager completely fails
         THEME = {
             rootFill: '#1976d2',
             rootText: '#ffffff',

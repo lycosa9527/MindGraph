@@ -27,13 +27,14 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     // Use provided padding; width/height will be derived from content
     const padding = dimensions?.padding || 40;
 
-    // Get theme using style manager
+    // Get theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('flowchart', theme, theme);
+            console.log('Flow: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using fallback theme');
+            console.warn('Style manager not available, using minimal fallback');
             THEME = {
                 startFill: '#4caf50',
                 startText: '#ffffff',
@@ -57,6 +58,7 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
+        // Minimal emergency fallback only if style manager completely fails
         THEME = {
             startFill: '#4caf50',
             startText: '#ffffff',

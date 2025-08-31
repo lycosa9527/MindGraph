@@ -43,35 +43,14 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         padding = 40;
     }
     
-    // Load theme
+    // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
     try {
-        console.log('=== STYLE MANAGER AVAILABILITY CHECK ===');
-        console.log('typeof styleManager:', typeof styleManager);
-        console.log('window.styleManager:', typeof window.styleManager);
-        console.log('styleManager available:', typeof styleManager !== 'undefined');
-        
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
-            console.log('=== THEME PARAMETERS DEBUG ===');
-            console.log('userTheme (second param):', theme);
-            console.log('backendTheme (third param):', theme);
-            
             THEME = styleManager.getTheme('mindmap', theme, theme);
-            console.log('=== MIND MAP THEME DEBUG ===');
-            console.log('Mind Map Theme loaded from styleManager:', THEME);
-            console.log('Theme properties:');
-            console.log('- background:', THEME.background);
-            console.log('- centralTopicFill:', THEME.centralTopicFill);
-            console.log('- centralTopicText:', THEME.centralTopicText);
-            console.log('- centralTopicStroke:', THEME.centralTopicStroke);
-            console.log('- branchFill:', THEME.branchFill);
-            console.log('- childFill:', THEME.childFill);
-            console.log('- childText:', THEME.childText);
-            console.log('- childStroke:', THEME.childStroke);
-            console.log('=== END THEME DEBUG ===');
-
+            console.log('Mind Map: Using centralized theme from style manager');
         } else {
-            console.warn('Style manager not available, using fallback theme');
+            console.warn('Style manager not available, using minimal fallback');
             THEME = {
                 background: '#f5f5f5',
                 centralTopicFill: '#e3f2fd',
@@ -90,12 +69,10 @@ function renderMindMap(spec, theme = null, dimensions = null) {
                 fontBranch: 16,
                 fontChild: 14
             };
-            console.log('=== MIND MAP FALLBACK THEME DEBUG ===');
-            console.log('Mind Map Fallback theme applied:', THEME);
-            console.log('=== END FALLBACK THEME DEBUG ===');
         }
     } catch (error) {
         console.error('Error getting theme from style manager:', error);
+        // Minimal emergency fallback only if style manager completely fails
         THEME = {
             background: '#f5f5f5',
             centralTopicFill: '#e3f2fd',
@@ -114,9 +91,6 @@ function renderMindMap(spec, theme = null, dimensions = null) {
             fontBranch: 16,
             fontChild: 14
         };
-        console.log('=== MIND MAP EMERGENCY THEME DEBUG ===');
-        console.log('Emergency fallback theme applied:', THEME);
-        console.log('=== END EMERGENCY THEME DEBUG ===');
     }
     
     // Apply container background - use THEME object that was loaded above
