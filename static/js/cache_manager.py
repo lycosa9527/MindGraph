@@ -71,7 +71,7 @@ class JavaScriptCache:
                             total_size += file_size
                             files_loaded += 1
                             
-                            logger.info(f"Loaded {key}: {file_size:,} bytes ({len(content):,} chars)")
+                            logger.debug(f"Loaded {key}: {file_size:,} bytes ({len(content):,} chars)")
                     except Exception as e:
                         logger.error(f"Failed to load {file_path}: {e}")
                         raise
@@ -89,7 +89,7 @@ class JavaScriptCache:
             
             logger.info(f"JavaScript cache initialized successfully:")
             logger.info(f"  - Files loaded: {files_loaded}")
-            logger.info(f"  - Total size: {total_size:,} bytes ({total_size/1024:.1f} KB)")
+            logger.debug(f"  - Total size: {total_size:,} bytes ({total_size/1024:.1f} KB)")
             logger.info(f"  - Load time: {load_time:.3f} seconds")
             
         except Exception as e:

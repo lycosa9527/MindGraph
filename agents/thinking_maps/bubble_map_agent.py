@@ -74,12 +74,8 @@ class BubbleMapAgent(BaseAgent):
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system - use general format that works with renderer
-            system_prompt = get_prompt("bubble_map", language, "generation")
-            
-            if not system_prompt:
-                # Fallback to agent-specific if general not found
-                system_prompt = get_prompt("bubble_map_agent", language, "generation")
+            # Get prompt from centralized system - use agent-specific format
+            system_prompt = get_prompt("bubble_map_agent", language, "generation")
             
             if not system_prompt:
                 logger.error(f"BubbleMapAgent: No prompt found for language {language}")
@@ -205,7 +201,7 @@ class BubbleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.info("BubbleMapAgent: Enhancing existing specification")
+            logger.debug("BubbleMapAgent: Enhancing existing specification")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):

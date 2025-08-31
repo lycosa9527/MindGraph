@@ -24,9 +24,8 @@ import traceback
 from dotenv import load_dotenv
 load_dotenv()
 
-# Use centralized logging configuration
-from logging_config import setup_agent_logging
-logger = setup_agent_logging()
+# Use standard logging like other modules
+logger = logging.getLogger(__name__)
 
 from langchain.prompts import PromptTemplate
 import requests

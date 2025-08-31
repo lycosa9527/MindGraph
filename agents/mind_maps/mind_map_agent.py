@@ -100,7 +100,7 @@ class MindMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self.enhance_spec(spec)
             
-            logger.info(f"✅ MindMapAgent: Successfully generated mind map")
+            logger.info(f"MindMapAgent: Successfully generated mind map")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -108,7 +108,7 @@ class MindMapAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ MindMapAgent: Error generating mind map: {e}")
+            logger.error(f"MindMapAgent: Error generating mind map: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'

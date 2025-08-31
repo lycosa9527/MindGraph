@@ -74,13 +74,8 @@ class CircleMapAgent(BaseAgent):
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system - try agent-specific first, then fallback to general
-            # Use general format that works with renderer
-            system_prompt = get_prompt("circle_map", language, "generation")
-            
-            if not system_prompt:
-                # Fallback to agent-specific if general not found
-                system_prompt = get_prompt("circle_map_agent", language, "generation")
+            # Get prompt from centralized system - use agent-specific format
+            system_prompt = get_prompt("circle_map_agent", language, "generation")
             
             if not system_prompt:
                 logger.error(f"CircleMapAgent: No prompt found for language {language}")
@@ -197,7 +192,7 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.info("CircleMapAgent: Enhancing existing specification")
+            logger.debug("CircleMapAgent: Enhancing existing specification")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):

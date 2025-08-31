@@ -9,8 +9,8 @@ from typing import Dict, List, Any, Optional, Tuple
 from ..core.base_agent import BaseAgent
 from ..core.agent_utils import get_llm_client, extract_json_from_response
 
-# Use the centralized agent logger
-logger = logging.getLogger('mindgraph.agents')
+# Use standard logging like other modules
+logger = logging.getLogger(__name__)
 
 class BridgeMapAgent(BaseAgent):
     """Agent for generating bridge maps."""
@@ -85,46 +85,26 @@ class BridgeMapAgent(BaseAgent):
             if not isinstance(spec, dict):
                 return False, "Specification must be a dictionary"
             
-            # Check for new standardized format first
-            if 'analogies' in spec and 'relating_factor' in spec:
-                # New format: relating_factor + analogies
-                analogies = spec.get('analogies', [])
-                if not analogies:
-                    return False, "Analogies array is empty"
-                
-                # Check if we have at least 5 analogies
-                if len(analogies) < 5:
-                    return False, f"Insufficient analogies: {len(analogies)}, need at least 5"
-                
-                # Validate each analogy has required fields
-                for i, analogy in enumerate(analogies):
-                    if not isinstance(analogy, dict):
-                        return False, f"Analogy {i} is not a dictionary"
-                    if 'left' not in analogy or 'right' not in analogy:
-                        return False, f"Analogy {i} missing left or right field"
-                
-                return True, "Basic validation passed (new format)"
+            # Check for required fields (renderer format)
+            if 'analogies' not in spec or 'relating_factor' not in spec:
+                return False, "Missing required fields. Expected (relating_factor, analogies)"
             
-            # Check for legacy format
-            elif 'left_side' in spec and 'right_side' in spec:
-                # Legacy format: left_side + right_side
-                if not spec.get('left_side', {}).get('elements'):
-                    return False, "Left side has no elements"
-                if not spec.get('right_side', {}).get('elements'):
-                    return False, "Right side has no elements"
-                
-                left_elements = spec['left_side']['elements']
-                right_elements = spec['right_side']['elements']
-                
-                if len(left_elements) < 5:
-                    return False, f"Left side has insufficient elements: {len(left_elements)}"
-                if len(right_elements) < 5:
-                    return False, f"Right side has insufficient elements: {len(right_elements)}"
-                
-                return True, "Basic validation passed (legacy format)"
+            analogies = spec.get('analogies', [])
+            if not analogies:
+                return False, "Analogies array is empty"
             
-            else:
-                return False, "Specification must use either new format (relating_factor + analogies) or legacy format (left_side + right_side)"
+            # Check if we have at least 5 analogies
+            if len(analogies) < 5:
+                return False, f"Insufficient analogies: {len(analogies)}, need at least 5"
+            
+            # Validate each analogy has required fields
+            for i, analogy in enumerate(analogies):
+                if not isinstance(analogy, dict):
+                    return False, f"Analogy {i} is not a dictionary"
+                if 'left' not in analogy or 'right' not in analogy:
+                    return False, f"Analogy {i} missing left or right field"
+            
+            return True, "Basic validation passed"
             
         except Exception as e:
             return False, f"Basic validation error: {str(e)}"
@@ -139,12 +119,8 @@ class BridgeMapAgent(BaseAgent):
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system - use agent-specific format that matches validation
+            # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("bridge_map_agent", language, "generation")
-            
-            if not system_prompt:
-                # Fallback to general format if agent-specific not found
-                system_prompt = get_prompt("bridge_map", language, "generation")
             
             if not system_prompt:
                 logger.error(f"BridgeMapAgent: No prompt found for language {language}")
@@ -198,99 +174,19 @@ class BridgeMapAgent(BaseAgent):
             return None
     
     def _enhance_spec(self, spec: Dict) -> Dict:
-        """Enhance the specification with layout and dimension recommendations and convert to renderer format."""
+        """Enhance the specification with layout and dimension recommendations."""
         try:
             logger.debug("=== ENHANCE SPEC START ===")
             logger.debug(f"Input spec keys: {list(spec.keys())}")
             logger.debug(f"Input spec type: {type(spec)}")
             
-            # Convert agent format (analogy_bridge/left_side/right_side) to renderer format (relating_factor/analogies) for D3.js
-            enhanced_spec = {}
+            # Agent already generates correct renderer format, just enhance it
+            enhanced_spec = spec.copy()
             
-            if 'analogy_bridge' in spec and 'left_side' in spec and 'right_side' in spec:
-                logger.debug("Processing agent format (analogy_bridge/left_side/right_side)")
-                logger.debug(f"Left side keys: {list(spec.get('left_side', {}).keys())}")
-                logger.debug(f"Right side keys: {list(spec.get('right_side', {}).keys())}")
-                
-                # Log the actual elements
-                left_elements = spec.get('left_side', {}).get('elements', [])
-                right_elements = spec.get('right_side', {}).get('elements', [])
-                logger.debug(f"Left elements count: {len(left_elements)}")
-                logger.debug(f"Right elements count: {len(right_elements)}")
-                
-                for i, elem in enumerate(left_elements):
-                    logger.debug(f"Left element {i}: {elem}")
-                
-                # === SIMPLE DEDUPLICATION ===
-                # Use first 5 unique elements from each side (we have 6 elements, so 1 backup)
-                logger.debug("Applying simple deduplication to get 5 unique elements per side...")
-                
-                # Deduplicate left side
-                left_elements = self._simple_deduplicate(left_elements, "left", max_elements=5)
-                logger.info(f"Left side deduplication complete: {len(left_elements)} elements")
-                
-                # Deduplicate right side  
-                right_elements = self._simple_deduplicate(right_elements, "right", max_elements=5)
-                logger.info(f"Right side deduplication complete: {len(right_elements)} elements")
-                
-                # Log final elements
-                left_texts = [elem.get('text', str(elem)) if isinstance(elem, dict) else str(elem) for elem in left_elements]
-                right_texts = [elem.get('text', str(elem)) if isinstance(elem, dict) else str(elem) for elem in right_elements]
-                logger.info(f"Final left elements: {left_texts}")
-                logger.info(f"Final right elements: {right_texts}")
-                
-                # Convert agent format to renderer format
-                enhanced_spec['relating_factor'] = 'as'  # Standard bridge map relating factor
-                enhanced_spec['analogies'] = []
-                
-                # Check if spec already uses the new standardized format
-                if 'analogies' in spec:
-                    # Already in correct format, just copy and ensure 5 elements
-                    enhanced_spec['analogies'] = spec['analogies'][:5]  # Take first 5
-                    logger.info(f"Spec already in standardized format, using {len(enhanced_spec['analogies'])} analogies")
-                else:
-                    # Legacy format - convert from left_side/right_side structure
-                    logger.info("Converting from legacy agent format to standardized format")
-                    
-                    # Create analogies from left and right side elements
-                    left_elements = spec.get('left_side', {}).get('elements', [])
-                    right_elements = spec.get('right_side', {}).get('elements', [])
-                    
-                    # Pair up elements (take first 5 from each side)
-                    for i in range(min(5, len(left_elements), len(right_elements))):
-                        left_text = left_elements[i].get('text', str(left_elements[i])) if isinstance(left_elements[i], dict) else str(left_elements[i])
-                        right_text = right_elements[i].get('text', str(right_elements[i])) if isinstance(right_elements[i], dict) else str(right_elements[i])
-                        
-                        analogy = {
-                            'left': left_text,
-                            'right': right_text,
-                            'id': i
-                        }
-                        enhanced_spec['analogies'].append(analogy)
-                
-                # Ensure we have exactly 5 analogies
-                if len(enhanced_spec['analogies']) > 5:
-                    logger.warning(f"Too many analogies ({len(enhanced_spec['analogies'])}), truncating to 5")
-                    enhanced_spec['analogies'] = enhanced_spec['analogies'][:5]
-                elif len(enhanced_spec['analogies']) < 5:
-                    logger.warning(f"Too few analogies ({len(enhanced_spec['analogies'])}), expected 5")
-                
-                # Ensure at least one analogy
-                if not enhanced_spec['analogies']:
-                    enhanced_spec['analogies'] = [
-                        {
-                            'left': 'Default Left',
-                            'right': 'Default Right',
-                            'id': 0
-                        }
-                    ]
-                
-                # Preserve original agent data for debugging
-                enhanced_spec['_agent_data'] = spec.copy()
-                
-            else:
-                # Already in renderer format or unknown format
-                enhanced_spec = spec.copy()
+            # Ensure we have exactly 5 analogies (renderer expects this)
+            if 'analogies' in enhanced_spec and len(enhanced_spec['analogies']) > 5:
+                logger.debug(f"Truncating {len(enhanced_spec['analogies'])} analogies to 5 for renderer")
+                enhanced_spec['analogies'] = enhanced_spec['analogies'][:5]
             
             # Add layout information
             enhanced_spec['_layout'] = {
@@ -315,8 +211,7 @@ class BridgeMapAgent(BaseAgent):
             enhanced_spec['_metadata'] = {
                 'generated_by': 'BridgeMapAgent',
                 'version': '1.0',
-                'enhanced': True,
-                'format_converted': 'analogy_bridge' in spec and 'left_side' in spec and 'right_side' in spec
+                'enhanced': True
             }
             
             logger.debug("=== ENHANCE SPEC COMPLETE ===")
@@ -335,162 +230,10 @@ class BridgeMapAgent(BaseAgent):
             return spec
     
 
-        """
-        Validate the generated bridge map specification.
-        
-        Args:
-            spec: The specification to validate
-            
-        Returns:
-            Tuple of (is_valid, validation_message)
-        """
-        try:
-            logger.debug("=== VALIDATION START ===")
-            logger.debug(f"Validating spec with keys: {list(spec.keys())}")
-            
-            # Check required fields
-            if not isinstance(spec, dict):
-                logger.error("Specification is not a dictionary")
-                return False, "Specification must be a dictionary"
-            
-            if 'analogy_bridge' not in spec or not spec['analogy_bridge']:
-                return False, "Missing or empty analogy_bridge"
-            
-            if 'left_side' not in spec or not isinstance(spec['left_side'], dict):
-                return False, "Missing or invalid left_side"
-            
-            if 'right_side' not in spec or not isinstance(spec['right_side'], dict):
-                return False, "Missing or invalid right_side"
-            
-            if 'bridge_connections' not in spec or not isinstance(spec['bridge_connections'], list):
-                return False, "Missing or invalid bridge_connections list"
-            
-            # Validate left side
-            if 'topic' not in spec['left_side'] or not spec['left_side']['topic']:
-                return False, "Missing or empty left_side topic"
-            
-            if 'elements' not in spec['left_side'] or not isinstance(spec['left_side']['elements'], list):
-                return False, "Missing or invalid left_side elements"
-            
-            # Validate right side
-            if 'topic' not in spec['right_side'] or not spec['right_side']['topic']:
-                return False, "Missing or empty right_side topic"
-            
-            if 'elements' not in spec['right_side'] or not isinstance(spec['right_side']['elements'], list):
-                return False, "Missing or invalid right_side elements"
-            
-            # Validate elements (expect exactly 5 for rich bridge maps)
-            if len(spec['left_side']['elements']) < 3:
-                return False, "Left side must have at least 3 elements for meaningful analogies"
-            
-            if len(spec['right_side']['elements']) < 3:
-                return False, "Right side must have at least 3 elements for meaningful analogies"
-            
-            # Check total element count
-            total_elements = (len(spec['left_side']['elements']) + 
-                             len(spec['right_side']['elements']))
-            if total_elements > 12:
-                return False, "Too many total elements (max 10 recommended for clarity)"
-            
-            # Validate bridge connections
-            if len(spec['bridge_connections']) < min(len(spec['left_side']['elements']), len(spec['right_side']['elements'])):
-                return False, "Must have bridge connections for most elements"
-            
-            # Check for valid IDs
-            valid_ids = set()
-            for elem in spec['left_side']['elements']:
-                valid_ids.add(elem.get('id'))
-            for elem in spec['right_side']['elements']:
-                valid_ids.add(elem.get('id'))
-            
-            for conn in spec['bridge_connections']:
-                if conn.get('from') not in valid_ids or conn.get('to') not in valid_ids:
-                    logger.error(f"Invalid bridge connection: {conn}")
-                    return False, "Invalid bridge connection references"
-                if 'label' not in conn or not conn['label']:
-                    logger.error(f"Missing label in connection: {conn}")
-                    return False, "Missing or empty bridge connection label"
-                if 'bridge_text' not in conn or not conn['bridge_text']:
-                    logger.error(f"Missing bridge_text in connection: {conn}")
-                    return False, "Missing or empty bridge text"
-            
-            logger.debug("=== VALIDATION PASSED ===")
-            logger.debug(f"Valid spec with {len(spec['left_side']['elements'])} left and {len(spec['left_side']['elements'])} right elements")
-            return True, "Specification is valid"
-            
-        except Exception as e:
-            return False, f"Validation error: {str(e)}"
+
     
-    def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
-        """
-        Enhance an existing bridge map specification.
-        
-        Args:
-            spec: Existing specification to enhance
-            
-        Returns:
-            Dict containing success status and enhanced spec
-        """
-        try:
-            logger.info("BridgeMapAgent: Enhancing existing specification")
-            
-            # If already enhanced, return as-is
-            if spec.get('_metadata', {}).get('enhanced'):
-                return {'success': True, 'spec': spec}
-            
-            # Enhance the spec
-            enhanced_spec = self._enhance_spec(spec)
-            
-            return {
-                'success': True,
-                'spec': enhanced_spec
-            }
-            
-        except Exception as e:
-            logger.error(f"BridgeMapAgent: Error enhancing spec: {e}")
-            return {
-                'success': False,
-                'error': f'Enhancement failed: {str(e)}'
-            }
+
     
-    def _simple_deduplicate(self, elements: List[Dict], side_name: str, max_elements: int = 5) -> List[Dict]:
-        """
-        Simple deduplication: use first N unique elements, log when backups are used.
-        
-        Args:
-            elements: List of element dictionaries
-            side_name: Name of the side for logging (left/right)
-            max_elements: Maximum number of elements to return
-            
-        Returns:
-            List of first N unique elements
-        """
-        try:
-            logger.debug(f"Starting simple deduplication for {side_name} side...")
-            
-            seen = set()
-            unique_elements = []
-            duplicates_found = []
-            
-            for i, elem in enumerate(elements):
-                text = elem.get('text', str(elem)) if isinstance(elem, dict) else str(elem)
-                
-                if text in seen:
-                    duplicates_found.append((i, text))
-                    logger.info(f"Duplicate found on {side_name} side: '{text}' at position {i}")
-                elif len(unique_elements) < max_elements:
-                    seen.add(text)
-                    unique_elements.append(elem)
-            
-            if duplicates_found:
-                logger.info(f"Used backup elements for {side_name} side. Duplicates: {duplicates_found}")
-                logger.info(f"Final {side_name} elements: {[elem.get('text', str(elem)) for elem in unique_elements]}")
-            
-            return unique_elements
-                
-        except Exception as e:
-            logger.error(f"Error in simple deduplication for {side_name} side: {e}")
-            # Return first N elements as fallback
-            return elements[:max_elements]
+
     
 

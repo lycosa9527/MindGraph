@@ -1156,7 +1156,7 @@ class BraceMapAgent(BaseAgent):
             from prompts import get_prompt
             
             # Get prompt from centralized system
-            system_prompt = get_prompt("brace_map_agent", language, "generation") or get_prompt("brace_map", language, "generation")
+            system_prompt = get_prompt("brace_map_agent", language, "generation")
             
             if not system_prompt:
                 logger.error(f"BraceMapAgent: No prompt found for language {language}")

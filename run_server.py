@@ -18,7 +18,7 @@ def check_package_installed(package_name):
 def run_waitress():
     """Run MindGraph with Waitress"""
     if not check_package_installed('waitress'):
-        print("❌ Waitress not installed. Install with: pip install waitress>=3.0.0")
+        print("Waitress not installed. Install with: pip install waitress>=3.0.0")
         sys.exit(1)
     
     try:
@@ -41,7 +41,7 @@ def run_waitress():
         from app import print_banner
         display_host = "localhost" if config_module['host'] == '0.0.0.0' else config_module['host']
         print_banner(display_host, config_module['port'])
-        print(f"📋 Press Ctrl+C to stop the server")
+        print(f"Press Ctrl+C to stop the server")
         
         serve(
             app, 
@@ -54,7 +54,7 @@ def run_waitress():
             recv_bytes=config_module['recv_bytes']
         )
     except Exception as e:
-        print(f"❌ Failed to start Waitress: {e}")
+        print(f"Failed to start Waitress: {e}")
         sys.exit(1)
 
 def run_flask_dev():
@@ -65,7 +65,7 @@ def run_flask_dev():
     try:
         subprocess.run([sys.executable, 'app.py'])
     except Exception as e:
-        print(f"❌ Failed to start Flask development server: {e}")
+        print(f"Failed to start Flask development server: {e}")
         sys.exit(1)
 
 def main():

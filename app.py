@@ -33,7 +33,6 @@ Environment Variables:
 
 from flask import Flask, request, jsonify, render_template, send_file
 from agents import main_agent as agent
-import graph_specs
 import logging
 import time
 from settings import config
@@ -62,11 +61,12 @@ from pathlib import Path
 # Create logs directory for application logging
 os.makedirs("logs", exist_ok=True)
 
-# Setup logging configuration
+# Setup global logging configuration
 # Get log level from environment variable, default to INFO
 log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
 log_level = getattr(logging, log_level_str, logging.INFO)
 
+# Configure global logging that all modules will inherit
 logging.basicConfig(
     level=log_level,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -74,8 +74,11 @@ logging.basicConfig(
     handlers=[
         logging.StreamHandler(),  # Console output
         logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "app.log"), encoding="utf-8")  # File logging
-    ]
+    ],
+    force=True  # Force reconfiguration to ensure all loggers inherit
 )
+
+# All other modules using logging.getLogger(__name__) will inherit this configuration
 logger = logging.getLogger(__name__)
 
 # Log the configured log level

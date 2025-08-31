@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify, send_file
 from agents import main_agent as agent
-import graph_specs
 import logging
 import tempfile
 import asyncio
@@ -651,7 +650,7 @@ def generate_png():
                 'height': agent_result.get('svg_data', {}).get('height')
             }
             spec = enhanced_spec
-            logger.info(f"Enhanced brace map spec with agent data (original structure preserved)")
+            logger.debug(f"Enhanced brace map spec with agent data (original structure preserved)")
         else:
             logger.error(f"Brace map agent failed: {agent_result.get('error')}")
             return jsonify({'error': f"Brace map generation failed: {agent_result.get('error')}"}), 500
@@ -826,7 +825,7 @@ def generate_png():
                 # Use the old working approach - single script tag
                 renderer_scripts = f'<script>{d3_renderers}</script>'
                 
-                logger.info(f"Loading modular D3 renderers for {graph_type}")
+                logger.debug(f"Loading modular D3 renderers for {graph_type}")
                 
                 # Debug: Log layout information for concept maps
                 if graph_type == 'concept_map' and isinstance(spec, dict):
@@ -858,9 +857,9 @@ def generate_png():
                     svg_keys = list(spec['svg_data'].keys())
                     element_count = len(spec['svg_data'].get('elements', [])) if 'elements' in spec['svg_data'] else 0
                     svg_info = f", svg_data: {svg_keys}, elements: {element_count}"
-                logger.info(f"Spec data: {spec_keys}{svg_info}")
+                logger.debug(f"Spec data: {spec_keys}{svg_info}")
             else:
-                logger.info("Spec data: Not a dict")
+                logger.debug("Spec data: Not a dict")
             
             # Calculate optimized dimensions for different graph types
             dimensions = config.get_d3_dimensions()
@@ -899,7 +898,7 @@ def generate_png():
                         'partFontSize': dimensions.get('partFontSize', 16),
                         'subpartFontSize': dimensions.get('subpartFontSize', 14)
                     }
-                    logger.info(f"Using enhanced spec optimal dimensions: {optimal_dims['width']}x{optimal_dims['height']}")
+                    logger.debug(f"Using enhanced spec optimal dimensions: {optimal_dims['width']}x{optimal_dims['height']}")
                 # Legacy format fallback
                 elif spec.get('success') and svg_data and 'width' in svg_data and 'height' in svg_data:
                     dimensions = {
@@ -912,7 +911,7 @@ def generate_png():
                         'partFontSize': dimensions.get('partFontSize', 16),
                         'subpartFontSize': dimensions.get('subpartFontSize', 14)
                     }
-                    logger.info(f"Using legacy format optimal dimensions: {svg_data['width']}x{svg_data['height']}")
+                    logger.debug(f"Using legacy format optimal dimensions: {svg_data['width']}x{svg_data['height']}")
                 else:
                     # Fallback to default dimensions if agent data is not available
                     dimensions = {
@@ -947,7 +946,7 @@ def generate_png():
             try:
                 with open(d3_js_path, 'r', encoding='utf-8') as f:
                     d3_js_content = f.read()
-                logger.info(f"Local D3.js loaded for PNG generation ({len(d3_js_content)} bytes)")
+                logger.debug(f"Local D3.js loaded for PNG generation ({len(d3_js_content)} bytes)")
                 d3_script_tag = f'<script>{d3_js_content}</script>'
             except Exception as e:
                 logger.error(f"Failed to load local D3.js: {e}")
@@ -1484,7 +1483,7 @@ def generate_dingtalk():
                 'height': agent_result.get('svg_data', {}).get('height')
             }
             spec = enhanced_spec
-            logger.info(f"Enhanced brace map spec with agent data (original structure preserved)")
+            logger.debug(f"Enhanced brace map spec with agent data (original structure preserved)")
         else:
             logger.error(f"Brace map agent failed: {agent_result.get('error')}")
             return jsonify({
@@ -1612,7 +1611,7 @@ def generate_dingtalk():
                 # Use the old working approach - single script tag
                 renderer_scripts = f'<script>{d3_renderers}</script>'
                 
-                logger.info(f"Loading modular D3 renderers for {graph_type}")
+                logger.debug(f"Loading modular D3 renderers for {graph_type}")
                 
                 # Debug: Log layout information for concept maps
                 if graph_type == 'concept_map' and isinstance(spec, dict):
@@ -1644,9 +1643,9 @@ def generate_dingtalk():
                     svg_keys = list(spec['svg_data'].keys())
                     element_count = len(spec['svg_data'].get('elements', [])) if 'elements' in spec['svg_data'] else 0
                     svg_info = f", svg_data: {svg_keys}, elements: {element_count}"
-                logger.info(f"Spec data: {spec_keys}{svg_info}")
+                logger.debug(f"Spec data: {spec_keys}{svg_info}")
             else:
-                logger.info("Spec data: Not a dict")
+                logger.debug("Spec data: Not a dict")
             
             # Calculate optimized dimensions for different graph types
             dimensions = config.get_d3_dimensions()
@@ -1685,7 +1684,7 @@ def generate_dingtalk():
                         'partFontSize': dimensions.get('partFontSize', 16),
                         'subpartFontSize': dimensions.get('subpartFontSize', 14)
                     }
-                    logger.info(f"Using enhanced spec optimal dimensions: {optimal_dims['width']}x{optimal_dims['height']}")
+                    logger.debug(f"Using enhanced spec optimal dimensions: {optimal_dims['width']}x{optimal_dims['height']}")
                 # Legacy format fallback
                 elif spec.get('success') and svg_data and 'width' in svg_data and 'height' in svg_data:
                     dimensions = {
@@ -1698,7 +1697,7 @@ def generate_dingtalk():
                         'partFontSize': dimensions.get('partFontSize', 16),
                         'subpartFontSize': dimensions.get('subpartFontSize', 14)
                     }
-                    logger.info(f"Using legacy format optimal dimensions: {svg_data['width']}x{svg_data['height']}")
+                    logger.debug(f"Using legacy format optimal dimensions: {svg_data['width']}x{svg_data['height']}")
                 else:
                     # Fallback to default dimensions if agent data is not available
                     dimensions = {
@@ -1733,7 +1732,7 @@ def generate_dingtalk():
             try:
                 with open(d3_js_path, 'r', encoding='utf-8') as f:
                     d3_js_content = f.read()
-                logger.info(f"Local D3.js loaded for PNG generation ({len(d3_js_content)} bytes)")
+                logger.debug(f"Local D3.js loaded for PNG generation ({len(d3_js_content)} bytes)")
                 d3_script_tag = f'<script>{d3_js_content}</script>'
             except Exception as e:
                 logger.error(f"Failed to load local D3.js: {e}")
@@ -2087,7 +2086,7 @@ def generate_dingtalk():
                 # Check SVG dimensions
                 svg_width = await element.get_attribute('width')
                 svg_height = await element.get_attribute('height')
-                logger.info(f"SVG dimensions: width={svg_width}, height={svg_height}")
+                logger.debug(f"SVG dimensions: width={svg_width}, height={svg_height}")
                 
                 # Ensure element is visible before screenshot
                 await element.scroll_into_view_if_needed()
@@ -2097,22 +2096,22 @@ def generate_dingtalk():
                 return png_bytes
             finally:
                 # Clean up resources properly
-                logger.info("DEBUG: Cleaning up PNG generation resources")
+                logger.debug("Cleaning up PNG generation resources")
                 try:
                     if 'page' in locals():
                         await page.close()
-                        logger.info("DEBUG: Page closed")
+                        logger.debug("Page closed")
                     if 'context' in locals():
                         await context.close()
-                        logger.info("DEBUG: Context closed")
+                        logger.debug("Context closed")
                     if 'browser' in locals():
                         await browser.close()
-                        logger.info("DEBUG: Browser closed")
+                        logger.debug("Browser closed")
                     if 'playwright' in locals():
                         await playwright.stop()
-                        logger.info("DEBUG: Playwright stopped")
+                        logger.debug("Playwright stopped")
                 except Exception as cleanup_error:
-                    logger.warning(f"DEBUG: Error during cleanup: {cleanup_error}")
+                    logger.warning(f"Error during cleanup: {cleanup_error}")
         
         # Execute the async rendering
         loop = asyncio.new_event_loop()
@@ -2152,7 +2151,7 @@ def generate_dingtalk():
                 dir=tempfile.gettempdir()
             )
             
-            logger.info(f"Created temporary file: {temp_path}")
+            logger.debug(f"Created temporary file: {temp_path}")
             
             # Close the file descriptor and reopen for writing
             os.close(temp_fd)
@@ -2161,22 +2160,22 @@ def generate_dingtalk():
             with open(temp_path, 'wb') as f:
                 f.write(png_bytes)
             
-            logger.info(f"Saved PNG data ({len(png_bytes)} bytes) to {temp_path}")
+            logger.debug(f"Saved PNG data ({len(png_bytes)} bytes) to {temp_path}")
             
             # Track for cleanup with timestamp
             add_dingtalk_image(temp_path, time.time())
-            logger.info(f"Added to dingtalk_images tracking: {temp_path}")
-            logger.info(f"Current tracked images count: {len(get_dingtalk_images())}")
+            logger.debug(f"Added to dingtalk_images tracking: {temp_path}")
+            logger.debug(f"Current tracked images count: {len(get_dingtalk_images())}")
             
             # Generate a unique filename for the URL (without the full temp path)
             filename = os.path.basename(temp_path)
-            logger.info(f"Generated filename for URL: {filename}")
+            logger.debug(f"Generated filename for URL: {filename}")
             
             # Get server URL for image access
             from settings import config
             server_url = config.SERVER_URL
             image_url = f"{server_url}/api/temp_images/{filename}"
-            logger.info(f"Generated image URL: {image_url}")
+            logger.debug(f"Generated image URL: {image_url}")
             
             # Return plain text in markdown image format: ![](image_url)
             return f"![]({image_url})"
@@ -2286,9 +2285,9 @@ def get_browser_context_pool_stats():
 def serve_temp_dingtalk_image(filename):
     """Serve temporary DingTalk images from the temporary directory."""
     try:
-        logger.info(f"Attempting to serve image: {filename}")
+        logger.debug(f"Attempting to serve image: {filename}")
         dingtalk_images = get_dingtalk_images()
-        logger.info(f"Current dingtalk_images keys: {list(dingtalk_images.keys())}")
+        logger.debug(f"Current dingtalk_images keys: {list(dingtalk_images.keys())}")
         
         # Find the image in our tracked temporary files
         temp_dir = tempfile.gettempdir()
@@ -2298,7 +2297,7 @@ def serve_temp_dingtalk_image(filename):
         for tracked_path in dingtalk_images.keys():
             if os.path.basename(tracked_path) == filename:
                 image_path = tracked_path
-                logger.info(f"Found image at: {image_path}")
+                logger.debug(f"Found image at: {image_path}")
                 break
         
         if not image_path:
@@ -2312,7 +2311,7 @@ def serve_temp_dingtalk_image(filename):
         # Check file permissions and size
         try:
             stat_info = os.stat(image_path)
-            logger.info(f"Image file stats: size={stat_info.st_size}, permissions={oct(stat_info.st_mode)}")
+            logger.debug(f"Image file stats: size={stat_info.st_size}, permissions={oct(stat_info.st_mode)}")
         except Exception as e:
             logger.error(f"Failed to get file stats: {e}")
         
@@ -2320,20 +2319,20 @@ def serve_temp_dingtalk_image(filename):
         current_time = time.time()
         creation_time = dingtalk_images.get(image_path, 0)
         age_hours = (current_time - creation_time) / 3600
-        logger.info(f"Image age: {age_hours:.2f} hours")
+        logger.debug(f"Image age: {age_hours:.2f} hours")
         
         if current_time - creation_time > 24 * 60 * 60:  # 24 hours in seconds
             # Remove expired image
             try:
                 os.unlink(image_path)
                 remove_dingtalk_image(image_path)
-                logger.info(f"Removed expired image during access: {image_path}")
+                logger.debug(f"Removed expired image during access: {image_path}")
             except OSError:
                 pass
             return jsonify({'error': 'Image has expired'}), 410  # Gone
         
         # Serve the image file
-        logger.info(f"Serving image file: {image_path}")
+        logger.debug(f"Serving image file: {image_path}")
         return send_file(image_path, mimetype='image/png')
         
     except Exception as e:

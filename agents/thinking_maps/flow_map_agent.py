@@ -77,13 +77,8 @@ class FlowMapAgent(BaseAgent):
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system
-            # Use general format that works with renderer
-            system_prompt = get_prompt("flow_map", language, "generation")
-            
-            if not system_prompt:
-                # Fallback to agent-specific if general not found
-                system_prompt = get_prompt("flow_map_agent", language, "generation")
+            # Get prompt from centralized system - use agent-specific format
+            system_prompt = get_prompt("flow_map_agent", language, "generation")
             
             if not system_prompt:
                 logger.error(f"FlowMapAgent: No prompt found for language {language}")

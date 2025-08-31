@@ -55,7 +55,7 @@ The LLM classification system in `main_agent.py` handles complex user intent:
 from prompts import get_prompt, get_available_diagram_types
 
 # Get a prompt for bridge map generation in English
-bridge_prompt = get_prompt("bridge_map", "en", "generation")
+bridge_prompt = get_prompt("bridge_map_agent", "en", "generation")
 
 # Get available diagram types
 diagram_types = get_available_diagram_types()

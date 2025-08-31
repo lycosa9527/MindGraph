@@ -78,13 +78,8 @@ class TreeMapAgent(BaseAgent):
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system - try agent-specific first, then fallback to general
-            # Use general format that works with renderer
-            system_prompt = get_prompt("tree_map", language, "generation")
-            
-            if not system_prompt:
-                # Fallback to agent-specific if general not found
-                system_prompt = get_prompt("tree_map_agent", language, "generation")
+            # Get prompt from centralized system - use agent-specific format
+            system_prompt = get_prompt("tree_map_agent", language, "generation")
             
             if not system_prompt:
                 logger.error(f"TreeMapAgent: No prompt found for language {language}")

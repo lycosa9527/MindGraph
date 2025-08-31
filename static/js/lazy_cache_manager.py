@@ -163,7 +163,7 @@ class LazyJavaScriptCache:
             self._stats['files_loaded'] += 1
             self._stats['total_memory_usage'] += size_bytes
             
-            logger.info(f"📁 Loaded {file_key}: {size_bytes:,} bytes in {load_time:.3f}s")
+            logger.debug(f"Loaded {file_key}: {size_bytes:,} bytes in {load_time:.3f}s")
             
             return content
             
@@ -230,7 +230,7 @@ class LazyJavaScriptCache:
         if total_freed > 0:
             # Prevent memory usage from going negative
             self._stats['total_memory_usage'] = max(0, self._stats['total_memory_usage'] - total_freed)
-            logger.info(f"Cache cleanup freed {total_freed:,} bytes")
+            logger.debug(f"Cache cleanup freed {total_freed:,} bytes")
         
         self._stats['last_cleanup'] = current_time
     

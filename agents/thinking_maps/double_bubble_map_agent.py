@@ -74,13 +74,8 @@ class DoubleBubbleMapAgent(BaseAgent):
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system
-            # Use agent-specific format that matches validation
+            # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("double_bubble_map_agent", language, "generation")
-            
-            if not system_prompt:
-                # Fallback to general format if agent-specific not found
-                system_prompt = get_prompt("double_bubble_map", language, "generation")
             
             if not system_prompt:
                 logger.error(f"DoubleBubbleMapAgent: No prompt found for language {language}")
@@ -118,53 +113,16 @@ class DoubleBubbleMapAgent(BaseAgent):
             return None
     
     def _enhance_spec(self, spec: Dict) -> Dict:
-        """Enhance the specification with layout and dimension recommendations and convert to renderer format."""
+        """Enhance the specification with layout and dimension recommendations."""
         try:
-            # Convert agent format (topic1/topic2) to renderer format (left/right) for D3.js
-            enhanced_spec = {}
-            
-            if 'topic1' in spec and 'topic2' in spec:
-                # Agent format - convert to renderer format
-                enhanced_spec['left'] = spec['topic1']
-                enhanced_spec['right'] = spec['topic2']
-                
-                # Convert attributes to simple arrays for renderer
-                enhanced_spec['similarities'] = []
-                if 'shared_attributes' in spec:
-                    for attr in spec['shared_attributes']:
-                        if isinstance(attr, dict) and 'text' in attr:
-                            enhanced_spec['similarities'].append(attr['text'])
-                        elif isinstance(attr, str):
-                            enhanced_spec['similarities'].append(attr)
-                
-                enhanced_spec['left_differences'] = []
-                if 'topic1_attributes' in spec:
-                    for attr in spec['topic1_attributes']:
-                        if isinstance(attr, dict) and 'text' in attr:
-                            enhanced_spec['left_differences'].append(attr['text'])
-                        elif isinstance(attr, str):
-                            enhanced_spec['left_differences'].append(attr)
-                
-                enhanced_spec['right_differences'] = []
-                if 'topic2_attributes' in spec:
-                    for attr in spec['topic2_attributes']:
-                        if isinstance(attr, dict) and 'text' in attr:
-                            enhanced_spec['right_differences'].append(attr['text'])
-                        elif isinstance(attr, str):
-                            enhanced_spec['right_differences'].append(attr)
-                            
-                # Preserve original agent data for debugging
-                enhanced_spec['_agent_data'] = spec.copy()
-                
-            else:
-                # Already in renderer format or unknown format
-                enhanced_spec = spec.copy()
+            # Agent already generates correct renderer format, just enhance it
+            enhanced_spec = spec.copy()
             
             # Add layout information
             enhanced_spec['_layout'] = {
                 'type': 'double_bubble_map',
-                'topic1_position': 'left',
-                'topic2_position': 'right',
+                'left_position': 'left',
+                'right_position': 'right',
                 'shared_position': 'center',
                 'attribute_spacing': 100,
                 'bubble_radius': 50
@@ -183,8 +141,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             enhanced_spec['_metadata'] = {
                 'generated_by': 'DoubleBubbleMapAgent',
                 'version': '1.0',
-                'enhanced': True,
-                'format_converted': 'topic1' in spec and 'topic2' in spec
+                'enhanced': True
             }
             
             return enhanced_spec
@@ -208,50 +165,37 @@ class DoubleBubbleMapAgent(BaseAgent):
             if not isinstance(spec, dict):
                 return False, "Specification must be a dictionary"
             
-            if 'topic1' not in spec or not spec['topic1']:
-                return False, "Missing or empty topic1"
+            if 'left' not in spec or not spec['left']:
+                return False, "Missing or empty left topic"
             
-            if 'topic2' not in spec or not spec['topic2']:
-                return False, "Missing or empty topic2"
+            if 'right' not in spec or not spec['right']:
+                return False, "Missing or empty right topic"
             
-            if 'topic1_attributes' not in spec or not isinstance(spec['topic1_attributes'], list):
-                return False, "Missing or invalid topic1_attributes list"
+            if 'left_differences' not in spec or not isinstance(spec['left_differences'], list):
+                return False, "Missing or invalid left_differences list"
             
-            if 'topic2_attributes' not in spec or not isinstance(spec['topic2_attributes'], list):
-                return False, "Missing or invalid topic2_attributes list"
+            if 'right_differences' not in spec or not isinstance(spec['right_differences'], list):
+                return False, "Missing or invalid right_differences list"
             
-            if 'shared_attributes' not in spec or not isinstance(spec['shared_attributes'], list):
-                return False, "Missing or invalid shared_attributes list"
-            
-            if 'connections' not in spec or not isinstance(spec['connections'], list):
-                return False, "Missing or invalid connections list"
+            if 'similarities' not in spec or not isinstance(spec['similarities'], list):
+                return False, "Missing or invalid similarities list"
             
             # Validate attributes
-            if len(spec['topic1_attributes']) < 2:
-                return False, "Topic1 must have at least 2 attributes"
+            if len(spec['left_differences']) < 2:
+                return False, "Left topic must have at least 2 attributes"
             
-            if len(spec['topic2_attributes']) < 2:
-                return False, "Topic2 must have at least 2 attributes"
+            if len(spec['right_differences']) < 2:
+                return False, "Right topic must have at least 2 attributes"
             
-            if len(spec['shared_attributes']) < 1:
+            if len(spec['similarities']) < 1:
                 return False, "Must have at least 1 shared attribute"
             
             # Check total attribute count
-            total_attrs = (len(spec['topic1_attributes']) + 
-                          len(spec['topic2_attributes']) + 
-                          len(spec['shared_attributes']))
+            total_attrs = (len(spec['left_differences']) + 
+                          len(spec['right_differences']) + 
+                          len(spec['similarities']))
             if total_attrs > 20:
                 return False, "Too many total attributes (max 20)"
-            
-            # Validate connections
-            if len(spec['connections']) < total_attrs:
-                return False, "Each attribute must have at least one connection"
-            
-            # Check for valid IDs
-            valid_ids = {'topic1', 'topic2'} | {attr.get('id') for attr in spec['topic1_attributes']} | {attr.get('id') for attr in spec['topic2_attributes']} | {attr.get('id') for attr in spec['shared_attributes']}
-            for conn in spec['connections']:
-                if conn.get('from') not in valid_ids or conn.get('to') not in valid_ids:
-                    return False, "Invalid connection references"
             
             return True, "Specification is valid"
             
@@ -269,7 +213,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.info("DoubleBubbleMapAgent: Enhancing existing specification")
+            logger.debug("DoubleBubbleMapAgent: Enhancing existing specification")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
