@@ -1216,7 +1216,9 @@ def generate_png():
                 
                 # Wait for rendering and check for console errors
                 logger.debug("Waiting for initial rendering...")
-                await asyncio.sleep(2.0)  # Reduced from 5.0 to 2.0 seconds
+                # Event-driven SVG detection
+                await page.wait_for_selector('svg', timeout=5000)
+                logger.debug("SVG element found - initial rendering complete")
                 
                 # Log console messages and errors (consolidated)
                 if console_messages:
@@ -1232,8 +1234,14 @@ def generate_png():
                 # Wait for rendering to complete with dynamic timing based on graph complexity
                 logger.debug("Waiting for rendering to complete...")
                 
-                # Simple wait for rendering to complete (no more complex calculations)
-                await asyncio.sleep(3.0)  # Reduced from 6.0 to 3.0 seconds
+                # Event-driven SVG content detection
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        return svg && svg.children.length > 0;
+                    }
+                ''', timeout=5000)
+                logger.debug("SVG content populated - rendering complete")
                 
                 # Check what functions are actually available in the browser
                 try:
@@ -1268,27 +1276,20 @@ def generate_png():
                     element = await page.wait_for_selector("svg", timeout=15000)  # Increased timeout
                     logger.debug("SVG element found successfully")
                     
-                    # Wait for SVG to actually contain content (not just empty)
-                    logger.debug("Waiting for SVG content to render...")
-                    for attempt in range(10):  # Try up to 10 times
-                        svg_content = await element.inner_html()
-                        if svg_content.strip() and len(svg_content) > 100:  # SVG has substantial content
-                            logger.debug(f"SVG content rendered successfully (length: {len(svg_content)})")
-                            # Log a sample of the SVG content for debugging
-                            if attempt == 0:  # Only log on first successful attempt
-                                svg_sample = svg_content[:500] + "..." if len(svg_content) > 500 else svg_content
-                                logger.debug(f"SVG content sample: {svg_sample}")
-                            break
-                        elif attempt < 9:  # Don't sleep on last attempt
-                            logger.debug(f"SVG content not ready yet (attempt {attempt + 1}/10), waiting...")
-                            await asyncio.sleep(1.0)
+                    # Verify SVG content is substantial
+                    logger.debug("Verifying SVG content...")
+                    svg_content = await element.inner_html()
+                    if svg_content.strip() and len(svg_content) > 100:  # SVG has substantial content
+                        logger.debug(f"SVG content verified successfully (length: {len(svg_content)})")
+                        # Log a sample of the SVG content for debugging
+                        svg_sample = svg_content[:500] + "..." if len(svg_content) > 500 else svg_content
+                        logger.debug(f"SVG content sample: {svg_sample}")
+                    else:
+                        logger.warning("SVG content may not be fully rendered")
+                        if svg_content:
+                            logger.warning(f"SVG content (may be incomplete): {svg_content[:200]}...")
                         else:
-                            logger.warning("SVG content may not be fully rendered")
-                            # Log what we got for debugging
-                            if svg_content:
-                                logger.warning(f"Final SVG content (may be incomplete): {svg_content[:200]}...")
-                            else:
-                                logger.warning("SVG content is completely empty")
+                            logger.warning("SVG content is completely empty")
                     
                 except Exception as e:
                     logger.error(f"Timeout waiting for SVG element: {e}")
@@ -1329,11 +1330,33 @@ def generate_png():
                 
                 # Final wait to ensure all rendering is complete
                 logger.debug("Final wait for rendering completion...")
-                await asyncio.sleep(1.0)  # Reduced from 2.0 to 1.0 seconds
+                # Event-driven D3.js completion detection
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        if (!svg) return false;
+                        
+                        // Check if D3.js has finished rendering
+                        const renderedElements = svg.querySelectorAll('g, circle, rect, text, path');
+                        return renderedElements.length > 10; // D3.js typically creates many elements
+                    }
+                ''', timeout=3000)
+                logger.debug("D3.js rendering complete - final wait done")
                 
                 # Ensure element is visible before screenshot
                 await element.scroll_into_view_if_needed()
-                await page.wait_for_timeout(500)  # Reduced from 1000 to 500ms
+                # Event-driven element readiness detection
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        if (!svg) return false;
+                        
+                        // Check if element is visible and ready for screenshot
+                        const rect = svg.getBoundingClientRect();
+                        return rect.width > 0 && rect.height > 0;
+                    }
+                ''', timeout=2000)
+                logger.debug("Element ready for screenshot")
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
@@ -2001,7 +2024,9 @@ def generate_dingtalk():
                 
                 # Wait for rendering and check for console errors
                 logger.debug("Waiting for initial rendering...")
-                await asyncio.sleep(3.0)
+                # Replace fixed timeout with event-driven SVG detection
+                await page.wait_for_selector('svg', timeout=5000)
+                logger.debug("SVG element found - initial rendering complete")
                 
                 # Log console messages and errors (consolidated)
                 if console_messages:
@@ -2016,7 +2041,14 @@ def generate_dingtalk():
                 
                 # Wait for rendering to complete
                 logger.debug("Waiting for rendering to complete...")
-                await asyncio.sleep(2.0)  # Reduced from 4.0 to 2.0 seconds
+                # Event-driven SVG content detection
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        return svg && svg.children.length > 0;
+                    }
+                ''', timeout=5000)
+                logger.debug("SVG content populated - rendering complete")
                 
                 # Check what functions are actually available in the browser
                 try:
@@ -2090,7 +2122,23 @@ def generate_dingtalk():
                 
                 # Ensure element is visible before screenshot
                 await element.scroll_into_view_if_needed()
-                await page.wait_for_timeout(500)  # Reduced from 1000 to 500ms
+                # Replace fixed timeout with event-driven element readiness detection
+                try:
+                    await page.wait_for_function('''
+                        () => {
+                            const svg = document.querySelector('svg');
+                            if (!svg) return false;
+                            
+                            // Check if element is visible and ready for screenshot
+                            const rect = svg.getBoundingClientRect();
+                            return rect.width > 0 && rect.height > 0;
+                        }
+                    ''', timeout=2000)
+                    logger.debug("Element ready for screenshot")
+                except Exception as e:
+                    logger.warning(f"Element not ready for screenshot within 2s timeout: {e}")
+                    # Fallback to shorter fixed wait
+                    await page.wait_for_timeout(200)
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
