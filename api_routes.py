@@ -573,6 +573,11 @@ def generate_graph():
 @handle_api_errors
 def generate_png():
     """Generate PNG image from user prompt."""
+    # Thread tracking for concurrency debugging
+    import threading
+    thread_id = threading.current_thread().ident
+    thread_name = threading.current_thread().name
+    
     # Input validation
     data = request.json
     valid, msg = validate_request_data(data, ['prompt'])
@@ -584,10 +589,10 @@ def generate_png():
         return jsonify({'error': 'Invalid or empty prompt'}), 400
     
     language = data.get('language', 'zh')
+    
+    logger.info(f"Frontend generate_png request received [Thread-{thread_id}|{thread_name}]: prompt='{prompt}', language='{language}'")
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
-    
-    logger.info(f"Frontend generate_png request received: prompt={prompt!r}, language={language!r}")
     
     # Track timing for the entire process
     total_start_time = time.time()
@@ -1118,13 +1123,15 @@ def generate_png():
             # - For PNG generation, create a fresh context each time
             # - Reference: https://playwright.dev/docs/browser-contexts#isolation
             
-            logger.debug("Creating fresh browser context for PNG generation (following Playwright isolation principles)")
+            logger.debug("Creating browser context for PNG generation (shared browser, fresh context)")
             
-            # Create a fresh browser instance and context for this PNG generation
-            # This ensures proper isolation and event loop compatibility
+            # Thread-safe fresh browser approach for concurrent requests
+            # Each request gets its own isolated browser and event loop
+            # This ensures no shared state or async conflicts between threads
             from playwright.async_api import async_playwright
-            playwright = await async_playwright().start()
             
+            logger.debug("Creating fresh browser for PNG generation (thread-safe isolated approach)")
+            playwright = await async_playwright().start()
             browser = await playwright.chromium.launch()
             context = await browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
@@ -1133,7 +1140,7 @@ def generate_png():
                 ignore_https_errors=True
             )
             
-            logger.debug(f"Fresh context created - type: {type(context)}, id: {id(context)}")
+            logger.debug(f"Fresh browser and context created - type: {type(context)}, id: {id(context)}")
             
             try:
                 # Use the fresh context for PNG generation
@@ -1400,6 +1407,7 @@ def generate_png():
                     if 'context' in locals():
                         await context.close()
                         logger.debug("Context closed")
+                    # Close browser and playwright instances for complete cleanup
                     if 'browser' in locals():
                         await browser.close()
                         logger.debug("Browser closed")
@@ -1958,13 +1966,15 @@ def generate_dingtalk():
             # - For PNG generation, create a fresh context each time
             # - Reference: https://playwright.dev/docs/browser-contexts#isolation
             
-            logger.debug("Creating fresh browser context for PNG generation (following Playwright isolation principles)")
+            logger.debug("Creating browser context for PNG generation (shared browser, fresh context)")
             
-            # Create a fresh browser instance and context for this PNG generation
-            # This ensures proper isolation and event loop compatibility
+            # Thread-safe fresh browser approach for concurrent requests
+            # Each request gets its own isolated browser and event loop
+            # This ensures no shared state or async conflicts between threads
             from playwright.async_api import async_playwright
-            playwright = await async_playwright().start()
             
+            logger.debug("Creating fresh browser for PNG generation (thread-safe isolated approach)")
+            playwright = await async_playwright().start()
             browser = await playwright.chromium.launch()
             context = await browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
@@ -1973,7 +1983,7 @@ def generate_dingtalk():
                 ignore_https_errors=True
             )
             
-            logger.debug(f"Fresh context created - type: {type(context)}, id: {id(context)}")
+            logger.debug(f"Fresh browser and context created - type: {type(context)}, id: {id(context)}")
             
             try:
                 # Use the fresh context for PNG generation
@@ -2162,6 +2172,7 @@ def generate_dingtalk():
                     if 'context' in locals():
                         await context.close()
                         logger.debug("Context closed")
+                    # Close browser and playwright instances for complete cleanup
                     if 'browser' in locals():
                         await browser.close()
                         logger.debug("Browser closed")

@@ -10,7 +10,7 @@ port = int(os.getenv('PORT', 9527))  # Use MindGraph default port
 
 # Connection settings
 listen = f"{host}:{port}"
-threads = 4  # Number of threads for concurrent requests
+threads = 6  # Increased for better concurrency (was 4)
 
 # Timeouts
 cleanup_interval = 30
