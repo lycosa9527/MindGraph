@@ -2,40 +2,39 @@
 
 ## Overview
 
-MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features an advanced LLM-based classification system that intelligently understands user intent, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
+MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
-**Base URL**: `http://localhost:9527` (or your deployed server URL)
-
+**Base URL**: `http://localhost:9527` (or your deployed server URL)  
 **API Version**: 2.5.3  
-**Architecture**: Multi-agent system with smart LLM classification and organized module structure
+**Architecture**: Multi-agent system with smart LLM classification
 
 **Key Features**:
-- 🧠 **Smart Intent Understanding**: Distinguishes between diagram type to create vs topic content
-- 🎯 **10 Diagram Types**: Complete coverage of Thinking Maps®, Mind Maps, and Concept Maps
-- 🚀 **High Performance**: Dual-model LLM system (qwen-turbo + qwen-plus)
-- 🌍 **Multi-language**: English and Chinese with automatic detection
+- **Smart Classification**: LLM-based diagram type detection
+- **10 Diagram Types**: Complete Thinking Maps®, Mind Maps, and Concept Maps coverage
+- **High Performance**: Dual-model LLM system (qwen-turbo + qwen-plus)
+- **Multi-language**: English and Chinese support
 
-**Endpoint Compatibility**: Both `/endpoint` and `/api/endpoint` formats are supported for backward compatibility.
+**Endpoint Compatibility**: Both `/endpoint` and `/api/endpoint` formats are supported.
 
 ## Authentication
 
-Currently, the API uses API key authentication through environment variables:
+The API uses API key authentication through environment variables:
 
 - **QWEN_API_KEY**: Required for core functionality
 - **DEEPSEEK_API_KEY**: Optional for enhanced features
 
 ## Endpoints
 
-### 1. PNG Generation (Primary Endpoint)
+### 1. PNG Generation
 
 Generates a PNG image directly from a text prompt.
 
 ```http
-POST /generate_png
 POST /api/generate_png
+POST /generate_png
 ```
 
-**Note**: Both endpoints are supported for backward compatibility. The `/api/generate_png` endpoint is the primary one.
+**Note**: Both endpoints are supported for backward compatibility.
 
 #### Request
 
@@ -69,8 +68,6 @@ Content-Type: application/json
 
 #### Default Values
 
-When parameters are omitted, MindGraph automatically applies sensible defaults:
-
 - **`language`**: Defaults to `"en"` (English) if not specified
 - **`style`**: Uses professional default theme and color scheme if not specified
 - **`prompt`**: **Required** - cannot be omitted or left blank
@@ -90,21 +87,18 @@ When parameters are omitted, MindGraph automatically applies sensible defaults:
 
 #### Response
 
-Returns a PNG image file that can be:
-- Displayed directly in a web browser
-- Downloaded and saved locally
-- Embedded in documents or presentations
+Returns a PNG image file that can be displayed directly in a web browser, downloaded, or embedded in documents.
 
-### 2. DingTalk Integration Endpoint
+### 2. DingTalk Integration
 
 Generates a PNG image for DingTalk platform and returns markdown format with image URL.
 
 ```http
-POST /generate_dingtalk
 POST /api/generate_dingtalk
+POST /generate_dingtalk
 ```
 
-**Note**: Both endpoints are supported for backward compatibility. The `/api/generate_dingtalk` endpoint is the primary one.
+**Note**: Both endpoints are supported for backward compatibility.
 
 #### Request
 
@@ -151,25 +145,11 @@ Returns JSON with markdown format and image URL:
 
 #### Important Notes
 
-- **Temporary Storage**: Images are stored in temporary storage and automatically cleaned up after 24 hours
+- **Temporary Storage**: Images are stored temporarily and automatically cleaned up after 24 hours
 - **Image Access**: Images are served through the `/api/temp_images/<filename>` endpoint
-- **Automatic Cleanup**: The system automatically removes expired images every 24 hours
 - **No Persistence**: Images are not permanently stored and will be lost after the cleanup period
 
-#### Usage in DingTalk
-
-The `markdown` field can be directly used in DingTalk markdown messages:
-
-```java
-// Example DingTalk integration
-OapiRobotSendRequest.Markdown markdown = new OapiRobotSendRequest.Markdown();
-markdown.setTitle("MindGraph Generated");
-markdown.setText("@" + userId + "  \n  " + response.getMarkdown());
-```
-
-### 3. Style Update Endpoint
-
-#### Clear Cache Endpoint
+### 3. Clear Cache
 
 Clears the modular JavaScript cache for development and debugging purposes.
 
@@ -177,7 +157,7 @@ Clears the modular JavaScript cache for development and debugging purposes.
 POST /api/clear_cache
 ```
 
-**Note**: This endpoint is primarily for development use to clear cached JavaScript modules.
+**Note**: This endpoint is primarily for development use.
 
 #### Request
 
@@ -206,40 +186,23 @@ Content-Type: application/json
 }
 ```
 
-#### Use Cases
-
-- **Development**: Clear cache when making changes to JavaScript modules
-- **Debugging**: Reset cache state when troubleshooting rendering issues
-- **Testing**: Ensure fresh module loading for testing scenarios
-  "status": "error",
-  "timestamp": "2024-01-01T00:00:00Z"
-}
-```
-
 #### Example Usage
 
 ```bash
-# Basic PNG generation (minimal request - uses all defaults)
-# Both endpoints work:
-curl -X POST http://localhost:9527/generate_png \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Compare cats and dogs"}' \
-  --output comparison.png
-
-# Or use the primary API endpoint:
+# Basic PNG generation
 curl -X POST http://localhost:9527/api/generate_png \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Compare cats and dogs"}' \
   --output comparison.png
 
 # With language specification
-curl -X POST http://localhost:9527/generate_png \
+curl -X POST http://localhost:9527/api/generate_png \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Compare cats and dogs", "language": "zh"}' \
   --output comparison_zh.png
 
 # With custom styling
-curl -X POST http://localhost:9527/generate_png \
+curl -X POST http://localhost:9527/api/generate_png \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Create a mind map about artificial intelligence",
@@ -255,37 +218,24 @@ curl -X POST http://localhost:9527/generate_png \
   --output ai_mindmap.png
 ```
 
-#### Request Body Examples (From Simple to Complex)
+#### Request Body Examples
 
-**Level 1: Minimal (Just Prompt)**
+**Minimal Request:**
 ```json
 {
   "prompt": "Compare cats and dogs"
 }
 ```
-✅ **Works perfectly** - Uses all defaults
 
-**Level 2: With Language**
+**With Language:**
 ```json
 {
   "prompt": "Compare cats and dogs",
   "language": "zh"
 }
 ```
-✅ **Works perfectly** - Uses default styling
 
-**Level 3: With Basic Style**
-```json
-{
-  "prompt": "Compare cats and dogs",
-  "style": {
-    "theme": "classic"
-  }
-}
-```
-✅ **Works perfectly** - Overrides theme, keeps other defaults
-
-**Level 4: Full Customization**
+**With Custom Styling:**
 ```json
 {
   "prompt": "Compare cats and dogs",
@@ -299,50 +249,23 @@ curl -X POST http://localhost:9527/generate_png \
   }
 }
 ```
-✅ **Full control** - Overrides all defaults
 
-#### What NOT to Do
-
-**❌ Invalid Requests**
-```json
-{
-  "prompt": ""  // Empty prompt - will fail
-}
-```
-
-```json
-{
-  "prompt": "Compare cats and dogs",
-  "language": "fr"  // Unsupported language - will fail
-}
-```
-
-```json
-{
-  "prompt": "Compare cats and dogs",
-  "style": {
-    "theme": "invalid_theme"  // Invalid theme - will use default
-  }
-}
-```
-
-#### Best Practices for Request Bodies
+#### Best Practices
 
 - **For Quick Testing**: Use minimal request with just `prompt`
 - **For Production**: Include language detection and consistent theming
 - **For Dify Integration**: `{"prompt": "{{user_input}}"}` works perfectly
-- **Progressive Enhancement**: Start simple, add complexity as needed
 
-### 2. Interactive Graph Generation
+### 4. Interactive Graph Generation
 
 Generates an interactive D3.js visualization with JSON data.
 
 ```http
-POST /generate_graph
 POST /api/generate_graph
+POST /generate_graph
 ```
 
-**Note**: Both endpoints are supported for backward compatibility. The `/api/generate_graph` endpoint is the primary one.
+**Note**: Both endpoints are supported for backward compatibility.
 
 #### Request
 
@@ -381,7 +304,7 @@ Content-Type: application/json
 }
 ```
 
-### 3. Health Check
+### 5. Health Check
 
 Returns application status and version information.
 
@@ -394,50 +317,39 @@ GET /status
 ```json
 {
   "status": "healthy",
-  "version": "2.4.0",
+  "version": "2.5.3",
   "timestamp": "2024-01-01T00:00:00Z",
   "services": {
     "qwen_api": "connected",
     "deepseek_api": "not_configured",
     "playwright": "ready"
-  },
-  "system": {
-    "python_version": "3.13.5",
-    "memory_usage": "45.2MB",
-    "uptime": "2h 15m"
   }
 }
 ```
 
 ## Integration Examples
 
-### 🔗 Dify Integration (Complete Guide)
+### Dify Integration
 
-MindGraph provides seamless integration with Dify through HTTP POST requests. This guide covers all scenarios from basic to advanced usage.
+MindGraph provides seamless integration with Dify through HTTP POST requests.
 
-#### 1. Basic HTTP Request Node Setup
+#### Basic Setup
 
-**Step 1: Create HTTP Request Node**
+**HTTP Request Node Configuration:**
 - **URL**: `http://your-mindgraph-server:9527/api/generate_png`
 - **Method**: `POST`
-- **Headers**: 
-  ```json
-  {
-    "Content-Type": "application/json"
-  }
-  ```
+- **Headers**: `Content-Type: application/json`
 
-**Step 2: Basic Request Body**
+**Request Body:**
 ```json
 {
   "prompt": "{{user_input}}"
 }
 ```
-✅ **This works perfectly** - Uses automatic language detection and default styling
 
-#### 2. Advanced Configuration Options
+#### Advanced Configuration
 
-**Option A: With Language Detection**
+**With Language Detection:**
 ```json
 {
   "prompt": "{{user_input}}",
@@ -445,7 +357,7 @@ MindGraph provides seamless integration with Dify through HTTP POST requests. Th
 }
 ```
 
-**Option B: With Custom Styling**
+**With Custom Styling:**
 ```json
 {
   "prompt": "{{user_input}}",
@@ -460,37 +372,11 @@ MindGraph provides seamless integration with Dify through HTTP POST requests. Th
 }
 ```
 
-**Option C: Full Customization**
-```json
-{
-  "prompt": "{{user_input}}",
-  "language": "{{language_var}}",
-  "style": {
-    "theme": "{{theme_preference}}",
-    "colors": {
-      "primary": "{{primary_color}}",
-      "secondary": "{{secondary_color}}"
-    }
-  }
-}
-```
+#### Response Handling
 
-#### 3. Response Handling in Dify
+**For PNG Images**: The response is a binary PNG image that can be directly displayed or saved.
 
-**For PNG Images (Binary Response)**:
-- The response is a binary PNG image
-- Can be directly displayed or saved
-- Use Dify's image handling capabilities
-
-**For Interactive Diagrams (use `/api/generate_graph`)**:
-```json
-{
-  "prompt": "{{user_input}}",
-  "language": "en"
-}
-```
-
-Response structure:
+**For Interactive Diagrams** (use `/api/generate_graph`):
 ```json
 {
   "success": true,
@@ -503,69 +389,13 @@ Response structure:
 }
 ```
 
-#### 4. Error Handling in Dify
-
-**Configure Error Response Handling**:
-```javascript
-// In Dify's response processing
-if (response.status !== 200) {
-  return {
-    error: "Failed to generate diagram",
-    details: response.error || "Unknown error occurred",
-    suggestion: "Please try rephrasing your request"
-  };
-}
-```
-
-**Common Error Scenarios**:
-- **Empty Prompt**: `{"error": "Prompt cannot be empty"}`
-- **Invalid Language**: `{"error": "Language 'fr' not supported"}`
-- **API Timeout**: `{"error": "Request timeout"}`
-
-#### 5. Dify Workflow Examples
-
-**Example 1: Simple Diagram Generator**
-```
-[User Input] → [HTTP Request to MindGraph] → [Display PNG]
-```
-
-**Example 2: Educational Assistant**
-```
-[User Question] → [Classify Intent] → [Generate Educational Diagram] → [Return with Explanation]
-```
-
-**Example 3: Business Process Mapper** 
-```
-[Process Description] → [Extract Steps] → [Generate Flow Map] → [Export for Documentation]
-```
-
-#### 6. Best Practices for Dify Integration
-
-**Performance Optimization**:
-- Use `/api/generate_png` for final images
-- Use `/api/generate_graph` for interactive content
-- Cache responses when possible
-- Set appropriate timeouts (10-15 seconds)
-
-**User Experience**:
-- Show loading indicators during generation
-- Provide fallback messages for errors
-- Allow users to regenerate with different parameters
-
-**Production Considerations**:
-- Use environment variables for server URLs
-- Implement retry logic for failed requests
-- Monitor API usage and response times
-- Consider rate limiting for high-traffic scenarios
-
 ### Python Integration
 
 ```python
 import requests
-import json
 
 def generate_png(prompt, language="en", style=None):
-    url = "http://localhost:9527/generate_png"
+    url = "http://localhost:9527/api/generate_png"
     
     payload = {
         "prompt": prompt,
@@ -578,7 +408,6 @@ def generate_png(prompt, language="en", style=None):
     response = requests.post(url, json=payload)
     
     if response.status_code == 200:
-        # Save PNG to file
         with open("generated_graph.png", "wb") as f:
             f.write(response.content)
         return "generated_graph.png"
@@ -587,15 +416,8 @@ def generate_png(prompt, language="en", style=None):
         raise Exception(f"API Error: {error['error']}")
 
 # Usage
-try:
-    filename = generate_png(
-        prompt="Compare cats and dogs",
-        language="en",
-        style={"theme": "modern"}
-    )
-    print(f"Graph saved as: {filename}")
-except Exception as e:
-    print(f"Error: {e}")
+filename = generate_png("Compare cats and dogs", "en", {"theme": "modern"})
+print(f"Graph saved as: {filename}")
 ```
 
 ### JavaScript/Node.js Integration
@@ -605,31 +427,16 @@ const axios = require('axios');
 const fs = require('fs');
 
 async function generatePNG(prompt, language = 'en', style = null) {
-    try {
-        const payload = {
-            prompt: prompt,
-            language: language
-        };
-        
-        if (style) {
-            payload.style = style;
-        }
-        
-        const response = await axios.post('http://localhost:9527/generate_png', payload, {
-            responseType: 'arraybuffer',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        // Save PNG to file
-        fs.writeFileSync('generated_graph.png', response.data);
-        return 'generated_graph.png';
-        
-    } catch (error) {
-        console.error('API Error:', error.response?.data || error.message);
-        throw error;
-    }
+    const payload = { prompt, language };
+    if (style) payload.style = style;
+    
+    const response = await axios.post('http://localhost:9527/api/generate_png', payload, {
+        responseType: 'arraybuffer',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    fs.writeFileSync('generated_graph.png', response.data);
+    return 'generated_graph.png';
 }
 
 // Usage
@@ -640,9 +447,9 @@ generatePNG('Compare cats and dogs', 'en', { theme: 'modern' })
 
 ## Supported Visualization Types
 
-MindGraph supports 10 diagram types with intelligent LLM-based classification that understands user intent vs topic content.
+MindGraph supports 10 diagram types with intelligent LLM-based classification.
 
-### 🧠 Smart Classification Examples
+### Smart Classification
 
 The system correctly distinguishes between what users want to **create** vs what the diagram is **about**:
 
@@ -665,41 +472,20 @@ The system correctly distinguishes between what users want to **create** vs what
 | **Multi-Flow Map** | Cause and effect relationships | Analyzing consequences | "Effects of climate change" |
 | **Bridge Map** | Analogical relationships | Showing similarities | "Learning is like building" |
 
-#### 🚀 Flow Map Enhancements (v2.3.9)
+#### Flow Map Enhancements
 
-The Flow Map has received major improvements for optimal visual presentation:
+The Flow Map features optimized layout with adaptive spacing and professional design:
 
-**Ultra-Compact Layout Features:**
-- **Revolutionary Positioning**: Substep-first algorithm eliminates all overlapping issues
+**Key Features:**
 - **Adaptive Spacing**: Canvas dimensions automatically adjust to content
-- **75% Title Spacing Reduction**: Minimal spacing around topic text for maximum content density
-- **Professional Design**: Clean, compact layout without sacrificing readability
-
-**Enhanced Flow Map Structure:**
-- **Main Steps**: Sequential process steps positioned vertically
-- **Substeps**: Sub-processes connected to main steps with L-shaped connectors
-- **Adaptive Canvas**: Automatically sized to fit all content perfectly
 - **Smart Positioning**: Substeps positioned first, then main steps align to their groups
+- **Professional Design**: Clean, compact layout without sacrificing readability
 
 **Example Flow Map Prompt:**
 ```json
 {
   "prompt": "制作咖啡的流程图",
   "language": "zh"
-}
-```
-
-**Flow Map JSON Structure:**
-```json
-{
-  "title": "制作咖啡",
-  "steps": ["准备材料", "加热水", "冲泡", "享用"],
-  "substeps": [
-    {"step": "准备材料", "substeps": ["咖啡豆", "过滤纸", "咖啡杯"]},
-    {"step": "加热水", "substeps": ["烧开水", "调节温度"]},
-    {"step": "冲泡", "substeps": ["湿润过滤纸", "倒入咖啡粉", "缓慢注水"]},
-    {"step": "享用", "substeps": ["品尝", "清洗器具"]}
-  ]
 }
 ```
 
@@ -711,7 +497,7 @@ The Flow Map has received major improvements for optimal visual presentation:
 | **Concept Map** | Advanced relationship mapping with optimized spacing | Complex concept relationships | "Show relationships in artificial intelligence" |
 | **Tree Map** | Hierarchical rectangles for nested data | Organizational structures and hierarchies | "Company organization structure" |
 
-### 🎯 Diagram Classification Intelligence
+### Diagram Classification Intelligence
 
 The LLM classification system uses semantic understanding with robust fallback:
 
@@ -749,35 +535,6 @@ The LLM classification system uses semantic understanding with robust fallback:
 }
 ```
 
-### Common Error Scenarios
-
-1. **Invalid Prompt**
-   ```json
-   {
-     "error": "Prompt is too short or contains invalid characters",
-     "code": "INVALID_PROMPT",
-     "suggestion": "Use descriptive prompts with at least 3 words"
-   }
-   ```
-
-2. **Unsupported Language**
-   ```json
-   {
-     "error": "Language 'fr' is not supported",
-     "code": "UNSUPPORTED_LANGUAGE",
-     "suggestion": "Use 'en' for English or 'zh' for Chinese"
-   }
-   ```
-
-3. **API Service Unavailable**
-   ```json
-   {
-     "error": "Qwen API service is currently unavailable",
-     "code": "API_UNAVAILABLE",
-     "suggestion": "Check your API key and try again later"
-   }
-   ```
-
 ## Rate Limiting
 
 The API implements rate limiting to ensure fair usage:
@@ -786,47 +543,25 @@ The API implements rate limiting to ensure fair usage:
 - **Burst Limit**: 10 requests per second
 - **Headers**: Rate limit information is included in response headers
 
-### Rate Limit Headers
-
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1640995200
-```
-
 ## Best Practices
 
-### 1. Prompt Engineering
+### Prompt Engineering
 
 - **Be Specific**: "Compare renewable vs fossil fuel energy sources" vs "energy"
 - **Include Context**: "Show monthly sales trends for Q4 2023"
 - **Specify Chart Type**: "Create a bar chart comparing sales by region"
 
-### 2. Request Body Optimization
+### Request Body Optimization
 
 - **Start Simple**: Begin with just the `prompt` field, add complexity as needed
 - **Use Defaults**: Leverage automatic defaults for language and styling
 - **Minimal Requests**: `{"prompt": "your text"}` works perfectly for most use cases
-- **Progressive Enhancement**: Add language and style options for specific requirements
 
-### 3. Error Handling
+### Error Handling
 
 - Always check HTTP status codes
 - Implement retry logic for 5xx errors
 - Provide user-friendly error messages
-
-### 4. Performance Optimization
-
-- Cache generated images when possible
-- Use appropriate image formats (PNG for quality, JPEG for size)
-- Implement client-side caching headers
-
-### 5. Security Considerations
-
-- Validate all input parameters
-- Implement proper authentication
-- Use HTTPS in production
-- Sanitize user prompts
 
 ## Troubleshooting
 
@@ -857,7 +592,7 @@ X-RateLimit-Reset: 1640995200
 ## Changelog
 
 ### Version 2.5.3
-- **Agent File Organization**: ✅ **COMPLETED** - Organized agents into clean module structure for 20% development efficiency improvement
+- **Agent File Organization**: Organized agents into clean module structure
 - Added `/api/clear_cache` endpoint for development workflow
 - Fixed flow map rendering with professional substep positioning
 - Enhanced modular JavaScript system integration
