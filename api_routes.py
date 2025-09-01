@@ -813,7 +813,9 @@ def generate_png():
                 for renderer_file in renderer_files:
                     try:
                         with open(renderer_file, 'r', encoding='utf-8') as f:
-                            d3_renderers += f.read() + '\n\n'
+                            content = f.read()
+                            d3_renderers += content + '\n\n'
+                            logger.debug(f"Loaded renderer: {renderer_file} ({len(content)} chars)")
                     except FileNotFoundError:
                         logger.warning(f"Renderer file not found: {renderer_file}")
                         continue
@@ -1057,7 +1059,7 @@ def generate_png():
                             console.log("Using centralized style manager theme");
                         }} else {{
                             // No fallback - style manager should always be available
-                            theme = {};
+                            theme = {{}};
                             console.error("Style manager not available - this should not happen");
                         }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
@@ -1842,7 +1844,7 @@ def generate_dingtalk():
                             console.log("Using centralized style manager theme");
                         }} else {{
                             // No fallback - style manager should always be available
-                            theme = {};
+                            theme = {{}};
                             console.error("Style manager not available - this should not happen");
                         }}
                         const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};

@@ -24,6 +24,7 @@ class StyleManager {
             fontAttribute: 14
         },
             double_bubble_map: {
+                background: '#f5f5f5',         // Light grey background
                 centralTopicFill: '#1976d2',  // Deeper blue
                 centralTopicText: '#ffffff',   // White text for contrast
                 centralTopicStroke: '#000000', // Black border for central topic
@@ -46,22 +47,22 @@ class StyleManager {
             },
             mindmap: {
                 background: '#f5f5f5',         // Light grey background
-                centralTopicFill: '#e3f2fd',   // Light blue for central topic
-                centralTopicText: '#333333',   // Dark text for readability
-                centralTopicStroke: '#35506b', // Dark blue-grey border
+                centralTopicFill: '#1976d2',   // Deep blue for central topic (like brace maps)
+                centralTopicText: '#ffffff',   // White text for contrast (like brace maps)
+                centralTopicStroke: '#0d47a1', // Darker blue border (like brace maps)
                 centralTopicStrokeWidth: 3,
-                branchFill: '#e3f2fd',         // Light blue for branches (main branch)
+                branchFill: '#e3f2fd',         // Light blue for branches (like brace map parts)
                 branchText: '#333333',         // Dark text for readability
-                branchStroke: '#4e79a7',       // Medium blue border
+                branchStroke: '#4e79a7',       // Medium blue border (like brace map parts)
                 branchStrokeWidth: 2,
-                childFill: '#f8f9fa',          // Very light grey for children (sub-branch)
+                childFill: '#bbdefb',          // Lighter blue for children (like brace map subparts)
                 childText: '#333333',          // Dark text for readability
-                childStroke: '#6c757d',        // Grey border
-                childStrokeWidth: 2,
-                fontTopic: 20,
+                childStroke: '#90caf9',        // Light blue border (like brace map subparts)
+                childStrokeWidth: 1,
+                fontTopic: 18,
                 fontBranch: 16,
-                fontChild: 14,
-                linkStroke: '#888888',
+                fontChild: 12,
+                linkStroke: '#4e79a7',
                 linkStrokeWidth: 2
             },
             concept_map: {
@@ -80,6 +81,7 @@ class StyleManager {
                 fontConcept: 14
             },
             brace_map: {
+                background: '#f5f5f5',         // Light grey background
                 topicFill: '#1976d2',
                 topicText: '#ffffff',
                 topicStroke: '#0d47a1',
@@ -97,6 +99,7 @@ class StyleManager {
                 fontSubpart: 12
             },
             tree_map: {
+                background: '#f5f5f5',         // Light grey background
                 rootFill: '#1976d2',
                 rootText: '#ffffff',
                 rootStroke: '#0d47a1',
@@ -116,6 +119,7 @@ class StyleManager {
             },
 
             flowchart: {
+                background: '#f5f5f5',         // Light grey background
                 startFill: '#4caf50',   // Green for start
                 startText: '#ffffff',    // White text
                 startStroke: '#388e3c',  // Darker green border

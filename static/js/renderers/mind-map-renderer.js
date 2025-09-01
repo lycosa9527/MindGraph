@@ -47,25 +47,18 @@ function renderMindMap(spec, theme = null, dimensions = null) {
     let THEME;
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
-            THEME = styleManager.getTheme('mindmap', theme, theme);
-            console.log('Mind Map: Using centralized theme from style manager');
+            THEME = styleManager.getTheme('mindmap', null, null);
+            
+
         } else {
-            console.error('Style manager not available - this should not happen');
             throw new Error('Style manager not available for mindmap rendering');
         }
     } catch (error) {
-        console.error('Error getting theme from style manager:', error);
         throw new Error('Failed to load theme from style manager');
     }
     
     // Apply container background - use THEME object that was loaded above
     const containerBackground = spec._layout?.params?.background || THEME?.background || '#f5f5f5';
-    
-    console.log('=== BACKGROUND DEBUG ===');
-    console.log('- spec._layout?.params?.background:', spec._layout?.params?.background);
-    console.log('- THEME?.background:', THEME?.background);
-    console.log('- Final containerBackground:', containerBackground);
-    console.log('=== END BACKGROUND DEBUG ===');
     
     d3.select('#d3-container')
         .style('background-color', containerBackground, 'important')
@@ -291,7 +284,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                     if (dist > 0) {
                         // Calculate line endpoints for proper mind map connections
                         const topicPos = positions['topic'];
-                        const topicRadius = topicPos ? getTextRadius(topicPos.text || 'Topic', THEME.fontCentral || '16px', 20) : 60;
+                        const topicRadius = topicPos ? getTextRadius(topicPos.text || 'Topic', THEME.fontTopic || '16px', 20) : 60;
                         
                         // Determine if branch is on left or right side
                         const branchIsOnLeft = branchX < centerX;
@@ -398,9 +391,6 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
         // Draw nodes on top
         Object.keys(positions).forEach(key => {
             const pos = positions[key];
-            console.log(`=== NODE RENDERING DEBUG: ${key} ===`);
-            console.log('Position data:', pos);
-            console.log('Node type:', pos.node_type);
 
             
             if (pos.node_type === 'topic') {
@@ -410,21 +400,13 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 const topicWidth = pos.width || 120;
                 const topicHeight = pos.height || 60;
                 // Calculate adaptive radius based on actual text dimensions using getTextRadius
-                const topicRadius = getTextRadius(pos.text || 'Topic', THEME.fontCentral || '16px', 20);
+                const topicRadius = getTextRadius(pos.text || 'Topic', THEME.fontTopic || '16px', 20);
                 
                 const finalFill = pos.fill || THEME.centralTopicFill || '#e3f2fd';
                 const finalStroke = pos.stroke || THEME.centralTopicStroke || '#35506b';
                 const finalTextColor = pos.text_color || THEME.centralTopicText || '#333333';
                 
-                console.log('=== TOPIC NODE COLOR DEBUG ===');
-                console.log('- Topic radius:', topicRadius);
-                console.log('- Final fill color:', finalFill);
-                console.log('- Final stroke color:', finalStroke);
-                console.log('- Final text color:', finalTextColor);
-                console.log('- pos.fill:', pos.fill);
-                console.log('- THEME.centralTopicFill:', THEME.centralTopicFill);
-                console.log('- THEME.centralNodeFill:', THEME.centralNodeFill);
-                console.log('=== END TOPIC DEBUG ===');
+
                 
     svg.append('circle')
                     .attr('cx', topicX)
@@ -440,7 +422,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
                     .attr('fill', finalTextColor)
-                    .attr('font-size', THEME.fontCentral || '16px')
+                    .attr('font-size', THEME.fontTopic || '16px')
         .attr('font-weight', 'bold')
                     .text(pos.text || 'Topic');
                     
@@ -456,15 +438,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
                 const finalBranchTextColor = pos.text_color || THEME.branchText || '#333333';
                 
-                console.log('=== BRANCH NODE COLOR DEBUG ===');
-                console.log('- Branch position:', { x: branchX, y: branchY });
-                console.log('- Branch dimensions:', { width: branchWidth, height: branchHeight });
-                console.log('- Final fill color:', finalBranchFill);
-                console.log('- Final stroke color:', finalBranchStroke);
-                console.log('- Final text color:', finalBranchTextColor);
-                console.log('- pos.fill:', pos.fill);
-                console.log('- THEME.branchFill:', THEME.branchFill);
-                console.log('=== END BRANCH DEBUG ===');
+
                 
                 // Draw rectangular node
                 svg.append('rect')
@@ -499,16 +473,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';
                 const finalChildTextColor = pos.text_color || THEME.childText || '#333333';
                 
-                console.log('=== CHILD NODE COLOR DEBUG ===');
-                console.log('- Child position:', { x: childX, y: childY });
-                console.log('- Child dimensions:', { width: childWidth, height: childHeight });
-                console.log('- Final fill color:', finalChildFill);
-                console.log('- Final stroke color:', finalChildStroke);
-                console.log('- Final text color:', finalChildTextColor);
-                console.log('- pos.fill:', pos.fill);
-                console.log('- THEME.childFill:', THEME.childFill);
-                console.log('- THEME.childNodeFill:', THEME.childNodeFill);
-                console.log('=== END CHILD DEBUG ===');
+
                 
                 // Draw rectangular node
                 svg.append('rect')
