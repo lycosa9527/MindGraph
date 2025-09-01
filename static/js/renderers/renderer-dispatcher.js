@@ -19,7 +19,7 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
     
     // Special debug for bridge maps
     if (type === 'bridge_map') {
-        console.log('=== BRIDGE MAP SPECIAL DEBUG ===');
+
         console.log('Analogies array:', spec?.analogies);
         console.log('Analogies count:', spec?.analogies?.length || 0);
         
@@ -237,12 +237,7 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
 // Helper function to show renderer errors
 function showRendererError(type, message = null) {
     const errorMsg = message || `Renderer for '${type}' not loaded or not available`;
-    d3.select('#d3-container').append('div')
-        .style('color', 'red')
-        .style('font-size', '18px')
-        .style('text-align', 'center')
-        .style('padding', '50px')
-        .text(`Error: ${errorMsg}`);
+    console.error(`Error: ${errorMsg}`);
 }
 
 // Export functions for module system

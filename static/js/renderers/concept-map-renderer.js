@@ -56,7 +56,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     console.log('🔍 Concept map renderer: Validating spec...');
     if (!spec || !spec.topic || !Array.isArray(spec.concepts) || !Array.isArray(spec.relationships)) {
         console.error('❌ Concept map renderer: Invalid spec for concept map:', { spec, topic: spec?.topic, concepts: spec?.concepts, relationships: spec?.relationships });
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for concept map');
+        console.error('Invalid spec for concept map');
         return;
     }
     console.log('✅ Concept map renderer: Spec validation passed');

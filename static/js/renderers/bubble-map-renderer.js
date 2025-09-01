@@ -17,7 +17,7 @@ if (typeof window.MindGraphUtils === 'undefined') {
 function renderBubbleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.attributes)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for bubble_map');
+        console.error('Invalid spec for bubble_map');
         return;
     }
     
@@ -228,7 +228,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
 function renderCircleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.context)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for circle_map');
+        console.error('Invalid spec for circle_map');
         return;
     }
     
@@ -384,31 +384,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     // Enhanced validation with detailed error messages
     if (!spec) {
         console.error('renderDoubleBubbleMap: spec is null or undefined');
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: No specification provided');
+
         return;
     }
     
     if (!spec.left || !spec.right) {
         console.error('renderDoubleBubbleMap: missing left or right topic', { left: spec.left, right: spec.right });
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Missing left or right topic');
+
         return;
     }
     
     if (!Array.isArray(spec.similarities)) {
         console.error('renderDoubleBubbleMap: similarities is not an array', spec.similarities);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Similarities must be an array');
+
         return;
     }
     
     if (!Array.isArray(spec.left_differences)) {
         console.error('renderDoubleBubbleMap: left_differences is not an array', spec.left_differences);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Left differences must be an array');
+
         return;
     }
     
     if (!Array.isArray(spec.right_differences)) {
         console.error('renderDoubleBubbleMap: right_differences is not an array', spec.right_differences);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Right differences must be an array');
+
         return;
     }
     

@@ -79,7 +79,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     
     if (!spec) {
         console.error('Brace renderer: Spec is null or undefined');
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: No specification provided for brace map');
+
         return;
     }
     
@@ -126,13 +126,13 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     
     if (!actualSpec.topic) {
         console.error('❌ Brace renderer: Spec missing topic:', actualSpec);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Brace map specification missing topic');
+
         return;
     }
     
     if (!Array.isArray(actualSpec.parts)) {
         console.error('❌ Brace renderer: Spec parts is not an array:', actualSpec.parts);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: Brace map specification missing parts array');
+
         return;
     }
     
@@ -481,7 +481,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     } catch (error) {
         console.error('❌ Brace renderer: Error during rendering:', error);
         console.error('❌ Brace renderer: Error stack:', error.stack);
-        d3.select('#d3-container').append('div').style('color', 'red').text('Error: ' + error.message);
+
     }
 }
 

@@ -796,36 +796,24 @@ def generate_png():
                 # Load the theme configuration
                 with open('static/js/theme-config.js', 'r', encoding='utf-8') as f:
                     theme_config = f.read()
-
-                # Load the modular D3.js renderers
-                renderer_files = [
-                    'static/js/renderers/shared-utilities.js',
-                    'static/js/renderers/renderer-dispatcher.js',
-                    'static/js/renderers/mind-map-renderer.js',
-                    'static/js/renderers/concept-map-renderer.js',
-                    'static/js/renderers/bubble-map-renderer.js',
-                    'static/js/renderers/tree-renderer.js',
-                    'static/js/renderers/flow-renderer.js',
-                    'static/js/renderers/brace-renderer.js'
-                ]
                 
-                d3_renderers = ''
-                for renderer_file in renderer_files:
-                    try:
-                        with open(renderer_file, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                            d3_renderers += content + '\n\n'
-                            logger.debug(f"Loaded renderer: {renderer_file} ({len(content)} chars)")
-                    except FileNotFoundError:
-                        logger.warning(f"Renderer file not found: {renderer_file}")
-                        continue
-
                 # Load the style manager
                 with open('static/js/style-manager.js', 'r', encoding='utf-8') as f:
                     style_manager = f.read()
+
+                # Load the dynamic renderer loader and modify it for absolute URLs
+                with open('static/js/dynamic-renderer-loader.js', 'r', encoding='utf-8') as f:
+                    dynamic_loader = f.read()
                 
-                # Use the old working approach - single script tag
-                renderer_scripts = f'<script>{d3_renderers}</script>'
+                # Replace relative URLs with absolute ones for PNG generation context
+                dynamic_loader = dynamic_loader.replace('/static/js/renderers/', 'http://localhost:9527/static/js/renderers/')
+                
+                renderer_scripts = f'''
+                <!-- Dynamic Renderer Loader (Modified for PNG Generation) -->
+                <script>
+                {dynamic_loader}
+                </script>
+                '''
                 
                 logger.debug(f"Loading modular D3 renderers for {graph_type}")
                 
@@ -1022,31 +1010,26 @@ def generate_png():
             
             <!-- Main Rendering Logic -->
             <script>
-            console.log("Page loaded, waiting for D3.js...");
-            console.log("Debug: Checking module availability...");
+
+
             
             // Debug: Check what modules are loaded
             setTimeout(() => {{
-                console.log("Debug: Module availability check:");
-                console.log("  - renderTreeMap:", typeof renderTreeMap);
-                console.log("  - TreeRenderer:", typeof TreeRenderer);
-                console.log("  - MindGraphUtils:", typeof MindGraphUtils);
-                console.log("  - addWatermark:", typeof addWatermark);
-                console.log("  - styleManager:", typeof styleManager);
-                console.log("  - renderGraph:", typeof renderGraph);
+
+
                 
                 if (window.TreeRenderer) {{
                     console.log("  - TreeRenderer.renderTreeMap:", typeof window.TreeRenderer.renderTreeMap);
                 }}
                 if (window.MindGraphUtils) {{
-                    console.log("  - MindGraphUtils.addWatermark:", typeof window.MindGraphUtils.addWatermark);
+
                 }}
             }}, 1000);
             
             // Wait for D3.js to load
             function waitForD3() {{
                 if (typeof d3 !== "undefined") {{
-                    console.log("D3.js loaded, starting rendering...");
+
                     try {{
                         window.spec = {json.dumps(spec, ensure_ascii=False)};
                         window.graph_type = "{graph_type}";
@@ -1056,7 +1039,7 @@ def generate_png():
                         let backendTheme;
                         if (typeof styleManager !== "undefined" && typeof styleManager.getTheme === "function") {{
                             theme = styleManager.getTheme(graph_type);
-                            console.log("Using centralized style manager theme");
+            
                         }} else {{
                             // No fallback - style manager should always be available
                             theme = {{}};
@@ -1066,98 +1049,59 @@ def generate_png():
                         backendTheme = {{...theme, ...watermarkConfig}};
                         window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
                         
-                        console.log("Rendering graph:", window.graph_type, window.spec);
-                        console.log("Style manager loaded:", typeof styleManager);
-                        console.log("Backend theme:", backendTheme);
+
                         
                         // Ensure style manager is available
                         if (typeof styleManager === "undefined") {{
                             console.error("Style manager not loaded!");
-                            document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Style manager not loaded!</div>";
+
                             throw new Error("Style manager not available");
                         }} else {{
-                            console.log("Style manager is available");
+
                         }}
                         
-                        // Use agent renderer for brace maps
-                        if (window.graph_type === "brace_map") {{
-                            console.log("Using brace map agent renderer");
-                            console.log("Debug: window.spec:", window.spec);
-                            console.log("Debug: spec keys:", Object.keys(window.spec || {{}}));
-                            
-                            // Handle both enhanced format (with original structure) and legacy formats
-                            const hasValidSpec = window.spec && (
-                                (window.spec.topic && Array.isArray(window.spec.parts)) || // Enhanced format
-                                window.spec.success || // Legacy format
-                                window.spec.data || window.spec.svg_data || window.spec.layout_data
-                            );
-                            
-                            console.log("Debug: hasValidSpec:", hasValidSpec);
-                            console.log("Debug: renderBraceMap available:", typeof renderBraceMap);
-                            console.log("Debug: BraceRenderer available:", typeof window.BraceRenderer);
-                            
-                            if (hasValidSpec) {{
-                                if (typeof renderBraceMap === "function") {{
-                                    console.log("Calling global renderBraceMap function");
-                                    try {{
-                                        renderBraceMap(window.spec, backendTheme, window.dimensions);
-                                        console.log("renderBraceMap completed successfully");
-                                    }} catch (error) {{
-                                        console.error("Error in renderBraceMap:", error);
-                                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
-                                    }}
-                                }} else if (typeof window.BraceRenderer !== "undefined" && typeof window.BraceRenderer.renderBraceMap === "function") {{
-                                    console.log("Calling BraceRenderer.renderBraceMap function");
-                                    try {{
-                                        window.BraceRenderer.renderBraceMap(window.spec, backendTheme, window.dimensions);
-                                        console.log("BraceRenderer.renderBraceMap completed successfully");
-                                    }} catch (error) {{
-                                        console.error("Error in BraceRenderer.renderBraceMap:", error);
-                                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
-                                    }}
-                                }} else {{
-                                    console.error("renderBraceMap function not available");
-                                    document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Brace map renderer not loaded</div>";
-                                }}
-                            }} else {{
-                                console.error("Invalid brace map specification");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Invalid brace map specification</div>";
-                            }}
-                        }} else if (window.graph_type === "flow_map") {{
-                            console.log("Using flow map renderer directly");
-                            if (typeof renderFlowMap === "function") {{
-                                renderFlowMap(window.spec, backendTheme, window.dimensions);
-                            }} else {{
-                                console.error("renderFlowMap function not available");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Flow map renderer not loaded</div>";
-                            }}
-                        }} else if (window.graph_type === "concept_map") {{
-                            console.log("Using concept map renderer directly");
-                            if (typeof renderConceptMap === "function") {{
-                                renderConceptMap(window.spec, backendTheme, window.dimensions);
-                            }} else {{
-                                console.error("renderConceptMap function not available");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Concept map renderer not loaded</div>";
-                            }}
+                        // Use dynamic renderer loader for all graph types
+
+                        
+                        if (typeof window.dynamicRendererLoader === "undefined") {{
+                            console.error("Dynamic renderer loader not available");
+                            console.error("Available window properties:", Object.keys(window).slice(0, 20));
+
+                            throw new Error("Dynamic renderer loader not available");
                         }} else {{
-                            renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions);
+
                         }}
                         
-                        console.log("Graph rendering completed");
+                        try {{
+                            // Use the dynamic renderer loader to render the graph
+                            window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
+                                .then(() => {{
+
+                                }})
+                                .catch(error => {{
+                                    console.error("Dynamic rendering failed:", error);
+
+                                }});
+                        }} catch (error) {{
+                            console.error("Error calling dynamic renderer:", error);
+
+                        }}
+                        
+
                         
                         // Wait a moment for SVG to be created
                         setTimeout(() => {{
                             const svg = document.querySelector("svg");
                             if (svg) {{
-                                console.log("SVG found with dimensions:", svg.getAttribute("width"), "x", svg.getAttribute("height"));
+
                             }} else {{
                                 console.error("No SVG element found after rendering");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">No SVG created after rendering</div>";
+
                             }}
                         }}, 1000);
                     }} catch (error) {{
                         console.error("Render error:", error);
-                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
+
                     }}
                 }} else {{
                     setTimeout(waitForD3, 100);
@@ -1199,26 +1143,112 @@ def generate_png():
                 page.set_default_timeout(60000)  # 60 seconds default
                 page.set_default_navigation_timeout(60000)
                 
-                # Set up console and error logging BEFORE loading content
+                # Set up comprehensive console and error logging BEFORE loading content
                 console_messages = []
                 page_errors = []
                 
-                page.on("console", lambda msg: console_messages.append(f"{msg.type}: {msg.text}"))
-                page.on("pageerror", lambda err: page_errors.append(str(err)))
+                def log_console_message(msg):
+                    message = f"{msg.type}: {msg.text}"
+                    console_messages.append(message)
+                    logger.debug(f"BROWSER CONSOLE: {message}")
                 
-                # Set timeout and log HTML size if large
+                def log_page_error(err):
+                    error_str = str(err)
+                    page_errors.append(error_str)
+                    logger.error(f"BROWSER ERROR: {error_str}")
+                
+                page.on("console", log_console_message)
+                page.on("pageerror", log_page_error)
+                
+                # Also log when resources fail to load
+                page.on("requestfailed", lambda request: logger.error(f"RESOURCE FAILED: {request.url} - {request.failure}"))
+                page.on("response", lambda response: logger.debug(f"RESOURCE LOADED: {response.url} - {response.status}") if response.status >= 400 else None)
+                
+                # Set timeout and log HTML size and structure
                 html_size = len(html)
                 timeout_ms = 60000  # 60 seconds for all content
+                logger.debug(f"HTML content size: {html_size} characters")
+                
+                # Log script tags in HTML for debugging
+                script_count = html.count('<script>')
+                logger.debug(f"Script tags in HTML: {script_count}")
+                
+                # Log if we have our test marker
+                has_test_marker = 'test-marker' in html
+                logger.debug(f"Test marker present in HTML: {has_test_marker}")
+                
+                # Log dynamic loader presence
+                has_dynamic_loader = 'dynamicRendererLoader' in html
+                logger.debug(f"Dynamic loader present in HTML: {has_dynamic_loader}")
+                
                 if html_size > 100000:  # Log if HTML is very large
                     logger.debug(f"Large HTML content: {html_size} characters, setting timeout to {timeout_ms}ms")
                 
-                await page.set_content(html, timeout=timeout_ms)
+                # Try to load the content with more detailed error handling
+                try:
+                    await page.set_content(html, timeout=timeout_ms)
+                    logger.debug("HTML content loaded successfully")
+                except Exception as e:
+                    logger.error(f"Failed to set HTML content: {e}")
+                    raise
                 
                 # Wait for rendering and check for console errors
                 logger.debug("Waiting for initial rendering...")
+                
+                # Check if basic elements exist before waiting for SVG
+                try:
+                    body_exists = await page.wait_for_selector('body', timeout=2000)
+                    logger.debug("Body element found")
+                    
+                    container_exists = await page.wait_for_selector('#d3-container', timeout=2000)
+                    logger.debug("D3 container found")
+                    
+                    # Check for our test marker
+                    test_marker = await page.query_selector('#test-marker')
+                    if test_marker:
+                        logger.debug("Test marker found - JavaScript is executing")
+                    else:
+                        logger.error("Test marker NOT found - JavaScript may not be executing")
+                    
+                    # Check what's actually in the page
+                    page_content = await page.evaluate('() => document.body.innerHTML')
+                    logger.debug(f"Page body content length: {len(page_content)}")
+                    logger.debug(f"Page body content preview: {page_content[:200]}...")
+                    
+                except Exception as e:
+                    logger.error(f"Error checking basic page elements: {e}")
+                
                 # Event-driven SVG detection
-                await page.wait_for_selector('svg', timeout=5000)
-                logger.debug("SVG element found - initial rendering complete")
+                try:
+                    await page.wait_for_selector('svg', timeout=5000)
+                    logger.debug("SVG element found - initial rendering complete")
+                except Exception as e:
+                    logger.error(f"SVG element not found within timeout: {e}")
+                    
+                    # Additional debugging when SVG fails
+                    try:
+                        all_elements = await page.evaluate('() => document.querySelectorAll("*").length')
+                        logger.debug(f"Total elements in page: {all_elements}")
+                        
+                        scripts = await page.evaluate('() => document.querySelectorAll("script").length')
+                        logger.debug(f"Script elements in page: {scripts}")
+                        
+                        divs = await page.evaluate('() => document.querySelectorAll("div").length')
+                        logger.debug(f"Div elements in page: {divs}")
+                        
+                        # Check console for any errors
+                        logger.debug(f"Console messages so far: {len(console_messages)}")
+                        for i, msg in enumerate(console_messages):
+                            logger.debug(f"Console {i+1}: {msg}")
+                        
+                        logger.debug(f"Page errors so far: {len(page_errors)}")
+                        for i, error in enumerate(page_errors):
+                            logger.error(f"Page Error {i+1}: {error}")
+                            
+                    except Exception as debug_e:
+                        logger.error(f"Error during additional debugging: {debug_e}")
+                    
+                    raise
                 
                 # Log console messages and errors (consolidated)
                 if console_messages:
@@ -1606,34 +1636,24 @@ def generate_dingtalk():
                 # Load the theme configuration
                 with open('static/js/theme-config.js', 'r', encoding='utf-8') as f:
                     theme_config = f.read()
-
-                # Load the modular D3.js renderers
-                renderer_files = [
-                    'static/js/renderers/shared-utilities.js',
-                    'static/js/renderers/renderer-dispatcher.js',
-                    'static/js/renderers/mind-map-renderer.js',
-                    'static/js/renderers/concept-map-renderer.js',
-                    'static/js/renderers/bubble-map-renderer.js',
-                    'static/js/renderers/tree-renderer.js',
-                    'static/js/renderers/flow-renderer.js',
-                    'static/js/renderers/brace-renderer.js'
-                ]
                 
-                d3_renderers = ''
-                for renderer_file in renderer_files:
-                    try:
-                        with open(renderer_file, 'r', encoding='utf-8') as f:
-                            d3_renderers += f.read() + '\n\n'
-                    except FileNotFoundError:
-                        logger.warning(f"Renderer file not found: {renderer_file}")
-                        continue
-
                 # Load the style manager
                 with open('static/js/style-manager.js', 'r', encoding='utf-8') as f:
                     style_manager = f.read()
+
+                # Load the dynamic renderer loader and modify it for absolute URLs
+                with open('static/js/dynamic-renderer-loader.js', 'r', encoding='utf-8') as f:
+                    dynamic_loader = f.read()
                 
-                # Use the old working approach - single script tag
-                renderer_scripts = f'<script>{d3_renderers}</script>'
+                # Replace relative URLs with absolute ones for PNG generation context
+                dynamic_loader = dynamic_loader.replace('/static/js/renderers/', 'http://localhost:9527/static/js/renderers/')
+                
+                renderer_scripts = f'''
+                <!-- Dynamic Renderer Loader (Modified for PNG Generation) -->
+                <script>
+                {dynamic_loader}
+                </script>
+                '''
                 
                 logger.debug(f"Loading modular D3 renderers for {graph_type}")
                 
@@ -1830,31 +1850,26 @@ def generate_dingtalk():
             
             <!-- Main Rendering Logic -->
             <script>
-            console.log("Page loaded, waiting for D3.js...");
-            console.log("Debug: Checking module availability...");
+
+
             
             // Debug: Check what modules are loaded
             setTimeout(() => {{
-                console.log("Debug: Module availability check:");
-                console.log("  - renderTreeMap:", typeof renderTreeMap);
-                console.log("  - TreeRenderer:", typeof TreeRenderer);
-                console.log("  - MindGraphUtils:", typeof MindGraphUtils);
-                console.log("  - addWatermark:", typeof addWatermark);
-                console.log("  - styleManager:", typeof styleManager);
-                console.log("  - renderGraph:", typeof renderGraph);
+
+
                 
                 if (window.TreeRenderer) {{
                     console.log("  - TreeRenderer.renderTreeMap:", typeof window.TreeRenderer.renderTreeMap);
                 }}
                 if (window.MindGraphUtils) {{
-                    console.log("  - MindGraphUtils.addWatermark:", typeof window.MindGraphUtils.addWatermark);
+
                 }}
             }}, 1000);
             
             // Wait for D3.js to load
             function waitForD3() {{
                 if (typeof d3 !== "undefined") {{
-                    console.log("D3.js loaded, starting rendering...");
+
                     try {{
                         window.spec = {json.dumps(spec, ensure_ascii=False)};
                         window.graph_type = "{graph_type}";
@@ -1864,7 +1879,7 @@ def generate_dingtalk():
                         let backendTheme;
                         if (typeof styleManager !== "undefined" && typeof styleManager.getTheme === "function") {{
                             theme = styleManager.getTheme(graph_type);
-                            console.log("Using centralized style manager theme");
+            
                         }} else {{
                             // No fallback - style manager should always be available
                             theme = {{}};
@@ -1874,98 +1889,59 @@ def generate_dingtalk():
                         backendTheme = {{...theme, ...watermarkConfig}};
                         window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
                         
-                        console.log("Rendering graph:", window.graph_type, window.spec);
-                        console.log("Style manager loaded:", typeof styleManager);
-                        console.log("Backend theme:", backendTheme);
+
                         
                         // Ensure style manager is available
                         if (typeof styleManager === "undefined") {{
                             console.error("Style manager not loaded!");
-                            document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Style manager not loaded!</div>";
+
                             throw new Error("Style manager not available");
                         }} else {{
-                            console.log("Style manager is available");
+
                         }}
                         
-                        // Use agent renderer for brace maps
-                        if (window.graph_type === "brace_map") {{
-                            console.log("Using brace map agent renderer");
-                            console.log("Debug: window.spec:", window.spec);
-                            console.log("Debug: spec keys:", Object.keys(window.spec || {{}}));
-                            
-                            // Handle both enhanced format (with original structure) and legacy formats
-                            const hasValidSpec = window.spec && (
-                                (window.spec.topic && Array.isArray(window.spec.parts)) || // Enhanced format
-                                window.spec.success || // Legacy format
-                                window.spec.data || window.spec.svg_data || window.spec.layout_data
-                            );
-                            
-                            console.log("Debug: hasValidSpec:", hasValidSpec);
-                            console.log("Debug: renderBraceMap available:", typeof renderBraceMap);
-                            console.log("Debug: BraceRenderer available:", typeof window.BraceRenderer);
-                            
-                            if (hasValidSpec) {{
-                                if (typeof renderBraceMap === "function") {{
-                                    console.log("Calling global renderBraceMap function");
-                                    try {{
-                                        renderBraceMap(window.spec, backendTheme, window.dimensions);
-                                        console.log("renderBraceMap completed successfully");
-                                    }} catch (error) {{
-                                        console.error("Error in renderBraceMap:", error);
-                                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
-                                    }}
-                                }} else if (typeof window.BraceRenderer !== "undefined" && typeof window.BraceRenderer.renderBraceMap === "function") {{
-                                    console.log("Calling BraceRenderer.renderBraceMap function");
-                                    try {{
-                                        window.BraceRenderer.renderBraceMap(window.spec, backendTheme, window.dimensions);
-                                        console.log("BraceRenderer.renderBraceMap completed successfully");
-                                    }} catch (error) {{
-                                        console.error("Error in BraceRenderer.renderBraceMap:", error);
-                                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
-                                    }}
-                                }} else {{
-                                    console.error("renderBraceMap function not available");
-                                    document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Brace map renderer not loaded</div>";
-                                }}
-                            }} else {{
-                                console.error("Invalid brace map specification");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Invalid brace map specification</div>";
-                            }}
-                        }} else if (window.graph_type === "flow_map") {{
-                            console.log("Using flow map renderer directly");
-                            if (typeof renderFlowMap === "function") {{
-                                renderFlowMap(window.spec, backendTheme, window.dimensions);
-                            }} else {{
-                                console.error("renderFlowMap function not available");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Flow map renderer not loaded</div>";
-                            }}
-                        }} else if (window.graph_type === "concept_map") {{
-                            console.log("Using concept map renderer directly");
-                            if (typeof renderConceptMap === "function") {{
-                                renderConceptMap(window.spec, backendTheme, window.dimensions);
-                            }} else {{
-                                console.error("renderConceptMap function not available");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Concept map renderer not loaded</div>";
-                            }}
+                        // Use dynamic renderer loader for all graph types
+
+                        
+                        if (typeof window.dynamicRendererLoader === "undefined") {{
+                            console.error("Dynamic renderer loader not available");
+                            console.error("Available window properties:", Object.keys(window).slice(0, 20));
+
+                            throw new Error("Dynamic renderer loader not available");
                         }} else {{
-                            renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions);
+
                         }}
                         
-                        console.log("Graph rendering completed");
+                        try {{
+                            // Use the dynamic renderer loader to render the graph
+                            window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
+                                .then(() => {{
+
+                                }})
+                                .catch(error => {{
+                                    console.error("Dynamic rendering failed:", error);
+
+                                }});
+                        }} catch (error) {{
+                            console.error("Error calling dynamic renderer:", error);
+
+                        }}
+                        
+
                         
                         // Wait a moment for SVG to be created
                         setTimeout(() => {{
                             const svg = document.querySelector("svg");
                             if (svg) {{
-                                console.log("SVG found with dimensions:", svg.getAttribute("width"), "x", svg.getAttribute("height"));
+
                             }} else {{
                                 console.error("No SVG element found after rendering");
-                                document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">No SVG created after rendering</div>";
+
                             }}
                         }}, 1000);
                     }} catch (error) {{
                         console.error("Render error:", error);
-                        document.body.innerHTML += "<div style=\\"color: red; padding: 20px;\\">Render error: " + error.message + "</div>";
+
                     }}
                 }} else {{
                     setTimeout(waitForD3, 100);
@@ -2007,20 +1983,54 @@ def generate_dingtalk():
                 page.set_default_timeout(60000)  # 60 seconds default
                 page.set_default_navigation_timeout(60000)
                 
-                # Set up console and error logging BEFORE loading content
+                # Set up comprehensive console and error logging BEFORE loading content
                 console_messages = []
                 page_errors = []
                 
-                page.on("console", lambda msg: console_messages.append(f"{msg.type}: {msg.text}"))
-                page.on("pageerror", lambda err: page_errors.append(str(err)))
+                def log_console_message(msg):
+                    message = f"{msg.type}: {msg.text}"
+                    console_messages.append(message)
+                    logger.debug(f"BROWSER CONSOLE: {message}")
                 
-                # Set timeout and log HTML size if large
+                def log_page_error(err):
+                    error_str = str(err)
+                    page_errors.append(error_str)
+                    logger.error(f"BROWSER ERROR: {error_str}")
+                
+                page.on("console", log_console_message)
+                page.on("pageerror", log_page_error)
+                
+                # Also log when resources fail to load
+                page.on("requestfailed", lambda request: logger.error(f"RESOURCE FAILED: {request.url} - {request.failure}"))
+                page.on("response", lambda response: logger.debug(f"RESOURCE LOADED: {response.url} - {response.status}") if response.status >= 400 else None)
+                
+                # Set timeout and log HTML size and structure
                 html_size = len(html)
                 timeout_ms = 60000  # 60 seconds for all content
+                logger.debug(f"HTML content size: {html_size} characters")
+                
+                # Log script tags in HTML for debugging
+                script_count = html.count('<script>')
+                logger.debug(f"Script tags in HTML: {script_count}")
+                
+                # Log if we have our test marker
+                has_test_marker = 'test-marker' in html
+                logger.debug(f"Test marker present in HTML: {has_test_marker}")
+                
+                # Log dynamic loader presence
+                has_dynamic_loader = 'dynamicRendererLoader' in html
+                logger.debug(f"Dynamic loader present in HTML: {has_dynamic_loader}")
+                
                 if html_size > 100000:  # Log if HTML is very large
                     logger.debug(f"Large HTML content: {html_size} characters, setting timeout to {timeout_ms}ms")
                 
-                await page.set_content(html, timeout=timeout_ms)
+                # Try to load the content with more detailed error handling
+                try:
+                    await page.set_content(html, timeout=timeout_ms)
+                    logger.debug("HTML content loaded successfully")
+                except Exception as e:
+                    logger.error(f"Failed to set HTML content: {e}")
+                    raise
                 
                 # Wait for rendering and check for console errors
                 logger.debug("Waiting for initial rendering...")

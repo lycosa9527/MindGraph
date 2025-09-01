@@ -20,7 +20,7 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
 
     // Validate spec
     if (!spec || !spec.title || !Array.isArray(spec.steps)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for flowchart');
+        console.error('Invalid spec for flowchart');
         return;
     }
 
@@ -211,7 +211,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
 
     // Validate spec
     if (!spec || !spec.title || !Array.isArray(spec.steps)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for flow map');
+        console.error('Invalid spec for flow map');
         return;
     }
 
@@ -613,8 +613,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
 }
 
 function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd3-container') {
-    // === FRONTEND DEBUG: BRIDGE MAP RENDERING START ===
-    console.log('=== FRONTEND DEBUG: BRIDGE MAP RENDERING START ===');
+
     console.log('Input spec:', spec);
     console.log('Spec type:', typeof spec);
     console.log('Spec keys:', Object.keys(spec || {}));
@@ -635,13 +634,13 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // Validate spec
     if (!spec || !Array.isArray(spec.analogies) || spec.analogies.length === 0) {
         console.error('Frontend Error: Invalid spec for bridge map');
-        d3.select(`#${containerId}`).append('div').style('color', 'red').text('Invalid spec for bridge map');
+        console.error('Invalid spec for bridge map');
         return;
     }
     
     // Validate that analogies have the correct structure
     if (!spec.analogies.every(analogy => analogy.left && analogy.right)) {
-        d3.select(`#${containerId}`).append('div').style('color', 'red').text('Invalid analogy structure. Each analogy must have left and right properties.');
+        console.error('Invalid analogy structure. Each analogy must have left and right properties.');
         return;
     }
     
@@ -699,8 +698,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     
     // 3. Draw analogy pairs first - EXACTLY as in old renderer
     spec.analogies.forEach((analogy, i) => {
-        // === FRONTEND DEBUG: RENDERING ANALOGY ===
-        console.log(`=== FRONTEND DEBUG: RENDERING ANALOGY ${i} ===`);
+
         console.log(`  Analogy data:`, analogy);
         console.log(`  Left text: "${analogy.left}"`);
         console.log(`  Right text: "${analogy.right}"`);
@@ -829,8 +827,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         window.MindGraphUtils.addWatermark(svg, theme);
     }
     
-    // === FRONTEND DEBUG: BRIDGE MAP RENDERING COMPLETE ===
-    console.log('=== FRONTEND DEBUG: BRIDGE MAP RENDERING COMPLETE ===');
+
     console.log('Final rendered analogies count:', spec.analogies.length);
     console.log('SVG dimensions:', { width, height });
     console.log('Container ID:', containerId);
@@ -842,7 +839,7 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     
     // Validate spec - use the correct format that matches the working spec
     if (!spec || !spec.event || !Array.isArray(spec.causes) || !Array.isArray(spec.effects)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for multi-flow map');
+        console.error('Invalid spec for multi-flow map');
         return;
     }
     

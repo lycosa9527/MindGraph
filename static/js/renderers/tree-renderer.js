@@ -32,13 +32,13 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     
     // Validate spec
     if (!spec || !spec.topic || !Array.isArray(spec.children)) {
-        d3.select('#d3-container').append('div').style('color', 'red').text('Invalid spec for tree map');
+        console.error('Invalid spec for tree map');
         return;
     }
     
     // Handle empty children case
     if (spec.children.length === 0) {
-        d3.select('#d3-container').append('div').style('color', 'orange').text('Tree map has no branches to display');
+        console.warn('Tree map has no branches to display');
         return;
     }
     
