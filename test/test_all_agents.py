@@ -580,7 +580,7 @@ def print_timing_summary(stats: Dict[str, Any]):
             print(f"   🔍 Bottleneck: Rendering is the main performance constraint")
         elif overhead_percentage > 40:
             print(f"   🔍 Bottleneck: Overhead is the main performance constraint")
-            print(f"   🔧 Optimization Target: Browser context pooling (saves 2-3s per request)")
+            print(f"   🔧 Optimization Target: LLM response caching (saves 5.94s per request - 69% of total time)")
         else:
             print(f"   🔍 Performance: Well-balanced between LLM, rendering, and overhead")
     

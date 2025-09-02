@@ -198,11 +198,11 @@ except Exception as e:
     # Don't raise here - allow app to continue with degraded performance
 
 # ============================================================================
-# BROWSER CONTEXT POOL INITIALIZATION
+# BROWSER MANAGER INITIALIZATION
 # ============================================================================
 
-# Browser context pool disabled for quick deployment - will be rewritten later
-# Browser context pool disabled for quick deployment
+# Browser manager uses fresh browser instance per request for optimal reliability
+# This approach ensures complete thread isolation and eliminates resource conflicts
 
 # ============================================================================
 # REQUEST LOGGING AND MONITORING

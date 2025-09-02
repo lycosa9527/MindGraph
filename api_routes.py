@@ -1114,26 +1114,26 @@ def generate_png():
             </script>
             </body></html>
             '''
-            # Get browser context from pool for optimal performance
+            # Create fresh browser instance for each request for optimal reliability
             # According to Playwright best practices:
             # - Each isolated operation should have its own browser context
             # - Contexts cannot cross event loop boundaries
-            # - For PNG generation, create a fresh context each time
+            # - For PNG generation, create a fresh browser instance each time
             # - Reference: https://playwright.dev/docs/browser-contexts#isolation
             
-            logger.debug("Creating browser context for PNG generation (shared browser, fresh context)")
+            logger.debug("Creating fresh browser instance for PNG generation")
             
-            # Use browser context pool for optimal performance and resource management
-            # The pool handles queuing when all contexts are busy, preventing resource exhaustion
+            # Use fresh browser manager for reliable, thread-safe operations
+            # This approach ensures complete isolation between requests
             from browser_manager import BrowserContextManager
             
-            logger.debug("Using browser context pool for PNG generation (queued approach)")
+            logger.debug("Using fresh browser manager for PNG generation")
             
             # Use context manager to automatically handle context acquisition and return
             async with BrowserContextManager() as context:
-                logger.debug(f"Browser context acquired from pool - type: {type(context)}, id: {id(context)}")
+                logger.debug(f"Fresh browser context created - type: {type(context)}, id: {id(context)}")
                 
-                # Use the pooled context for PNG generation
+                # Use the fresh context for PNG generation
                 page = await context.new_page()
                 
                 # Set timeout to 60 seconds for all content
@@ -1930,26 +1930,26 @@ def generate_dingtalk():
             </script>
             </body></html>
             '''
-            # Get browser context from pool for optimal performance
+            # Create fresh browser instance for each request for optimal reliability
             # According to Playwright best practices:
             # - Each isolated operation should have its own browser context
             # - Contexts cannot cross event loop boundaries
-            # - For PNG generation, create a fresh context each time
+            # - For PNG generation, create a fresh browser instance each time
             # - Reference: https://playwright.dev/docs/browser-contexts#isolation
             
-            logger.debug("Creating browser context for PNG generation (shared browser, fresh context)")
+            logger.debug("Creating fresh browser instance for PNG generation")
             
-            # Use browser context pool for optimal performance and resource management
-            # The pool handles queuing when all contexts are busy, preventing resource exhaustion
+            # Use fresh browser manager for reliable, thread-safe operations
+            # This approach ensures complete isolation between requests
             from browser_manager import BrowserContextManager
             
-            logger.debug("Using browser context pool for PNG generation (queued approach)")
+            logger.debug("Using fresh browser manager for PNG generation")
             
             # Use context manager to automatically handle context acquisition and return
             async with BrowserContextManager() as context:
-                logger.debug(f"Browser context acquired from pool - type: {type(context)}, id: {id(context)}")
+                logger.debug(f"Fresh browser context created - type: {type(context)}, id: {id(context)}")
                 
-                # Use the pooled context for PNG generation
+                # Use the fresh context for PNG generation
                 page = await context.new_page()
                 
                 # Set timeout to 60 seconds for all content
@@ -2278,13 +2278,20 @@ def get_timing_stats():
     
     return jsonify(formatted_stats)
 
-@api.route('/browser_context_pool_stats', methods=['GET'])
+@api.route('/browser_manager_stats', methods=['GET'])
 @handle_api_errors
-def get_browser_context_pool_stats():
-    """Browser context pool statistics endpoint (disabled for quick deployment)"""
+def get_browser_manager_stats():
+    """Browser manager statistics endpoint - fresh browser per request approach"""
     return jsonify({
-        'message': 'Browser context pool statistics endpoint is disabled for quick deployment',
-        'status': 'disabled'
+        'message': 'Browser manager uses fresh browser instance per request for optimal reliability',
+        'status': 'active',
+        'approach': 'fresh_browser_per_request',
+        'benefits': [
+            'Complete thread isolation',
+            'No resource conflicts',
+            'Reliable cleanup',
+            'Simplified architecture'
+        ]
     })
 
 @api.route('/temp_images/<filename>', methods=['GET'])

@@ -176,7 +176,7 @@
 ### **Font Weight Optimization** - 32% smaller HTML size, remove unused Inter font weights (1-2 hours) 🔄 **NEW**
 ### **D3.js Data URI Optimization** - 18.6% smaller HTML size, memory optimization (1-2 hours)
 ### **LLM Cache Memory Optimization** - More efficient caching with memory management (1-2 hours) 🔄 **NEW**
-### **Lazy Browser Pool Initialization** - Initialize pools only when needed (1 hour) 🔄 **NEW**
+### **Browser Pool Optimization** - Future optimization for memory efficiency (2-3 hours) 🔄 **FUTURE**
 
 ---
 
@@ -195,7 +195,7 @@
 ## 🎯 **KEY INSIGHTS & LESSONS LEARNED**
 
 ### **Threading Architecture Evolution** ✅ **RESOLVED**
-- **Initial Attempt**: Shared browser context pooling for performance optimization
+- **Initial Attempt**: Shared browser context pooling for performance optimization (replaced with fresh browser approach)
 - **Critical Issues**: Race conditions, "Target closed" errors, resource conflicts
 - **Root Cause**: Thread safety violations in shared browser approach
 - **Final Solution**: Thread-safe isolated browser instances per request
