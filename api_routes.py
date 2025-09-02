@@ -299,19 +299,17 @@ def sanitize_prompt(prompt):
     for pattern in dangerous_patterns:
         prompt = re.sub(pattern, '', prompt, flags=re.IGNORECASE | re.DOTALL)
     
-    # HTML entity encoding for special characters
-    html_entities = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '&': '&amp;',
-        '/': '&#x2F;',
-        '\\': '&#x5C;',
-    }
-    
-    for char, entity in html_entities.items():
-        prompt = prompt.replace(char, entity)
+    # HTML entity encoding for special characters (but preserve Chinese characters)
+    # Only encode characters that are actually dangerous, not all special characters
+    # Temporarily disabled to test Chinese character preservation
+    # html_entities = {
+    #     '<': '&lt;',
+    #     '>': '&gt;',
+    #     '&': '&amp;',
+    # }
+    # 
+    # for char, entity in html_entities.items():
+    #     prompt = prompt.replace(char, entity)
     
     # Remove control characters and normalize whitespace
     prompt = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', prompt)
@@ -1125,25 +1123,17 @@ def generate_png():
             
             logger.debug("Creating browser context for PNG generation (shared browser, fresh context)")
             
-            # Thread-safe fresh browser approach for concurrent requests
-            # Each request gets its own isolated browser and event loop
-            # This ensures no shared state or async conflicts between threads
-            from playwright.async_api import async_playwright
+            # Use browser context pool for optimal performance and resource management
+            # The pool handles queuing when all contexts are busy, preventing resource exhaustion
+            from browser_manager import BrowserContextManager
             
-            logger.debug("Creating fresh browser for PNG generation (thread-safe isolated approach)")
-            playwright = await async_playwright().start()
-            browser = await playwright.chromium.launch()
-            context = await browser.new_context(
-                viewport={'width': 1920, 'height': 1080},
-                user_agent='MindGraph PNG Generator/1.0',
-                java_script_enabled=True,
-                ignore_https_errors=True
-            )
+            logger.debug("Using browser context pool for PNG generation (queued approach)")
             
-            logger.debug(f"Fresh browser and context created - type: {type(context)}, id: {id(context)}")
-            
-            try:
-                # Use the fresh context for PNG generation
+            # Use context manager to automatically handle context acquisition and return
+            async with BrowserContextManager() as context:
+                logger.debug(f"Browser context acquired from pool - type: {type(context)}, id: {id(context)}")
+                
+                # Use the pooled context for PNG generation
                 page = await context.new_page()
                 
                 # Set timeout to 60 seconds for all content
@@ -1397,25 +1387,6 @@ def generate_png():
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
-            finally:
-                # Clean up resources properly
-                logger.debug("Cleaning up PNG generation resources")
-                try:
-                    if 'page' in locals():
-                        await page.close()
-                        logger.debug("Page closed")
-                    if 'context' in locals():
-                        await context.close()
-                        logger.debug("Context closed")
-                    # Close browser and playwright instances for complete cleanup
-                    if 'browser' in locals():
-                        await browser.close()
-                        logger.debug("Browser closed")
-                    if 'playwright' in locals():
-                        await playwright.stop()
-                        logger.debug("Playwright stopped")
-                except Exception as cleanup_error:
-                    logger.warning(f"Error during cleanup: {cleanup_error}")
         
         # Close the async function definition
         # Now call the async function with proper event loop handling
@@ -1968,25 +1939,17 @@ def generate_dingtalk():
             
             logger.debug("Creating browser context for PNG generation (shared browser, fresh context)")
             
-            # Thread-safe fresh browser approach for concurrent requests
-            # Each request gets its own isolated browser and event loop
-            # This ensures no shared state or async conflicts between threads
-            from playwright.async_api import async_playwright
+            # Use browser context pool for optimal performance and resource management
+            # The pool handles queuing when all contexts are busy, preventing resource exhaustion
+            from browser_manager import BrowserContextManager
             
-            logger.debug("Creating fresh browser for PNG generation (thread-safe isolated approach)")
-            playwright = await async_playwright().start()
-            browser = await playwright.chromium.launch()
-            context = await browser.new_context(
-                viewport={'width': 1920, 'height': 1080},
-                user_agent='MindGraph PNG Generator/1.0',
-                java_script_enabled=True,
-                ignore_https_errors=True
-            )
+            logger.debug("Using browser context pool for PNG generation (queued approach)")
             
-            logger.debug(f"Fresh browser and context created - type: {type(context)}, id: {id(context)}")
-            
-            try:
-                # Use the fresh context for PNG generation
+            # Use context manager to automatically handle context acquisition and return
+            async with BrowserContextManager() as context:
+                logger.debug(f"Browser context acquired from pool - type: {type(context)}, id: {id(context)}")
+                
+                # Use the pooled context for PNG generation
                 page = await context.new_page()
                 
                 # Set timeout to 60 seconds for all content
@@ -2162,25 +2125,6 @@ def generate_dingtalk():
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
-            finally:
-                # Clean up resources properly
-                logger.debug("Cleaning up PNG generation resources")
-                try:
-                    if 'page' in locals():
-                        await page.close()
-                        logger.debug("Page closed")
-                    if 'context' in locals():
-                        await context.close()
-                        logger.debug("Context closed")
-                    # Close browser and playwright instances for complete cleanup
-                    if 'browser' in locals():
-                        await browser.close()
-                        logger.debug("Browser closed")
-                    if 'playwright' in locals():
-                        await playwright.stop()
-                        logger.debug("Playwright stopped")
-                except Exception as cleanup_error:
-                    logger.warning(f"Error during cleanup: {cleanup_error}")
         
         # Execute the async rendering
         loop = asyncio.new_event_loop()

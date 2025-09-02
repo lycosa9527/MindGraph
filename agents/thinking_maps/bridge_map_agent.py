@@ -229,11 +229,37 @@ class BridgeMapAgent(BaseAgent):
             logger.error(f"BridgeMapAgent: Error enhancing spec: {e}")
             return spec
     
-
-
-    
-
-    
+    def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
+        """
+        Enhance an existing bridge map specification.
+        
+        Args:
+            spec: Existing specification to enhance
+            
+        Returns:
+            Dict containing success status and enhanced spec
+        """
+        try:
+            logger.debug("BridgeMapAgent: Enhancing existing specification")
+            
+            # If already enhanced, return as-is
+            if spec.get('_metadata', {}).get('enhanced'):
+                return {'success': True, 'spec': spec}
+            
+            # Enhance the spec
+            enhanced_spec = self._enhance_spec(spec)
+            
+            return {
+                'success': True,
+                'spec': enhanced_spec
+            }
+            
+        except Exception as e:
+            logger.error(f"BridgeMapAgent: Error enhancing spec: {e}")
+            return {
+                'success': False,
+                'error': f'Enhancement failed: {str(e)}'
+            }    
 
     
 

@@ -718,123 +718,18 @@ def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> str:
             logger.info(f"LLM classification completed: '{user_prompt}' → {detected_type}")
             return detected_type
         else:
-            logger.warning(f"LLM returned invalid type '{detected_type}', falling back to semantic analysis")
-            return _detect_diagram_type_fallback(user_prompt, language)
+            logger.warning(f"LLM returned invalid type '{detected_type}', using default mind_map")
+            return 'mind_map'
             
     except ValueError as e:
         logger.error(f"Input validation failed: {e}")
-        return 'bubble_map'  # Safe default
+        return 'mind_map'  # Safe default
     except Exception as e:
-        logger.error(f"LLM classification failed: {e}, using fallback")
-        return _detect_diagram_type_fallback(user_prompt, language)
+        logger.error(f"LLM classification failed: {e}, using default mind_map")
+        return 'mind_map'
 
 
-def _detect_diagram_type_fallback(user_prompt: str, language: str) -> str:
-    """
-    Semantic fallback detection using longest-match-first approach.
-    Only used when LLM classification fails.
-    
-    This function distinguishes between what the user wants to CREATE vs the TOPIC content.
-    """
-    prompt_lower = user_prompt.lower()
-    
-    # First, check for explicit creation intent patterns
-    if language == 'zh':
-        # Check for "生成/创建 X的Y图" patterns (user wants Y diagram about X topic)
-        creation_patterns = [
-            (r'生成.*的气泡图|创建.*的气泡图|做.*的气泡图', 'bubble_map'),
-            (r'生成.*的双气泡图|创建.*的双气泡图|做.*的双气泡图', 'double_bubble_map'),
-            (r'生成.*的流程图|创建.*的流程图|做.*的流程图', 'flow_map'),
-            (r'生成.*的复流程图|创建.*的复流程图|做.*的复流程图', 'multi_flow_map'),
-            (r'生成.*的树形图|创建.*的树形图|做.*的树形图', 'tree_map'),
-            (r'生成.*的圆圈图|创建.*的圆圈图|做.*的圆圈图', 'circle_map'),
-            (r'生成.*的桥梁图|创建.*的桥梁图|做.*的桥梁图', 'bridge_map'),
-            (r'生成.*的括号图|创建.*的括号图|做.*的括号图', 'brace_map'),
-            (r'生成.*的概念图|创建.*的概念图|做.*的概念图', 'concept_map'),
-            (r'生成.*的思维导图|创建.*的思维导图|做.*的思维导图', 'mind_map'),
-        ]
-    else:
-        creation_patterns = [
-            (r'create.*bubble map|generate.*bubble map|make.*bubble map', 'bubble_map'),
-            (r'create.*double bubble map|generate.*double bubble map|make.*double bubble map', 'double_bubble_map'),
-            (r'create.*flow map|generate.*flow map|make.*flow map', 'flow_map'),
-            (r'create.*multi flow map|generate.*multi flow map|make.*multi flow map', 'multi_flow_map'),
-            (r'create.*tree map|generate.*tree map|make.*tree map', 'tree_map'),
-            (r'create.*circle map|generate.*circle map|make.*circle map', 'circle_map'),
-            (r'create.*bridge map|generate.*bridge map|make.*bridge map', 'bridge_map'),
-            (r'create.*brace map|generate.*brace map|make.*brace map', 'brace_map'),
-            (r'create.*concept map|generate.*concept map|make.*concept map', 'concept_map'),
-            (r'create.*mind map|generate.*mind map|make.*mind map', 'mind_map'),
-        ]
-    
-    # Check creation intent patterns first
-    import re
-    for pattern, diagram_type in creation_patterns:
-        if re.search(pattern, prompt_lower):
-            logger.debug(f"Fallback creation intent detected: '{user_prompt}' → {diagram_type}")
-            return diagram_type
-    
-    # Fallback to content-based detection if no clear creation intent
-    if language == 'zh':
-        keyword_patterns = [
-            ('double_bubble_map', ['双气泡图', '对比气泡图']),
-            ('multi_flow_map', ['复流程图', '多流程图', '因果流程图']),
-            ('bubble_map', ['气泡图', '属性图']),
-            ('bridge_map', ['桥梁图', '类比图', '对比桥']),
-            ('flow_map', ['流程图', '步骤图']),
-            ('tree_map', ['树形图', '分类图', '层次图']),
-            ('circle_map', ['圆圈图', '环形图', '上下文图']),
-            ('brace_map', ['括号图', '整体图', '部分图']),
-            ('concept_map', ['概念图', '关系图']),
-            ('mind_map', ['思维导图', '脑图', '发散图']),
-        ]
-    else:
-        keyword_patterns = [
-            ('double_bubble_map', ['double bubble map', 'comparison bubble']),
-            ('multi_flow_map', ['multi flow map', 'cause effect flow', 'multiple flow']),
-            ('bubble_map', ['bubble map', 'attribute map']),
-            ('bridge_map', ['bridge map', 'analogy map']),
-            ('flow_map', ['flow map', 'process map', 'sequence map']),
-            ('tree_map', ['tree map', 'hierarchy map', 'classification map']),
-            ('circle_map', ['circle map', 'context map']),
-            ('brace_map', ['brace map', 'part whole map']),
-            ('concept_map', ['concept map', 'relationship map']),
-            ('mind_map', ['mind map', 'brainstorm map']),
-        ]
-    
-    # Check patterns in order of specificity
-    for diagram_type, keywords in keyword_patterns:
-        if any(keyword in prompt_lower for keyword in keywords):
-            logger.debug(f"Fallback content detection completed: '{user_prompt}' → {diagram_type}")
-            return diagram_type
-    
-    # Semantic analysis based on content intent
-    if language == 'zh':
-        if any(word in prompt_lower for word in ['属性', '特征', '特点', '性质']):
-            return 'bubble_map'
-        elif any(word in prompt_lower for word in ['对比', '比较', '异同']):
-            return 'double_bubble_map'
-        elif any(word in prompt_lower for word in ['原因', '结果', '因果', '影响']):
-            return 'multi_flow_map'
-        elif any(word in prompt_lower for word in ['步骤', '流程', '过程', '顺序']):
-            return 'flow_map'
-        elif any(word in prompt_lower for word in ['分类', '层次', '结构']):
-            return 'tree_map'
-    else:
-        if any(word in prompt_lower for word in ['attribute', 'characteristic', 'feature', 'property']):
-            return 'bubble_map'
-        elif any(word in prompt_lower for word in ['compare', 'contrast', 'difference', 'similarity']):
-            return 'double_bubble_map'
-        elif any(word in prompt_lower for word in ['cause', 'effect', 'result', 'consequence']):
-            return 'multi_flow_map'
-        elif any(word in prompt_lower for word in ['step', 'process', 'sequence', 'procedure']):
-            return 'flow_map'
-        elif any(word in prompt_lower for word in ['hierarchy', 'classification', 'structure']):
-            return 'tree_map'
-    
-    # Default to bubble_map (most versatile)
-    logger.info(f"Default Detection: '{user_prompt}' → bubble_map (no specific patterns found)")
-    return 'bubble_map'
+
 
 
 def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:

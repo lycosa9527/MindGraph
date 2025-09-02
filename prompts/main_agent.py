@@ -39,24 +39,23 @@ CLASSIFICATION_EN = """Analyze the following user input and determine what type 
 
 Important: Distinguish between the diagram type the user wants vs the topic content
 - "generate a bubble map about double bubble maps" → user wants bubble_map, topic is about double bubble maps → bubble_map
+- "generate a bubble map about mind maps" → user wants bubble_map, topic is about mind maps → bubble_map
 - "generate a mind map about concept maps" → user wants mind_map, topic is about concept maps → mind_map
 - "generate a concept map about mind maps" → user wants concept_map, topic is about mind maps → concept_map
 - "generate a double bubble map comparing apples and oranges" → user wants double_bubble_map → double_bubble_map
+- "generate a bridge map showing learning is like building" → user wants bridge_map → bridge_map
+- "generate a tree map for animal classification" → user wants tree_map → tree_map
+- "generate a circle map defining climate change" → user wants circle_map → circle_map
+- "generate a multi-flow map analyzing lamp explosion" → user wants multi_flow_map → multi_flow_map
+- "generate a flow map showing coffee making steps" → user wants flow_map → flow_map
+- "generate a brace map breaking down computer parts" → user wants brace_map → brace_map
 
 User input: "{user_prompt}"
 
-Key phrases to identify:
-- "generate... bubble map" / "create... bubble map" → bubble_map
-- "generate... double bubble map" / "create... double bubble map" → double_bubble_map
-- "generate... mind map" / "create... mind map" → mind_map
-- "generate... concept map" / "create... concept map" → concept_map
-- "generate... flow map" / "create... flow map" → flow_map
-- "generate... tree map" / "create... tree map" → tree_map
-- Focus on what diagram type the user is requesting (after "generate/create"), not the topic content (after "about")
+Based on user intent and content analysis, select the most appropriate diagram type:
 
-Available diagram types and their use cases:
 1. bubble_map (Bubble Map) - describing attributes, characteristics, features
-2. bridge_map (Bridge Map) - analogies, comparing similarities between concepts
+2. bridge_map (Bridge Map) - analogies, comparing similarities between concepts  
 3. tree_map (Tree Map) - classification, hierarchy, organizational structure
 4. circle_map (Circle Map) - association, generating related information around the central topic
 5. double_bubble_map (Double Bubble Map) - comparing and contrasting two things
@@ -66,30 +65,37 @@ Available diagram types and their use cases:
 9. concept_map (Concept Map) - relationship networks between concepts
 10. mind_map (Mind Map) - divergent thinking, brainstorming
 
+Edge Cases and Decision Logic:
+- If user intent is unclear or ambiguous, prefer mind_map (most versatile)
+- If multiple types could fit, choose the most specific one
+- If user mentions "chart", "graph", or "diagram" without specifics, analyze the content intent
+- If user wants to compare/contrast two things, use double_bubble_map
+- If user wants to show causes and effects, use multi_flow_map
+- If user wants to show steps or processes, use flow_map
+
 Return only the diagram type name (e.g., bubble_map), no other content."""
 
 CLASSIFICATION_ZH = """分析以下用户输入，判断用户想要创建的图表类型。
 
 重要：区分用户想要创建的图表类型 vs 图表内容主题
 - "生成一个关于双气泡图的气泡图" → 用户要创建气泡图，主题是双气泡图 → bubble_map
+- "生成一个关于思维导图的气泡图" → 用户要创建气泡图，主题是思维导图 → bubble_map
 - "生成一个关于概念图的思维导图" → 用户要创建思维导图，主题是概念图 → mind_map
 - "生成一个关于思维导图的概念图" → 用户要创建概念图，主题是思维导图 → concept_map
 - "生成一个双气泡图比较苹果和橙子" → 用户要创建双气泡图 → double_bubble_map
+- "生成一个桥形图说明学习像建筑" → 用户要创建桥形图 → bridge_map
+- "生成一个树形图展示动物分类" → 用户要创建树形图 → tree_map
+- "生成一个圆圈图定义气候变化" → 用户要创建圆圈图 → circle_map
+- "生成一个复流程图分析酒精灯爆炸" → 用户要创建复流程图 → multi_flow_map
+- "生成一个流程图展示制作咖啡步骤" → 用户要创建流程图 → flow_map
+- "生成一个括号图分解电脑组成部分" → 用户要创建括号图 → brace_map
 
 用户输入："{user_prompt}"
 
-注意识别关键词：
-- "生成...的气泡图" / "创建...的气泡图" → bubble_map
-- "生成...的双气泡图" / "创建...的双气泡图" → double_bubble_map
-- "生成...的思维导图" / "创建...的思维导图" → mind_map
-- "生成...的概念图" / "创建...的概念图" → concept_map
-- "生成...的流程图" / "创建...的流程图" → flow_map
-- "生成...的树形图" / "创建...的树形图" → tree_map
-- 重点关注用户要求的图表类型（"的X图"中的X），而不是内容主题（"关于Y"中的Y）
+基于用户意图和内容分析，选择最合适的图表类型：
 
-可选图表类型及其适用场景：
 1. bubble_map (气泡图) - 描述事物的属性、特征、特点
-2. bridge_map (桥梁图) - 通过类比来理解新概念
+2. bridge_map (桥形图) - 通过类比来理解新概念
 3. tree_map (树形图) - 分类、层次结构、组织架构
 4. circle_map (圆圈图) - 联想，围绕中心主题生成相关的信息
 5. double_bubble_map (双气泡图) - 对比两个事物的异同
@@ -98,6 +104,14 @@ CLASSIFICATION_ZH = """分析以下用户输入，判断用户想要创建的图
 8. brace_map (括号图) - 对中心词进行拆分，整体与部分的关系
 9. concept_map (概念图) - 概念间的关系网络
 10. mind_map (思维导图) - 发散思维、头脑风暴
+
+边缘情况和决策逻辑：
+- 如果用户意图不明确或模糊，优先选择 mind_map（最通用）
+- 如果多个类型都适用，选择最具体的那个
+- 如果用户提到"图表"、"图形"或"图"但没有具体说明，分析内容意图
+- 如果用户想要对比两个事物，使用 double_bubble_map
+- 如果用户想要显示因果关系，使用 multi_flow_map
+- 如果用户想要显示步骤或流程，使用 flow_map
 
 请只返回图表类型的英文名称（如：bubble_map），不要返回其他内容。"""
 

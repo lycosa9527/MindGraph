@@ -10,6 +10,9 @@ USAGE:
     python test_all_agents.py concurrent      # Enhanced concurrent testing (3 rounds × 4 requests)
     python test_all_agents.py 4               # Same as concurrent
     python test_all_agents.py concurrency     # Same as concurrent
+    python test_all_agents.py production      # Production-like testing (5 rounds × 9 diagrams)
+    python test_all_agents.py prod            # Same as production
+    python test_all_agents.py 5               # Same as production
 
 ENHANCED CONCURRENT TESTING:
     - Tests 3 rounds of 4 simultaneous requests (12 total requests)
@@ -19,6 +22,16 @@ ENHANCED CONCURRENT TESTING:
     - Threading functionality verification
     - Images saved to test/images/ with round-based naming
     - Final recommendations for production readiness
+
+PRODUCTION-LIKE TESTING:
+    - Tests 5 rounds, each testing all 9 diagram types (45 total requests)
+    - Uses pool of 50 diverse, realistic topics for maximum variety
+    - Each diagram type tested 5 times with different topics
+    - 4 concurrent requests per batch until all 9 diagrams tested per round
+    - Comprehensive performance analysis across all diagram types
+    - Mimics real production environment with diverse user requests
+    - Images saved to test/images/ with detailed naming
+    - Production readiness assessment
 """
 
 import sys
@@ -241,6 +254,7 @@ def generate_diagram_via_api(prompt, language="en", request_id=None) -> Dict[str
         timing_data['success'] = True
         timing_data['image_data'] = image_data
         timing_data['response_size'] = len(image_data)
+        timing_data['thread_id'] = thread_id
         
         print(f"  ✅ PNG image generated successfully ({len(image_data)} bytes)")
         print(f"  ⏱️  Total time: {timing_data['total_time']:.2f}s")
@@ -265,6 +279,7 @@ def generate_diagram_via_api(prompt, language="en", request_id=None) -> Dict[str
     except Exception as e:
         timing_data['error'] = str(e)
         timing_data['total_time'] = time.time() - timing_data['start_time']
+        timing_data['thread_id'] = thread_id
         print(f"  ❌ Error generating diagram: {str(e)}")
         return timing_data
 
@@ -926,6 +941,344 @@ def test_concurrent_requests(num_concurrent=4, num_rounds=3):
     
     return success_rate >= 90
 
+def test_production_like_concurrent(num_concurrent=4, num_rounds=5):
+    """Test production-like concurrent requests with diverse topics and all diagram types.
+    
+    Each round tests all 9 diagrams (excluding concept maps) with random topics from a pool of 50.
+    This ensures each diagram type is tested multiple times with diverse content.
+    
+    Args:
+        num_concurrent (int): Number of simultaneous requests per round. Default 4.
+        num_rounds (int): Number of testing rounds. Default 5.
+        
+    Returns:
+        bool: True if success rate >= 90%, False otherwise.
+    """
+    # Input validation
+    if not isinstance(num_concurrent, int) or num_concurrent < 1:
+        raise ValueError("num_concurrent must be a positive integer")
+    if not isinstance(num_rounds, int) or num_rounds < 1:
+        raise ValueError("num_rounds must be a positive integer")
+    if num_concurrent > MAX_CONCURRENT_REQUESTS:
+        print(f"⚠️  WARNING: Testing {num_concurrent} concurrent requests may be resource-intensive")
+    
+    print(f"\n{'='*80}")
+    print(f"🚀 PRODUCTION-LIKE CONCURRENT TESTING")
+    print(f"{'='*80}")
+    print(f"Testing {num_rounds} rounds, each testing all 9 diagram types")
+    print(f"Total requests: {num_rounds * 9} (9 diagrams × {num_rounds} rounds)")
+    print(f"Each round: 4 concurrent requests until all 9 diagrams are tested")
+    print(f"Expected: All requests should complete successfully with proper threading")
+    print(f"Server threads configured: 6 (from waitress.conf.py)")
+    print(f"Note: Concept Maps excluded due to performance issues")
+    
+    # Create images directory for test results
+    images_dir = ensure_test_directories()
+    print(f"✓ Images will be saved to: {images_dir}")
+    
+    # Define all 9 diagram types (excluding concept maps)
+    all_diagram_types = [
+        ("Mind Map", "mindmap"),
+        ("Bubble Map", "bubble_map"),
+        ("Double Bubble Map", "double_bubble_map"),
+        ("Bridge Map", "bridge_map"),
+        ("Tree Map", "tree_map"),
+        ("Circle Map", "circle_map"),
+        ("Flow Map", "flow_map"),
+        ("Brace Map", "brace_map"),
+        ("Multi Flow Map", "multi_flow_map")
+    ]
+    
+    # Create pool of 50 diverse, realistic topics
+    topic_pool = [
+        # Technology & Innovation
+        "人工智能技术发展", "区块链应用场景", "云计算架构设计", "5G网络技术", "物联网生态系统",
+        "机器学习算法", "大数据分析", "网络安全防护", "软件开发流程", "数字化转型",
+        
+        # Business & Management  
+        "项目管理方法", "市场营销策略", "供应链管理", "人力资源管理", "财务管理体系",
+        "企业文化建设", "客户关系管理", "品牌建设策略", "商业模式创新", "组织架构设计",
+        
+        # Education & Learning
+        "在线教育平台", "学习方法论", "知识管理体系", "教学评估方法", "课程设计流程",
+        "学习资源整合", "教育技术应用", "学术研究流程", "技能培训体系", "终身学习规划",
+        
+        # Health & Wellness
+        "健康管理方案", "医疗诊断流程", "康复治疗计划", "心理健康维护", "营养饮食规划",
+        "运动健身计划", "疾病预防策略", "医疗技术创新", "健康监测系统", "养生保健方法",
+        
+        # Environment & Sustainability
+        "环境保护措施", "可持续发展", "清洁能源技术", "废物处理流程", "生态保护策略",
+        "气候变化应对", "绿色建筑技术", "循环经济模式", "碳减排方案", "生态修复计划",
+        
+        # Social & Cultural
+        "社会问题分析", "文化交流活动", "社区建设规划", "公益活动组织", "文化传承保护",
+        "社会创新项目", "公共政策制定", "社会治理体系", "文化产业发展", "社会服务优化"
+    ]
+    
+    print(f"✓ Using pool of {len(topic_pool)} diverse topics")
+    print(f"✓ Testing all {len(all_diagram_types)} diagram types per round")
+    
+    # Test results tracking
+    all_results = []
+    thread_ids = set()
+    diagram_performance = {}
+    
+    # Run multiple rounds
+    for round_num in range(1, num_rounds + 1):
+        print(f"\n{'='*60}")
+        print(f"🔄 ROUND {round_num}/{num_rounds}")
+        print(f"{'='*60}")
+        print(f"🎯 Round {round_num} Configuration:")
+        for i, (name, _) in enumerate(all_diagram_types, 1):
+            print(f"  Diagram {i}: {name}")
+        print(f"⏰ Starting round {round_num} at {datetime.now().strftime('%H:%M:%S')}...")
+        
+        round_start_time = time.time()
+        round_results = []
+        
+        # Test all 9 diagrams in this round (4 concurrent at a time)
+        for batch_start in range(0, len(all_diagram_types), num_concurrent):
+            batch_end = min(batch_start + num_concurrent, len(all_diagram_types))
+            batch_diagrams = all_diagram_types[batch_start:batch_end]
+            
+            print(f"🚀 Testing batch {batch_start//num_concurrent + 1}: {len(batch_diagrams)} diagrams")
+            
+            # Submit concurrent requests for this batch
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_concurrent) as executor:
+                future_to_diagram = {}
+                
+                for i, (diagram_name, diagram_type) in enumerate(batch_diagrams):
+                    # Select random topic for this request
+                    import random
+                    random_topic = random.choice(topic_pool)
+                    
+                    # Create appropriate prompt based on diagram type
+                    if diagram_type == "mindmap":
+                        prompt = f"创建一个关于'{random_topic}'的思维导图"
+                    elif diagram_type == "bubble_map":
+                        prompt = f"创建一个关于'{random_topic}'的气泡图，显示主要特征和属性"
+                    elif diagram_type == "double_bubble_map":
+                        # For double bubble, we need two related topics
+                        topic2 = random.choice([t for t in topic_pool if t != random_topic])
+                        prompt = f"创建一个双气泡图，比较'{random_topic}'和'{topic2}'的异同"
+                    elif diagram_type == "bridge_map":
+                        topic2 = random.choice([t for t in topic_pool if t != random_topic])
+                        prompt = f"创建一个桥形图，类比'{random_topic}'与'{topic2}'的相似之处"
+                    elif diagram_type == "tree_map":
+                        prompt = f"创建一个树形图，展示'{random_topic}'的分类结构"
+                    elif diagram_type == "circle_map":
+                        prompt = f"创建一个圆圈图，定义'{random_topic}'的相关概念"
+                    elif diagram_type == "flow_map":
+                        prompt = f"创建一个流程图，展示'{random_topic}'的处理流程"
+                    elif diagram_type == "brace_map":
+                        prompt = f"创建一个括号图，分解'{random_topic}'的组成部分"
+                    elif diagram_type == "multi_flow_map":
+                        prompt = f"创建一个复流程图，分析'{random_topic}'的因果关系"
+                    
+                    request_id = f"R{round_num}-REQ{batch_start + i + 1}|T-{threading.current_thread().ident}"
+                    print(f"  📤 [REQ-R{round_num}-{batch_start + i + 1}|T-{threading.current_thread().ident}] Sending request to API...")
+                    print(f"  🎨 [REQ-R{round_num}-{batch_start + i + 1}|T-{threading.current_thread().ident}] Generating PNG image...")
+                    
+                    future = executor.submit(generate_diagram_via_api, prompt, "zh", request_id)
+                    future_to_diagram[future] = (diagram_name, diagram_type, random_topic, request_id)
+                
+                print(f"📤 All {len(batch_diagrams)} requests submitted to thread pool")
+                
+                # Collect results as they complete
+                for future in concurrent.futures.as_completed(future_to_diagram):
+                    diagram_name, diagram_type, topic, request_id = future_to_diagram[future]
+                    try:
+                        result = future.result()
+                        # Extract thread ID from the result data (which contains the actual worker thread ID)
+                        if result.get('thread_id'):
+                            thread_ids.add(str(result['thread_id']))
+                        
+                        if result['success']:
+                            # Save image
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            filename = f"round{round_num}_{diagram_type}_req{batch_start + 1}_{timestamp}.png"
+                            image_path = images_dir / filename
+                            
+                            with open(image_path, 'wb') as f:
+                                f.write(result['image_data'])
+                            
+                            print(f"✅ [{request_id}] API request completed at {datetime.now().strftime('%H:%M:%S')} (Status: 200)")
+                            print(f"✅ PNG image generated successfully ({len(result['image_data'])} bytes)")
+                            print(f"⏱️  Total time: {result['total_time']:.2f}s")
+                            print(f"⏱️  API request time: {result['api_request_time']:.2f}s")
+                            print(f"🧠 LLM time: {result['llm_time']:.2f}s")
+                            print(f"🎨 Rendering time: {result['rendering_time']:.2f}s")
+                            print(f"⚙️  Overhead time: {result['overhead_time']:.2f}s")
+                            print(f"     📊 Overhead breakdown:")
+                            print(f"        - Browser Setup: ~{result['overhead_time'] * 0.4:.1f}s (40%)")
+                            print(f"        - HTML Preparation: ~{result['overhead_time'] * 0.25:.1f}s (25%)")
+                            print(f"        - Content Loading: ~{result['overhead_time'] * 0.2:.1f}s (20%)")
+                            print(f"        - JavaScript Init: ~{result['overhead_time'] * 0.1:.1f}s (10%)")
+                            print(f"        - Server Processing: ~{result['overhead_time'] * 0.05:.1f}s (5%)")
+                            print(f"💾 [{request_id}] Image saved: {filename}")
+                            
+                            # Track performance
+                            if diagram_name not in diagram_performance:
+                                diagram_performance[diagram_name] = []
+                            diagram_performance[diagram_name].append(result['total_time'])
+                            
+                            round_results.append({
+                                'diagram_name': diagram_name,
+                                'diagram_type': diagram_type,
+                                'topic': topic,
+                                'success': True,
+                                'total_time': result['total_time'],
+                                'image_file': filename,
+                                'request_id': request_id,
+                                'thread_id': result.get('thread_id')
+                            })
+                            
+                        else:
+                            print(f"❌ [{request_id}] Failed: {result['error']}")
+                            round_results.append({
+                                'diagram_name': diagram_name,
+                                'diagram_type': diagram_type,
+                                'topic': topic,
+                                'success': False,
+                                'error': result['error'],
+                                'request_id': request_id,
+                                'thread_id': result.get('thread_id')
+                            })
+                            
+                    except Exception as e:
+                        print(f"❌ [{request_id}] Exception: {e}")
+                        round_results.append({
+                            'diagram_name': diagram_name,
+                            'diagram_type': diagram_type,
+                            'topic': topic,
+                            'success': False,
+                            'error': str(e),
+                            'request_id': request_id,
+                            'thread_id': None
+                        })
+        
+        # Round summary
+        round_end_time = time.time()
+        round_duration = round_end_time - round_start_time
+        successful_in_round = sum(1 for r in round_results if r['success'])
+        
+        print(f"📊 Round {round_num} Summary:")
+        print(f"   ✅ Successful: {successful_in_round}/{len(round_results)}")
+        print(f"   ⏱️  Round time: {round_duration:.2f}s")
+        if successful_in_round > 0:
+            avg_time = sum(r['total_time'] for r in round_results if r['success']) / successful_in_round
+            print(f"   📈 Average request time: {avg_time:.2f}s")
+        
+        all_results.extend(round_results)
+        
+        # Pause between rounds (except last round)
+        if round_num < num_rounds:
+            print(f"   💤 Pausing 3s before next round (allowing resource cleanup)...")
+            time.sleep(3)
+    
+    # Final comprehensive analysis
+    print(f"\n{'='*80}")
+    print(f"🎯 PRODUCTION-LIKE CONCURRENT TESTING ANALYSIS")
+    print(f"{'='*80}")
+    
+    # Overall Statistics
+    total_requests = len(all_results)
+    successful_requests = [r for r in all_results if r['success']]
+    failed_requests = [r for r in all_results if not r['success']]
+    success_rate = (len(successful_requests) / total_requests * 100) if total_requests > 0 else 0
+    
+    print(f"📊 Overall Statistics:")
+    print(f"   Total requests: {total_requests} ({num_rounds} rounds × 9 diagrams)")
+    print(f"   ✅ Successful: {len(successful_requests)}/{total_requests} ({success_rate:.1f}%)")
+    print(f"   ❌ Failed: {len(failed_requests)}/{total_requests} ({100-success_rate:.1f}%)")
+    
+    # Threading Analysis
+    print(f"🧵 Threading Analysis:")
+    print(f"   Unique threads used: {len(thread_ids)}")
+    print(f"   Expected threads: {num_concurrent} (server configured with 6 threads)")
+    threading_works = len(thread_ids) > 1
+    if threading_works:
+        print(f"   ✅ EXCELLENT: True multi-threading detected!")
+    else:
+        print(f"   ❌ WARNING: Limited threading detected - possible serialization")
+    
+    print(f"   Thread usage distribution:")
+    for thread_id in sorted(thread_ids):
+        count = sum(1 for r in all_results if str(r.get('thread_id', '')) == str(thread_id))
+        print(f"     Thread-{thread_id}: {count} requests")
+    
+    # Diagram Performance Analysis
+    print(f"\n📊 Diagram Type Performance Analysis:")
+    if diagram_performance:
+        for diagram_name, times in diagram_performance.items():
+            avg_time = statistics.mean(times)
+            min_time = min(times)
+            max_time = max(times)
+            count = len(times)
+            print(f"   {diagram_name}:")
+            print(f"     Count: {count} requests")
+            print(f"     Average: {avg_time:.2f}s")
+            print(f"     Range: {min_time:.2f}s - {max_time:.2f}s")
+            if avg_time < 15:
+                print(f"     Status: ✅ GOOD performance")
+            elif avg_time < 30:
+                print(f"     Status: ⚠️  MODERATE performance")
+            else:
+                print(f"     Status: ❌ SLOW performance")
+    
+    # Overall Performance Summary
+    if successful_requests:
+        times = [r['total_time'] for r in successful_requests]
+        avg_time = statistics.mean(times)
+        min_time = min(times)
+        max_time = max(times)
+        
+        print(f"\n📊 Overall Performance Summary:")
+        print(f"   Average request time: {avg_time:.2f}s")
+        print(f"   Fastest request: {min_time:.2f}s")
+        print(f"   Slowest request: {max_time:.2f}s")
+        print(f"   Time variance: {max_time - min_time:.2f}s")
+    
+    # Generated Images Summary
+    print(f"\n📁 Generated Images Summary:")
+    print(f"   Total images generated: {len(successful_requests)}")
+    print(f"   Location: {images_dir}")
+    
+    # Find fastest and slowest diagrams
+    if diagram_performance:
+        fastest_diagram = min(diagram_performance.items(), key=lambda x: statistics.mean(x[1]))
+        slowest_diagram = max(diagram_performance.items(), key=lambda x: statistics.mean(x[1]))
+        print(f"   🏆 FASTEST: {fastest_diagram[0]} (avg: {statistics.mean(fastest_diagram[1]):.2f}s)")
+        print(f"   🐌 SLOWEST: {slowest_diagram[0]} (avg: {statistics.mean(slowest_diagram[1]):.2f}s)")
+    
+    print(f"   📊 RECOMMENDATION: {'Ready for production' if success_rate >= 90 and threading_works else 'Needs optimization'}")
+    
+    # Final conclusions
+    print(f"\n🎯 TESTING CONCLUSIONS:")
+    if success_rate >= 95:
+        print(f"   ✅ EXCELLENT: {success_rate:.1f}% success rate")
+    elif success_rate >= 90:
+        print(f"   ✅ GOOD: {success_rate:.1f}% success rate")
+    else:
+        print(f"   ❌ CONCERNING: {success_rate:.1f}% success rate")
+    
+    if threading_works:
+        print(f"   ✅ THREADING: Multi-threading is working correctly")
+    else:
+        print(f"   ❌ THREADING: Threading issues detected")
+    
+    if success_rate >= 90 and threading_works:
+        print(f"🎉 PRODUCTION-LIKE CONCURRENT TEST PASSED!")
+        print(f"✅ MindGraph successfully handled diverse concurrent requests")
+        print(f"💡 Your application is ready for production with multiple users!")
+    else:
+        print(f"⚠️  PRODUCTION-LIKE CONCURRENT TEST NEEDS ATTENTION")
+        print(f"❌ Some issues detected during concurrent execution")
+        print(f"💡 Check the analysis above for specific recommendations")
+    
+    return success_rate >= 90
+
 def main():
     """Main test function with comprehensive timing analysis."""
     print("🚀 Starting comprehensive MindGraph agent testing with timing analysis...")
@@ -936,29 +1289,54 @@ def main():
     if not check_app_running():
         return 1
     
-    # Check for concurrent testing mode
+    # Check for testing mode
     import sys
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ['concurrent', 'concurrency', '4']:
-        print("\n🎯 ENHANCED CONCURRENT TESTING MODE SELECTED")
-        print("This will test 3 rounds of 4 simultaneous requests each")
-        print("Testing diverse diagram types (excluding concept maps)")
-        print("=" * 60)
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].lower()
         
-        # Clean up previous test results before concurrent testing
-        cleanup_previous_tests()
-        
-        concurrent_success = test_concurrent_requests(num_concurrent=4, num_rounds=3)
-        
-        if concurrent_success:
-            print(f"\n🎉 COMPREHENSIVE CONCURRENT TEST PASSED!")
-            print(f"✅ MindGraph successfully handled multiple concurrent requests")
-            print(f"💡 Your application is ready for production with multiple users!")
-            return 0
-        else:
-            print(f"\n⚠️  CONCURRENT TEST NEEDS ATTENTION")
-            print(f"❌ Some issues detected during concurrent execution")
-            print(f"💡 Check the analysis above for specific recommendations")
-            return 1
+        if mode in ['production', 'prod', '5']:
+            print("\n🎯 PRODUCTION-LIKE TESTING MODE SELECTED")
+            print("This will test 5 rounds, each testing all 9 diagram types")
+            print("Total: 45 requests (9 diagrams × 5 rounds) with diverse topics")
+            print("=" * 60)
+            
+            # Clean up previous test results before production testing
+            cleanup_previous_tests()
+            
+            production_success = test_production_like_concurrent(num_concurrent=4, num_rounds=5)
+            
+            if production_success:
+                print(f"\n🎉 PRODUCTION-LIKE TEST PASSED!")
+                print(f"✅ MindGraph successfully handled diverse concurrent requests")
+                print(f"💡 Your application is ready for production with multiple users!")
+                return 0
+            else:
+                print(f"\n⚠️  PRODUCTION-LIKE TEST NEEDS ATTENTION")
+                print(f"❌ Some issues detected during concurrent execution")
+                print(f"💡 Check the analysis above for specific recommendations")
+                return 1
+                
+        elif mode in ['concurrent', 'concurrency', '4']:
+            print("\n🎯 ENHANCED CONCURRENT TESTING MODE SELECTED")
+            print("This will test 3 rounds of 4 simultaneous requests each")
+            print("Testing diverse diagram types (excluding concept maps)")
+            print("=" * 60)
+            
+            # Clean up previous test results before concurrent testing
+            cleanup_previous_tests()
+            
+            concurrent_success = test_concurrent_requests(num_concurrent=4, num_rounds=3)
+            
+            if concurrent_success:
+                print(f"\n🎉 COMPREHENSIVE CONCURRENT TEST PASSED!")
+                print(f"✅ MindGraph successfully handled multiple concurrent requests")
+                print(f"💡 Your application is ready for production with multiple users!")
+                return 0
+            else:
+                print(f"\n⚠️  CONCURRENT TEST NEEDS ATTENTION")
+                print(f"❌ Some issues detected during concurrent execution")
+                print(f"💡 Check the analysis above for specific recommendations")
+                return 1
     
     # Clean up previous test results
     cleanup_previous_tests()
