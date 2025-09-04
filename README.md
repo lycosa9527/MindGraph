@@ -71,6 +71,59 @@ Transform natural language into professional diagrams. Supports 10 diagram types
    - Web UI: `http://localhost:9527/debug` | 网页界面
    - API: `http://localhost:9527/api/generate_png` | API接口
 
+## Docker Deployment | Docker部署
+
+### Quick Docker Setup | 快速Docker设置
+
+1. **Build Docker Image | 构建Docker镜像**
+   ```bash
+   # From project root | 从项目根目录
+   docker build -f docker/Dockerfile -t mindgraph:latest .
+   ```
+
+2. **Run with Docker Compose | 使用Docker Compose运行**
+   ```bash
+   # Copy environment template | 复制环境模板
+   cp docker/docker.env.example .env
+   
+   # Edit .env with your values | 编辑.env文件
+   # - QWEN_API_KEY=your-api-key
+   # - EXTERNAL_HOST=your-server-ip
+   
+   # Start the application | 启动应用
+   docker-compose -f docker/docker-compose.yml up -d
+   ```
+
+3. **Access the Application | 访问应用**
+   - Web UI: `http://localhost:9527/debug` | 网页界面
+   - API: `http://localhost:9527/api/generate_png` | API接口
+
+### Docker Features | Docker特性
+
+- **✅ Optimized Image**: 2.93GB multi-stage build with Playwright pre-installed | **优化镜像**: 2.93GB多阶段构建，预装Playwright
+- **✅ Production Ready**: Health checks, non-root user, comprehensive logging | **生产就绪**: 健康检查、非root用户、全面日志
+- **✅ Easy Configuration**: Environment variables with sensible defaults | **简单配置**: 环境变量，合理默认值
+- **✅ Complete Setup**: All dependencies included, no runtime downloads | **完整设置**: 包含所有依赖，无需运行时下载
+
+### Docker Commands | Docker命令
+
+```bash
+# Build image | 构建镜像
+docker build -f docker/Dockerfile -t mindgraph:latest .
+
+# Run container | 运行容器
+docker run -d -p 9527:9527 \
+  -e QWEN_API_KEY=your-api-key \
+  -e EXTERNAL_HOST=localhost \
+  mindgraph:latest
+
+# View logs | 查看日志
+docker logs -f mindgraph-app
+
+# Stop container | 停止容器
+docker stop mindgraph-app
+```
+
 ## API Reference | API参考
 
 ### Core Endpoints | 核心端点
