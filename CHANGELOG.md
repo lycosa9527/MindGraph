@@ -5,6 +5,53 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2025-01-30
+
+### 🎯 **TOPIC EXTRACTION & RENDERING IMPROVEMENTS**
+
+#### LLM-Based Topic Extraction - COMPLETED ✅
+- **Eliminated Hardcoded String Manipulation**: Replaced crude string replacement with intelligent LLM-based topic extraction
+- **Context Preservation**: "生成" and other action words now preserved when semantically important
+- **Semantic Understanding**: LLM understands user intent and extracts meaningful topics
+- **Language Agnostic**: Consistent behavior for both Chinese and English inputs
+- **Specialized Extraction**: Created `extract_double_bubble_topics_llm()` for double bubble map comparisons
+
+#### Double Bubble Map Agent Improvements - COMPLETED ✅
+- **Smart Topic Extraction**: Double bubble map agent now uses LLM-based topic extraction before processing
+- **Proper Topic Separation**: Correctly extracts two comparison topics (e.g., "速度和加速度" from "生成速度和加速度的双气泡图")
+- **Consistent Processing**: All thinking map agents now use centralized topic extraction logic
+- **Error Handling**: Robust fallback mechanisms for topic extraction failures
+
+#### Visual Rendering Fixes - COMPLETED ✅
+- **Uniform Circle Sizing**: Fixed double bubble map difference circles to use consistent radius across both sides
+- **Font Size Consistency**: Corrected undefined `THEME.fontAttribute` to use proper `THEME.fontDiff`
+- **Cross-Side Uniformity**: All difference circles now use the same radius based on longest text across both sides
+- **Visual Consistency**: Eliminated size differences between left and right difference circles
+
+#### Code Quality Improvements - COMPLETED ✅
+- **Centralized Topic Extraction**: Single `extract_central_topic_llm()` function for all agents
+- **Specialized Functions**: `extract_double_bubble_topics_llm()` for comparison-specific extraction
+- **Maintainable Architecture**: Removed scattered hardcoded string manipulation across multiple files
+- **Future-Proof Design**: Handles new use cases without code changes
+
+### 🔧 **Technical Details**
+
+#### Files Modified:
+- `agents/main_agent.py`: Added LLM-based topic extraction functions
+- `agents/thinking_maps/double_bubble_map_agent.py`: Integrated topic extraction
+- `static/js/renderers/bubble-map-renderer.js`: Fixed circle sizing and font consistency
+
+#### Key Functions Added:
+- `extract_central_topic_llm()`: General purpose LLM-based topic extraction
+- `extract_double_bubble_topics_llm()`: Specialized extraction for comparison topics
+
+#### Breaking Changes:
+- None - all changes are backward compatible
+
+#### Performance Impact:
+- Minimal - LLM calls are fast and cached
+- Improved user experience with better topic extraction accuracy
+
 ## [2.6.0] - 2025-01-30
 
 ### 🔍 **COMPREHENSIVE END-TO-END CODE REVIEW COMPLETE**

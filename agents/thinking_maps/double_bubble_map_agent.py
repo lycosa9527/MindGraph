@@ -73,6 +73,11 @@ class DoubleBubbleMapAgent(BaseAgent):
         try:
             # Import centralized prompt system
             from prompts import get_prompt
+            from ..main_agent import extract_double_bubble_topics_llm
+            
+            # Extract two topics for comparison using specialized LLM extraction
+            topics = extract_double_bubble_topics_llm(prompt, language)
+            logger.debug(f"DoubleBubbleMapAgent: Extracted topics: {topics}")
             
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("double_bubble_map_agent", language, "generation")
@@ -81,7 +86,8 @@ class DoubleBubbleMapAgent(BaseAgent):
                 logger.error(f"DoubleBubbleMapAgent: No prompt found for language {language}")
                 return None
                 
-            user_prompt = f"请为以下描述创建一个双气泡图：{prompt}" if language == "zh" else f"Please create a double bubble map for the following description: {prompt}"
+            # Use the extracted topics instead of raw prompt
+            user_prompt = f"请为以下描述创建一个双气泡图：{topics}" if language == "zh" else f"Please create a double bubble map for the following description: {topics}"
             
             # Generate response from LLM
             messages = [

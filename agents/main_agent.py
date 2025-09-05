@@ -83,14 +83,85 @@ def validate_inputs(user_prompt: str, language: str) -> None:
     if not language or language not in ['zh', 'en']:
         raise ValueError("Language must be 'zh' or 'en'")
 
+def extract_central_topic_llm(user_prompt: str, language: str = 'zh') -> str:
+    """
+    Extract central topic using LLM instead of hardcoded string manipulation.
+    This provides better semantic understanding and context preservation.
+    """
+    try:
+        if language == 'zh':
+            prompt = f"从以下用户输入中提取核心主题，只返回主题内容，不要其他文字：\n{user_prompt}"
+        else:
+            prompt = f"Extract the central topic from this user input, return only the topic:\n{user_prompt}"
+        
+        result = llm_classification._call(prompt)
+        # Clean up the result - remove any extra whitespace or formatting
+        central_topic = result.strip()
+        
+        # Fallback to original prompt if extraction fails
+        if not central_topic or len(central_topic) < 2:
+            logger.warning(f"LLM topic extraction failed, using original prompt: {user_prompt}")
+            central_topic = user_prompt.strip()
+            
+        return central_topic
+        
+    except Exception as e:
+        logger.error(f"LLM topic extraction error: {e}, using original prompt")
+        return user_prompt.strip()
+
+def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh') -> str:
+    """
+    Extract two topics for double bubble map comparison using LLM.
+    This is specialized for double bubble maps that need two separate topics.
+    """
+    try:
+        if language == 'zh':
+            prompt = f"""从以下用户输入中提取两个要比较的主题，只返回两个主题，用"和"连接，不要其他文字：
+{user_prompt}
+
+重要：忽略动作词如"生成"、"创建"、"比较"、"制作"等，只提取实际要比较的两个主题。
+
+示例：
+输入："生成速度和加速度的双气泡图" → 输出："速度和加速度"
+输入："比较苹果和橙子" → 输出："苹果和橙子"
+输入："创建关于猫和狗的比较图" → 输出："猫和狗"
+输入："制作一个关于太阳和月亮的对比图" → 输出："太阳和月亮"
+
+你的输出："""
+        else:
+            prompt = f"""Extract two topics for comparison from this user input, return only the two topics separated by "and", no other text:
+{user_prompt}
+
+Examples:
+Input: "generate a double bubble map about speed and acceleration" → Output: "speed and acceleration"
+Input: "compare apples and oranges" → Output: "apples and oranges"
+Input: "create a comparison chart about cats and dogs" → Output: "cats and dogs"
+
+Your output:"""
+        
+        result = llm_classification._call(prompt)
+        # Clean up the result - remove any extra whitespace or formatting
+        topics = result.strip()
+        
+        # Fallback to original prompt if extraction fails
+        if not topics or len(topics) < 3:
+            logger.warning(f"LLM double bubble topic extraction failed, using original prompt: {user_prompt}")
+            topics = user_prompt.strip()
+            
+        return topics
+        
+    except Exception as e:
+        logger.error(f"LLM double bubble topic extraction error: {e}, using original prompt")
+        return user_prompt.strip()
+
 def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = 'en') -> dict:
     """
     Simple replacement for the removed complex style extraction function.
     Returns minimal data structure that existing code expects.
+    Now uses LLM-based topic extraction instead of hardcoded string manipulation.
     """
-    # Simple topic extraction
-    words = user_prompt.replace('生成', '').replace('图', '').replace('关于', '').replace('create', '').replace('generate', '').replace('about', '').strip().split()
-    central_topic = ' '.join(words[:3]) if words else user_prompt.strip()
+    # Use LLM-based topic extraction
+    central_topic = extract_central_topic_llm(user_prompt, language)
     
     return {
         "topics": [central_topic] if central_topic else [],
@@ -347,13 +418,13 @@ topic_extraction_prompt_zh = PromptTemplate(
 
 规则：
 1. 找到恰好两个可以比较的名词/概念
-2. 忽略"比较"、"生成"、"创建"、"显示"、"关于"、"之间"等词
+2. 忽略"比较"、"创建"、"显示"、"关于"、"之间"等词
 3. 只输出："主题1和主题2"
 4. 不要代码块，不要解释，不要额外文字
 
 示例：
 输入："比较猫和狗" → 输出："猫和狗"
-输入："生成关于宝马和奔驰的图表" → 输出："宝马和奔驰"
+输入："生成关于宝马和奔驰的图表" → 输出："生成关于宝马和奔驰"
 输入："创建苹果和橙子的比较" → 输出："苹果和橙子"
 
 你的输出（只输出两个主题）：
@@ -1093,9 +1164,8 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
     to generate exactly 30 concepts + relationships, matching the desired workflow.
     """
     try:
-        # Simple topic extraction from user prompt
-        words = user_prompt.replace('生成', '').replace('图', '').replace('关于', '').replace('create', '').replace('generate', '').replace('about', '').strip().split()
-        central_topic = ' '.join(words[:3]) if words else user_prompt.strip()  # Use first 3 words or fallback
+        # Use LLM-based topic extraction instead of hardcoded string manipulation
+        central_topic = extract_central_topic_llm(user_prompt, language)
         
         if isinstance(central_topic, list):
             central_topic = ' '.join(central_topic)
@@ -1511,9 +1581,8 @@ class MainAgent:
             dict: Graph specification with styling and metadata
         """
         try:
-            # Simple topic extraction from the prompt
-            words = user_prompt.replace('生成', '').replace('图', '').replace('关于', '').replace('create', '').replace('generate', '').replace('about', '').strip().split()
-            central_topic = ' '.join(words[:3]) if words else user_prompt.strip()
+            # Use LLM-based topic extraction instead of hardcoded string manipulation
+            central_topic = extract_central_topic_llm(user_prompt, language)
             
             if not central_topic.strip():
                 return create_error_response("Failed to extract topic from prompt", "extraction")

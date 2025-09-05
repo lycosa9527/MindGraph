@@ -448,9 +448,13 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const rightTopicR = getTextRadius(spec.right, THEME.fontTopic, 20);
     const topicR = Math.max(leftTopicR, rightTopicR, 60);
     
-    const simR = Math.max(...spec.similarities.map(t => getTextRadius(t, THEME.fontAttribute, 10)), 28);
-    const leftDiffR = Math.max(...spec.left_differences.map(t => getTextRadius(t, THEME.fontAttribute, 8)), 24);
-    const rightDiffR = Math.max(...spec.right_differences.map(t => getTextRadius(t, THEME.fontAttribute, 8)), 24);
+    const simR = Math.max(...spec.similarities.map(t => getTextRadius(t, THEME.fontSim, 10)), 28);
+    
+    // Calculate uniform radius for ALL difference circles (both left and right)
+    const allDiffTexts = [...spec.left_differences, ...spec.right_differences];
+    const uniformDiffR = Math.max(...allDiffTexts.map(t => getTextRadius(t, THEME.fontDiff, 8)), 24);
+    const leftDiffR = uniformDiffR;
+    const rightDiffR = uniformDiffR;
     
     // Calculate counts
     const simCount = spec.similarities.length;
