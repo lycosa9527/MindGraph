@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-2.6.0-brightgreen.svg)](CHANGELOG.md)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-success.svg)](CHANGELOG.md)
-[![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199)
+[![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
 Transform natural language into professional diagrams. Supports 10 diagram types including Thinking Maps, Mind Maps, and Concept Maps with intelligent LLM classification and D3.js rendering.
 
