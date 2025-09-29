@@ -1547,10 +1547,19 @@ def generate_dingtalk():
         graph_type = result.get('diagram_type', 'bubble_map')
         
         # Add learning sheet metadata to spec for frontend rendering
+        logger.debug(f"DingTalk: result keys: {list(result.keys())}")
+        logger.debug(f"DingTalk: result.is_learning_sheet = {result.get('is_learning_sheet')}")
+        logger.debug(f"DingTalk: result.hidden_node_percentage = {result.get('hidden_node_percentage')}")
         if result.get('is_learning_sheet'):
             spec['is_learning_sheet'] = True
             spec['hidden_node_percentage'] = result.get('hidden_node_percentage', 0.5)
+            logger.info(f"DingTalk: Added learning sheet metadata to spec: is_learning_sheet={spec.get('is_learning_sheet')}, hidden_percentage={spec.get('hidden_node_percentage')}")
+        else:
+            logger.info(f"DingTalk: No learning sheet metadata added - is_learning_sheet={result.get('is_learning_sheet')}")
         
+        logger.debug(f"DingTalk: Final spec keys: {list(spec.keys())}")
+        logger.debug(f"DingTalk: Final spec.is_learning_sheet = {spec.get('is_learning_sheet')}")
+        logger.debug(f"DingTalk: Final spec.hidden_node_percentage = {spec.get('hidden_node_percentage')}")
         logger.info(f"LLM processing completed in {llm_time:.3f}s")
     except Exception as e:
         logger.error(f"Agent workflow failed: {e}")
