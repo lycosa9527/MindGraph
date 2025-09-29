@@ -231,7 +231,10 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
     
     try {
         // Get all text elements, excluding watermarks, titles, and critical structural elements
-        const textElements = svg.selectAll('text')
+        const allTextElements = svg.selectAll('text');
+        console.log(`Learning sheet: Total text elements found: ${allTextElements.size()}`);
+        
+        const textElements = allTextElements
             .filter(function() {
                 const text = d3.select(this).text();
                 const fontSize = parseFloat(d3.select(this).attr('font-size')) || 16;
@@ -251,18 +254,27 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 // Main steps typically have white text (#ffffff) and medium font size (14px)
                 const isMainStep = fillColor === '#ffffff' && fontSize >= 14;
                 
-                // For flow maps: Only hide substep text (dark text on light background, smaller size)
-                // Substeps typically have dark text (#333333) and smaller font size (<14px)
-                const isHideableSubstep = fillColor === '#333333' || fillColor === '#333' && fontSize < 14;
+                // Debug logging for each text element
+                if (!isWatermark && !isTitle && !isEmpty) {
+                    console.log(`Learning sheet: Text "${text.substring(0, 20)}..." - fontSize: ${fontSize}, fillColor: ${fillColor}, isMainStep: ${isMainStep}`);
+                }
                 
                 return !isWatermark && !isTitle && !isEmpty && !isMainStep;
             });
         
         const totalTexts = textElements.size();
-        if (totalTexts === 0) return;
+        console.log(`Learning sheet: Eligible text elements after filtering: ${totalTexts}`);
+        if (totalTexts === 0) {
+            console.log('Learning sheet: No eligible text elements found - skipping knockout');
+            return;
+        }
         
         const hideCount = Math.floor(totalTexts * hiddenPercentage);
-        if (hideCount === 0) return;
+        console.log(`Learning sheet: Will hide ${hideCount} out of ${totalTexts} elements (${Math.round(hiddenPercentage * 100)}%)`);
+        if (hideCount === 0) {
+            console.log('Learning sheet: Hide count is 0 - skipping knockout');
+            return;
+        }
         
         // Create array of indices to hide
         const indicesToHide = [];
