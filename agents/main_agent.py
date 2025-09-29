@@ -1481,6 +1481,56 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
 # Style manager provides complete themes, no backend theme generation needed
 
 
+def _detect_learning_sheet_from_prompt(user_prompt: str, language: str) -> bool:
+    """
+    Detect if the prompt is requesting a learning sheet.
+    
+    Args:
+        user_prompt: User's input prompt
+        language: Language ('zh' or 'en')
+    
+    Returns:
+        bool: True if learning sheet keywords detected
+    """
+    learning_sheet_keywords = ['学习单', '练习单', '作业单', '学习表', '练习表']
+    is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
+    
+    if is_learning_sheet:
+        logger.info(f"Learning sheet detected in prompt: '{user_prompt}'")
+    
+    return is_learning_sheet
+
+
+def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
+    """
+    Remove learning sheet keywords from prompt so LLM generates actual content.
+    
+    When user asks for "生成鸦片战争的流程图学习单", we want the LLM to generate
+    content about "生成鸦片战争的流程图" (the actual topic), not meta-content 
+    about how to create learning sheets.
+    
+    Args:
+        user_prompt: Original user prompt
+        
+    Returns:
+        str: Cleaned prompt with learning sheet keywords removed
+    """
+    learning_sheet_keywords = ['学习单', '练习单', '作业单', '学习表', '练习表']
+    
+    cleaned_prompt = user_prompt
+    for keyword in learning_sheet_keywords:
+        cleaned_prompt = cleaned_prompt.replace(keyword, '').strip()
+    
+    # Clean up any extra whitespace or punctuation left behind
+    import re
+    cleaned_prompt = re.sub(r'\s+', ' ', cleaned_prompt)  # Multiple spaces -> single space
+    cleaned_prompt = re.sub(r'的+$', '', cleaned_prompt)  # Remove trailing "的"
+    cleaned_prompt = cleaned_prompt.strip()
+    
+    logger.debug(f"Cleaned prompt: '{user_prompt}' -> '{cleaned_prompt}'")
+    return cleaned_prompt
+
+
 def agent_graph_workflow_with_styles(user_prompt, language='zh'):
     """
     Simplified agent workflow that directly calls specialized agents.
@@ -1497,12 +1547,22 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
     try:
         # Validate inputs
         validate_inputs(user_prompt, language)
+        
         # LLM-based diagram type detection for semantic understanding
         diagram_type = _detect_diagram_type_from_prompt(user_prompt, language)
         logger.info(f"Agent: Detected diagram type: {diagram_type}")
         
+        # Add learning sheet detection
+        is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
+        logger.info(f"Agent: Learning sheet detected: {is_learning_sheet}")
+        
+        # Clean the prompt for learning sheets to generate actual content, not meta-content
+        generation_prompt = _clean_prompt_for_learning_sheet(user_prompt) if is_learning_sheet else user_prompt
+        if is_learning_sheet:
+            logger.info(f"Agent: Using cleaned prompt for generation: '{generation_prompt}'")
+        
         # Generate specification using the appropriate agent
-        spec = _generate_spec_with_agent(user_prompt, diagram_type, language)
+        spec = _generate_spec_with_agent(generation_prompt, diagram_type, language)
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Agent: Failed to generate spec for {diagram_type}")
@@ -1511,10 +1571,14 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
                 'diagram_type': diagram_type,
                 'topics': [],
                 'style_preferences': {},
-                'language': language
+                'language': language,
+                'is_learning_sheet': is_learning_sheet,
+                'hidden_node_percentage': 0
             }
         
-        # REMOVED: _add_basic_styling call - style manager provides themes
+        # Calculate random hidden percentage for learning sheets (20-80%)
+        import random
+        hidden_percentage = random.uniform(0.2, 0.8) if is_learning_sheet else 0
         
         # Add metadata to the result
         result = {
@@ -1522,10 +1586,12 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
             'diagram_type': diagram_type,
             'topics': [],  # No longer extracted
             'style_preferences': {},  # No longer extracted
-            'language': language
+            'language': language,
+            'is_learning_sheet': is_learning_sheet,  # NEW
+            'hidden_node_percentage': hidden_percentage  # NEW
         }
         
-        logger.info(f"Agent: Simplified workflow completed successfully")
+        logger.info(f"Agent: Simplified workflow completed successfully, learning sheet: {is_learning_sheet}")
         return result
         
     except ValueError as e:

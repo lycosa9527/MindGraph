@@ -19,9 +19,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
-log_level = getattr(logging, log_level_str, logging.INFO)
-logger.setLevel(log_level)
 
 class ModularJavaScriptManager:
     """
@@ -193,7 +190,7 @@ class ModularJavaScriptManager:
             
             # Cache the content
             self._module_cache[module_name] = content
-            logger.debug(f"📦 Loaded module: {module_name} ({len(content)} chars)")
+            logger.debug(f"Loaded module: {module_name} ({len(content)} chars)")
             
             return content
             

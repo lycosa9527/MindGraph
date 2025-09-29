@@ -610,6 +610,19 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    console.log('FlowMap renderer: Checking learning sheet metadata:', {
+        is_learning_sheet: spec.is_learning_sheet,
+        hidden_node_percentage: spec.hidden_node_percentage,
+        spec_keys: Object.keys(spec)
+    });
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        console.log('FlowMap renderer: Calling knockout function with percentage:', spec.hidden_node_percentage);
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    } else {
+        console.log('FlowMap renderer: Skipping knockout - conditions not met');
+    }
 }
 
 function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd3-container') {
@@ -832,6 +845,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     console.log('SVG dimensions:', { width, height });
     console.log('Container ID:', containerId);
     console.log('All rendered elements should be visible above');
+    
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
 }
 
 function renderMultiFlowMap(spec, theme = null, dimensions = null) {
@@ -1122,6 +1140,19 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)     // Original 80% opacity
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    console.log('MultiFlowMap renderer: Checking learning sheet metadata:', {
+        is_learning_sheet: spec.is_learning_sheet,
+        hidden_node_percentage: spec.hidden_node_percentage,
+        spec_keys: Object.keys(spec)
+    });
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        console.log('MultiFlowMap renderer: Calling knockout function with percentage:', spec.hidden_node_percentage);
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    } else {
+        console.log('MultiFlowMap renderer: Skipping knockout - conditions not met');
+    }
 }
 
 // Export functions for module system

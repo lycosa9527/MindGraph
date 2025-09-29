@@ -351,6 +351,19 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)     // Original 80% opacity
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    console.log('Tree renderer: Checking learning sheet metadata:', {
+        is_learning_sheet: spec.is_learning_sheet,
+        hidden_node_percentage: spec.hidden_node_percentage,
+        spec_keys: Object.keys(spec)
+    });
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        console.log('Tree renderer: Calling knockout function with percentage:', spec.hidden_node_percentage);
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    } else {
+        console.log('Tree renderer: Skipping knockout - conditions not met');
+    }
 }
 
 

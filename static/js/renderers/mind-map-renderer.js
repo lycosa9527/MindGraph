@@ -134,6 +134,11 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
 }
 
 function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {

@@ -9,7 +9,7 @@
  */
 
 // CRITICAL DEBUG: Add comprehensive logging
-console.log('🔍 Shared utilities: Module loading started');
+console.log('Shared utilities: Module loading started');
 
 // --- Safe, memory-leak-free text radius measurement ---
 let measurementContainer = null;
@@ -221,6 +221,74 @@ function wrapText(text, width) {
     });
 }
 
+/**
+ * Hide random text elements for learning sheet mode
+ * @param {Object} svg - D3 SVG selection
+ * @param {number} hiddenPercentage - Percentage of text elements to hide (0-1)
+ */
+function knockoutTextForLearningSheet(svg, hiddenPercentage) {
+    if (!svg || hiddenPercentage <= 0) return;
+    
+    try {
+        // Get all text elements, excluding watermarks, titles, and critical structural elements
+        const textElements = svg.selectAll('text')
+            .filter(function() {
+                const text = d3.select(this).text();
+                const fontSize = parseFloat(d3.select(this).attr('font-size')) || 16;
+                const fontWeight = d3.select(this).attr('font-weight');
+                const fillColor = d3.select(this).attr('fill');
+                
+                // Exclude watermarks
+                const isWatermark = text === 'MindGraph' || text.includes('学习单');
+                
+                // Exclude titles (large, bold text)
+                const isTitle = fontWeight === 'bold' && fontSize >= 20;
+                
+                // Exclude empty text
+                const isEmpty = text.length === 0;
+                
+                // For flow maps: Exclude main step text (white text on blue background, medium size)
+                // Main steps typically have white text (#ffffff) and medium font size (14px)
+                const isMainStep = fillColor === '#ffffff' && fontSize >= 14;
+                
+                // For flow maps: Only hide substep text (dark text on light background, smaller size)
+                // Substeps typically have dark text (#333333) and smaller font size (<14px)
+                const isHideableSubstep = fillColor === '#333333' || fillColor === '#333' && fontSize < 14;
+                
+                return !isWatermark && !isTitle && !isEmpty && !isMainStep;
+            });
+        
+        const totalTexts = textElements.size();
+        if (totalTexts === 0) return;
+        
+        const hideCount = Math.floor(totalTexts * hiddenPercentage);
+        if (hideCount === 0) return;
+        
+        // Create array of indices to hide
+        const indicesToHide = [];
+        while (indicesToHide.length < hideCount) {
+            const randomIndex = Math.floor(Math.random() * totalTexts);
+            if (!indicesToHide.includes(randomIndex)) {
+                indicesToHide.push(randomIndex);
+            }
+        }
+        
+        // Hide selected texts
+        textElements.each(function(d, i) {
+            if (indicesToHide.includes(i)) {
+                d3.select(this)
+                    .attr('opacity', 0)
+                    .attr('fill', 'transparent');
+            }
+        });
+        
+        console.log(`Learning sheet: Hidden ${hideCount} out of ${totalTexts} text elements (${Math.round(hiddenPercentage * 100)}%)`);
+        
+    } catch (error) {
+        console.error('Error in knockoutTextForLearningSheet:', error);
+    }
+}
+
 // Note: renderGraph function has been moved to renderer-dispatcher.js
 // to avoid dependency issues with individual renderer modules
 
@@ -237,7 +305,8 @@ if (typeof window !== 'undefined') {
         getThemeDefaults,
         createSVG,
         centerContent,
-        wrapText
+        wrapText,
+        knockoutTextForLearningSheet
     };
     
     // CRITICAL FIX: Also expose functions globally for backward compatibility
@@ -251,10 +320,13 @@ if (typeof window !== 'undefined') {
     if (typeof window.getTextRadius === 'undefined') {
         window.getTextRadius = getTextRadius;
     }
+    if (typeof window.knockoutTextForLearningSheet === 'undefined') {
+        window.knockoutTextForLearningSheet = knockoutTextForLearningSheet;
+    }
     
     // Shared utilities exported to global scope
-    console.log('✅ Shared utilities: Module loaded successfully in browser environment');
-    console.log('🔍 Shared utilities: Functions exported to window:', Object.keys(window).filter(k => k.includes('getTextRadius') || k.includes('addWatermark')));
+    console.log('Shared utilities: Module loaded successfully in browser environment');
+    console.log('Shared utilities: Functions exported to window:', Object.keys(window).filter(k => k.includes('getTextRadius') || k.includes('addWatermark')));
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
@@ -267,9 +339,10 @@ if (typeof window !== 'undefined') {
         getThemeDefaults,
         createSVG,
         centerContent,
-        wrapText
+        wrapText,
+        knockoutTextForLearningSheet
     };
-    console.log('✅ Shared utilities: Module loaded successfully in Node.js environment');
+    console.log('Shared utilities: Module loaded successfully in Node.js environment');
 } else {
-    console.error('❌ Shared utilities: Module failed to load in any environment');
+    console.error('Shared utilities: Module failed to load in any environment');
 }

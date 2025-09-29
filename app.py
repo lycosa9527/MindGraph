@@ -31,19 +31,52 @@ Environment Variables:
     See env.example for complete configuration
 """
 
+# ============================================================================
+# EARLY LOGGING SETUP - MUST BE FIRST BEFORE ANY MODULE IMPORTS
+# ============================================================================
+
+import os
+import sys
+import logging
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
+# Create logs directory for application logging
+os.makedirs("logs", exist_ok=True)
+
+# Setup global logging configuration BEFORE any module imports
+# Get log level from environment variable, default to INFO
+log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+
+# Configure global logging that all modules will inherit
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.StreamHandler(sys.stdout),  # Console output to stdout (Windows-safe)
+        logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "app.log"), encoding="utf-8")  # File logging
+    ],
+    force=True  # Force reconfiguration to ensure all loggers inherit
+)
+
+# Create logger after configuration
+logger = logging.getLogger(__name__)
+logger.info(f"Logging level set to: {log_level_str}")
+
+# ============================================================================
+# APPLICATION IMPORTS - AFTER LOGGING CONFIGURATION
+# ============================================================================
+
 from flask import Flask, request, jsonify, render_template, send_file
 from agents import main_agent as agent
-import logging
 import time
 from settings import config
-import os
 import socket
 import webbrowser
 import threading
 import shutil
-import sys
-from dotenv import load_dotenv
-load_dotenv()  # Load environment variables from .env file
 import tempfile
 import asyncio
 import base64
@@ -57,32 +90,6 @@ from pathlib import Path
 # ============================================================================
 # APPLICATION SETUP AND CONFIGURATION
 # ============================================================================
-
-# Create logs directory for application logging
-os.makedirs("logs", exist_ok=True)
-
-# Setup global logging configuration
-# Get log level from environment variable, default to INFO
-log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
-log_level = getattr(logging, log_level_str, logging.INFO)
-
-# Configure global logging that all modules will inherit
-logging.basicConfig(
-    level=log_level,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.StreamHandler(),  # Console output
-        logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "app.log"), encoding="utf-8")  # File logging
-    ],
-    force=True  # Force reconfiguration to ensure all loggers inherit
-)
-
-# All other modules using logging.getLogger(__name__) will inherit this configuration
-logger = logging.getLogger(__name__)
-
-# Log the configured log level
-logger.info(f"Logging level set to: {log_level_str}")
 
 # Dependency checker removed for simplicity
 
@@ -740,8 +747,12 @@ if __name__ == '__main__':
     # Automatically open browser (non-blocking)
     open_browser_debug(config.HOST, config.PORT)
     
-    # Suppress Flask development server messages for cleaner output
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    # Configure Werkzeug log level via environment (default WARNING)
+    werkzeug_level_str = os.getenv('WERKZEUG_LOG_LEVEL', 'WARNING').upper()
+    try:
+        logging.getLogger('werkzeug').setLevel(getattr(logging, werkzeug_level_str, logging.WARNING))
+    except Exception:
+        logging.getLogger('werkzeug').setLevel(logging.WARNING)
     
     logger.info("Starting Flask development server...")
     app.run(debug=config.DEBUG, host=config.HOST, port=config.PORT) 

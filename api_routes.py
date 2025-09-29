@@ -616,16 +616,54 @@ def generate_png():
                 result = cached
             else:
                 result = agent.agent_graph_workflow_with_styles(prompt, language)
-                # Cache on success
+                
+                # Add learning sheet metadata to spec for frontend rendering BEFORE caching
+                spec = result.get('spec', {})
+                logger.info(f"DEBUG: result keys: {list(result.keys())}")
+                logger.info(f"DEBUG: result.is_learning_sheet = {result.get('is_learning_sheet')}")
+                logger.info(f"DEBUG: result.hidden_node_percentage = {result.get('hidden_node_percentage')}")
+                if result.get('is_learning_sheet'):
+                    spec['is_learning_sheet'] = True
+                    spec['hidden_node_percentage'] = result.get('hidden_node_percentage', 0.5)
+                    logger.info(f"Added learning sheet metadata to spec: is_learning_sheet={spec.get('is_learning_sheet')}, hidden_percentage={spec.get('hidden_node_percentage')}")
+                else:
+                    logger.info(f"No learning sheet metadata added - is_learning_sheet={result.get('is_learning_sheet')}")
+                
+                # Update the result with the modified spec
+                result['spec'] = spec
+                
+                # Cache on success (now includes learning sheet metadata)
                 try:
                     if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):
                         _llm_cache_set(prompt, language, result)
                 except Exception:
                     pass
-        llm_time = time.time() - llm_start_time
         
+        # Add learning sheet metadata to spec for frontend rendering (for both cached and fresh results)
         spec = result.get('spec', {})
+        if result.get('is_learning_sheet'):
+            spec['is_learning_sheet'] = True
+            spec['hidden_node_percentage'] = result.get('hidden_node_percentage', 0.5)
+            logger.info(f"Added learning sheet metadata to spec: is_learning_sheet={spec.get('is_learning_sheet')}, hidden_percentage={spec.get('hidden_node_percentage')}")
+            result['spec'] = spec
+        else:
+            logger.info(f"No learning sheet metadata needed - is_learning_sheet={result.get('is_learning_sheet')}")
+        
+        llm_time = time.time() - llm_start_time
+        spec = result.get('spec', {})  # This now contains the learning sheet metadata
         graph_type = result.get('diagram_type', 'bubble_map')
+        
+        logger.info(f"DEBUG: Final spec keys: {list(spec.keys())}")
+        logger.info(f"DEBUG: Final spec.is_learning_sheet = {spec.get('is_learning_sheet')}")
+        logger.info(f"DEBUG: Final spec.hidden_node_percentage = {spec.get('hidden_node_percentage')}")
+        
+        # Debug: Check what's being serialized to JSON
+        import json
+        spec_json = json.dumps(spec, ensure_ascii=False)
+        logger.info(f"DEBUG: Spec JSON length: {len(spec_json)}")
+        logger.info(f"DEBUG: Spec JSON contains is_learning_sheet: {'is_learning_sheet' in spec_json}")
+        logger.info(f"DEBUG: Spec JSON contains hidden_node_percentage: {'hidden_node_percentage' in spec_json}")
+        logger.info(f"DEBUG: Spec JSON preview: {spec_json[:500]}...")
         
         logger.info(f"LLM processing completed in {llm_time:.3f}s")
     except Exception as e:
@@ -664,7 +702,13 @@ def generate_png():
             mf_agent = MultiFlowMapAgent()
             agent_result = mf_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
-                spec = agent_result['spec']
+                # Preserve learning sheet metadata when enhancing spec
+                enhanced_spec = agent_result['spec']
+                if 'is_learning_sheet' in spec:
+                    enhanced_spec['is_learning_sheet'] = spec['is_learning_sheet']
+                if 'hidden_node_percentage' in spec:
+                    enhanced_spec['hidden_node_percentage'] = spec['hidden_node_percentage']
+                spec = enhanced_spec
             else:
                 logger.warning(f"MultiFlowMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -676,7 +720,13 @@ def generate_png():
             f_agent = FlowMapAgent()
             agent_result = f_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
-                spec = agent_result['spec']
+                # Preserve learning sheet metadata when enhancing spec
+                enhanced_spec = agent_result['spec']
+                if 'is_learning_sheet' in spec:
+                    enhanced_spec['is_learning_sheet'] = spec['is_learning_sheet']
+                if 'hidden_node_percentage' in spec:
+                    enhanced_spec['hidden_node_percentage'] = spec['hidden_node_percentage']
+                spec = enhanced_spec
             else:
                 logger.warning(f"FlowMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -688,7 +738,13 @@ def generate_png():
             t_agent = TreeMapAgent()
             agent_result = t_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
-                spec = agent_result['spec']
+                # Preserve learning sheet metadata when enhancing spec
+                enhanced_spec = agent_result['spec']
+                if 'is_learning_sheet' in spec:
+                    enhanced_spec['is_learning_sheet'] = spec['is_learning_sheet']
+                if 'hidden_node_percentage' in spec:
+                    enhanced_spec['hidden_node_percentage'] = spec['hidden_node_percentage']
+                spec = enhanced_spec
             else:
                 logger.warning(f"TreeMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -1489,6 +1545,11 @@ def generate_dingtalk():
         
         spec = result.get('spec', {})
         graph_type = result.get('diagram_type', 'bubble_map')
+        
+        # Add learning sheet metadata to spec for frontend rendering
+        if result.get('is_learning_sheet'):
+            spec['is_learning_sheet'] = True
+            spec['hidden_node_percentage'] = result.get('hidden_node_percentage', 0.5)
         
         logger.info(f"LLM processing completed in {llm_time:.3f}s")
     except Exception as e:

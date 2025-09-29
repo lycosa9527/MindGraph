@@ -8,10 +8,10 @@
  */
 
 // CRITICAL DEBUG: Add comprehensive logging
-console.log('🔍 Concept map renderer: Module loading started');
+console.log('Concept map renderer: Module loading started');
 
 function renderConceptMap(spec, theme = null, dimensions = null) {
-    console.log('🚀 Concept map renderer: renderConceptMap called with:', { spec, theme, dimensions });
+    console.log('Concept map renderer: renderConceptMap called with:', { spec, theme, dimensions });
     
     // Self-contained measurement utilities (from reference file)
     let measurementContainer = null;
@@ -40,26 +40,26 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     }
 
     // Try to use shared utilities if available, otherwise use self-contained functions
-    console.log('🔍 Concept map renderer: Checking for shared utilities...');
+    console.log('Concept map renderer: Checking for shared utilities...');
     let useSharedUtilities = false;
     if (typeof window.MindGraphUtils !== 'undefined' && 
         typeof window.MindGraphUtils.getMeasurementContainer === 'function') {
         useSharedUtilities = true;
-        console.log('✅ Using shared utilities from MindGraphUtils');
+        console.log('Using shared utilities from MindGraphUtils');
     } else {
-        console.log('✅ Using self-contained utilities (fallback mode)');
+        console.log('Using self-contained utilities (fallback mode)');
     }
     
     d3.select('#d3-container').html('');
-    console.log('✅ Concept map renderer: Container cleared');
+    console.log('Concept map renderer: Container cleared');
     
-    console.log('🔍 Concept map renderer: Validating spec...');
+    console.log('Concept map renderer: Validating spec...');
     if (!spec || !spec.topic || !Array.isArray(spec.concepts) || !Array.isArray(spec.relationships)) {
-        console.error('❌ Concept map renderer: Invalid spec for concept map:', { spec, topic: spec?.topic, concepts: spec?.concepts, relationships: spec?.relationships });
+        console.error('Concept map renderer: Invalid spec for concept map:', { spec, topic: spec?.topic, concepts: spec?.concepts, relationships: spec?.relationships });
         console.error('Invalid spec for concept map');
         return;
     }
-    console.log('✅ Concept map renderer: Spec validation passed');
+    console.log('Concept map renderer: Spec validation passed');
     
     const baseWidth = dimensions?.baseWidth || 1600;
     const baseHeight = dimensions?.baseHeight || 1000;
@@ -247,7 +247,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         const params = spec._layout.params || {};
         const extents = spec._layout.extents;
         
-        console.log('🔍 Concept map renderer: Position data debug:', {
+        console.log('Concept map renderer: Position data debug:', {
             positionsKeys: Object.keys(positions),
             topicKey: spec.topic,
             conceptKeys: spec.concepts,
@@ -269,7 +269,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         
         // Draw topic first - at canvas center
         boxes.topic = drawBox(width / 2, height / 2, spec.topic, true);
-        console.log('🎯 Drawing topic at canvas center:', {x: width / 2, y: height / 2});
+        console.log('Drawing topic at canvas center:', {x: width / 2, y: height / 2});
         
         // Draw concepts - positions are keyed by concept text with coordinate transformation
         spec.concepts.forEach((concept, i) => {
@@ -288,7 +288,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 
                 boxes[concept] = drawBox(canvasPos.x, canvasPos.y, concept, false);
             } else {
-                console.warn('⚠️ No position found for concept:', concept);
+                console.warn('No position found for concept:', concept);
             }
         });
         
@@ -489,7 +489,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         
         // Draw topic at canvas center
         boxes.topic = drawBox(width / 2, height / 2, spec.topic, true);
-        console.log('🎯 Drawing topic at canvas center (fallback)');
+        console.log('Drawing topic at canvas center (fallback)');
         
         // Draw concepts with coordinate transformation
         spec.concepts.forEach((concept) => {
@@ -611,12 +611,17 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
             .attr('opacity', 0.6)
         .text(watermarkText);
     }
+    
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
 }
 
 function renderConceptMapWithForceLayout(spec, svg, THEME, width, height) {
     // This function is kept for compatibility but not actively used
     // The main renderer now uses the radial layout fallback from the reference file
-    console.log('⚠️ Force layout function called - using radial fallback instead');
+    console.log('Force layout function called - using radial fallback instead');
 }
 
 // Export functions for module system
@@ -634,14 +639,14 @@ if (typeof window !== 'undefined') {
     }
     
     // ConceptMapRenderer exported to window.ConceptMapRenderer
-    console.log('✅ Concept map renderer: Module loaded successfully in browser environment');
+    console.log('Concept map renderer: Module loaded successfully in browser environment');
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
         renderConceptMap,
         renderConceptMapWithForceLayout
     };
-    console.log('✅ Concept map renderer: Module loaded successfully in Node.js environment');
+    console.log('Concept map renderer: Module loaded successfully in Node.js environment');
 } else {
-    console.error('❌ Concept map renderer: Module failed to load in any environment');
+    console.error('Concept map renderer: Module failed to load in any environment');
 }

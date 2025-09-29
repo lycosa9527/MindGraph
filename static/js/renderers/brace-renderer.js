@@ -476,6 +476,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .attr('pointer-events', 'none')
         .text(watermarkText);
     
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
+    
     // Rendering completed successfully
     console.log('✅ Brace renderer: Rendering completed successfully');
     } catch (error) {

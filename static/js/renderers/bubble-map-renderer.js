@@ -223,6 +223,11 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)     // Original 80% opacity
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
 }
 
 function renderCircleMap(spec, theme = null, dimensions = null) {
@@ -376,6 +381,11 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)     // Original 80% opacity
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
 }
 
 function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
@@ -738,6 +748,11 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('opacity', 0.8)     // Original 80% opacity
         .attr('pointer-events', 'none')
         .text(watermarkText);
+    
+    // Apply learning sheet text knockout if needed
+    if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
+        knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
+    }
 }
 
 // Export functions for module system

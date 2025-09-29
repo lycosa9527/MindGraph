@@ -694,7 +694,7 @@ class MindMapAgent(BaseAgent):
                         overlaps_detected += 1
             
             if overlaps_detected > 0:
-                logger.warning(f"⚠️ {overlaps_detected} overlaps detected after centering - spacing may need adjustment")
+                logger.warning(f"WARNING: {overlaps_detected} overlaps detected after centering - spacing may need adjustment")
         
         return balanced_positions
     
@@ -755,20 +755,20 @@ class MindMapAgent(BaseAgent):
         STAGE 1: Natural perfect layout with validation
         STAGE 2: Strategic phantom compensation if needed
         """
-        logger.debug(f"🎯 Starting Two-Stage Smart Positioning System for {len(children)} branches")
+        logger.debug(f"Starting Two-Stage Smart Positioning System for {len(children)} branches")
         
         # STAGE 1: Natural perfect layout
         stage1_result = self._stage1_natural_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
         
         if stage1_result['all_principles_satisfied']:
-            logger.debug("✅ Stage 1 SUCCESS: Natural layout satisfies all principles")
+            logger.debug("Stage 1 SUCCESS: Natural layout satisfies all principles")
             return {
                 'positions': stage1_result['positions'],
                 'stage_used': 1,
                 'violations': []
             }
         
-        logger.debug(f"⚠️ Stage 1: {len(stage1_result['violations'])} violations detected")
+        logger.debug(f"WARNING Stage 1: {len(stage1_result['violations'])} violations detected")
         for violation in stage1_result['violations']:
             logger.debug(f"  Violation: {violation}")
         
@@ -776,7 +776,7 @@ class MindMapAgent(BaseAgent):
         stage2_result = self._stage2_phantom_compensation(stage1_result['positions'], stage1_result['violations'], children)
         
         if stage2_result['all_principles_satisfied']:
-            logger.debug("✅ Stage 2 SUCCESS: Phantom compensation solved all violations")
+            logger.debug("Stage 2 SUCCESS: Phantom compensation solved all violations")
             return {
                 'positions': stage2_result['positions'],
                 'stage_used': 2,
@@ -784,7 +784,7 @@ class MindMapAgent(BaseAgent):
             }
         
         # FALLBACK: Use best available result
-        logger.debug("⚠️ Stage 2: Could not achieve perfect alignment, using best result")
+        logger.debug("WARNING Stage 2: Could not achieve perfect alignment, using best result")
         return {
             'positions': stage2_result['positions'],
             'stage_used': 2,
@@ -1106,7 +1106,7 @@ class MindMapAgent(BaseAgent):
         """
         STAGE 2: Strategic phantom compensation for alignment violations.
         """
-        logger.debug(f"🔧 Stage 2: Starting phantom compensation for {len(violations)} violations")
+        logger.debug(f"Stage 2: Starting phantom compensation for {len(violations)} violations")
         
         # Identify middle branch alignment violations
         middle_violations = [v for v in violations if 'Middle branch' in v and 'not horizontally aligned' in v]
@@ -1358,7 +1358,7 @@ class MindMapAgent(BaseAgent):
                     # Phantom child - just reserve space, don't create position
                     logger.debug(f"  Right phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
         
-        logger.debug(f"✅ Positioned {len(positions)} real children with perfect spacing")
+        logger.debug(f"Positioned {len(positions)} real children with perfect spacing")
         return positions
     
     def _calculate_center_out_branches(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
@@ -1367,7 +1367,7 @@ class MindMapAgent(BaseAgent):
         
         This is the key innovation that ensures middle branches align with central topic.
         """
-        logger.debug(f"🎯 Calculating center-out branch positions")
+        logger.debug(f"Calculating center-out branch positions")
         
         positions = {}
         num_branches = len(children)
@@ -1401,7 +1401,7 @@ class MindMapAgent(BaseAgent):
             if branch_idx in middle_branches:
                 # FORCE middle branches to Y=0 (same as central topic)
                 branch_y = 0.0
-                logger.debug(f"🎯 MIDDLE branch {branch_idx}: FORCED to Y=0")
+                logger.debug(f"MIDDLE branch {branch_idx}: FORCED to Y=0")
             else:
                 # Other branches: center-aligned to their children
                 if branch_children:
@@ -1425,7 +1425,7 @@ class MindMapAgent(BaseAgent):
             side = "LEFT" if is_left_side else "RIGHT"
             logger.debug(f"  Branch {branch_idx} ({side}): '{branch_text}' at Y={branch_y:.1f}")
         
-        logger.debug(f"✅ All {num_branches} branches positioned with center-out method")
+        logger.debug(f"All {num_branches} branches positioned with center-out method")
         return positions
     
     def _identify_middle_branches_smart(self, num_branches: int) -> List[int]:
@@ -1624,7 +1624,7 @@ class MindMapAgent(BaseAgent):
             logger.debug(f"  Storing branch {i}: {branch_data}")
             positions[f'branch_{i}'] = branch_data
             
-            logger.debug(f"✅ Branch {i} stored at Y={branch_y:.1f}")
+            logger.debug(f"Branch {i} stored at Y={branch_y:.1f}")
         
         # STEP 6: Early Overlap Prevention (Before Branch Alignment)
         # Fix overlaps in children positions before calculating final branch positions
@@ -1705,7 +1705,7 @@ class MindMapAgent(BaseAgent):
                     if branch_key in positions and positions[branch_key] is not None:
                         old_y = positions[branch_key]['y']
                         positions[branch_key]['y'] = mathematical_center
-                        logger.debug(f"🔧 Final branch {i} position update: {old_y:.1f} → {mathematical_center:.1f}")
+                        logger.debug(f"Final branch {i} position update: {old_y:.1f} → {mathematical_center:.1f}")
             
             # STEP 6.7: Final topic position recalculation
             # Recalculate topic position based on final branch positions
@@ -1715,7 +1715,7 @@ class MindMapAgent(BaseAgent):
                 min_branch_y = min(branch_y_positions)
                 max_branch_y = max(branch_y_positions)
                 topic_y = (min_branch_y + max_branch_y) / 2
-                logger.debug(f"🔧 Final topic Y after final branch repositioning: {topic_y:.1f}")
+                logger.debug(f"Final topic Y after final branch repositioning: {topic_y:.1f}")
             
         else:
             # Fallback if no branches
@@ -1785,7 +1785,7 @@ class MindMapAgent(BaseAgent):
         Smart middle branch horizontal alignment while preserving mathematical precision.
         Only affects the middle branches on each side for perfect horizontal alignment.
         """
-        logger.debug(f"🎯 Applying middle branch horizontal alignment")
+        logger.debug(f"Applying middle branch horizontal alignment")
         
         # Identify middle branches on each side
         middle_branches = self._identify_middle_branches(num_branches)
@@ -1799,7 +1799,7 @@ class MindMapAgent(BaseAgent):
             if branch_key in positions:
                 branch_pos = positions[branch_key]
                 if branch_pos is None:
-                    logger.debug(f"⚠️ Branch position is None for {branch_key}")
+                    logger.debug(f"WARNING: Branch position is None for {branch_key}")
                     continue
                     
                 original_y = branch_pos.get('y', 0)
@@ -1817,9 +1817,9 @@ class MindMapAgent(BaseAgent):
                 # Adjust children positions to maintain visual balance
                 self._adjust_children_positions(positions, branch_index, y_offset)
                 
-                logger.debug(f"✅ Middle branch {branch_index} ({side}): {original_y:.1f} → {topic_y:.1f} (offset: {y_offset:.1f})")
+                logger.debug(f"Middle branch {branch_index} ({side}): {original_y:.1f} → {topic_y:.1f} (offset: {y_offset:.1f})")
             else:
-                logger.debug(f"⚠️ Middle branch {branch_index} not found in positions")
+                logger.debug(f"WARNING: Middle branch {branch_index} not found in positions")
     
     def _identify_middle_branches(self, num_branches: int) -> Dict[str, int]:
         """
@@ -2337,7 +2337,7 @@ class MindMapAgent(BaseAgent):
         Post-processing step to detect and fix any remaining overlaps.
         This is a safety net to ensure no overlaps exist after positioning.
         """
-        logger.debug("🔧 Running post-processing overlap prevention")
+        logger.debug("Running post-processing overlap prevention")
         
         # Get all non-null positions
         all_positions = [(key, pos) for key, pos in positions.items() if pos is not None]
@@ -2355,10 +2355,10 @@ class MindMapAgent(BaseAgent):
                         overlaps_found.append((key1, pos1, key2, pos2))
             
             if not overlaps_found:
-                logger.debug(f"✅ No overlaps found after {iteration} iterations")
+                logger.debug(f"No overlaps found after {iteration} iterations")
                 break
             
-            logger.debug(f"🔧 Iteration {iteration + 1}: Found {len(overlaps_found)} overlaps")
+            logger.debug(f"Iteration {iteration + 1}: Found {len(overlaps_found)} overlaps")
             
             # Fix overlaps by adjusting Y positions
             for key1, pos1, key2, pos2 in overlaps_found:
@@ -2393,9 +2393,9 @@ class MindMapAgent(BaseAgent):
                             logger.debug(f"  Fixed overlap: moved '{pos2.get('text', 'node')}' down by {required_move:.1f}px (min_sep={min_separation:.1f}px)")
         
         if overlap_fixes > 0:
-            logger.debug(f"🔧 Applied {overlap_fixes} overlap fixes")
+            logger.debug(f"Applied {overlap_fixes} overlap fixes")
         else:
-            logger.debug(f"✅ No overlap fixes needed")
+            logger.debug(f"No overlap fixes needed")
     
     def _get_max_branches(self) -> int:
         """Get maximum number of branches allowed."""
