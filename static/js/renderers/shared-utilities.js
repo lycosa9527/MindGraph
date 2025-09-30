@@ -287,9 +287,15 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
             }
         }
         
-        // Hide selected texts
+        // Collect hidden texts for answer key
+        const hiddenTexts = [];
+        
+        // Hide selected texts and collect their values
         textElements.each(function(d, i) {
             if (indicesToHide.includes(i)) {
+                const text = d3.select(this).text();
+                hiddenTexts.push(text);
+                
                 d3.select(this)
                     .attr('opacity', 0)
                     .attr('fill', 'transparent');
@@ -297,6 +303,66 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
         });
         
         console.log(`Learning sheet: Hidden ${hideCount} out of ${totalTexts} text elements (${Math.round(hiddenPercentage * 100)}%)`);
+        
+        // Add answer key below the diagram
+        if (hiddenTexts.length > 0) {
+            // Create answer key text
+            const answerText = 'Answer: ' + hiddenTexts.join(', ');
+            const answerKeyHeight = 50; // Space needed for answer key
+            
+            // Get viewBox or use regular coordinates
+            const viewBox = svg.attr('viewBox');
+            let answerX, answerY;
+            let currentWidth, currentHeight;
+            
+            if (viewBox) {
+                // Parse viewBox: "minX minY width height"
+                const [minX, minY, width, height] = viewBox.split(' ').map(Number);
+                currentWidth = width;
+                currentHeight = height;
+                
+                // Expand viewBox to make room for answer key
+                const newHeight = height + answerKeyHeight;
+                svg.attr('viewBox', `${minX} ${minY} ${width} ${newHeight}`);
+                
+                // Update SVG height attribute
+                const svgHeight = parseFloat(svg.attr('height')) || height;
+                svg.attr('height', svgHeight + answerKeyHeight);
+                
+                // Position answer key at new bottom
+                answerX = minX + 20;
+                answerY = minY + newHeight - 20; // 20px from new bottom
+                
+                console.log(`Learning sheet: Expanded viewBox from ${width}x${height} to ${width}x${newHeight}`);
+            } else {
+                // Use regular coordinates
+                const bbox = svg.node().getBBox();
+                currentWidth = parseFloat(svg.attr('width')) || bbox.width;
+                currentHeight = parseFloat(svg.attr('height')) || bbox.height;
+                
+                // Expand SVG height to make room for answer key
+                const newHeight = currentHeight + answerKeyHeight;
+                svg.attr('height', newHeight);
+                
+                // Position answer key at new bottom
+                answerX = 20;
+                answerY = newHeight - 20; // 20px from new bottom
+                
+                console.log(`Learning sheet: Expanded SVG height from ${currentHeight} to ${newHeight}`);
+            }
+            
+            // Add answer key at the bottom
+            svg.append('text')
+                .attr('x', answerX)
+                .attr('y', answerY)
+                .attr('font-family', 'Inter, Arial, sans-serif')
+                .attr('font-size', '14')
+                .attr('font-weight', '500')
+                .attr('fill', '#374151')
+                .text(answerText);
+            
+            console.log(`Learning sheet: Added answer key with ${hiddenTexts.length} items at (${answerX}, ${answerY})`);
+        }
         
     } catch (error) {
         console.error('Error in knockoutTextForLearningSheet:', error);
