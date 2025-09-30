@@ -34,9 +34,20 @@ def enhance_mindmap_spec(spec):
     try:
         from agents.mind_maps.mind_map_agent import MindMapAgent
         m_agent = MindMapAgent()
+        
+        # Preserve learning sheet metadata before enhancement
+        is_learning_sheet = spec.get('is_learning_sheet')
+        hidden_percentage = spec.get('hidden_node_percentage')
+        
         agent_result = m_agent.enhance_spec(spec)
         if agent_result.get('success') and 'spec' in agent_result:
-            return agent_result['spec']
+            enhanced_spec = agent_result['spec']
+            # Restore learning sheet metadata after enhancement
+            if is_learning_sheet:
+                enhanced_spec['is_learning_sheet'] = is_learning_sheet
+                enhanced_spec['hidden_node_percentage'] = hidden_percentage
+                logger.debug(f"Restored learning sheet metadata to enhanced mindmap spec")
+            return enhanced_spec
         else:
             logger.warning(f"MindMapAgent enhancement skipped: {agent_result.get('error')}")
             return spec
@@ -1600,9 +1611,19 @@ def generate_dingtalk():
         try:
             from agents.thinking_maps import MultiFlowMapAgent
             mf_agent = MultiFlowMapAgent()
+            
+            # Preserve learning sheet metadata before enhancement
+            is_learning_sheet = spec.get('is_learning_sheet')
+            hidden_percentage = spec.get('hidden_node_percentage')
+            
             agent_result = mf_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                # Restore learning sheet metadata after enhancement
+                if is_learning_sheet:
+                    spec['is_learning_sheet'] = is_learning_sheet
+                    spec['hidden_node_percentage'] = hidden_percentage
+                    logger.debug(f"Restored learning sheet metadata to enhanced multi_flow_map spec")
             else:
                 logger.warning(f"MultiFlowMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -1612,9 +1633,19 @@ def generate_dingtalk():
         try:
             from agents.thinking_maps import FlowMapAgent
             f_agent = FlowMapAgent()
+            
+            # Preserve learning sheet metadata before enhancement
+            is_learning_sheet = spec.get('is_learning_sheet')
+            hidden_percentage = spec.get('hidden_node_percentage')
+            
             agent_result = f_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                # Restore learning sheet metadata after enhancement
+                if is_learning_sheet:
+                    spec['is_learning_sheet'] = is_learning_sheet
+                    spec['hidden_node_percentage'] = hidden_percentage
+                    logger.debug(f"Restored learning sheet metadata to enhanced flow_map spec")
             else:
                 logger.warning(f"FlowMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -1625,9 +1656,19 @@ def generate_dingtalk():
         try:
             from agents.thinking_maps import BubbleMapAgent
             b_agent = BubbleMapAgent()
+            
+            # Preserve learning sheet metadata before enhancement
+            is_learning_sheet = spec.get('is_learning_sheet')
+            hidden_percentage = spec.get('hidden_node_percentage')
+            
             agent_result = b_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                # Restore learning sheet metadata after enhancement
+                if is_learning_sheet:
+                    spec['is_learning_sheet'] = is_learning_sheet
+                    spec['hidden_node_percentage'] = hidden_percentage
+                    logger.debug(f"Restored learning sheet metadata to enhanced bubble_map spec")
             else:
                 logger.warning(f"BubbleMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -1636,9 +1677,19 @@ def generate_dingtalk():
         try:
             from agents.thinking_maps import DoubleBubbleMapAgent
             db_agent = DoubleBubbleMapAgent()
+            
+            # Preserve learning sheet metadata before enhancement
+            is_learning_sheet = spec.get('is_learning_sheet')
+            hidden_percentage = spec.get('hidden_node_percentage')
+            
             agent_result = db_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                # Restore learning sheet metadata after enhancement
+                if is_learning_sheet:
+                    spec['is_learning_sheet'] = is_learning_sheet
+                    spec['hidden_node_percentage'] = hidden_percentage
+                    logger.debug(f"Restored learning sheet metadata to enhanced double_bubble_map spec")
             else:
                 logger.warning(f"DoubleBubbleMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -1647,9 +1698,19 @@ def generate_dingtalk():
         try:
             from agents.thinking_maps import CircleMapAgent
             c_agent = CircleMapAgent()
+            
+            # Preserve learning sheet metadata before enhancement
+            is_learning_sheet = spec.get('is_learning_sheet')
+            hidden_percentage = spec.get('hidden_node_percentage')
+            
             agent_result = c_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                # Restore learning sheet metadata after enhancement
+                if is_learning_sheet:
+                    spec['is_learning_sheet'] = is_learning_sheet
+                    spec['hidden_node_percentage'] = hidden_percentage
+                    logger.debug(f"Restored learning sheet metadata to enhanced circle_map spec")
             else:
                 logger.warning(f"CircleMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
@@ -1658,9 +1719,19 @@ def generate_dingtalk():
         try:
             from agents.thinking_maps import BridgeMapAgent
             br_agent = BridgeMapAgent()
+            
+            # Preserve learning sheet metadata before enhancement
+            is_learning_sheet = spec.get('is_learning_sheet')
+            hidden_percentage = spec.get('hidden_node_percentage')
+            
             agent_result = br_agent.enhance_spec(spec)
             if agent_result.get('success') and 'spec' in agent_result:
                 spec = agent_result['spec']
+                # Restore learning sheet metadata after enhancement
+                if is_learning_sheet:
+                    spec['is_learning_sheet'] = is_learning_sheet
+                    spec['hidden_node_percentage'] = hidden_percentage
+                    logger.debug(f"Restored learning sheet metadata to enhanced bridge_map spec")
             else:
                 logger.warning(f"BridgeMapAgent enhancement skipped: {agent_result.get('error')}")
         except Exception as e:
