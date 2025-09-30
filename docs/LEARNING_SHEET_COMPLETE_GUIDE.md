@@ -7,7 +7,7 @@
 **Risk Assessment**: 🟢 **LOW RISK** - Well-designed, minimal changes, comprehensive testing  
 **Estimated Implementation Time**: 4-6 hours
 
-This document provides a complete guide for implementing the "学习单" (learning sheet) feature in the MindGraph system. When a user's prompt contains learning sheet keywords, the system will generate a normal diagram but randomly hide 20-80% of node text content to create a fill-in-the-blank worksheet.
+This document provides a complete guide for implementing the "半成品" (semi-finished diagram) feature in the MindGraph system. When a user's prompt contains learning sheet keywords, the system will generate a normal diagram but randomly hide 20-80% of node text content to create a fill-in-the-blank worksheet.
 
 ---
 
@@ -20,11 +20,7 @@ This document provides a complete guide for implementing the "学习单" (learni
 - **Preservation**: Keeps watermarks, titles, and structural elements visible
 
 ### **Supported Keywords**
-- `学习单` (Learning Sheet)
-- `练习单` (Practice Sheet)  
-- `作业单` (Homework Sheet)
-- `学习表` (Learning Table)
-- `练习表` (Practice Table)
+- `半成品` (Semi-finished)
 
 ### **Benefits**
 - ✅ **Minimal Code Changes**: Preserves existing functionality
@@ -87,7 +83,7 @@ def _detect_learning_sheet_from_prompt(user_prompt: str, language: str) -> bool:
     Returns:
         bool: True if learning sheet keywords detected
     """
-    learning_sheet_keywords = ['学习单', '练习单', '作业单', '学习表', '练习表']
+    learning_sheet_keywords = ['半成品']
     is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
     
     if is_learning_sheet:
@@ -137,9 +133,8 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
                 'hidden_node_percentage': 0
             }
         
-        # Calculate random hidden percentage for learning sheets (20-80%)
-        import random
-        hidden_percentage = random.uniform(0.2, 0.8) if is_learning_sheet else 0
+        # Calculate hidden percentage for learning sheets (10%)
+        hidden_percentage = 0.1 if is_learning_sheet else 0
         
         # Add metadata to the result
         result = {
@@ -182,7 +177,7 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 const fontWeight = d3.select(this).attr('font-weight');
                 
                 // Exclude watermarks
-                const isWatermark = text === 'MindGraph' || text.includes('学习单');
+                const isWatermark = text === 'MindGraph';
                 
                 // Exclude titles (large, bold text)
                 const isTitle = fontWeight === 'bold' && fontSize > 20;
@@ -415,7 +410,7 @@ def generate_dingtalk():
 ### **Test Cases**
 
 #### **1. Learning Sheet Detection**
-- **Test**: Prompt with "学习单" keyword
+- **Test**: Prompt with "半成品" keyword
 - **Expected**: `is_learning_sheet = True`, `hidden_node_percentage` between 0.2-0.8
 - **Test**: Prompt without learning sheet keywords
 - **Expected**: `is_learning_sheet = False`, `hidden_node_percentage = 0`
@@ -444,7 +439,7 @@ def generate_dingtalk():
 # Test learning sheet detection
 curl -X POST http://localhost:9527/api/generate_png \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "生成一个关于动物的学习单", "language": "zh"}'
+  -d '{"prompt": "生成一个关于动物的半成品流程图", "language": "zh"}'
 
 # Test normal diagram
 curl -X POST http://localhost:9527/api/generate_png \
@@ -549,15 +544,16 @@ curl -X POST http://localhost:9527/api/generate_png \
 ## ⚙️ **Configuration Options**
 
 ### **Learning Sheet Keywords**
-Current keywords: `['学习单', '练习单', '作业单', '学习表', '练习表']`
+Current keywords: `['半成品']`
 
-### **Hidden Percentage Range**
-Current range: 20-80% (0.2-0.8)
+### **Hidden Percentage**
+Fixed at: 20% (0.2), with minimum of 2 nodes
 
 ### **Excluded Text Elements**
-- Watermarks (text containing "MindGraph" or "学习单")
-- Titles (bold text with font size > 20px)
+- Watermarks (text containing "MindGraph")
+- Main topic nodes (all bold text - prevents central topics/main concepts from being hidden)
 - Empty text elements
+- Flow map main steps (white text on blue background)
 
 ---
 

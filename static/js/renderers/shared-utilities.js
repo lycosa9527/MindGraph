@@ -242,24 +242,25 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 const fillColor = d3.select(this).attr('fill');
                 
                 // Exclude watermarks
-                const isWatermark = text === 'MindGraph' || text.includes('学习单');
+                const isWatermark = text === 'MindGraph';
                 
-                // Exclude titles (large, bold text)
-                const isTitle = fontWeight === 'bold' && fontSize >= 20;
+                // Exclude main topic nodes (bold or semi-bold text - central topics, main concepts)
+                // Note: concept maps use font-weight 600, other maps use 'bold'
+                const isMainTopic = fontWeight === 'bold' || fontWeight === '600' || parseInt(fontWeight) >= 600;
                 
                 // Exclude empty text
                 const isEmpty = text.length === 0;
                 
-                // For flow maps: Exclude main step text (white text on blue background, medium size)
-                // Main steps typically have white text (#ffffff) and medium font size (14px)
-                const isMainStep = fillColor === '#ffffff' && fontSize >= 14;
+                // For flow maps and bridge maps: Exclude main step/example text (white text on blue background)
+                // Flow map main steps and bridge map first pair use white text (#ffffff)
+                const isMainStep = fillColor && fillColor.toLowerCase() === '#ffffff' && fontSize >= 14;
                 
                 // Debug logging for each text element
-                if (!isWatermark && !isTitle && !isEmpty) {
-                    console.log(`Learning sheet: Text "${text.substring(0, 20)}..." - fontSize: ${fontSize}, fillColor: ${fillColor}, isMainStep: ${isMainStep}`);
+                if (!isWatermark && !isMainTopic && !isEmpty) {
+                    console.log(`Learning sheet: Text "${text.substring(0, 20)}..." - fontSize: ${fontSize}, fontWeight: ${fontWeight}, fillColor: ${fillColor}, isMainStep: ${isMainStep}`);
                 }
                 
-                return !isWatermark && !isTitle && !isEmpty && !isMainStep;
+                return !isWatermark && !isMainTopic && !isEmpty && !isMainStep;
             });
         
         const totalTexts = textElements.size();
@@ -269,7 +270,8 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
             return;
         }
         
-        const hideCount = Math.floor(totalTexts * hiddenPercentage);
+        // Ensure at least 2 elements are hidden (20% rate)
+        const hideCount = Math.max(2, Math.floor(totalTexts * hiddenPercentage));
         console.log(`Learning sheet: Will hide ${hideCount} out of ${totalTexts} elements (${Math.round(hiddenPercentage * 100)}%)`);
         if (hideCount === 0) {
             console.log('Learning sheet: Hide count is 0 - skipping knockout');

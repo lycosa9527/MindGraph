@@ -1492,7 +1492,7 @@ def _detect_learning_sheet_from_prompt(user_prompt: str, language: str) -> bool:
     Returns:
         bool: True if learning sheet keywords detected
     """
-    learning_sheet_keywords = ['学习单', '练习单', '作业单', '学习表', '练习表']
+    learning_sheet_keywords = ['半成品']
     is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
     
     if is_learning_sheet:
@@ -1505,9 +1505,9 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     """
     Remove learning sheet keywords from prompt so LLM generates actual content.
     
-    When user asks for "生成鸦片战争的流程图学习单", we want the LLM to generate
-    content about "生成鸦片战争的流程图" (the actual topic), not meta-content 
-    about how to create learning sheets.
+    When user asks for "生成鸦片战争的半成品流程图" or "生成鸦片战争的流程图半成品", 
+    we want the LLM to generate content about "生成鸦片战争的流程图" (the actual topic), 
+    not meta-content about how to create learning sheets.
     
     Args:
         user_prompt: Original user prompt
@@ -1515,7 +1515,7 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     Returns:
         str: Cleaned prompt with learning sheet keywords removed
     """
-    learning_sheet_keywords = ['学习单', '练习单', '作业单', '学习表', '练习表']
+    learning_sheet_keywords = ['半成品']
     
     cleaned_prompt = user_prompt
     for keyword in learning_sheet_keywords:
@@ -1524,6 +1524,7 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     # Clean up any extra whitespace or punctuation left behind
     import re
     cleaned_prompt = re.sub(r'\s+', ' ', cleaned_prompt)  # Multiple spaces -> single space
+    cleaned_prompt = re.sub(r'的图+$', '的', cleaned_prompt)  # "的图" at end -> "的" (for cases like "流程图的半成品图" -> "流程图的")
     cleaned_prompt = re.sub(r'的+$', '', cleaned_prompt)  # Remove trailing "的"
     cleaned_prompt = cleaned_prompt.strip()
     
@@ -1576,9 +1577,8 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
                 'hidden_node_percentage': 0
             }
         
-        # Calculate random hidden percentage for learning sheets (20-80%)
-        import random
-        hidden_percentage = random.uniform(0.2, 0.8) if is_learning_sheet else 0
+        # Calculate hidden percentage for learning sheets (20%)
+        hidden_percentage = 0.2 if is_learning_sheet else 0
         
         # Add metadata to the result
         result = {
