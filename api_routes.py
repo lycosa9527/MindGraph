@@ -1086,7 +1086,7 @@ def generate_png():
             }}, 1000);
             
             // Wait for D3.js to load
-            async function waitForD3() {{
+            function waitForD3() {{
                 if (typeof d3 !== "undefined") {{
 
                     try {{
@@ -1132,60 +1132,15 @@ def generate_png():
                         }}
                         
                         try {{
-                            // Check if this is a learning sheet
-                            const isLearningSheet = window.spec.is_learning_sheet === true;
-                            
-                            if (isLearningSheet) {{
-                                console.log("Learning sheet mode: Rendering side-by-side diagrams");
-                                
-                                // Create wrapper for side-by-side layout
-                                const body = document.body;
-                                body.innerHTML = '';
-                                
-                                const wrapper = document.createElement('div');
-                                wrapper.style.cssText = 'display: flex; gap: 40px; align-items: flex-start; padding: 20px; background: white;';
-                                
-                                // Left side - Complete version
-                                const leftContainer = document.createElement('div');
-                                leftContainer.style.cssText = 'text-align: center;';
-                                leftContainer.innerHTML = '<div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333;">完整版 (Answer Key)</div><div id="d3-container"></div>';
-                                wrapper.appendChild(leftContainer);
-                                
-                                // Right side - Practice version
-                                const rightContainer = document.createElement('div');
-                                rightContainer.style.cssText = 'text-align: center;';
-                                rightContainer.innerHTML = '<div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333;">练习版 (Worksheet)</div><div id="d3-container-practice"></div>';
-                                wrapper.appendChild(rightContainer);
-                                
-                                body.appendChild(wrapper);
-                                
-                                // Render complete version first (without knockout)
-                                const completeSpec = {{...window.spec, is_learning_sheet: false, hidden_node_percentage: 0}};
-                                await window.dynamicRendererLoader.renderGraph(window.graph_type, completeSpec, backendTheme, window.dimensions);
-                                
-                                // Clone the SVG to the practice container
-                                const originalSvg = document.querySelector('#d3-container svg');
-                                if (originalSvg) {{
-                                    const practiceContainer = document.querySelector('#d3-container-practice');
-                                    practiceContainer.innerHTML = originalSvg.outerHTML;
-                                    
-                                    // Now apply knockout to the practice version
-                                    const practiceSvg = d3.select('#d3-container-practice svg');
-                                    if (typeof knockoutTextForLearningSheet === 'function') {{
-                                        knockoutTextForLearningSheet(practiceSvg, window.spec.hidden_node_percentage);
-                                    }}
-                                }}
-                            }} else {{
-                                // Normal single diagram rendering
-                                window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
-                                    .then(() => {{
+                            // Use the dynamic renderer loader to render the graph
+                            window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
+                                .then(() => {{
 
-                                    }})
-                                    .catch(error => {{
-                                        console.error("Dynamic rendering failed:", error);
+                                }})
+                                .catch(error => {{
+                                    console.error("Dynamic rendering failed:", error);
 
-                                    }});
-                            }}
+                                }});
                         }} catch (error) {{
                             console.error("Error calling dynamic renderer:", error);
 
@@ -1485,14 +1440,6 @@ def generate_png():
                     }
                 ''', timeout=2000)
                 logger.debug("Element ready for screenshot")
-                
-                # For learning sheets, screenshot the wrapper containing both diagrams
-                is_learning_sheet = spec.get('is_learning_sheet', False)
-                if is_learning_sheet:
-                    wrapper = await page.query_selector('div[style*="display: flex"]')
-                    if wrapper:
-                        element = wrapper
-                        logger.debug("Learning sheet: Capturing side-by-side wrapper")
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
@@ -1969,7 +1916,7 @@ def generate_dingtalk():
             }}, 1000);
             
             // Wait for D3.js to load
-            async function waitForD3() {{
+            function waitForD3() {{
                 if (typeof d3 !== "undefined") {{
 
                     try {{
@@ -2015,60 +1962,15 @@ def generate_dingtalk():
                         }}
                         
                         try {{
-                            // Check if this is a learning sheet
-                            const isLearningSheet = window.spec.is_learning_sheet === true;
-                            
-                            if (isLearningSheet) {{
-                                console.log("Learning sheet mode: Rendering side-by-side diagrams");
-                                
-                                // Create wrapper for side-by-side layout
-                                const body = document.body;
-                                body.innerHTML = '';
-                                
-                                const wrapper = document.createElement('div');
-                                wrapper.style.cssText = 'display: flex; gap: 40px; align-items: flex-start; padding: 20px; background: white;';
-                                
-                                // Left side - Complete version
-                                const leftContainer = document.createElement('div');
-                                leftContainer.style.cssText = 'text-align: center;';
-                                leftContainer.innerHTML = '<div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333;">完整版 (Answer Key)</div><div id="d3-container"></div>';
-                                wrapper.appendChild(leftContainer);
-                                
-                                // Right side - Practice version
-                                const rightContainer = document.createElement('div');
-                                rightContainer.style.cssText = 'text-align: center;';
-                                rightContainer.innerHTML = '<div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333;">练习版 (Worksheet)</div><div id="d3-container-practice"></div>';
-                                wrapper.appendChild(rightContainer);
-                                
-                                body.appendChild(wrapper);
-                                
-                                // Render complete version first (without knockout)
-                                const completeSpec = {{...window.spec, is_learning_sheet: false, hidden_node_percentage: 0}};
-                                await window.dynamicRendererLoader.renderGraph(window.graph_type, completeSpec, backendTheme, window.dimensions);
-                                
-                                // Clone the SVG to the practice container
-                                const originalSvg = document.querySelector('#d3-container svg');
-                                if (originalSvg) {{
-                                    const practiceContainer = document.querySelector('#d3-container-practice');
-                                    practiceContainer.innerHTML = originalSvg.outerHTML;
-                                    
-                                    // Now apply knockout to the practice version
-                                    const practiceSvg = d3.select('#d3-container-practice svg');
-                                    if (typeof knockoutTextForLearningSheet === 'function') {{
-                                        knockoutTextForLearningSheet(practiceSvg, window.spec.hidden_node_percentage);
-                                    }}
-                                }}
-                            }} else {{
-                                // Normal single diagram rendering
-                                window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
-                                    .then(() => {{
+                            // Use the dynamic renderer loader to render the graph
+                            window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
+                                .then(() => {{
 
-                                    }})
-                                    .catch(error => {{
-                                        console.error("Dynamic rendering failed:", error);
+                                }})
+                                .catch(error => {{
+                                    console.error("Dynamic rendering failed:", error);
 
-                                    }});
-                            }}
+                                }});
                         }} catch (error) {{
                             console.error("Error calling dynamic renderer:", error);
 
@@ -2290,14 +2192,6 @@ def generate_dingtalk():
                     logger.warning(f"Element not ready for screenshot within 2s timeout: {e}")
                     # Fallback to shorter fixed wait
                     await page.wait_for_timeout(200)
-                
-                # For learning sheets, screenshot the wrapper containing both diagrams
-                is_learning_sheet = spec.get('is_learning_sheet', False)
-                if is_learning_sheet:
-                    wrapper = await page.query_selector('div[style*="display: flex"]')
-                    if wrapper:
-                        element = wrapper
-                        logger.debug("Learning sheet: Capturing side-by-side wrapper")
                 
                 png_bytes = await element.screenshot(omit_background=False, timeout=60000)
                 return png_bytes
