@@ -307,7 +307,7 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
         // Add answer key below the diagram
         if (hiddenTexts.length > 0) {
             // Create answer key text
-            const answerText = 'Answer: ' + hiddenTexts.join(', ');
+            const answerText = '参考答案: ' + hiddenTexts.join(', ');
             const answerKeyHeight = 50; // Space needed for answer key
             
             // Get viewBox or use regular coordinates
