@@ -92,13 +92,8 @@ class PromptManager {
         // Disable send button
         this.sendBtn.disabled = true;
         
-        // Show loading notification
-        this.showNotification(
-            window.languageManager?.currentLanguage === 'zh' 
-                ? '正在生成图表...' 
-                : 'Generating diagram...',
-            'info'
-        );
+        // Show loading spinner
+        this.showLoadingSpinner();
         
         try {
             // Get current language
@@ -137,8 +132,14 @@ class PromptManager {
             // Transition to editor with generated diagram
             this.transitionToEditorWithDiagram(data);
             
+            // Hide loading spinner (will be hidden by transition anyway)
+            this.hideLoadingSpinner();
+            
         } catch (error) {
             console.error('Error generating diagram:', error);
+            
+            // Hide loading spinner
+            this.hideLoadingSpinner();
             
             // Show error notification
             this.showNotification(
@@ -385,6 +386,105 @@ class PromptManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    /**
+     * Show loading spinner
+     */
+    showLoadingSpinner() {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = '10000';
+        overlay.style.backdropFilter = 'blur(4px)';
+        
+        // Create spinner container
+        const spinnerContainer = document.createElement('div');
+        spinnerContainer.style.textAlign = 'center';
+        
+        // Create spinner
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-spinner';
+        spinner.style.width = '80px';
+        spinner.style.height = '80px';
+        spinner.style.border = '8px solid rgba(255, 255, 255, 0.2)';
+        spinner.style.borderTop = '8px solid #667eea';
+        spinner.style.borderRadius = '50%';
+        spinner.style.animation = 'spin 1s linear infinite';
+        
+        // Create loading text
+        const loadingText = document.createElement('div');
+        loadingText.style.marginTop = '24px';
+        loadingText.style.color = 'white';
+        loadingText.style.fontSize = '18px';
+        loadingText.style.fontWeight = '600';
+        loadingText.textContent = window.languageManager?.currentLanguage === 'zh' 
+            ? 'AI正在生成图表...' 
+            : 'AI is generating your diagram...';
+        
+        // Create subtext
+        const subText = document.createElement('div');
+        subText.style.marginTop = '8px';
+        subText.style.color = 'rgba(255, 255, 255, 0.8)';
+        subText.style.fontSize = '14px';
+        subText.textContent = window.languageManager?.currentLanguage === 'zh' 
+            ? '请稍候，这可能需要几秒钟' 
+            : 'Please wait, this may take a few seconds';
+        
+        // Add CSS animation if not exists
+        if (!document.getElementById('spinner-style')) {
+            const style = document.createElement('style');
+            style.id = 'spinner-style';
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Add pulsing animation to text
+        loadingText.style.animation = 'pulse 2s ease-in-out infinite';
+        
+        // Assemble
+        spinnerContainer.appendChild(spinner);
+        spinnerContainer.appendChild(loadingText);
+        spinnerContainer.appendChild(subText);
+        overlay.appendChild(spinnerContainer);
+        
+        document.body.appendChild(overlay);
+    }
+    
+    /**
+     * Hide loading spinner
+     */
+    hideLoadingSpinner() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.style.transition = 'opacity 0.3s ease';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 300);
+        }
     }
     
     /**
