@@ -5,6 +5,46 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.2] - 2025-10-01
+
+### Added - Interactive Editing Tools
+- **Property Panel**: Right-side panel for editing selected nodes
+  - Text editing with live preview
+  - Font size and font family selectors
+  - Bold, italic, underline text styles
+  - Color pickers for text, fill, and stroke colors
+  - Hex color input for precise color selection
+  - Stroke width and opacity sliders
+  - Real-time property updates
+  
+- **ToolbarManager**: Complete toolbar functionality
+  - Add, delete, and duplicate nodes
+  - Undo/redo actions
+  - Save/load diagram files (JSON format)
+  - Export diagrams as SVG
+  - Back to gallery navigation
+  - Node selection awareness
+  
+- **Visual Editing Capabilities**:
+  - Click to select nodes
+  - Double-click to edit text
+  - Ctrl/Cmd+Click for multiple selection
+  - Delete key to remove selected nodes
+  - Property panel shows/hides based on selection
+  - Apply all changes button for bulk updates
+
+### Changed
+- Property panel slides in from right when nodes are selected
+- Toolbar buttons enable/disable based on selection state
+- Mobile-responsive property panel (bottom sheet on mobile)
+
+### Technical
+- Created `toolbar-manager.js` with full editing controls
+- Added comprehensive property panel CSS
+- Integrated ToolbarManager with InteractiveEditor
+- Real-time color picker sync with hex inputs
+- Selection-based property loading
+
 ## [3.0.1] - 2025-10-01
 
 ### Added - AI Prompt Generation Integration

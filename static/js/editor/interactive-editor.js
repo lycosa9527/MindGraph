@@ -16,6 +16,7 @@ class InteractiveEditor {
         // Initialize components
         this.selectionManager = new SelectionManager();
         this.canvasManager = new CanvasManager();
+        this.toolbarManager = null; // Will be initialized after render
         this.renderer = null;
         
         // Bind selection change callback
@@ -42,6 +43,12 @@ class InteractiveEditor {
         
         // Setup global event handlers
         this.setupGlobalEventHandlers();
+        
+        // Initialize toolbar manager
+        if (typeof ToolbarManager !== 'undefined') {
+            this.toolbarManager = new ToolbarManager(this);
+            console.log('Toolbar manager initialized');
+        }
     }
     
     /**

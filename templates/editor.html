@@ -284,6 +284,90 @@
             <div class="canvas-panel">
                 <div id="d3-container"></div>
             </div>
+            
+            <!-- Property Panel (shown when nodes are selected) -->
+            <div class="property-panel" id="property-panel" style="display: none;">
+                <div class="property-header">
+                    <h3>Properties</h3>
+                    <button id="close-properties" class="btn-close">×</button>
+                </div>
+                
+                <div class="property-content">
+                    <!-- Text Properties -->
+                    <div class="property-group">
+                        <label>Text</label>
+                        <input type="text" id="prop-text" class="prop-input" placeholder="Node text">
+                        <button id="prop-text-apply" class="prop-btn">Apply</button>
+                    </div>
+                    
+                    <!-- Font Properties -->
+                    <div class="property-group">
+                        <label>Font Size</label>
+                        <input type="number" id="prop-font-size" class="prop-input" min="8" max="72" value="14">
+                        <select id="prop-font-family" class="prop-select">
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="Courier New, monospace">Courier</option>
+                            <option value="Comic Sans MS, cursive">Comic Sans</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Font Style -->
+                    <div class="property-group">
+                        <label>Text Style</label>
+                        <div class="btn-group">
+                            <button id="prop-bold" class="prop-toggle-btn" title="Bold"><strong>B</strong></button>
+                            <button id="prop-italic" class="prop-toggle-btn" title="Italic"><em>I</em></button>
+                            <button id="prop-underline" class="prop-toggle-btn" title="Underline"><u>U</u></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Color Properties -->
+                    <div class="property-group">
+                        <label>Text Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="prop-text-color" value="#000000">
+                            <input type="text" id="prop-text-color-hex" class="color-hex-input" value="#000000">
+                        </div>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label>Fill Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="prop-fill-color" value="#2196f3">
+                            <input type="text" id="prop-fill-color-hex" class="color-hex-input" value="#2196f3">
+                        </div>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label>Stroke Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="prop-stroke-color" value="#1976d2">
+                            <input type="text" id="prop-stroke-color-hex" class="color-hex-input" value="#1976d2">
+                        </div>
+                    </div>
+                    
+                    <!-- Stroke Width -->
+                    <div class="property-group">
+                        <label>Stroke Width</label>
+                        <input type="range" id="prop-stroke-width" class="prop-slider" min="0" max="10" step="0.5" value="2">
+                        <span id="stroke-width-value">2px</span>
+                    </div>
+                    
+                    <!-- Opacity -->
+                    <div class="property-group">
+                        <label>Opacity</label>
+                        <input type="range" id="prop-opacity" class="prop-slider" min="0" max="1" step="0.1" value="1">
+                        <span id="opacity-value">100%</span>
+                    </div>
+                    
+                    <!-- Quick Apply Button -->
+                    <div class="property-actions">
+                        <button id="apply-all-properties" class="btn-primary btn-block">Apply All Changes</button>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="editor-status-bar">
@@ -309,8 +393,12 @@
     <script src="/static/js/editor/selection-manager.js"></script>
     <script src="/static/js/editor/canvas-manager.js"></script>
     <script src="/static/js/editor/node-editor.js"></script>
+    <script src="/static/js/editor/toolbar-manager.js"></script>
     <script src="/static/js/editor/interactive-editor.js"></script>
     <script src="/static/js/editor/diagram-selector.js"></script>
+    
+    <!-- Renderer Dispatcher -->
+    <script src="/static/js/renderers/renderer-dispatcher.js"></script>
 </body>
 </html>
 
