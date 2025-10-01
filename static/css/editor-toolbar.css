@@ -1,0 +1,83 @@
+/**
+ * Professional Toolbar Styling for MindGraph Interactive Editor
+ * 
+ * @author lycosa9527
+ * @made_by MindSpring Team
+ */
+
+/* Toolbar container already defined in editor.css */
+
+/* Additional button styles for specific toolbar elements */
+
+/* Tooltip styles */
+[title] {
+    position: relative;
+}
+
+[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+/* Active states for selected elements */
+.toolbar-group.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Animation for toolbar interactions */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.btn-tool:active:not(:disabled) {
+    animation: pulse 0.2s ease;
+}
+
+/* Toolbar responsiveness */
+@media (max-width: 1200px) {
+    .toolbar-center {
+        min-width: 300px;
+    }
+    
+    .toolbar-group {
+        padding: 6px 8px;
+    }
+    
+    .toolbar-group label {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .editor-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .toolbar-section {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toolbar-group {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+

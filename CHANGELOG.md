@@ -5,6 +5,70 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-10-01
+
+### Added - MindGraph Professional Interactive Editor
+- **New Interactive Editor Interface** at `/editor` endpoint
+  - Professional diagram gallery with visual previews
+  - 8 Thinking Maps: Circle Map, Bubble Map, Double Bubble Map, Tree Map, Brace Map, Flow Map, Multi-Flow Map, Bridge Map
+  - 2 Advanced Diagrams: Mind Map, Concept Map
+  - Click-to-select diagram cards (removed separate select buttons)
+  
+- **Bilingual Language Support**
+  - Language switcher button (EN ↔ 中文) in top-right corner
+  - Complete translations for all UI elements
+  - Educational descriptions for each map type
+  
+- **QR Code Sharing**
+  - Share button displays QR code modal with current URL
+  - One-click copy to clipboard
+  - Professional modal design with smooth animations
+  
+- **AI Prompt Input System**
+  - Elegant search bar with send button
+  - Recent prompts history (up to 10 items)
+  - LocalStorage persistence
+  - Dropdown history with click-to-reuse
+  - Bilingual placeholders and UI
+  
+- **Interactive Editor Components**
+  - `SelectionManager`: Node selection with visual feedback
+  - `CanvasManager`: Viewport and canvas management
+  - `NodeEditor`: Modal text editing with validation
+  - `InteractiveEditor`: Main controller with state management
+  - `DiagramSelector`: Template system for all diagram types
+  - `LanguageManager`: Complete i18n system
+  - `PromptManager`: AI prompt handling and history
+
+### Changed
+- Renamed "MindGraph Interactive Editor" to "MindGraph Professional"
+- Reorganized diagram categories (8 Thinking Maps for K12 education)
+- Moved Concept Map to Advanced Diagrams category
+- Moved Brace Map to Thinking Maps category
+- Updated all diagram descriptions to educational framework
+- Disabled automatic browser opening on server startup
+- Improved responsive design for mobile devices
+
+### Documentation
+- Created comprehensive `docs/INTERACTIVE_EDITOR.md` (consolidated plan + status)
+- Created `docs/IMPLEMENTATION_SUMMARY.md`
+- Updated README.md with editor information
+- Removed duplicate documentation files
+
+### Technical
+- Added `/editor` route to Flask application
+- Created modular JavaScript components in `static/js/editor/`
+- Professional CSS with gradient themes and smooth animations
+- Non-invasive approach: existing renderers unchanged
+- Full keyboard shortcut support (Delete, Ctrl+Z, Ctrl+Y, Ctrl+A)
+
+### Fixed
+- Button positioning to scroll with content (not fixed)
+- History dropdown appearing only on gallery page
+- QR modal z-index layering
+
+---
+
 ## [2.6.2] - 2025-10-01
 
 ### 🎓 **LEARNING SHEET FUNCTIONALITY**

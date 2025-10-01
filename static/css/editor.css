@@ -1,0 +1,614 @@
+/**
+ * MindGraph Interactive Editor Styles
+ * 
+ * @author lycosa9527
+ * @made_by MindSpring Team
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    overflow: hidden;
+}
+
+/* ========== Landing Page ========== */
+.editor-landing {
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px 20px;
+    position: relative;
+}
+
+/* ========== Top Right Controls ========== */
+.top-right-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 1000;
+}
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #667eea;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.control-btn:hover {
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    border-color: #667eea;
+}
+
+.control-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.lang-text {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.editor-header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+}
+
+.editor-header h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.editor-header p {
+    font-size: 18px;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* ========== AI Prompt Input Section ========== */
+.prompt-section {
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    padding: 0 20px;
+}
+
+.prompt-container {
+    position: relative;
+}
+
+.prompt-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 50px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    transition: all 0.3s ease;
+}
+
+.prompt-input-wrapper:focus-within {
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.25);
+    transform: translateY(-2px);
+}
+
+.prompt-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 18px 28px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    color: #333;
+    border-radius: 50px;
+}
+
+.prompt-input::placeholder {
+    color: #999;
+}
+
+.prompt-send-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-right: 6px;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.prompt-send-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.prompt-send-btn:active {
+    transform: scale(1.05);
+}
+
+.prompt-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: scale(1);
+}
+
+/* History Toggle Button */
+.prompt-history-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.prompt-history-toggle:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.prompt-history-toggle svg {
+    transition: transform 0.3s ease;
+}
+
+.prompt-history-toggle.active svg {
+    transform: rotate(180deg);
+}
+
+/* History Dropdown */
+.prompt-history-dropdown {
+    position: absolute;
+    top: calc(100% + 16px);
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    max-height: 320px;
+    overflow: hidden;
+    z-index: 100;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.prompt-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.prompt-history-header span {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.clear-history-btn {
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.clear-history-btn:hover {
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.prompt-history-list {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.prompt-history-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.prompt-history-item:last-child {
+    border-bottom: none;
+}
+
+.prompt-history-item:hover {
+    background: #f8f9fa;
+}
+
+.prompt-history-item svg {
+    flex-shrink: 0;
+    color: #999;
+}
+
+.prompt-history-item-text {
+    flex: 1;
+    color: #555;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prompt-history-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+}
+
+/* ========== Diagram Gallery ========== */
+.diagram-gallery {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.diagram-category {
+    margin-bottom: 60px;
+}
+
+.diagram-category h2 {
+    color: white;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    padding-left: 10px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.diagram-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 0 10px;
+}
+
+.diagram-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+}
+
+.diagram-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    border: 2px solid #667eea;
+}
+
+.diagram-card:active {
+    transform: translateY(-4px);
+}
+
+.diagram-preview {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.diagram-preview svg {
+    width: 100%;
+    height: 100%;
+}
+
+.diagram-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.diagram-card p {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+    margin: 0;
+}
+
+/* ========== Landing Footer ========== */
+.landing-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding: 40px 20px;
+}
+
+.landing-footer .btn-primary {
+    background: white;
+    color: #667eea;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    margin-bottom: 12px;
+}
+
+.landing-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.landing-footer p {
+    color: white;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* ========== Editor Interface ========== */
+.editor-interface {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f5f5f5;
+}
+
+.editor-toolbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 12px 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.toolbar-group label {
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 5px;
+}
+
+.btn-tool {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 60px;
+}
+
+.btn-tool:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-tool:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: #4CAF50;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.btn-success {
+    background: #2196F3;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-success:hover {
+    background: #1976D2;
+    transform: translateY(-1px);
+}
+
+.diagram-type {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+}
+
+/* ========== Main Content ========== */
+.editor-main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.canvas-panel {
+    flex: 1;
+    overflow: auto;
+    background: #f5f5f5;
+    position: relative;
+}
+
+#d3-container {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+}
+
+/* ========== Status Bar ========== */
+.editor-status-bar {
+    background: #2c3e50;
+    color: white;
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+.editor-status-bar span {
+    margin-right: 20px;
+}
+
+/* ========== Selection Indicator ========== */
+.selected {
+    filter: drop-shadow(0 0 8px rgba(255, 107, 107, 0.6));
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 768px) {
+    .editor-header h1 {
+        font-size: 32px;
+    }
+    
+    .diagram-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .editor-toolbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .toolbar-section {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .top-right-controls {
+        top: 10px;
+        right: 10px;
+        gap: 8px;
+    }
+    
+    .control-btn {
+        padding: 8px 14px;
+        font-size: 12px;
+    }
+}
+

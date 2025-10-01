@@ -26,6 +26,7 @@ API_TEMP_IMAGES = '/api/temp_images'
 # Main Pages
 WEB_INDEX = '/'
 WEB_DEBUG = '/debug'
+WEB_EDITOR = '/editor'
 WEB_STYLE_DEMO = '/style-demo'
 WEB_TEST_STYLE_MANAGER = '/test-style-manager'
 WEB_TEST_PNG_GENERATION = '/test-png-generation'
@@ -70,6 +71,7 @@ def get_web_urls():
     return {
         'index': WEB_INDEX,
         'debug': WEB_DEBUG,
+        'editor': WEB_EDITOR,
         'style_demo': WEB_STYLE_DEMO,
         'test_style_manager': WEB_TEST_STYLE_MANAGER,
         'test_png_generation': WEB_TEST_PNG_GENERATION,

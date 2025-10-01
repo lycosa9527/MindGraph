@@ -744,8 +744,8 @@ if __name__ == '__main__':
     # Display professional startup banner
     print_banner(config.HOST, config.PORT)
     
-    # Automatically open browser (non-blocking)
-    open_browser_debug(config.HOST, config.PORT)
+    # Automatically open browser (non-blocking) - DISABLED
+    # open_browser_debug(config.HOST, config.PORT)
     
     # Configure Werkzeug log level via environment (default WARNING)
     werkzeug_level_str = os.getenv('WERKZEUG_LOG_LEVEL', 'WARNING').upper()

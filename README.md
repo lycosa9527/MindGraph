@@ -30,6 +30,7 @@ Transform natural language into professional diagrams. Supports 10 diagram types
 
 ## Features | 功能特性
 
+- **Interactive Editor**: Professional web-based editor for creating and editing diagrams | **交互式编辑器**: 用于创建和编辑图表的专业网页编辑器
 - **Smart Classification**: LLM-based diagram type detection | **智能分类**: 基于LLM的图表类型检测
 - **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的思维导图覆盖，包括思维导图和概念图
 - **Learning Sheets (半成品)**: Educational mode with 20% content hidden for student practice | **学习半成品**: 教育模式，隐藏20%内容供学生练习
@@ -69,6 +70,7 @@ Transform natural language into professional diagrams. Supports 10 diagram types
    ```
 
 4. **Access Interface | 访问界面**
+   - Interactive Editor: `http://localhost:9527/editor` | 交互式编辑器
    - Web UI: `http://localhost:9527/debug` | 网页界面
    - API: `http://localhost:9527/api/generate_png` | API接口
 

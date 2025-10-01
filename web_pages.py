@@ -4,7 +4,7 @@ import os
 from functools import wraps
 from dotenv import load_dotenv
 from urls import (
-    WEB_INDEX, WEB_DEBUG, WEB_STYLE_DEMO, WEB_TEST_STYLE_MANAGER,
+    WEB_INDEX, WEB_DEBUG, WEB_EDITOR, WEB_STYLE_DEMO, WEB_TEST_STYLE_MANAGER,
     WEB_TEST_PNG_GENERATION, WEB_SIMPLE_TEST, WEB_BROWSER_TEST,
     WEB_BUBBLE_MAP_TEST, WEB_DEBUG_THEME_CONVERSION, WEB_SIMPLE_THEME_TEST,
     WEB_TIMING_STATS
@@ -43,6 +43,12 @@ def index():
 @web.route(WEB_DEBUG)
 @handle_template_errors('debug.html')
 def debug():
+    pass
+
+
+@web.route(WEB_EDITOR)
+@handle_template_errors('editor.html')
+def editor():
     pass
 
 

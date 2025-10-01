@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph Professional</title>
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="/static/fonts/inter.css">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/editor.css">
+    <link rel="stylesheet" href="/static/css/editor-toolbar.css">
+    
+    <!-- D3.js -->
+    <script src="/static/js/d3.min.js"></script>
+</head>
+<body>
+    <!-- Landing Page / Gallery -->
+    <div class="editor-landing" id="editor-landing">
+        <!-- Top Right Buttons (Only on landing page) -->
+        <div class="top-right-controls">
+            <button id="language-toggle" class="control-btn" title="Switch Language">
+                <span class="lang-text">EN</span>
+            </button>
+            <button id="share-btn" class="control-btn" title="Share">
+                <span>Share</span>
+            </button>
+        </div>
+        
+        <header class="editor-header">
+            <h1 id="main-title">MindGraph Professional</h1>
+            <p id="main-subtitle">Choose a diagram type to start creating</p>
+        </header>
+        
+        <!-- AI Prompt Input Section -->
+        <div class="prompt-section">
+            <div class="prompt-container">
+                <div class="prompt-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="prompt-input" 
+                        class="prompt-input" 
+                        placeholder="Describe your diagram or choose from templates below..."
+                        autocomplete="off"
+                    />
+                    <button id="prompt-send-btn" class="prompt-send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Recent Prompts Dropdown -->
+                <div class="prompt-history-toggle" id="history-toggle">
+                    <span id="history-toggle-text">Recent Prompts</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                
+                <div class="prompt-history-dropdown" id="prompt-history" style="display: none;">
+                    <div class="prompt-history-header">
+                        <span id="history-header-text">Recent Prompts</span>
+                        <button id="clear-history-btn" class="clear-history-btn">Clear</button>
+                    </div>
+                    <div class="prompt-history-list" id="prompt-history-list">
+                        <div class="prompt-history-empty" id="history-empty">
+                            <span id="empty-history-text">No recent prompts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="diagram-gallery">
+            <!-- Thinking Maps Category -->
+            <div class="diagram-category">
+                <h2>Thinking Maps</h2>
+                <div class="diagram-grid">
+                    <div class="diagram-card" data-type="circle_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#e91e63"/>
+                                <circle cx="100" cy="75" r="45" fill="none" stroke="#f48fb1" stroke-width="2"/>
+                                <text x="100" y="80" text-anchor="middle" fill="white" font-size="12">Topic</text>
+                            </svg>
+                        </div>
+                        <h3>Circle Map</h3>
+                        <p>Defining in context</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="bubble_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="30" fill="#4caf50"/>
+                                <circle cx="40" cy="40" r="12" fill="#81c784"/>
+                                <circle cx="160" cy="40" r="12" fill="#81c784"/>
+                                <circle cx="40" cy="110" r="12" fill="#81c784"/>
+                                <circle cx="160" cy="110" r="12" fill="#81c784"/>
+                            </svg>
+                        </div>
+                        <h3>Bubble Map</h3>
+                        <p>Describing with adjectives</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="double_bubble_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="60" cy="75" r="25" fill="#2196f3"/>
+                                <circle cx="140" cy="75" r="25" fill="#2196f3"/>
+                                <circle cx="100" cy="55" r="10" fill="#64b5f6"/>
+                                <circle cx="100" cy="75" r="10" fill="#64b5f6"/>
+                                <circle cx="100" cy="95" r="10" fill="#64b5f6"/>
+                            </svg>
+                        </div>
+                        <h3>Double Bubble Map</h3>
+                        <p>Comparing and contrasting</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="tree_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="30" r="15" fill="#9c27b0"/>
+                                <circle cx="60" cy="80" r="12" fill="#ba68c8"/>
+                                <circle cx="100" cy="80" r="12" fill="#ba68c8"/>
+                                <circle cx="140" cy="80" r="12" fill="#ba68c8"/>
+                                <line x1="100" y1="30" x2="60" y2="80" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="30" x2="100" y2="80" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="30" x2="140" y2="80" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Tree Map</h3>
+                        <p>Classifying and grouping</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="brace_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="20" y="60" width="60" height="30" rx="5" fill="#00bcd4"/>
+                                <rect x="120" y="30" width="60" height="20" rx="3" fill="#4dd0e1"/>
+                                <rect x="120" y="60" width="60" height="20" rx="3" fill="#4dd0e1"/>
+                                <rect x="120" y="90" width="60" height="20" rx="3" fill="#4dd0e1"/>
+                                <path d="M 80 75 Q 100 45, 120 40" stroke="#666" stroke-width="2" fill="none"/>
+                                <path d="M 80 75 Q 100 75, 120 70" stroke="#666" stroke-width="2" fill="none"/>
+                                <path d="M 80 75 Q 100 105, 120 100" stroke="#666" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <h3>Brace Map</h3>
+                        <p>Whole to parts</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="flow_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="20" y="60" width="40" height="30" rx="5" fill="#ff9800"/>
+                                <rect x="80" y="60" width="40" height="30" rx="5" fill="#ff9800"/>
+                                <rect x="140" y="60" width="40" height="30" rx="5" fill="#ff9800"/>
+                                <path d="M 60 75 L 80 75" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <path d="M 120 75 L 140 75" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                        <h3>Flow Map</h3>
+                        <p>Sequencing and ordering</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="multi_flow_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="70" y="60" width="60" height="30" rx="5" fill="#ff5722"/>
+                                <rect x="10" y="35" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <rect x="10" y="80" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <rect x="155" y="35" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <rect x="155" y="80" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <path d="M 45 42 L 70 70" stroke="#666" stroke-width="2"/>
+                                <path d="M 45 88 L 70 80" stroke="#666" stroke-width="2"/>
+                                <path d="M 130 70 L 155 42" stroke="#666" stroke-width="2"/>
+                                <path d="M 130 80 L 155 88" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Multi-Flow Map</h3>
+                        <p>Cause and effect</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="bridge_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="20" y="40" width="60" height="20" rx="3" fill="#795548"/>
+                                <rect x="20" y="90" width="60" height="20" rx="3" fill="#795548"/>
+                                <rect x="120" y="40" width="60" height="20" rx="3" fill="#a1887f"/>
+                                <rect x="120" y="90" width="60" height="20" rx="3" fill="#a1887f"/>
+                                <line x1="100" y1="50" x2="100" y2="100" stroke="#666" stroke-width="3"/>
+                                <path d="M 80 50 L 120 50" stroke="#666" stroke-width="2"/>
+                                <path d="M 80 100 L 120 100" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Bridge Map</h3>
+                        <p>Seeing analogies</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Diagrams Category -->
+            <div class="diagram-category">
+                <h2>Advanced Diagrams</h2>
+                <div class="diagram-grid">
+                    <div class="diagram-card" data-type="mindmap">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#1976d2"/>
+                                <circle cx="50" cy="40" r="15" fill="#42a5f5"/>
+                                <circle cx="50" cy="110" r="15" fill="#42a5f5"/>
+                                <circle cx="150" cy="40" r="15" fill="#42a5f5"/>
+                                <circle cx="150" cy="110" r="15" fill="#42a5f5"/>
+                                <line x1="100" y1="75" x2="50" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="50" y2="110" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="110" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Mind Map</h3>
+                        <p>Creative brainstorming</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="concept_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <ellipse cx="100" cy="40" rx="35" ry="20" fill="#f44336"/>
+                                <ellipse cx="50" cy="100" rx="30" ry="18" fill="#ef5350"/>
+                                <ellipse cx="150" cy="100" rx="30" ry="18" fill="#ef5350"/>
+                                <line x1="100" y1="60" x2="50" y2="82" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="60" x2="150" y2="82" stroke="#666" stroke-width="2"/>
+                                <line x1="80" y1="100" x2="120" y2="100" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+                            </svg>
+                        </div>
+                        <h3>Concept Map</h3>
+                        <p>Complex relationships</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Editor Interface (hidden initially) -->
+    <div class="editor-interface" id="editor-interface" style="display: none;">
+        <div class="editor-toolbar">
+            <!-- Left Section: Navigation & File Operations -->
+            <div class="toolbar-section toolbar-left">
+                <button id="back-to-gallery" class="btn-secondary">Back to Gallery</button>
+                <button id="save-btn" class="btn-primary">Save</button>
+                <button id="load-btn" class="btn-primary">Load</button>
+                <button id="export-btn" class="btn-success">Export</button>
+            </div>
+            
+            <!-- Center Section: Node Management -->
+            <div class="toolbar-section toolbar-center">
+                <div class="toolbar-group">
+                    <label>Nodes:</label>
+                    <button id="add-node-btn" class="btn-tool" title="Add Node">Add</button>
+                    <button id="delete-node-btn" class="btn-tool" title="Delete Selected">Delete</button>
+                    <button id="duplicate-node-btn" class="btn-tool" title="Duplicate Selected">Copy</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <label>Tools:</label>
+                    <button id="undo-btn" class="btn-tool" title="Undo">Undo</button>
+                    <button id="redo-btn" class="btn-tool" title="Redo">Redo</button>
+                </div>
+            </div>
+            
+            <!-- Right Section: Display -->
+            <div class="toolbar-section toolbar-right">
+                <span id="diagram-type-display" class="diagram-type"></span>
+            </div>
+        </div>
+        
+        <div class="editor-main-content">
+            <div class="canvas-panel">
+                <div id="d3-container"></div>
+            </div>
+        </div>
+        
+        <div class="editor-status-bar">
+            <span id="node-count">Nodes: 0</span>
+            <span id="edit-mode">Edit Mode: Active</span>
+        </div>
+    </div>
+    
+    <!-- Load all required scripts -->
+    <script src="/static/js/theme-config.js"></script>
+    <script src="/static/js/style-manager.js"></script>
+    <script src="/static/js/renderers/shared-utilities.js"></script>
+    <script src="/static/js/renderers/mind-map-renderer.js"></script>
+    <script src="/static/js/renderers/concept-map-renderer.js"></script>
+    <script src="/static/js/renderers/bubble-map-renderer.js"></script>
+    <script src="/static/js/renderers/flow-renderer.js"></script>
+    <script src="/static/js/renderers/tree-renderer.js"></script>
+    <script src="/static/js/renderers/brace-renderer.js"></script>
+    
+    <!-- Editor scripts -->
+    <script src="/static/js/editor/language-manager.js"></script>
+    <script src="/static/js/editor/prompt-manager.js"></script>
+    <script src="/static/js/editor/selection-manager.js"></script>
+    <script src="/static/js/editor/canvas-manager.js"></script>
+    <script src="/static/js/editor/node-editor.js"></script>
+    <script src="/static/js/editor/interactive-editor.js"></script>
+    <script src="/static/js/editor/diagram-selector.js"></script>
+</body>
+</html>
+
