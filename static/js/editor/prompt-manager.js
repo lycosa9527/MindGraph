@@ -79,7 +79,7 @@ class PromptManager {
     /**
      * Handle send action
      */
-    handleSend() {
+    async handleSend() {
         const prompt = this.promptInput.value.trim();
         
         if (!prompt) {
@@ -89,10 +89,10 @@ class PromptManager {
         // Add to history
         this.addToHistory(prompt);
         
-        // TODO: Send to AI generation endpoint
-        console.log('Sending prompt to AI:', prompt);
+        // Disable send button
+        this.sendBtn.disabled = true;
         
-        // Show notification
+        // Show loading notification
         this.showNotification(
             window.languageManager?.currentLanguage === 'zh' 
                 ? '正在生成图表...' 
@@ -100,16 +100,145 @@ class PromptManager {
             'info'
         );
         
-        // Clear input
-        this.promptInput.value = '';
-        this.updateSendButtonState();
+        try {
+            // Get current language
+            const language = window.languageManager?.currentLanguage || 'en';
+            
+            // Send to AI generation endpoint
+            const response = await fetch('/api/generate_graph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    language: language
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Check for errors in response
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Clear input
+            this.promptInput.value = '';
+            this.updateSendButtonState();
+            
+            // Close history if open
+            this.closeHistory();
+            
+            // Transition to editor with generated diagram
+            this.transitionToEditorWithDiagram(data);
+            
+        } catch (error) {
+            console.error('Error generating diagram:', error);
+            
+            // Show error notification
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh' 
+                    ? '生成失败，请重试' 
+                    : 'Generation failed, please try again',
+                'error'
+            );
+            
+            // Re-enable send button
+            this.sendBtn.disabled = false;
+        }
+    }
+    
+    /**
+     * Transition to editor with generated diagram
+     */
+    transitionToEditorWithDiagram(data) {
+        // Hide landing page
+        const landing = document.getElementById('editor-landing');
+        if (landing) {
+            landing.style.display = 'none';
+        }
         
-        // Close history if open
-        this.closeHistory();
+        // Show editor interface
+        const editorInterface = document.getElementById('editor-interface');
+        if (editorInterface) {
+            editorInterface.style.display = 'flex';
+        }
         
-        // TODO: Redirect to AI generation or show result
-        // For now, just log
-        alert('AI generation feature coming soon!\n\nYour prompt: ' + prompt);
+        // Get diagram type (use diagram_type or type from response)
+        const diagramType = data.diagram_type || data.type;
+        
+        // Update diagram type display
+        const displayElement = document.getElementById('diagram-type-display');
+        if (displayElement && diagramType) {
+            const typeNames = {
+                'mindmap': window.languageManager?.currentLanguage === 'zh' ? '思维导图' : 'Mind Map',
+                'concept_map': window.languageManager?.currentLanguage === 'zh' ? '概念图' : 'Concept Map',
+                'bubble_map': window.languageManager?.currentLanguage === 'zh' ? '气泡图' : 'Bubble Map',
+                'double_bubble_map': window.languageManager?.currentLanguage === 'zh' ? '双气泡图' : 'Double Bubble Map',
+                'tree_map': window.languageManager?.currentLanguage === 'zh' ? '树状图' : 'Tree Map',
+                'brace_map': window.languageManager?.currentLanguage === 'zh' ? '括号图' : 'Brace Map',
+                'flow_map': window.languageManager?.currentLanguage === 'zh' ? '流程图' : 'Flow Map',
+                'multi_flow_map': window.languageManager?.currentLanguage === 'zh' ? '多流程图' : 'Multi-Flow Map',
+                'circle_map': window.languageManager?.currentLanguage === 'zh' ? '圆圈图' : 'Circle Map',
+                'bridge_map': window.languageManager?.currentLanguage === 'zh' ? '桥接图' : 'Bridge Map'
+            };
+            displayElement.textContent = typeNames[diagramType] || diagramType;
+        }
+        
+        // Render diagram using the renderer dispatcher
+        const container = document.getElementById('d3-container');
+        if (container && data.spec && diagramType) {
+            // Use the existing renderGraph function to render the diagram
+            if (typeof window.renderGraph === 'function') {
+                try {
+                    // renderGraph clears the container and renders the diagram
+                    window.renderGraph(diagramType, data.spec, data.theme || null, data.dimensions || null);
+                    
+                    console.log('Diagram rendered successfully');
+                } catch (error) {
+                    console.error('Error rendering diagram:', error);
+                    this.showNotification(
+                        window.languageManager?.currentLanguage === 'zh' 
+                            ? '渲染失败' 
+                            : 'Rendering failed',
+                        'error'
+                    );
+                    return;
+                }
+            } else {
+                console.error('renderGraph function not found');
+                this.showNotification(
+                    window.languageManager?.currentLanguage === 'zh' 
+                        ? '渲染器未加载' 
+                        : 'Renderer not loaded',
+                    'error'
+                );
+                return;
+            }
+            
+            // Initialize interactive editor if available
+            if (window.InteractiveEditor && data.spec) {
+                try {
+                    window.currentEditor = new window.InteractiveEditor(diagramType, data.spec);
+                    window.currentEditor.initialize();
+                } catch (error) {
+                    console.error('Error initializing interactive editor:', error);
+                }
+            }
+        }
+        
+        // Show success notification
+        this.showNotification(
+            window.languageManager?.currentLanguage === 'zh' 
+                ? '图表生成成功！' 
+                : 'Diagram generated successfully!',
+            'success'
+        );
     }
     
     /**
@@ -273,7 +402,16 @@ class PromptManager {
         notification.style.right = '20px';
         notification.style.padding = '12px 24px';
         notification.style.borderRadius = '8px';
-        notification.style.backgroundColor = type === 'success' ? '#4CAF50' : '#2196F3';
+        
+        // Set color based on type
+        if (type === 'success') {
+            notification.style.backgroundColor = '#4CAF50';
+        } else if (type === 'error') {
+            notification.style.backgroundColor = '#ff6b6b';
+        } else {
+            notification.style.backgroundColor = '#2196F3';
+        }
+        
         notification.style.color = 'white';
         notification.style.fontWeight = '600';
         notification.style.fontSize = '14px';
@@ -293,7 +431,9 @@ class PromptManager {
         setTimeout(() => {
             notification.style.opacity = '0';
             setTimeout(() => {
-                document.body.removeChild(notification);
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
             }, 300);
         }, 3000);
     }

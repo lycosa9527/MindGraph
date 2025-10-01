@@ -5,6 +5,24 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2025-10-01
+
+### Added - AI Prompt Generation Integration
+- **AI Diagram Generation**: Prompt input now generates actual diagrams using AI and transitions to the editor
+- Integrated prompt manager with `/api/generate_graph` endpoint for real-time diagram creation
+- Automatic diagram rendering using existing renderer system
+- Language-aware diagram generation (respects current UI language setting)
+
+### Changed
+- Removed popup alert messages from AI generation workflow
+- Improved error handling with professional notification system
+- Send button now properly disables during generation and re-enables on error
+
+### Technical
+- Prompt manager now uses `window.renderGraph()` to render AI-generated diagrams
+- Proper error handling for both API failures and rendering failures
+- Success notifications show after diagram is successfully rendered
+
 ## [3.0.0] - 2025-10-01
 
 ### Added - MindGraph Professional Interactive Editor
