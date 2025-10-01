@@ -1,5 +1,5 @@
 # MindGraph - AI-Powered Graph Generation Application
-# Version: 2.5.3 
+# Version: 2.5.4
 # Requirements for Python 3.8+ (Tested with Python 3.13.5)
 # 
 # Core Features:
@@ -11,8 +11,15 @@
 # - Cross-platform compatibility
 # - Clean classification system with no hardcoded fallbacks
 #
-# INSTALLATION:
-# pip install -r requirements.txt
+# INSTALLATION INSTRUCTIONS:
+# 1. Install Python packages:
+#    pip install -r requirements.txt
+#
+# 2. Install Playwright browsers with system dependencies:
+#    playwright install chromium --with-deps
+#    
+#    OR use the automated setup script:
+#    python setup.py
 
 # ============================================================================
 # CORE FLASK DEPENDENCIES (Required for Production)
@@ -49,12 +56,12 @@ python-dotenv>=1.0.1
 # ASYNC AND CONCURRENCY (Required for Production)
 # ============================================================================
 nest_asyncio>=1.6.0
-pyee>=13.0.0
-asgiref>=3.7.0
 
 # ============================================================================
 # BROWSER AUTOMATION (Required for Production - PNG generation)
 # ============================================================================
+# Note: After pip install, run: playwright install chromium --with-deps
+# This installs the Chromium browser and required system dependencies
 playwright>=1.54.0
 
 # ============================================================================
@@ -68,37 +75,23 @@ Pillow>=11.3.0
 psutil>=6.0.0
 
 # ============================================================================
-# TYPE HINTS AND VALIDATION (Required for Production)
-# ============================================================================
-typing-extensions>=4.12.0
-pydantic>=2.10.0
-
-# ============================================================================
-# LOGGING AND MONITORING (Required for Production)
-# ============================================================================
-structlog>=24.1.0
-
-# ============================================================================
-# SECURITY (Required for Production)
-# ============================================================================
-cryptography>=42.0.0
-
-# ============================================================================
 # DEPENDENCY SUMMARY
 # ============================================================================
 # 
-# REQUIRED THIRD-PARTY PACKAGES (25):
+# REQUIRED THIRD-PARTY PACKAGES (16):
 # - Flask, Werkzeug, flask-cors (Web framework)
+# - waitress (Production WSGI server)
 # - langchain, langchain-community, langchain-core (AI/LLM)
 # - requests, aiohttp (HTTP clients)
 # - playwright, Pillow (Browser automation & image processing)
 # - python-dotenv (Environment configuration)
 # - PyYAML (Configuration parsing)
-# - nest_asyncio, pyee, asgiref (Async utilities)
+# - nest_asyncio (Async utilities)
 # - psutil (System monitoring)
-# - typing-extensions, pydantic (Type hints & validation)
-# - structlog (Logging)
-# - cryptography (Security)
+#
+# REMOVED UNUSED PACKAGES (v2.5.4):
+# - pyee, asgiref, typing-extensions (not used in codebase)
+# - pydantic, structlog, cryptography (not used in codebase)
 #
 # PYTHON STANDARD LIBRARY USED:
 # - Core: os, sys, json, re, time, datetime, math, logging, pathlib
@@ -111,12 +104,19 @@ cryptography>=42.0.0
 # INSTALLATION NOTES
 # ============================================================================
 # 
-# PRODUCTION DEPLOYMENT:
-# pip install -r requirements.txt
+# QUICK START:
+# 1. pip install -r requirements.txt
+# 2. playwright install chromium --with-deps
+# 3. Copy env.example to .env and configure API keys
+# 4. python run_server.py
+#
+# AUTOMATED SETUP:
+# python setup.py
+# (Handles all dependencies including Playwright browsers)
 #
 # COMPATIBILITY:
 # - Python 3.8+ (Tested with Python 3.13.5)
 # - Node.js 18.19+ for D3.js dependencies
 # - All packages use >= for minimum version compatibility
 #
-# ANALYSIS LAST UPDATED: 2025-01-15 (Version 2.5.3)
+# ANALYSIS LAST UPDATED: 2025-10-01 (Version 2.5.4)

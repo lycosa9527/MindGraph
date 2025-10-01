@@ -5,7 +5,7 @@ MindGraph - AI-Powered Graph Generation Application
 A Flask-based web application that generates interactive D3.js graphs using AI agents.
 Supports Qwen LLM for intelligent graph generation and enhancement.
 
-Version: 2.4.0
+Version: 2.5.4
 Author: MindSpring Team
 License: MIT
 
@@ -121,7 +121,7 @@ def validate_dependencies():
     # Define required Python packages for core functionality
     required_packages = [
         'flask', 'requests', 'langchain', 'yaml', 'dotenv',
-        'nest_asyncio', 'pyee', 'playwright', 'pillow'
+        'nest_asyncio', 'playwright', 'pillow'
     ]
     
     # Package name mapping for correct import checking

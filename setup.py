@@ -52,23 +52,13 @@ CORE_DEPENDENCIES = {
     
     # Async and concurrency
     'nest_asyncio': 'nest-asyncio',
-    'pyee': 'pyee',
-    'asgiref': 'asgiref',
     
     # Browser automation and image processing
     'playwright': 'Playwright',
     'PIL': 'Pillow',
     
     # System utilities
-    'psutil': 'psutil',
-    
-    # Type hints and validation
-    'typing_extensions': 'typing-extensions',
-    'pydantic': 'Pydantic',
-    
-    # Logging and security
-    'structlog': 'structlog',
-    'cryptography': 'cryptography'
+    'psutil': 'psutil'
 }
 
 PROGRESS_BAR_LENGTH = 30
@@ -365,12 +355,6 @@ def check_dependencies_already_installed() -> bool:
                 import dotenv
             elif module_name == 'nest_asyncio':
                 import nest_asyncio
-            elif module_name == 'pyee':
-                import pyee
-            elif module_name == 'asgiref':
-                import asgiref
-            elif module_name == 'typing_extensions':
-                import typing_extensions
             else:
                 importlib.import_module(module_name)
                 
@@ -495,35 +479,40 @@ def install_playwright() -> bool:
         print("      - Audio libraries (libopus0, libvpx7)")
         print("      - Other system packages (~50-100MB)")
     
+    # Use --with-deps flag for automatic system dependency installation
+    print("\n[INFO] Installing Chromium browser with system dependencies...")
+    
     if os_name == "windows":
-        print("\n[INFO] Windows detected - using npx installation")
+        print("[INFO] Windows detected - using playwright install")
         
-        # Try npx first, fallback to playwright
-        if run_command_with_progress("npx playwright install chromium", "Installing Chromium via npx"):
-            print("[SUCCESS] Chromium installed successfully via npx")
-        else:
-            print("[WARNING] npx failed, trying playwright directly...")
-            if not run_command_with_progress("playwright install chromium", "Installing Chromium via playwright"):
+        # On Windows, --with-deps is less critical but still useful
+        if not run_command_with_progress("playwright install chromium --with-deps", "Installing Chromium with dependencies"):
+            print("[WARNING] Installation with --with-deps failed, trying without...")
+            if not run_command_with_progress("playwright install chromium", "Installing Chromium"):
                 raise SetupError(
-                    "Both npx and playwright commands failed. "
-                    "Please ensure Node.js is installed for npx, or "
-                    "try: pip install playwright && playwright install chromium"
+                    "Playwright installation failed. "
+                    "Try manually: playwright install chromium"
                 )
     else:
-        print("\n[INFO] Unix-like system detected - installing system dependencies")
+        print("[INFO] Unix-like system detected - installing with system dependencies")
+        print("[INFO] This will install fonts, libraries, and other system packages")
+        print("[INFO] May require sudo/administrator privileges")
         
-        # Install system dependencies first
-        print("    Installing system dependencies (fonts, libraries, etc.)...")
-        if not run_command_with_progress("playwright install-deps", "Installing system dependencies"):
-            raise SetupError(
-                "Failed to install system dependencies. "
-                "This may require sudo/administrator privileges. "
-                "Try: sudo playwright install-deps"
-            )
-        
-        # Install Chromium browser
-        if not run_command_with_progress("playwright install chromium", "Installing Chromium browser"):
-            raise SetupError("Failed to install Chromium browser")
+        # Use --with-deps to install everything in one command
+        if not run_command_with_progress("playwright install chromium --with-deps", "Installing Chromium with system dependencies"):
+            print("[WARNING] Installation with --with-deps failed")
+            print("[INFO] Trying two-step installation (install-deps + install chromium)...")
+            
+            # Fallback to two-step process
+            if not run_command_with_progress("playwright install-deps", "Installing system dependencies"):
+                raise SetupError(
+                    "Failed to install system dependencies. "
+                    "This may require sudo/administrator privileges. "
+                    "Try: sudo playwright install chromium --with-deps"
+                )
+            
+            if not run_command_with_progress("playwright install chromium", "Installing Chromium browser"):
+                raise SetupError("Failed to install Chromium browser")
     
     print("[SUCCESS] Playwright Chromium installed successfully")
     return True
@@ -572,15 +561,6 @@ def verify_dependencies() -> bool:
             elif module_name == 'nest_asyncio':
                 import nest_asyncio
                 version = get_package_version('nest-asyncio')
-            elif module_name == 'pyee':
-                import pyee
-                version = get_package_version('pyee')
-            elif module_name == 'asgiref':
-                import asgiref
-                version = get_package_version('asgiref')
-            elif module_name == 'typing_extensions':
-                import typing_extensions
-                version = get_package_version('typing-extensions')
             else:
                 module = importlib.import_module(module_name)
                 version = get_package_version(package_name)
