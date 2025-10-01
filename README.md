@@ -6,7 +6,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.6.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.6.2-brightgreen.svg)](CHANGELOG.md)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-success.svg)](CHANGELOG.md)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -32,6 +32,7 @@ Transform natural language into professional diagrams. Supports 10 diagram types
 
 - **Smart Classification**: LLM-based diagram type detection | **智能分类**: 基于LLM的图表类型检测
 - **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的思维导图覆盖，包括思维导图和概念图
+- **Learning Sheets (半成品)**: Educational mode with 20% content hidden for student practice | **学习半成品**: 教育模式，隐藏20%内容供学生练习
 - **Multi-language**: English and Chinese support | **多语言**: 支持英文和中文
 - **API-First**: RESTful endpoints for integrations | **API优先**: 用于集成的RESTful端点
 - **Export Options**: PNG, SVG, and interactive HTML | **导出选项**: PNG、SVG和交互式HTML
@@ -229,6 +230,89 @@ if result["success"]:
 ### Additional Types | 其他类型
 9. **Mind Map** - Clockwise branch positioning | **思维导图** - 顺时针分支定位
 10. **Concept Map** - Advanced relationship mapping | **概念图** - 高级关系映射
+
+## Learning Sheets (半成品功能) | 学习半成品
+
+### Educational Feature for K-12 Teachers | K-12教师教育功能
+
+MindGraph supports **Learning Sheets (半成品)** - a special mode designed for classroom learning where the system automatically generates practice diagrams with 20% of content hidden.
+
+MindGraph支持**学习半成品功能** - 专为课堂学习设计的特殊模式，系统自动生成隐藏20%内容的练习图表。
+
+### How It Works | 工作原理
+
+1. **Add "半成品" to Your Prompt** | **在提示中添加"半成品"**
+   ```
+   "生成鸦片战争的半成品流程图"
+   "创建关于光合作用的半成品思维导图"
+   "制作中国历史朝代的半成品树形图"
+   ```
+
+2. **System Generates Complete Content** | **系统生成完整内容**
+   - LLM creates full diagram with all information
+   - LLM创建包含所有信息的完整图表
+
+3. **20% Text Randomly Hidden** | **随机隐藏20%文本**
+   - System randomly removes text from 20% of nodes
+   - Students fill in missing content for practice
+   - 系统随机删除20%节点的文本
+   - 学生填写缺失内容进行练习
+
+### Usage Examples | 使用示例
+
+#### API Request | API请求
+```python
+import requests
+
+# Generate a learning sheet flow map
+response = requests.post(
+    "http://localhost:9527/api/generate_png",
+    json={
+        "prompt": "生成鸦片战争的半成品流程图",
+        "language": "zh"
+    }
+)
+
+# Returns PNG with 20% of text hidden for student practice
+# 返回隐藏20%文本的PNG供学生练习
+```
+
+#### DingTalk Integration | 钉钉集成
+```python
+# Generate learning sheet for DingTalk classroom
+result = requests.post(
+    "http://localhost:9527/api/generate_dingtalk",
+    json={
+        "prompt": "创建关于光合作用的半成品思维导图",
+        "language": "zh"
+    }
+).json()
+
+# Result includes image URL with hidden content
+# 结果包含隐藏内容的图片URL
+print(result["image_url"])
+```
+
+### Educational Benefits | 教育价值
+
+✅ **Active Learning**: Students engage by filling in missing information | **主动学习**: 学生通过填写缺失信息参与学习  
+✅ **Practice Mode**: Teachers create practice materials instantly | **练习模式**: 教师即时创建练习材料  
+✅ **All Diagram Types**: Works with Flow Maps, Mind Maps, Concept Maps, etc. | **所有图表类型**: 适用于流程图、思维导图、概念图等  
+✅ **Automatic**: No manual editing required | **自动化**: 无需手动编辑  
+✅ **Customizable**: 20% default, configurable for different difficulty levels | **可定制**: 默认20%，可配置不同难度级别
+
+### Supported Prompts | 支持的提示词
+
+- "生成[主题]的半成品[图表类型]" - Generate learning sheet for any topic
+- "创建[主题]的半成品图" - Create learning sheet diagram
+- "制作[主题]的半成品导图" - Make learning sheet mind map
+
+### Technical Details | 技术细节
+
+- **Detection**: Automatic keyword detection in prompt | **检测**: 提示中的自动关键词检测
+- **Cleaning**: Removes keywords before LLM processing | **清理**: LLM处理前删除关键词
+- **Rendering**: Random text knockout in final SVG | **渲染**: 最终SVG中随机删除文本
+- **Metadata**: Learning sheet flags preserved throughout pipeline | **元数据**: 学习半成品标志在整个流程中保留
 
 ## Testing | 测试
 

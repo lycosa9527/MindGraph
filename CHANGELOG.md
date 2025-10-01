@@ -5,6 +5,55 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2025-10-01
+
+### 🎓 **LEARNING SHEET FUNCTIONALITY**
+
+#### Educational Feature - Learning Sheets (半成品) - COMPLETED ✅
+- **Keyword Detection**: Automatically detects "半成品" keyword in user prompts
+- **Smart Prompt Cleaning**: Removes learning sheet keywords while preserving actual content topic
+- **Random Text Knockout**: Hides 20% of node text content randomly for student practice
+- **Metadata Propagation**: Properly carries learning sheet flags through entire rendering pipeline
+- **All Diagram Types**: Works seamlessly with all 10 diagram types (Mind Maps, Flow Maps, Concept Maps, etc.)
+
+#### Implementation Details - COMPLETED ✅
+- **Detection**: `_detect_learning_sheet_from_prompt()` identifies learning sheet requests
+- **Cleaning**: `_clean_prompt_for_learning_sheet()` removes keywords to prevent LLM confusion
+- **Rendering**: `knockoutTextForLearningSheet()` randomly hides text in SVG nodes
+- **Preservation**: Learning sheet metadata preserved through agent enhancement pipeline
+- **API Support**: Full support in `/api/generate_png` and `/api/generate_dingtalk` endpoints
+
+#### Educational Benefits - COMPLETED ✅
+- **Active Learning**: Students fill in missing information to reinforce understanding
+- **Practice Mode**: Teachers can generate practice diagrams with 20% content hidden
+- **Flexible**: Works with any topic across all diagram types
+- **Automatic**: No manual editing required - just add "半成品" to prompt
+
+#### Usage Examples - COMPLETED ✅
+
+**Chinese (中文)**:
+```
+"生成鸦片战争的半成品流程图"
+"创建关于光合作用的半成品思维导图"
+"制作中国历史朝代的半成品树形图"
+```
+
+**Result**: System generates complete content, then randomly hides 20% of text for student practice
+
+#### Technical Architecture - COMPLETED ✅
+- **Pipeline Integration**: Learning sheet detection → prompt cleaning → LLM generation → metadata preservation → knockout rendering
+- **Metadata Flow**: `is_learning_sheet` and `hidden_node_percentage` flags flow through entire system
+- **Frontend Rendering**: SVG text elements randomly hidden based on percentage (default: 20%)
+- **Preservation Logic**: Metadata preserved through Mind Map enhancement and all agent workflows
+
+#### Files Modified:
+- `agents/main_agent.py`: Added detection and cleaning functions
+- `api_routes.py`: Metadata preservation in enhancement pipeline
+- `static/js/renderers/shared-utilities.js`: Text knockout rendering function
+- All diagram renderers: Support for learning sheet rendering
+
+---
+
 ## [2.6.1] - 2025-01-30
 
 ### 🎯 **TOPIC EXTRACTION & RENDERING IMPROVEMENTS**
