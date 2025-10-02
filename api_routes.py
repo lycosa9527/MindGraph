@@ -333,20 +333,11 @@ def sanitize_prompt(prompt):
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
-    # Debug-only endpoint: block in non-debug environments
-    try:
-        if not config.DEBUG:
-            logger.warning("/api/generate_graph called in non-debug mode; returning 410 Gone. Use /api/generate_png instead.")
-            resp = jsonify({'error': '/api/generate_graph is debug-only. Use /api/generate_png for image generation.'})
-            return resp, 410
-        else:
-            logger.info("/api/generate_graph is running in DEBUG mode (debug-only endpoint)")
-    except Exception:
-        # If config.DEBUG isn't available for some reason, fail closed
-        logger.warning("/api/generate_graph debug check failed; returning 410 Gone by default")
-        resp = jsonify({'error': '/api/generate_graph is debug-only. Use /api/generate_png for image generation.'})
-        return resp, 410
-    """Generate graph specification from user prompt using Qwen (default, with enhanced extraction and style integration)."""
+    """Generate graph specification from user prompt using Qwen (default, with enhanced extraction and style integration).
+    
+    This endpoint returns JSON with the diagram specification for the frontend editor to render.
+    For PNG file downloads, use /api/generate_png instead.
+    """
     # Input validation
     data = request.json
     valid, msg = validate_request_data(data, ['prompt'])
@@ -2555,3 +2546,63 @@ def debug_dingtalk_images():
     except Exception as e:
         logger.error(f"Error in debug endpoint: {e}", exc_info=True)
         return jsonify({'error': f'Debug failed: {e}'}), 500
+
+@api.route('/ai_assistant/stream', methods=['POST'])
+@handle_api_errors
+def ai_assistant_stream():
+    """Stream AI assistant responses using Dify API with SSE"""
+    from flask import Response, stream_with_context
+    from dify_client import DifyClient
+    import os
+    
+    # Input validation
+    data = request.json
+    valid, msg = validate_request_data(data, ['message', 'user_id'])
+    if not valid:
+        return jsonify({'error': msg}), 400
+    
+    message = data.get('message', '').strip()
+    user_id = data.get('user_id')
+    conversation_id = data.get('conversation_id')
+    
+    if not message:
+        return jsonify({'error': 'Message is required'}), 400
+    
+    # Get Dify configuration from environment
+    api_key = os.getenv('DIFY_API_KEY')
+    api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
+    timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
+    
+    if not api_key:
+        logger.error("DIFY_API_KEY not configured")
+        return jsonify({'error': 'AI assistant not configured'}), 500
+    
+    logger.info(f"AI assistant request from user {user_id}: {message[:50]}...")
+    
+    def generate():
+        """Generator function for SSE streaming"""
+        try:
+            client = DifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
+            
+            for chunk in client.stream_chat(message, user_id, conversation_id):
+                # Format as SSE
+                yield f"data: {json.dumps(chunk)}\n\n"
+                
+        except Exception as e:
+            logger.error(f"AI assistant streaming error: {e}")
+            error_data = {
+                'event': 'error',
+                'error': str(e),
+                'timestamp': int(time.time() * 1000)
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+    
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
+    )

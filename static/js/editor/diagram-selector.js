@@ -223,16 +223,17 @@ class DiagramSelector {
     getBridgeMapTemplate() {
         return {
             relating_factor: 'as',
-            pairs: [
+            analogies: [
                 { left: 'Item 1', right: 'Item A' },
-                { left: 'Item 2', right: 'Item B' }
+                { left: 'Item 2', right: 'Item B' },
+                { left: 'Item 3', right: 'Item C' }
             ],
             _layout: {
                 positions: {}
             },
             _recommended_dimensions: {
                 width: 700,
-                height: 500,
+                height: 300,
                 padding: 40
             }
         };

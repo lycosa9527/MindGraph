@@ -22,6 +22,7 @@ class ToolbarManager {
         // Toolbar buttons
         this.addNodeBtn = document.getElementById('add-node-btn');
         this.deleteNodeBtn = document.getElementById('delete-node-btn');
+        this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
@@ -64,6 +65,7 @@ class ToolbarManager {
         // Toolbar buttons
         this.addNodeBtn?.addEventListener('click', () => this.handleAddNode());
         this.deleteNodeBtn?.addEventListener('click', () => this.handleDeleteNode());
+        this.autoCompleteBtn?.addEventListener('click', () => this.handleAutoComplete());
         this.duplicateNodeBtn?.addEventListener('click', () => this.handleDuplicateNode());
         this.undoBtn?.addEventListener('click', () => this.handleUndo());
         this.redoBtn?.addEventListener('click', () => this.handleRedo());
@@ -349,7 +351,12 @@ class ToolbarManager {
      */
     handleAddNode() {
         console.log('Add node clicked');
-        this.showNotification('Add node feature coming soon!');
+        if (this.editor) {
+            this.editor.addNode();
+            this.showNotification('Node added! Double-click to edit text.', 'success');
+        } else {
+            this.showNotification('Editor not initialized', 'error');
+        }
     }
     
     /**
@@ -357,8 +364,191 @@ class ToolbarManager {
      */
     handleDeleteNode() {
         if (this.editor && this.currentSelection.length > 0) {
+            const count = this.currentSelection.length;
             this.editor.deleteSelectedNodes();
             this.hidePropertyPanel();
+            this.showNotification(`Deleted ${count} node${count > 1 ? 's' : ''}`, 'success');
+        } else {
+            this.showNotification('Please select nodes to delete', 'warning');
+        }
+    }
+    
+    /**
+     * Handle auto-complete diagram with AI
+     */
+    async handleAutoComplete() {
+        console.log('Auto-complete clicked');
+        
+        if (!this.editor) {
+            this.showNotification('Editor not initialized', 'error');
+            return;
+        }
+        
+        // Extract existing nodes from the diagram
+        const existingNodes = this.extractExistingNodes();
+        
+        if (existingNodes.length === 0) {
+            this.showNotification('Please add some nodes first before using Auto', 'warning');
+            return;
+        }
+        
+        // Identify the main/central topic (center-most or largest node)
+        const mainTopic = this.identifyMainTopic(existingNodes);
+        const diagramType = this.editor.diagramType;
+        
+        // Create a better prompt focused on the main topic
+        let prompt;
+        if (existingNodes.length === 1) {
+            // Only one node - expand around it
+            prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
+        } else {
+            // Multiple nodes - use main topic and mention others
+            const otherNodes = existingNodes
+                .filter(n => n.text !== mainTopic)
+                .map(n => n.text)
+                .slice(0, 5); // Limit to avoid too long prompt
+            
+            if (otherNodes.length > 0) {
+                prompt = `Create a complete ${diagramType} with "${mainTopic}" as the main topic. User has added: ${otherNodes.join(', ')}. Expand and complete the diagram with relevant nodes and connections.`;
+            } else {
+                prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
+            }
+        }
+        
+        console.log('Auto-complete prompt:', prompt);
+        console.log('Main topic identified:', mainTopic);
+        console.log('Total existing nodes:', existingNodes.length);
+        
+        // Show loading state
+        this.setAutoButtonLoading(true);
+        this.showNotification(`AI is completing diagram about "${mainTopic}"...`, 'info');
+        
+        try {
+            // Call API to generate diagram
+            const response = await fetch('/api/generate_graph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    diagram_type: diagramType
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Update diagram with new specification
+            if (data.spec) {
+                this.editor.currentSpec = data.spec;
+                this.editor.renderDiagram();
+                this.showNotification('Diagram auto-completed successfully!', 'success');
+            } else {
+                throw new Error('No diagram specification returned');
+            }
+            
+        } catch (error) {
+            console.error('Auto-complete error:', error);
+            this.showNotification(`Auto-complete failed: ${error.message}`, 'error');
+        } finally {
+            this.setAutoButtonLoading(false);
+        }
+    }
+    
+    /**
+     * Identify the main topic from existing nodes
+     * Uses heuristics: center position, font size, or first meaningful node
+     */
+    identifyMainTopic(nodes) {
+        if (nodes.length === 0) return '';
+        if (nodes.length === 1) return nodes[0].text;
+        
+        // Strategy 1: Find node closest to center of canvas
+        const svg = d3.select('#d3-container svg');
+        if (!svg.empty()) {
+            const width = parseFloat(svg.attr('width')) || 800;
+            const height = parseFloat(svg.attr('height')) || 600;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Calculate distance from center for each node
+            let closestNode = nodes[0];
+            let minDistance = Infinity;
+            
+            nodes.forEach(node => {
+                const distance = Math.sqrt(
+                    Math.pow(node.x - centerX, 2) + 
+                    Math.pow(node.y - centerY, 2)
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestNode = node;
+                }
+            });
+            
+            console.log('Main topic identified by position:', closestNode.text, 'at', closestNode.x, closestNode.y);
+            return closestNode.text;
+        }
+        
+        // Fallback: Return first node with meaningful content
+        const meaningfulNode = nodes.find(n => 
+            n.text.length > 1 && 
+            n.text !== 'New Node' && 
+            !n.text.startsWith('Context')
+        );
+        
+        return meaningfulNode ? meaningfulNode.text : nodes[0].text;
+    }
+    
+    /**
+     * Extract existing nodes from the current diagram
+     */
+    extractExistingNodes() {
+        const nodes = [];
+        
+        // Find all text elements in the SVG
+        d3.selectAll('#d3-container text').each(function() {
+            const textElement = d3.select(this);
+            const text = textElement.text().trim();
+            
+            // Skip empty or very short text
+            if (text && text.length > 0 && text !== 'New Node') {
+                const x = parseFloat(textElement.attr('x')) || 0;
+                const y = parseFloat(textElement.attr('y')) || 0;
+                
+                nodes.push({
+                    text: text,
+                    x: x,
+                    y: y
+                });
+            }
+        });
+        
+        console.log(`Extracted ${nodes.length} existing nodes:`, nodes);
+        return nodes;
+    }
+    
+    /**
+     * Set loading state for auto button
+     */
+    setAutoButtonLoading(isLoading) {
+        if (!this.autoCompleteBtn) return;
+        
+        if (isLoading) {
+            this.autoCompleteBtn.classList.add('loading');
+            this.autoCompleteBtn.disabled = true;
+        } else {
+            this.autoCompleteBtn.classList.remove('loading');
+            this.autoCompleteBtn.disabled = false;
         }
     }
     
@@ -491,25 +681,83 @@ class ToolbarManager {
     /**
      * Show notification
      */
-    showNotification(message) {
+    showNotification(message, type = 'info') {
         const notification = document.createElement('div');
         notification.style.position = 'fixed';
         notification.style.top = '80px';
         notification.style.right = '20px';
-        notification.style.padding = '12px 24px';
-        notification.style.background = '#667eea';
-        notification.style.color = 'white';
-        notification.style.borderRadius = '8px';
-        notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+        notification.style.padding = '14px 24px';
+        notification.style.borderRadius = '12px';
+        notification.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
         notification.style.zIndex = '10001';
         notification.style.fontSize = '14px';
         notification.style.fontWeight = '600';
-        notification.textContent = message;
+        notification.style.display = 'flex';
+        notification.style.alignItems = 'center';
+        notification.style.gap = '10px';
+        notification.style.animation = 'slideInRight 0.3s ease';
+        notification.style.minWidth = '250px';
+        
+        // Add animation keyframes if not exists
+        if (!document.getElementById('notification-animations')) {
+            const style = document.createElement('style');
+            style.id = 'notification-animations';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Set colors based on type
+        const styles = {
+            success: {
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                icon: '✓'
+            },
+            error: {
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                icon: '✕'
+            },
+            info: {
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                icon: 'ℹ'
+            },
+            warning: {
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                icon: '⚠'
+            }
+        };
+        
+        const currentStyle = styles[type] || styles.info;
+        notification.style.background = currentStyle.background;
+        notification.style.color = 'white';
+        
+        // Add icon
+        const icon = document.createElement('span');
+        icon.style.fontSize = '18px';
+        icon.style.fontWeight = 'bold';
+        icon.textContent = currentStyle.icon;
+        notification.appendChild(icon);
+        
+        // Add message
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        notification.appendChild(messageSpan);
         
         document.body.appendChild(notification);
         
         setTimeout(() => {
-            notification.style.transition = 'opacity 0.3s';
+            notification.style.transition = 'all 0.3s ease';
+            notification.style.transform = 'translateX(400px)';
             notification.style.opacity = '0';
             setTimeout(() => {
                 document.body.removeChild(notification);

@@ -184,6 +184,7 @@ class LanguageManager {
         const exportBtn = document.getElementById('export-btn');
         const addBtn = document.getElementById('add-node-btn');
         const deleteBtn = document.getElementById('delete-node-btn');
+        const autoBtn = document.getElementById('auto-complete-btn');
         const duplicateBtn = document.getElementById('duplicate-node-btn');
         const undoBtn = document.getElementById('undo-btn');
         const redoBtn = document.getElementById('redo-btn');
@@ -194,6 +195,7 @@ class LanguageManager {
         if (exportBtn) exportBtn.textContent = t.export;
         if (addBtn) addBtn.textContent = t.add;
         if (deleteBtn) deleteBtn.textContent = t.delete;
+        // Auto button has icon + text in HTML, skip text update
         if (duplicateBtn) duplicateBtn.textContent = t.copy;
         if (undoBtn) undoBtn.textContent = t.undo;
         if (redoBtn) redoBtn.textContent = t.redo;

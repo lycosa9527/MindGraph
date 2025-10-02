@@ -2,7 +2,7 @@
 
 **Author**: lycosa9527  
 **Made by**: MindSpring Team  
-**Last Updated**: October 1, 2025
+**Last Updated**: October 2, 2025
 
 ---
 
@@ -16,11 +16,19 @@
 
 ---
 
+## Terminology
+
+- **Gallery**: The landing page where users select diagram types (diagram cards view)
+- **Canvas**: The editing workspace where users create and modify diagrams
+- **Interactive Editor**: The overall system combining Gallery and Canvas
+
+---
+
 ## Current Status
 
 ### ✅ Phase 1: Core Interactive Foundation (PARTIALLY COMPLETED)
 
-The MindGraph Interactive Editor is now functional with core features implemented. Users can access a professional web-based interface for creating and editing diagrams interactively.
+The MindGraph Interactive Editor is now functional with core features implemented. Users can access the **Gallery** to select diagram types and then edit them on the **Canvas**.
 
 **Access**: `http://localhost:9527/editor`
 
@@ -28,12 +36,12 @@ The MindGraph Interactive Editor is now functional with core features implemente
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Diagram Gallery | ✅ Complete | Professional landing page with 6 diagram types |
+| Gallery | ✅ Complete | Landing page with diagram type cards (10 types) |
+| Canvas Manager | ✅ Complete | Editing workspace with viewport management |
 | Selection Manager | ✅ Complete | Single/multi-select with visual feedback |
 | Node Editor | ✅ Complete | Modal text editing with validation |
-| Canvas Manager | ✅ Complete | Viewport management, pan/zoom ready |
 | Interactive Editor Controller | ✅ Complete | State management, keyboard shortcuts |
-| Diagram Templates | ✅ Complete | All 6 diagram types with default layouts |
+| Diagram Templates | ✅ Complete | All 10 diagram types with blank templates |
 | Drag-and-Drop | ⏳ Pending | Not yet implemented |
 | Toolbar Functionality | ⏳ Pending | Buttons present but not wired |
 | Save/Load System | ⏳ Pending | No persistence yet |
@@ -45,15 +53,16 @@ The MindGraph Interactive Editor is now functional with core features implemente
 
 ### ✅ Completed Features
 
-#### 1. Professional Diagram Gallery
+#### 1. Gallery (Diagram Selection Page)
 **Files**: `templates/editor.html`, `static/css/editor.css`
 
-- Gallery-style landing page with visual previews
-- 6 diagram types organized by category:
-  - **Thinking Maps**: Mind Map, Bubble Map, Flow Map, Tree Map
-  - **Advanced Diagrams**: Concept Map, Brace Map
+- Landing page with visual diagram type cards
+- 10 diagram types organized by category:
+  - **Thinking Maps**: Circle Map, Bubble Map, Double Bubble Map, Tree Map, Brace Map, Flow Map, Multi-Flow Map, Bridge Map
+  - **Advanced Diagrams**: Mind Map, Concept Map
+- Click any card to open a blank template on the Canvas
+- AI prompt input for generating diagrams
 - Responsive design for all screen sizes
-- "Generate with AI Instead" option
 - Clean, modern UI with gradient backgrounds
 
 #### 2. Selection System
@@ -100,10 +109,10 @@ The MindGraph Interactive Editor is now functional with core features implemente
 #### 6. Diagram Templates
 **File**: `static/js/editor/diagram-selector.js`
 
-- **Template System**: Pre-configured templates for all 6 types
-- **Default Layouts**: Each template includes positioned nodes
-- **Type Selection**: Click-to-select interface
-- **Smooth Transitions**: Gallery ↔ Editor transitions
+- **Template System**: Pre-configured blank templates for all 10 types
+- **Default Layouts**: Each template includes positioned nodes ready to edit
+- **Type Selection**: Click any diagram card in the Gallery
+- **Smooth Transitions**: Gallery ↔ Canvas transitions
 
 #### 7. Professional Styling
 **Files**: `static/css/editor.css`, `static/css/editor-toolbar.css`
@@ -158,12 +167,13 @@ The MindGraph Interactive Editor is now functional with core features implemente
 
 ### Creating and Editing Diagrams
 
-#### Step 1: Select a Diagram Type
-- Browse the gallery of diagram types
-- Click the "Select" button on any diagram card
-- Or click "Generate with AI Instead" for AI-powered creation
+#### Step 1: Select a Diagram Type (Gallery)
+- Browse the Gallery showing all diagram types
+- Click any diagram card to load a blank template
+- Or use the AI prompt input to generate a diagram with AI
 
-#### Step 2: Edit Your Diagram
+#### Step 2: Edit Your Diagram (Canvas)
+- The Canvas opens with your selected blank diagram template
 - **Select Nodes**: Click any node to select it
 - **Multi-Select**: Hold Ctrl and click multiple nodes
 - **Edit Text**: Double-click any node to open the text editor
@@ -172,15 +182,15 @@ The MindGraph Interactive Editor is now functional with core features implemente
 - **Select All**: Press Ctrl+A to select all nodes
 
 #### Step 3: Navigate
-- Click "Back to Gallery" to return to diagram selection
+- Click "Back to Gallery" to return to the Gallery
 - Use toolbar buttons for additional operations (coming soon)
 
 ### Current Limitations
 
-1. **No Drag-and-Drop**: Nodes cannot be repositioned yet
+1. **No Drag-and-Drop**: Nodes cannot be repositioned yet on the Canvas
 2. **Limited Toolbar**: Most toolbar buttons are inactive
 3. **No Persistence**: Diagrams are not saved between sessions
-4. **No Export from Editor**: Use existing API endpoints
+4. **No Export from Canvas**: Use existing API endpoints
 
 ---
 
@@ -305,23 +315,26 @@ nodes.call(d3.drag()
 
 ### Week 3: Diagram Gallery and Selection ✅ COMPLETED
 
-#### ✅ 3.1 Create Professional Diagram Gallery (1 day)
+#### ✅ 3.1 Create Gallery (1 day)
 **Status**: COMPLETED  
 **Files Created**: `templates/editor.html`, `static/css/editor.css`
 
 **Features Implemented**:
-- Professional landing page with diagram type gallery
+- Gallery landing page with diagram type cards
 - Visual previews for each diagram type
+- 10 diagram types with blank templates
 - Clean, modern UI design with categories
-- "Generate with AI" option
+- AI prompt input for generating diagrams
+- Click-to-open blank templates on Canvas
 - Responsive layout
 
 **Deliverables**:
-- [x] Professional diagram selection gallery
-- [x] Visual previews for all diagram types
+- [x] Gallery with diagram type cards
+- [x] Visual previews for all 10 diagram types
 - [x] Clean, modern UI design
 - [x] Responsive layout
-- [x] Integration with AI generator option
+- [x] Integration with AI prompt system
+- [x] Blank template loading on Canvas
 
 #### ✅ 3.2 Create Professional Toolbar CSS (1 day)
 **Status**: COMPLETED  
@@ -345,16 +358,16 @@ nodes.call(d3.drag()
 **Files Created**: `static/js/editor/diagram-selector.js`
 
 **Features Implemented**:
-- Template system for all 6 diagram types
-- Diagram type selection logic
-- Transition to editing interface
-- Blank template generation
+- Template system for all 10 diagram types
+- Diagram card click handling in Gallery
+- Smooth transition from Gallery to Canvas
+- Blank template generation for each type
 
 **Deliverables**:
-- [x] Diagram selection logic
-- [x] Template system for all diagram types
-- [x] Transition to editing interface
-- [x] Integration with AI generator
+- [x] Diagram selection logic (Gallery → Canvas)
+- [x] Template system for all 10 diagram types
+- [x] Smooth Gallery to Canvas transition
+- [x] Integration with AI prompt system
 
 ### Week 4: Toolbar and Data Management ⏳ PENDING
 
@@ -589,21 +602,23 @@ def list_diagrams():
 ```
 MindGraph/
 ├── templates/
-│   ├── editor.html                    # ✅ Main editor template
+│   ├── editor.html                    # ✅ Gallery + Canvas template
 │   └── debug.html                     # Existing debug interface
 │
 ├── static/
 │   ├── css/
-│   │   ├── editor.css                 # ✅ Main editor styles
-│   │   └── editor-toolbar.css         # ✅ Toolbar styles
+│   │   ├── editor.css                 # ✅ Gallery + Canvas styles
+│   │   └── editor-toolbar.css         # ✅ Canvas toolbar styles
 │   │
 │   └── js/
-│       ├── editor/                    # ✅ Editor system
-│       │   ├── selection-manager.js   # ✅ Node selection
-│       │   ├── canvas-manager.js      # ✅ Canvas/viewport
-│       │   ├── node-editor.js         # ✅ Text editing
-│       │   ├── interactive-editor.js  # ✅ Main controller
-│       │   └── diagram-selector.js    # ✅ Type selection
+│       ├── editor/                    # ✅ Interactive Editor system
+│       │   ├── selection-manager.js   # ✅ Node selection on Canvas
+│       │   ├── canvas-manager.js      # ✅ Canvas viewport management
+│       │   ├── node-editor.js         # ✅ Text editing on Canvas
+│       │   ├── interactive-editor.js  # ✅ Canvas controller
+│       │   ├── diagram-selector.js    # ✅ Gallery card selection
+│       │   ├── prompt-manager.js      # ✅ AI prompt input
+│       │   └── toolbar-manager.js     # ⏳ Canvas toolbar (partial)
 │       │
 │       ├── widgets/                   # ⏳ UI components (planned)
 │       │   ├── style-panel.js         # ⏳ Style editing
@@ -706,17 +721,18 @@ The implementation follows a **non-invasive approach**:
 ## Success Metrics
 
 ### Phase 1 Success Criteria ✅ PARTIAL
-- [x] Interactive editor accessible at `/editor`
-- [x] Node selection working (single and multi)
-- [x] Text editing functional
-- [ ] Drag-and-drop operational
+- [x] Gallery accessible at `/editor` with 10 diagram types
+- [x] Canvas opens with blank templates when cards are clicked
+- [x] Node selection working on Canvas (single and multi)
+- [x] Text editing functional on Canvas
+- [ ] Drag-and-drop operational on Canvas
 - [x] No performance degradation
 
 ### Phase 2 Success Criteria ⏳
-- [x] Professional gallery interface
-- [ ] Complete toolbar functionality
+- [x] Professional Gallery interface
+- [ ] Complete Canvas toolbar functionality
 - [ ] Save/load system working
-- [ ] Undo/redo fully functional
+- [ ] Undo/redo fully functional on Canvas
 
 ### Overall Success Metrics
 - **Performance**: No more than 10% impact vs current system
@@ -731,12 +747,12 @@ The implementation follows a **non-invasive approach**:
 
 ### Current Limitations
 
-1. **No Drag-and-Drop**: Nodes cannot be repositioned
-2. **Limited Toolbar**: Most buttons are placeholders
+1. **No Drag-and-Drop**: Nodes cannot be repositioned on Canvas
+2. **Limited Toolbar**: Most Canvas toolbar buttons are placeholders
 3. **No Persistence**: Diagrams not saved between sessions
 4. **Partial Undo/Redo**: Framework exists but needs completion
-5. **No Style Controls**: Cannot change colors/fonts yet
-6. **No Export from Editor**: Must use existing API
+5. **No Style Controls**: Cannot change colors/fonts on Canvas yet
+6. **No Export from Canvas**: Must use existing API
 
 ### Planned Fixes
 
@@ -749,26 +765,26 @@ All limitations above are addressed in the implementation plan and will be resol
 ### Current Features Testing
 
 - [x] Gallery loads at `/editor`
-- [x] All 6 diagram types displayed
-- [x] Click diagram card loads editor
-- [x] Nodes render correctly
-- [x] Single-click selects nodes
-- [x] Ctrl+click multi-selects
-- [x] Double-click opens text editor
-- [x] Text changes save correctly
-- [x] Delete key removes nodes
-- [x] Back to Gallery works
-- [x] Responsive design functions
+- [x] All 10 diagram types displayed in Gallery
+- [x] Click diagram card loads blank template on Canvas
+- [x] Canvas renders all diagram types correctly
+- [x] Single-click selects nodes on Canvas
+- [x] Ctrl+click multi-selects on Canvas
+- [x] Double-click opens text editor on Canvas
+- [x] Text changes save correctly on Canvas
+- [x] Delete key removes nodes from Canvas
+- [x] Back to Gallery button returns to Gallery
+- [x] Responsive design functions for Gallery and Canvas
 
 ### Upcoming Features Testing
 
-- [ ] Drag-and-drop repositioning
-- [ ] Toolbar button functionality
-- [ ] Save diagram persistence
-- [ ] Load saved diagrams
-- [ ] Undo/redo operations
-- [ ] Style changes apply
-- [ ] Export with styling
+- [ ] Drag-and-drop repositioning on Canvas
+- [ ] Canvas toolbar button functionality
+- [ ] Save diagram persistence from Canvas
+- [ ] Load saved diagrams to Canvas
+- [ ] Undo/redo operations on Canvas
+- [ ] Style changes apply on Canvas
+- [ ] Export with styling from Canvas
 
 ---
 

@@ -81,3 +81,78 @@
     }
 }
 
+/* MindMate AI Button */
+.mindmate-ai-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.mindmate-ai-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.5);
+}
+
+.mindmate-ai-btn:active {
+    transform: translateY(0);
+}
+
+.mindmate-ai-btn svg {
+    flex-shrink: 0;
+}
+
+.mindmate-ai-btn.active {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* Auto Complete Button */
+.btn-auto {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-auto:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+.btn-auto:active {
+    transform: translateY(0);
+}
+
+.btn-auto.loading {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
+
+.btn-auto.loading svg {
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
