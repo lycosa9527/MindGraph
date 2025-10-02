@@ -26,11 +26,37 @@
 
 ## Current Status
 
-### ✅ Phase 1: Core Interactive Foundation (PARTIALLY COMPLETED)
+### ✅ Phase 1 & 2: Core Foundation MOSTLY COMPLETED
 
-The MindGraph Interactive Editor is now functional with core features implemented. Users can access the **Gallery** to select diagram types and then edit them on the **Canvas**.
+The MindGraph Interactive Editor is now functional with most core features implemented. Users can access the **Gallery** to select diagram types and then edit them on the **Canvas** with a full-featured toolbar.
 
 **Access**: `http://localhost:9527/editor`
+
+### 🎉 Recent Accomplishments (v3.0.4)
+
+**Toolbar & Editing Tools**:
+- ✅ Full toolbar implementation with all core features
+- ✅ Add, Delete, and Empty node operations
+- ✅ Main topic protection (prevents deletion of central nodes)
+- ✅ Double-click text editing for all diagram types
+- ✅ Property panel for node customization
+
+**AI Integration**:
+- ✅ Auto-complete: AI-powered diagram generation
+- ✅ MindMate AI assistant panel with SSE streaming
+- ✅ Context-aware main topic identification
+
+**Style & Export**:
+- ✅ Line Mode: Toggle black & white line-art style
+- ✅ Export to PNG with watermarks
+- ✅ Reset canvas to blank template
+- ✅ Reversible style conversion
+
+**Interaction**:
+- ✅ Drag-and-drop for Concept Map nodes
+- ✅ Text selection by clicking on node text
+- ✅ Multi-node selection and operations
+- ✅ Keyboard shortcuts (Delete, Ctrl+Z, Ctrl+A)
 
 ### Implementation Progress Summary
 
@@ -42,7 +68,7 @@ The MindGraph Interactive Editor is now functional with core features implemente
 | Node Editor | ✅ Complete | Modal text editing with validation |
 | Interactive Editor Controller | ✅ Complete | State management, keyboard shortcuts |
 | Diagram Templates | ✅ Complete | All 10 diagram types with blank templates |
-| Drag-and-Drop | ⏳ Pending | Not yet implemented |
+| Drag-and-Drop | ✅ Partial | Implemented for Concept Maps |
 | Toolbar Functionality | ✅ Complete | Full toolbar with editing, AI, and style tools |
 | Save/Load System | ⏳ Pending | No persistence yet |
 | Undo/Redo | ⏳ Partial | Framework ready, needs completion |
@@ -155,11 +181,18 @@ The MindGraph Interactive Editor is now functional with core features implemente
 
 ### ⏳ Pending Features
 
-#### 1. Drag-and-Drop (High Priority)
-- Enable node repositioning by dragging
-- Visual feedback during drag
-- Save new positions to spec
-- Maintain connections during drag
+#### 1. Drag-and-Drop (Partially Complete)
+**Status**: ✅ Implemented for Concept Maps only
+
+**Completed**:
+- ✅ Concept Map nodes can be repositioned by dragging
+- ✅ Visual feedback during drag
+- ✅ Connections follow nodes in real-time
+- ✅ Text follows node during drag
+
+**Still Needed**:
+- ⏳ Enable drag for other diagram types (if applicable)
+- ⏳ Save dragged positions to spec for persistence
 
 #### 2. Save/Load System
 - API endpoints for diagram persistence
@@ -204,9 +237,19 @@ The MindGraph Interactive Editor is now functional with core features implemente
 - **Undo**: Press Ctrl+Z to undo actions
 - **Select All**: Press Ctrl+A to select all nodes
 
-#### Step 3: Navigate
+#### Step 3: Use Toolbar Features
+- **Add Node**: Click "Add" to create new nodes
+- **Delete Node**: Select nodes and click "Delete" (main topic protected)
+- **Empty Node**: Click "Empty" to clear text from selected nodes
+- **Auto-Complete**: Click "Auto" to let AI complete your diagram
+- **Line Mode**: Click "Line" to toggle black & white style
+- **Empty Tool**: Select nodes and click "Empty" to clear text
+- **Export**: Click "Export" to save as PNG
+- **Reset**: Click "Reset" to restore blank template
+- **MindMate AI**: Click "MindMate AI" for diagram assistance
+
+#### Step 4: Navigate
 - Click "Back to Gallery" to return to the Gallery
-- Use toolbar buttons for additional operations (coming soon)
 
 ### Current Limitations
 
@@ -221,7 +264,8 @@ The MindGraph Interactive Editor is now functional with core features implemente
 
 **Objective**: Create a professional interactive diagram editor with polished UX  
 **Timeline**: 8 weeks total (4 phases of 2 weeks each)  
-**Current Status**: Phase 1 partially complete, Phase 2 started  
+**Current Status**: Phase 1 complete ✅, Phase 2 mostly complete ✅  
+**Progress**: ~70% - Core features and toolbar implemented  
 **Risk Level**: Medium - complex interactive system with performance considerations
 
 ### Phase Breakdown
@@ -390,30 +434,39 @@ nodes.call(d3.drag()
 - [x] Smooth Gallery to Canvas transition
 - [x] Integration with AI prompt system
 
-### Week 4: Toolbar and Data Management ⏳ PENDING
+### Week 4: Toolbar and Data Management ✅ MOSTLY COMPLETED
 
-#### ⏳ 4.1 Implement Toolbar Functionality (3 days)
-**Status**: PENDING  
-**Priority**: HIGH  
-**Files to Create**: `static/js/editor/toolbar-manager.js`
+#### ✅ 4.1 Implement Toolbar Functionality (3 days)
+**Status**: MOSTLY COMPLETED  
+**Files Created**: `static/js/editor/toolbar-manager.js`
 
-**Features to Implement**:
-- Complete toolbar functionality for all controls
-- Node management (add, delete, duplicate)
-- Text formatting (font, size, bold, italic)
-- Color management (fill, text, border)
-- Border styling (width, style)
-- Layout tools (align, auto-layout)
-- Undo/redo functionality
+**Features Implemented**:
+- ✅ Node management (add, delete with main topic protection, empty text)
+- ✅ AI tools (Auto-complete, MindMate AI assistant panel)
+- ✅ Style tools (Line mode for black & white conversion)
+- ✅ File operations (Export to PNG, Reset canvas, Back to Gallery)
+- ✅ Property panel for node editing
+- ✅ Selection-aware button states
+- ✅ Notification system for user feedback
+- ✅ Bilingual support (EN/中文)
+
+**Still Pending**:
+- ⏳ Duplicate node functionality
+- ⏳ Advanced text formatting (font family, size controls in toolbar)
+- ⏳ Layout and alignment tools
+- ⏳ Complete undo/redo implementation
 
 **Deliverables**:
-- [ ] Complete toolbar functionality
-- [ ] Node management (add, delete, duplicate)
-- [ ] Text formatting controls
-- [ ] Color and border styling
+- [x] Core toolbar functionality
+- [x] Node management (add, delete, empty)
+- [x] AI integration (Auto-complete, MindMate AI)
+- [x] Style tools (Line mode)
+- [x] File operations (export, reset)
+- [ ] Duplicate functionality
+- [ ] Advanced text formatting
 - [ ] Layout and alignment tools
-- [ ] Undo/redo system
-- [ ] File operations (save, load, export)
+- [ ] Complete undo/redo system
+- [ ] Save/load persistence
 
 #### ⏳ 4.2 Implement Save/Load System (2 days)
 **Status**: PENDING  
@@ -692,24 +745,25 @@ The implementation follows a **non-invasive approach**:
 
 ### Immediate Priorities (Next Session)
 
-1. **Implement Drag-and-Drop** (HIGH)
-   - Enable node repositioning
-   - Visual feedback during drag
-   - Save positions to spec
-
-2. **Complete Toolbar Manager** (HIGH)
-   - Wire up all toolbar buttons
-   - Implement add/delete/duplicate
-   - Add style controls
-
-3. **Implement Save/Load** (MEDIUM)
-   - Create API endpoints
+1. **Complete Save/Load System** (HIGH)
+   - Create API endpoints for diagram persistence
    - Add frontend save manager
    - LocalStorage fallback
+   - Diagram listing interface
 
-4. **Complete Undo/Redo** (MEDIUM)
+2. **Complete Undo/Redo** (HIGH)
    - Full history implementation
    - Visual state indicators
+   - History state persistence
+
+3. **Enhance Drag-and-Drop** (MEDIUM)
+   - Save dragged positions to spec for persistence
+   - Consider enabling for more diagram types
+
+4. **Add Missing Toolbar Features** (MEDIUM)
+   - Implement duplicate node functionality
+   - Advanced text formatting controls
+   - Layout and alignment tools
 
 ### Medium-Term Goals
 
