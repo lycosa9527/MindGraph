@@ -398,7 +398,7 @@ class DiagramSelector {
      */
     getTreeMapTemplate() {
         return {
-            root: 'Root Topic',
+            topic: 'Root Topic',  // Fixed: Changed from 'root' to 'topic' to match renderer
             children: [
                 { 
                     text: 'Category 1', 
