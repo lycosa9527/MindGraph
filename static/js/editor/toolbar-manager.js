@@ -23,12 +23,17 @@ class ToolbarManager {
         this.addNodeBtn = document.getElementById('add-node-btn');
         this.deleteNodeBtn = document.getElementById('delete-node-btn');
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
+        this.lineModeBtn = document.getElementById('line-mode-btn');
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
+        this.emptyNodeBtn = document.getElementById('empty-node-btn');
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
         this.resetBtn = document.getElementById('reset-btn');
         this.exportBtn = document.getElementById('export-btn');
         this.backBtn = document.getElementById('back-to-gallery');
+        
+        // Line mode state
+        this.isLineMode = false;
         
         // Property panel
         this.propertyPanel = document.getElementById('property-panel');
@@ -65,7 +70,9 @@ class ToolbarManager {
         this.addNodeBtn?.addEventListener('click', () => this.handleAddNode());
         this.deleteNodeBtn?.addEventListener('click', () => this.handleDeleteNode());
         this.autoCompleteBtn?.addEventListener('click', () => this.handleAutoComplete());
+        this.lineModeBtn?.addEventListener('click', () => this.toggleLineMode());
         this.duplicateNodeBtn?.addEventListener('click', () => this.handleDuplicateNode());
+        this.emptyNodeBtn?.addEventListener('click', () => this.handleEmptyNode());
         this.undoBtn?.addEventListener('click', () => this.handleUndo());
         this.redoBtn?.addEventListener('click', () => this.handleRedo());
         this.resetBtn?.addEventListener('click', () => this.handleReset());
@@ -138,6 +145,12 @@ class ToolbarManager {
                 this.loadNodeProperties(this.currentSelection[0]);
             }
         });
+        
+        // Listen for notification requests from editor
+        window.addEventListener('show-notification', (event) => {
+            const { message, type } = event.detail;
+            this.showNotification(message, type || 'info');
+        });
     }
     
     /**
@@ -147,6 +160,11 @@ class ToolbarManager {
         if (this.deleteNodeBtn) {
             this.deleteNodeBtn.disabled = !hasSelection;
             this.deleteNodeBtn.style.opacity = hasSelection ? '1' : '0.5';
+        }
+        
+        if (this.emptyNodeBtn) {
+            this.emptyNodeBtn.disabled = !hasSelection;
+            this.emptyNodeBtn.style.opacity = hasSelection ? '1' : '0.5';
         }
         
         if (this.duplicateNodeBtn) {
@@ -416,7 +434,61 @@ class ToolbarManager {
             this.hidePropertyPanel();
             this.showNotification(`Deleted ${count} node${count > 1 ? 's' : ''}`, 'success');
         } else {
-            this.showNotification('Please select nodes to delete', 'warning');
+            this.showNotification('Select a node first to delete', 'warning');
+        }
+    }
+    
+    /**
+     * Handle empty node text (clear text but keep node)
+     */
+    handleEmptyNode() {
+        if (this.editor && this.currentSelection.length > 0) {
+            const nodeIds = [...this.currentSelection];
+            
+            nodeIds.forEach(nodeId => {
+                // Find the shape element
+                const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+                if (shapeElement.empty()) {
+                    console.warn(`Shape not found for nodeId: ${nodeId}`);
+                    return;
+                }
+                
+                // Find the text element
+                let textElement = d3.select(`[data-text-for="${nodeId}"]`);
+                
+                // If not found, try to find text as sibling or in parent group
+                if (textElement.empty()) {
+                    const shapeNode = shapeElement.node();
+                    const nextSibling = shapeNode.nextElementSibling;
+                    if (nextSibling && nextSibling.tagName === 'text') {
+                        textElement = d3.select(nextSibling);
+                    } else if (shapeNode.parentElement && shapeNode.parentElement.tagName === 'g') {
+                        textElement = d3.select(shapeNode.parentElement).select('text');
+                    }
+                }
+                
+                if (!textElement.empty()) {
+                    const textNode = textElement.node();
+                    
+                    // Update the text to empty string
+                    if (this.editor && typeof this.editor.updateNodeText === 'function') {
+                        this.editor.updateNodeText(nodeId, shapeElement.node(), textNode, '');
+                    } else {
+                        // Fallback: just update the DOM
+                        textElement.text('');
+                    }
+                }
+            });
+            
+            const count = nodeIds.length;
+            this.showNotification(`Emptied ${count} node${count > 1 ? 's' : ''}`, 'success');
+            
+            // Update property panel if still showing
+            if (this.currentSelection.length > 0) {
+                this.loadNodeProperties(this.currentSelection[0]);
+            }
+        } else {
+            this.showNotification('Select a node first to empty', 'warning');
         }
     }
     
@@ -585,6 +657,143 @@ class ToolbarManager {
     }
     
     /**
+     * Toggle line mode (black and white, no fill)
+     */
+    toggleLineMode() {
+        this.isLineMode = !this.isLineMode;
+        
+        // Toggle button active state
+        if (this.isLineMode) {
+            this.lineModeBtn.classList.add('active');
+        } else {
+            this.lineModeBtn.classList.remove('active');
+        }
+        
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty()) {
+            console.warn('No SVG found in container');
+            return;
+        }
+        
+        if (this.isLineMode) {
+            // Apply black and white line mode
+            console.log('Applying line mode: black and white');
+            
+            // Remove canvas background
+            svg.style('background-color', 'transparent');
+            
+            // Select all shapes (circles, rects, ellipses, polygons, paths)
+            svg.selectAll('circle, rect, ellipse, polygon, path')
+                .each(function() {
+                    const element = d3.select(this);
+                    
+                    // Store original styles as data attributes (for restoration)
+                    if (!element.attr('data-original-fill')) {
+                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || 'none');
+                    }
+                    if (!element.attr('data-original-stroke')) {
+                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || 'none');
+                    }
+                    if (!element.attr('data-original-stroke-width')) {
+                        element.attr('data-original-stroke-width', element.style('stroke-width') || element.attr('stroke-width') || '1');
+                    }
+                    
+                    // Apply line mode: no fill, black stroke
+                    element
+                        .style('fill', 'none')
+                        .style('stroke', '#000000')
+                        .style('stroke-width', '2px');
+                });
+            
+            // Make all text black
+            svg.selectAll('text')
+                .each(function() {
+                    const element = d3.select(this);
+                    
+                    // Store original text color
+                    if (!element.attr('data-original-fill')) {
+                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || '#000000');
+                    }
+                    
+                    // Apply black text
+                    element.style('fill', '#000000');
+                });
+            
+            // Make all lines/connections black
+            svg.selectAll('line')
+                .each(function() {
+                    const element = d3.select(this);
+                    
+                    // Store original stroke
+                    if (!element.attr('data-original-stroke')) {
+                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || '#000000');
+                    }
+                    
+                    // Apply black stroke
+                    element.style('stroke', '#000000');
+                });
+            
+            this.showNotification('Line mode enabled', 'success');
+            
+        } else {
+            // Restore original colors
+            console.log('Restoring original colors');
+            
+            // Restore canvas background (if it had one)
+            svg.style('background-color', null);
+            
+            // Restore shapes
+            svg.selectAll('circle, rect, ellipse, polygon, path')
+                .each(function() {
+                    const element = d3.select(this);
+                    
+                    const originalFill = element.attr('data-original-fill');
+                    const originalStroke = element.attr('data-original-stroke');
+                    const originalStrokeWidth = element.attr('data-original-stroke-width');
+                    
+                    if (originalFill) {
+                        element.style('fill', originalFill === 'none' ? 'none' : originalFill);
+                        element.attr('data-original-fill', null);
+                    }
+                    if (originalStroke) {
+                        element.style('stroke', originalStroke === 'none' ? 'none' : originalStroke);
+                        element.attr('data-original-stroke', null);
+                    }
+                    if (originalStrokeWidth) {
+                        element.style('stroke-width', originalStrokeWidth);
+                        element.attr('data-original-stroke-width', null);
+                    }
+                });
+            
+            // Restore text colors
+            svg.selectAll('text')
+                .each(function() {
+                    const element = d3.select(this);
+                    const originalFill = element.attr('data-original-fill');
+                    
+                    if (originalFill) {
+                        element.style('fill', originalFill);
+                        element.attr('data-original-fill', null);
+                    }
+                });
+            
+            // Restore line colors
+            svg.selectAll('line')
+                .each(function() {
+                    const element = d3.select(this);
+                    const originalStroke = element.attr('data-original-stroke');
+                    
+                    if (originalStroke) {
+                        element.style('stroke', originalStroke);
+                        element.attr('data-original-stroke', null);
+                    }
+                });
+            
+            this.showNotification('Line mode disabled', 'success');
+        }
+    }
+    
+    /**
      * Set loading state for auto button
      */
     setAutoButtonLoading(isLoading) {
@@ -682,6 +891,10 @@ class ToolbarManager {
         }
         
         try {
+            // Temporarily show watermarks for export
+            const watermarks = svg.querySelectorAll('.watermark');
+            watermarks.forEach(wm => wm.style.display = 'block');
+            
             // Get SVG dimensions
             const svgRect = svg.getBoundingClientRect();
             const width = parseFloat(svg.getAttribute('width')) || svgRect.width;
@@ -724,6 +937,9 @@ class ToolbarManager {
                     URL.revokeObjectURL(pngUrl);
                     URL.revokeObjectURL(url);
                     
+                    // Hide watermarks again after export
+                    watermarks.forEach(wm => wm.style.display = 'none');
+                    
                     this.showNotification('Diagram exported as PNG!', 'success');
                 }, 'image/png');
             };
@@ -731,6 +947,10 @@ class ToolbarManager {
             img.onerror = (error) => {
                 console.error('Error loading SVG:', error);
                 URL.revokeObjectURL(url);
+                
+                // Hide watermarks on error
+                watermarks.forEach(wm => wm.style.display = 'none');
+                
                 this.showNotification('Failed to export diagram', 'error');
             };
             

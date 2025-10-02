@@ -219,6 +219,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     const watermarkY = maxY - watermarkPadding;
     
     svg.append('text')
+        .attr('class', 'watermark')
         .attr('x', watermarkX)
         .attr('y', watermarkY)
         .attr('text-anchor', 'end')
@@ -384,6 +385,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     const watermarkY = maxY - watermarkPadding;
     
     svg.append('text')
+        .attr('class', 'watermark')
         .attr('x', watermarkX)
         .attr('y', watermarkY)
         .attr('text-anchor', 'end')
@@ -751,6 +753,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const watermarkY = height - watermarkPadding;
     
     svg.append('text')
+        .attr('class', 'watermark')
         .attr('x', watermarkX)
         .attr('y', watermarkY)
         .attr('text-anchor', 'end')

@@ -43,7 +43,7 @@ The MindGraph Interactive Editor is now functional with core features implemente
 | Interactive Editor Controller | ✅ Complete | State management, keyboard shortcuts |
 | Diagram Templates | ✅ Complete | All 10 diagram types with blank templates |
 | Drag-and-Drop | ⏳ Pending | Not yet implemented |
-| Toolbar Functionality | ⏳ Pending | Buttons present but not wired |
+| Toolbar Functionality | ✅ Complete | Full toolbar with editing, AI, and style tools |
 | Save/Load System | ⏳ Pending | No persistence yet |
 | Undo/Redo | ⏳ Partial | Framework ready, needs completion |
 
@@ -114,7 +114,36 @@ The MindGraph Interactive Editor is now functional with core features implemente
 - **Type Selection**: Click any diagram card in the Gallery
 - **Smooth Transitions**: Gallery ↔ Canvas transitions
 
-#### 7. Professional Styling
+#### 7. Toolbar Functionality
+**File**: `static/js/editor/toolbar-manager.js`
+
+- **Node Management**:
+  - Add new nodes to diagrams
+  - Delete selected nodes with main topic protection
+  - Empty node text while preserving structure
+  - Multi-node operations support
+  
+- **AI Tools**:
+  - Auto-complete: AI-powered diagram generation based on existing nodes
+  - Main topic identification for context-aware generation
+  - MindMate AI: Side panel for diagram assistance
+  
+- **Style Tools**:
+  - Line Mode: Toggle black & white line-art style
+  - Fully reversible style conversion
+  - Original color preservation
+  
+- **File Operations**:
+  - Export diagrams to PNG with watermarks
+  - Reset canvas to blank template
+  - Back to Gallery navigation
+  
+- **Main Topic Protection**:
+  - Central topic nodes cannot be deleted
+  - Warning notifications for protected operations
+  - Maintains diagram structure integrity
+
+#### 8. Professional Styling
 **Files**: `static/css/editor.css`, `static/css/editor-toolbar.css`
 
 - Modern card-based design
@@ -132,19 +161,13 @@ The MindGraph Interactive Editor is now functional with core features implemente
 - Save new positions to spec
 - Maintain connections during drag
 
-#### 2. Toolbar Functionality (High Priority)
-- Wire up add/delete/duplicate buttons
-- Implement style controls (colors, fonts, borders)
-- Add alignment tools
-- Enable layout tools
-
-#### 3. Save/Load System
+#### 2. Save/Load System
 - API endpoints for diagram persistence
 - LocalStorage fallback
 - Diagram listing interface
 - Auto-save functionality
 
-#### 4. Complete Undo/Redo
+#### 3. Complete Undo/Redo
 - Full history implementation
 - Visual state indicators
 - Memory optimization
@@ -187,10 +210,8 @@ The MindGraph Interactive Editor is now functional with core features implemente
 
 ### Current Limitations
 
-1. **No Drag-and-Drop**: Nodes cannot be repositioned yet on the Canvas
-2. **Limited Toolbar**: Most toolbar buttons are inactive
-3. **No Persistence**: Diagrams are not saved between sessions
-4. **No Export from Canvas**: Use existing API endpoints
+1. **Limited Drag-and-Drop**: Only Concept Map nodes can be repositioned
+2. **No Persistence**: Diagrams are not saved between sessions
 
 ---
 
@@ -747,12 +768,9 @@ The implementation follows a **non-invasive approach**:
 
 ### Current Limitations
 
-1. **No Drag-and-Drop**: Nodes cannot be repositioned on Canvas
-2. **Limited Toolbar**: Most Canvas toolbar buttons are placeholders
-3. **No Persistence**: Diagrams not saved between sessions
-4. **Partial Undo/Redo**: Framework exists but needs completion
-5. **No Style Controls**: Cannot change colors/fonts on Canvas yet
-6. **No Export from Canvas**: Must use existing API
+1. **Limited Drag-and-Drop**: Only Concept Map nodes can be repositioned on Canvas
+2. **No Persistence**: Diagrams not saved between sessions
+3. **Partial Undo/Redo**: Framework exists but needs completion
 
 ### Planned Fixes
 

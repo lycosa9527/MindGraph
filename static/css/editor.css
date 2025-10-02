@@ -545,6 +545,11 @@ body {
     transform: translateY(-1px);
 }
 
+/* Hide watermarks in canvas view */
+.watermark {
+    display: none;
+}
+
 .diagram-type {
     color: white;
     font-size: 14px;

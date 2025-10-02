@@ -123,6 +123,7 @@ function addWatermark(svg, theme = null) {
     
     // Add watermark text - EXACTLY as in original d3-renderers.js
     svg.append('text')
+        .attr('class', 'watermark')
         .attr('x', x)
         .attr('y', y)
         .attr('text-anchor', textAnchor)

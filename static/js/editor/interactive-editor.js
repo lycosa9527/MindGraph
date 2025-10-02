@@ -278,32 +278,64 @@ class InteractiveEditor {
                 });
         });
         
-        // Add text click handlers with better text extraction
+        // Add text click handlers - link to associated shape node
         d3.selectAll('text').each((d, i, nodes) => {
             const element = d3.select(nodes[i]);
-            const nodeId = `text_${i}`;
             const textNode = nodes[i];
             
+            // Skip watermark text
+            const elemClass = element.attr('class') || '';
+            if (elemClass.includes('watermark')) {
+                return;
+            }
+            
+            // Find associated shape node ID
+            let associatedNodeId = null;
+            
+            // Method 1: Check if text has data-text-for attribute (Circle/Bubble Map)
+            const textFor = element.attr('data-text-for');
+            if (textFor) {
+                associatedNodeId = textFor;
+            }
+            // Method 2: Check previous sibling (common pattern)
+            else if (textNode.previousElementSibling) {
+                const prevElement = d3.select(textNode.previousElementSibling);
+                associatedNodeId = prevElement.attr('data-node-id');
+            }
+            // Method 3: Check parent group (Concept Map)
+            else if (textNode.parentNode && textNode.parentNode.tagName === 'g') {
+                const groupElement = d3.select(textNode.parentNode);
+                const shapeInGroup = groupElement.select('circle, rect, ellipse');
+                if (!shapeInGroup.empty()) {
+                    associatedNodeId = shapeInGroup.attr('data-node-id');
+                }
+            }
+            
+            // Only add handlers if we found an associated node
+            if (associatedNodeId) {
             element
-                .attr('data-text-id', nodeId)
                 .style('cursor', 'pointer')
+                    .style('pointer-events', 'all')  // Enable pointer events on text
                 .on('click', (event) => {
                     event.stopPropagation();
                     
                     if (event.ctrlKey || event.metaKey) {
-                        this.selectionManager.toggleNodeSelection(nodeId);
+                            self.selectionManager.toggleNodeSelection(associatedNodeId);
                     } else {
-                        this.selectionManager.clearSelection();
-                        this.selectionManager.selectNode(nodeId);
+                            self.selectionManager.clearSelection();
+                            self.selectionManager.selectNode(associatedNodeId);
                     }
                 })
                 .on('dblclick', (event) => {
                     event.stopPropagation();
-                    const currentText = element.text();
-                    // Find associated shape element
-                    const shapeNode = textNode.previousElementSibling;
-                    this.openNodeEditor(nodeId, shapeNode, textNode, currentText);
-                });
+                        const currentText = element.text();
+                        // Find associated shape element
+                        const shapeElement = d3.select(`[data-node-id="${associatedNodeId}"]`);
+                        if (!shapeElement.empty()) {
+                            self.openNodeEditor(associatedNodeId, shapeElement.node(), textNode, currentText);
+                        }
+                    });
+            }
         });
     }
     
@@ -760,8 +792,9 @@ class InteractiveEditor {
             return;
         }
         
-        // Collect indices to delete
+        // Collect indices to delete and check for main topic
         const indicesToDelete = [];
+        let attemptedMainTopicDelete = false;
         
         nodeIds.forEach(nodeId => {
             const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
@@ -774,10 +807,26 @@ class InteractiveEditor {
                         indicesToDelete.push(arrayIndex);
                     }
                 } else if (nodeType === 'topic') {
-                    console.warn('Cannot delete the central topic node');
+                    attemptedMainTopicDelete = true;
                 }
             }
         });
+        
+        // Show notification if user tried to delete main topic
+        if (attemptedMainTopicDelete) {
+            // Dispatch event for toolbar to show notification
+            window.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: 'Main topic node cannot be deleted',
+                    type: 'warning'
+                }
+            }));
+        }
+        
+        // If no valid nodes to delete, return early
+        if (indicesToDelete.length === 0) {
+            return;
+        }
         
         // Sort indices in descending order to delete from end to start
         indicesToDelete.sort((a, b) => b - a);
@@ -802,8 +851,9 @@ class InteractiveEditor {
             return;
         }
         
-        // Collect indices to delete
+        // Collect indices to delete and check for main topic
         const indicesToDelete = [];
+        let attemptedMainTopicDelete = false;
         
         nodeIds.forEach(nodeId => {
             const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
@@ -816,10 +866,26 @@ class InteractiveEditor {
                         indicesToDelete.push(arrayIndex);
                     }
                 } else if (nodeType === 'topic') {
-                    console.warn('Cannot delete the central topic node');
+                    attemptedMainTopicDelete = true;
                 }
             }
         });
+        
+        // Show notification if user tried to delete main topic
+        if (attemptedMainTopicDelete) {
+            // Dispatch event for toolbar to show notification
+            window.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: 'Main topic node cannot be deleted',
+                    type: 'warning'
+                }
+            }));
+        }
+        
+        // If no valid nodes to delete, return early
+        if (indicesToDelete.length === 0) {
+            return;
+        }
         
         // Sort indices in descending order to delete from end to start
         indicesToDelete.sort((a, b) => b - a);
@@ -844,26 +910,50 @@ class InteractiveEditor {
             return;
         }
         
-        // For concept maps, we need to delete from the spec and also remove connections
+        // Collect node texts to delete from spec
+        const textsToDelete = new Set();
+        
         nodeIds.forEach(nodeId => {
-            // Find and remove the concept by matching text or position
-            // This is a simplified approach - you may need to enhance based on your spec structure
             const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (!shapeElement.empty()) {
-                // Remove the visual elements and their parent group
+                // Find associated text to match with spec
                 const parentGroup = shapeElement.node()?.parentNode;
+                let nodeText = '';
+                
                 if (parentGroup && parentGroup.tagName === 'g') {
-                    d3.select(parentGroup).remove();
+                    const textElement = d3.select(parentGroup).select('text');
+                    if (!textElement.empty()) {
+                        nodeText = textElement.text();
+                    }
                 } else {
-                    // Also remove associated text
                     const textElement = d3.select(`[data-text-for="${nodeId}"]`);
-                    textElement.remove();
-                    shapeElement.remove();
+                    if (!textElement.empty()) {
+                        nodeText = textElement.text();
+                    }
+                }
+                
+                if (nodeText) {
+                    textsToDelete.add(nodeText);
                 }
             }
         });
         
-        console.log(`Deleted ${nodeIds.length} concept node(s) from Concept Map`);
+        // Remove from concepts array
+        this.currentSpec.concepts = this.currentSpec.concepts.filter(
+            concept => !textsToDelete.has(concept.text)
+        );
+        
+        // Remove connections involving deleted nodes
+        if (Array.isArray(this.currentSpec.connections)) {
+            this.currentSpec.connections = this.currentSpec.connections.filter(
+                conn => !textsToDelete.has(conn.from) && !textsToDelete.has(conn.to)
+            );
+        }
+        
+        console.log(`Deleted ${textsToDelete.size} concept node(s) from Concept Map`);
+        
+        // Re-render to update layout and connections
+        this.renderDiagram();
     }
     
     /**
@@ -879,13 +969,16 @@ class InteractiveEditor {
                 
                 // Check if inside a group
                 if (shapeNode.parentNode && shapeNode.parentNode.tagName === 'g') {
-                    // Remove the entire group
+                    // Remove the entire group (shape + text together)
                     d3.select(shapeNode.parentNode).remove();
                 } else {
                     // Remove associated text (next sibling)
                     if (shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
                         d3.select(shapeNode.nextElementSibling).remove();
                     }
+                    
+                    // Also check for text by data-text-for attribute
+                    d3.select(`[data-text-for="${nodeId}"]`).remove();
                     
                     // Remove the shape
                     shapeElement.remove();
@@ -894,10 +987,9 @@ class InteractiveEditor {
             
             // Also try to remove by text-id (in case it's a text selection)
             d3.select(`[data-text-id="${nodeId}"]`).remove();
-            
-            // Remove by data-text-for attribute
-            d3.select(`[data-text-for="${nodeId}"]`).remove();
         });
+        
+        console.log(`Deleted ${nodeIds.length} generic node(s) - DOM only (no spec update)`);
     }
     
     /**

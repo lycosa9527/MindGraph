@@ -70,17 +70,46 @@ class SelectionManager {
         }
         
         if (isSelected) {
+            // Store original stroke attributes to restore later
+            const originalStroke = nodeElement.attr('stroke');
+            const originalStrokeWidth = nodeElement.attr('stroke-width');
+            
+            if (!nodeElement.attr('data-original-stroke')) {
+                nodeElement
+                    .attr('data-original-stroke', originalStroke || 'none')
+                    .attr('data-original-stroke-width', originalStrokeWidth || '0');
+            }
+            
+            // Apply selection highlight with contrasting blue/purple color
             nodeElement
                 .classed('selected', true)
-                .attr('stroke', '#ff6b6b')
-                .attr('stroke-width', 3)
-                .style('filter', 'drop-shadow(0 0 8px rgba(255, 107, 107, 0.6))');
+                .attr('stroke', '#667eea')  // Blue/purple from app theme
+                .attr('stroke-width', 4)
+                .style('filter', 'drop-shadow(0 0 12px rgba(102, 126, 234, 0.7))');
         } else {
+            // Restore original stroke attributes
+            const originalStroke = nodeElement.attr('data-original-stroke');
+            const originalStrokeWidth = nodeElement.attr('data-original-stroke-width');
+            
             nodeElement
                 .classed('selected', false)
-                .attr('stroke', null)
-                .attr('stroke-width', null)
                 .style('filter', null);
+            
+            // Restore original or remove stroke
+            if (originalStroke && originalStroke !== 'none') {
+                nodeElement
+                    .attr('stroke', originalStroke)
+                    .attr('stroke-width', originalStrokeWidth);
+            } else {
+                nodeElement
+                    .attr('stroke', null)
+                    .attr('stroke-width', null);
+            }
+            
+            // Clean up data attributes
+            nodeElement
+                .attr('data-original-stroke', null)
+                .attr('data-original-stroke-width', null);
         }
     }
     

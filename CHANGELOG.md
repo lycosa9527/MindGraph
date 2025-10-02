@@ -5,6 +5,79 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.4] - 2025-10-02
+
+### Added - Advanced Canvas Editing Tools
+
+- **Line Mode Toggle**: Convert diagrams to black & white line-art style
+  - "Line" button in toolbar next to "Auto" button
+  - Removes all fill colors from shapes
+  - Converts all strokes to black (2px width)
+  - Makes all text black
+  - Removes canvas background color
+  - Fully reversible - toggle to restore original colors
+  - Stores original styles as data attributes
+  - Active state visual indicator on button
+  - Bilingual support (EN: "Line" / 中文: "线条")
+
+- **Empty Node Text Tool**: Clear text from selected nodes
+  - "Empty" button in Tools section before "Undo"
+  - Clears text content while preserving node structure
+  - Works with all diagram types (Circle Map, Bubble Map, Concept Map, etc.)
+  - Requires node selection to activate
+  - Updates underlying diagram specification
+  - Multi-node support (batch emptying)
+  - Disabled state when no nodes selected
+  - Warning notification if no selection
+  - Success notification with count of emptied nodes
+  - Bilingual support (EN: "Empty" / 中文: "清空")
+
+- **Main Topic Protection**: Prevent deletion of central topic nodes
+  - Circle Map central topic cannot be deleted
+  - Bubble Map central topic cannot be deleted
+  - Warning notification: "Main topic node cannot be deleted"
+  - Protects diagram integrity
+  - Only context/attribute nodes can be deleted
+  - Custom event system for cross-component notifications
+
+### Changed
+
+- **Node Deletion Logic**: Enhanced with main topic validation
+  - Delete button now checks node type before deletion
+  - Shows friendly warning for protected nodes
+  - Improved user feedback for deletion operations
+
+- **Toolbar Organization**: Restructured for better workflow
+  - Line mode button grouped with Auto button
+  - Empty button added to Tools section
+  - Consistent button styling across all tools
+  - Improved button states (active, disabled, loading)
+
+### Technical
+
+- **ToolbarManager Enhancements**:
+  - Added `toggleLineMode()` method for style conversion
+  - Added `handleEmptyNode()` method for text clearing
+  - Enhanced `deleteCircleMapNodes()` with main topic protection
+  - Enhanced `deleteBubbleMapNodes()` with main topic protection
+  - Added custom event listener for `show-notification` events
+  - State tracking for line mode (`isLineMode`)
+
+- **Interactive Editor Improvements**:
+  - Main topic validation in deletion methods
+  - Custom event dispatching for notifications
+  - Better text element identification for emptying
+
+- **CSS Additions**:
+  - `.btn-line` styling with gray gradient
+  - `.btn-line.active` state for toggled mode
+  - Smooth transitions and hover effects
+
+- **Language Support**:
+  - Added "Line" / "线条" translations
+  - Added "Empty" / "清空" translations
+  - Maintained consistent bilingual UX
+
 ## [3.0.3] - 2025-10-01
 
 ### Added - Loading Spinner for AI Generation
