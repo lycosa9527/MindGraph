@@ -101,6 +101,9 @@ class DiagramSelector {
      * Transition to editor interface
      */
     transitionToEditor(diagramType, template, diagramName) {
+        // Clean up previous editor and canvas first
+        this.cleanupCanvas();
+        
         // Hide landing page
         const landing = document.getElementById('editor-landing');
         if (landing) {
@@ -123,6 +126,8 @@ class DiagramSelector {
         try {
             window.currentEditor = new InteractiveEditor(diagramType, template);
             window.currentEditor.initialize();
+            
+            console.log(`Editor initialized for diagram type: ${diagramType}`);
         } catch (error) {
             console.error('Error initializing editor:', error);
             alert('Error loading editor. Please try again.');
@@ -131,9 +136,30 @@ class DiagramSelector {
     }
     
     /**
+     * Clean up canvas and previous editor
+     */
+    cleanupCanvas() {
+        // Clear the D3 container
+        const container = document.getElementById('d3-container');
+        if (container) {
+            // Remove all SVG elements
+            d3.select('#d3-container').selectAll('*').remove();
+            console.log('Canvas cleared for new diagram');
+        }
+        
+        // Clear any existing editor
+        if (window.currentEditor) {
+            window.currentEditor = null;
+        }
+    }
+    
+    /**
      * Return to gallery
      */
     backToGallery() {
+        // Clean up canvas and editor first
+        this.cleanupCanvas();
+        
         // Show landing page
         const landing = document.getElementById('editor-landing');
         if (landing) {
@@ -146,10 +172,7 @@ class DiagramSelector {
             editorInterface.style.display = 'none';
         }
         
-        // Clean up editor
-        if (window.currentEditor) {
-            window.currentEditor = null;
-        }
+        console.log('Returned to gallery');
     }
     
     /**
