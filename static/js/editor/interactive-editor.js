@@ -79,46 +79,135 @@ class InteractiveEditor {
     
     /**
      * Add drag behavior to a node and its text
+     * Only applies to concept maps - other diagram types have fixed layouts
      */
     addDragBehavior(shapeElement, textElement) {
+        // Only allow dragging for concept maps
+        if (this.diagramType !== 'concept_map') {
+            // For non-concept maps, change cursor to default instead of move
+            shapeElement.style('cursor', 'pointer');
+            return;
+        }
+        
         const self = this;
+        let startX, startY;
+        let connectedLines = []; // Store which lines connect to this node
         
         const drag = d3.drag()
             .on('start', function(event) {
-                d3.select(this).style('opacity', 0.7);
+                const shape = d3.select(this);
+                const parentNode = this.parentNode;
+                const nodeId = shape.attr('data-node-id');
+                
+                // Store starting position
+                if (parentNode && parentNode.tagName === 'g') {
+                    // For grouped elements, get the group's transform
+                    const transform = d3.select(parentNode).attr('transform') || 'translate(0,0)';
+                    const matches = transform.match(/translate\(([^,]+),([^)]+)\)/);
+                    if (matches) {
+                        startX = parseFloat(matches[1]);
+                        startY = parseFloat(matches[2]);
+                    } else {
+                        startX = 0;
+                        startY = 0;
+                    }
+                } else {
+                    // For individual elements
+                    const tagName = this.tagName.toLowerCase();
+                    if (tagName === 'circle') {
+                        startX = parseFloat(shape.attr('cx'));
+                        startY = parseFloat(shape.attr('cy'));
+                    } else if (tagName === 'rect') {
+                        const width = parseFloat(shape.attr('width')) || 0;
+                        const height = parseFloat(shape.attr('height')) || 0;
+                        startX = parseFloat(shape.attr('x')) + width / 2;
+                        startY = parseFloat(shape.attr('y')) + height / 2;
+                    } else if (tagName === 'ellipse') {
+                        startX = parseFloat(shape.attr('cx'));
+                        startY = parseFloat(shape.attr('cy'));
+                    }
+                }
+                
+                // Find all lines connected to this node (within tolerance)
+                connectedLines = [];
+                const tolerance = 10;
+                d3.selectAll('line').each(function() {
+                    const line = d3.select(this);
+                    const x1 = parseFloat(line.attr('x1'));
+                    const y1 = parseFloat(line.attr('y1'));
+                    const x2 = parseFloat(line.attr('x2'));
+                    const y2 = parseFloat(line.attr('y2'));
+                    
+                    const connectsAtStart = Math.abs(x1 - startX) < tolerance && Math.abs(y1 - startY) < tolerance;
+                    const connectsAtEnd = Math.abs(x2 - startX) < tolerance && Math.abs(y2 - startY) < tolerance;
+                    
+                    if (connectsAtStart || connectsAtEnd) {
+                        connectedLines.push({
+                            line: line,
+                            connectsAtStart: connectsAtStart,
+                            connectsAtEnd: connectsAtEnd
+                        });
+                    }
+                });
+                
+                shape.style('opacity', 0.7);
             })
             .on('drag', function(event) {
                 const shape = d3.select(this);
                 const tagName = this.tagName.toLowerCase();
+                const parentNode = this.parentNode;
                 
-                // Update shape position based on type
-                if (tagName === 'circle') {
-                    shape.attr('cx', event.x).attr('cy', event.y);
-                } else if (tagName === 'rect') {
-                    const width = parseFloat(shape.attr('width')) || 0;
-                    const height = parseFloat(shape.attr('height')) || 0;
-                    shape.attr('x', event.x - width / 2).attr('y', event.y - height / 2);
-                } else if (tagName === 'ellipse') {
-                    shape.attr('cx', event.x).attr('cy', event.y);
-                }
+                // Calculate new position
+                const newX = startX + event.dx;
+                const newY = startY + event.dy;
+                startX = newX;
+                startY = newY;
                 
-                // Update associated text position
-                if (textElement) {
-                    textElement.attr('x', event.x).attr('y', event.y);
+                // Check if this element is inside a group (concept map style)
+                if (parentNode && parentNode.tagName === 'g') {
+                    // Move the entire group using transform
+                    d3.select(parentNode).attr('transform', `translate(${newX}, ${newY})`);
+                    
+                    // Update all connected lines
+                    connectedLines.forEach(conn => {
+                        if (conn.connectsAtStart) {
+                            conn.line.attr('x1', newX).attr('y1', newY);
+                        }
+                        if (conn.connectsAtEnd) {
+                            conn.line.attr('x2', newX).attr('y2', newY);
+                        }
+                    });
                 } else {
-                    // Try to find and move associated text
-                    const nextSibling = this.nextElementSibling;
-                    if (nextSibling && nextSibling.tagName === 'text') {
-                        d3.select(nextSibling).attr('x', event.x).attr('y', event.y);
+                    // Move individual elements (original behavior)
+                    if (tagName === 'circle') {
+                        shape.attr('cx', newX).attr('cy', newY);
+                    } else if (tagName === 'rect') {
+                        const width = parseFloat(shape.attr('width')) || 0;
+                        const height = parseFloat(shape.attr('height')) || 0;
+                        shape.attr('x', newX - width / 2).attr('y', newY - height / 2);
+                    } else if (tagName === 'ellipse') {
+                        shape.attr('cx', newX).attr('cy', newY);
+                    }
+                    
+                    // Update associated text position
+                    if (textElement) {
+                        textElement.attr('x', newX).attr('y', newY);
+                    } else {
+                        // Try to find and move associated text
+                        const nextSibling = this.nextElementSibling;
+                        if (nextSibling && nextSibling.tagName === 'text') {
+                            d3.select(nextSibling).attr('x', newX).attr('y', newY);
+                        }
                     }
                 }
             })
             .on('end', function(event) {
                 d3.select(this).style('opacity', 1);
+                connectedLines = []; // Clear references
                 self.saveToHistory('move_node', { 
                     nodeId: d3.select(this).attr('data-node-id'),
-                    x: event.x,
-                    y: event.y
+                    x: startX,
+                    y: startY
                 });
             });
         
@@ -132,25 +221,32 @@ class InteractiveEditor {
         const self = this;
         
         // Find all node elements (shapes) and add click handlers
+        // Filter out background elements and decorative elements
         d3.selectAll('circle, rect, ellipse').each((d, i, nodes) => {
             const element = d3.select(nodes[i]);
+            
+            // Skip background rectangles and other non-interactive elements
+            const elemClass = element.attr('class') || '';
+            if (elemClass.includes('background') || elemClass.includes('watermark')) {
+                return; // Skip this element
+            }
+            
             const nodeId = element.attr('data-node-id') || `node_${i}`;
             
             // Add node ID attribute if not exists
             if (!element.attr('data-node-id')) {
-                element.attr('data-node-id', nodeId);
+            element.attr('data-node-id', nodeId);
             }
             
             // Find associated text
             const textNode = nodes[i].nextElementSibling;
             const textElement = (textNode && textNode.tagName === 'text') ? d3.select(textNode) : null;
             
-            // Add drag behavior
+            // Add drag behavior (cursor style is set inside addDragBehavior based on diagram type)
             self.addDragBehavior(element, textElement);
             
             // Add click handler for selection
             element
-                .style('cursor', 'move')
                 .on('click', (event) => {
                     event.stopPropagation();
                     
@@ -311,6 +407,96 @@ class InteractiveEditor {
      * Update node text
      */
     updateNodeText(nodeId, shapeNode, textNode, newText) {
+        console.log(`Updating text for node ${nodeId} to "${newText}" in ${this.diagramType}`);
+        
+        // Handle diagram-specific text updates
+        if (this.diagramType === 'circle_map') {
+            this.updateCircleMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'bubble_map') {
+            this.updateBubbleMapText(nodeId, shapeNode, newText);
+        } else {
+            // Generic text update for other diagram types
+            this.updateGenericNodeText(nodeId, shapeNode, textNode, newText);
+        }
+        
+        // Save to history
+        this.saveToHistory('update_text', { nodeId, newText });
+    }
+    
+    /**
+     * Update Circle Map node text
+     */
+    updateCircleMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        if (nodeType === 'topic') {
+            // Update the central topic
+            this.currentSpec.topic = newText;
+            console.log('Updated Circle Map topic to:', newText);
+        } else if (nodeType === 'context') {
+            // Update context array
+            const arrayIndex = parseInt(shape.attr('data-array-index'));
+            if (!isNaN(arrayIndex) && Array.isArray(this.currentSpec.context)) {
+                this.currentSpec.context[arrayIndex] = newText;
+                console.log(`Updated context[${arrayIndex}] to:`, newText);
+            }
+        }
+        
+        // Re-render to update layout and text sizes
+        this.renderDiagram();
+    }
+    
+    /**
+     * Update Bubble Map node text
+     */
+    updateBubbleMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        if (nodeType === 'topic') {
+            // Update the central topic
+            this.currentSpec.topic = newText;
+            console.log('Updated Bubble Map topic to:', newText);
+        } else if (nodeType === 'attribute') {
+            // Update attributes array
+            const arrayIndex = parseInt(shape.attr('data-array-index'));
+            if (!isNaN(arrayIndex) && Array.isArray(this.currentSpec.attributes)) {
+                this.currentSpec.attributes[arrayIndex] = newText;
+                console.log(`Updated attribute[${arrayIndex}] to:`, newText);
+            }
+        }
+        
+        // Re-render to update layout and text sizes
+        this.renderDiagram();
+    }
+    
+    /**
+     * Update generic node text (for other diagram types)
+     */
+    updateGenericNodeText(nodeId, shapeNode, textNode, newText) {
         // Update the text element
         if (textNode) {
             // Direct text node provided
@@ -324,8 +510,8 @@ class InteractiveEditor {
         } else {
             // Fallback: try to find by data attribute
             const textElement = d3.select(`[data-text-id="${nodeId}"]`);
-            if (!textElement.empty()) {
-                textElement.text(newText);
+        if (!textElement.empty()) {
+            textElement.text(newText);
             } else {
                 // Try by node-id
                 const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
@@ -338,9 +524,6 @@ class InteractiveEditor {
                 }
             }
         }
-        
-        // Save to history
-        this.saveToHistory('update_text', { nodeId, newText });
     }
     
     /**
@@ -349,6 +532,103 @@ class InteractiveEditor {
     addNode() {
         console.log(`Adding new node to ${this.diagramType}`);
         
+        // Handle diagram-specific node addition
+        switch(this.diagramType) {
+            case 'circle_map':
+                this.addNodeToCircleMap();
+                break;
+            case 'bubble_map':
+                this.addNodeToBubbleMap();
+                break;
+            case 'concept_map':
+                this.addNodeToConceptMap();
+                break;
+            default:
+                this.addGenericNode();
+                break;
+        }
+    }
+    
+    /**
+     * Add a new node to Circle Map
+     */
+    addNodeToCircleMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.context)) {
+            console.error('Invalid circle map spec');
+            return;
+        }
+        
+        // Add new context item to spec
+        this.currentSpec.context.push('New Context');
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'circle_map', 
+            contextCount: this.currentSpec.context.length 
+        });
+        
+        console.log('Added new context node to Circle Map');
+    }
+    
+    /**
+     * Add a new node to Bubble Map
+     */
+    addNodeToBubbleMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.attributes)) {
+            console.error('Invalid bubble map spec');
+            return;
+        }
+        
+        // Add new attribute item to spec
+        this.currentSpec.attributes.push('New Attribute');
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'bubble_map', 
+            attributeCount: this.currentSpec.attributes.length 
+        });
+        
+        console.log('Added new attribute node to Bubble Map');
+    }
+    
+    /**
+     * Add a new node to Concept Map
+     */
+    addNodeToConceptMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.concepts)) {
+            console.error('Invalid concept map spec');
+            return;
+        }
+        
+        // Add new concept to spec
+        this.currentSpec.concepts.push({
+            text: 'New Concept',
+            x: 400,
+            y: 300
+        });
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'concept_map', 
+            conceptCount: this.currentSpec.concepts.length 
+        });
+        
+        console.log('Added new concept node to Concept Map');
+    }
+    
+    /**
+     * Add a generic node (fallback for other diagram types)
+     */
+    addGenericNode() {
         // Get SVG container dimensions for positioning
         const svg = d3.select('#d3-container svg');
         if (svg.empty()) {
@@ -388,8 +668,7 @@ class InteractiveEditor {
             .attr('fill', '#667eea')
             .attr('stroke', '#5568d3')
             .attr('stroke-width', 2)
-            .attr('data-node-id', nodeId)
-            .style('cursor', 'move');
+            .attr('data-node-id', nodeId);
         
         // Add text
         const text = g.append('text')
@@ -401,15 +680,34 @@ class InteractiveEditor {
             .attr('font-size', '14px')
             .attr('font-weight', '500')
             .attr('data-text-id', `text_${Date.now()}`)
-            .style('cursor', 'move')
             .style('pointer-events', 'none')
             .text('New Node');
         
-        // Add drag behavior
+        // Add drag behavior to this specific node only
         this.addDragBehavior(circle, text);
         
-        // Add interaction handlers to the new node
-        this.addInteractionHandlers();
+        // Add click handlers to this specific node
+        const self = this;
+        circle.on('click', (event) => {
+            event.stopPropagation();
+            if (event.ctrlKey || event.metaKey) {
+                self.selectionManager.toggleNode(nodeId);
+            } else {
+                self.selectionManager.clearSelection();
+                self.selectionManager.selectNode(nodeId);
+            }
+        });
+        
+        // Add double-click handler for editing
+        circle.on('dblclick', (event) => {
+            event.stopPropagation();
+            self.openNodeEditor(nodeId, circle.node(), text.node(), 'New Node');
+        });
+        
+        text.on('dblclick', (event) => {
+            event.stopPropagation();
+            self.openNodeEditor(nodeId, circle.node(), text.node(), 'New Node');
+        });
         
         // Select the new node
         this.selectionManager.clearSelection();
@@ -433,25 +731,16 @@ class InteractiveEditor {
         const nodesToDelete = Array.from(this.selectedNodes);
         console.log(`Deleting ${nodesToDelete.length} node(s):`, nodesToDelete);
         
-        // Remove both the shape and associated text for each node
-        nodesToDelete.forEach(nodeId => {
-            // Remove the shape element
-            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
-            if (!shapeElement.empty()) {
-                const shapeNode = shapeElement.node();
-                
-                // Remove associated text (next sibling)
-                if (shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
-                    d3.select(shapeNode.nextElementSibling).remove();
-                }
-                
-                // Remove the shape
-                shapeElement.remove();
-            }
-            
-            // Also try to remove by text-id (in case it's a text selection)
-            d3.select(`[data-text-id="${nodeId}"]`).remove();
-        });
+        // Handle diagram-specific deletion
+        if (this.diagramType === 'circle_map') {
+            this.deleteCircleMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'bubble_map') {
+            this.deleteBubbleMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'concept_map') {
+            this.deleteConceptMapNodes(nodesToDelete);
+        } else {
+            this.deleteGenericNodes(nodesToDelete);
+        }
         
         // Clear selection
         this.selectionManager.clearSelection();
@@ -460,6 +749,155 @@ class InteractiveEditor {
         this.saveToHistory('delete_nodes', { nodeIds: nodesToDelete });
         
         console.log(`Successfully deleted ${nodesToDelete.length} node(s)`);
+    }
+    
+    /**
+     * Delete Circle Map nodes
+     */
+    deleteCircleMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.context)) {
+            console.error('Invalid circle map spec');
+            return;
+        }
+        
+        // Collect indices to delete
+        const indicesToDelete = [];
+        
+        nodeIds.forEach(nodeId => {
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                const nodeType = shapeElement.attr('data-node-type');
+                
+                if (nodeType === 'context') {
+                    const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
+                    if (!isNaN(arrayIndex)) {
+                        indicesToDelete.push(arrayIndex);
+                    }
+                } else if (nodeType === 'topic') {
+                    console.warn('Cannot delete the central topic node');
+                }
+            }
+        });
+        
+        // Sort indices in descending order to delete from end to start
+        indicesToDelete.sort((a, b) => b - a);
+        
+        // Remove from spec
+        indicesToDelete.forEach(index => {
+            this.currentSpec.context.splice(index, 1);
+        });
+        
+        console.log(`Deleted ${indicesToDelete.length} context node(s) from Circle Map`);
+        
+        // Re-render
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Bubble Map nodes
+     */
+    deleteBubbleMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.attributes)) {
+            console.error('Invalid bubble map spec');
+            return;
+        }
+        
+        // Collect indices to delete
+        const indicesToDelete = [];
+        
+        nodeIds.forEach(nodeId => {
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                const nodeType = shapeElement.attr('data-node-type');
+                
+                if (nodeType === 'attribute') {
+                    const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
+                    if (!isNaN(arrayIndex)) {
+                        indicesToDelete.push(arrayIndex);
+                    }
+                } else if (nodeType === 'topic') {
+                    console.warn('Cannot delete the central topic node');
+                }
+            }
+        });
+        
+        // Sort indices in descending order to delete from end to start
+        indicesToDelete.sort((a, b) => b - a);
+        
+        // Remove from spec
+        indicesToDelete.forEach(index => {
+            this.currentSpec.attributes.splice(index, 1);
+        });
+        
+        console.log(`Deleted ${indicesToDelete.length} attribute node(s) from Bubble Map`);
+        
+        // Re-render
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Concept Map nodes
+     */
+    deleteConceptMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.concepts)) {
+            console.error('Invalid concept map spec');
+            return;
+        }
+        
+        // For concept maps, we need to delete from the spec and also remove connections
+        nodeIds.forEach(nodeId => {
+            // Find and remove the concept by matching text or position
+            // This is a simplified approach - you may need to enhance based on your spec structure
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                // Remove the visual elements and their parent group
+                const parentGroup = shapeElement.node()?.parentNode;
+                if (parentGroup && parentGroup.tagName === 'g') {
+                    d3.select(parentGroup).remove();
+                } else {
+                    // Also remove associated text
+                    const textElement = d3.select(`[data-text-for="${nodeId}"]`);
+                    textElement.remove();
+                    shapeElement.remove();
+                }
+            }
+        });
+        
+        console.log(`Deleted ${nodeIds.length} concept node(s) from Concept Map`);
+    }
+    
+    /**
+     * Delete generic nodes (for other diagram types)
+     */
+    deleteGenericNodes(nodeIds) {
+        // Remove both the shape and associated text for each node
+        nodeIds.forEach(nodeId => {
+            // Remove the shape element
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                const shapeNode = shapeElement.node();
+                
+                // Check if inside a group
+                if (shapeNode.parentNode && shapeNode.parentNode.tagName === 'g') {
+                    // Remove the entire group
+                    d3.select(shapeNode.parentNode).remove();
+                } else {
+                    // Remove associated text (next sibling)
+                    if (shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
+                        d3.select(shapeNode.nextElementSibling).remove();
+                    }
+                    
+                    // Remove the shape
+                    shapeElement.remove();
+                }
+            }
+            
+            // Also try to remove by text-id (in case it's a text selection)
+            d3.select(`[data-text-id="${nodeId}"]`).remove();
+            
+            // Remove by data-text-for attribute
+            d3.select(`[data-text-for="${nodeId}"]`).remove();
+        });
     }
     
     /**

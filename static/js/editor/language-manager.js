@@ -40,8 +40,7 @@ class LanguageManager {
                 conceptMapDesc: 'Complex relationships',
                 selectButton: 'Select',
                 backToGallery: 'Back to Gallery',
-                save: 'Save',
-                load: 'Load',
+                reset: 'Reset',
                 export: 'Export',
                 nodes: 'Nodes',
                 add: 'Add',
@@ -87,8 +86,7 @@ class LanguageManager {
                 conceptMapDesc: '复杂关系',
                 selectButton: '选择',
                 backToGallery: '返回图库',
-                save: '保存',
-                load: '加载',
+                reset: '重置',
                 export: '导出',
                 nodes: '节点',
                 add: '添加',
@@ -179,8 +177,7 @@ class LanguageManager {
         
         // Update toolbar buttons (if in editor view)
         const backBtn = document.getElementById('back-to-gallery');
-        const saveBtn = document.getElementById('save-btn');
-        const loadBtn = document.getElementById('load-btn');
+        const resetBtn = document.getElementById('reset-btn');
         const exportBtn = document.getElementById('export-btn');
         const addBtn = document.getElementById('add-node-btn');
         const deleteBtn = document.getElementById('delete-node-btn');
@@ -190,8 +187,7 @@ class LanguageManager {
         const redoBtn = document.getElementById('redo-btn');
         
         if (backBtn) backBtn.textContent = t.backToGallery;
-        if (saveBtn) saveBtn.textContent = t.save;
-        if (loadBtn) loadBtn.textContent = t.load;
+        if (resetBtn) resetBtn.textContent = t.reset;
         if (exportBtn) exportBtn.textContent = t.export;
         if (addBtn) addBtn.textContent = t.add;
         if (deleteBtn) deleteBtn.textContent = t.delete;

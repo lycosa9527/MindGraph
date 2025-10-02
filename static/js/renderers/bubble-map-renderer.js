@@ -169,7 +169,9 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('r', topicR)
         .attr('fill', THEME.topicFill)
         .attr('stroke', THEME.topicStroke)
-        .attr('stroke-width', THEME.topicStrokeWidth);
+        .attr('stroke-width', THEME.topicStrokeWidth)
+        .attr('data-node-id', 'topic_center')
+        .attr('data-node-type', 'topic');
     
     svg.append('text')
         .attr('x', centerX)
@@ -179,6 +181,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicText)
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 'bold')
+        .attr('data-text-for', 'topic_center')
         .text(spec.topic);
     
     // Draw attribute circles
@@ -189,7 +192,10 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             .attr('r', node.radius)
             .attr('fill', THEME.attributeFill)
             .attr('stroke', THEME.attributeStroke)
-            .attr('stroke-width', THEME.attributeStrokeWidth);
+            .attr('stroke-width', THEME.attributeStrokeWidth)
+            .attr('data-node-id', `attribute_${node.id}`)
+            .attr('data-node-type', 'attribute')
+            .attr('data-array-index', node.id);
         
         svg.append('text')
             .attr('x', node.x)
@@ -198,6 +204,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.attributeText)
             .attr('font-size', THEME.fontAttribute)
+            .attr('data-text-for', `attribute_${node.id}`)
             .text(node.text);
     });
     
@@ -327,7 +334,10 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             .attr('r', node.radius)
             .attr('fill', THEME.contextFill)
             .attr('stroke', THEME.contextStroke)
-            .attr('stroke-width', THEME.contextStrokeWidth);
+            .attr('stroke-width', THEME.contextStrokeWidth)
+            .attr('data-node-id', `context_${node.id}`)
+            .attr('data-node-type', 'context')
+            .attr('data-array-index', node.id);
         
         svg.append('text')
             .attr('x', node.x)
@@ -336,6 +346,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.contextText)
             .attr('font-size', THEME.fontContext)
+            .attr('data-text-for', `context_${node.id}`)
             .text(node.text);
     });
     
@@ -346,7 +357,9 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('r', topicR)
         .attr('fill', THEME.topicFill)
         .attr('stroke', THEME.topicStroke)
-        .attr('stroke-width', THEME.topicStrokeWidth);
+        .attr('stroke-width', THEME.topicStrokeWidth)
+        .attr('data-node-id', 'topic_center')
+        .attr('data-node-type', 'topic');
     
     // Draw topic text on top
     svg.append('text')
@@ -357,6 +370,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicText)
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 'bold')
+        .attr('data-text-for', 'topic_center')
         .text(spec.topic);
     
     // Add watermark in lower right corner - matching original d3-renderers.js

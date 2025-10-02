@@ -26,8 +26,7 @@ class ToolbarManager {
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
-        this.saveBtn = document.getElementById('save-btn');
-        this.loadBtn = document.getElementById('load-btn');
+        this.resetBtn = document.getElementById('reset-btn');
         this.exportBtn = document.getElementById('export-btn');
         this.backBtn = document.getElementById('back-to-gallery');
         
@@ -69,8 +68,7 @@ class ToolbarManager {
         this.duplicateNodeBtn?.addEventListener('click', () => this.handleDuplicateNode());
         this.undoBtn?.addEventListener('click', () => this.handleUndo());
         this.redoBtn?.addEventListener('click', () => this.handleRedo());
-        this.saveBtn?.addEventListener('click', () => this.handleSave());
-        this.loadBtn?.addEventListener('click', () => this.handleLoad());
+        this.resetBtn?.addEventListener('click', () => this.handleReset());
         this.exportBtn?.addEventListener('click', () => this.handleExport());
         this.backBtn?.addEventListener('click', () => this.handleBackToGallery());
         
@@ -232,19 +230,53 @@ class ToolbarManager {
     applyText() {
         if (this.currentSelection.length === 0) return;
         
-        const newText = this.propText.value;
+        const newText = this.propText.value.trim();
+        if (!newText) {
+            this.showNotification('Text cannot be empty', 'warning');
+            return;
+        }
+        
+        console.log('Applying text to selected nodes:', this.currentSelection);
         
         this.currentSelection.forEach(nodeId => {
-            const textElement = d3.select(`[data-node-id="${nodeId}"]`).select('text');
-            if (!textElement.empty()) {
-                textElement.text(newText);
+            // Get the shape node
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (shapeElement.empty()) {
+                console.warn(`Node ${nodeId} not found`);
+                return;
+            }
+            
+            const shapeNode = shapeElement.node();
+            
+            // Find associated text element
+            let textNode = null;
+            
+            // Method 1: Try data-text-for attribute
+            const textByDataAttr = d3.select(`[data-text-for="${nodeId}"]`);
+            if (!textByDataAttr.empty()) {
+                textNode = textByDataAttr.node();
+            } else {
+                // Method 2: Try next sibling
+                if (shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
+                    textNode = shapeNode.nextElementSibling;
+                } else {
+                    // Method 3: Try child text (for grouped elements)
+                    const textChild = shapeElement.select('text');
+                    if (!textChild.empty()) {
+                        textNode = textChild.node();
+                    }
+                }
+            }
+            
+            // Use the editor's updateNodeText method which handles all diagram types properly
+            if (this.editor && typeof this.editor.updateNodeText === 'function') {
+                this.editor.updateNodeText(nodeId, shapeNode, textNode, newText);
+            } else {
+                console.error('Editor updateNodeText method not available');
             }
         });
         
-        this.editor?.saveToHistory('update_text', { 
-            nodes: this.currentSelection, 
-            text: newText 
-        });
+        this.showNotification('Text updated successfully', 'success');
     }
     
     /**
@@ -267,9 +299,27 @@ class ToolbarManager {
             underline: this.propUnderline?.classList.contains('active')
         };
         
+        console.log('Applying all properties:', properties);
+        
+        // Apply text changes first using the proper method
+        if (properties.text && properties.text.trim()) {
+            this.applyText();
+        }
+        
         this.currentSelection.forEach(nodeId => {
             const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
-            const textElement = nodeElement.select('text');
+            if (nodeElement.empty()) return;
+            
+            // Find text element using multiple methods
+            let textElement = d3.select(`[data-text-for="${nodeId}"]`);
+            if (textElement.empty()) {
+                const node = nodeElement.node();
+                if (node.nextElementSibling && node.nextElementSibling.tagName === 'text') {
+                    textElement = d3.select(node.nextElementSibling);
+                } else {
+                    textElement = nodeElement.select('text');
+                }
+            }
             
             // Apply shape properties
             if (properties.fillColor) {
@@ -285,11 +335,8 @@ class ToolbarManager {
                 nodeElement.attr('opacity', properties.opacity);
             }
             
-            // Apply text properties
+            // Apply text styling properties (not content - that's handled by applyText)
             if (!textElement.empty()) {
-                if (properties.text) {
-                    textElement.text(properties.text);
-                }
                 if (properties.fontSize) {
                     textElement.attr('font-size', properties.fontSize);
                 }
@@ -322,7 +369,7 @@ class ToolbarManager {
             properties 
         });
         
-        this.showNotification('Properties applied successfully!');
+        this.showNotification('All properties applied successfully!', 'success');
     }
     
     /**
@@ -579,83 +626,120 @@ class ToolbarManager {
     }
     
     /**
-     * Handle save
+     * Reset canvas to blank template
      */
-    handleSave() {
+    handleReset() {
         if (!this.editor) return;
         
-        const diagramData = this.editor.getCurrentDiagramData();
-        const dataStr = JSON.stringify(diagramData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        // Confirm with user
+        const confirmed = confirm('Are you sure you want to reset the canvas to a blank template? All current changes will be lost.');
+        if (!confirmed) return;
         
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `mindgraph-${Date.now()}.json`;
-        link.click();
+        console.log('Resetting canvas to blank template');
         
-        URL.revokeObjectURL(url);
+        // Get the diagram selector to retrieve blank template
+        const diagramSelector = window.diagramSelector;
+        if (!diagramSelector) {
+            console.error('Diagram selector not available');
+            this.showNotification('Failed to reset: diagram selector not found', 'error');
+            return;
+        }
         
-        this.showNotification('Diagram saved!');
+        // Get blank template for current diagram type
+        const blankTemplate = diagramSelector.getTemplate(this.editor.diagramType);
+        if (!blankTemplate) {
+            console.error('Failed to get blank template for:', this.editor.diagramType);
+            this.showNotification('Failed to reset: template not found', 'error');
+            return;
+        }
+        
+        // Reset the spec and re-render
+        this.editor.currentSpec = blankTemplate;
+        this.editor.renderDiagram();
+        
+        // Clear history
+        if (this.editor.history) {
+            this.editor.history = [JSON.parse(JSON.stringify(blankTemplate))];
+            this.editor.historyIndex = 0;
+        }
+        
+        // Clear selection
+        if (this.editor.selectionManager) {
+            this.editor.selectionManager.clearSelection();
+        }
+        
+        this.showNotification('Canvas reset to blank template', 'success');
     }
     
     /**
-     * Handle load
-     */
-    handleLoad() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    console.log('Loaded diagram data:', data);
-                    this.showNotification('Diagram loaded! Re-rendering...');
-                    
-                    // Re-initialize editor with loaded data
-                    if (this.editor && data.spec) {
-                        this.editor.currentSpec = data.spec;
-                        this.editor.renderDiagram();
-                    }
-                } catch (error) {
-                    console.error('Error loading file:', error);
-                    this.showNotification('Error loading file!');
-                }
-            };
-            reader.readAsText(file);
-        };
-        
-        input.click();
-    }
-    
-    /**
-     * Handle export
+     * Handle export - Export diagram as PNG
      */
     handleExport() {
         const svg = document.querySelector('#d3-container svg');
         if (!svg) {
-            this.showNotification('No diagram to export!');
+            this.showNotification('No diagram to export!', 'error');
             return;
         }
         
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        
-        const url = URL.createObjectURL(svgBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `mindgraph-${Date.now()}.svg`;
-        link.click();
-        
-        URL.revokeObjectURL(url);
-        
-        this.showNotification('Diagram exported as SVG!');
+        try {
+            // Get SVG dimensions
+            const svgRect = svg.getBoundingClientRect();
+            const width = parseFloat(svg.getAttribute('width')) || svgRect.width;
+            const height = parseFloat(svg.getAttribute('height')) || svgRect.height;
+            
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const scale = 2; // Higher resolution
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            const ctx = canvas.getContext('2d');
+            
+            // Scale context for higher resolution
+            ctx.scale(scale, scale);
+            
+            // Fill white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Serialize SVG
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            // Create image from SVG
+            const img = new Image();
+            img.onload = () => {
+                // Draw image to canvas
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert canvas to PNG
+                canvas.toBlob((blob) => {
+                    const pngUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = pngUrl;
+                    link.download = `mindgraph-${Date.now()}.png`;
+                    link.click();
+                    
+                    // Cleanup
+                    URL.revokeObjectURL(pngUrl);
+                    URL.revokeObjectURL(url);
+                    
+                    this.showNotification('Diagram exported as PNG!', 'success');
+                }, 'image/png');
+            };
+            
+            img.onerror = (error) => {
+                console.error('Error loading SVG:', error);
+                URL.revokeObjectURL(url);
+                this.showNotification('Failed to export diagram', 'error');
+            };
+            
+            img.src = url;
+            
+        } catch (error) {
+            console.error('Error exporting diagram:', error);
+            this.showNotification('Failed to export diagram', 'error');
+        }
     }
     
     /**

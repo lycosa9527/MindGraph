@@ -528,6 +528,23 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-warning {
+    background: #FF9800;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-warning:hover {
+    background: #F57C00;
+    transform: translateY(-1px);
+}
+
 .diagram-type {
     color: white;
     font-size: 14px;
