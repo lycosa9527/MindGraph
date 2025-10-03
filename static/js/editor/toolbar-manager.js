@@ -11,9 +11,66 @@ class ToolbarManager {
         this.propertyPanel = null;
         this.currentSelection = [];
         this.isAutoCompleting = false; // Flag to prevent concurrent auto-complete operations
+        
+        // Session management - store session ID for lifecycle management
+        this.sessionId = editor.sessionId;
+        this.diagramType = editor.diagramType;
+        
+        const logMessage = `Created for session: ${this.sessionId?.substr(-8)} | Type: ${this.diagramType}`;
+        console.log('ToolbarManager:', logMessage);
+        
+        // Send to backend terminal
+        this.logToBackend('INFO', logMessage);
+        
+        // Register this instance in the global registry
+        this.registerInstance();
+        
         this.initializeElements();
         this.attachEventListeners();
         this.listenToSelectionChanges();
+    }
+    
+    /**
+     * Send log to backend terminal console
+     */
+    logToBackend(level, message, data = null) {
+        try {
+            fetch('/api/frontend_log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level: level,
+                    message: message,
+                    data: data,
+                    source: 'ToolbarManager',
+                    sessionId: this.sessionId
+                })
+            }).catch(() => {});
+        } catch (e) {}
+    }
+    
+    /**
+     * Register this toolbar manager instance globally, cleaning up old instances from different sessions
+     */
+    registerInstance() {
+        // Initialize global registry if it doesn't exist
+        if (!window.toolbarManagerRegistry) {
+            window.toolbarManagerRegistry = new Map();
+            console.log('ToolbarManager: Registry initialized');
+        }
+        
+        // Clean up any existing toolbar manager from a different session
+        window.toolbarManagerRegistry.forEach((oldManager, oldSessionId) => {
+            if (oldSessionId !== this.sessionId) {
+                console.log('ToolbarManager: Cleaning up old instance from session:', oldSessionId?.substr(-8));
+                oldManager.destroy();
+                window.toolbarManagerRegistry.delete(oldSessionId);
+            }
+        });
+        
+        // Register this instance
+        window.toolbarManagerRegistry.set(this.sessionId, this);
+        console.log('ToolbarManager: Instance registered for session:', this.sessionId?.substr(-8));
     }
     
     /**
@@ -1442,12 +1499,80 @@ class ToolbarManager {
      */
     showNotification(message, type = 'info') {
         console.log(`ToolbarManager: showNotification called - "${message}" [${type}]`);
-        console.trace('Notification stack trace:');
         if (window.notificationManager) {
             window.notificationManager.show(message, type);
         } else {
             console.error('NotificationManager not available');
         }
+    }
+    
+    /**
+     * Validate that this toolbar manager is still valid for the current session
+     */
+    validateToolbarSession(operation = 'Operation') {
+        // Check if we have a session ID
+        if (!this.sessionId) {
+            console.warn(`ToolbarManager: ${operation} - No session ID set`);
+            return false;
+        }
+        
+        // Check if the editor's session matches our session
+        if (this.editor && this.editor.sessionId !== this.sessionId) {
+            console.warn(`ToolbarManager: ${operation} blocked - Session mismatch`);
+            console.warn('  Toolbar session:', this.sessionId?.substr(-8));
+            console.warn('  Editor session:', this.editor.sessionId?.substr(-8));
+            return false;
+        }
+        
+        // Check with DiagramSelector's session
+        if (window.diagramSelector?.currentSession) {
+            if (window.diagramSelector.currentSession.id !== this.sessionId) {
+                console.warn(`ToolbarManager: ${operation} blocked - DiagramSelector session mismatch`);
+                console.warn('  Toolbar session:', this.sessionId?.substr(-8));
+                console.warn('  Active session:', window.diagramSelector.currentSession.id?.substr(-8));
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Cleanup and remove all event listeners by cloning and replacing elements
+     */
+    destroy() {
+        console.log('ToolbarManager: Destroying instance for session:', this.sessionId?.substr(-8));
+        
+        // Clone and replace buttons to remove all event listeners
+        // This is the most reliable way to remove event listeners added with arrow functions
+        const buttonsToClean = [
+            'add-node-btn', 'delete-node-btn', 'empty-node-btn', 'auto-complete-btn',
+            'line-mode-btn', 'undo-btn', 'redo-btn', 'reset-btn', 'export-btn',
+            'back-to-gallery', 'close-properties', 'prop-text-apply', 'prop-bold',
+            'prop-italic', 'prop-underline', 'apply-all-properties'
+        ];
+        
+        buttonsToClean.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn && btn.parentNode) {
+                const clone = btn.cloneNode(true);
+                btn.parentNode.replaceChild(clone, btn);
+            }
+        });
+        
+        // Unregister from global registry
+        if (window.toolbarManagerRegistry) {
+            window.toolbarManagerRegistry.delete(this.sessionId);
+            console.log('ToolbarManager: Unregistered from registry');
+        }
+        
+        // Clear all references
+        this.editor = null;
+        this.currentSelection = [];
+        this.sessionId = null;
+        this.diagramType = null;
+        
+        console.log('ToolbarManager: Destruction complete');
     }
 }
 

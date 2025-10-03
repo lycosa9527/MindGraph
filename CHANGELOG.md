@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.8] - 2025-10-03
+
+### Added - Centralized Logging System
+- **Unified Logging Format**: All logs (frontend & backend) now use consistent format
+  - Format: `[HH:MM:SS] LEVEL | SRC  | Message`
+  - Clean, professional appearance with aligned columns
+  - Ultra-compact padding (5 chars for level, 4 chars for source)
+- **Color-Coded Log Levels**: Visual distinction for different log severities
+  - `DEBUG` - Cyan for detailed debugging information
+  - `INFO` - Green for general information
+  - `WARN` - Yellow for warnings (abbreviated from WARNING)
+  - `ERROR` - Red for errors
+  - `CRIT` - Magenta + Bold for critical issues (abbreviated from CRITICAL)
+- **Frontend-to-Backend Logging Bridge**: JavaScript logs sent to backend terminal
+  - New `/api/frontend_log` endpoint receives frontend logs
+  - Frontend logs from `InteractiveEditor`, `ToolbarManager`, and `DiagramSelector`
+  - Non-blocking async logging (failures don't break UI)
+  - Session-aware logging with session ID tracking
+- **Smart WAN IP Detection**: Optimized external IP detection logic
+  - Skips WAN IP detection when `EXTERNAL_HOST` is set in `.env`
+  - Faster startup when external host is pre-configured
+  - Reduced dependency on external IP detection services
+  - Clear log messages indicating detection source
+
+### Changed
+- **Log Format**: Ultra-compact source codes for maximum readability
+  - Level field: 7 chars → 5 chars (using abbreviations)
+  - Source field: 12 chars → 8 chars → **4 chars** (final optimization)
+  - Removed duplicate timestamps (frontend was sending, Python was adding)
+  - **Frontend sources**: `IEDT` (InteractiveEditor), `TOOL` (ToolbarManager), `DSEL` (DiagramSelector), `FRNT` (generic)
+  - **Backend sources**: `APP` (main), `API` (routes), `CONF` (settings), `SRVR` (server), `ASYN` (asyncio), `HTTP` (urllib3), `CACH` (cache)
+- **Logging Architecture**: Custom `UnifiedFormatter` class in `app.py`
+  - Centralizes all log formatting logic
+  - Ensures consistency across all modules
+  - Applies ANSI color codes for terminal output
+- **Session Management**: Improved `ToolbarManager` cleanup
+  - Session-based registry prevents duplicate event listeners
+  - Automatic cleanup of old instances from different sessions
+  - Fixed double notification issue from toolbar actions
+- **Documentation**: Updated all logging-related documentation
+  - `docs/CENTRALIZED_LOGGING_SYSTEM.md` - Complete logging system guide
+  - `docs/EDITOR_LOGGING_ANALYSIS.md` - Logging analysis and findings
+  - Clear examples of log format and color scheme
+
+### Fixed
+- **Gallery Stuck After Two Clicks**: Critical fix for diagram selection lockup
+  - **Root cause**: State mismatch between JavaScript flags (`editorActive`, `currentSession`) and DOM display properties
+  - **Solution**: Auto-recovery mechanism with `forceReset()`
+  - When state mismatch detected (DOM shows gallery but flags say editor active), automatically reset and proceed
+  - Added comprehensive state logging to track transitions
+  - Gallery now works indefinitely without requiring page refresh
+  - **Impact**: Users can freely switch between diagrams without getting stuck
+- **MindMate AI Button**: Fixed chat panel not opening
+  - Added extensive debug logging to track element presence
+  - Verified event listener attachment
+  - Confirmed toggle functionality
+- **Duplicate Notifications**: Eliminated double messages on "Apply" button
+  - Root cause: Multiple `ToolbarManager` instances with stacked event listeners
+  - Solution: Session-based registry with automatic cleanup
+  - Clone-and-replace technique for complete event listener removal
+- **Double Timestamps**: Removed redundant timestamp formatting
+  - Frontend stopped sending timestamps in log payload
+  - Only Python's `UnifiedFormatter` adds timestamps
+  - Cleaner, more readable log output
+
+### Technical Details
+- **Backend Changes** (`app.py`)
+  - `UnifiedFormatter` class with ANSI color codes
+  - Color mapping: DEBUG→cyan, INFO→green, WARN→yellow, ERROR→red, CRIT→magenta
+  - Ultra-compact 4-char source codes with intelligent module name mapping
+  - Source padding reduced from 8 to 4 characters for cleaner logs
+  - Smart WAN IP detection in `print_banner()` function
+  - Checks `EXTERNAL_HOST` env var before calling `get_wan_ip()`
+- **API Endpoint** (`api_routes.py`)
+  - New `/api/frontend_log` endpoint for centralized logging
+  - Dedicated `frontend_logger = logging.getLogger('frontend')`
+  - Source abbreviation mapping: InteractiveEditor→IEDT, ToolbarManager→TOOL, DiagramSelector→DSEL
+  - Formats messages with session ID and source module
+  - Supports DEBUG, INFO, WARN, ERROR log levels
+- **Frontend Logging** (JavaScript files)
+  - `InteractiveEditor.sendToBackendLogger()` - sends editor logs
+  - `ToolbarManager.logToBackend()` - sends toolbar logs
+  - `DiagramSelector.logToBackend()` - sends session lifecycle logs
+  - All use `fetch('/api/frontend_log')` with async POST
+- **Session Management** (`toolbar-manager.js`)
+  - `registerInstance()` - global registry management
+  - `destroy()` - clone-and-replace DOM elements to remove listeners
+  - Session validation ensures correct toolbar for current diagram
+- **Gallery Fix** (`diagram-selector.js`)
+  - `forceReset()` - comprehensive state recovery mechanism
+  - State mismatch detection comparing DOM state vs JavaScript flags
+  - Auto-recovery: resets flags and DOM when inconsistency detected
+  - Enhanced logging for debugging state transitions
+  - Primary check uses `editorActive` flag (source of truth)
+  - Secondary DOM validation triggers recovery if mismatch found
+
+### Developer Notes
+- **Log Viewing**: All logs visible in terminal where server runs
+- **Browser Console**: Frontend logs still appear in browser console (F12)
+- **Log File**: `logs/app.log` contains all logs (without ANSI colors for compatibility)
+- **Log Format**: Ultra-compact 4-char source codes make logs 50% narrower than before
+- **Source Codes**: Quick reference for log sources
+  - Frontend: IEDT, TOOL, DSEL, FRNT
+  - Backend: APP, API, CONF, SRVR, ASYN, HTTP, CACH
+- **Environment Variable**: Set `EXTERNAL_HOST` in `.env` to skip WAN detection
+- **Color Support**: Works in Windows Terminal, PowerShell (Win10+), Linux, Mac terminals
+- **Gallery Issue**: If gallery appears stuck, check browser console for "STATE MISMATCH" - auto-recovery should activate
+
+---
+
 ## [v3.0.7] - 2025-10-03
 
 ### Added

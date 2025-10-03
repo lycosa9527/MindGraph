@@ -38,7 +38,7 @@ class InteractiveEditor {
     }
     
     /**
-     * Centralized logging for debugging
+     * Centralized logging for debugging - sends to both browser console and backend terminal
      */
     log(message, data = null) {
         if (!this.debugMode) return;
@@ -47,10 +47,36 @@ class InteractiveEditor {
         const sessionInfo = this.sessionId ? ` [Session: ${this.sessionId.substr(-8)}]` : '';
         const prefix = `[${timestamp}]${sessionInfo} [${this.diagramType}]`;
         
+        // Log to browser console
         if (data) {
             console.log(`${prefix} ${message}`, data);
         } else {
             console.log(`${prefix} ${message}`);
+        }
+        
+        // Send to backend for centralized terminal logging
+        this.sendToBackendLogger('INFO', message, data);
+    }
+    
+    /**
+     * Send log to backend terminal console
+     */
+    sendToBackendLogger(level, message, data = null) {
+        // Don't block execution if logging fails
+        try {
+            fetch('/api/frontend_log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level: level,
+                    message: message,
+                    data: data,
+                    source: 'InteractiveEditor',
+                    sessionId: this.sessionId
+                })
+            }).catch(() => {}); // Fail silently - don't break frontend if backend logging fails
+        } catch (e) {
+            // Silently ignore logging errors
         }
     }
     

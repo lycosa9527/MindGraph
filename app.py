@@ -49,15 +49,87 @@ os.makedirs("logs", exist_ok=True)
 log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
 log_level = getattr(logging, log_level_str, logging.INFO)
 
+# Create unified logging formatter
+class UnifiedFormatter(logging.Formatter):
+    """Unified logging formatter for MindGraph application with color support."""
+    
+    # ANSI color codes for terminal output
+    COLORS = {
+        'DEBUG': '\033[36m',    # Cyan
+        'INFO': '\033[32m',     # Green
+        'WARN': '\033[33m',     # Yellow
+        'ERROR': '\033[31m',    # Red
+        'CRIT': '\033[35m',     # Magenta
+        'RESET': '\033[0m',     # Reset
+        'BOLD': '\033[1m',      # Bold
+    }
+    
+    def format(self, record):
+        # Format: [HH:MM:SS] LEVEL | Source | Message
+        timestamp = self.formatTime(record, '%H:%M:%S')
+        
+        # Use abbreviated level names for compact format
+        level_map = {
+            'DEBUG': 'DEBUG',
+            'INFO': 'INFO',
+            'WARNING': 'WARN',
+            'ERROR': 'ERROR',
+            'CRITICAL': 'CRIT'
+        }
+        level_name = level_map.get(record.levelname, record.levelname)
+        
+        # Add color to level based on severity
+        color = self.COLORS.get(level_name, '')
+        reset = self.COLORS['RESET']
+        
+        # For CRITICAL, make it bold + colored
+        if level_name == 'CRIT':
+            colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
+        else:
+            colored_level = f"{color}{level_name.ljust(5)}{reset}"
+        
+        # Extract source from logger name (abbreviated to 3-4 letters)
+        source = record.name
+        if source == '__main__':
+            source = 'APP'
+        elif source == 'frontend':
+            source = 'FRNT'
+        elif source == 'api_routes':
+            source = 'API'
+        elif source == 'settings':
+            source = 'CONF'
+        elif source == 'waitress':
+            source = 'SRVR'
+        elif source == 'asyncio':
+            source = 'ASYN'
+        elif source.startswith('urllib3'):
+            source = 'HTTP'
+        elif source.startswith('static.'):
+            source = 'CACH'
+        else:
+            # Keep first 4 chars and uppercase for any other module
+            source = source[:4].upper()
+        
+        source = source.ljust(4)  # Pad source to 4 chars for compact alignment
+        
+        # Format final message
+        return f"[{timestamp}] {colored_level} | {source} | {record.getMessage()}"
+
 # Configure global logging that all modules will inherit
+unified_formatter = UnifiedFormatter()
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(unified_formatter)
+
+file_handler = logging.FileHandler(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "app.log"), 
+    encoding="utf-8"
+)
+file_handler.setFormatter(unified_formatter)
+
 logging.basicConfig(
     level=log_level,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.StreamHandler(sys.stdout),  # Console output to stdout (Windows-safe)
-        logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "app.log"), encoding="utf-8")  # File logging
-    ],
+    handlers=[console_handler, file_handler],
     force=True  # Force reconfiguration to ensure all loggers inherit
 )
 
@@ -649,6 +721,7 @@ def print_banner(host, port):
     - ASCII art logo
     - Application URLs (local and network)
     - Clickable browser link
+    - Smart WAN IP detection (skips if EXTERNAL_HOST is set)
     """
     banner = """
 ================================================================================
@@ -668,13 +741,32 @@ def print_banner(host, port):
     
     # Display IP information
     lan_ip = get_local_ip()
-    wan_ip = get_wan_ip()
+    
+    # Check if EXTERNAL_HOST is set - skip WAN detection if configured
+    external_host = os.environ.get('EXTERNAL_HOST')
+    if external_host:
+        # EXTERNAL_HOST is set, skip WAN IP detection
+        logger.info(f"Using EXTERNAL_HOST from .env: {external_host} (skipping WAN detection)")
+        wan_ip = None
+        wan_configured = True
+    else:
+        # No EXTERNAL_HOST, detect WAN IP
+        logger.info("EXTERNAL_HOST not set, detecting WAN IP...")
+        wan_ip = get_wan_ip()
+        wan_configured = False
     
     print(f"Local Network (LAN): http://{lan_ip}:{port}")
-    if wan_ip:
+    
+    if wan_configured:
+        # Using configured EXTERNAL_HOST
+        print(f"Public Network (WAN): Using configured host ({external_host})")
+        print(f"External Access: Configured via EXTERNAL_HOST")
+    elif wan_ip:
+        # WAN IP detected
         print(f"Public Network (WAN): http://{wan_ip}:{port}")
-        print(f"External Access: Available via WAN IP")
+        print(f"External Access: Available via detected WAN IP")
     else:
+        # WAN detection failed
         print(f"Public Network (WAN): Detection failed")
         print(f"External Access: Limited (set EXTERNAL_HOST in .env)")
     

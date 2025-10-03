@@ -35,6 +35,16 @@ class AIAssistantManager {
         this.chatMessages = document.getElementById('ai-chat-messages');
         this.chatInput = document.getElementById('ai-chat-input');
         this.sendBtn = document.getElementById('ai-chat-send');
+        
+        // Debug: Log element status
+        console.log('AI Assistant Elements:', {
+            panel: !!this.panel,
+            toggleBtn: !!this.toggleBtn,
+            mindmateBtn: !!this.mindmateBtn,
+            chatMessages: !!this.chatMessages,
+            chatInput: !!this.chatInput,
+            sendBtn: !!this.sendBtn
+        });
     }
     
     /**
@@ -43,12 +53,22 @@ class AIAssistantManager {
     bindEvents() {
         // Close button in panel
         if (this.toggleBtn) {
-            this.toggleBtn.addEventListener('click', () => this.togglePanel());
+            this.toggleBtn.addEventListener('click', () => {
+                console.log('Close button clicked');
+                this.togglePanel();
+            });
+            console.log('Bound event to close button');
         }
         
         // MindMate AI button in toolbar
         if (this.mindmateBtn) {
-            this.mindmateBtn.addEventListener('click', () => this.togglePanel());
+            this.mindmateBtn.addEventListener('click', () => {
+                console.log('MindMate AI button clicked');
+                this.togglePanel();
+            });
+            console.log('Bound event to MindMate AI button');
+        } else {
+            console.warn('MindMate AI button not found during initialization');
         }
         
         // Send message
@@ -74,7 +94,15 @@ class AIAssistantManager {
      * Toggle AI assistant panel
      */
     togglePanel() {
+        console.log('Toggle panel called, panel:', this.panel);
+        
+        if (!this.panel) {
+            console.error('AI Assistant panel not found!');
+            return;
+        }
+        
         const isCollapsed = this.panel.classList.toggle('collapsed');
+        console.log('Panel collapsed state:', isCollapsed);
         
         // Update MindMate button state
         if (this.mindmateBtn) {

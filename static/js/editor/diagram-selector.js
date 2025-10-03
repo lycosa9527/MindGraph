@@ -83,13 +83,43 @@ class DiagramSelector {
                     cardType: card.dataset.type,
                     landingDisplay: landing?.style.display,
                     editorDisplay: editorInterface?.style.display,
+                    editorActive: this.editorActive,
+                    hasSession: !!this.currentSession,
                     target: e.target.tagName,
                     currentTarget: e.currentTarget.className
                 });
                 
+                // CRITICAL: Check for state mismatch first
+                const domInGalleryMode = landing && landing.style.display !== 'none' && 
+                                        (!editorInterface || editorInterface.style.display === 'none');
+                const flagsSayEditorActive = this.editorActive || this.currentSession;
+                
+                // If DOM shows gallery but flags say editor active -> FORCE RESET
+                if (domInGalleryMode && flagsSayEditorActive) {
+                    console.warn('DiagramSelector: STATE MISMATCH DETECTED - DOM in gallery but flags say editor active!');
+                    console.warn('DiagramSelector: Triggering force reset...');
+                    this.forceReset();
+                    // After reset, allow the click to proceed
+                    const diagramType = card.dataset.type;
+                    console.log('DiagramSelector: Card click PROCEEDING after reset for:', diagramType);
+                    this.selectDiagram(diagramType);
+                    return;
+                }
+                
+                // FIXED: Use editorActive flag instead of DOM checks for reliability
+                if (this.editorActive) {
+                    console.warn('DiagramSelector: Card click BLOCKED - editor is active (flag check)');
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Secondary check: Verify DOM state matches our flags (opposite direction)
                 if (!landing || landing.style.display === 'none' || 
                     (editorInterface && editorInterface.style.display !== 'none')) {
-                    console.log('DiagramSelector: Card click BLOCKED - editor is active');
+                    console.warn('DiagramSelector: Card click BLOCKED - DOM in editor mode, resetting...');
+                    // Force reset to recover from inconsistent state
+                    this.forceReset();
                     e.stopPropagation();
                     e.preventDefault();
                     return;
@@ -129,13 +159,36 @@ class DiagramSelector {
         };
         this.editorActive = true;
         
-        console.log('DiagramSelector: ========== SESSION STARTED ==========');
-        console.log('DiagramSelector: Session ID:', sessionId);
-        console.log('DiagramSelector: Diagram Type:', diagramType);
-        console.log('DiagramSelector: Start Time:', this.currentSession.startTime);
-        console.log('DiagramSelector: ========================================');
+        const message = `SESSION STARTED - ID: ${sessionId} | Type: ${diagramType} | Time: ${this.currentSession.startTime}`;
+        console.log('DiagramSelector:', message);
+        
+        // Send to backend terminal
+        this.logToBackend('INFO', message, {
+            sessionId: sessionId,
+            diagramType: diagramType,
+            startTime: this.currentSession.startTime
+        });
         
         return sessionId;
+    }
+    
+    /**
+     * Send log to backend terminal console
+     */
+    logToBackend(level, message, data = null) {
+        try {
+            fetch('/api/frontend_log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level: level,
+                    message: message,
+                    data: data,
+                    source: 'DiagramSelector',
+                    sessionId: this.currentSession?.id
+                })
+            }).catch(() => {});
+        } catch (e) {}
     }
     
     /**
@@ -153,6 +206,43 @@ class DiagramSelector {
         
         this.currentSession = null;
         this.editorActive = false;
+        
+        console.log('DiagramSelector: Session ended - editorActive:', this.editorActive);
+    }
+    
+    /**
+     * Force reset to gallery mode - recovery from inconsistent state
+     */
+    forceReset() {
+        console.warn('DiagramSelector: FORCE RESET - Recovering from inconsistent state');
+        
+        // Reset flags
+        this.currentSession = null;
+        this.editorActive = false;
+        
+        // Force DOM to gallery mode
+        const landing = document.getElementById('editor-landing');
+        if (landing) {
+            landing.style.display = 'block';
+        }
+        
+        const editorInterface = document.getElementById('editor-interface');
+        if (editorInterface) {
+            editorInterface.style.display = 'none';
+        }
+        
+        // Clean up any lingering editor
+        if (window.currentEditor) {
+            window.currentEditor = null;
+        }
+        
+        // Clear canvas
+        const container = document.getElementById('d3-container');
+        if (container) {
+            d3.select('#d3-container').selectAll('*').remove();
+        }
+        
+        console.warn('DiagramSelector: Force reset complete - please try clicking again');
     }
     
     /**
@@ -307,23 +397,29 @@ class DiagramSelector {
      * Clean up canvas and previous editor
      */
     cleanupCanvas() {
+        console.log('DiagramSelector: Cleaning up canvas and editor');
+        
         // Clear the D3 container
         const container = document.getElementById('d3-container');
         if (container) {
             // Remove all SVG elements
             d3.select('#d3-container').selectAll('*').remove();
-            console.log('Canvas cleared for new diagram');
+            console.log('DiagramSelector: Canvas cleared');
         }
         
         // Clear any existing editor
+        // Note: ToolbarManager cleanup is handled automatically via the session registry
+        // When a new ToolbarManager is created, it will destroy old instances from different sessions
         if (window.currentEditor) {
-            // Clear the toolbar manager's property panel if it exists
+            // Clear the toolbar manager's property panel if method exists
             if (window.currentEditor.toolbarManager && 
                 typeof window.currentEditor.toolbarManager.clearPropertyPanel === 'function') {
                 window.currentEditor.toolbarManager.clearPropertyPanel();
-                console.log('Property panel cleared for diagram switch');
+                console.log('DiagramSelector: Property panel cleared');
             }
+            
             window.currentEditor = null;
+            console.log('DiagramSelector: Editor reference cleared');
         }
         
         // Hide property panel when cleaning up
@@ -331,18 +427,25 @@ class DiagramSelector {
         if (propertyPanel) {
             propertyPanel.style.display = 'none';
         }
+        
+        console.log('DiagramSelector: Cleanup complete (ToolbarManager cleanup handled by session registry)');
     }
     
     /**
      * Return to gallery
      */
     backToGallery() {
-        console.log('DiagramSelector: Returning to gallery');
+        console.log('DiagramSelector: ========== RETURNING TO GALLERY ==========');
+        console.log('DiagramSelector: Current state before cleanup:', {
+            hasSession: !!this.currentSession,
+            editorActive: this.editorActive,
+            hasCurrentEditor: !!window.currentEditor
+        });
         
-        // End the current session
+        // End the current session FIRST (critical!)
         this.endSession();
         
-        // Clean up canvas and editor first
+        // Clean up canvas and editor
         this.cleanupCanvas();
         
         // Close AI assistant if open and reset button state
@@ -361,19 +464,30 @@ class DiagramSelector {
             propertyPanel.style.display = 'none';
         }
         
-        // Show landing page
-        const landing = document.getElementById('editor-landing');
-        if (landing) {
-            landing.style.display = 'block';
-        }
-        
-        // Hide editor interface
-        const editorInterface = document.getElementById('editor-interface');
-        if (editorInterface) {
-            editorInterface.style.display = 'none';
-        }
-        
-        console.log('Returned to gallery - all cleanup complete');
+        // Show landing page (use requestAnimationFrame for reliable DOM update)
+        requestAnimationFrame(() => {
+            const landing = document.getElementById('editor-landing');
+            if (landing) {
+                landing.style.display = 'block';
+                console.log('DiagramSelector: Landing page shown');
+            }
+            
+            // Hide editor interface
+            const editorInterface = document.getElementById('editor-interface');
+            if (editorInterface) {
+                editorInterface.style.display = 'none';
+                console.log('DiagramSelector: Editor interface hidden');
+            }
+            
+            console.log('DiagramSelector: Final state after cleanup:', {
+                hasSession: !!this.currentSession,
+                editorActive: this.editorActive,
+                hasCurrentEditor: !!window.currentEditor,
+                landingDisplay: landing?.style.display,
+                editorDisplay: editorInterface?.style.display
+            });
+            console.log('DiagramSelector: ========== GALLERY READY ==========');
+        });
     }
     
     /**

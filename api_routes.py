@@ -28,6 +28,9 @@ except ImportError:
 api = Blueprint('api', __name__, url_prefix='/api')
 logger = logging.getLogger(__name__)
 
+# Frontend logger for centralized logging
+frontend_logger = logging.getLogger('frontend')
+
 # Shared agent enhancement functions to reduce code duplication
 def enhance_mindmap_spec(spec):
     """Shared function to enhance mind map specs with layout data."""
@@ -2489,6 +2492,70 @@ def serve_temp_dingtalk_image(filename):
     except Exception as e:
         logger.error(f"Error serving temporary image {filename}: {e}", exc_info=True)
         return jsonify({'error': 'Failed to serve image'}), 500
+
+@api.route('/frontend_log', methods=['POST'])
+def frontend_log():
+    """
+    Centralized frontend logging endpoint.
+    Receives logs from JavaScript frontend and outputs to terminal console.
+    
+    Request body:
+    {
+        "level": "INFO|DEBUG|WARNING|ERROR",
+        "message": "Log message",
+        "data": {...},  // optional
+        "source": "module_name",  // optional
+        "sessionId": "session_id",  // optional
+        "timestamp": "HH:MM:SS"  // optional
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Extract log details
+        level = data.get('level', 'INFO').upper()
+        message = data.get('message', '')
+        log_data = data.get('data')
+        source = data.get('source', 'frontend')
+        session_id = data.get('sessionId', '')
+        
+        # Abbreviate frontend sources for compact logging (3-4 letter codes)
+        source_abbrev_map = {
+            'InteractiveEditor': 'IEDT',
+            'ToolbarManager': 'TOOL',
+            'DiagramSelector': 'DSEL',
+            'frontend': 'FRNT'
+        }
+        source_abbrev = source_abbrev_map.get(source, source[:4].upper())
+        
+        # Format log message for terminal (no timestamp - UnifiedFormatter adds it)
+        session_info = f"Session: {session_id[:8]} | " if session_id else ""
+        source_info = f"{source_abbrev} | "
+        
+        # Build complete message
+        if log_data:
+            complete_message = f"{session_info}{source_info}{message} | Data: {json.dumps(log_data, ensure_ascii=False)}"
+        else:
+            complete_message = f"{session_info}{source_info}{message}"
+        
+        # Log to appropriate level
+        if level == 'DEBUG':
+            frontend_logger.debug(complete_message)
+        elif level == 'WARNING':
+            frontend_logger.warning(complete_message)
+        elif level == 'ERROR':
+            frontend_logger.error(complete_message)
+        else:  # INFO or default
+            frontend_logger.info(complete_message)
+        
+        return jsonify({'status': 'logged'}), 200
+        
+    except Exception as e:
+        # Don't fail the frontend if logging fails
+        logger.error(f"Frontend logging endpoint error: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @api.route('/clear_cache', methods=['POST'])
 def clear_cache():
