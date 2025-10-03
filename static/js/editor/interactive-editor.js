@@ -1073,6 +1073,9 @@ class InteractiveEditor {
             case 'concept_map':
                 this.addNodeToConceptMap();
                 break;
+            case 'mindmap':
+                this.addNodeToMindMap();
+                break;
             default:
                 this.addGenericNode();
                 break;
@@ -1700,6 +1703,199 @@ class InteractiveEditor {
     }
     
     /**
+     * Add a new node to Mind Map
+     */
+    async addNodeToMindMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
+            console.error('Invalid mind map spec');
+            return;
+        }
+        
+        // Get selected nodes
+        const selectedNodes = Array.from(this.selectedNodes);
+        
+        // Check if no node is selected
+        if (selectedNodes.length === 0) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Please select a branch or sub-item to add', 'warning');
+            }
+            console.log('MindMap: No node selected, skipping add');
+            return;
+        }
+        
+        // Get the first selected node
+        const selectedNodeId = selectedNodes[0];
+        const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
+        
+        if (selectedElement.empty()) {
+            console.error('Selected node not found');
+            return;
+        }
+        
+        const nodeType = selectedElement.attr('data-node-type');
+        
+        // Don't allow adding to the central topic
+        if (nodeType === 'topic' || !nodeType) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Cannot add to central topic. Please select a branch or sub-item.', 'warning');
+            }
+            console.log('MindMap: Cannot add to central topic');
+            return;
+        }
+        
+        // Handle different node types
+        if (nodeType === 'branch') {
+            // Adding a new branch - find the branch index
+            const branchIndex = parseInt(selectedElement.attr('data-array-index') || selectedElement.attr('data-branch-index'));
+            
+            if (isNaN(branchIndex) || branchIndex < 0) {
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Invalid branch index', 'error');
+                }
+                return;
+            }
+            
+            // Add new branch with 2 subitems (following the template pattern)
+            const newBranchIndex = this.currentSpec.children.length;
+            this.currentSpec.children.push({
+                id: `branch_${newBranchIndex}`,
+                label: `New Branch ${newBranchIndex + 1}`,
+                text: `New Branch ${newBranchIndex + 1}`,
+                children: [
+                    {
+                        id: `sub_${newBranchIndex}_0`,
+                        label: `Sub-item ${newBranchIndex + 1}.1`,
+                        text: `Sub-item ${newBranchIndex + 1}.1`,
+                        children: []
+                    },
+                    {
+                        id: `sub_${newBranchIndex}_1`,
+                        label: `Sub-item ${newBranchIndex + 1}.2`,
+                        text: `Sub-item ${newBranchIndex + 1}.2`,
+                        children: []
+                    }
+                ]
+            });
+            
+            console.log(`Added new branch with 2 subitems. Total branches: ${this.currentSpec.children.length}`);
+            
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('New branch with 2 sub-items added!', 'success');
+            }
+            
+        } else if (nodeType === 'child' || nodeType === 'subitem') {
+            // Adding a sub-item - find the parent branch
+            const branchIndex = parseInt(selectedElement.attr('data-branch-index'));
+            
+            if (isNaN(branchIndex) || branchIndex < 0 || branchIndex >= this.currentSpec.children.length) {
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Invalid branch index', 'error');
+                }
+                return;
+            }
+            
+            const branch = this.currentSpec.children[branchIndex];
+            if (!branch || !Array.isArray(branch.children)) {
+                console.error('Invalid branch structure');
+                return;
+            }
+            
+            // Add new sub-item to the branch
+            const newChildIndex = branch.children.length;
+            branch.children.push({
+                id: `sub_${branchIndex}_${newChildIndex}`,
+                label: `Sub-item ${branchIndex + 1}.${newChildIndex + 1}`,
+                text: `Sub-item ${branchIndex + 1}.${newChildIndex + 1}`,
+                children: []
+            });
+            
+            console.log(`Added new sub-item to branch ${branchIndex}. Total sub-items: ${branch.children.length}`);
+            
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('New sub-item added!', 'success');
+            }
+        } else {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Unknown node type. Please select a branch or sub-item.', 'error');
+            }
+            return;
+        }
+        
+        // For mind maps, we need to recalculate layout from backend before rendering
+        await this.recalculateMindMapLayout();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'mindmap',
+            nodeType: nodeType,
+            totalBranches: this.currentSpec.children.length
+        });
+    }
+    
+    /**
+     * Recalculate Mind Map layout from backend
+     * This is necessary because mind maps require positioned layout data
+     */
+    async recalculateMindMapLayout() {
+        if (!this.currentSpec) {
+            console.error('No spec available for recalculation');
+            return;
+        }
+        
+        try {
+            console.log('Recalculating mind map layout from backend...');
+            
+            // Show loading state
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Updating layout...', 'info');
+            }
+            
+            // Call backend to recalculate layout
+            const response = await fetch('/api/recalculate_mindmap_layout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    spec: this.currentSpec
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Update spec with new layout data
+            if (data.spec && data.spec._layout) {
+                this.currentSpec._layout = data.spec._layout;
+                this.currentSpec._recommended_dimensions = data.spec._recommended_dimensions;
+                console.log('Layout recalculated successfully');
+                
+                // Re-render with new layout
+                this.renderDiagram();
+            } else {
+                console.warn('Backend did not return layout data');
+                // Still try to render
+                this.renderDiagram();
+            }
+            
+        } catch (error) {
+            console.error('Error recalculating mind map layout:', error);
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Failed to update layout. Changes may not be visible.', 'warning');
+            }
+            // Still try to render even if layout calculation failed
+            this.renderDiagram();
+        }
+    }
+    
+    /**
      * Add a generic node (fallback for other diagram types)
      */
     addGenericNode() {
@@ -1829,6 +2025,8 @@ class InteractiveEditor {
             this.deleteBridgeMapNodes(nodesToDelete);
         } else if (this.diagramType === 'concept_map') {
             this.deleteConceptMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'mindmap') {
+            this.deleteMindMapNodes(nodesToDelete);
         } else {
             this.deleteGenericNodes(nodesToDelete);
         }
@@ -2551,6 +2749,97 @@ class InteractiveEditor {
         
         // Re-render to update layout and connections
         this.renderDiagram();
+    }
+    
+    /**
+     * Delete Mind Map nodes
+     */
+    async deleteMindMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
+            console.error('Invalid mind map spec');
+            return;
+        }
+        
+        // Collect branches and sub-items to delete
+        const branchesToDelete = new Set();
+        const subItemsToDelete = new Map(); // Map of branchIndex -> Set of childIndices
+        let attemptedTopicDelete = false;
+        
+        nodeIds.forEach(nodeId => {
+            const element = d3.select(`[data-node-id="${nodeId}"]`);
+            if (element.empty()) {
+                console.warn(`Node ${nodeId} not found`);
+                return;
+            }
+            
+            const nodeType = element.attr('data-node-type');
+            
+            // Check if user is trying to delete the central topic
+            if (nodeType === 'topic') {
+                attemptedTopicDelete = true;
+                return;
+            }
+            
+            if (nodeType === 'branch') {
+                const branchIndex = parseInt(element.attr('data-array-index') || element.attr('data-branch-index'));
+                if (!isNaN(branchIndex) && branchIndex >= 0) {
+                    branchesToDelete.add(branchIndex);
+                    console.log(`Marking branch ${branchIndex} for deletion`);
+                }
+            } else if (nodeType === 'child' || nodeType === 'subitem') {
+                const branchIndex = parseInt(element.attr('data-branch-index'));
+                const childIndex = parseInt(element.attr('data-child-index') || element.attr('data-array-index'));
+                
+                if (!isNaN(branchIndex) && !isNaN(childIndex)) {
+                    if (!subItemsToDelete.has(branchIndex)) {
+                        subItemsToDelete.set(branchIndex, new Set());
+                    }
+                    subItemsToDelete.get(branchIndex).add(childIndex);
+                    console.log(`Marking sub-item ${childIndex} of branch ${branchIndex} for deletion`);
+                }
+            }
+        });
+        
+        // Show warning if user attempted to delete the central topic
+        if (attemptedTopicDelete) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Cannot delete the central topic', 'warning');
+            }
+        }
+        
+        // Delete sub-items first (within each branch, delete from highest index to lowest)
+        subItemsToDelete.forEach((childIndices, branchIndex) => {
+            if (branchIndex >= 0 && branchIndex < this.currentSpec.children.length) {
+                const branch = this.currentSpec.children[branchIndex];
+                if (Array.isArray(branch.children)) {
+                    // Sort child indices descending to avoid index shifting
+                    const sortedIndices = Array.from(childIndices).sort((a, b) => b - a);
+                    sortedIndices.forEach(childIndex => {
+                        if (childIndex >= 0 && childIndex < branch.children.length) {
+                            const childText = branch.children[childIndex].text || branch.children[childIndex].label || 'unknown';
+                            branch.children.splice(childIndex, 1);
+                            console.log(`Deleted sub-item ${childIndex} from branch ${branchIndex}: ${childText}`);
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Delete branches (sort by index descending to avoid index shifting)
+        const sortedBranchIndices = Array.from(branchesToDelete).sort((a, b) => b - a);
+        sortedBranchIndices.forEach(index => {
+            if (index >= 0 && index < this.currentSpec.children.length) {
+                const branchText = this.currentSpec.children[index].text || this.currentSpec.children[index].label || 'unknown';
+                this.currentSpec.children.splice(index, 1);
+                console.log(`Deleted branch ${index}: ${branchText}`);
+            }
+        });
+        
+        const totalDeleted = sortedBranchIndices.length + Array.from(subItemsToDelete.values()).reduce((sum, set) => sum + set.size, 0);
+        console.log(`MindMap: Deleted ${totalDeleted} node(s)`);
+        
+        // For mind maps, we need to recalculate layout from backend before rendering
+        await this.recalculateMindMapLayout();
     }
     
     /**

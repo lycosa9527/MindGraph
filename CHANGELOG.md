@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v3.0.8] - 2025-10-03
 
+### Fixed
+- **Mind Map Layout Refresh**: Fixed issue where add/delete operations didn't update the canvas
+  - **Problem**: Mind maps require backend-calculated layout positions (`_layout.positions`)
+  - **Symptom**: Adding or deleting nodes updated the spec but canvas remained unchanged
+  - **Root Cause**: Frontend only updated `spec.children` without recalculating positions
+  - **Solution**: Created new `/api/recalculate_mindmap_layout` endpoint
+    - Automatically calls `MindMapAgent.enhance_spec()` to recalculate layout
+    - Frontend now calls this endpoint after add/delete operations
+    - Canvas updates properly with new node positions
+  - **Implementation**: 
+    - `addNodeToMindMap()` and `deleteMindMapNodes()` now async functions
+    - Both call `recalculateMindMapLayout()` before rendering
+    - Backend endpoint validates spec and returns enhanced layout
+  - **Impact**: Mind map add/delete buttons now work correctly with immediate visual feedback
+
 ### Added - Centralized Logging System
 - **Unified Logging Format**: All logs (frontend & backend) now use consistent format
   - Format: `[HH:MM:SS] LEVEL | SRC  | Message`
@@ -31,7 +46,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reduced dependency on external IP detection services
   - Clear log messages indicating detection source
 
+### Added
+- **Mind Map Add/Delete Logic**: Intelligent node management for mind maps
+  - **Add Button**: Requires branch or sub-item selection (blocks central topic)
+    - Selecting a branch → adds new branch with 2 subitems automatically
+    - Selecting a sub-item → adds new sub-item to that branch
+    - Central topic cannot be used for adding (shows warning)
+  - **Delete Button**: Requires node selection before deletion
+    - Can delete branches (removes branch and all its subitems)
+    - Can delete individual sub-items
+    - Central topic cannot be deleted (shows warning)
+  - **Implementation**: Added `addNodeToMindMap()` and `deleteMindMapNodes()` functions
+  - **Impact**: Mind maps now have proper node management workflow
+
 ### Changed
+- **Watermark Display**: Watermarks removed from canvas, now only appear in PNG exports
+  - **Before**: Watermarks visible on all 10 diagram types during editing
+  - **After**: Clean canvas without watermarks during editing
+  - **Export behavior**: Watermark dynamically added only during PNG export, then removed
+  - **Affected diagrams**: Mind Map, Bubble Map, Circle Map, Double Bubble Map, Concept Map (5 diagrams fixed)
+  - **Already correct**: Flow Map, Bridge Map, Multi-Flow Map, Brace Map, Tree Map (5 diagrams)
+  - **Implementation**: Updated `handleExport()` in `toolbar-manager.js` to add temporary watermark during export
+  - **Impact**: Cleaner editing experience while maintaining branding in exported images
 - **Log Format**: Ultra-compact source codes for maximum readability
   - Level field: 7 chars → 5 chars (using abbreviations)
   - Source field: 12 chars → 8 chars → **4 chars** (final optimization)
@@ -52,6 +88,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clear examples of log format and color scheme
 
 ### Fixed
+- **Mind Map Add/Delete Buttons**: Fixed node type detection for add/delete operations
+  - **Root cause**: Mind map renderer wasn't adding data attributes to nodes
+  - **Problem**: Add button couldn't detect if user selected branch/subitem/topic
+  - **Solution**: Updated `mind-map-renderer.js` to add proper data attributes to all nodes
+  - Added `data-node-id`, `data-node-type`, `data-branch-index`, `data-child-index`, `data-array-index`
+  - Topic nodes: `data-node-type="topic"`
+  - Branch nodes: `data-node-type="branch"` with `data-branch-index`
+  - Child nodes: `data-node-type="child"` with `data-branch-index` and `data-child-index`
+  - **Impact**: Add/delete buttons now work correctly with proper node type detection
+- **Mind Map Canvas Blank Template**: Fixed mind map not displaying when first opened
+  - **Root cause**: Template had incomplete `_layout.positions` structure missing required metadata
+  - **Problem**: Renderer expected position objects with `node_type`, `text`, `width`, `height`, etc., but template only provided simple `{x, y}` coordinates
+  - **Solution**: Updated `getMindMapTemplate()` in `diagram-selector.js` to include complete position metadata matching backend agent format
+  - Added proper `node_type` field ('topic', 'branch', 'child') for each position
+  - Added `text`, `width`, `height`, `branch_index`, `child_index`, `angle` fields
+  - Added `connections` array with proper connection format
+  - Updated to 4-branch default template (following even-number rule from mind map agent)
+  - Enhanced template: Each branch now has 2 subitems (8 total children across 4 branches)
+  - Increased canvas dimensions from 700×500 to 1000×600 for better layout
+  - **Impact**: Mind map now displays correctly with default template on first canvas access
 - **Gallery Stuck After Two Clicks**: Critical fix for diagram selection lockup
   - **Root cause**: State mismatch between JavaScript flags (`editorActive`, `currentSession`) and DOM display properties
   - **Solution**: Auto-recovery mechanism with `forceReset()`

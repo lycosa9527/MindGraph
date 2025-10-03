@@ -671,37 +671,177 @@ class DiagramSelector {
                 topic: '中心主题',
                 children: [
                     { 
-                        text: '分支1', 
+                        id: 'branch_0',
+                        label: '分支1', 
+                        text: '分支1',
                         children: [
-                            { text: '子项1.1', children: [] },
-                            { text: '子项1.2', children: [] }
+                            { id: 'sub_0_0', label: '子项1.1', text: '子项1.1', children: [] },
+                            { id: 'sub_0_1', label: '子项1.2', text: '子项1.2', children: [] }
                         ] 
                     },
                     { 
-                        text: '分支2', 
+                        id: 'branch_1',
+                        label: '分支2', 
+                        text: '分支2',
                         children: [
-                            { text: '子项2.1', children: [] }
+                            { id: 'sub_1_0', label: '子项2.1', text: '子项2.1', children: [] },
+                            { id: 'sub_1_1', label: '子项2.2', text: '子项2.2', children: [] }
                         ] 
                     },
                     { 
-                        text: '分支3', 
-                        children: [] 
+                        id: 'branch_2',
+                        label: '分支3', 
+                        text: '分支3',
+                        children: [
+                            { id: 'sub_2_0', label: '子项3.1', text: '子项3.1', children: [] },
+                            { id: 'sub_2_1', label: '子项3.2', text: '子项3.2', children: [] }
+                        ] 
+                    },
+                    { 
+                        id: 'branch_3',
+                        label: '分支4', 
+                        text: '分支4',
+                        children: [
+                            { id: 'sub_3_0', label: '子项4.1', text: '子项4.1', children: [] },
+                            { id: 'sub_3_1', label: '子项4.2', text: '子项4.2', children: [] }
+                        ] 
                     }
                 ],
                 _layout: {
                     positions: {
-                        '中心主题': { x: 350, y: 250 },
-                        '分支1': { x: 200, y: 150 },
-                        '分支2': { x: 200, y: 250 },
-                        '分支3': { x: 200, y: 350 },
-                        '子项1.1': { x: 100, y: 120 },
-                        '子项1.2': { x: 100, y: 180 },
-                        '子项2.1': { x: 100, y: 250 }
+                        'topic': { 
+                            x: 0, y: 0, 
+                            width: 120, height: 60, 
+                            text: '中心主题', 
+                            node_type: 'topic', 
+                            angle: 0 
+                        },
+                        'branch_0': { 
+                            x: 220, y: -80, 
+                            width: 100, height: 50, 
+                            text: '分支1', 
+                            node_type: 'branch', 
+                            branch_index: 0, 
+                            angle: 0 
+                        },
+                        'branch_1': { 
+                            x: 220, y: 80, 
+                            width: 100, height: 50, 
+                            text: '分支2', 
+                            node_type: 'branch', 
+                            branch_index: 1, 
+                            angle: 0 
+                        },
+                        'branch_2': { 
+                            x: -220, y: -80, 
+                            width: 100, height: 50, 
+                            text: '分支3', 
+                            node_type: 'branch', 
+                            branch_index: 2, 
+                            angle: 0 
+                        },
+                        'branch_3': { 
+                            x: -220, y: 80, 
+                            width: 100, height: 50, 
+                            text: '分支4', 
+                            node_type: 'branch', 
+                            branch_index: 3, 
+                            angle: 0 
+                        },
+                        'child_0_0': { 
+                            x: 370, y: -110, 
+                            width: 90, height: 40, 
+                            text: '子项1.1', 
+                            node_type: 'child', 
+                            branch_index: 0, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_0_1': { 
+                            x: 370, y: -50, 
+                            width: 90, height: 40, 
+                            text: '子项1.2', 
+                            node_type: 'child', 
+                            branch_index: 0, 
+                            child_index: 1, 
+                            angle: 0 
+                        },
+                        'child_1_0': { 
+                            x: 370, y: 50, 
+                            width: 90, height: 40, 
+                            text: '子项2.1', 
+                            node_type: 'child', 
+                            branch_index: 1, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_1_1': { 
+                            x: 370, y: 110, 
+                            width: 90, height: 40, 
+                            text: '子项2.2', 
+                            node_type: 'child', 
+                            branch_index: 1, 
+                            child_index: 1, 
+                            angle: 0 
+                        },
+                        'child_2_0': { 
+                            x: -370, y: -110, 
+                            width: 90, height: 40, 
+                            text: '子项3.1', 
+                            node_type: 'child', 
+                            branch_index: 2, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_2_1': { 
+                            x: -370, y: -50, 
+                            width: 90, height: 40, 
+                            text: '子项3.2', 
+                            node_type: 'child', 
+                            branch_index: 2, 
+                            child_index: 1, 
+                            angle: 0 
+                        },
+                        'child_3_0': { 
+                            x: -370, y: 50, 
+                            width: 90, height: 40, 
+                            text: '子项4.1', 
+                            node_type: 'child', 
+                            branch_index: 3, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_3_1': { 
+                            x: -370, y: 110, 
+                            width: 90, height: 40, 
+                            text: '子项4.2', 
+                            node_type: 'child', 
+                            branch_index: 3, 
+                            child_index: 1, 
+                            angle: 0 
+                        }
+                    },
+                    connections: [
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: 220, y: -80, type: 'branch' } },
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: 220, y: 80, type: 'branch' } },
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: -220, y: -80, type: 'branch' } },
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: -220, y: 80, type: 'branch' } },
+                        { from: { x: 220, y: -80, type: 'branch' }, to: { x: 370, y: -110, type: 'child' } },
+                        { from: { x: 220, y: -80, type: 'branch' }, to: { x: 370, y: -50, type: 'child' } },
+                        { from: { x: 220, y: 80, type: 'branch' }, to: { x: 370, y: 50, type: 'child' } },
+                        { from: { x: 220, y: 80, type: 'branch' }, to: { x: 370, y: 110, type: 'child' } },
+                        { from: { x: -220, y: -80, type: 'branch' }, to: { x: -370, y: -110, type: 'child' } },
+                        { from: { x: -220, y: -80, type: 'branch' }, to: { x: -370, y: -50, type: 'child' } },
+                        { from: { x: -220, y: 80, type: 'branch' }, to: { x: -370, y: 50, type: 'child' } },
+                        { from: { x: -220, y: 80, type: 'branch' }, to: { x: -370, y: 110, type: 'child' } }
+                    ],
+                    params: {
+                        background: '#f5f5f5'
                     }
                 },
                 _recommended_dimensions: {
-                    width: 700,
-                    height: 500,
+                    width: 1000,
+                    height: 600,
                     padding: 40
                 }
             };
@@ -710,37 +850,177 @@ class DiagramSelector {
                 topic: 'Central Topic',
                 children: [
                     { 
-                        text: 'Branch 1', 
+                        id: 'branch_0',
+                        label: 'Branch 1', 
+                        text: 'Branch 1',
                         children: [
-                            { text: 'Sub-item 1.1', children: [] },
-                            { text: 'Sub-item 1.2', children: [] }
+                            { id: 'sub_0_0', label: 'Sub-item 1.1', text: 'Sub-item 1.1', children: [] },
+                            { id: 'sub_0_1', label: 'Sub-item 1.2', text: 'Sub-item 1.2', children: [] }
                         ] 
                     },
                     { 
-                        text: 'Branch 2', 
+                        id: 'branch_1',
+                        label: 'Branch 2', 
+                        text: 'Branch 2',
                         children: [
-                            { text: 'Sub-item 2.1', children: [] }
+                            { id: 'sub_1_0', label: 'Sub-item 2.1', text: 'Sub-item 2.1', children: [] },
+                            { id: 'sub_1_1', label: 'Sub-item 2.2', text: 'Sub-item 2.2', children: [] }
                         ] 
                     },
                     { 
-                        text: 'Branch 3', 
-                        children: [] 
+                        id: 'branch_2',
+                        label: 'Branch 3', 
+                        text: 'Branch 3',
+                        children: [
+                            { id: 'sub_2_0', label: 'Sub-item 3.1', text: 'Sub-item 3.1', children: [] },
+                            { id: 'sub_2_1', label: 'Sub-item 3.2', text: 'Sub-item 3.2', children: [] }
+                        ] 
+                    },
+                    { 
+                        id: 'branch_3',
+                        label: 'Branch 4', 
+                        text: 'Branch 4',
+                        children: [
+                            { id: 'sub_3_0', label: 'Sub-item 4.1', text: 'Sub-item 4.1', children: [] },
+                            { id: 'sub_3_1', label: 'Sub-item 4.2', text: 'Sub-item 4.2', children: [] }
+                        ] 
                     }
                 ],
                 _layout: {
                     positions: {
-                        'Central Topic': { x: 350, y: 250 },
-                        'Branch 1': { x: 200, y: 150 },
-                        'Branch 2': { x: 200, y: 250 },
-                        'Branch 3': { x: 200, y: 350 },
-                        'Sub-item 1.1': { x: 100, y: 120 },
-                        'Sub-item 1.2': { x: 100, y: 180 },
-                        'Sub-item 2.1': { x: 100, y: 250 }
+                        'topic': { 
+                            x: 0, y: 0, 
+                            width: 120, height: 60, 
+                            text: 'Central Topic', 
+                            node_type: 'topic', 
+                            angle: 0 
+                        },
+                        'branch_0': { 
+                            x: 220, y: -80, 
+                            width: 100, height: 50, 
+                            text: 'Branch 1', 
+                            node_type: 'branch', 
+                            branch_index: 0, 
+                            angle: 0 
+                        },
+                        'branch_1': { 
+                            x: 220, y: 80, 
+                            width: 100, height: 50, 
+                            text: 'Branch 2', 
+                            node_type: 'branch', 
+                            branch_index: 1, 
+                            angle: 0 
+                        },
+                        'branch_2': { 
+                            x: -220, y: -80, 
+                            width: 100, height: 50, 
+                            text: 'Branch 3', 
+                            node_type: 'branch', 
+                            branch_index: 2, 
+                            angle: 0 
+                        },
+                        'branch_3': { 
+                            x: -220, y: 80, 
+                            width: 100, height: 50, 
+                            text: 'Branch 4', 
+                            node_type: 'branch', 
+                            branch_index: 3, 
+                            angle: 0 
+                        },
+                        'child_0_0': { 
+                            x: 370, y: -110, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 1.1', 
+                            node_type: 'child', 
+                            branch_index: 0, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_0_1': { 
+                            x: 370, y: -50, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 1.2', 
+                            node_type: 'child', 
+                            branch_index: 0, 
+                            child_index: 1, 
+                            angle: 0 
+                        },
+                        'child_1_0': { 
+                            x: 370, y: 50, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 2.1', 
+                            node_type: 'child', 
+                            branch_index: 1, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_1_1': { 
+                            x: 370, y: 110, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 2.2', 
+                            node_type: 'child', 
+                            branch_index: 1, 
+                            child_index: 1, 
+                            angle: 0 
+                        },
+                        'child_2_0': { 
+                            x: -370, y: -110, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 3.1', 
+                            node_type: 'child', 
+                            branch_index: 2, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_2_1': { 
+                            x: -370, y: -50, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 3.2', 
+                            node_type: 'child', 
+                            branch_index: 2, 
+                            child_index: 1, 
+                            angle: 0 
+                        },
+                        'child_3_0': { 
+                            x: -370, y: 50, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 4.1', 
+                            node_type: 'child', 
+                            branch_index: 3, 
+                            child_index: 0, 
+                            angle: 0 
+                        },
+                        'child_3_1': { 
+                            x: -370, y: 110, 
+                            width: 90, height: 40, 
+                            text: 'Sub-item 4.2', 
+                            node_type: 'child', 
+                            branch_index: 3, 
+                            child_index: 1, 
+                            angle: 0 
+                        }
+                    },
+                    connections: [
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: 220, y: -80, type: 'branch' } },
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: 220, y: 80, type: 'branch' } },
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: -220, y: -80, type: 'branch' } },
+                        { from: { x: 0, y: 0, type: 'topic' }, to: { x: -220, y: 80, type: 'branch' } },
+                        { from: { x: 220, y: -80, type: 'branch' }, to: { x: 370, y: -110, type: 'child' } },
+                        { from: { x: 220, y: -80, type: 'branch' }, to: { x: 370, y: -50, type: 'child' } },
+                        { from: { x: 220, y: 80, type: 'branch' }, to: { x: 370, y: 50, type: 'child' } },
+                        { from: { x: 220, y: 80, type: 'branch' }, to: { x: 370, y: 110, type: 'child' } },
+                        { from: { x: -220, y: -80, type: 'branch' }, to: { x: -370, y: -110, type: 'child' } },
+                        { from: { x: -220, y: -80, type: 'branch' }, to: { x: -370, y: -50, type: 'child' } },
+                        { from: { x: -220, y: 80, type: 'branch' }, to: { x: -370, y: 50, type: 'child' } },
+                        { from: { x: -220, y: 80, type: 'branch' }, to: { x: -370, y: 110, type: 'child' } }
+                    ],
+                    params: {
+                        background: '#f5f5f5'
                     }
                 },
                 _recommended_dimensions: {
-                    width: 700,
-                    height: 500,
+                    width: 1000,
+                    height: 600,
                     padding: 40
                 }
             };

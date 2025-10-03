@@ -87,53 +87,7 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Add watermark in lower right corner
-    const watermarkText = 'MindGraph';
-    
-    // Get SVG dimensions
-    const w = +svg.attr('width');
-    const h = +svg.attr('height');
-    
-    // Check if SVG uses viewBox
-    const viewBox = svg.attr('viewBox');
-    let watermarkX, watermarkY, watermarkFontSize;
-    
-    if (viewBox) {
-        // SVG uses viewBox - position within viewBox coordinate system
-        const viewBoxParts = viewBox.split(' ').map(Number);
-        const viewBoxWidth = viewBoxParts[2];
-        const viewBoxHeight = viewBoxParts[3];
-        
-        // Calculate font size based on viewBox dimensions
-        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
-        
-        // Calculate padding based on viewBox size
-        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
-        
-        // Position in lower right corner of viewBox
-        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
-        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
-    } else {
-        // SVG uses standard coordinate system
-        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
-        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
-        watermarkX = w - padding;
-        watermarkY = h - padding;
-    }
-    
-    // Add watermark with proper styling
-    svg.append('text')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
+    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
@@ -209,7 +163,9 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('r', topicRadius)
                 .attr('fill', finalFill)
                 .attr('stroke', finalStroke)
-                .attr('stroke-width', pos.stroke_width || 3);
+                .attr('stroke-width', pos.stroke_width || 3)
+                .attr('data-node-id', 'topic_center')
+                .attr('data-node-type', 'topic');
             
             // Draw text
             svg.append('text')
@@ -220,6 +176,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('fill', finalTextColor)
                 .attr('font-size', THEME.fontTopic || '16px')
                 .attr('font-weight', 'bold')
+                .attr('data-text-for', 'topic_center')
                 .text(pos.text || 'Topic');
                 
         } else if (pos.node_type === 'branch') {
@@ -234,6 +191,9 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
             const finalBranchTextColor = pos.text_color || THEME.branchText || '#333333';
             
+            // Generate node ID for branch
+            const branchNodeId = `branch_${pos.branch_index}`;
+            
             // Draw rectangular node
             svg.append('rect')
                 .attr('x', branchX - branchWidth / 2)
@@ -244,7 +204,11 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('ry', 8)
                 .attr('fill', finalBranchFill)
                 .attr('stroke', finalBranchStroke)
-                .attr('stroke-width', pos.stroke_width || THEME.branchStrokeWidth || 2);
+                .attr('stroke-width', pos.stroke_width || THEME.branchStrokeWidth || 2)
+                .attr('data-node-id', branchNodeId)
+                .attr('data-node-type', 'branch')
+                .attr('data-branch-index', pos.branch_index)
+                .attr('data-array-index', pos.branch_index);
             
             // Draw text
             svg.append('text')
@@ -254,6 +218,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', finalBranchTextColor)
                 .attr('font-size', THEME.fontBranch || '16px')
+                .attr('data-text-for', branchNodeId)
                 .text(pos.text || 'Branch');
                 
         } else if (pos.node_type === 'child') {
@@ -268,6 +233,9 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';
             const finalChildTextColor = pos.text_color || THEME.childText || '#333333';
             
+            // Generate node ID for child
+            const childNodeId = `child_${pos.branch_index}_${pos.child_index}`;
+            
             // Draw rectangular node
             svg.append('rect')
                 .attr('x', childX - childWidth / 2)
@@ -278,7 +246,12 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('ry', 6)
                 .attr('fill', finalChildFill)
                 .attr('stroke', finalChildStroke)
-                .attr('stroke-width', pos.stroke_width || 2);
+                .attr('stroke-width', pos.stroke_width || 2)
+                .attr('data-node-id', childNodeId)
+                .attr('data-node-type', 'child')
+                .attr('data-branch-index', pos.branch_index)
+                .attr('data-child-index', pos.child_index)
+                .attr('data-array-index', pos.child_index);
             
             // Draw text
             svg.append('text')
@@ -288,6 +261,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', finalChildTextColor)
                 .attr('font-size', THEME.fontChild || '14px')
+                .attr('data-text-for', childNodeId)
                 .text(pos.text || 'Child');
         }
     });

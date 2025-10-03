@@ -208,29 +208,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             .text(node.text);
     });
     
-    // Add watermark in lower right corner - matching original d3-renderers.js
-    const watermarkText = 'MindGraph';
-    
-    // Calculate dynamic padding and font size like original
-    const watermarkPadding = Math.max(5, Math.min(15, Math.min(width, height) * 0.01));
-    const watermarkFontSize = Math.max(8, Math.min(16, Math.min(width, height) * 0.02));
-    
-    const watermarkX = maxX - watermarkPadding;
-    const watermarkY = maxY - watermarkPadding;
-    
-    svg.append('text')
-        .attr('class', 'watermark')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
+    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
@@ -374,29 +352,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('data-text-for', 'topic_center')
         .text(spec.topic);
     
-    // Add watermark in lower right corner - matching original d3-renderers.js
-    const watermarkText = 'MindGraph';
-    
-    // Calculate dynamic padding and font size like original
-    const watermarkPadding = Math.max(5, Math.min(15, Math.min(width, height) * 0.01));
-    const watermarkFontSize = Math.max(8, Math.min(16, Math.min(width, height) * 0.02));
-    
-    const watermarkX = maxX - watermarkPadding;
-    const watermarkY = maxY - watermarkPadding;
-    
-    svg.append('text')
-        .attr('class', 'watermark')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
+    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
@@ -768,29 +724,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         });
     }
     
-    // Add watermark in lower right corner - using smaller size like circle map
-    const watermarkText = 'MindGraph';
-    
-    // Calculate dynamic padding and font size (smaller like circle map for better proportion)
-    const watermarkPadding = Math.max(5, Math.min(15, Math.min(width, height) * 0.01));
-    const watermarkFontSize = Math.max(8, Math.min(16, Math.min(width, height) * 0.02));
-    
-    const watermarkX = width - watermarkPadding;
-    const watermarkY = height - watermarkPadding;
-    
-    svg.append('text')
-        .attr('class', 'watermark')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
+    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {

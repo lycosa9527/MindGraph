@@ -561,56 +561,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         });
     }
     
-    // Add watermark using shared utilities if available, otherwise self-contained
-    if (useSharedUtilities && typeof window.MindGraphUtils.addWatermark === 'function') {
-        window.MindGraphUtils.addWatermark(svg, theme);
-    } else {
-        // Self-contained watermark (from reference file)
-        const watermarkText = theme?.watermarkText || 'MindGraph';
-    const w = +svg.attr('width');
-    const h = +svg.attr('height');
-    
-    // Check if SVG uses viewBox
-    const viewBox = svg.attr('viewBox');
-    let watermarkX, watermarkY, watermarkFontSize;
-    
-    if (viewBox) {
-        // SVG uses viewBox - position within viewBox coordinate system
-        const viewBoxParts = viewBox.split(' ').map(Number);
-        const viewBoxWidth = viewBoxParts[2];
-        const viewBoxHeight = viewBoxParts[3];
-        
-        // Calculate font size based on viewBox dimensions
-        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
-        
-        // Calculate padding based on viewBox size
-        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
-        
-        // Position in lower right corner of viewBox
-        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
-        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
-    } else {
-        // SVG uses standard coordinate system
-        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
-        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
-            
-            // Position in lower right corner
-        watermarkX = w - padding;
-        watermarkY = h - padding;
-    }
-    
-        // Add watermark text (matching reference file style)
-    svg.append('text')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-            .attr('dominant-baseline', 'hanging')
-            .attr('fill', theme?.watermarkColor || '#999')
-        .attr('font-size', watermarkFontSize)
-            .attr('font-family', 'Arial, sans-serif')
-            .attr('opacity', 0.6)
-        .text(watermarkText);
-    }
+    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {

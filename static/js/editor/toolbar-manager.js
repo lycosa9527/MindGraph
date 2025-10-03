@@ -623,7 +623,7 @@ class ToolbarManager {
         }
         
         const diagramType = this.editor.diagramType;
-        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map'].includes(diagramType);
+        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'mindmap'].includes(diagramType);
 
         // Check if selection is required for this diagram type
         if (requiresSelection && this.currentSelection.length === 0) {
@@ -635,7 +635,7 @@ class ToolbarManager {
         this.editor.addNode();
         
         // Only show generic success notification for diagram types that don't show their own
-            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'bridge_map', 'circle_map', 'bubble_map', 'concept_map'].includes(diagramType);
+            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'bridge_map', 'circle_map', 'bubble_map', 'concept_map', 'mindmap'].includes(diagramType);
             if (!showsOwnNotification) {
                 this.showNotification('Node added! Double-click to edit text.', 'success');
             }
@@ -1363,20 +1363,55 @@ class ToolbarManager {
         }
         
         try {
-            // Temporarily show watermarks for export
-            const watermarks = svg.querySelectorAll('.watermark');
-            watermarks.forEach(wm => wm.style.display = 'block');
+            // Add watermark temporarily for export
+            const svgD3 = d3.select(svg);
+            const width = parseFloat(svg.getAttribute('width')) || svg.getBoundingClientRect().width;
+            const height = parseFloat(svg.getAttribute('height')) || svg.getBoundingClientRect().height;
+            
+            // Check if SVG uses viewBox
+            const viewBox = svg.getAttribute('viewBox');
+            let watermarkX, watermarkY, watermarkFontSize;
+            
+            if (viewBox) {
+                const viewBoxParts = viewBox.split(' ').map(Number);
+                const viewBoxWidth = viewBoxParts[2];
+                const viewBoxHeight = viewBoxParts[3];
+                watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
+                const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
+                watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
+                watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
+            } else {
+                watermarkFontSize = Math.max(12, Math.min(20, Math.min(width, height) * 0.025));
+                const padding = Math.max(10, Math.min(20, Math.min(width, height) * 0.02));
+                watermarkX = width - padding;
+                watermarkY = height - padding;
+            }
+            
+            // Add temporary watermark
+            const watermark = svgD3.append('text')
+                .attr('class', 'export-watermark')
+                .attr('x', watermarkX)
+                .attr('y', watermarkY)
+                .attr('text-anchor', 'end')
+                .attr('dominant-baseline', 'alphabetic')
+                .attr('fill', '#2c3e50')
+                .attr('font-size', watermarkFontSize)
+                .attr('font-family', 'Inter, Segoe UI, sans-serif')
+                .attr('font-weight', '500')
+                .attr('opacity', 0.8)
+                .attr('pointer-events', 'none')
+                .text('MindGraph');
             
             // Get SVG dimensions
             const svgRect = svg.getBoundingClientRect();
-            const width = parseFloat(svg.getAttribute('width')) || svgRect.width;
-            const height = parseFloat(svg.getAttribute('height')) || svgRect.height;
+            const finalWidth = parseFloat(svg.getAttribute('width')) || svgRect.width;
+            const finalHeight = parseFloat(svg.getAttribute('height')) || svgRect.height;
             
             // Create canvas
             const canvas = document.createElement('canvas');
             const scale = 2; // Higher resolution
-            canvas.width = width * scale;
-            canvas.height = height * scale;
+            canvas.width = finalWidth * scale;
+            canvas.height = finalHeight * scale;
             const ctx = canvas.getContext('2d');
             
             // Scale context for higher resolution
@@ -1384,7 +1419,7 @@ class ToolbarManager {
             
             // Fill white background
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, finalWidth, finalHeight);
             
             // Serialize SVG
             const svgData = new XMLSerializer().serializeToString(svg);
@@ -1395,7 +1430,7 @@ class ToolbarManager {
             const img = new Image();
             img.onload = () => {
                 // Draw image to canvas
-                ctx.drawImage(img, 0, 0, width, height);
+                ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
                 
                 // Convert canvas to PNG
                 canvas.toBlob((blob) => {
@@ -1409,8 +1444,8 @@ class ToolbarManager {
                     URL.revokeObjectURL(pngUrl);
                     URL.revokeObjectURL(url);
                     
-                    // Hide watermarks again after export
-                    watermarks.forEach(wm => wm.style.display = 'none');
+                    // Remove temporary watermark
+                    watermark.remove();
                     
                     this.showNotification('Diagram exported as PNG!', 'success');
                 }, 'image/png');
@@ -1420,8 +1455,8 @@ class ToolbarManager {
                 console.error('Error loading SVG:', error);
                 URL.revokeObjectURL(url);
                 
-                // Hide watermarks on error
-                watermarks.forEach(wm => wm.style.display = 'none');
+                // Remove temporary watermark on error
+                watermark.remove();
                 
                 this.showNotification('Failed to export diagram', 'error');
             };

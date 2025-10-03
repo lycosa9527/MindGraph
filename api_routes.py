@@ -333,6 +333,36 @@ def sanitize_prompt(prompt):
     sanitized = prompt[:1000].strip()
     return sanitized if sanitized else None
 
+@api.route('/recalculate_mindmap_layout', methods=['POST'])
+@handle_api_errors
+def recalculate_mindmap_layout():
+    """Recalculate mind map layout after adding/deleting nodes in the editor.
+    
+    This endpoint takes a mind map spec with updated children and returns
+    the spec with recalculated layout positions.
+    """
+    data = request.json
+    spec = data.get('spec')
+    
+    if not spec or not isinstance(spec, dict):
+        return jsonify({'error': 'Invalid spec'}), 400
+    
+    if not spec.get('topic') or not isinstance(spec.get('children'), list):
+        return jsonify({'error': 'Invalid mind map spec'}), 400
+    
+    try:
+        # Enhance spec using MindMapAgent to recalculate layout
+        enhanced_spec = enhance_mindmap_spec(spec)
+        
+        return jsonify({
+            'spec': enhanced_spec,
+            'success': True
+        })
+    except Exception as e:
+        logger.error(f"Error recalculating mind map layout: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
