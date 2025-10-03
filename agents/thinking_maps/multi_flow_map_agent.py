@@ -189,23 +189,28 @@ class MultiFlowMapAgent(BaseAgent):
                 return (value or "").strip()
 
             event: str = clean_text(event_raw)
+            logger.info(f"MultiFlowMapAgent: Raw causes: {len(causes_raw)}, Raw effects: {len(effects_raw)}")
 
             def normalize_list(items: List[str]) -> List[str]:
                 seen = set()
                 normalized: List[str] = []
                 for item in items:
                     if not isinstance(item, str):
+                        logger.warning(f"MultiFlowMapAgent: Skipping non-string item: {item}")
                         continue
                     cleaned = clean_text(item)
                     if not cleaned or cleaned in seen:
+                        logger.warning(f"MultiFlowMapAgent: Skipping empty or duplicate item: '{item}'")
                         continue
                     seen.add(cleaned)
                     normalized.append(cleaned)
+                    logger.info(f"MultiFlowMapAgent: Added normalized item: '{cleaned}'")
                 # Clamp to maximum supported items
                 return normalized[: self.MAX_ITEMS_PER_SIDE]
 
             causes: List[str] = normalize_list(causes_raw)
             effects: List[str] = normalize_list(effects_raw)
+            logger.info(f"MultiFlowMapAgent: Final normalized - causes: {len(causes)}, effects: {len(effects)}")
 
             if not event:
                 return {"success": False, "error": "Missing or empty event"}

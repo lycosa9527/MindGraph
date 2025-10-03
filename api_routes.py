@@ -352,7 +352,12 @@ def generate_graph():
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
     
-    logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}")
+    # Get optional forced diagram type (for auto-complete feature)
+    forced_diagram_type = data.get('diagram_type', None)
+    if forced_diagram_type:
+        logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}, forced_type={forced_diagram_type!r}")
+    else:
+        logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}")
     
     # Track timing for LLM processing
     start_time = time.time()
@@ -360,12 +365,13 @@ def generate_graph():
     # Use enhanced agent workflow with integrated style system
     try:
         # Try cache first to avoid duplicate LLM work for identical prompt/language
+        # Note: Cache is language-specific but not diagram-type-specific for now
         cached = _llm_cache_get(prompt, language)
-        if cached:
+        if cached and not forced_diagram_type:
             logger.debug("Cache hit for generate_graph - returning cached spec")
             result = cached
         else:
-            result = agent.agent_graph_workflow_with_styles(prompt, language)
+            result = agent.agent_graph_workflow_with_styles(prompt, language, forced_diagram_type=forced_diagram_type)
             # Cache on success
             try:
                 if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):

@@ -176,16 +176,14 @@ class BridgeMapAgent(BaseAgent):
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
-            logger.debug("=== ENHANCE SPEC START ===")
-            logger.debug(f"Input spec keys: {list(spec.keys())}")
-            logger.debug(f"Input spec type: {type(spec)}")
+            logger.info(f"BridgeMapAgent: Enhancing spec - Analogies: {len(spec.get('analogies', []))}")
             
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()
             
             # Ensure we have exactly 5 analogies (renderer expects this)
             if 'analogies' in enhanced_spec and len(enhanced_spec['analogies']) > 5:
-                logger.debug(f"Truncating {len(enhanced_spec['analogies'])} analogies to 5 for renderer")
+                logger.info(f"BridgeMapAgent: Truncating {len(enhanced_spec['analogies'])} analogies to 5 for renderer")
                 enhanced_spec['analogies'] = enhanced_spec['analogies'][:5]
             
             # Add layout information
@@ -240,10 +238,11 @@ class BridgeMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.debug("BridgeMapAgent: Enhancing existing specification")
+            logger.info("BridgeMapAgent: Starting spec enhancement")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
+                logger.info("BridgeMapAgent: Spec already enhanced, skipping")
                 return {'success': True, 'spec': spec}
             
             # Enhance the spec

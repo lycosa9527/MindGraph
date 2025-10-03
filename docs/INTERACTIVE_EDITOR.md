@@ -2,7 +2,7 @@
 
 **Author**: lycosa9527  
 **Made by**: MindSpring Team  
-**Last Updated**: October 2, 2025
+**Last Updated**: October 3, 2025
 
 ---
 
@@ -20,12 +20,12 @@
 ## Executive Summary
 
 **Objective**: Create a professional interactive diagram editor with polished UX  
-**Current Progress**: ~70% Complete  
-**Status**: Phase 1 ✅ Complete | Phase 2 ⏳ Partial (70% done)
+**Current Progress**: ~75% Complete  
+**Status**: Phase 1 ✅ Complete | Phase 2 ⏳ Partial (75% done)
 
 The MindGraph Interactive Editor provides a modern **Gallery** for selecting diagram types and a feature-rich **Canvas** for editing diagrams. The system is accessible at `/editor` with most core features implemented.
 
-**Key Achievement**: Core editing functionality is operational with toolbar, AI integration, and export capabilities.
+**Key Achievement**: Core editing functionality is operational with toolbar, AI integration, export capabilities, and full bilingual support (EN/ZH).
 
 ---
 
@@ -55,21 +55,26 @@ The MindGraph Interactive Editor provides a modern **Gallery** for selecting dia
 - Professional toolbar with organized sections
 
 **Toolbar Features**
-- Add, Delete, Empty node operations
+- Add, Delete, Empty node operations (with node selection requirement for specific diagrams)
 - Main topic protection (prevents deletion of central nodes)
-- Auto-complete AI diagram generation
+- Auto-complete AI diagram generation (language-aware)
 - MindMate AI assistant panel with SSE streaming
 - Line Mode (black & white style toggle)
 - Export to PNG with watermarks
-- Reset to blank template
+- Reset to blank template (language-aware)
 - Property panel for node customization
+- Language toggle with auto-refresh
 
 **Technical Foundation**
-- 10 diagram types with blank templates
+- 10 diagram types with language-aware blank templates
 - Integration with existing D3.js renderers
 - Event coordination and state management
 - Character counter and input validation
-- Bilingual support (EN/中文)
+- **Complete bilingual support (EN/中文)**
+  - All diagram templates support both languages
+  - Auto-refresh when switching languages
+  - Language-aware auto-complete
+  - Seamless EN ⟷ ZH switching
 
 ### ⏳ What's Pending
 
@@ -87,6 +92,31 @@ The MindGraph Interactive Editor provides a modern **Gallery** for selecting dia
 - Performance optimization for large diagrams
 - Help system and tutorials
 - Accessibility features
+
+### 🆕 Recent Additions (v3.0.5)
+
+**Language & Localization**
+- ✅ All diagram templates support EN/ZH
+- ✅ Auto-refresh on language toggle
+- ✅ Language-aware auto-complete
+- ✅ Chinese LLM prompts with explicit instructions
+
+**Flow Map Enhancements**
+- ✅ Editable title field
+- ✅ Smart add logic (step→step, substep→substep)
+- ✅ Node selection requirement for add/delete
+- ✅ Insertion after selected node
+- ✅ Title preservation in auto-complete
+
+**Brace Map Enhancements**
+- ✅ Smart add logic (part→part, subpart→subpart)
+- ✅ Node selection requirement for add/delete
+- ✅ Main topic protection
+- ✅ Default 3 parts × 2 subparts template
+
+**Developer Features**
+- ✅ Verbose logging for all diagram agents
+- ✅ Enhanced debugging for editor mode
 
 ---
 
@@ -135,6 +165,16 @@ The MindGraph Interactive Editor provides a modern **Gallery** for selecting dia
 - [x] Selection-aware button states
 - [x] Notification system
 - [x] Main topic protection
+- [x] **Language system** ✨ NEW
+  - [x] All templates support EN/ZH
+  - [x] Auto-refresh on language toggle
+  - [x] Language-aware auto-complete
+  - [x] Language-aware LLM prompts
+- [x] **Enhanced diagram interactions** ✨ NEW
+  - [x] Flow map: editable title, smart add/delete
+  - [x] Brace map: smart add/delete logic
+  - [x] Tree map: root topic preservation
+  - [x] Node insertion after selection
 
 **Pending**:
 - [ ] Duplicate node functionality
@@ -148,7 +188,7 @@ The MindGraph Interactive Editor provides a modern **Gallery** for selecting dia
   - [ ] Diagram listing interface
   - [ ] LocalStorage fallback
 
-**Phase 2 Status**: ⏳ **70% Complete**
+**Phase 2 Status**: ⏳ **75% Complete**
 
 ---
 
@@ -345,6 +385,16 @@ MindGraph/
 4. **No Duplicate**: Cannot duplicate nodes yet
 5. **No Layout Tools**: No auto-arrange or alignment
 
+### Recent Improvements (v3.0.5)
+
+1. ✅ **Complete Language Support**: All diagrams now support EN/ZH templates
+2. ✅ **Auto-Refresh**: Language toggle automatically updates diagram template
+3. ✅ **Flow Map Editing**: Title editable, smart add logic, node insertion
+4. ✅ **Brace Map Editing**: Smart add logic, node selection requirements
+5. ✅ **Tree Map Fix**: Root topic preserved during auto-complete
+6. ✅ **Language-Aware AI**: Auto-complete detects and respects diagram language
+7. ✅ **Developer Logging**: Verbose logs for all diagram agents in editor mode
+
 ---
 
 ## Next Steps
@@ -413,10 +463,10 @@ MindGraph/
 
 ### Overall Progress
 - **Phase 1**: ✅ 100% Complete
-- **Phase 2**: ⏳ 70% Complete
+- **Phase 2**: ⏳ 75% Complete
 - **Phase 3**: ⏳ 0% Complete
 - **Phase 4**: ⏳ 0% Complete
-- **Total Progress**: ~42% Complete
+- **Total Progress**: ~44% Complete
 
 ### Testing Checklist
 
@@ -462,7 +512,9 @@ All limitations will be addressed in Phases 2-4 according to the implementation 
 
 ## Summary
 
-**Current State**: Interactive Editor is functional with core features implemented. Users can select diagrams in the Gallery, edit them on the Canvas, use AI assistance, and export results.
+**Current State**: Interactive Editor is functional with core features implemented. Users can select diagrams in the Gallery, edit them on the Canvas, use AI assistance, and export results. Complete bilingual support (EN/ZH) with language-aware templates and auto-complete.
+
+**Recent Progress (v3.0.5)**: Comprehensive language support, enhanced diagram interactions (Flow Map, Brace Map, Tree Map), auto-refresh on language toggle, and verbose agent logging.
 
 **Critical Gap**: Save/Load system is the highest priority missing feature for production readiness.
 
@@ -474,10 +526,11 @@ All limitations will be addressed in Phases 2-4 according to the implementation 
 
 **Documentation**: This consolidated document  
 **API Reference**: `docs/API_REFERENCE.md`  
-**Optimization Guide**: `docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md`
+**Optimization Guide**: `docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md`  
+**Changelog**: `CHANGELOG.md`
 
-**Version**: Phase 2 (Partial) - October 2025
+**Version**: Phase 2 (Partial - 75%) - October 2025
 
 ---
 
-*Last Updated: October 2, 2025*
+*Last Updated: October 3, 2025*

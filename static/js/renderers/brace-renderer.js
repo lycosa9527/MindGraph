@@ -43,13 +43,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             console.log('✅ Brace renderer: getTextRadius function available');
         }
 
-        if (typeof window.addWatermark !== 'function') {
-            console.error('❌ Brace renderer: addWatermark function not available globally');
-            console.log('🔍 Available functions on window:', Object.keys(window).filter(k => k.includes('Watermark') || k.includes('watermark')));
-            throw new Error('addWatermark function not available globally');
-        } else {
-            console.log('✅ Brace renderer: addWatermark function available');
-        }
+        // Note: addWatermark function check removed - watermark only added during export, not in canvas display
 
         // Check D3 availability
         if (typeof d3 === 'undefined') {
@@ -290,7 +284,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .attr('rx', 8)
         .attr('fill', THEME.topicFill)
         .attr('stroke', THEME.topicStroke)
-        .attr('stroke-width', 2);
+        .attr('stroke-width', 2)
+        .attr('data-node-id', 'topic_center')
+        .attr('data-node-type', 'topic');
     
     svg.append('text')
         .attr('x', topicX + topicBoxWidth / 2)
@@ -301,6 +297,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .attr('font-size', parseFontSpec(THEME.fontTopic).size)
         .attr('font-family', parseFontSpec(THEME.fontTopic).family)
         .attr('font-weight', 'bold')
+        .attr('data-text-for', 'topic_center')
         .text(actualSpec.topic);
 
     // Position parts to the right of topic - FIXED: Better positioning
@@ -336,7 +333,10 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('rx', 5)
             .attr('fill', THEME.partFill)
             .attr('stroke', THEME.partStroke)
-            .attr('stroke-width', 1);
+            .attr('stroke-width', 1)
+            .attr('data-node-id', `part_${partIndex}`)
+            .attr('data-node-type', 'part')
+            .attr('data-part-index', partIndex);
         
         svg.append('text')
             .attr('x', partsStartX + partBoxWidth / 2)
@@ -347,6 +347,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('font-size', parseFontSpec(THEME.fontPart).size)
             .attr('font-family', parseFontSpec(THEME.fontPart).family)
             .attr('font-weight', 'bold')
+            .attr('data-text-for', `part_${partIndex}`)
             .text(part.name || '');
 
         // Move to next position for subparts
@@ -369,7 +370,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('rx', 3)
                     .attr('fill', THEME.subpartFill)
                     .attr('stroke', THEME.subpartStroke)
-                    .attr('stroke-width', 1);
+                    .attr('stroke-width', 1)
+                    .attr('data-node-id', `subpart_${partIndex}_${subpartIndex}`)
+                    .attr('data-node-type', 'subpart')
+                    .attr('data-part-index', partIndex)
+                    .attr('data-subpart-index', subpartIndex);
                 
                 svg.append('text')
                     .attr('x', subpartsStartX + subpartBoxWidth / 2)
@@ -379,6 +384,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('fill', THEME.subpartText)
                     .attr('font-size', parseFontSpec(THEME.fontSubpart).size)
                     .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
+                    .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
                     .text(subpart.name || '');
 
                 currentY += subpartBoxHeight + 10;
@@ -428,54 +434,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('stroke-width', braceWidth);
     }
 
-    // Watermark - matching mindmap style
-    const watermarkText = 'MindGraph';
-    
-    // Get SVG dimensions
-    const w = +svg.attr('width');
-    const h = +svg.attr('height');
-    
-    // Check if SVG uses viewBox
-    const viewBox = svg.attr('viewBox');
-    let watermarkX, watermarkY, watermarkFontSize;
-    
-    if (viewBox) {
-        // SVG uses viewBox - position within viewBox coordinate system
-        const viewBoxParts = viewBox.split(' ').map(Number);
-        const viewBoxWidth = viewBoxParts[2];
-        const viewBoxHeight = viewBoxParts[3];
-        
-        // Calculate font size based on viewBox dimensions
-        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
-        
-        // Calculate padding based on viewBox size
-        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
-        
-        // Position in lower right corner of viewBox
-        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
-        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
-    } else {
-        // SVG uses standard coordinate system
-        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
-        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
-        watermarkX = w - padding;
-        watermarkY = h - padding;
-    }
-    
-    // Add watermark with proper styling - matching mindmap
-    svg.append('text')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
-    
+    // Watermark removed from canvas display - will be added during PNG export only
+    // The export functionality will handle adding the watermark to the final image
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);

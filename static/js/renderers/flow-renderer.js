@@ -200,10 +200,7 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         .attr('d', 'M0,-5L10,0L0,5')
         .attr('fill', '#666');
 
-    // Watermark
-    if (typeof window.MindGraphUtils !== 'undefined' && window.MindGraphUtils.addWatermark) {
-        window.MindGraphUtils.addWatermark(svg, theme);
-    }
+    // Watermark removed from canvas display - will be added during PNG export only
 }
 
 function renderFlowMap(spec, theme = null, dimensions = null) {
@@ -385,6 +382,9 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         .attr('font-size', THEME.fontTitle)
         .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
         .attr('font-weight', 'bold')
+        .attr('data-node-id', 'flow-title')
+        .attr('data-node-type', 'title')
+        .attr('cursor', 'pointer')
         .text(spec.title);
 
     // NEW APPROACH: Calculate all substep positions first, then position steps accordingly
@@ -466,6 +466,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('fill', THEME.stepText)        // White text
             .attr('font-size', THEME.fontStep)
             .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
+            .attr('data-node-id', `flow-step-${index}`)
+            .attr('data-node-type', 'step')
+            .attr('data-step-index', index)
+            .attr('cursor', 'pointer')
             .text(s.text);
 
         // Arrow to next step (if there is one)
@@ -547,6 +551,11 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('fill', THEME.substepText)        // Dark text for readability
                 .attr('font-size', Math.max(12, THEME.fontStep - 1))
                 .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
+                .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                .attr('data-node-type', 'substep')
+                .attr('data-step-index', stepIdx)
+                .attr('data-substep-index', nodeIdx)
+                .attr('cursor', 'pointer')
                 .text(substep.text);
             
             // Draw L-shaped connector from step to substep
@@ -593,24 +602,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .style('height', ch + 'px');
     }
     
-    // Add watermark with same styling as bubble maps
-    const watermarkText = theme?.watermarkText || 'MindGraph';
-    const watermarkFontSize = Math.max(12, Math.min(20, Math.min(cw, ch) * 0.025));
-    const watermarkPadding = Math.max(10, Math.min(20, Math.min(cw, ch) * 0.02));
-    
-    svg.append('text')
-        .attr('x', cw - watermarkPadding)
-        .attr('y', ch - watermarkPadding)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
-    
+    // Watermark removed from canvas display - will be added during PNG export only
     // Apply learning sheet text knockout if needed
     console.log('FlowMap renderer: Checking learning sheet metadata:', {
         is_learning_sheet: spec.is_learning_sheet,
@@ -835,12 +827,8 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .style("fill", "#666666"); // Changed to grey to match triangles
     }
     
-    // Watermark
-    if (typeof window.MindGraphUtils !== 'undefined' && window.MindGraphUtils.addWatermark) {
-        window.MindGraphUtils.addWatermark(svg, theme);
-    }
+    // Watermark removed from canvas display - will be added during PNG export only
     
-
     console.log('Final rendered analogies count:', spec.analogies.length);
     console.log('SVG dimensions:', { width, height });
     console.log('Container ID:', containerId);
@@ -1118,29 +1106,7 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('font-weight', 'bold')
         .text(spec.event);
     
-    // Add watermark in lower right corner - matching bubble map and mind map styling
-    const watermarkText = 'MindGraph';
-    
-    // Calculate dynamic padding and font size like bubble map (increased font size)
-    const watermarkPadding = Math.max(5, Math.min(15, Math.min(fW, fH) * 0.01));
-    const watermarkFontSize = Math.max(12, Math.min(20, Math.min(fW, fH) * 0.025));
-    
-    const watermarkX = fW - watermarkPadding;
-    const watermarkY = fH - watermarkPadding;
-    
-    svg.append('text')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
-    
+    // Watermark removed from canvas display - will be added during PNG export only
     // Apply learning sheet text knockout if needed
     console.log('MultiFlowMap renderer: Checking learning sheet metadata:', {
         is_learning_sheet: spec.is_learning_sheet,

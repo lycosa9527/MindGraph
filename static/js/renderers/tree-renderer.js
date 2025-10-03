@@ -142,29 +142,31 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
 
     // First pass: measure branches and leaves, compute per-column width
     const branchLayouts = spec.children.map((child) => {
-        // Validate child structure
-        if (!child || typeof child.label !== 'string') {
+        // Validate child structure - accept both 'text' and 'label' properties
+        const childText = child?.text || child?.label;
+        if (!child || typeof childText !== 'string') {
             console.warn('Invalid child structure:', child);
             return null;
         }
         
         const branchFont = THEME.fontBranch || 16;
-        const branchBox = measureSvgTextBox(svg, child.label, branchFont, 14, 10);
+        const branchBox = measureSvgTextBox(svg, childText, branchFont, 14, 10);
         const leafFont = THEME.fontLeaf || 14;
         let maxLeafW = 0;
         const leafBoxes = (Array.isArray(child.children) ? child.children : []).map(leaf => {
-            if (!leaf || typeof leaf.label !== 'string') {
+            const leafText = leaf?.text || leaf?.label;
+            if (!leaf || typeof leafText !== 'string') {
                 console.warn('Invalid leaf structure:', leaf);
                 return null;
             }
-            const b = measureSvgTextBox(svg, leaf.label, leafFont, 12, 8);
+            const b = measureSvgTextBox(svg, leafText, leafFont, 12, 8);
             if (b.w > maxLeafW) maxLeafW = b.w;
-            return b;
+            return { ...b, text: leafText };
         }).filter(box => box !== null); // Filter out invalid leaves
         
         const columnContentW = Math.max(branchBox.w, maxLeafW);
         const columnWidth = columnContentW + 60; // padding within column to avoid overlap
-        return { child, branchFont, branchBox, leafFont, leafBoxes, maxLeafW, columnWidth };
+        return { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW, columnWidth };
     }).filter(layout => layout !== null); // Filter out invalid layouts
 
     // Second pass: assign x positions cumulatively to prevent overlap
@@ -189,7 +191,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
 
     // Render branches and children stacked vertically with straight connectors
     branchLayouts.forEach(layout => {
-        const { child, branchFont, branchBox, leafFont, leafBoxes, maxLeafW } = layout;
+        const { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW } = layout;
         const branchX = layout.branchX;
 
         // Draw branch rectangle and label with width adaptive to characters
@@ -211,7 +213,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.branchText)
             .attr('font-size', branchFont)
-            .text(child.label);
+            .text(childText);
 
         // Root to branch straight connector
         svg.append('line')
@@ -244,7 +246,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
 
             // Draw child rectangles and labels centered at branchX
             leaves.forEach((leaf, j) => {
-                const box = leafBoxes[j] || measureSvgTextBox(svg, leaf.label, leafFont, 12, 8);
+                const leafText = leaf?.text || leaf?.label;
+                const box = leafBoxes[j] || measureSvgTextBox(svg, leafText, leafFont, 12, 8);
                 const leafY = centersY[j];
                 // Width adaptive to characters for each node
                 const rectW = box.w;
@@ -266,7 +269,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.leafText)
                     .attr('font-size', leafFont)
-                    .text(leaf.label);
+                    .text(leafText);
             });
 
             // Draw straight vertical connectors: branch -> first child, then between consecutive children
@@ -303,54 +306,6 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     if (finalNeededHeight > height) {
         svg.attr('height', finalNeededHeight);
     }
-    
-    // Watermark - matching mindmap style
-    const watermarkText = 'MindGraph';
-    
-    // Get SVG dimensions
-    const w = +svg.attr('width');
-    const h = +svg.attr('height');
-    
-    // Check if SVG uses viewBox
-    const viewBox = svg.attr('viewBox');
-    let watermarkX, watermarkY, watermarkFontSize;
-    
-    if (viewBox) {
-        // SVG uses viewBox - position within viewBox coordinate system
-        const viewBoxParts = viewBox.split(' ').map(Number);
-        const viewBoxWidth = viewBoxParts[2];
-        const viewBoxHeight = viewBoxParts[3];
-        
-        // Calculate font size based on viewBox dimensions
-        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
-        
-        // Calculate padding based on viewBox size
-        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
-        
-        // Position in lower right corner of viewBox
-        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
-        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
-    } else {
-        // SVG uses standard coordinate system
-        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
-        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
-        watermarkX = w - padding;
-        watermarkY = h - padding;
-    }
-    
-    // Add watermark with proper styling - matching mindmap
-    svg.append('text')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
     
     // Apply learning sheet text knockout if needed
     console.log('Tree renderer: Checking learning sheet metadata:', {

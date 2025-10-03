@@ -171,6 +171,21 @@ class ToolbarManager {
             this.duplicateNodeBtn.disabled = !hasSelection;
             this.duplicateNodeBtn.style.opacity = hasSelection ? '1' : '0.5';
         }
+        
+        // Add button state for diagrams that require selection (brace_map, double_bubble_map, flow_map)
+        if (this.addNodeBtn && this.editor) {
+            const diagramType = this.editor.diagramType;
+            const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map'].includes(diagramType);
+            
+            if (requiresSelection) {
+                this.addNodeBtn.disabled = !hasSelection;
+                this.addNodeBtn.style.opacity = hasSelection ? '1' : '0.5';
+            } else {
+                // For other diagram types, add button is always enabled
+                this.addNodeBtn.disabled = false;
+                this.addNodeBtn.style.opacity = '1';
+            }
+        }
     }
     
     /**
@@ -416,12 +431,28 @@ class ToolbarManager {
      */
     handleAddNode() {
         console.log('Add node clicked');
-        if (this.editor) {
-            this.editor.addNode();
-            this.showNotification('Node added! Double-click to edit text.', 'success');
-        } else {
+        if (!this.editor) {
             this.showNotification('Editor not initialized', 'error');
+            return;
         }
+        
+        const diagramType = this.editor.diagramType;
+        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map'].includes(diagramType);
+
+        // Check if selection is required for this diagram type
+        if (requiresSelection && this.currentSelection.length === 0) {
+            this.showNotification('Please select a node first to add', 'warning');
+            return;
+        }
+        
+        // Call editor's addNode method (it will handle diagram-specific logic)
+        this.editor.addNode();
+        
+        // Only show generic success notification for diagram types that don't show their own
+            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'circle_map', 'bubble_map', 'concept_map'].includes(diagramType);
+            if (!showsOwnNotification) {
+                this.showNotification('Node added! Double-click to edit text.', 'success');
+            }
     }
     
     /**
@@ -515,11 +546,40 @@ class ToolbarManager {
         const mainTopic = this.identifyMainTopic(existingNodes);
         const diagramType = this.editor.diagramType;
         
-        // Create a better prompt focused on the main topic
+        // Store the original topic to preserve it later
+        const originalTopic = this.editor.currentSpec?.topic || mainTopic;
+        console.log('Original topic to preserve:', originalTopic);
+        
+        // For flow maps, prioritize title for language detection
+        let textForLanguageDetection = mainTopic;
+        if (diagramType === 'flow_map' && this.editor.currentSpec?.title) {
+            textForLanguageDetection = this.editor.currentSpec.title;
+            console.log('Flow map detected - using title for language detection:', textForLanguageDetection);
+        }
+        
+        // Detect language from the topic/title text (if contains Chinese characters, use Chinese)
+        const hasChinese = /[\u4e00-\u9fa5]/.test(textForLanguageDetection);
+        const language = hasChinese ? 'zh' : (window.languageManager?.getCurrentLanguage() || 'en');
+        console.log('Detected language from text:', language, '(hasChinese:', hasChinese, ', text:', textForLanguageDetection, ')');
+        
+        // Create a better prompt focused on the main topic (language-aware)
         let prompt;
-        if (existingNodes.length === 1) {
+        
+        // For flow maps, only use the title in the prompt, not the steps/substeps
+        // (to avoid LLM being influenced by default English template)
+        if (diagramType === 'flow_map') {
+            if (language === 'zh') {
+                prompt = `为主题"${mainTopic}"创建一个完整的流程图。生成相关的主要步骤和子步骤，使其内容完整。`;
+            } else {
+                prompt = `Create a complete flow map about "${mainTopic}". Generate relevant steps and substeps to make it comprehensive.`;
+            }
+        } else if (existingNodes.length === 1) {
             // Only one node - expand around it
-            prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
+            if (language === 'zh') {
+                prompt = `为主题"${mainTopic}"创建一个完整的${diagramType}。生成相关的节点、连接和详细信息，使其内容完整。`;
+            } else {
+                prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
+            }
         } else {
             // Multiple nodes - use main topic and mention others
             const otherNodes = existingNodes
@@ -528,15 +588,24 @@ class ToolbarManager {
                 .slice(0, 5); // Limit to avoid too long prompt
             
             if (otherNodes.length > 0) {
-                prompt = `Create a complete ${diagramType} with "${mainTopic}" as the main topic. User has added: ${otherNodes.join(', ')}. Expand and complete the diagram with relevant nodes and connections.`;
+                if (language === 'zh') {
+                    prompt = `以"${mainTopic}"为主题创建一个完整的${diagramType}。用户已添加：${otherNodes.join('、')}。扩展并完善图表，添加相关节点和连接。`;
+                } else {
+                    prompt = `Create a complete ${diagramType} with "${mainTopic}" as the main topic. User has added: ${otherNodes.join(', ')}. Expand and complete the diagram with relevant nodes and connections.`;
+                }
             } else {
-                prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
+                if (language === 'zh') {
+                    prompt = `为主题"${mainTopic}"创建一个完整的${diagramType}。生成相关的节点、连接和详细信息，使其内容完整。`;
+                } else {
+                    prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
+                }
             }
         }
         
         console.log('Auto-complete prompt:', prompt);
         console.log('Main topic identified:', mainTopic);
         console.log('Total existing nodes:', existingNodes.length);
+        console.log('Language:', language);
         
         // Show loading state
         this.setAutoButtonLoading(true);
@@ -551,7 +620,8 @@ class ToolbarManager {
                 },
                 body: JSON.stringify({
                     prompt: prompt,
-                    diagram_type: diagramType
+                    diagram_type: diagramType,
+                    language: language
                 })
             });
             
@@ -567,6 +637,34 @@ class ToolbarManager {
             
             // Update diagram with new specification
             if (data.spec) {
+                console.log('Received spec from LLM:', JSON.stringify(data.spec).substring(0, 200));
+                
+                // CRITICAL: Preserve the original root topic to prevent it from being overwritten
+                // For tree maps and other hierarchical diagrams, always keep the user's original topic
+                if (originalTopic && data.spec.topic) {
+                    console.log(`[AUTO-COMPLETE] Preserving original topic: "${originalTopic}" (LLM generated: "${data.spec.topic}")`);
+                    data.spec.topic = originalTopic;
+                } else if (originalTopic) {
+                    console.warn(`[AUTO-COMPLETE] Original topic exists but spec.topic is missing. Adding original topic.`);
+                    data.spec.topic = originalTopic;
+                } else {
+                    console.warn(`[AUTO-COMPLETE] No original topic found. Using LLM generated topic: "${data.spec.topic}"`);
+                }
+                
+                // For flow maps, preserve the title field (but replace steps/substeps with LLM output)
+                if (diagramType === 'flow_map') {
+                    const originalTitle = this.editor.currentSpec?.title || mainTopic;
+                    if (originalTitle && data.spec.title) {
+                        console.log(`[AUTO-COMPLETE] Preserving original flow map title: "${originalTitle}" (LLM generated: "${data.spec.title}")`);
+                        data.spec.title = originalTitle;
+                    } else if (originalTitle) {
+                        console.warn(`[AUTO-COMPLETE] Original title exists but spec.title is missing. Adding original title.`);
+                        data.spec.title = originalTitle;
+                    }
+                    // Note: Steps and substeps are completely replaced by LLM output
+                    console.log(`[AUTO-COMPLETE] Flow map - Replacing with ${data.spec.steps?.length || 0} new steps`);
+                }
+                
                 this.editor.currentSpec = data.spec;
                 this.editor.renderDiagram();
                 this.showNotification('Diagram auto-completed successfully!', 'success');
@@ -584,13 +682,69 @@ class ToolbarManager {
     
     /**
      * Identify the main topic from existing nodes
-     * Uses heuristics: center position, font size, or first meaningful node
+     * Uses diagram-specific structure first, then falls back to heuristics
      */
     identifyMainTopic(nodes) {
         if (nodes.length === 0) return '';
         if (nodes.length === 1) return nodes[0].text;
         
-        // Strategy 1: Find node closest to center of canvas
+        const diagramType = this.editor.diagramType;
+        const spec = this.editor.currentSpec;
+        
+        // Strategy 1: Use diagram-specific structure
+        if (spec) {
+            let mainTopic = null;
+            
+            switch (diagramType) {
+                case 'bubble_map':
+                    // For bubble map, the main topic is spec.topic
+                    mainTopic = spec.topic;
+                    break;
+                    
+                case 'circle_map':
+                    // For circle map, the main topic is spec.topic
+                    mainTopic = spec.topic;
+                    break;
+                    
+                case 'tree_map':
+                case 'mindmap':
+                    // For tree/mind maps, the main topic is spec.topic
+                    mainTopic = spec.topic;
+                    break;
+                    
+                case 'brace_map':
+                    // For brace map, the main topic is spec.topic
+                    mainTopic = spec.topic;
+                    break;
+                    
+                case 'double_bubble_map':
+                    // For double bubble map, use the left topic as primary
+                    mainTopic = spec.left || spec.right;
+                    break;
+                    
+                case 'multi_flow_map':
+                    // For multi-flow map, the main topic is spec.event
+                    mainTopic = spec.event;
+                    break;
+                    
+                case 'flow_map':
+                    // For flow map, use the title or first step
+                    mainTopic = spec.title || (spec.steps && spec.steps[0]);
+                    break;
+                    
+                case 'concept_map':
+                    // For concept map, the main topic is spec.topic
+                    mainTopic = spec.topic;
+                    break;
+            }
+            
+            if (mainTopic) {
+                console.log('Main topic identified from spec structure:', mainTopic);
+                return mainTopic;
+            }
+        }
+        
+        // Strategy 2: Find node closest to center of canvas (geometric fallback)
         const svg = d3.select('#d3-container svg');
         if (!svg.empty()) {
             const width = parseFloat(svg.attr('width')) || 800;
@@ -618,11 +772,12 @@ class ToolbarManager {
             return closestNode.text;
         }
         
-        // Fallback: Return first node with meaningful content
+        // Strategy 3: Fallback - find first meaningful node
         const meaningfulNode = nodes.find(n => 
             n.text.length > 1 && 
             n.text !== 'New Node' && 
-            !n.text.startsWith('Context')
+            !n.text.startsWith('Context') &&
+            !n.text.startsWith('Attribute')
         );
         
         return meaningfulNode ? meaningfulNode.text : nodes[0].text;
@@ -966,6 +1121,22 @@ class ToolbarManager {
      * Handle back to gallery
      */
     handleBackToGallery() {
+        // Clean up canvas and editor first
+        this.cleanupCanvas();
+        
+        // Hide property panel
+        this.hidePropertyPanel();
+        
+        // Close AI assistant if open and reset button state
+        const aiPanel = document.getElementById('ai-assistant-panel');
+        if (aiPanel && !aiPanel.classList.contains('collapsed')) {
+            aiPanel.classList.add('collapsed');
+        }
+        const mindmateBtn = document.getElementById('mindmate-ai-btn');
+        if (mindmateBtn) {
+            mindmateBtn.classList.remove('active');
+        }
+        
         // Hide editor interface
         const editorInterface = document.getElementById('editor-interface');
         if (editorInterface) {
@@ -978,8 +1149,31 @@ class ToolbarManager {
             landing.style.display = 'block';
         }
         
-        // Hide property panel
-        this.hidePropertyPanel();
+        console.log('Returned to gallery - canvas cleaned');
+    }
+    
+    /**
+     * Clean up canvas and previous editor
+     */
+    cleanupCanvas() {
+        // Clear the D3 container
+        const container = document.getElementById('d3-container');
+        if (container) {
+            // Remove all SVG elements
+            d3.select('#d3-container').selectAll('*').remove();
+            console.log('Canvas cleared');
+        }
+        
+        // Clear any existing editor instance
+        if (window.currentEditor) {
+            window.currentEditor = null;
+        }
+        
+        // Reset selection state
+        this.currentSelection = [];
+        if (this.editor && this.editor.selectedNodes) {
+            this.editor.selectedNodes.clear();
+        }
     }
     
     /**

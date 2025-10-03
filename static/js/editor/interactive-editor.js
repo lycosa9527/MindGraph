@@ -289,6 +289,40 @@ class InteractiveEditor {
                 return;
             }
             
+            // Check if this is a standalone text element with its own node-id (e.g., flow map title)
+            const ownNodeId = element.attr('data-node-id');
+            const ownNodeType = element.attr('data-node-type');
+            
+            if (ownNodeId && ownNodeType) {
+                // This is a standalone editable text element
+                element
+                    .style('cursor', 'pointer')
+                    .style('pointer-events', 'all')
+                    .on('click', (event) => {
+                        event.stopPropagation();
+                        
+                        if (event.ctrlKey || event.metaKey) {
+                            self.selectionManager.toggleNodeSelection(ownNodeId);
+                        } else {
+                            self.selectionManager.clearSelection();
+                            self.selectionManager.selectNode(ownNodeId);
+                        }
+                    })
+                    .on('dblclick', (event) => {
+                        event.stopPropagation();
+                        const currentText = element.text();
+                        // For standalone text elements, the text element is both the shape and text
+                        self.openNodeEditor(ownNodeId, textNode, textNode, currentText);
+                    })
+                    .on('mouseover', function() {
+                        d3.select(this).style('opacity', 0.8);
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).style('opacity', 1);
+                    });
+                return; // Skip the associated node logic below
+            }
+            
             // Find associated shape node ID
             let associatedNodeId = null;
             
@@ -446,6 +480,10 @@ class InteractiveEditor {
             this.updateCircleMapText(nodeId, shapeNode, newText);
         } else if (this.diagramType === 'bubble_map') {
             this.updateBubbleMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'double_bubble_map') {
+            this.updateDoubleBubbleMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'flow_map') {
+            this.updateFlowMapText(nodeId, shapeNode, newText);
         } else {
             // Generic text update for other diagram types
             this.updateGenericNodeText(nodeId, shapeNode, textNode, newText);
@@ -526,6 +564,124 @@ class InteractiveEditor {
     }
     
     /**
+     * Update Double Bubble Map node text
+     */
+    updateDoubleBubbleMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        switch(nodeType) {
+            case 'left':
+                // Update left topic
+                this.currentSpec.left = newText;
+                console.log('Updated Double Bubble Map left topic to:', newText);
+                break;
+                
+            case 'right':
+                // Update right topic
+                this.currentSpec.right = newText;
+                console.log('Updated Double Bubble Map right topic to:', newText);
+                break;
+                
+            case 'similarity':
+                // Update similarities array
+                const simIndex = parseInt(shape.attr('data-array-index'));
+                if (!isNaN(simIndex) && Array.isArray(this.currentSpec.similarities)) {
+                    this.currentSpec.similarities[simIndex] = newText;
+                    console.log(`Updated similarity[${simIndex}] to:`, newText);
+                }
+                break;
+                
+            case 'left_difference':
+                // Update left_differences array
+                const leftDiffIndex = parseInt(shape.attr('data-array-index'));
+                if (!isNaN(leftDiffIndex) && Array.isArray(this.currentSpec.left_differences)) {
+                    this.currentSpec.left_differences[leftDiffIndex] = newText;
+                    console.log(`Updated left_difference[${leftDiffIndex}] to:`, newText);
+                }
+                break;
+                
+            case 'right_difference':
+                // Update right_differences array
+                const rightDiffIndex = parseInt(shape.attr('data-array-index'));
+                if (!isNaN(rightDiffIndex) && Array.isArray(this.currentSpec.right_differences)) {
+                    this.currentSpec.right_differences[rightDiffIndex] = newText;
+                    console.log(`Updated right_difference[${rightDiffIndex}] to:`, newText);
+                }
+                break;
+                
+            default:
+                console.warn(`Unknown node type: ${nodeType}`);
+                return;
+        }
+        
+        // Re-render to update layout and text sizes
+        this.renderDiagram();
+    }
+    
+    /**
+     * Update Flow Map node text
+     */
+    updateFlowMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        if (nodeType === 'title') {
+            // Update the title
+            this.currentSpec.title = newText;
+            console.log('Updated Flow Map title to:', newText);
+        } else if (nodeType === 'step') {
+            // Update step in the steps array
+            const stepIndex = parseInt(shape.attr('data-step-index'));
+            if (!isNaN(stepIndex) && this.currentSpec.steps && stepIndex < this.currentSpec.steps.length) {
+                this.currentSpec.steps[stepIndex] = newText;
+                console.log(`Updated step ${stepIndex} to:`, newText);
+            }
+        } else if (nodeType === 'substep') {
+            // Update substep in the substeps array
+            const stepIndex = parseInt(shape.attr('data-step-index'));
+            const substepIndex = parseInt(shape.attr('data-substep-index'));
+            
+            if (!isNaN(stepIndex) && !isNaN(substepIndex) && this.currentSpec.substeps) {
+                // Find the substeps entry for this step
+                const substepsEntry = this.currentSpec.substeps.find(s => s.step === this.currentSpec.steps[stepIndex]);
+                if (substepsEntry && substepsEntry.substeps && substepIndex < substepsEntry.substeps.length) {
+                    substepsEntry.substeps[substepIndex] = newText;
+                    console.log(`Updated substep ${stepIndex}-${substepIndex} to:`, newText);
+                }
+            }
+        }
+        
+        // Update the visual text element
+        shape.text(newText);
+        
+        // Re-render to reflect changes
+        this.renderDiagram();
+    }
+    
+    /**
      * Update generic node text (for other diagram types)
      */
     updateGenericNodeText(nodeId, shapeNode, textNode, newText) {
@@ -571,6 +727,15 @@ class InteractiveEditor {
                 break;
             case 'bubble_map':
                 this.addNodeToBubbleMap();
+                break;
+            case 'double_bubble_map':
+                this.addNodeToDoubleBubbleMap();
+                break;
+            case 'brace_map':
+                this.addNodeToBraceMap();
+                break;
+            case 'flow_map':
+                this.addNodeToFlowMap();
                 break;
             case 'concept_map':
                 this.addNodeToConceptMap();
@@ -627,6 +792,334 @@ class InteractiveEditor {
         });
         
         console.log('Added new attribute node to Bubble Map');
+    }
+    
+    /**
+     * Add a new node to Double Bubble Map
+     * Requires user to select a node type first (similarity or difference)
+     */
+    addNodeToDoubleBubbleMap() {
+        if (!this.currentSpec) {
+            console.error('Invalid double bubble map spec');
+            return;
+        }
+        
+        // Check if user has selected a node
+        const selected = Array.from(this.selectedNodes);
+        if (selected.length === 0) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Please select a node type first (similarity or difference)', 'warning');
+            }
+            console.log('No node selected - user must select node type first');
+            return;
+        }
+        
+        // Get the type of the selected node
+        const selectedElement = d3.select(`[data-node-id="${selected[0]}"]`);
+        const nodeType = selectedElement.attr('data-node-type');
+        
+        if (!nodeType) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Could not determine node type. Please try again.', 'error');
+            }
+            return;
+        }
+        
+        // Add node based on selected type
+        switch(nodeType) {
+            case 'similarity':
+                // Add similarity
+                if (!Array.isArray(this.currentSpec.similarities)) {
+                    this.currentSpec.similarities = [];
+                }
+                this.currentSpec.similarities.push('New Similarity');
+                console.log('Added new similarity node');
+                break;
+                
+            case 'left_difference':
+            case 'right_difference':
+                // Add paired differences (one to each side)
+                if (!Array.isArray(this.currentSpec.left_differences)) {
+                    this.currentSpec.left_differences = [];
+                }
+                if (!Array.isArray(this.currentSpec.right_differences)) {
+                    this.currentSpec.right_differences = [];
+                }
+                this.currentSpec.left_differences.push('Left Difference');
+                this.currentSpec.right_differences.push('Right Difference');
+                console.log('Added paired difference nodes');
+                break;
+                
+            case 'left':
+            case 'right':
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot add main topics. Please select a similarity or difference node.', 'warning');
+                }
+                return;
+                
+            default:
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Unknown node type. Please select a similarity or difference node.', 'error');
+                }
+                return;
+        }
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'double_bubble_map',
+            nodeType: nodeType
+        });
+        
+        if (this.toolbarManager) {
+            if (nodeType === 'similarity') {
+                this.toolbarManager.showNotification('Similarity node added!', 'success');
+            } else {
+                this.toolbarManager.showNotification('Difference pair added!', 'success');
+            }
+        }
+    }
+    
+    /**
+     * Add a new node to Brace Map
+     * Requires user to select a part or subpart node first
+     * - Clicking on part → adds new part
+     * - Clicking on subpart → adds new subpart to same part
+     */
+    addNodeToBraceMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.parts)) {
+            console.error('Invalid brace map spec');
+            return;
+        }
+        
+        // Check if user has selected a node
+        const selected = Array.from(this.selectedNodes);
+        if (selected.length === 0) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Please select a part or subpart node first', 'warning');
+            }
+            console.log('No node selected - user must select a part or subpart first');
+            return;
+        }
+        
+        // Get the type of the selected node
+        const selectedElement = d3.select(`[data-node-id="${selected[0]}"]`);
+        const nodeType = selectedElement.attr('data-node-type');
+        
+        if (!nodeType) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Could not determine node type. Please try again.', 'error');
+            }
+            return;
+        }
+        
+        // Handle different node types
+        switch(nodeType) {
+            case 'part': {
+                // Add new part node to the parts array with two default subparts
+                this.currentSpec.parts.push({
+                    name: 'New Part',
+                    subparts: [
+                        { name: 'New Subpart 1' },
+                        { name: 'New Subpart 2' }
+                    ]
+                });
+                console.log('Added new part node with 2 subparts');
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New part added with 2 subparts!', 'success');
+                }
+                break;
+            }
+                
+            case 'subpart': {
+                // Get part index from selected subpart
+                const partIndex = parseInt(selectedElement.attr('data-part-index'));
+                
+                if (isNaN(partIndex) || partIndex < 0 || partIndex >= this.currentSpec.parts.length) {
+                    if (this.toolbarManager) {
+                        this.toolbarManager.showNotification('Invalid part index', 'error');
+                    }
+                    return;
+                }
+                
+                // Add new subpart to the same part as the selected subpart
+                if (!Array.isArray(this.currentSpec.parts[partIndex].subparts)) {
+                    this.currentSpec.parts[partIndex].subparts = [];
+                }
+                this.currentSpec.parts[partIndex].subparts.push({
+                    name: 'New Subpart'
+                });
+                console.log(`Added new subpart to part ${partIndex}`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New subpart added!', 'success');
+                }
+                break;
+            }
+                
+            case 'topic':
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot add to topic. Please select a part or subpart node.', 'warning');
+                }
+                // Don't re-render, just return
+                return;
+                
+            default:
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Unknown node type. Please select a part or subpart node.', 'error');
+                }
+                return;
+        }
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'brace_map',
+            nodeType: nodeType
+        });
+    }
+    
+    /**
+     * Add a new node to Flow Map
+     * Requirements:
+     * - Requires node selection (step or substep)
+     * - Clicking on step → adds new step (with 2 substeps)
+     * - Clicking on substep → adds new substep to same step
+     */
+    addNodeToFlowMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.steps)) {
+            console.error('Invalid flow map spec');
+            return;
+        }
+        
+        // Check if a node is selected
+        const selectedNodes = Array.from(this.selectedNodes);
+        if (selectedNodes.length === 0) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Please select a step or substep node first', 'warning');
+            }
+            return;
+        }
+        
+        // Get the first selected node
+        const selectedNodeId = selectedNodes[0];
+        const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
+        
+        if (selectedElement.empty()) {
+            console.error('Selected node not found');
+            return;
+        }
+        
+        const nodeType = selectedElement.attr('data-node-type');
+        console.log('Adding to flow map, selected node type:', nodeType);
+        
+        // Handle different node types
+        switch (nodeType) {
+            case 'step': {
+                // Get the index of the selected step
+                const stepIndex = parseInt(selectedElement.attr('data-step-index'));
+                
+                if (isNaN(stepIndex) || stepIndex < 0 || stepIndex >= this.currentSpec.steps.length) {
+                    if (this.toolbarManager) {
+                        this.toolbarManager.showNotification('Invalid step index', 'error');
+                    }
+                    return;
+                }
+                
+                // Insert new step right after the selected step
+                const newStep = 'New Step';
+                this.currentSpec.steps.splice(stepIndex + 1, 0, newStep);
+                
+                // Also insert substeps entry at the same position with 2 default substeps
+                if (!Array.isArray(this.currentSpec.substeps)) {
+                    this.currentSpec.substeps = [];
+                }
+                this.currentSpec.substeps.splice(stepIndex + 1, 0, {
+                    step: newStep,
+                    substeps: ['New Substep 1', 'New Substep 2']
+                });
+                
+                console.log(`Inserted new step after step ${stepIndex} with 2 substeps`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New step added with 2 substeps!', 'success');
+                }
+                break;
+            }
+                
+            case 'substep': {
+                // Get step index and substep index from selected substep
+                const stepIndex = parseInt(selectedElement.attr('data-step-index'));
+                const substepIndex = parseInt(selectedElement.attr('data-substep-index'));
+                
+                if (isNaN(stepIndex) || stepIndex < 0 || stepIndex >= this.currentSpec.steps.length) {
+                    if (this.toolbarManager) {
+                        this.toolbarManager.showNotification('Invalid step index', 'error');
+                    }
+                    return;
+                }
+                
+                if (isNaN(substepIndex) || substepIndex < 0) {
+                    if (this.toolbarManager) {
+                        this.toolbarManager.showNotification('Invalid substep index', 'error');
+                    }
+                    return;
+                }
+                
+                // Find the substeps entry for this step
+                const stepName = this.currentSpec.steps[stepIndex];
+                let substepsEntry = this.currentSpec.substeps?.find(s => s.step === stepName);
+                
+                if (!substepsEntry) {
+                    // Create substeps entry if it doesn't exist
+                    if (!Array.isArray(this.currentSpec.substeps)) {
+                        this.currentSpec.substeps = [];
+                    }
+                    substepsEntry = { step: stepName, substeps: [] };
+                    this.currentSpec.substeps.push(substepsEntry);
+                }
+                
+                // Insert new substep right after the selected substep
+                if (!Array.isArray(substepsEntry.substeps)) {
+                    substepsEntry.substeps = [];
+                }
+                substepsEntry.substeps.splice(substepIndex + 1, 0, 'New Substep');
+                
+                console.log(`Inserted new substep after substep ${substepIndex} in step ${stepIndex}`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New substep added!', 'success');
+                }
+                break;
+            }
+                
+            case 'title':
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot add to title. Please select a step or substep node.', 'warning');
+                }
+                // Don't re-render, just return
+                return;
+                
+            default:
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Please select a step or substep node', 'warning');
+                }
+                return;
+        }
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'flow_map',
+            nodeType: nodeType
+        });
     }
     
     /**
@@ -768,6 +1261,12 @@ class InteractiveEditor {
             this.deleteCircleMapNodes(nodesToDelete);
         } else if (this.diagramType === 'bubble_map') {
             this.deleteBubbleMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'double_bubble_map') {
+            this.deleteDoubleBubbleMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'brace_map') {
+            this.deleteBraceMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'flow_map') {
+            this.deleteFlowMapNodes(nodesToDelete);
         } else if (this.diagramType === 'concept_map') {
             this.deleteConceptMapNodes(nodesToDelete);
         } else {
@@ -898,6 +1397,329 @@ class InteractiveEditor {
         console.log(`Deleted ${indicesToDelete.length} attribute node(s) from Bubble Map`);
         
         // Re-render
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Double Bubble Map nodes
+     * - Similarities: delete normally
+     * - Differences: delete in PAIRS (same index from both left and right)
+     */
+    deleteDoubleBubbleMapNodes(nodeIds) {
+        if (!this.currentSpec) {
+            console.error('Invalid double bubble map spec');
+            return;
+        }
+        
+        // Collect indices to delete by type
+        const similarityIndicesToDelete = [];
+        const differenceIndicesToDelete = []; // For paired deletion
+        let attemptedMainTopicDelete = false;
+        
+        nodeIds.forEach(nodeId => {
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                const nodeType = shapeElement.attr('data-node-type');
+                const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
+                
+                switch(nodeType) {
+                    case 'similarity':
+                        if (!isNaN(arrayIndex)) {
+                            similarityIndicesToDelete.push(arrayIndex);
+                        }
+                        break;
+                        
+                    case 'left_difference':
+                    case 'right_difference':
+                        // For differences, delete in pairs at the same index
+                        if (!isNaN(arrayIndex)) {
+                            differenceIndicesToDelete.push(arrayIndex);
+                        }
+                        break;
+                        
+                    case 'left':
+                    case 'right':
+                        attemptedMainTopicDelete = true;
+                        break;
+                }
+            }
+        });
+        
+        // Show notification if user tried to delete main topics
+        if (attemptedMainTopicDelete) {
+            window.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: 'Main topic nodes cannot be deleted',
+                    type: 'warning'
+                }
+            }));
+        }
+        
+        // If no valid nodes to delete, return early
+        if (similarityIndicesToDelete.length === 0 && differenceIndicesToDelete.length === 0) {
+            return;
+        }
+        
+        let deletedCount = 0;
+        
+        // Delete similarities
+        if (similarityIndicesToDelete.length > 0 && Array.isArray(this.currentSpec.similarities)) {
+            // Sort in descending order to delete from end to start
+            const uniqueIndices = [...new Set(similarityIndicesToDelete)].sort((a, b) => b - a);
+            uniqueIndices.forEach(index => {
+                this.currentSpec.similarities.splice(index, 1);
+                deletedCount++;
+            });
+            console.log(`Deleted ${uniqueIndices.length} similarity node(s)`);
+        }
+        
+        // Delete differences in PAIRS
+        if (differenceIndicesToDelete.length > 0) {
+            // Remove duplicates and sort in descending order
+            const uniqueIndices = [...new Set(differenceIndicesToDelete)].sort((a, b) => b - a);
+            
+            uniqueIndices.forEach(index => {
+                // Delete from both left and right at the same index
+                if (Array.isArray(this.currentSpec.left_differences) && index < this.currentSpec.left_differences.length) {
+                    this.currentSpec.left_differences.splice(index, 1);
+                }
+                if (Array.isArray(this.currentSpec.right_differences) && index < this.currentSpec.right_differences.length) {
+                    this.currentSpec.right_differences.splice(index, 1);
+                }
+            });
+            
+            deletedCount += uniqueIndices.length * 2; // Count both left and right
+            console.log(`Deleted ${uniqueIndices.length} difference pair(s) (${uniqueIndices.length * 2} nodes total)`);
+            
+            // Show notification about paired deletion
+            window.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: `Deleted ${uniqueIndices.length} difference pair${uniqueIndices.length > 1 ? 's' : ''} (left & right)`,
+                    type: 'success'
+                }
+            }));
+        }
+        
+        console.log(`Total deleted from Double Bubble Map: ${deletedCount} node(s)`);
+        
+        // Re-render - this will automatically remove connecting lines
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Brace Map nodes (parts and subparts)
+     */
+    deleteBraceMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.parts)) {
+            console.error('Invalid brace map spec');
+            return;
+        }
+        
+        // Collect nodes to delete by type
+        const partsToDelete = [];
+        const subpartsToDelete = []; // Store as {partIndex, subpartIndex}
+        let attemptedMainTopicDelete = false;
+        
+        nodeIds.forEach(nodeId => {
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                const nodeType = shapeElement.attr('data-node-type');
+                
+                switch(nodeType) {
+                    case 'part': {
+                        const partIndex = parseInt(shapeElement.attr('data-part-index'));
+                        if (!isNaN(partIndex)) {
+                            partsToDelete.push(partIndex);
+                        }
+                        break;
+                    }
+                        
+                    case 'subpart': {
+                        const partIndex = parseInt(shapeElement.attr('data-part-index'));
+                        const subpartIndex = parseInt(shapeElement.attr('data-subpart-index'));
+                        if (!isNaN(partIndex) && !isNaN(subpartIndex)) {
+                            subpartsToDelete.push({partIndex, subpartIndex});
+                        }
+                        break;
+                    }
+                        
+                    case 'topic':
+                        attemptedMainTopicDelete = true;
+                        break;
+                }
+            }
+        });
+        
+        // Show notification if user tried to delete main topic
+        if (attemptedMainTopicDelete) {
+            window.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: 'Main topic node cannot be deleted',
+                    type: 'warning'
+                }
+            }));
+        }
+        
+        // If no valid nodes to delete, return early
+        if (partsToDelete.length === 0 && subpartsToDelete.length === 0) {
+            return;
+        }
+        
+        let deletedCount = 0;
+        
+        // Delete subparts first (before deleting parts, which would remove all subparts)
+        if (subpartsToDelete.length > 0) {
+            // Group subparts by part index for efficient deletion
+            const subpartsByPart = {};
+            subpartsToDelete.forEach(({partIndex, subpartIndex}) => {
+                if (!subpartsByPart[partIndex]) {
+                    subpartsByPart[partIndex] = [];
+                }
+                subpartsByPart[partIndex].push(subpartIndex);
+            });
+            
+            // Delete subparts for each part (in descending order to avoid index shifts)
+            Object.keys(subpartsByPart).forEach(partIndexStr => {
+                const partIndex = parseInt(partIndexStr);
+                if (partIndex >= 0 && partIndex < this.currentSpec.parts.length) {
+                    const part = this.currentSpec.parts[partIndex];
+                    if (part && Array.isArray(part.subparts)) {
+                        // Sort indices in descending order
+                        const sortedIndices = [...new Set(subpartsByPart[partIndex])].sort((a, b) => b - a);
+                        sortedIndices.forEach(subpartIndex => {
+                            if (subpartIndex >= 0 && subpartIndex < part.subparts.length) {
+                                part.subparts.splice(subpartIndex, 1);
+                                deletedCount++;
+                            }
+                        });
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedCount} subpart(s)`);
+        }
+        
+        // Delete parts (this will also remove any remaining subparts)
+        if (partsToDelete.length > 0) {
+            // Remove duplicates and sort in descending order
+            const uniquePartIndices = [...new Set(partsToDelete)].sort((a, b) => b - a);
+            
+            uniquePartIndices.forEach(partIndex => {
+                if (partIndex >= 0 && partIndex < this.currentSpec.parts.length) {
+                    this.currentSpec.parts.splice(partIndex, 1);
+                    deletedCount++;
+                }
+            });
+            console.log(`Deleted ${uniquePartIndices.length} part(s)`);
+        }
+        
+        console.log(`Total deleted from Brace Map: ${deletedCount} node(s)`);
+        
+        // Re-render - this will automatically rebuild the diagram
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Flow Map nodes (steps and substeps)
+     */
+    deleteFlowMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.steps)) {
+            console.error('Invalid flow map spec');
+            return;
+        }
+        
+        // Separate node IDs by type
+        const stepNodesToDelete = [];
+        const substepNodesToDelete = [];
+        
+        nodeIds.forEach(nodeId => {
+            const element = d3.select(`[data-node-id="${nodeId}"]`);
+            if (element.empty()) {
+                console.warn(`Node ${nodeId} not found`);
+                return;
+            }
+            
+            const nodeType = element.attr('data-node-type');
+            
+            if (nodeType === 'title') {
+                // Don't allow deletion of title
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot delete the title', 'warning');
+                }
+                return;
+            } else if (nodeType === 'step') {
+                const stepIndex = parseInt(element.attr('data-step-index'));
+                if (!isNaN(stepIndex)) {
+                    stepNodesToDelete.push({ nodeId, stepIndex });
+                }
+            } else if (nodeType === 'substep') {
+                const stepIndex = parseInt(element.attr('data-step-index'));
+                const substepIndex = parseInt(element.attr('data-substep-index'));
+                if (!isNaN(stepIndex) && !isNaN(substepIndex)) {
+                    substepNodesToDelete.push({ nodeId, stepIndex, substepIndex });
+                }
+            }
+        });
+        
+        console.log('Flow map deletion:', { stepNodesToDelete, substepNodesToDelete });
+        
+        // Delete substeps first (grouped by step, highest index first to avoid index shifting)
+        const substepsByStep = {};
+        substepNodesToDelete.forEach(item => {
+            if (!substepsByStep[item.stepIndex]) {
+                substepsByStep[item.stepIndex] = [];
+            }
+            substepsByStep[item.stepIndex].push(item.substepIndex);
+        });
+        
+        Object.keys(substepsByStep).forEach(stepIndex => {
+            const indices = substepsByStep[stepIndex].sort((a, b) => b - a); // Sort descending
+            const stepName = this.currentSpec.steps[parseInt(stepIndex)];
+            const substepsEntry = this.currentSpec.substeps?.find(s => s.step === stepName);
+            
+            if (substepsEntry && Array.isArray(substepsEntry.substeps)) {
+                indices.forEach(index => {
+                    if (index >= 0 && index < substepsEntry.substeps.length) {
+                        substepsEntry.substeps.splice(index, 1);
+                        console.log(`Deleted substep ${index} from step ${stepIndex}`);
+                    }
+                });
+            }
+        });
+        
+        // Delete steps (sort by index descending to avoid index shifting)
+        const stepIndicesToDelete = stepNodesToDelete
+            .map(item => item.stepIndex)
+            .sort((a, b) => b - a);
+        
+        stepIndicesToDelete.forEach(index => {
+            if (index >= 0 && index < this.currentSpec.steps.length) {
+                const stepName = this.currentSpec.steps[index];
+                
+                // Remove step from steps array
+                this.currentSpec.steps.splice(index, 1);
+                console.log(`Deleted step ${index}: ${stepName}`);
+                
+                // Remove corresponding substeps entry
+                if (Array.isArray(this.currentSpec.substeps)) {
+                    const substepsIndex = this.currentSpec.substeps.findIndex(s => s.step === stepName);
+                    if (substepsIndex !== -1) {
+                        this.currentSpec.substeps.splice(substepsIndex, 1);
+                        console.log(`Deleted substeps entry for step: ${stepName}`);
+                    }
+                }
+            }
+        });
+        
+        // Show notification
+        const totalDeleted = stepNodesToDelete.length + substepNodesToDelete.length;
+        if (totalDeleted > 0 && this.toolbarManager) {
+            this.toolbarManager.showNotification(
+                `Deleted ${totalDeleted} node(s)`,
+                'success'
+            );
+        }
+        
+        // Re-render the diagram
         this.renderDiagram();
     }
     

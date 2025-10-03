@@ -635,7 +635,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicFill)
         .attr('opacity', 0.9)
         .attr('stroke', THEME.topicStroke)
-        .attr('stroke-width', THEME.topicStrokeWidth);
+        .attr('stroke-width', THEME.topicStrokeWidth)
+        .attr('data-node-id', 'topic_left')
+        .attr('data-node-type', 'left');
     
     svg.append('text')
         .attr('x', leftTopicX)
@@ -645,7 +647,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicText)
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 600)
-        .text(spec.left);
+        .text(spec.left)
+        .attr('data-node-id', 'topic_left')
+        .attr('data-node-type', 'left');
     
     // Draw right topic
     svg.append('circle')
@@ -655,7 +659,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicFill)
         .attr('opacity', 0.9)
         .attr('stroke', THEME.topicStroke)
-        .attr('stroke-width', THEME.topicStrokeWidth);
+        .attr('stroke-width', THEME.topicStrokeWidth)
+        .attr('data-node-id', 'topic_right')
+        .attr('data-node-type', 'right');
     
     svg.append('text')
         .attr('x', rightTopicX)
@@ -665,7 +671,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicText)
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 600)
-        .text(spec.right);
+        .text(spec.right)
+        .attr('data-node-id', 'topic_right')
+        .attr('data-node-type', 'right');
     
     // Draw similarities in center column
     if (spec.similarities && Array.isArray(spec.similarities)) {
@@ -679,7 +687,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('r', simR)
                 .attr('fill', THEME.simFill)
                 .attr('stroke', THEME.simStroke)
-                .attr('stroke-width', THEME.simStrokeWidth);
+                .attr('stroke-width', THEME.simStrokeWidth)
+                .attr('data-node-id', `similarity_${i}`)
+                .attr('data-node-type', 'similarity')
+                .attr('data-array-index', i);
             
             svg.append('text')
                 .attr('x', simX)
@@ -688,7 +699,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.simText)
                 .attr('font-size', THEME.fontSim)
-                .text(item);
+                .text(item)
+                .attr('data-node-id', `similarity_${i}`)
+                .attr('data-node-type', 'similarity')
+                .attr('data-array-index', i);
         });
     }
     
@@ -704,7 +718,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('r', leftDiffR)
                 .attr('fill', THEME.diffFill)
                 .attr('stroke', THEME.diffStroke)
-                .attr('stroke-width', THEME.diffStrokeWidth);
+                .attr('stroke-width', THEME.diffStrokeWidth)
+                .attr('data-node-id', `left_diff_${i}`)
+                .attr('data-node-type', 'left_difference')
+                .attr('data-array-index', i);
             
             svg.append('text')
                 .attr('x', leftDiffX)
@@ -713,7 +730,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.diffText)
                 .attr('font-size', THEME.fontDiff)
-                .text(item);
+                .text(item)
+                .attr('data-node-id', `left_diff_${i}`)
+                .attr('data-node-type', 'left_difference')
+                .attr('data-array-index', i);
         });
     }
     
@@ -729,7 +749,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('r', rightDiffR)
                 .attr('fill', THEME.diffFill)
                 .attr('stroke', THEME.diffStroke)
-                .attr('stroke-width', THEME.diffStrokeWidth);
+                .attr('stroke-width', THEME.diffStrokeWidth)
+                .attr('data-node-id', `right_diff_${i}`)
+                .attr('data-node-type', 'right_difference')
+                .attr('data-array-index', i);
             
             svg.append('text')
                 .attr('x', rightDiffX)
@@ -738,7 +761,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.diffText)
                 .attr('font-size', THEME.fontDiff)
-                .text(item);
+                .text(item)
+                .attr('data-node-id', `right_diff_${i}`)
+                .attr('data-node-type', 'right_difference')
+                .attr('data-array-index', i);
         });
     }
     

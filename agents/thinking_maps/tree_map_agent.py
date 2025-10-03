@@ -8,7 +8,7 @@ Enhances basic tree map specs by:
 - Recommending canvas dimensions based on content density
 
 The agent accepts a spec of the form:
-  { "topic": str, "children": [ {"id": str, "label": str, "children": [{"id": str, "label": str}] } ] }
+  { "topic": str, "children": [ {"id": str, "text": str, "children": [{"id": str, "text": str}] } ] }
 
 Returns { "success": bool, "spec": Dict } on success, or { "success": False, "error": str } on failure.
 """
@@ -150,7 +150,7 @@ class TreeMapAgent(BaseAgent):
         Clean and enhance a tree map spec.
 
         Args:
-            spec: { "topic": str, "children": [ {"id": str, "label": str, "children": [{"id": str, "label": str}] } ] }
+            spec: { "topic": str, "children": [ {"id": str, "text": str, "children": [{"id": str, "text": str}] } ] }
 
         Returns:
             Dict with keys:
@@ -177,16 +177,18 @@ class TreeMapAgent(BaseAgent):
             # Normalize branches and leaves
             normalized_children: List[Dict] = []
             seen_branch_labels: Set[str] = set()
+            logger.info(f"TreeMapAgent: Raw children from LLM: {len(children_raw)} items")
 
             def ensure_node(node: Dict) -> Tuple[str, str]:
-                # returns (id, label) after normalization
-                label = clean_text(node.get("label", node.get("name", "")))
+                # returns (id, text) after normalization
+                # Accept both "text" (new format) and "label" (legacy format)
+                text = clean_text(node.get("text", node.get("label", node.get("name", ""))))
                 node_id = clean_text(node.get("id", ""))
-                return node_id, label
+                return node_id, text
 
-            def make_id_from(label: str, existing_ids: Set[str]) -> str:
+            def make_id_from(text: str, existing_ids: Set[str]) -> str:
                 base = (
-                    label.lower()
+                    text.lower()
                     .replace(" ", "-")
                     .replace("/", "-")
                     .replace("\\", "-")
@@ -202,17 +204,20 @@ class TreeMapAgent(BaseAgent):
 
             for child in children_raw:
                 if not isinstance(child, dict):
+                    logger.warning(f"TreeMapAgent: Skipping non-dict child: {child}")
                     continue
-                cid, clabel = ensure_node(child)
-                if not clabel or clabel in seen_branch_labels:
+                cid, ctext = ensure_node(child)
+                if not ctext or ctext in seen_branch_labels:
+                    logger.warning(f"TreeMapAgent: Skipping empty or duplicate branch: '{ctext}'")
                     continue
-                seen_branch_labels.add(clabel)
+                seen_branch_labels.add(ctext)
+                logger.info(f"TreeMapAgent: Processing branch: '{ctext}'")
 
                 # Normalize child id
                 if not cid:
-                    cid = make_id_from(clabel, used_ids)
+                    cid = make_id_from(ctext, used_ids)
                 if cid in used_ids:
-                    cid = make_id_from(f"{clabel}-b", used_ids)
+                    cid = make_id_from(f"{ctext}-b", used_ids)
                 used_ids.add(cid)
 
                 # Normalize leaves
@@ -223,26 +228,28 @@ class TreeMapAgent(BaseAgent):
                     for leaf in leaves_raw:
                         if not isinstance(leaf, dict):
                             continue
-                        lid, llabel = ensure_node(leaf)
-                        if not llabel or llabel in seen_leaf_labels:
+                        lid, ltext = ensure_node(leaf)
+                        if not ltext or ltext in seen_leaf_labels:
                             continue
-                        seen_leaf_labels.add(llabel)
+                        seen_leaf_labels.add(ltext)
                         if not lid:
-                            lid = make_id_from(llabel, used_ids)
+                            lid = make_id_from(ltext, used_ids)
                         if lid in used_ids:
-                            lid = make_id_from(f"{llabel}-l", used_ids)
+                            lid = make_id_from(f"{ltext}-l", used_ids)
                         used_ids.add(lid)
-                        normalized_leaves.append({"id": lid, "label": llabel})
+                        normalized_leaves.append({"id": lid, "text": ltext})
                         if len(normalized_leaves) >= self.MAX_LEAVES_PER_BRANCH:
                             break
 
                 normalized_children.append({
                     "id": cid,
-                    "label": clabel,
+                    "text": ctext,
                     "children": normalized_leaves,
                 })
                 if len(normalized_children) >= self.MAX_BRANCHES:
                     break
+
+            logger.info(f"TreeMapAgent: Final normalized children: {len(normalized_children)} branches")
 
             if not normalized_children:
                 return {"success": False, "error": "At least one branch (child) is required"}
@@ -267,7 +274,7 @@ class TreeMapAgent(BaseAgent):
             per_branch_widths: List[int] = []
             max_leaf_count = 0
             for b in normalized_children:
-                br = text_radius(b["label"], font_branch, 16)
+                br = text_radius(b["text"], font_branch, 16)
                 per_branch_widths.append(br * 2 + 20)
                 max_leaf_count = max(max_leaf_count, len(b.get("children", [])))
 

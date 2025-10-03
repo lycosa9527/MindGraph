@@ -121,6 +121,9 @@ class DoubleBubbleMapAgent(BaseAgent):
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
+            logger.info(f"DoubleBubbleMapAgent: Enhancing spec - Left: {spec.get('left')}, Right: {spec.get('right')}")
+            logger.info(f"DoubleBubbleMapAgent: Left attributes: {len(spec.get('left_only', []))}, Right attributes: {len(spec.get('right_only', []))}, Shared: {len(spec.get('shared', []))}")
+            
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()
             

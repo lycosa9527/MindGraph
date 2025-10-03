@@ -1532,13 +1532,15 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     return cleaned_prompt
 
 
-def agent_graph_workflow_with_styles(user_prompt, language='zh'):
+def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None):
     """
     Simplified agent workflow that directly calls specialized agents.
     
     Args:
         user_prompt (str): User's input prompt
         language (str): Language for processing ('zh' or 'en')
+        forced_diagram_type (str, optional): Force a specific diagram type instead of auto-detection.
+                                            Used for auto-complete to preserve current diagram type.
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
@@ -1549,9 +1551,14 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh'):
         # Validate inputs
         validate_inputs(user_prompt, language)
         
-        # LLM-based diagram type detection for semantic understanding
-        diagram_type = _detect_diagram_type_from_prompt(user_prompt, language)
-        logger.info(f"Agent: Detected diagram type: {diagram_type}")
+        # Use forced diagram type if provided, otherwise detect from prompt
+        if forced_diagram_type:
+            diagram_type = forced_diagram_type
+            logger.info(f"Agent: Using forced diagram type: {diagram_type}")
+        else:
+            # LLM-based diagram type detection for semantic understanding
+            diagram_type = _detect_diagram_type_from_prompt(user_prompt, language)
+            logger.info(f"Agent: Detected diagram type: {diagram_type}")
         
         # Add learning sheet detection
         is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)

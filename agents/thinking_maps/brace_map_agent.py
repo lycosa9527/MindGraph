@@ -1221,6 +1221,8 @@ class BraceMapAgent(BaseAgent):
             if not spec or not isinstance(spec, dict):
                 return {"success": False, "error": "Invalid specification"}
             
+            logger.info(f"BraceMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Parts: {len(spec.get('parts', []))}")
+            
             if 'topic' not in spec or not spec['topic']:
                 return {"success": False, "error": "Missing topic"}
             
@@ -1229,6 +1231,12 @@ class BraceMapAgent(BaseAgent):
             
             if not spec['parts']:
                 return {"success": False, "error": "At least one part is required"}
+            
+            # Log parts details
+            for i, part in enumerate(spec['parts']):
+                subparts_count = len(part.get('subparts', [])) if isinstance(part, dict) else 0
+                part_name = part.get('name', 'unnamed') if isinstance(part, dict) else 'invalid'
+                logger.info(f"BraceMapAgent: Part {i}: '{part_name}' with {subparts_count} subparts")
             
             # Normalize field names: convert 'label' to 'name' for compatibility
             spec = self._normalize_field_names(spec)

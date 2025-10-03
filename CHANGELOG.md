@@ -5,6 +5,162 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.5] - 2025-10-03
+
+### Added - Language Consistency & Editor Enhancements
+
+- **Complete Language Support for All Diagram Templates**
+  - All 10 diagram types now support bilingual templates (EN/ZH)
+  - Circle Map: `Main Topic/主题`, `Context/背景`
+  - Bubble Map: `Main Topic/主题`, `Attribute/属性`
+  - Double Bubble Map: `Topic A/B/主题A/B`, `Similarity/相似点`, `Difference/差异`
+  - Multi-Flow Map: `Main Event/主要事件`, `Cause/原因`, `Effect/结果`
+  - Bridge Map: `as/如同`, `Item/项目`
+  - Mind Map: `Central Topic/中心主题`, `Branch/分支`, `Sub-item/子项`
+  - Concept Map: `Main Concept/主要概念`, `Concept/概念`, `relates to/关联`
+  - Flow Map: `Process Flow/流程`, `Start/开始`, `Process/执行`
+  - Tree Map: `Root Topic/根主题`, `Category/类别`
+  - Brace Map: `Main Topic/主题`, `Part/部分`, `Subpart/子部分`
+
+- **Auto-Refresh on Language Toggle**
+  - Diagrams automatically refresh when switching languages in editor mode
+  - New template loaded in the selected language (EN ⟷ ZH)
+  - Success notification shows: "Template refreshed in English/模板已刷新为中文"
+  - Seamless language switching without losing editor state
+
+- **Flow Map Interactive Enhancements**
+  - Title is now fully editable (double-click to edit)
+  - Add button requires node selection (greys out when no selection)
+  - Delete button requires node selection
+  - Add logic: Select step → adds new step (with 2 substeps), Select substep → adds substep
+  - New nodes insert immediately after selected node (not at bottom)
+  - Title preserved during auto-complete (only steps/substeps replaced)
+  - Fixed default template: 2 substeps per step node
+
+- **Brace Map Interactive Enhancements**
+  - Add button requires node selection (greys out when no selection)
+  - Delete button requires node selection
+  - Add logic: Select part → adds new part (with 2 subparts), Select subpart → adds subpart
+  - Main topic node protected from add operations
+  - Fixed default template: 3 parts, each with 2 subparts
+  - Add button shows notification if no node selected
+
+- **Verbose Logging for All Diagram Agents**
+  - FlowMapAgent: Logs steps/substeps normalization process
+  - TreeMapAgent: Logs branch/leaf processing
+  - MultiFlowMapAgent: Logs causes/effects normalization
+  - BubbleMapAgent: Logs enhancement process
+  - CircleMapAgent: Logs context processing
+  - DoubleBubbleMapAgent: Logs attribute counts
+  - BridgeMapAgent: Logs analogy processing and truncation
+  - BraceMapAgent: Logs parts/subparts structure
+  - Helps debug editor mode operations
+
+### Changed
+
+- **Auto-Complete Behavior**
+  - Tree Map: Root topic now preserved exactly as user entered
+  - Flow Map: Title preserved, steps/substeps completely replaced (not merged)
+  - Auto-complete now properly detects language from diagram content (especially flow map title)
+  - LLM prompts explicitly instruct to preserve exact user topic/title
+
+- **Language Detection for Auto-Complete**
+  - Flow Map: Uses title field for language detection (not default template text)
+  - Chinese title → generates all content in Chinese (steps and substeps)
+  - English title → generates all content in English
+  - Prevents mixing languages in generated content
+
+- **Watermark Behavior**
+  - Removed watermarks from canvas display for Brace Map and Flow Map
+  - Watermarks now only appear in final PNG exports
+  - Cleaner editing experience without visual clutter
+
+- **Default Template Improvements**
+  - Flow Map: Each step now includes 2 substeps by default
+  - Brace Map: 3 parts, each with 2 subparts by default
+  - Tree Map: Now language-aware
+  - All templates match interface language automatically
+
+### Fixed
+
+- **Tree Map Root Topic Preservation**
+  - Root topic no longer overwritten during auto-complete
+  - LLM explicitly instructed to use exact topic from user request
+  - Enhanced topic preservation logic in frontend
+
+- **Flow Map Language Consistency**
+  - Fixed issue where steps were in English but substeps in Chinese
+  - Auto-complete prompt no longer includes default English template text
+  - Only uses title for prompt to avoid LLM confusion
+  - Added explicit Chinese-only instruction in Chinese prompt
+
+- **Double Bubble Map Template**
+  - Fixed broken template (canvas was empty)
+  - Corrected field names: `similarities`, `left_differences`, `right_differences`
+  - Template now matches renderer expectations
+
+- **Duplicate Notification Issue**
+  - Fixed brace map showing two pop-up messages when selecting main topic
+  - Added `showsOwnNotification` check to prevent generic success messages
+
+- **Flow Map Title Editing**
+  - Title text element now has proper data attributes for interaction
+  - Added standalone text element handler in `addInteractionHandlers()`
+  - Double-click on title now opens editor correctly
+
+### Technical
+
+- **LanguageManager Enhancements** (`language-manager.js`):
+  - Added `refreshEditorIfActive()` method
+  - Detects editor mode and refreshes diagram with new language template
+  - Integrates with DiagramSelector to get fresh templates
+
+- **DiagramSelector Language-Aware Templates** (`diagram-selector.js`):
+  - All template factory methods now check `window.languageManager?.getCurrentLanguage()`
+  - Return Chinese template if `lang === 'zh'`, otherwise English
+  - Template generation is dynamic, not hardcoded
+
+- **ToolbarManager Improvements** (`toolbar-manager.js`):
+  - Enhanced topic preservation for generic diagrams (lines 628-636)
+  - Flow map title preservation in auto-complete (lines 639-650)
+  - Flow map language detection prioritizes title field (lines 553-563)
+  - Flow map auto-complete prompt simplified to avoid template text influence (lines 568-575)
+  - Flow map add button state management (lines 175-188)
+  - Flow map notification handling (lines 440-455)
+
+- **InteractiveEditor Enhancements** (`interactive-editor.js`):
+  - Added `addNodeToFlowMap()` method (lines 987-1105)
+  - Added `deleteFlowMapNodes()` method (lines 1603-1706)
+  - Added `updateFlowMapText()` method (lines 636-682)
+  - Added standalone text element interaction handler (lines 292-323)
+  - Flow map add logic inserts nodes after selected (using `splice(index+1, 0, ...)`)
+
+- **FlowRenderer Updates** (`flow-renderer.js`):
+  - Removed watermark rendering from canvas (lines 377-612)
+  - Added `data-node-id`, `data-node-type`, `cursor: 'pointer'` to title (lines 377-388)
+  - Added interaction attributes to steps (lines 461-473)
+  - Added interaction attributes to substeps (lines 546-559)
+
+- **BraceRenderer Updates** (`brace-renderer.js`):
+  - Removed watermark rendering from canvas (lines 443-489)
+  - Watermark only appears in PNG export
+
+- **Prompt Engineering** (`prompts/thinking_maps.py`):
+  - Added `CRITICAL` instruction for exact topic preservation (tree, bubble, circle, flow maps)
+  - Flow map Chinese prompt: Explicit `关键要求：必须全部使用中文生成内容`
+  - Flow map Chinese prompt: Concrete Chinese examples for steps/substeps
+  - Ensures LLM respects user's exact topic wording
+
+- **Agent Logging Enhancements**:
+  - FlowMapAgent: Steps normalization logging (lines 181-227)
+  - TreeMapAgent: Branch/leaf processing logging (lines 180-252)
+  - MultiFlowMapAgent: Causes/effects normalization logging (lines 192-213)
+  - BubbleMapAgent: Enhancement process logging (line 204)
+  - CircleMapAgent: Context processing logging (line 195)
+  - DoubleBubbleMapAgent: Attribute counts logging (lines 124-125)
+  - BridgeMapAgent: Changed debug to info logging (lines 179-245)
+  - BraceMapAgent: Parts/subparts structure logging (lines 1224-1239)
+
 ## [3.0.4] - 2025-10-02
 
 ### Added - Advanced Canvas Editing Tools

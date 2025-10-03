@@ -192,10 +192,11 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.debug("CircleMapAgent: Enhancing existing specification")
+            logger.info(f"CircleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Context elements: {len(spec.get('context', []))}")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
+                logger.info("CircleMapAgent: Spec already enhanced, skipping")
                 return {'success': True, 'spec': spec}
             
             # Enhance the spec

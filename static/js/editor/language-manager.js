@@ -133,6 +133,43 @@ class LanguageManager {
         this.currentLanguage = this.currentLanguage === 'en' ? 'zh' : 'en';
         this.applyTranslations();
         this.updateLanguageButton();
+        
+        // If in editor mode, refresh the diagram with language-appropriate template
+        this.refreshEditorIfActive();
+    }
+    
+    /**
+     * Refresh editor with new language template if currently editing
+     */
+    refreshEditorIfActive() {
+        // Check if we're in editor mode
+        const editorView = document.getElementById('editor-view');
+        const galleryView = document.getElementById('gallery-view');
+        
+        if (editorView && editorView.style.display !== 'none' && 
+            galleryView && galleryView.style.display === 'none') {
+            
+            // We're in editor mode, refresh with new template
+            if (window.interactiveEditor && window.diagramSelector) {
+                const currentDiagramType = window.interactiveEditor.diagramType;
+                console.log(`Refreshing ${currentDiagramType} with ${this.currentLanguage} template`);
+                
+                // Get fresh template in new language
+                const freshTemplate = window.diagramSelector.getTemplate(currentDiagramType);
+                
+                // Update the editor's spec and re-render
+                if (freshTemplate) {
+                    window.interactiveEditor.currentSpec = freshTemplate;
+                    window.interactiveEditor.renderDiagram();
+                    
+                    // Show notification
+                    this.showNotification(
+                        this.currentLanguage === 'en' ? 'Template refreshed in English' : '模板已刷新为中文',
+                        'success'
+                    );
+                }
+            }
+        }
     }
     
     /**

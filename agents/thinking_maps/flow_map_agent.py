@@ -178,6 +178,7 @@ class FlowMapAgent(BaseAgent):
             # Normalize steps: de-duplicate, preserve order, clamp
             seen = set()
             normalized_steps: List[str] = []
+            logger.info(f"FlowMapAgent: Raw steps from LLM: {steps_raw}")
             for item in steps_raw:
                 # Handle both string and object formats
                 if isinstance(item, str):
@@ -185,15 +186,20 @@ class FlowMapAgent(BaseAgent):
                 elif isinstance(item, dict) and 'label' in item:
                     step_text = item['label']
                 else:
+                    logger.warning(f"FlowMapAgent: Skipping invalid step item: {item}")
                     continue
                 
                 cleaned = clean_text(step_text)
                 if not cleaned or cleaned in seen:
+                    logger.warning(f"FlowMapAgent: Skipping empty or duplicate step: '{step_text}'")
                     continue
                 seen.add(cleaned)
                 normalized_steps.append(cleaned)
+                logger.info(f"FlowMapAgent: Added normalized step: '{cleaned}'")
                 if len(normalized_steps) >= self.MAX_STEPS:
                     break
+            
+            logger.info(f"FlowMapAgent: Final normalized steps: {normalized_steps}")
 
             if not title:
                 return {"success": False, "error": "Missing or empty title"}
@@ -218,6 +224,7 @@ class FlowMapAgent(BaseAgent):
                         break
 
             if isinstance(substeps_raw, list):
+                logger.info(f"FlowMapAgent: Processing {len(substeps_raw)} substeps entries")
                 for entry in substeps_raw:
                     if not isinstance(entry, dict):
                         continue
@@ -225,6 +232,9 @@ class FlowMapAgent(BaseAgent):
                     sub_list = entry.get("substeps") or entry.get("sub_steps") or entry.get("subSteps") or []
                     if not isinstance(sub_list, list):
                         continue
+                    logger.info(f"FlowMapAgent: Matching substeps for step '{step_name}': {sub_list}")
+                    if step_name not in step_to_substeps:
+                        logger.warning(f"FlowMapAgent: Step '{step_name}' not found in normalized steps {list(step_to_substeps.keys())}")
                     add_substeps_for(step_name, sub_list)
 
             # Heuristics for recommended dimensions

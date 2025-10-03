@@ -151,13 +151,15 @@ Please generate a JSON specification for a bubble map for the following user req
 
 Request: {user_prompt}
 
+CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
+
 You can generate a bubble map with a central core topic surrounded by "bubbles" connected to the topic. Each bubble uses adjectives or descriptive phrases to describe the attributes of the core topic.
 Thinking approach: Use adjectives for description and explanation of characteristics.
 1. Use adjectives
 2. Describe the central topic from multiple dimensions
 
 Please output a JSON object containing the following fields:
-topic: "Topic"
+topic: "Topic" (MUST match the topic mentioned in the user request EXACTLY if provided)
 attributes: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5", "Feature6", "Feature7", "Feature8"]
 
 Requirements: Each characteristic should be concise and clear. Use adjectives or adjectival phrases to describe the central topic. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.
@@ -169,12 +171,15 @@ BUBBLE_MAP_GENERATION_ZH = """
 请为以下用户需求生成一个气泡图的JSON规范。
 
 需求：{user_prompt}
+
+重要提示：如果用户需求中包含引号标注的主题（例如："为主题'交通工具'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
+
 你能够生成气泡图，中心是一个核心主题，周围是与主题连接的"气泡"，每个气泡使用形容词或描述性短语来描述核心主题的属性。
 思维方式： 使用形容词进行描述、说明特质。
 1. 使用形容词
 2. 从多个维度对中心词进行描述
 请输出一个包含以下字段的JSON对象：
-topic: "主题"
+topic: "主题"（如果需求中明确指定主题，必须完全匹配）
 attributes: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6", "特征7", "特征8"]
 
 要求：每个特征要简洁明了，使用形容词或形容词短语对中心词进行描述，可以超过4个字，但不要太长，避免完整句子。
@@ -237,13 +242,15 @@ Please generate a JSON specification for a circle map for the following user req
 
 Request: {user_prompt}
 
+CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
+
 You can draw a circle map to brainstorm the central topic and associate it with related information or background knowledge.
 Thinking approach: Association, Divergence
 1. Be able to diverge and associate from multiple angles, the wider the angle the better
 2. Feature words should be as concise as possible
 
 Please output a JSON object containing the following fields:
-topic: "Topic"
+topic: "Topic" (MUST match the topic mentioned in the user request EXACTLY if provided)
 context: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5", "Feature6"]
 
 Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.
@@ -255,12 +262,15 @@ CIRCLE_MAP_GENERATION_ZH = """
 请为以下用户需求生成一个圆圈图的JSON规范。
 
 需求：{user_prompt}
+
+重要提示：如果用户需求中包含引号标注的主题（例如："为主题'交通工具'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
+
 你能绘制圆圈图，对中心词进行头脑风暴，联想出与之相关的信息或背景知识。
 思维方式：关联、发散
 1. 能够从多个角度进行发散、联想，角度越广越好
 2. 特征词要尽可能简洁
 请输出一个包含以下字段的JSON对象：
-topic: "主题"
+topic: "主题"（如果需求中明确指定主题，必须完全匹配）
 context: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6"]
 
 要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。
@@ -280,24 +290,28 @@ Request: {user_prompt}
 You can classify the central topic.
 Purpose: Classification, Induction, Hierarchical organization of information.
 
+CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
+
 Output a SINGLE JSON object with the following fields (example shown below):
-- topic: "Main topic"
+- topic: "Main topic" (MUST match the topic mentioned in the user request EXACTLY if provided)
 - children: [
-  {{"id": "category-1", "label": "Category 1", "children": [
-    {{"id": "item-1", "label": "Item 1"}},
-    {{"id": "item-2", "label": "Item 2"}}
+  {{"text": "Category 1", "children": [
+    {{"text": "Item 1", "children": []}},
+    {{"text": "Item 2", "children": []}}
   ]}},
-  {{"id": "category-2", "label": "Category 2", "children": [
-    {{"id": "item-a", "label": "Item A"}}
+  {{"text": "Category 2", "children": [
+    {{"text": "Item A", "children": []}}
   ]}}
 ]
 
 Strict requirements:
+- Topic: Use the EXACT topic from the request if specified (e.g., if request says "about 'Transportation'", use "Transportation")
 - Top-level children: generate 4–6 categories under "children" (each a short phrase, 1–5 words)
 - For EACH top-level child, generate 2–6 sub-children in its "children" array (short phrases, 1–5 words)
+- Each child MUST have a "text" field (the label) and a "children" field (array, can be empty)
 - Use concise phrases only; no punctuation; no numbering prefixes; avoid full sentences
-- All labels must be unique and non-redundant
-- Do not include extra fields beyond topic, children, id, label
+- All text labels must be unique and non-redundant
+- Do not include extra fields beyond topic, children, text
 
 Return only valid JSON. Do NOT include code block markers.
 """
@@ -309,24 +323,28 @@ TREE_MAP_GENERATION_ZH = """
 你能对中心词进行分类。
 目的是：分类、归纳、层级化组织信息。
 
+重要提示：如果用户需求中包含引号标注的主题（例如："为主题'交通工具'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
+
 输出且仅输出一个JSON对象，包含以下字段（示例如下）：
-- topic: "主题"
+- topic: "主题"（如果需求中明确指定主题，必须完全匹配）
 - children: [
-  {{"id": "category-1", "label": "类别一", "children": [
-    {{"id": "item-1", "label": "条目一"}},
-    {{"id": "item-2", "label": "条目二"}}
+  {{"text": "类别一", "children": [
+    {{"text": "条目一", "children": []}},
+    {{"text": "条目二", "children": []}}
   ]}},
-  {{"id": "category-2", "label": "类别二", "children": [
-    {{"id": "item-a", "label": "条目甲"}}
+  {{"text": "类别二", "children": [
+    {{"text": "条目甲", "children": []}}
   ]}}
 ]
 
 严格要求：
+- 主题：如果需求中指定了主题（例如"为主题'交通工具'创建..."），必须使用"交通工具"作为topic
 - 顶层 children：生成 4–6 个类别（短语，1–5 个词/字）
 - 每个顶层 child 的 "children" 数组：生成 2–6 个子项（短语，1–5 个词/字）
+- 每个 child 必须有 "text" 字段（标签）和 "children" 字段（数组，可以为空）
 - 仅用简短短语；不要标点；不要编号前缀；不要完整句子
-- 所有标签必须唯一且不冗余
-- 不要包含 topic、children、id、label 之外的字段
+- 所有 text 标签必须唯一且不冗余
+- 不要包含 topic、children、text 之外的字段
 
 只返回有效 JSON，不要包含代码块标记。
 """
@@ -340,8 +358,10 @@ Please generate a JSON specification for a flow map with MAJOR steps and SUB-STE
 
 Request: {user_prompt}
 
+CRITICAL: If the user request contains a quoted title/topic (e.g., "about 'Water Cycle'"), you MUST use that EXACT title in the "title" field. Do not paraphrase, translate, or modify it.
+
 Output a SINGLE JSON object with the following fields:
-- title: "Main topic"
+- title: "Main topic" (if specified in request, use EXACT title)
 - steps: ["Major step 1", "Major step 2", "Major step 3"]
 - substeps: [
   {"step": "Major step 1", "substeps": ["Sub-step A", "Sub-step B"]},
@@ -370,13 +390,21 @@ FLOW_MAP_GENERATION_ZH = """
 
 需求：{user_prompt}
 
+重要提示：如果用户需求中包含引号标注的主题（例如："为主题'水循环'创建..."），你必须在"title"字段中使用完全相同的主题词。不要改写、翻译或修改它。
+
+关键要求：必须全部使用中文生成内容，包括steps数组和substeps数组中的所有文本。不要混用英文和中文。
+
 输出一个且仅一个JSON对象，包含以下字段：
-- title: "主题"
-- steps: ["主要步骤1", "主要步骤2", "主要步骤3"]
+- title: "主题"（如果需求中明确指定主题，必须完全匹配）
+- steps: ["准备阶段", "执行阶段", "检查阶段", "完成阶段"]
 - substeps: [
-  {"step": "主要步骤1", "substeps": ["子步骤A", "子步骤B"]},
-  {"step": "主要步骤2", "substeps": ["子步骤A", "子步骤B"]}
+  {"step": "准备阶段", "substeps": ["收集需求", "制定计划"]},
+  {"step": "执行阶段", "substeps": ["实施任务", "监控进度"]},
+  {"step": "检查阶段", "substeps": ["质量检验", "验收确认"]},
+  {"step": "完成阶段", "substeps": ["交付成果", "总结归档"]}
 ]
+
+注意：以上示例仅为格式参考，实际内容应根据用户需求生成。steps数组中的步骤名称必须与substeps数组中的"step"字段完全一致。
 
 定义与意图：
 - 主要步骤（steps）：高层级阶段，用于保持流程图整洁、专业，类似里程碑或阶段名称；且每个主要步骤应当能够"概括/泛化"其所属的所有子步骤。
