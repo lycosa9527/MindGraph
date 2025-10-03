@@ -66,28 +66,98 @@ class ToolbarManager {
      * Attach event listeners
      */
     attachEventListeners() {
-        // Toolbar buttons
-        this.addNodeBtn?.addEventListener('click', () => this.handleAddNode());
-        this.deleteNodeBtn?.addEventListener('click', () => this.handleDeleteNode());
-        this.autoCompleteBtn?.addEventListener('click', () => this.handleAutoComplete());
-        this.lineModeBtn?.addEventListener('click', () => this.toggleLineMode());
-        this.duplicateNodeBtn?.addEventListener('click', () => this.handleDuplicateNode());
-        this.emptyNodeBtn?.addEventListener('click', () => this.handleEmptyNode());
-        this.undoBtn?.addEventListener('click', () => this.handleUndo());
-        this.redoBtn?.addEventListener('click', () => this.handleRedo());
-        this.resetBtn?.addEventListener('click', () => this.handleReset());
-        this.exportBtn?.addEventListener('click', () => this.handleExport());
-        this.backBtn?.addEventListener('click', () => this.handleBackToGallery());
+        // Toolbar buttons - stop event propagation to prevent conflicts
+        this.addNodeBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Add Node button clicked');
+            this.handleAddNode();
+        });
+        this.deleteNodeBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Delete Node button clicked');
+            this.handleDeleteNode();
+        });
+        this.autoCompleteBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();  // Also prevent default to be extra safe
+            console.log('ToolbarManager: Auto-Complete button clicked');
+            this.handleAutoComplete();
+        });
+        this.lineModeBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Line Mode button clicked');
+            this.toggleLineMode();
+        });
+        this.duplicateNodeBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Duplicate Node button clicked');
+            this.handleDuplicateNode();
+        });
+        this.emptyNodeBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Empty Node button clicked');
+            this.handleEmptyNode();
+        });
+        this.undoBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Undo button clicked');
+            this.handleUndo();
+        });
+        this.redoBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Redo button clicked');
+            this.handleRedo();
+        });
+        this.resetBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Reset button clicked');
+            this.handleReset();
+        });
+        this.exportBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Export button clicked');
+            this.handleExport();
+        });
+        this.backBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Back to Gallery button clicked');
+            this.handleBackToGallery();
+        });
         
         // Property panel
-        this.closePropBtn?.addEventListener('click', () => this.hidePropertyPanel());
+        this.closePropBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.hidePropertyPanel();
+            this.clearPropertyPanel();
+        });
         
-        // Property inputs
-        this.propTextApply?.addEventListener('click', () => this.applyText());
-        this.propBold?.addEventListener('click', () => this.toggleBold());
-        this.propItalic?.addEventListener('click', () => this.toggleItalic());
-        this.propUnderline?.addEventListener('click', () => this.toggleUnderline());
-        this.applyAllBtn?.addEventListener('click', () => this.applyAllProperties());
+        // Property inputs - prevent event bubbling to avoid accidental diagram switches
+        this.propTextApply?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.applyText();
+        });
+        this.propBold?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.toggleBold();
+        });
+        this.propItalic?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.toggleItalic();
+        });
+        this.propUnderline?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.toggleUnderline();
+        });
+        this.applyAllBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.applyAllProperties();
+        });
         
         // Color pickers sync
         this.propTextColor?.addEventListener('input', (e) => {
@@ -139,10 +209,14 @@ class ToolbarManager {
             // Update toolbar button states
             this.updateToolbarState(hasSelection);
             
-            // Show/hide property panel
+            // Show/hide property panel based on selection
             if (hasSelection && this.currentSelection.length > 0) {
                 this.showPropertyPanel();
                 this.loadNodeProperties(this.currentSelection[0]);
+            } else {
+                // Hide property panel when no selection
+                this.hidePropertyPanel();
+                this.clearPropertyPanel();
             }
         });
         
@@ -172,10 +246,10 @@ class ToolbarManager {
             this.duplicateNodeBtn.style.opacity = hasSelection ? '1' : '0.5';
         }
         
-        // Add button state for diagrams that require selection (brace_map, double_bubble_map, flow_map)
+        // Add button state for diagrams that require selection (brace_map, double_bubble_map, flow_map, multi_flow_map)
         if (this.addNodeBtn && this.editor) {
             const diagramType = this.editor.diagramType;
-            const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map'].includes(diagramType);
+            const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map'].includes(diagramType);
             
             if (requiresSelection) {
                 this.addNodeBtn.disabled = !hasSelection;
@@ -204,6 +278,40 @@ class ToolbarManager {
         if (this.propertyPanel) {
             this.propertyPanel.style.display = 'none';
         }
+    }
+    
+    /**
+     * Clear property panel inputs to default values
+     * Called when switching diagrams or clearing selection
+     */
+    clearPropertyPanel() {
+        // Clear text input
+        if (this.propText) this.propText.value = '';
+        
+        // Reset font properties to defaults
+        if (this.propFontSize) this.propFontSize.value = 14;
+        if (this.propFontFamily) this.propFontFamily.value = 'Inter, sans-serif';
+        
+        // Reset colors to defaults
+        if (this.propTextColor) this.propTextColor.value = '#000000';
+        if (this.propTextColorHex) this.propTextColorHex.value = '#000000';
+        if (this.propFillColor) this.propFillColor.value = '#2196f3';
+        if (this.propFillColorHex) this.propFillColorHex.value = '#2196F3';
+        if (this.propStrokeColor) this.propStrokeColor.value = '#1976d2';
+        if (this.propStrokeColorHex) this.propStrokeColorHex.value = '#1976D2';
+        
+        // Reset stroke width and opacity to defaults
+        if (this.propStrokeWidth) this.propStrokeWidth.value = 2;
+        if (this.strokeWidthValue) this.strokeWidthValue.textContent = '2px';
+        if (this.propOpacity) this.propOpacity.value = 1;
+        if (this.opacityValue) this.opacityValue.textContent = '100%';
+        
+        // Reset toggle buttons
+        if (this.propBold) this.propBold.classList.remove('active');
+        if (this.propItalic) this.propItalic.classList.remove('active');
+        if (this.propUnderline) this.propUnderline.classList.remove('active');
+        
+        console.log('Property panel cleared to default values');
     }
     
     /**
@@ -332,7 +440,12 @@ class ToolbarManager {
             underline: this.propUnderline?.classList.contains('active')
         };
         
-        console.log('Applying all properties:', properties);
+        console.log('ToolbarManager: Applying all properties', {
+            diagramType: this.editor?.diagramType,
+            sessionId: this.editor?.sessionId?.substr(-8),
+            selectedNodes: this.currentSelection,
+            properties
+        });
         
         // Apply text changes first using the proper method
         if (properties.text && properties.text.trim()) {
@@ -430,14 +543,21 @@ class ToolbarManager {
      * Handle add node
      */
     handleAddNode() {
-        console.log('Add node clicked');
+        console.log('ToolbarManager: handleAddNode called', {
+            diagramType: this.editor?.diagramType,
+            sessionId: this.editor?.sessionId?.substr(-8),
+            hasSelection: this.editor?.selectedNodes?.size > 0,
+            selectedCount: this.editor?.selectedNodes?.size || 0
+        });
+        
         if (!this.editor) {
+            console.error('ToolbarManager: handleAddNode blocked - Editor not initialized');
             this.showNotification('Editor not initialized', 'error');
             return;
         }
         
         const diagramType = this.editor.diagramType;
-        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map'].includes(diagramType);
+        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map'].includes(diagramType);
 
         // Check if selection is required for this diagram type
         if (requiresSelection && this.currentSelection.length === 0) {
@@ -449,7 +569,7 @@ class ToolbarManager {
         this.editor.addNode();
         
         // Only show generic success notification for diagram types that don't show their own
-            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'circle_map', 'bubble_map', 'concept_map'].includes(diagramType);
+            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'circle_map', 'bubble_map', 'concept_map'].includes(diagramType);
             if (!showsOwnNotification) {
                 this.showNotification('Node added! Double-click to edit text.', 'success');
             }
@@ -527,24 +647,43 @@ class ToolbarManager {
      * Handle auto-complete diagram with AI
      */
     async handleAutoComplete() {
-        console.log('Auto-complete clicked');
+        console.log('ToolbarManager: =============== AUTO-COMPLETE STARTED ===============');
+        console.log('ToolbarManager: Current diagram type:', this.editor?.diagramType);
+        console.log('ToolbarManager: Current spec:', this.editor?.currentSpec);
         
         if (!this.editor) {
             this.showNotification('Editor not initialized', 'error');
+            console.error('ToolbarManager: Auto-complete failed - Editor not initialized');
             return;
         }
         
+        // CRITICAL: Validate session before auto-complete
+        if (!this.editor.validateSession('Auto-complete')) {
+            this.showNotification('Session validation failed', 'error');
+            return;
+        }
+        
+        // CRITICAL: Store the current diagram type and session ID to prevent accidental switching
+        const currentDiagramType = this.editor.diagramType;
+        const currentSessionId = this.editor.sessionId;
+        console.log('ToolbarManager: Locked diagram type:', currentDiagramType);
+        console.log('ToolbarManager: Locked session ID:', currentSessionId);
+        
         // Extract existing nodes from the diagram
         const existingNodes = this.extractExistingNodes();
+        console.log('ToolbarManager: Extracted nodes:', existingNodes.length);
         
         if (existingNodes.length === 0) {
             this.showNotification('Please add some nodes first before using Auto', 'warning');
+            console.log('ToolbarManager: Auto-complete aborted - No nodes found');
             return;
         }
         
         // Identify the main/central topic (center-most or largest node)
         const mainTopic = this.identifyMainTopic(existingNodes);
-        const diagramType = this.editor.diagramType;
+        const diagramType = currentDiagramType; // Use locked type
+        console.log('ToolbarManager: Main topic:', mainTopic);
+        console.log('ToolbarManager: Diagram type:', diagramType);
         
         // Store the original topic to preserve it later
         const originalTopic = this.editor.currentSpec?.topic || mainTopic;
@@ -637,46 +776,69 @@ class ToolbarManager {
             
             // Update diagram with new specification
             if (data.spec) {
-                console.log('Received spec from LLM:', JSON.stringify(data.spec).substring(0, 200));
+                console.log('ToolbarManager: Received spec from LLM');
+                console.log('ToolbarManager: Spec preview:', JSON.stringify(data.spec).substring(0, 200));
+                
+                // CRITICAL SAFEGUARD: Verify diagram type and session haven't changed
+                if (this.editor.diagramType !== currentDiagramType) {
+                    console.error('ToolbarManager: DIAGRAM TYPE MISMATCH DETECTED!');
+                    console.error('ToolbarManager: Expected:', currentDiagramType);
+                    console.error('ToolbarManager: Current:', this.editor.diagramType);
+                    this.showNotification('Error: Diagram type changed unexpectedly', 'error');
+                    return;
+                }
+                
+                if (this.editor.sessionId !== currentSessionId) {
+                    console.error('ToolbarManager: SESSION ID MISMATCH DETECTED!');
+                    console.error('ToolbarManager: Expected:', currentSessionId);
+                    console.error('ToolbarManager: Current:', this.editor.sessionId);
+                    this.showNotification('Error: Session changed unexpectedly', 'error');
+                    return;
+                }
                 
                 // CRITICAL: Preserve the original root topic to prevent it from being overwritten
                 // For tree maps and other hierarchical diagrams, always keep the user's original topic
                 if (originalTopic && data.spec.topic) {
-                    console.log(`[AUTO-COMPLETE] Preserving original topic: "${originalTopic}" (LLM generated: "${data.spec.topic}")`);
+                    console.log(`ToolbarManager: Preserving original topic: "${originalTopic}" (LLM generated: "${data.spec.topic}")`);
                     data.spec.topic = originalTopic;
                 } else if (originalTopic) {
-                    console.warn(`[AUTO-COMPLETE] Original topic exists but spec.topic is missing. Adding original topic.`);
+                    console.warn(`ToolbarManager: Original topic exists but spec.topic is missing. Adding original topic.`);
                     data.spec.topic = originalTopic;
                 } else {
-                    console.warn(`[AUTO-COMPLETE] No original topic found. Using LLM generated topic: "${data.spec.topic}"`);
+                    console.warn(`ToolbarManager: No original topic found. Using LLM generated topic: "${data.spec.topic}"`);
                 }
                 
                 // For flow maps, preserve the title field (but replace steps/substeps with LLM output)
                 if (diagramType === 'flow_map') {
                     const originalTitle = this.editor.currentSpec?.title || mainTopic;
                     if (originalTitle && data.spec.title) {
-                        console.log(`[AUTO-COMPLETE] Preserving original flow map title: "${originalTitle}" (LLM generated: "${data.spec.title}")`);
+                        console.log(`ToolbarManager: Preserving original flow map title: "${originalTitle}" (LLM generated: "${data.spec.title}")`);
                         data.spec.title = originalTitle;
                     } else if (originalTitle) {
-                        console.warn(`[AUTO-COMPLETE] Original title exists but spec.title is missing. Adding original title.`);
+                        console.warn(`ToolbarManager: Original title exists but spec.title is missing. Adding original title.`);
                         data.spec.title = originalTitle;
                     }
                     // Note: Steps and substeps are completely replaced by LLM output
-                    console.log(`[AUTO-COMPLETE] Flow map - Replacing with ${data.spec.steps?.length || 0} new steps`);
+                    console.log(`ToolbarManager: Flow map - Replacing with ${data.spec.steps?.length || 0} new steps`);
                 }
                 
+                console.log('ToolbarManager: Updating editor spec');
                 this.editor.currentSpec = data.spec;
+                console.log('ToolbarManager: Rendering updated diagram');
                 this.editor.renderDiagram();
+                console.log('ToolbarManager: Auto-complete completed successfully');
                 this.showNotification('Diagram auto-completed successfully!', 'success');
             } else {
                 throw new Error('No diagram specification returned');
             }
             
         } catch (error) {
-            console.error('Auto-complete error:', error);
+            console.error('ToolbarManager: Auto-complete error:', error);
+            console.error('ToolbarManager: Error stack:', error.stack);
             this.showNotification(`Auto-complete failed: ${error.message}`, 'error');
         } finally {
             this.setAutoButtonLoading(false);
+            console.log('ToolbarManager: =============== AUTO-COMPLETE ENDED ===============');
         }
     }
     
@@ -1124,8 +1286,9 @@ class ToolbarManager {
         // Clean up canvas and editor first
         this.cleanupCanvas();
         
-        // Hide property panel
+        // Hide and clear property panel
         this.hidePropertyPanel();
+        this.clearPropertyPanel();
         
         // Close AI assistant if open and reset button state
         const aiPanel = document.getElementById('ai-assistant-panel');
@@ -1177,90 +1340,14 @@ class ToolbarManager {
     }
     
     /**
-     * Show notification
+     * Show notification using centralized notification manager
      */
     showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.style.position = 'fixed';
-        notification.style.top = '80px';
-        notification.style.right = '20px';
-        notification.style.padding = '14px 24px';
-        notification.style.borderRadius = '12px';
-        notification.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
-        notification.style.zIndex = '10001';
-        notification.style.fontSize = '14px';
-        notification.style.fontWeight = '600';
-        notification.style.display = 'flex';
-        notification.style.alignItems = 'center';
-        notification.style.gap = '10px';
-        notification.style.animation = 'slideInRight 0.3s ease';
-        notification.style.minWidth = '250px';
-        
-        // Add animation keyframes if not exists
-        if (!document.getElementById('notification-animations')) {
-            const style = document.createElement('style');
-            style.id = 'notification-animations';
-            style.textContent = `
-                @keyframes slideInRight {
-                    from {
-                        transform: translateX(400px);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
+        if (window.notificationManager) {
+            window.notificationManager.show(message, type);
+        } else {
+            console.error('NotificationManager not available');
         }
-        
-        // Set colors based on type
-        const styles = {
-            success: {
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                icon: '✓'
-            },
-            error: {
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                icon: '✕'
-            },
-            info: {
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                icon: 'ℹ'
-            },
-            warning: {
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                icon: '⚠'
-            }
-        };
-        
-        const currentStyle = styles[type] || styles.info;
-        notification.style.background = currentStyle.background;
-        notification.style.color = 'white';
-        
-        // Add icon
-        const icon = document.createElement('span');
-        icon.style.fontSize = '18px';
-        icon.style.fontWeight = 'bold';
-        icon.textContent = currentStyle.icon;
-        notification.appendChild(icon);
-        
-        // Add message
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = message;
-        notification.appendChild(messageSpan);
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.transition = 'all 0.3s ease';
-            notification.style.transform = 'translateX(400px)';
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
     }
 }
 

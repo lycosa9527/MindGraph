@@ -5,6 +5,90 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.6] - 2025-10-03
+
+### Added - Centralized Notification System
+
+- **NotificationManager Class** (`static/js/editor/notification-manager.js`)
+  - Centralized notification system for all editor components
+  - Smart notification queue (max 3 visible, others wait in queue)
+  - Automatic vertical stacking (80px, 150px, 220px spacing)
+  - Type-based duration: Success (2s), Info (3s), Warning (4s), Error (5s)
+  - Smooth slide-in/slide-out animations from right
+  - Icon system with visual indicators: ✓ (success), ✕ (error), ⚠ (warning), ℹ (info)
+  - Modern gradient backgrounds for professional appearance
+  - Global singleton instance: `window.notificationManager`
+  - Simple API: `window.notificationManager.show(message, type, duration)`
+
+- **Enhanced User Experience**
+  - Notifications no longer overlap or conflict
+  - Appropriate reading time based on message importance
+  - Automatic repositioning when notifications close
+  - Queue system ensures no messages are lost
+  - Consistent styling across all notification types
+
+### Changed
+
+- **Simplified Notification Implementations**
+  - ToolbarManager: Reduced from 85 lines to 7 lines (~92% reduction)
+  - PromptManager: Reduced from 46 lines to 7 lines (~85% reduction)
+  - LanguageManager: Reduced from 35 lines to 7 lines (~80% reduction)
+  - All now delegate to centralized `NotificationManager`
+  - Total code reduction: ~145 lines of duplicate code removed
+
+- **Notification Responsibility**
+  - ToolbarManager: Single source of user feedback notifications
+  - InteractiveEditor: No longer shows notifications, only performs operations
+  - Clear separation of concerns: UI layer handles user feedback, business logic layer performs actions
+
+### Fixed
+
+- **Eliminated All Double Notifications**
+  - Flow Map delete operations: Fixed duplicate "Deleted X node(s)" messages
+  - Multi-Flow Map delete operations: Fixed duplicate "Deleted X node(s)" messages
+  - Flow Map add operations: Fixed duplicate "Please select a node first" warnings
+  - Multi-Flow Map add operations: Fixed duplicate selection warnings
+  - Brace Map add operations: Fixed duplicate selection warnings
+  - Double Bubble Map add operations: Fixed duplicate selection warnings
+
+- **InteractiveEditor Notification Cleanup**
+  - `deleteFlowMapNodes()`: Removed duplicate notification (line 1950-1952)
+  - `deleteMultiFlowMapNodes()`: Removed duplicate notification (line 2021-2023)
+  - `addNodeToFlowMap()`: Removed duplicate warnings (handled by ToolbarManager)
+  - `addNodeToMultiFlowMap()`: Removed duplicate warnings (handled by ToolbarManager)
+  - `addNodeToBraceMap()`: Removed duplicate warnings (handled by ToolbarManager)
+  - `addNodeToDoubleBubbleMap()`: Removed duplicate warnings (handled by ToolbarManager)
+  - Now only logs to console for debugging purposes
+
+### Technical
+
+- **Architecture Improvement**
+  - Single source of truth for all notification logic
+  - Loose coupling: Components no longer need `toolbarManager` reference
+  - Better maintainability: Change notification behavior in one place
+  - Improved testability: Notification logic isolated and easy to test
+  - Consistent API across all components
+
+- **Script Loading Order**
+  - `notification-manager.js` now loads first (before other editor components)
+  - Ensures `window.notificationManager` is available globally
+  - Added to `templates/editor.html` line 469
+
+- **Developer Experience**
+  - Simple, consistent API for showing notifications
+  - Clear documentation in code comments
+  - Debug logging for all notification events
+  - Easy to extend with new notification types or features
+
+### Documentation
+
+- **Added `NOTIFICATION_SYSTEM_REFACTOR.md`**
+  - Complete technical documentation of the refactoring
+  - Before/after comparisons with code examples
+  - Benefits for users and developers
+  - Migration guide for future development
+  - Testing checklist and future enhancement ideas
+
 ## [3.0.5] - 2025-10-03
 
 ### Added - Language Consistency & Editor Enhancements

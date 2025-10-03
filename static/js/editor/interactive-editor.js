@@ -13,17 +13,82 @@ class InteractiveEditor {
         this.history = [];
         this.historyIndex = -1;
         
+        // Enable debug logging
+        this.debugMode = true;
+        
+        // Session info (will be set by DiagramSelector)
+        this.sessionId = null;
+        this.sessionDiagramType = null;
+        
         // Initialize components
         this.selectionManager = new SelectionManager();
         this.canvasManager = new CanvasManager();
         this.toolbarManager = null; // Will be initialized after render
         this.renderer = null;
         
+        // Log editor initialization
+        this.log('InteractiveEditor: Created', { diagramType, templateKeys: Object.keys(template || {}) });
+        
         // Bind selection change callback
         this.selectionManager.setSelectionChangeCallback((selectedNodes) => {
             this.selectedNodes = new Set(selectedNodes);
+            this.log('InteractiveEditor: Selection changed', { count: selectedNodes.length, nodes: selectedNodes });
             this.updateToolbarState();
         });
+    }
+    
+    /**
+     * Centralized logging for debugging
+     */
+    log(message, data = null) {
+        if (!this.debugMode) return;
+        
+        const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+        const sessionInfo = this.sessionId ? ` [Session: ${this.sessionId.substr(-8)}]` : '';
+        const prefix = `[${timestamp}]${sessionInfo} [${this.diagramType}]`;
+        
+        if (data) {
+            console.log(`${prefix} ${message}`, data);
+        } else {
+            console.log(`${prefix} ${message}`);
+        }
+    }
+    
+    /**
+     * Validate that we're operating within the correct session
+     */
+    validateSession(operation = 'Operation') {
+        if (!this.sessionId) {
+            console.error(`${operation} blocked - No session ID set!`);
+            return false;
+        }
+        
+        if (this.diagramType !== this.sessionDiagramType) {
+            console.error(`${operation} blocked - Diagram type mismatch!`);
+            console.error('Editor diagram type:', this.diagramType);
+            console.error('Session diagram type:', this.sessionDiagramType);
+            console.error('Session ID:', this.sessionId);
+            return false;
+        }
+        
+        // Cross-check with DiagramSelector session
+        if (window.diagramSelector?.currentSession) {
+            if (window.diagramSelector.currentSession.id !== this.sessionId) {
+                console.error(`${operation} blocked - Session ID mismatch!`);
+                console.error('Editor session:', this.sessionId);
+                console.error('DiagramSelector session:', window.diagramSelector.currentSession.id);
+                return false;
+            }
+            
+            if (window.diagramSelector.currentSession.diagramType !== this.diagramType) {
+                console.error(`${operation} blocked - DiagramSelector session type mismatch!`);
+                console.error('Editor type:', this.diagramType);
+                console.error('Session type:', window.diagramSelector.currentSession.diagramType);
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     /**
@@ -55,6 +120,10 @@ class InteractiveEditor {
      * Render the diagram
      */
     renderDiagram() {
+        this.log('InteractiveEditor: Starting diagram render', {
+            specKeys: Object.keys(this.currentSpec || {})
+        });
+        
         try {
             // Use the renderGraph dispatcher function to handle all diagram types
             const theme = null; // Use default theme
@@ -249,6 +318,7 @@ class InteractiveEditor {
             element
                 .on('click', (event) => {
                     event.stopPropagation();
+                    self.log('InteractiveEditor: Node clicked', { nodeId, ctrl: event.ctrlKey || event.metaKey });
                     
                     if (event.ctrlKey || event.metaKey) {
                         self.selectionManager.toggleNodeSelection(nodeId);
@@ -259,6 +329,7 @@ class InteractiveEditor {
                 })
                 .on('dblclick', (event) => {
                     event.stopPropagation();
+                    self.log('InteractiveEditor: Node double-clicked for editing', { nodeId });
                     // Find associated text element
                     const textNode = element.node().nextElementSibling;
                     if (textNode && textNode.tagName === 'text') {
@@ -456,13 +527,24 @@ class InteractiveEditor {
      * Open node editor
      */
     openNodeEditor(nodeId, shapeNode, textNode, currentText) {
+        this.log('InteractiveEditor: Opening node editor', {
+            nodeId,
+            currentText: currentText?.substring(0, 50),
+            textLength: currentText?.length || 0
+        });
+        
         const editor = new NodeEditor(
             { id: nodeId, text: currentText || 'Edit me' },
             (newText) => {
+                this.log('InteractiveEditor: Node editor - Save callback triggered', {
+                    nodeId,
+                    newText: newText?.substring(0, 50)
+                });
                 this.updateNodeText(nodeId, shapeNode, textNode, newText);
             },
             () => {
                 // Cancel callback
+                this.log('InteractiveEditor: Node editor - Cancel callback triggered', { nodeId });
             }
         );
         
@@ -473,7 +555,17 @@ class InteractiveEditor {
      * Update node text
      */
     updateNodeText(nodeId, shapeNode, textNode, newText) {
-        console.log(`Updating text for node ${nodeId} to "${newText}" in ${this.diagramType}`);
+        this.log('InteractiveEditor: Updating node text', {
+            nodeId,
+            diagramType: this.diagramType,
+            newText: newText?.substring(0, 50),
+            textLength: newText?.length || 0
+        });
+        
+        // Validate session
+        if (!this.validateSession('Update node text')) {
+            return;
+        }
         
         // Handle diagram-specific text updates
         if (this.diagramType === 'circle_map') {
@@ -484,6 +576,8 @@ class InteractiveEditor {
             this.updateDoubleBubbleMapText(nodeId, shapeNode, newText);
         } else if (this.diagramType === 'flow_map') {
             this.updateFlowMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'multi_flow_map') {
+            this.updateMultiFlowMapText(nodeId, shapeNode, newText);
         } else {
             // Generic text update for other diagram types
             this.updateGenericNodeText(nodeId, shapeNode, textNode, newText);
@@ -682,6 +776,51 @@ class InteractiveEditor {
     }
     
     /**
+     * Update Multi-Flow Map node text
+     */
+    updateMultiFlowMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        if (nodeType === 'event') {
+            // Update the central event
+            this.currentSpec.event = newText;
+            console.log('Updated Multi-Flow Map event to:', newText);
+        } else if (nodeType === 'cause') {
+            // Update cause in the causes array
+            const causeIndex = parseInt(shape.attr('data-cause-index'));
+            if (!isNaN(causeIndex) && this.currentSpec.causes && causeIndex < this.currentSpec.causes.length) {
+                this.currentSpec.causes[causeIndex] = newText;
+                console.log(`Updated cause ${causeIndex} to:`, newText);
+            }
+        } else if (nodeType === 'effect') {
+            // Update effect in the effects array
+            const effectIndex = parseInt(shape.attr('data-effect-index'));
+            if (!isNaN(effectIndex) && this.currentSpec.effects && effectIndex < this.currentSpec.effects.length) {
+                this.currentSpec.effects[effectIndex] = newText;
+                console.log(`Updated effect ${effectIndex} to:`, newText);
+            }
+        }
+        
+        // Update the visual text element
+        shape.text(newText);
+        
+        // Re-render to reflect changes
+        this.renderDiagram();
+    }
+    
+    /**
      * Update generic node text (for other diagram types)
      */
     updateGenericNodeText(nodeId, shapeNode, textNode, newText) {
@@ -718,7 +857,12 @@ class InteractiveEditor {
      * Add a new node to the diagram
      */
     addNode() {
-        console.log(`Adding new node to ${this.diagramType}`);
+        this.log('InteractiveEditor: Add node requested', { hasSelection: this.selectedNodes.size > 0 });
+        
+        // Validate session before adding
+        if (!this.validateSession('Add node')) {
+            return;
+        }
         
         // Handle diagram-specific node addition
         switch(this.diagramType) {
@@ -736,6 +880,9 @@ class InteractiveEditor {
                 break;
             case 'flow_map':
                 this.addNodeToFlowMap();
+                break;
+            case 'multi_flow_map':
+                this.addNodeToMultiFlowMap();
                 break;
             case 'concept_map':
                 this.addNodeToConceptMap();
@@ -807,10 +954,9 @@ class InteractiveEditor {
         // Check if user has selected a node
         const selected = Array.from(this.selectedNodes);
         if (selected.length === 0) {
-            if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Please select a node type first (similarity or difference)', 'warning');
-            }
-            console.log('No node selected - user must select node type first');
+            // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
+            // Don't show duplicate notification here
+            console.log('DoubleBubbleMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -897,10 +1043,9 @@ class InteractiveEditor {
         // Check if user has selected a node
         const selected = Array.from(this.selectedNodes);
         if (selected.length === 0) {
-            if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Please select a part or subpart node first', 'warning');
-            }
-            console.log('No node selected - user must select a part or subpart first');
+            // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
+            // Don't show duplicate notification here
+            console.log('BraceMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -1000,9 +1145,9 @@ class InteractiveEditor {
         // Check if a node is selected
         const selectedNodes = Array.from(this.selectedNodes);
         if (selectedNodes.length === 0) {
-            if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Please select a step or substep node first', 'warning');
-            }
+            // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
+            // Don't show duplicate notification here
+            console.log('FlowMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -1118,6 +1263,91 @@ class InteractiveEditor {
         // Save to history
         this.saveToHistory('add_node', { 
             diagramType: 'flow_map',
+            nodeType: nodeType
+        });
+    }
+    
+    /**
+     * Add a new node to Multi-Flow Map
+     * Requirements:
+     * - Requires node selection (cause or effect)
+     * - Clicking on cause → adds new cause
+     * - Clicking on effect → adds new effect
+     * - They don't go in pairs
+     */
+    addNodeToMultiFlowMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.causes) || !Array.isArray(this.currentSpec.effects)) {
+            console.error('Invalid multi-flow map spec');
+            return;
+        }
+        
+        // Check if a node is selected
+        const selectedNodes = Array.from(this.selectedNodes);
+        if (selectedNodes.length === 0) {
+            // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
+            // Don't show duplicate notification here
+            console.log('MultiFlowMap: No node selected, skipping add (notification already shown by toolbar)');
+            return;
+        }
+        
+        // Get the first selected node
+        const selectedNodeId = selectedNodes[0];
+        const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
+        
+        if (selectedElement.empty()) {
+            console.error('Selected node not found');
+            return;
+        }
+        
+        const nodeType = selectedElement.attr('data-node-type');
+        console.log('Adding to multi-flow map, selected node type:', nodeType);
+        
+        // Handle different node types
+        switch (nodeType) {
+            case 'cause': {
+                // Add new cause to the causes array
+                this.currentSpec.causes.push('New Cause');
+                
+                console.log(`Added new cause. Total causes: ${this.currentSpec.causes.length}`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New cause added!', 'success');
+                }
+                break;
+            }
+                
+            case 'effect': {
+                // Add new effect to the effects array
+                this.currentSpec.effects.push('New Effect');
+                
+                console.log(`Added new effect. Total effects: ${this.currentSpec.effects.length}`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New effect added!', 'success');
+                }
+                break;
+            }
+                
+            case 'event':
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot add to event. Please select a cause or effect node.', 'warning');
+                }
+                // Don't re-render, just return
+                return;
+                
+            default:
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Please select a cause or effect node', 'warning');
+                }
+                return;
+        }
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'multi_flow_map',
             nodeType: nodeType
         });
     }
@@ -1249,12 +1479,17 @@ class InteractiveEditor {
      */
     deleteSelectedNodes() {
         if (this.selectedNodes.size === 0) {
-            console.log('No nodes selected to delete');
+            this.log('InteractiveEditor: Delete requested but no nodes selected');
+            return;
+        }
+        
+        // Validate session before deleting
+        if (!this.validateSession('Delete nodes')) {
             return;
         }
         
         const nodesToDelete = Array.from(this.selectedNodes);
-        console.log(`Deleting ${nodesToDelete.length} node(s):`, nodesToDelete);
+        this.log('InteractiveEditor: Deleting nodes', { count: nodesToDelete.length, nodeIds: nodesToDelete });
         
         // Handle diagram-specific deletion
         if (this.diagramType === 'circle_map') {
@@ -1267,6 +1502,8 @@ class InteractiveEditor {
             this.deleteBraceMapNodes(nodesToDelete);
         } else if (this.diagramType === 'flow_map') {
             this.deleteFlowMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'multi_flow_map') {
+            this.deleteMultiFlowMapNodes(nodesToDelete);
         } else if (this.diagramType === 'concept_map') {
             this.deleteConceptMapNodes(nodesToDelete);
         } else {
@@ -1710,14 +1947,80 @@ class InteractiveEditor {
             }
         });
         
-        // Show notification
-        const totalDeleted = stepNodesToDelete.length + substepNodesToDelete.length;
-        if (totalDeleted > 0 && this.toolbarManager) {
-            this.toolbarManager.showNotification(
-                `Deleted ${totalDeleted} node(s)`,
-                'success'
-            );
+        // Note: Notification is shown by ToolbarManager.handleDeleteNode()
+        // Don't show duplicate notification here
+        console.log(`FlowMap: Deleted ${stepNodesToDelete.length + substepNodesToDelete.length} node(s)`);
+        
+        // Re-render the diagram
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Multi-Flow Map nodes (causes and effects)
+     */
+    deleteMultiFlowMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.causes) || !Array.isArray(this.currentSpec.effects)) {
+            console.error('Invalid multi-flow map spec');
+            return;
         }
+        
+        // Separate node IDs by type and collect indices
+        const causeIndicesToDelete = [];
+        const effectIndicesToDelete = [];
+        
+        nodeIds.forEach(nodeId => {
+            const element = d3.select(`[data-node-id="${nodeId}"]`);
+            if (element.empty()) {
+                console.warn(`Node ${nodeId} not found`);
+                return;
+            }
+            
+            const nodeType = element.attr('data-node-type');
+            
+            if (nodeType === 'event') {
+                // Don't allow deletion of central event
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot delete the central event', 'warning');
+                }
+                return;
+            } else if (nodeType === 'cause') {
+                const causeIndex = parseInt(element.attr('data-cause-index'));
+                if (!isNaN(causeIndex)) {
+                    causeIndicesToDelete.push(causeIndex);
+                }
+            } else if (nodeType === 'effect') {
+                const effectIndex = parseInt(element.attr('data-effect-index'));
+                if (!isNaN(effectIndex)) {
+                    effectIndicesToDelete.push(effectIndex);
+                }
+            }
+        });
+        
+        console.log('Multi-flow map deletion:', { causeIndicesToDelete, effectIndicesToDelete });
+        
+        // Delete causes (sort by index descending to avoid index shifting)
+        const sortedCauseIndices = causeIndicesToDelete.sort((a, b) => b - a);
+        sortedCauseIndices.forEach(index => {
+            if (index >= 0 && index < this.currentSpec.causes.length) {
+                const causeText = this.currentSpec.causes[index];
+                this.currentSpec.causes.splice(index, 1);
+                console.log(`Deleted cause ${index}: ${causeText}`);
+            }
+        });
+        
+        // Delete effects (sort by index descending to avoid index shifting)
+        const sortedEffectIndices = effectIndicesToDelete.sort((a, b) => b - a);
+        sortedEffectIndices.forEach(index => {
+            if (index >= 0 && index < this.currentSpec.effects.length) {
+                const effectText = this.currentSpec.effects[index];
+                this.currentSpec.effects.splice(index, 1);
+                console.log(`Deleted effect ${index}: ${effectText}`);
+            }
+        });
+        
+        // Note: Notification is shown by ToolbarManager.handleDeleteNode()
+        // Don't show duplicate notification here
+        console.log(`MultiFlowMap: Deleted ${causeIndicesToDelete.length + effectIndicesToDelete.length} node(s)`);
         
         // Re-render the diagram
         this.renderDiagram();

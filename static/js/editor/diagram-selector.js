@@ -7,6 +7,10 @@
 
 class DiagramSelector {
     constructor() {
+        // Session management
+        this.currentSession = null;  // Will hold session info: { id, diagramType, startTime }
+        this.editorActive = false;
+        
         // Store metadata only - templates are generated fresh each time via factory methods
         this.diagramTypes = {
             'circle_map': {
@@ -71,7 +75,28 @@ class DiagramSelector {
         // Diagram card click handlers - make entire card clickable
         document.querySelectorAll('.diagram-card').forEach(card => {
             card.addEventListener('click', (e) => {
+                // CRITICAL: Only handle clicks if we're actually in gallery view
+                const landing = document.getElementById('editor-landing');
+                const editorInterface = document.getElementById('editor-interface');
+                
+                console.log('DiagramSelector: Card clicked', {
+                    cardType: card.dataset.type,
+                    landingDisplay: landing?.style.display,
+                    editorDisplay: editorInterface?.style.display,
+                    target: e.target.tagName,
+                    currentTarget: e.currentTarget.className
+                });
+                
+                if (!landing || landing.style.display === 'none' || 
+                    (editorInterface && editorInterface.style.display !== 'none')) {
+                    console.log('DiagramSelector: Card click BLOCKED - editor is active');
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return;
+                }
+                
                 const diagramType = card.dataset.type;
+                console.log('DiagramSelector: Card click PROCEEDING for:', diagramType);
                 this.selectDiagram(diagramType);
             });
         });
@@ -86,17 +111,120 @@ class DiagramSelector {
     }
     
     /**
+     * Generate a unique session ID
+     */
+    generateSessionId() {
+        return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    /**
+     * Start a new editing session
+     */
+    startSession(diagramType) {
+        const sessionId = this.generateSessionId();
+        this.currentSession = {
+            id: sessionId,
+            diagramType: diagramType,
+            startTime: new Date().toISOString()
+        };
+        this.editorActive = true;
+        
+        console.log('DiagramSelector: ========== SESSION STARTED ==========');
+        console.log('DiagramSelector: Session ID:', sessionId);
+        console.log('DiagramSelector: Diagram Type:', diagramType);
+        console.log('DiagramSelector: Start Time:', this.currentSession.startTime);
+        console.log('DiagramSelector: ========================================');
+        
+        return sessionId;
+    }
+    
+    /**
+     * End the current editing session
+     */
+    endSession() {
+        if (this.currentSession) {
+            console.log('DiagramSelector: ========== SESSION ENDED ==========');
+            console.log('DiagramSelector: Session ID:', this.currentSession.id);
+            console.log('DiagramSelector: Diagram Type:', this.currentSession.diagramType);
+            console.log('DiagramSelector: Duration:', 
+                (new Date() - new Date(this.currentSession.startTime)) / 1000, 'seconds');
+            console.log('DiagramSelector: ========================================');
+        }
+        
+        this.currentSession = null;
+        this.editorActive = false;
+    }
+    
+    /**
+     * Validate that we're in the correct session for a diagram operation
+     */
+    validateSession(diagramType, operation = 'operation') {
+        if (!this.currentSession) {
+            console.error(`DiagramSelector: ${operation} rejected - No active session!`);
+            return false;
+        }
+        
+        if (this.currentSession.diagramType !== diagramType) {
+            console.error(`DiagramSelector: ${operation} rejected - Session diagram mismatch!`);
+            console.error('DiagramSelector: Session diagram:', this.currentSession.diagramType);
+            console.error('DiagramSelector: Requested diagram:', diagramType);
+            console.error('DiagramSelector: Session ID:', this.currentSession.id);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
      * Select a diagram type
      */
     selectDiagram(diagramType) {
+        // CRITICAL: Check if there's an active session
+        if (this.currentSession) {
+            console.error('DiagramSelector: BLOCKED - Active session in progress!');
+            console.error('DiagramSelector: Current session ID:', this.currentSession.id);
+            console.error('DiagramSelector: Current diagram:', this.currentSession.diagramType);
+            console.error('DiagramSelector: Attempted switch to:', diagramType);
+            console.error('DiagramSelector: Stack trace:', new Error().stack);
+            return;
+        }
+        
+        // CRITICAL: Check global flag
+        if (this.editorActive) {
+            console.error('DiagramSelector: BLOCKED BY FLAG - Cannot switch diagram while editor is active!');
+            console.error('DiagramSelector: Attempted switch to:', diagramType);
+            console.error('DiagramSelector: Current editor:', window.currentEditor?.diagramType);
+            console.error('DiagramSelector: Stack trace:', new Error().stack);
+            return;
+        }
+        
+        // CRITICAL: Verify we're actually in gallery mode before switching
+        const landing = document.getElementById('editor-landing');
+        const editorInterface = document.getElementById('editor-interface');
+        
+        console.log('DiagramSelector: selectDiagram called', {
+            diagramType,
+            landingDisplay: landing?.style.display,
+            editorDisplay: editorInterface?.style.display,
+            hasActiveEditor: !!window.currentEditor,
+            editorActiveFlag: this.editorActive
+        });
+        
+        // Double-check we're in gallery view
+        if (editorInterface && editorInterface.style.display !== 'none') {
+            console.error('DiagramSelector: BLOCKED BY DOM CHECK - Cannot switch diagram while editor is active!');
+            console.error('DiagramSelector: Current editor diagram type:', window.currentEditor?.diagramType);
+            return;
+        }
+        
         const diagramConfig = this.diagramTypes[diagramType];
         if (diagramConfig) {
-            console.log(`Selected diagram type: ${diagramType}`);
+            console.log(`DiagramSelector: Proceeding with diagram selection: ${diagramType}`);
             // Get a fresh template using the factory method
             const freshTemplate = this.getTemplate(diagramType);
             this.transitionToEditor(diagramType, freshTemplate, diagramConfig.name);
         } else {
-            console.error(`Unknown diagram type: ${diagramType}`);
+            console.error(`DiagramSelector: Unknown diagram type: ${diagramType}`);
         }
     }
     
@@ -126,6 +254,11 @@ class DiagramSelector {
      * Transition to editor interface
      */
     transitionToEditor(diagramType, template, diagramName) {
+        console.log('DiagramSelector: ============= TRANSITION TO EDITOR =============');
+        console.log('DiagramSelector: Diagram type:', diagramType);
+        console.log('DiagramSelector: Diagram name:', diagramName);
+        console.log('DiagramSelector: Stack trace:', new Error().stack);
+        
         // Clean up previous editor and canvas first
         this.cleanupCanvas();
         
@@ -133,12 +266,14 @@ class DiagramSelector {
         const landing = document.getElementById('editor-landing');
         if (landing) {
             landing.style.display = 'none';
+            console.log('DiagramSelector: Landing page hidden');
         }
         
         // Show editor interface
         const editorInterface = document.getElementById('editor-interface');
         if (editorInterface) {
             editorInterface.style.display = 'flex';
+            console.log('DiagramSelector: Editor interface shown');
         }
         
         // Update diagram type display
@@ -149,12 +284,20 @@ class DiagramSelector {
         
         // Initialize editor with selected diagram type
         try {
+            // Start a new session
+            const sessionId = this.startSession(diagramType);
+            
+            // Create editor and attach session info
             window.currentEditor = new InteractiveEditor(diagramType, template);
+            window.currentEditor.sessionId = sessionId;
+            window.currentEditor.sessionDiagramType = diagramType;
             window.currentEditor.initialize();
             
-            console.log(`Editor initialized for diagram type: ${diagramType}`);
+            console.log(`DiagramSelector: Editor initialized successfully for: ${diagramType}`);
+            console.log('DiagramSelector: ============= TRANSITION COMPLETE =============');
         } catch (error) {
-            console.error('Error initializing editor:', error);
+            console.error('DiagramSelector: Error initializing editor:', error);
+            this.endSession();  // End session on error
             alert('Error loading editor. Please try again.');
             this.backToGallery();
         }
@@ -174,7 +317,19 @@ class DiagramSelector {
         
         // Clear any existing editor
         if (window.currentEditor) {
+            // Clear the toolbar manager's property panel if it exists
+            if (window.currentEditor.toolbarManager && 
+                typeof window.currentEditor.toolbarManager.clearPropertyPanel === 'function') {
+                window.currentEditor.toolbarManager.clearPropertyPanel();
+                console.log('Property panel cleared for diagram switch');
+            }
             window.currentEditor = null;
+        }
+        
+        // Hide property panel when cleaning up
+        const propertyPanel = document.getElementById('property-panel');
+        if (propertyPanel) {
+            propertyPanel.style.display = 'none';
         }
     }
     
@@ -182,6 +337,11 @@ class DiagramSelector {
      * Return to gallery
      */
     backToGallery() {
+        console.log('DiagramSelector: Returning to gallery');
+        
+        // End the current session
+        this.endSession();
+        
         // Clean up canvas and editor first
         this.cleanupCanvas();
         

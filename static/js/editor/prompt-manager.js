@@ -158,88 +158,90 @@ class PromptManager {
      * Transition to editor with generated diagram
      */
     transitionToEditorWithDiagram(data) {
-        // Hide landing page
-        const landing = document.getElementById('editor-landing');
-        if (landing) {
-            landing.style.display = 'none';
-        }
+        console.log('PromptManager: Transitioning to editor with AI-generated diagram', {
+            diagramType: data.diagram_type || data.type,
+            hasSpec: !!data.spec
+        });
         
-        // Show editor interface
-        const editorInterface = document.getElementById('editor-interface');
-        if (editorInterface) {
-            editorInterface.style.display = 'flex';
-        }
-        
-        // Get diagram type (use diagram_type or type from response)
+        // Get diagram type
         const diagramType = data.diagram_type || data.type;
         
-        // Update diagram type display
-        const displayElement = document.getElementById('diagram-type-display');
-        if (displayElement && diagramType) {
-            const typeNames = {
-                'mindmap': window.languageManager?.currentLanguage === 'zh' ? '思维导图' : 'Mind Map',
-                'concept_map': window.languageManager?.currentLanguage === 'zh' ? '概念图' : 'Concept Map',
-                'bubble_map': window.languageManager?.currentLanguage === 'zh' ? '气泡图' : 'Bubble Map',
-                'double_bubble_map': window.languageManager?.currentLanguage === 'zh' ? '双气泡图' : 'Double Bubble Map',
-                'tree_map': window.languageManager?.currentLanguage === 'zh' ? '树状图' : 'Tree Map',
-                'brace_map': window.languageManager?.currentLanguage === 'zh' ? '括号图' : 'Brace Map',
-                'flow_map': window.languageManager?.currentLanguage === 'zh' ? '流程图' : 'Flow Map',
-                'multi_flow_map': window.languageManager?.currentLanguage === 'zh' ? '多流程图' : 'Multi-Flow Map',
-                'circle_map': window.languageManager?.currentLanguage === 'zh' ? '圆圈图' : 'Circle Map',
-                'bridge_map': window.languageManager?.currentLanguage === 'zh' ? '桥接图' : 'Bridge Map'
-            };
-            displayElement.textContent = typeNames[diagramType] || diagramType;
+        if (!diagramType || !data.spec) {
+            console.error('PromptManager: Missing diagram type or spec');
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh' 
+                    ? '数据不完整' 
+                    : 'Incomplete data',
+                'error'
+            );
+            return;
         }
         
-        // Render diagram using the renderer dispatcher
-        const container = document.getElementById('d3-container');
-        if (container && data.spec && diagramType) {
-            // Use the existing renderGraph function to render the diagram
-            if (typeof window.renderGraph === 'function') {
-                try {
-                    // renderGraph clears the container and renders the diagram
-                    window.renderGraph(diagramType, data.spec, data.theme || null, data.dimensions || null);
-                    
-                    console.log('Diagram rendered successfully');
-                } catch (error) {
-                    console.error('Error rendering diagram:', error);
-                    this.showNotification(
-                        window.languageManager?.currentLanguage === 'zh' 
-                            ? '渲染失败' 
-                            : 'Rendering failed',
-                        'error'
-                    );
-                    return;
-                }
-            } else {
-                console.error('renderGraph function not found');
-                this.showNotification(
-                    window.languageManager?.currentLanguage === 'zh' 
-                        ? '渲染器未加载' 
-                        : 'Renderer not loaded',
-                    'error'
-                );
-                return;
-            }
+        // CRITICAL: Use DiagramSelector to properly create session-aware editor
+        if (!window.diagramSelector) {
+            console.error('PromptManager: DiagramSelector not available!');
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh' 
+                    ? '系统错误' 
+                    : 'System error',
+                'error'
+            );
+            return;
+        }
+        
+        try {
+            // Get localized diagram name
+            const diagramName = this.getDiagramName(diagramType);
             
-            // Initialize interactive editor if available
-            if (window.InteractiveEditor && data.spec) {
-                try {
-                    window.currentEditor = new window.InteractiveEditor(diagramType, data.spec);
-                    window.currentEditor.initialize();
-                } catch (error) {
-                    console.error('Error initializing interactive editor:', error);
-                }
-            }
+            console.log('PromptManager: Using DiagramSelector.transitionToEditor for session management');
+            
+            // This will:
+            // 1. Start a proper session with unique ID
+            // 2. Set session protection flags
+            // 3. Create InteractiveEditor with session info
+            // 4. Initialize the editor properly
+            window.diagramSelector.transitionToEditor(diagramType, data.spec, diagramName);
+            
+            console.log('PromptManager: Transition complete - editor now has session protection');
+            
+            // Show success notification
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh' 
+                    ? '图表生成成功！' 
+                    : 'Diagram generated successfully!',
+                'success'
+            );
+        } catch (error) {
+            console.error('PromptManager: Error during transition:', error);
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh' 
+                    ? '创建编辑器失败' 
+                    : 'Failed to create editor',
+                'error'
+            );
         }
+    }
+    
+    /**
+     * Get localized diagram name
+     */
+    getDiagramName(diagramType) {
+        const isZh = window.languageManager?.currentLanguage === 'zh';
         
-        // Show success notification
-        this.showNotification(
-            window.languageManager?.currentLanguage === 'zh' 
-                ? '图表生成成功！' 
-                : 'Diagram generated successfully!',
-            'success'
-        );
+        const typeNames = {
+            'mindmap': isZh ? '思维导图' : 'Mind Map',
+            'concept_map': isZh ? '概念图' : 'Concept Map',
+            'bubble_map': isZh ? '气泡图' : 'Bubble Map',
+            'double_bubble_map': isZh ? '双气泡图' : 'Double Bubble Map',
+            'tree_map': isZh ? '树状图' : 'Tree Map',
+            'brace_map': isZh ? '括号图' : 'Brace Map',
+            'flow_map': isZh ? '流程图' : 'Flow Map',
+            'multi_flow_map': isZh ? '多流程图' : 'Multi-Flow Map',
+            'circle_map': isZh ? '圆圈图' : 'Circle Map',
+            'bridge_map': isZh ? '桥接图' : 'Bridge Map'
+        };
+        
+        return typeNames[diagramType] || diagramType;
     }
     
     /**
@@ -488,54 +490,14 @@ class PromptManager {
     }
     
     /**
-     * Show notification
+     * Show notification using centralized notification manager
      */
     showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        
-        // Style the notification
-        notification.style.position = 'fixed';
-        notification.style.top = '80px';
-        notification.style.right = '20px';
-        notification.style.padding = '12px 24px';
-        notification.style.borderRadius = '8px';
-        
-        // Set color based on type
-        if (type === 'success') {
-            notification.style.backgroundColor = '#4CAF50';
-        } else if (type === 'error') {
-            notification.style.backgroundColor = '#ff6b6b';
+        if (window.notificationManager) {
+            window.notificationManager.show(message, type);
         } else {
-            notification.style.backgroundColor = '#2196F3';
+            console.error('NotificationManager not available');
         }
-        
-        notification.style.color = 'white';
-        notification.style.fontWeight = '600';
-        notification.style.fontSize = '14px';
-        notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-        notification.style.zIndex = '10001';
-        notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.3s ease';
-        
-        document.body.appendChild(notification);
-        
-        // Fade in
-        setTimeout(() => {
-            notification.style.opacity = '1';
-        }, 10);
-        
-        // Fade out and remove
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
     }
 }
 

@@ -1034,8 +1034,8 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     const eventRightSlots = computeEdgeSlots(centerX, centerY, eventW, eventH, effects.length, 'right', 10);
 
     // Draw causes and arrows to event (right center of cause -> distributed left edge of event)
-    causes.forEach(n => {
-        svg.append('rect')
+    causes.forEach((n, idx) => {
+        const rectNode = svg.append('rect')
             .attr('x', n.cx - n.w / 2)
             .attr('y', n.cy - n.h / 2)
             .attr('width', n.w)
@@ -1044,7 +1044,12 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('ry', THEME.rectRadius)
             .attr('fill', THEME.causeFill)
             .attr('stroke', THEME.causeStroke)
-            .attr('stroke-width', THEME.causeStrokeWidth);
+            .attr('stroke-width', THEME.causeStrokeWidth)
+            .attr('data-node-id', `multi-flow-cause-${idx}`)
+            .attr('data-node-type', 'cause')
+            .attr('data-cause-index', idx)
+            .attr('cursor', 'pointer');
+        
         svg.append('text')
             .attr('x', n.cx)
             .attr('y', n.cy)
@@ -1052,7 +1057,13 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.causeText)
             .attr('font-size', THEME.fontCause)
+            .attr('data-node-id', `multi-flow-cause-${idx}`)
+            .attr('data-node-type', 'cause')
+            .attr('data-cause-index', idx)
+            .attr('data-text-for', `multi-flow-cause-${idx}`)
+            .attr('cursor', 'pointer')
             .text(n.text);
+        
         const start = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'right');
         const slotIndex = Math.min(eventLeftSlots.length - 1, Math.max(0, causes.indexOf(n)));
         const end = eventLeftSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'left');
@@ -1060,7 +1071,7 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     });
     
     // Draw effects and arrows from event (distributed right edge of event -> left center of effect)
-    effects.forEach(n => {
+    effects.forEach((n, idx) => {
         svg.append('rect')
             .attr('x', n.cx - n.w / 2)
             .attr('y', n.cy - n.h / 2)
@@ -1070,7 +1081,12 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('ry', THEME.rectRadius)
             .attr('fill', THEME.effectFill)
             .attr('stroke', THEME.effectStroke)
-            .attr('stroke-width', THEME.effectStrokeWidth);
+            .attr('stroke-width', THEME.effectStrokeWidth)
+            .attr('data-node-id', `multi-flow-effect-${idx}`)
+            .attr('data-node-type', 'effect')
+            .attr('data-effect-index', idx)
+            .attr('cursor', 'pointer');
+        
         svg.append('text')
             .attr('x', n.cx)
             .attr('y', n.cy)
@@ -1078,7 +1094,13 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.effectText)
             .attr('font-size', THEME.fontEffect)
+            .attr('data-node-id', `multi-flow-effect-${idx}`)
+            .attr('data-node-type', 'effect')
+            .attr('data-effect-index', idx)
+            .attr('data-text-for', `multi-flow-effect-${idx}`)
+            .attr('cursor', 'pointer')
             .text(n.text);
+        
         const slotIndex = Math.min(eventRightSlots.length - 1, Math.max(0, effects.indexOf(n)));
         const start = eventRightSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'right');
         const end = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'left');
@@ -1095,7 +1117,11 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('ry', THEME.rectRadius)
         .attr('fill', THEME.eventFill)
         .attr('stroke', THEME.eventStroke)
-        .attr('stroke-width', THEME.eventStrokeWidth);
+        .attr('stroke-width', THEME.eventStrokeWidth)
+        .attr('data-node-id', 'multi-flow-event')
+        .attr('data-node-type', 'event')
+        .attr('cursor', 'pointer');
+    
     svg.append('text')
         .attr('x', centerX)
         .attr('y', centerY)
@@ -1104,6 +1130,10 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.eventText)
         .attr('font-size', THEME.fontEvent)
         .attr('font-weight', 'bold')
+        .attr('data-node-id', 'multi-flow-event')
+        .attr('data-node-type', 'event')
+        .attr('data-text-for', 'multi-flow-event')
+        .attr('cursor', 'pointer')
         .text(spec.event);
     
     // Watermark removed from canvas display - will be added during PNG export only

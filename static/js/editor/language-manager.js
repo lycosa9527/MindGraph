@@ -477,43 +477,14 @@ class LanguageManager {
     }
     
     /**
-     * Show notification message
+     * Show notification using centralized notification manager
      */
     showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        
-        // Style the notification
-        notification.style.position = 'fixed';
-        notification.style.top = '80px';
-        notification.style.right = '20px';
-        notification.style.padding = '12px 24px';
-        notification.style.borderRadius = '8px';
-        notification.style.backgroundColor = type === 'success' ? '#4CAF50' : '#2196F3';
-        notification.style.color = 'white';
-        notification.style.fontWeight = '600';
-        notification.style.fontSize = '14px';
-        notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-        notification.style.zIndex = '10001';
-        notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.3s ease';
-        
-        document.body.appendChild(notification);
-        
-        // Fade in
-        setTimeout(() => {
-            notification.style.opacity = '1';
-        }, 10);
-        
-        // Fade out and remove
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
+        if (window.notificationManager) {
+            window.notificationManager.show(message, type);
+        } else {
+            console.error('NotificationManager not available');
+        }
     }
     
     /**
