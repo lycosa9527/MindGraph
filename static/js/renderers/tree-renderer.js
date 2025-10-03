@@ -125,7 +125,9 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('ry', 6)
         .attr('fill', THEME.rootFill)
         .attr('stroke', THEME.rootStroke)
-        .attr('stroke-width', THEME.rootStrokeWidth);
+        .attr('stroke-width', THEME.rootStrokeWidth)
+        .attr('data-node-id', 'tree-topic')
+        .attr('data-node-type', 'topic');
     svg.append('text')
         .attr('x', rootX)
         .attr('y', rootY)
@@ -134,6 +136,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.rootText)
         .attr('font-size', rootFont)
         .attr('font-weight', 'bold')
+        .attr('data-text-for', 'tree-topic')
+        .attr('cursor', 'pointer')
         .text(spec.topic);
     
     // Draw branches
@@ -190,7 +194,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     branchLayouts.forEach(layout => { layout.branchX += offsetX; });
 
     // Render branches and children stacked vertically with straight connectors
-    branchLayouts.forEach(layout => {
+    branchLayouts.forEach((layout, branchIndex) => {
         const { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW } = layout;
         const branchX = layout.branchX;
 
@@ -204,7 +208,10 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('ry', 6)
             .attr('fill', THEME.branchFill)
             .attr('stroke', THEME.branchStroke)
-            .attr('stroke-width', THEME.branchStrokeWidth);
+            .attr('stroke-width', THEME.branchStrokeWidth)
+            .attr('data-node-id', `tree-category-${branchIndex}`)
+            .attr('data-node-type', 'category')
+            .attr('data-category-index', branchIndex);
 
         svg.append('text')
             .attr('x', branchX)
@@ -213,6 +220,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.branchText)
             .attr('font-size', branchFont)
+            .attr('data-text-for', `tree-category-${branchIndex}`)
+            .attr('cursor', 'pointer')
             .text(childText);
 
         // Root to branch straight connector
@@ -260,7 +269,11 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                     .attr('ry', 4)
                     .attr('fill', THEME.leafFill || '#ffffff')
                     .attr('stroke', THEME.leafStroke || '#c8d6e5')
-                    .attr('stroke-width', THEME.leafStrokeWidth != null ? THEME.leafStrokeWidth : 1);
+                    .attr('stroke-width', THEME.leafStrokeWidth != null ? THEME.leafStrokeWidth : 1)
+                    .attr('data-node-id', `tree-leaf-${branchIndex}-${j}`)
+                    .attr('data-node-type', 'leaf')
+                    .attr('data-category-index', branchIndex)
+                    .attr('data-leaf-index', j);
 
                 svg.append('text')
                     .attr('x', branchX)
@@ -269,6 +282,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.leafText)
                     .attr('font-size', leafFont)
+                    .attr('data-text-for', `tree-leaf-${branchIndex}-${j}`)
+                    .attr('cursor', 'pointer')
                     .text(leafText);
             });
 

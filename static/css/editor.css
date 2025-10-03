@@ -573,12 +573,52 @@ body {
     overflow: auto;
     background: #f5f5f5;
     position: relative;
+    scroll-behavior: smooth;
+    
+    /* Firefox scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: #667eea #e0e0e0;
+}
+
+/* Custom scrollbar styling for canvas */
+.canvas-panel::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.canvas-panel::-webkit-scrollbar-track {
+    background: #e0e0e0;
+    border-radius: 6px;
+}
+
+.canvas-panel::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 6px;
+    border: 2px solid #e0e0e0;
+}
+
+.canvas-panel::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.canvas-panel::-webkit-scrollbar-corner {
+    background: #e0e0e0;
 }
 
 #d3-container {
+    /* Dimensions are set by renderers via inline styles */
+    /* These serve as fallbacks and ensure minimum viewport coverage */
     width: 100%;
     height: 100%;
-    min-height: 600px;
+    min-width: 100%;
+    min-height: 100%;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+/* Let SVG use natural dimensions set by renderers */
+#d3-container svg {
+    display: block;
 }
 
 /* ========== Status Bar ========== */

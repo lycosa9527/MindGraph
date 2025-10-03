@@ -10,6 +10,7 @@ class ToolbarManager {
         this.editor = editor;
         this.propertyPanel = null;
         this.currentSelection = [];
+        this.isAutoCompleting = false; // Flag to prevent concurrent auto-complete operations
         this.initializeElements();
         this.attachEventListeners();
         this.listenToSelectionChanges();
@@ -249,7 +250,7 @@ class ToolbarManager {
         // Add button state for diagrams that require selection (brace_map, double_bubble_map, flow_map, multi_flow_map)
         if (this.addNodeBtn && this.editor) {
             const diagramType = this.editor.diagramType;
-            const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map'].includes(diagramType);
+            const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map'].includes(diagramType);
             
             if (requiresSelection) {
                 this.addNodeBtn.disabled = !hasSelection;
@@ -368,11 +369,12 @@ class ToolbarManager {
     /**
      * Apply text changes
      */
-    applyText() {
+    applyText(silent = false) {
         if (this.currentSelection.length === 0) return;
         
         const newText = this.propText.value.trim();
         if (!newText) {
+            // Always show warning for empty text
             this.showNotification('Text cannot be empty', 'warning');
             return;
         }
@@ -417,7 +419,13 @@ class ToolbarManager {
             }
         });
         
-        this.showNotification('Text updated successfully', 'success');
+        // Only show notification if not called from applyAllProperties
+        if (!silent) {
+            console.log('ToolbarManager: applyText showing notification (silent=false)');
+            this.showNotification('Text updated successfully', 'success');
+        } else {
+            console.log('ToolbarManager: applyText notification suppressed (silent=true)');
+        }
     }
     
     /**
@@ -447,9 +455,9 @@ class ToolbarManager {
             properties
         });
         
-        // Apply text changes first using the proper method
+        // Apply text changes first using the proper method (silently - we'll show one notification at the end)
         if (properties.text && properties.text.trim()) {
-            this.applyText();
+            this.applyText(true); // Pass true to suppress notification
         }
         
         this.currentSelection.forEach(nodeId => {
@@ -515,6 +523,7 @@ class ToolbarManager {
             properties 
         });
         
+        console.log('ToolbarManager: applyAllProperties showing final notification');
         this.showNotification('All properties applied successfully!', 'success');
     }
     
@@ -557,7 +566,7 @@ class ToolbarManager {
         }
         
         const diagramType = this.editor.diagramType;
-        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map'].includes(diagramType);
+        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map'].includes(diagramType);
 
         // Check if selection is required for this diagram type
         if (requiresSelection && this.currentSelection.length === 0) {
@@ -569,7 +578,7 @@ class ToolbarManager {
         this.editor.addNode();
         
         // Only show generic success notification for diagram types that don't show their own
-            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'circle_map', 'bubble_map', 'concept_map'].includes(diagramType);
+            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'bridge_map', 'circle_map', 'bubble_map', 'concept_map'].includes(diagramType);
             if (!showsOwnNotification) {
                 this.showNotification('Node added! Double-click to edit text.', 'success');
             }
@@ -651,15 +660,27 @@ class ToolbarManager {
         console.log('ToolbarManager: Current diagram type:', this.editor?.diagramType);
         console.log('ToolbarManager: Current spec:', this.editor?.currentSpec);
         
+        // Prevent concurrent auto-complete operations
+        if (this.isAutoCompleting) {
+            console.log('ToolbarManager: Auto-complete already in progress, ignoring duplicate request');
+            return;
+        }
+        
         if (!this.editor) {
             this.showNotification('Editor not initialized', 'error');
             console.error('ToolbarManager: Auto-complete failed - Editor not initialized');
             return;
         }
         
+        // Set flag to prevent concurrent operations
+        this.isAutoCompleting = true;
+        
         // CRITICAL: Validate session before auto-complete
         if (!this.editor.validateSession('Auto-complete')) {
-            this.showNotification('Session validation failed', 'error');
+            // validateSession already logs the error to console
+            // Don't show notification here as it creates confusion when it still works
+            console.error('ToolbarManager: Session validation failed, aborting auto-complete');
+            this.isAutoCompleting = false; // Clear flag on early return
             return;
         }
         
@@ -676,6 +697,7 @@ class ToolbarManager {
         if (existingNodes.length === 0) {
             this.showNotification('Please add some nodes first before using Auto', 'warning');
             console.log('ToolbarManager: Auto-complete aborted - No nodes found');
+            this.isAutoCompleting = false; // Clear flag on early return
             return;
         }
         
@@ -696,6 +718,26 @@ class ToolbarManager {
             console.log('Flow map detected - using title for language detection:', textForLanguageDetection);
         }
         
+        // For bridge maps, check all existing nodes for Chinese characters (prioritize user content)
+        if (diagramType === 'bridge_map' && existingNodes.length > 0) {
+            // Check if any existing node has Chinese characters
+            const hasChineseInNodes = existingNodes.some(node => /[\u4e00-\u9fa5]/.test(node.text));
+            if (hasChineseInNodes) {
+                textForLanguageDetection = existingNodes.find(node => /[\u4e00-\u9fa5]/.test(node.text)).text;
+                console.log('Bridge map - Found Chinese text in nodes, using for language detection:', textForLanguageDetection);
+            }
+        }
+        
+        // For brace maps, check all existing nodes for Chinese characters (prioritize user content)
+        if (diagramType === 'brace_map' && existingNodes.length > 0) {
+            // Check if any existing node has Chinese characters
+            const hasChineseInNodes = existingNodes.some(node => /[\u4e00-\u9fa5]/.test(node.text));
+            if (hasChineseInNodes) {
+                textForLanguageDetection = existingNodes.find(node => /[\u4e00-\u9fa5]/.test(node.text)).text;
+                console.log('Brace map - Found Chinese text in nodes, using for language detection:', textForLanguageDetection);
+            }
+        }
+        
         // Detect language from the topic/title text (if contains Chinese characters, use Chinese)
         const hasChinese = /[\u4e00-\u9fa5]/.test(textForLanguageDetection);
         const language = hasChinese ? 'zh' : (window.languageManager?.getCurrentLanguage() || 'en');
@@ -711,6 +753,14 @@ class ToolbarManager {
                 prompt = `为主题"${mainTopic}"创建一个完整的流程图。生成相关的主要步骤和子步骤，使其内容完整。`;
             } else {
                 prompt = `Create a complete flow map about "${mainTopic}". Generate relevant steps and substeps to make it comprehensive.`;
+            }
+        } else if (diagramType === 'brace_map') {
+            // For brace maps, only use the main topic, not the placeholder parts/subparts
+            // (to avoid LLM being influenced by default template placeholders)
+            if (language === 'zh') {
+                prompt = `为主题"${mainTopic}"创建一个完整的括号图。生成相关的主要部分和子部分，使其内容完整。`;
+            } else {
+                prompt = `Create a complete brace map about "${mainTopic}". Generate relevant parts and subparts to make it comprehensive.`;
             }
         } else if (existingNodes.length === 1) {
             // Only one node - expand around it
@@ -784,7 +834,9 @@ class ToolbarManager {
                     console.error('ToolbarManager: DIAGRAM TYPE MISMATCH DETECTED!');
                     console.error('ToolbarManager: Expected:', currentDiagramType);
                     console.error('ToolbarManager: Current:', this.editor.diagramType);
-                    this.showNotification('Error: Diagram type changed unexpectedly', 'error');
+                    // Only show notification if there's actually a mismatch
+                    this.showNotification('Diagram changed during auto-complete', 'error');
+                    this.isAutoCompleting = false; // Clear flag on early return
                     return;
                 }
                 
@@ -792,20 +844,25 @@ class ToolbarManager {
                     console.error('ToolbarManager: SESSION ID MISMATCH DETECTED!');
                     console.error('ToolbarManager: Expected:', currentSessionId);
                     console.error('ToolbarManager: Current:', this.editor.sessionId);
-                    this.showNotification('Error: Session changed unexpectedly', 'error');
+                    // Only show notification if there's actually a mismatch
+                    this.showNotification('Session changed during auto-complete', 'error');
+                    this.isAutoCompleting = false; // Clear flag on early return
                     return;
                 }
                 
                 // CRITICAL: Preserve the original root topic to prevent it from being overwritten
                 // For tree maps and other hierarchical diagrams, always keep the user's original topic
-                if (originalTopic && data.spec.topic) {
-                    console.log(`ToolbarManager: Preserving original topic: "${originalTopic}" (LLM generated: "${data.spec.topic}")`);
-                    data.spec.topic = originalTopic;
-                } else if (originalTopic) {
-                    console.warn(`ToolbarManager: Original topic exists but spec.topic is missing. Adding original topic.`);
-                    data.spec.topic = originalTopic;
-                } else {
-                    console.warn(`ToolbarManager: No original topic found. Using LLM generated topic: "${data.spec.topic}"`);
+                // Note: Bridge maps don't have a topic field, so skip this for bridge_map
+                if (diagramType !== 'bridge_map') {
+                    if (originalTopic && data.spec.topic) {
+                        console.log(`ToolbarManager: Preserving original topic: "${originalTopic}" (LLM generated: "${data.spec.topic}")`);
+                        data.spec.topic = originalTopic;
+                    } else if (originalTopic) {
+                        console.warn(`ToolbarManager: Original topic exists but spec.topic is missing. Adding original topic.`);
+                        data.spec.topic = originalTopic;
+                    } else {
+                        console.warn(`ToolbarManager: No original topic found. Using LLM generated topic: "${data.spec.topic}"`);
+                    }
                 }
                 
                 // For flow maps, preserve the title field (but replace steps/substeps with LLM output)
@@ -820,6 +877,18 @@ class ToolbarManager {
                     }
                     // Note: Steps and substeps are completely replaced by LLM output
                     console.log(`ToolbarManager: Flow map - Replacing with ${data.spec.steps?.length || 0} new steps`);
+                }
+                
+                // For brace maps, preserve the topic but replace parts/subparts with LLM output
+                if (diagramType === 'brace_map') {
+                    // Topic is already preserved above in the generic topic preservation
+                    // Note: Parts and subparts are completely replaced by LLM output
+                    console.log(`ToolbarManager: Brace map - Replacing with ${data.spec.parts?.length || 0} new parts`);
+                }
+                
+                // For bridge maps, just use the LLM output directly (no topic preservation needed)
+                if (diagramType === 'bridge_map') {
+                    console.log(`ToolbarManager: Bridge map - Using ${data.spec.analogies?.length || 0} analogy pairs from LLM`);
                 }
                 
                 console.log('ToolbarManager: Updating editor spec');
@@ -838,6 +907,7 @@ class ToolbarManager {
             this.showNotification(`Auto-complete failed: ${error.message}`, 'error');
         } finally {
             this.setAutoButtonLoading(false);
+            this.isAutoCompleting = false; // Clear flag
             console.log('ToolbarManager: =============== AUTO-COMPLETE ENDED ===============');
         }
     }
@@ -898,6 +968,11 @@ class ToolbarManager {
                     // For concept map, the main topic is spec.topic
                     mainTopic = spec.topic;
                     break;
+                    
+                case 'bridge_map':
+                    // For bridge map, use the relating_factor (usually "as") or first analogy
+                    mainTopic = spec.relating_factor || (spec.analogies && spec.analogies[0]?.left);
+                    break;
             }
             
             if (mainTopic) {
@@ -951,25 +1026,48 @@ class ToolbarManager {
     extractExistingNodes() {
         const nodes = [];
         
+        // Define placeholder/template text patterns to skip
+        const placeholderPatterns = [
+            /^New Node$/i,
+            /^New (Left|Right|Item|Concept|Step|Substep|Category|Child|Part|Subpart|Cause|Effect|Attribute|Context)$/i,
+            /^Item [A-Z0-9]+$/i,  // Item 1, Item A, Item B, etc.
+            /^Item \d+$/i,        // Item 1, Item 2, Item 3, etc.
+            /^as$/i,              // Bridge map relating factor default
+            /^Main Topic$/i,
+            /^Topic [A-Z]?$/i,
+            /^主题$/,
+            /^新节点$/,
+            /^项目[A-Z0-9]+$/
+        ];
+        
         // Find all text elements in the SVG
         d3.selectAll('#d3-container text').each(function() {
             const textElement = d3.select(this);
             const text = textElement.text().trim();
             
-            // Skip empty or very short text
-            if (text && text.length > 0 && text !== 'New Node') {
-                const x = parseFloat(textElement.attr('x')) || 0;
-                const y = parseFloat(textElement.attr('y')) || 0;
-                
-                nodes.push({
-                    text: text,
-                    x: x,
-                    y: y
-                });
+            // Skip empty or placeholder text
+            if (!text || text.length === 0) {
+                return;
             }
+            
+            // Check if this is placeholder text
+            const isPlaceholder = placeholderPatterns.some(pattern => pattern.test(text));
+            if (isPlaceholder) {
+                console.log(`Skipping placeholder text: "${text}"`);
+                return;
+            }
+            
+            const x = parseFloat(textElement.attr('x')) || 0;
+            const y = parseFloat(textElement.attr('y')) || 0;
+            
+            nodes.push({
+                text: text,
+                x: x,
+                y: y
+            });
         });
         
-        console.log(`Extracted ${nodes.length} existing nodes:`, nodes);
+        console.log(`Extracted ${nodes.length} real nodes (filtered out placeholders):`, nodes);
         return nodes;
     }
     
@@ -1343,6 +1441,8 @@ class ToolbarManager {
      * Show notification using centralized notification manager
      */
     showNotification(message, type = 'info') {
+        console.log(`ToolbarManager: showNotification called - "${message}" [${type}]`);
+        console.trace('Notification stack trace:');
         if (window.notificationManager) {
             window.notificationManager.show(message, type);
         } else {

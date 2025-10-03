@@ -5,6 +5,96 @@ All notable changes to the MindGraph project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
+## [v3.0.7] - 2025-10-03
+
+### Added
+- **Scrollable Canvas**: Canvas now supports horizontal and vertical scrolling for large diagrams
+  - Custom styled scrollbars matching app theme (purple gradient)
+  - Smooth scrolling behavior for better UX
+  - Firefox scrollbar support with thin styled scrollbars
+  - 40px padding around diagrams for breathing room
+- **Brace Map Text Editing**: Added `updateBraceMapText()` function to properly save topic, part, and subpart edits
+- **Debug Logging**: Added comprehensive console logging to track notification calls with stack traces
+- **Code Review Documentation**: Created `CANVAS_SCROLLING_CODE_REVIEW.md` with detailed technical analysis
+
+### Changed
+- **Properties Panel Apply Button**: Eliminated duplicate notifications across all diagram types
+  - Apply button now shows single "All properties applied successfully!" notification
+  - Text apply operations are now silent when called from "Apply All" button
+  - Improved notification flow with `silent` parameter in `applyText()` method
+- **Brace Map Auto-Complete**: Improved prompt generation to exclude placeholder parts/subparts
+  - Only main topic is sent to LLM for brace maps
+  - Prevents LLM from treating placeholder text as real user content
+  - Parts and subparts are completely replaced by LLM output
+- **Brace Map Language Detection**: Enhanced to prioritize user-edited Chinese content over placeholders
+  - Scans all nodes for Chinese characters to determine language
+  - Ensures correct language is passed to LLM
+- **Brace Map Prompts**: Updated prompts with explicit instructions
+  - Chinese prompt requires all-Chinese content generation
+  - Added concrete examples in both English and Chinese
+  - Warns against using placeholder text
+  - Added topic preservation instructions
+- **Canvas Container Sizing**: Improved CSS for better compatibility
+  - Removed conflicting `max-content` rules
+  - Removed SVG `min-width/min-height` to prevent stretching of small diagrams
+  - Added clear comments explaining renderer behavior
+
+### Fixed
+- **Triple/Double Notifications**: Fixed duplicate notifications when clicking "Apply All" in properties panel
+  - Affected all diagram types: circle, bubble, double bubble, flow, multi-flow, tree, bridge, brace maps
+  - Root cause: Both `applyText()` and `applyAllProperties()` were showing notifications
+  - Solution: Added silent parameter to suppress intermediate notifications
+- **Brace Map Topic Not Sent to LLM**: Fixed critical bug where edited topic wasn't being saved
+  - Added `updateBraceMapText()` dispatcher and handler
+  - Topic edits now properly update `spec.topic`
+  - Auto-complete now receives correct user-typed topic
+- **Brace Map Language Issue**: Fixed LLM generating wrong language content
+  - Language detection now scans actual node content instead of using main topic placeholder
+  - Prompt generation excludes placeholder parts/subparts
+  - LLM now receives only the main topic, not template text
+- **SVG Stretching Bug**: Prevented small diagrams from being forced to fill entire viewport
+  - Removed `min-width: 100%` and `min-height: 100%` from SVG rules
+  - SVGs now use natural dimensions set by renderers
+- **Firefox Scrollbar Styling**: Added Firefox-specific scrollbar properties
+  - `scrollbar-width: thin`
+  - `scrollbar-color: #667eea #e0e0e0`
+
+### Technical
+- **CSS Improvements** (`static/css/editor.css`)
+  - Canvas panel: Added `overflow: auto` and `scroll-behavior: smooth`
+  - Custom webkit scrollbar styling (Chrome/Edge/Safari)
+  - Firefox scrollbar styling for cross-browser consistency
+  - D3 container: Simplified sizing rules with clear comments
+  - SVG: Removed conflicting min-width/height rules
+- **JavaScript Enhancements** (`static/js/editor/toolbar-manager.js`)
+  - `applyText()`: Added `silent` parameter to control notification display
+  - `applyAllProperties()`: Calls `applyText(true)` to suppress duplicate notification
+  - `handleAutoComplete()`: Added brace map specific prompt generation
+  - `extractExistingNodes()`: Enhanced placeholder filtering for brace maps
+  - Language detection: Added brace map support to prioritize Chinese content
+  - Added extensive console logging with `console.log()` and `console.trace()`
+- **Interactive Editor** (`static/js/editor/interactive-editor.js`)
+  - Added `updateBraceMapText()` function to handle topic, part, and subpart updates
+  - Added brace map dispatcher to `updateNodeText()` method
+  - Properly updates `spec.topic`, `spec.parts[].name`, and `spec.parts[].subparts[].name`
+- **Prompt Engineering** (`prompts/thinking_maps.py`)
+  - `BRACE_MAP_GENERATION_ZH`: Added "关键要求：必须全部使用中文生成内容..."
+  - `BRACE_MAP_GENERATION_ZH`: Added concrete Chinese examples (汽车, 车身部分, etc.)
+  - `BRACE_MAP_GENERATION_ZH`: Added topic preservation instruction
+  - `BRACE_MAP_GENERATION_EN`: Added "IMPORTANT: Generate fresh, meaningful content..."
+  - `BRACE_MAP_GENERATION_EN`: Added topic preservation instruction
+  - `BRACE_MAP_GENERATION_EN`: Added concrete English examples
+
+### Developer Notes
+- **Notification System**: All property panel notifications now use centralized flow
+- **Brace Map Workflow**: Edit topic → save to spec → auto-complete → LLM receives correct topic
+- **Canvas Scrolling**: CSS-only solution, no JavaScript changes required
+- **Browser Testing**: Verified scrollbar styling in Chrome, Firefox, Edge, Safari
+
+---
+
 ## [3.0.6] - 2025-10-03
 
 ### Added - Centralized Notification System

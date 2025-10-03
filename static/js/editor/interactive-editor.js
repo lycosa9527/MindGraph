@@ -574,10 +574,16 @@ class InteractiveEditor {
             this.updateBubbleMapText(nodeId, shapeNode, newText);
         } else if (this.diagramType === 'double_bubble_map') {
             this.updateDoubleBubbleMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'brace_map') {
+            this.updateBraceMapText(nodeId, shapeNode, newText);
         } else if (this.diagramType === 'flow_map') {
             this.updateFlowMapText(nodeId, shapeNode, newText);
         } else if (this.diagramType === 'multi_flow_map') {
             this.updateMultiFlowMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'tree_map') {
+            this.updateTreeMapText(nodeId, shapeNode, newText);
+        } else if (this.diagramType === 'bridge_map') {
+            this.updateBridgeMapText(nodeId, shapeNode, newText);
         } else {
             // Generic text update for other diagram types
             this.updateGenericNodeText(nodeId, shapeNode, textNode, newText);
@@ -725,6 +731,53 @@ class InteractiveEditor {
     }
     
     /**
+     * Update Brace Map node text
+     */
+    updateBraceMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        if (nodeType === 'topic') {
+            // Update the main topic
+            this.currentSpec.topic = newText;
+            console.log('Updated Brace Map topic to:', newText);
+        } else if (nodeType === 'part') {
+            // Update part name in the parts array
+            const partIndex = parseInt(shape.attr('data-part-index'));
+            if (!isNaN(partIndex) && this.currentSpec.parts && partIndex < this.currentSpec.parts.length) {
+                this.currentSpec.parts[partIndex].name = newText;
+                console.log(`Updated part ${partIndex} to:`, newText);
+            }
+        } else if (nodeType === 'subpart') {
+            // Update subpart name in the parts array
+            const partIndex = parseInt(shape.attr('data-part-index'));
+            const subpartIndex = parseInt(shape.attr('data-subpart-index'));
+            
+            if (!isNaN(partIndex) && !isNaN(subpartIndex) && this.currentSpec.parts && partIndex < this.currentSpec.parts.length) {
+                const part = this.currentSpec.parts[partIndex];
+                if (part.subparts && subpartIndex < part.subparts.length) {
+                    part.subparts[subpartIndex].name = newText;
+                    console.log(`Updated subpart ${partIndex}-${subpartIndex} to:`, newText);
+                }
+            }
+        }
+        
+        // Re-render to update layout and text sizes
+        this.renderDiagram();
+    }
+    
+    /**
      * Update Flow Map node text
      */
     updateFlowMapText(nodeId, shapeNode, newText) {
@@ -821,6 +874,107 @@ class InteractiveEditor {
     }
     
     /**
+     * Update Tree Map text
+     */
+    updateTreeMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        
+        if (nodeType === 'topic') {
+            // Update the root topic
+            this.currentSpec.topic = newText;
+            console.log('Updated Tree Map topic to:', newText);
+        } else if (nodeType === 'category') {
+            // Update category text in children array
+            const categoryIndex = parseInt(shape.attr('data-category-index'));
+            if (!isNaN(categoryIndex) && this.currentSpec.children && categoryIndex < this.currentSpec.children.length) {
+                this.currentSpec.children[categoryIndex].text = newText;
+                console.log(`Updated category ${categoryIndex} to:`, newText);
+            }
+        } else if (nodeType === 'leaf') {
+            // Update leaf text within its category
+            const categoryIndex = parseInt(shape.attr('data-category-index'));
+            const leafIndex = parseInt(shape.attr('data-leaf-index'));
+            if (!isNaN(categoryIndex) && !isNaN(leafIndex) && 
+                this.currentSpec.children && categoryIndex < this.currentSpec.children.length) {
+                const category = this.currentSpec.children[categoryIndex];
+                if (Array.isArray(category.children) && leafIndex < category.children.length) {
+                    // Handle both object and string formats
+                    if (typeof category.children[leafIndex] === 'object') {
+                        category.children[leafIndex].text = newText;
+                    } else {
+                        category.children[leafIndex] = newText;
+                    }
+                    console.log(`Updated leaf ${leafIndex} in category ${categoryIndex} to:`, newText);
+                }
+            }
+        }
+        
+        // Update the visual text element
+        shape.text(newText);
+        
+        // Re-render to reflect changes
+        this.renderDiagram();
+    }
+    
+    /**
+     * Update Bridge Map text
+     */
+    updateBridgeMapText(nodeId, shapeNode, newText) {
+        if (!this.currentSpec) {
+            console.error('No spec available');
+            return;
+        }
+        
+        // Get the shape element to extract metadata
+        const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
+        if (shape.empty()) {
+            console.error('Cannot find node shape');
+            return;
+        }
+        
+        const nodeType = shape.attr('data-node-type');
+        const pairIndex = parseInt(shape.attr('data-pair-index'));
+        
+        if (!isNaN(pairIndex) && pairIndex < this.currentSpec.analogies.length) {
+            if (nodeType === 'left') {
+                // Update left item in the pair
+                this.currentSpec.analogies[pairIndex].left = newText;
+                console.log(`Updated left item in pair ${pairIndex} to: "${newText}"`);
+            } else if (nodeType === 'right') {
+                // Update right item in the pair
+                this.currentSpec.analogies[pairIndex].right = newText;
+                console.log(`Updated right item in pair ${pairIndex} to: "${newText}"`);
+            }
+        }
+        
+        // Update the visual text element
+        const textElement = d3.select(`[data-text-for="${nodeId}"]`);
+        if (!textElement.empty()) {
+            textElement.text(newText);
+        } else {
+            // If no separate text element, try to update the shape itself if it's text
+            if (shape.node().tagName === 'text') {
+                shape.text(newText);
+            }
+        }
+        
+        // Re-render to reflect changes
+        this.renderDiagram();
+    }
+    
+    /**
      * Update generic node text (for other diagram types)
      */
     updateGenericNodeText(nodeId, shapeNode, textNode, newText) {
@@ -883,6 +1037,12 @@ class InteractiveEditor {
                 break;
             case 'multi_flow_map':
                 this.addNodeToMultiFlowMap();
+                break;
+            case 'tree_map':
+                this.addNodeToTreeMap();
+                break;
+            case 'bridge_map':
+                this.addNodeToBridgeMap();
                 break;
             case 'concept_map':
                 this.addNodeToConceptMap();
@@ -1353,6 +1513,139 @@ class InteractiveEditor {
     }
     
     /**
+     * Add a new node to Tree Map
+     */
+    addNodeToTreeMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
+            console.error('Invalid tree map spec');
+            return;
+        }
+        
+        // Check if a node is selected
+        const selectedNodes = Array.from(this.selectedNodes);
+        if (selectedNodes.length === 0) {
+            // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
+            console.log('TreeMap: No node selected, skipping add (notification already shown by toolbar)');
+            return;
+        }
+        
+        // Get the first selected node
+        const selectedNodeId = selectedNodes[0];
+        const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
+        
+        if (selectedElement.empty()) {
+            console.error('Selected node not found');
+            return;
+        }
+        
+        const nodeType = selectedElement.attr('data-node-type');
+        console.log('Adding to tree map, selected node type:', nodeType);
+        
+        // Handle different node types
+        switch (nodeType) {
+            case 'category': {
+                // Add new category (with 3 children) to children array
+                const categoryIndex = parseInt(selectedElement.attr('data-category-index'));
+                const newCategory = {
+                    text: 'New Category',
+                    children: [
+                        { text: 'New Child 1' },
+                        { text: 'New Child 2' },
+                        { text: 'New Child 3' }
+                    ]
+                };
+                
+                // Insert after selected category
+                this.currentSpec.children.splice(categoryIndex + 1, 0, newCategory);
+                
+                console.log(`Added new category after index ${categoryIndex}. Total categories: ${this.currentSpec.children.length}`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New category added with 3 children!', 'success');
+                }
+                break;
+            }
+                
+            case 'leaf': {
+                // Add new leaf/child to the parent category
+                const categoryIndex = parseInt(selectedElement.attr('data-category-index'));
+                const leafIndex = parseInt(selectedElement.attr('data-leaf-index'));
+                
+                if (categoryIndex < 0 || categoryIndex >= this.currentSpec.children.length) {
+                    console.error('Invalid category index');
+                    return;
+                }
+                
+                const category = this.currentSpec.children[categoryIndex];
+                if (!Array.isArray(category.children)) {
+                    category.children = [];
+                }
+                
+                // Insert after selected leaf
+                category.children.splice(leafIndex + 1, 0, { text: 'New Child' });
+                
+                console.log(`Added new child to category ${categoryIndex} after leaf ${leafIndex}. Total children: ${category.children.length}`);
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('New child added!', 'success');
+                }
+                break;
+            }
+                
+            case 'topic':
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot add to topic. Please select a category or child node.', 'warning');
+                }
+                return;
+                
+            default:
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Please select a category or child node', 'warning');
+                }
+                return;
+        }
+        
+        // Re-render the diagram with new node
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'tree_map',
+            nodeType: nodeType
+        });
+    }
+    
+    /**
+     * Add a new analogy pair to Bridge Map
+     */
+    addNodeToBridgeMap() {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.analogies)) {
+            console.error('Invalid bridge map spec');
+            return;
+        }
+        
+        // For bridge map, always add pairs to the end (no selection required)
+        // This is because bridge maps are sequential in nature
+        const newPair = {
+            left: 'New Left',
+            right: 'New Right'
+        };
+        
+        this.currentSpec.analogies.push(newPair);
+        
+        console.log(`Added new analogy pair at end. Total pairs: ${this.currentSpec.analogies.length}`);
+        
+        // Re-render the diagram with new pair
+        this.renderDiagram();
+        
+        // Save to history
+        this.saveToHistory('add_node', { 
+            diagramType: 'bridge_map',
+            totalPairs: this.currentSpec.analogies.length
+        });
+    }
+    
+    /**
      * Add a new node to Concept Map
      */
     addNodeToConceptMap() {
@@ -1504,6 +1797,10 @@ class InteractiveEditor {
             this.deleteFlowMapNodes(nodesToDelete);
         } else if (this.diagramType === 'multi_flow_map') {
             this.deleteMultiFlowMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'tree_map') {
+            this.deleteTreeMapNodes(nodesToDelete);
+        } else if (this.diagramType === 'bridge_map') {
+            this.deleteBridgeMapNodes(nodesToDelete);
         } else if (this.diagramType === 'concept_map') {
             this.deleteConceptMapNodes(nodesToDelete);
         } else {
@@ -2021,6 +2318,155 @@ class InteractiveEditor {
         // Note: Notification is shown by ToolbarManager.handleDeleteNode()
         // Don't show duplicate notification here
         console.log(`MultiFlowMap: Deleted ${causeIndicesToDelete.length + effectIndicesToDelete.length} node(s)`);
+        
+        // Re-render the diagram
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Tree Map nodes
+     */
+    deleteTreeMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
+            console.error('Invalid tree map spec');
+            return;
+        }
+        
+        // Separate node IDs by type and collect indices
+        const categoriesToDelete = [];
+        const leavesToDelete = [];
+        
+        nodeIds.forEach(nodeId => {
+            const element = d3.select(`[data-node-id="${nodeId}"]`);
+            if (element.empty()) {
+                console.warn(`Node ${nodeId} not found`);
+                return;
+            }
+            
+            const nodeType = element.attr('data-node-type');
+            
+            if (nodeType === 'topic') {
+                // Don't allow deletion of root topic
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification('Cannot delete the root topic', 'warning');
+                }
+                return;
+            } else if (nodeType === 'category') {
+                const categoryIndex = parseInt(element.attr('data-category-index'));
+                if (!isNaN(categoryIndex)) {
+                    categoriesToDelete.push(categoryIndex);
+                }
+            } else if (nodeType === 'leaf') {
+                const categoryIndex = parseInt(element.attr('data-category-index'));
+                const leafIndex = parseInt(element.attr('data-leaf-index'));
+                if (!isNaN(categoryIndex) && !isNaN(leafIndex)) {
+                    leavesToDelete.push({ categoryIndex, leafIndex });
+                }
+            }
+        });
+        
+        console.log('Tree map deletion:', { categoriesToDelete, leavesToDelete });
+        
+        // Delete leaves first (sort by leaf index descending within each category)
+        // Group by category
+        const leavesByCategory = {};
+        leavesToDelete.forEach(({ categoryIndex, leafIndex }) => {
+            if (!leavesByCategory[categoryIndex]) {
+                leavesByCategory[categoryIndex] = [];
+            }
+            leavesByCategory[categoryIndex].push(leafIndex);
+        });
+        
+        // Sort and delete leaves within each category
+        Object.keys(leavesByCategory).forEach(catIdx => {
+            const categoryIndex = parseInt(catIdx);
+            if (categoryIndex >= 0 && categoryIndex < this.currentSpec.children.length) {
+                const category = this.currentSpec.children[categoryIndex];
+                if (Array.isArray(category.children)) {
+                    // Sort leaf indices descending to avoid index shifting
+                    const sortedLeafIndices = leavesByCategory[catIdx].sort((a, b) => b - a);
+                    sortedLeafIndices.forEach(leafIndex => {
+                        if (leafIndex >= 0 && leafIndex < category.children.length) {
+                            const leafText = category.children[leafIndex].text || category.children[leafIndex];
+                            category.children.splice(leafIndex, 1);
+                            console.log(`Deleted leaf ${leafIndex} from category ${categoryIndex}: ${leafText}`);
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Delete categories (sort by index descending to avoid index shifting)
+        const sortedCategoryIndices = categoriesToDelete.sort((a, b) => b - a);
+        sortedCategoryIndices.forEach(index => {
+            if (index >= 0 && index < this.currentSpec.children.length) {
+                const categoryText = this.currentSpec.children[index].text;
+                this.currentSpec.children.splice(index, 1);
+                console.log(`Deleted category ${index}: ${categoryText}`);
+            }
+        });
+        
+        // Note: Notification is shown by ToolbarManager.handleDeleteNode()
+        // Don't show duplicate notification here
+        console.log(`TreeMap: Deleted ${categoriesToDelete.length + leavesToDelete.length} node(s)`);
+        
+        // Re-render the diagram
+        this.renderDiagram();
+    }
+    
+    /**
+     * Delete Bridge Map analogy pairs
+     */
+    deleteBridgeMapNodes(nodeIds) {
+        if (!this.currentSpec || !Array.isArray(this.currentSpec.analogies)) {
+            console.error('Invalid bridge map spec');
+            return;
+        }
+        
+        // Collect unique pair indices to delete
+        // Bridge map deletes complete pairs (both left and right together)
+        const pairIndicesToDelete = new Set();
+        
+        nodeIds.forEach(nodeId => {
+            const element = d3.select(`[data-node-id="${nodeId}"]`);
+            if (element.empty()) {
+                console.warn(`Node ${nodeId} not found`);
+                return;
+            }
+            
+            const nodeType = element.attr('data-node-type');
+            const pairIndex = parseInt(element.attr('data-pair-index'));
+            
+            if (!isNaN(pairIndex)) {
+                // Add the pair index (whether it's left or right, we delete the whole pair)
+                pairIndicesToDelete.add(pairIndex);
+                console.log(`Marking pair ${pairIndex} for deletion (${nodeType} node)`);
+            }
+        });
+        
+        console.log('Bridge map deletion:', { pairIndicesToDelete: Array.from(pairIndicesToDelete) });
+        
+        // Prevent deletion of the first pair (like the topic in other maps)
+        if (pairIndicesToDelete.has(0)) {
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Cannot delete the first analogy pair', 'warning');
+            }
+            pairIndicesToDelete.delete(0);
+        }
+        
+        // Delete pairs (sort by index descending to avoid index shifting)
+        const sortedPairIndices = Array.from(pairIndicesToDelete).sort((a, b) => b - a);
+        sortedPairIndices.forEach(index => {
+            if (index >= 0 && index < this.currentSpec.analogies.length) {
+                const pair = this.currentSpec.analogies[index];
+                this.currentSpec.analogies.splice(index, 1);
+                console.log(`Deleted pair ${index}: "${pair.left}" / "${pair.right}"`);
+            }
+        });
+        
+        // Note: Notification is shown by ToolbarManager.handleDeleteNode()
+        // Don't show duplicate notification here
+        console.log(`BridgeMap: Deleted ${sortedPairIndices.length} pair(s)`);
         
         // Re-render the diagram
         this.renderDiagram();

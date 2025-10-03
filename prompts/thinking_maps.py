@@ -439,6 +439,10 @@ Please output a JSON object containing the following fields:
 topic: "Main topic"
 parts: [{{"name": "Part1", "subparts": [{{"name": "Subpart1.1"}}]}}]
 
+CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
+
+IMPORTANT: Generate fresh, meaningful content for parts and subparts. Do not use placeholder text like "Part1", "Subpart1.1", etc.
+
 Requirements:
 - Generate 3-6 main parts with clear, descriptive names
 - Each part should have 2-5 subparts that are specific and detailed
@@ -446,6 +450,13 @@ Requirements:
 - Ensure logical whole-to-part relationships (whole → parts → subparts)
 - Parts should be major categories or divisions of the topic
 - Subparts should be specific components, features, or elements of each part
+
+Example format (for reference only):
+topic: "Car"
+parts: [
+  {{"name": "Body Parts", "subparts": [{{"name": "Doors"}}, {{"name": "Windows"}}, {{"name": "Roof"}}]}},
+  {{"name": "Powertrain", "subparts": [{{"name": "Engine"}}, {{"name": "Transmission"}}, {{"name": "Driveshaft"}}]}}
+]
 
 Do not include any information about visual layout or braces; only provide the hierarchical data.
 
@@ -464,6 +475,10 @@ BRACE_MAP_GENERATION_ZH = """
 topic: "主题"
 parts: [{{"name": "部分1", "subparts": [{{"name": "子部分1.1"}}]}}]
 
+重要提示：如果用户需求中包含引号标注的主题（例如："为主题'植物'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
+
+关键要求：必须全部使用中文生成内容，包括topic、parts数组和subparts数组中的所有文本。不要混用英文和中文。请生成全新的、有意义的部分和子部分内容，不要使用占位符文本如"部分1"、"子部分1.1"等。
+
 要求：
 - 生成3-6个主要部分，名称清晰、描述性强
 - 每个部分应有2-5个子部分，具体且详细
@@ -471,6 +486,13 @@ parts: [{{"name": "部分1", "subparts": [{{"name": "子部分1.1"}}]}}]
 - 确保逻辑的整体→部分→子部分关系
 - 部分应为主题的主要类别或分支
 - 子部分应为每个部分的具体组件、特征或元素
+
+示例格式（仅供参考）：
+topic: "汽车"
+parts: [
+  {{"name": "车身部分", "subparts": [{{"name": "车门"}}, {{"name": "车窗"}}, {{"name": "车顶"}}]}},
+  {{"name": "动力系统", "subparts": [{{"name": "发动机"}}, {{"name": "变速箱"}}, {{"name": "传动轴"}}]}}
+]
 
 不要包含任何关于可视化布局或括号形状的说明；只提供层级数据。
 

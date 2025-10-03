@@ -727,7 +727,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .attr("rx", 4)
                 .attr("fill", "#1976d2") // Deep blue from mind map
                 .attr("stroke", "#0d47a1")
-                .attr("stroke-width", 2);
+                .attr("stroke-width", 2)
+                .attr("data-node-id", `bridge-left-${i}`)
+                .attr("data-node-type", "left")
+                .attr("data-pair-index", i)
+                .attr("cursor", "pointer");
             
             // Draw text in white
             svg.append("text")
@@ -738,7 +742,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .text(analogy.left)
                 .style("font-size", THEME.analogyFontSize)
                 .style("fill", "#ffffff") // White text
-                .style("font-weight", "bold");
+                .style("font-weight", "bold")
+                .attr("data-text-for", `bridge-left-${i}`)
+                .attr("cursor", "pointer");
         } else {
             // Regular pairs get normal text styling
             svg.append("text")
@@ -748,7 +754,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .text(analogy.left)
                 .style("font-size", THEME.analogyFontSize)
                 .style("fill", THEME.analogyTextColor)
-                .style("font-weight", "bold");
+                .style("font-weight", "bold")
+                .attr("data-node-id", `bridge-left-${i}`)
+                .attr("data-node-type", "left")
+                .attr("data-pair-index", i)
+                .attr("cursor", "pointer");
         }
         
         // 3.2 Add downstream item (right) - below the main line
@@ -766,7 +776,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .attr("rx", 4)
                 .attr("fill", "#1976d2") // Deep blue from mind map
                 .attr("stroke", "#0d47a1")
-                .attr("stroke-width", 2);
+                .attr("stroke-width", 2)
+                .attr("data-node-id", `bridge-right-${i}`)
+                .attr("data-node-type", "right")
+                .attr("data-pair-index", i)
+                .attr("cursor", "pointer");
             
             // Draw text in white
             svg.append("text")
@@ -777,7 +791,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .text(analogy.right)
                 .style("font-size", THEME.analogyFontSize)
                 .style("fill", "#ffffff") // White text
-                .style("font-weight", "bold");
+                .style("font-weight", "bold")
+                .attr("data-text-for", `bridge-right-${i}`)
+                .attr("cursor", "pointer");
         } else {
             // Regular pairs get normal text styling
             svg.append("text")
@@ -787,7 +803,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .text(analogy.right)
                 .style("font-size", THEME.analogyFontSize)
                 .style("fill", THEME.analogyTextColor)
-                .style("font-weight", "bold");
+                .style("font-weight", "bold")
+                .attr("data-node-id", `bridge-right-${i}`)
+                .attr("data-node-type", "right")
+                .attr("data-pair-index", i)
+                .attr("cursor", "pointer");
         }
         
         // 3.3 Add vertical connection line (made invisible) - EXACTLY as in old renderer
