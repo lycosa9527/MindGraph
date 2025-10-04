@@ -3,6 +3,7 @@
 <head>
     <title>MindGraph - Diagram Generation API</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -51,6 +52,9 @@
         .debug-button {
             text-align: center;
             margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
         }
         .debug-button a {
             display: inline-block;
@@ -64,6 +68,12 @@
         }
         .debug-button a:hover {
             background: #c0392b;
+        }
+        .debug-button a.editor-btn {
+            background: #3498db;
+        }
+        .debug-button a.editor-btn:hover {
+            background: #2980b9;
         }
         .timing-section {
             background: #f8f9fa;
@@ -263,7 +273,8 @@
         </div>
 
         <div class="debug-button">
-            <a href="/debug">🔧 Debug Interface</a>
+            <a href="/debug">Debug</a>
+            <a href="/editor" class="editor-btn">Editor</a>
         </div>
 
         <div class="api-section">

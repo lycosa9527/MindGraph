@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.9] - 2025-10-04
+
+### Added
+- **Complete Bilingual Support**: Full Chinese/English language support across entire editor
+  - **Default Language**: Changed to Chinese (zh) from English
+  - **Language Toggle**: Shows opposite language (中文 in EN mode, EN in CN mode) to clarify switching
+  - **Gallery Interface**: All diagram types, descriptions, and UI elements fully translated
+  - **Editor Toolbar**: All buttons (Add, Delete, Auto, Line, Empty, Undo, Redo) translated
+  - **Properties Panel**: All labels, inputs, and buttons fully localized
+  - **MindMate AI Panel**: Title, status, welcome message, and placeholder translated
+  - **Tooltips**: All button tooltips display in current language
+  - **Dynamic Node Creation**: All 10 diagram types create nodes in current language
+    - Circle Map: "新背景" / "New Context"
+    - Bubble Map: "新属性" / "New Attribute"
+    - Double Bubble Map: "新相似点", "左差异", "右差异" / "New Similarity", "Left Difference", "Right Difference"
+    - Tree Map: "新类别", "新项目" / "New Category", "New Item"
+    - Brace Map: "新部分", "新子部分" / "New Part", "New Subpart"
+    - Flow Map: "新步骤", "新子项" / "New Step", "New Subitem"
+    - Multi-Flow Map: "新原因", "新结果" / "New Cause", "New Effect"
+    - Bridge Map: "新左项", "新右项" / "New Left", "New Right"
+    - Mind Map: "新分支", "新子项" / "New Branch", "New Subitem"
+    - Concept Map: "新概念" / "New Concept"
+
+- **MindMate AI Integration**: Complete Dify API integration for AI assistant
+  - Streaming responses using Server-Sent Events (SSE)
+  - Conversation context management
+  - Real-time AI responses in editor side panel
+  - Comprehensive error logging with `[STREAM]` and `[DIFY]` tags
+  - **Note**: Requires Flask dev server or Gunicorn with gevent workers for SSE support
+  - Waitress does not support SSE streaming (Windows deployment limitation)
+
+- **Black Cat Favicon**: Added black cat emoji (🐈‍⬛) as favicon
+  - SVG format for crisp display at all sizes
+  - Applied to all HTML templates (index, editor, debug)
+  - Fixes 404 errors for missing favicon
+
+- **Enhanced Main Interface**: Improved homepage UX
+  - Changed "🔧 Debug Interface" button to simply "Debug"
+  - Added "Editor" button for direct access to diagram editor
+  - Side-by-side button layout with distinct colors (Debug: red, Editor: blue)
+
+### Changed
+- **Branding Updates**:
+  - English title: "MindGraph Professional" → "MindGraph Pro"
+  - Chinese title: "MindGraph 专业版" → "MindGraph专业版" (removed space)
+  - English subtitle: "Choose a diagram type to start creating" → "The universe's most powerful AI diagram generation software"
+  - Chinese subtitle: "选择图表类型开始创作" → "宇宙中最强大的AI思维图示生成软件"
+
+- **Diagram Categories**:
+  - English: "Thinking Maps" / "Advanced Diagrams" (unchanged)
+  - Chinese: "思维导图" → "八大思维图示" (more accurate - refers to all 8 thinking maps)
+  - Chinese: "高级图表" → "进阶图示"
+
+- **Diagram Descriptions** (updated for all 10 types):
+  - English: More concise, action-oriented descriptions
+  - Chinese: Clearer purpose statements
+  - Circle Map: "联想，头脑风暴" / "Association, brainstorming"
+  - Bubble Map: "描述特性" / "Describing characteristics"
+  - Double Bubble Map: "比较与对比" / "Comparing and contrasting"
+  - Tree Map: "分类与归纳" / "Classifying and categorizing"
+  - Brace Map: "整体与部分" / "Whole and parts"
+  - Flow Map: "顺序与步骤" / "Sequence and steps"
+  - Multi-Flow Map: "因果分析" / "Cause and effect analysis"
+  - Bridge Map: "类比推理" / "Analogical reasoning"
+  - Mind Map: "因果分析" / "Cause and effect analysis"
+  - Concept Map: "概念关系" / "Conceptual relationships"
+
+- **Button Text Updates**:
+  - Chinese "提示词历史" (was "最近的提示") - "Prompt History"
+  - Auto button: "自动" / "Auto"
+  - Line button: "线稿" / "Line"
+  - Empty button: "清空" / "Empty"
+
+### Fixed
+- **DifyClient Import**: Moved import to module level to catch errors early
+  - Added `DIFY_AVAILABLE` flag to gracefully handle missing Dify integration
+  - Prevents generic 500 errors from import failures
+  - Clear error messages when Dify is not configured
+
+- **MindMate AI Response Import**: Fixed missing `Response` import in streaming endpoint
+  - Was causing `name 'Response' is not defined` error
+  - Now properly imports `Response` from Flask
+
+- **Documentation Cleanup**: Removed outdated logging documentation files
+  - Deleted `docs/CENTRALIZED_LOGGING_SYSTEM.md`
+  - Deleted `docs/EDITOR_LOGGING_ANALYSIS.md`
+
+### Technical Notes
+- **Development vs Production**:
+  - **Windows Development**: Use `python app.py` (Flask dev server supports SSE)
+  - **Ubuntu Production**: Use `gunicorn -w 4 -k gevent --bind 0.0.0.0:9527 app:app`
+  - Waitress (run_server.py) does NOT support SSE streaming
+  - Gunicorn with gevent workers recommended for Linux production deployments
+
+- **Language System Architecture**:
+  - `LanguageManager` class handles all translations
+  - `getCurrentLanguage()` returns current language ('en' or 'zh')
+  - `translate(key)` retrieves translation for current language
+  - `applyTranslations()` called on language switch and page load
+  - All dynamic node creation checks current language before creating nodes
+
+---
+
 ## [v3.0.8] - 2025-10-03
 
 ### Fixed

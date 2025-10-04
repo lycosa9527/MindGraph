@@ -1091,8 +1091,9 @@ class InteractiveEditor {
             return;
         }
         
-        // Add new context item to spec
-        this.currentSpec.context.push('New Context');
+        // Add new context item to spec with language support
+        const newContextText = window.languageManager?.getCurrentLanguage() === 'zh' ? '新背景' : 'New Context';
+        this.currentSpec.context.push(newContextText);
         
         // Re-render the diagram with new node
         this.renderDiagram();
@@ -1115,8 +1116,9 @@ class InteractiveEditor {
             return;
         }
         
-        // Add new attribute item to spec
-        this.currentSpec.attributes.push('New Attribute');
+        // Add new attribute item to spec with language support
+        const newAttrText = window.languageManager?.translate('newAttribute') || 'New Attribute';
+        this.currentSpec.attributes.push(newAttrText);
         
         // Re-render the diagram with new node
         this.renderDiagram();
@@ -1161,13 +1163,15 @@ class InteractiveEditor {
         }
         
         // Add node based on selected type
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
         switch(nodeType) {
             case 'similarity':
                 // Add similarity
                 if (!Array.isArray(this.currentSpec.similarities)) {
                     this.currentSpec.similarities = [];
                 }
-                this.currentSpec.similarities.push('New Similarity');
+                const newSimilarityText = lang === 'zh' ? '新相似点' : 'New Similarity';
+                this.currentSpec.similarities.push(newSimilarityText);
                 console.log('Added new similarity node');
                 break;
                 
@@ -1180,8 +1184,10 @@ class InteractiveEditor {
                 if (!Array.isArray(this.currentSpec.right_differences)) {
                     this.currentSpec.right_differences = [];
                 }
-                this.currentSpec.left_differences.push('Left Difference');
-                this.currentSpec.right_differences.push('Right Difference');
+                const leftDiffText = lang === 'zh' ? '左差异' : 'Left Difference';
+                const rightDiffText = lang === 'zh' ? '右差异' : 'Right Difference';
+                this.currentSpec.left_differences.push(leftDiffText);
+                this.currentSpec.right_differences.push(rightDiffText);
                 console.log('Added paired difference nodes');
                 break;
                 
@@ -1253,17 +1259,21 @@ class InteractiveEditor {
         switch(nodeType) {
             case 'part': {
                 // Add new part node to the parts array with two default subparts
+                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                const newPartText = lang === 'zh' ? '新部分' : 'New Part';
+                const newSubpartText = lang === 'zh' ? '新子部分' : 'New Subpart';
                 this.currentSpec.parts.push({
-                    name: 'New Part',
+                    name: newPartText,
                     subparts: [
-                        { name: 'New Subpart 1' },
-                        { name: 'New Subpart 2' }
+                        { name: `${newSubpartText}1` },
+                        { name: `${newSubpartText}2` }
                     ]
                 });
                 console.log('Added new part node with 2 subparts');
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New part added with 2 subparts!', 'success');
+                    const message = lang === 'zh' ? '新部分及2个子部分已添加！' : 'New part added with 2 subparts!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1283,13 +1293,16 @@ class InteractiveEditor {
                 if (!Array.isArray(this.currentSpec.parts[partIndex].subparts)) {
                     this.currentSpec.parts[partIndex].subparts = [];
                 }
+                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                const newSubpartText = lang === 'zh' ? '新子部分' : 'New Subpart';
                 this.currentSpec.parts[partIndex].subparts.push({
-                    name: 'New Subpart'
+                    name: newSubpartText
                 });
                 console.log(`Added new subpart to part ${partIndex}`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New subpart added!', 'success');
+                    const message = lang === 'zh' ? '新子部分已添加！' : 'New subpart added!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1366,22 +1379,24 @@ class InteractiveEditor {
                 }
                 
                 // Insert new step right after the selected step
-                const newStep = 'New Step';
+                const newStep = window.languageManager?.translate('newStep') || 'New Step';
                 this.currentSpec.steps.splice(stepIndex + 1, 0, newStep);
                 
                 // Also insert substeps entry at the same position with 2 default substeps
                 if (!Array.isArray(this.currentSpec.substeps)) {
                     this.currentSpec.substeps = [];
                 }
+                const newSubstepText = window.languageManager?.translate('newSubitem') || 'New Substep';
                 this.currentSpec.substeps.splice(stepIndex + 1, 0, {
                     step: newStep,
-                    substeps: ['New Substep 1', 'New Substep 2']
+                    substeps: [`${newSubstepText}1`, `${newSubstepText}2`]
                 });
                 
                 console.log(`Inserted new step after step ${stepIndex} with 2 substeps`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New step added with 2 substeps!', 'success');
+                    const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新步骤及2个子步骤已添加！' : 'New step added with 2 substeps!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1422,12 +1437,14 @@ class InteractiveEditor {
                 if (!Array.isArray(substepsEntry.substeps)) {
                     substepsEntry.substeps = [];
                 }
-                substepsEntry.substeps.splice(substepIndex + 1, 0, 'New Substep');
+                const newSubstepText = window.languageManager?.translate('newSubitem') || 'New Substep';
+                substepsEntry.substeps.splice(substepIndex + 1, 0, newSubstepText);
                 
                 console.log(`Inserted new substep after substep ${substepIndex} in step ${stepIndex}`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New substep added!', 'success');
+                    const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新子步骤已添加！' : 'New substep added!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1495,24 +1512,28 @@ class InteractiveEditor {
         switch (nodeType) {
             case 'cause': {
                 // Add new cause to the causes array
-                this.currentSpec.causes.push('New Cause');
+                const newCauseText = window.languageManager?.translate('newCause') || 'New Cause';
+                this.currentSpec.causes.push(newCauseText);
                 
                 console.log(`Added new cause. Total causes: ${this.currentSpec.causes.length}`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New cause added!', 'success');
+                    const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新原因已添加！' : 'New cause added!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
                 
             case 'effect': {
                 // Add new effect to the effects array
-                this.currentSpec.effects.push('New Effect');
+                const newEffectText = window.languageManager?.translate('newEffect') || 'New Effect';
+                this.currentSpec.effects.push(newEffectText);
                 
                 console.log(`Added new effect. Total effects: ${this.currentSpec.effects.length}`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New effect added!', 'success');
+                    const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新结果已添加！' : 'New effect added!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1575,12 +1596,14 @@ class InteractiveEditor {
             case 'category': {
                 // Add new category (with 3 children) to children array
                 const categoryIndex = parseInt(selectedElement.attr('data-category-index'));
+                const newCategoryText = window.languageManager?.translate('newCategory') || 'New Category';
+                const newItemText = window.languageManager?.translate('newItem') || 'New Item';
                 const newCategory = {
-                    text: 'New Category',
+                    text: newCategoryText,
                     children: [
-                        { text: 'New Child 1' },
-                        { text: 'New Child 2' },
-                        { text: 'New Child 3' }
+                        { text: `${newItemText}1` },
+                        { text: `${newItemText}2` },
+                        { text: `${newItemText}3` }
                     ]
                 };
                 
@@ -1590,7 +1613,8 @@ class InteractiveEditor {
                 console.log(`Added new category after index ${categoryIndex}. Total categories: ${this.currentSpec.children.length}`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New category added with 3 children!', 'success');
+                    const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新类别及3个子项已添加！' : 'New category added with 3 children!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1611,12 +1635,14 @@ class InteractiveEditor {
                 }
                 
                 // Insert after selected leaf
-                category.children.splice(leafIndex + 1, 0, { text: 'New Child' });
+                const newItemText = window.languageManager?.translate('newItem') || 'New Child';
+                category.children.splice(leafIndex + 1, 0, { text: newItemText });
                 
                 console.log(`Added new child to category ${categoryIndex} after leaf ${leafIndex}. Total children: ${category.children.length}`);
                 
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('New child added!', 'success');
+                    const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新子项已添加！' : 'New child added!';
+                    this.toolbarManager.showNotification(message, 'success');
                 }
                 break;
             }
@@ -1655,9 +1681,10 @@ class InteractiveEditor {
         
         // For bridge map, always add pairs to the end (no selection required)
         // This is because bridge maps are sequential in nature
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
         const newPair = {
-            left: 'New Left',
-            right: 'New Right'
+            left: lang === 'zh' ? '新左项' : 'New Left',
+            right: lang === 'zh' ? '新右项' : 'New Right'
         };
         
         this.currentSpec.analogies.push(newPair);
@@ -1683,9 +1710,10 @@ class InteractiveEditor {
             return;
         }
         
-        // Add new concept to spec
+        // Add new concept to spec with language support
+        const newConceptText = window.languageManager?.translate('newConcept') || 'New Concept';
         this.currentSpec.concepts.push({
-            text: 'New Concept',
+            text: newConceptText,
             x: 400,
             y: 300
         });
@@ -1757,21 +1785,23 @@ class InteractiveEditor {
             
             // Add new branch with 2 subitems (following the template pattern)
             const newBranchIndex = this.currentSpec.children.length;
+            const newBranchText = window.languageManager?.translate('newBranch') || 'New Branch';
+            const newSubitemText = window.languageManager?.translate('newSubitem') || 'Sub-item';
             this.currentSpec.children.push({
                 id: `branch_${newBranchIndex}`,
-                label: `New Branch ${newBranchIndex + 1}`,
-                text: `New Branch ${newBranchIndex + 1}`,
+                label: `${newBranchText}${newBranchIndex + 1}`,
+                text: `${newBranchText}${newBranchIndex + 1}`,
                 children: [
                     {
                         id: `sub_${newBranchIndex}_0`,
-                        label: `Sub-item ${newBranchIndex + 1}.1`,
-                        text: `Sub-item ${newBranchIndex + 1}.1`,
+                        label: `${newSubitemText}${newBranchIndex + 1}.1`,
+                        text: `${newSubitemText}${newBranchIndex + 1}.1`,
                         children: []
                     },
                     {
                         id: `sub_${newBranchIndex}_1`,
-                        label: `Sub-item ${newBranchIndex + 1}.2`,
-                        text: `Sub-item ${newBranchIndex + 1}.2`,
+                        label: `${newSubitemText}${newBranchIndex + 1}.2`,
+                        text: `${newSubitemText}${newBranchIndex + 1}.2`,
                         children: []
                     }
                 ]
@@ -1780,7 +1810,8 @@ class InteractiveEditor {
             console.log(`Added new branch with 2 subitems. Total branches: ${this.currentSpec.children.length}`);
             
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('New branch with 2 sub-items added!', 'success');
+                const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新分支及2个子项已添加！' : 'New branch with 2 sub-items added!';
+                this.toolbarManager.showNotification(message, 'success');
             }
             
         } else if (nodeType === 'child' || nodeType === 'subitem') {
@@ -1951,13 +1982,14 @@ class InteractiveEditor {
             .attr('font-weight', '500')
             .attr('data-text-id', `text_${Date.now()}`)
             .style('pointer-events', 'none')
-            .text('New Node');
+            .text(window.languageManager?.translate('newNode') || 'New Node');
         
         // Add drag behavior to this specific node only
         this.addDragBehavior(circle, text);
         
         // Add click handlers to this specific node
         const self = this;
+        const newNodeText = window.languageManager?.translate('newNode') || 'New Node';
         circle.on('click', (event) => {
             event.stopPropagation();
             if (event.ctrlKey || event.metaKey) {
@@ -1971,12 +2003,12 @@ class InteractiveEditor {
         // Add double-click handler for editing
         circle.on('dblclick', (event) => {
             event.stopPropagation();
-            self.openNodeEditor(nodeId, circle.node(), text.node(), 'New Node');
+            self.openNodeEditor(nodeId, circle.node(), text.node(), newNodeText);
         });
         
         text.on('dblclick', (event) => {
             event.stopPropagation();
-            self.openNodeEditor(nodeId, circle.node(), text.node(), 'New Node');
+            self.openNodeEditor(nodeId, circle.node(), text.node(), newNodeText);
         });
         
         // Select the new node

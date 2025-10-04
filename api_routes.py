@@ -13,6 +13,15 @@ from werkzeug.exceptions import HTTPException
 from functools import wraps
 from settings import config
 
+# Import Dify client at module level to catch import errors early
+try:
+    from dify_client import DifyClient
+    DIFY_AVAILABLE = True
+except ImportError as e:
+    logging.error(f"Failed to import DifyClient: {e}")
+    DIFY_AVAILABLE = False
+    DifyClient = None
+
 # URL configuration (fallback if urls module doesn't exist)
 try:
     from urls import get_api_urls
@@ -2655,8 +2664,11 @@ def debug_dingtalk_images():
 def ai_assistant_stream():
     """Stream AI assistant responses using Dify API with SSE"""
     from flask import Response, stream_with_context
-    from dify_client import DifyClient
-    import os
+    
+    # Check if Dify client is available
+    if not DIFY_AVAILABLE or DifyClient is None:
+        logger.error("DifyClient not available - check if dify_client.py exists and imports correctly")
+        return jsonify({'error': 'AI assistant service not available'}), 500
     
     # Input validation
     data = request.json
@@ -2676,36 +2688,58 @@ def ai_assistant_stream():
     api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
     timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
     
+    logger.info(f"Dify Configuration - API URL: {api_url}, Has API Key: {bool(api_key)}, Timeout: {timeout}")
+    
     if not api_key:
-        logger.error("DIFY_API_KEY not configured")
+        logger.error("DIFY_API_KEY not configured in environment")
         return jsonify({'error': 'AI assistant not configured'}), 500
     
     logger.info(f"AI assistant request from user {user_id}: {message[:50]}...")
+    logger.info(f"[SETUP] About to create generator function")
     
     def generate():
         """Generator function for SSE streaming"""
+        logger.info(f"[GENERATOR] Generator function called - starting execution")
         try:
+            logger.info(f"[STREAM] Creating DifyClient with URL: {api_url}")
             client = DifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
+            logger.info(f"[STREAM] DifyClient created successfully")
             
+            logger.info(f"[STREAM] Starting stream_chat for message: {message[:50]}...")
+            chunk_count = 0
             for chunk in client.stream_chat(message, user_id, conversation_id):
+                chunk_count += 1
+                logger.debug(f"[STREAM] Received chunk {chunk_count}: {chunk.get('event', 'unknown')}")
                 # Format as SSE
                 yield f"data: {json.dumps(chunk)}\n\n"
+            
+            logger.info(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
                 
         except Exception as e:
-            logger.error(f"AI assistant streaming error: {e}")
+            logger.error(f"[STREAM] AI assistant streaming error: {e}", exc_info=True)
+            import traceback
+            logger.error(f"[STREAM] Full traceback: {traceback.format_exc()}")
             error_data = {
                 'event': 'error',
                 'error': str(e),
+                'error_type': type(e).__name__,
                 'timestamp': int(time.time() * 1000)
             }
             yield f"data: {json.dumps(error_data)}\n\n"
     
-    return Response(
-        stream_with_context(generate()),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive'
-        }
-    )
+    logger.info(f"[SETUP] Creating Response with stream_with_context")
+    try:
+        response = Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no',
+                'Connection': 'keep-alive'
+            }
+        )
+        logger.info(f"[SETUP] Response object created successfully")
+        return response
+    except Exception as e:
+        logger.error(f"[SETUP] Failed to create streaming response: {e}", exc_info=True)
+        raise

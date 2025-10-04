@@ -39,7 +39,8 @@ class DifyClient:
             Dict containing event data from Dify API
         """
         
-        logger.info(f"Sending message to Dify: {message[:50]}... for user {user_id}")
+        logger.info(f"[DIFY] Sending message to Dify: {message[:50]}... for user {user_id}")
+        logger.info(f"[DIFY] API URL: {self.api_url}, Timeout: {self.timeout}")
         
         payload = {
             "inputs": {},
@@ -50,25 +51,34 @@ class DifyClient:
         
         if conversation_id:
             payload["conversation_id"] = conversation_id
+            logger.info(f"[DIFY] Using conversation_id: {conversation_id}")
             
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self.api_key[:10]}...{self.api_key[-4:]}" if len(self.api_key) > 14 else "Bearer ***",
             "Content-Type": "application/json"
         }
         
+        logger.info(f"[DIFY] Request headers: {headers}")
+        
         try:
             url = f"{self.api_url}/chat-messages"
-            logger.info(f"Making request to: {url}")
+            logger.info(f"[DIFY] Making request to: {url}")
+            logger.info(f"[DIFY] Request payload: {json.dumps(payload, ensure_ascii=False)}")
             
+            logger.info(f"[DIFY] Sending POST request...")
             response = requests.post(
                 url,
                 json=payload,
-                headers=headers,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
                 stream=True,
                 timeout=(10, self.timeout)  # 10s connect timeout, configurable read timeout
             )
             
-            logger.info(f"Response status: {response.status_code}")
+            logger.info(f"[DIFY] Response status: {response.status_code}")
+            logger.info(f"[DIFY] Response headers: {dict(response.headers)}")
             
             # Check status code
             if response.status_code != 200:
