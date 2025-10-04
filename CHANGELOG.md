@@ -35,8 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Conversation context management
   - Real-time AI responses in editor side panel
   - Comprehensive error logging with `[STREAM]` and `[DIFY]` tags
-  - **Note**: Requires Flask dev server or Gunicorn with gevent workers for SSE support
-  - Waitress does not support SSE streaming (Windows deployment limitation)
+  - **Note**: SSE streaming requires Flask development server
+  - Waitress does not support SSE streaming
 
 - **Black Cat Favicon**: Added black cat emoji (🐈‍⬛) as favicon
   - SVG format for crisp display at all sizes
@@ -95,11 +95,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Deleted `docs/EDITOR_LOGGING_ANALYSIS.md`
 
 ### Technical Notes
-- **Development vs Production**:
-  - **Windows Development**: Use `python app.py` (Flask dev server supports SSE)
-  - **Ubuntu Production**: Use `gunicorn -w 4 -k gevent --bind 0.0.0.0:9527 app:app`
-  - Waitress (run_server.py) does NOT support SSE streaming
-  - Gunicorn with gevent workers recommended for Linux production deployments
+- **MindMate AI Streaming**:
+  - SSE streaming works with Flask development server (`python app.py`)
+  - Waitress (`run_server.py`) does NOT support SSE streaming
+  - For production deployment with SSE support, alternative WSGI server required
 
 - **Language System Architecture**:
   - `LanguageManager` class handles all translations
