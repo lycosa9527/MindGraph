@@ -58,19 +58,205 @@ Transform MindGraph diagrams into interactive learning exercises where users act
 
 ## 🎨 User Experience Flow
 
-### Step 1: Activation | 激活学习模式
+### Step 1: Pre-Validation | 预验证检查
+
+**CRITICAL REQUIREMENT**: Before entering Learning Mode, system MUST validate:
 
 ```
-User creates/opens diagram → Clicks "Learning" button (学习)
-                           ↓
+User clicks "Learning" button (学习)
+            ↓
+System validates diagram completeness:
+  ✓ All nodes have text content
+  ✓ No placeholder patterns detected
+  ✓ No empty/blank nodes
+            ↓
+    ┌─── PASS ───┐         ┌─── FAIL ───┐
+    ↓             ↓         ↓             ↓
+Enter Learning  Stay in Editor with notification
+    Mode
+```
+
+**Validation Rules:**
+
+1. **No Empty Nodes**: Every node must have text (length > 0)
+2. **No Placeholders**: Detect and reject common placeholder patterns:
+   - Chinese: "分支1", "分支2", "子项1.1", "新节点", "节点", "主题", "属性1"
+   - English: "Branch 1", "Child 1.1", "New Node", "Node", "Topic", "Attribute 1"
+   - Pattern matching: `/^(分支|Branch|子项|Child|节点|Node|属性|Attribute)\s*\d+/i`
+3. **Minimum Content**: Each node should have meaningful text (not just "a", "test", etc.)
+
+**Validation Failure Response:**
+
+```
+❌ Cannot Start Learning Mode
+
+Your diagram contains placeholder or empty nodes.
+Please fill in all nodes with meaningful content first.
+
+Incomplete nodes found:
+• Branch 2 (placeholder)
+• 子项3.1 (placeholder)
+• Attribute 5 (empty)
+
+[Edit Diagram] [Cancel]
+```
+
+**Button State Management:**
+
+- **Enabled** (clickable, rainbow glow active): All nodes validated ✅
+- **Disabled** (grayed out, rainbow glow paused): Validation fails ❌
+- **Tooltip when enabled**: "Start Interactive Learning Mode"
+- **Tooltip when disabled**: "Fill in all nodes before starting Learning Mode"
+
+**Real-Time Validation:**
+
+The button state should update automatically when:
+- User edits any node text (double-click edit)
+- User adds a new node
+- User deletes a node
+- Diagram is first loaded/rendered
+
+Validation should run:
+- On `diagram-rendered` event
+- After any text update operation
+- Debounced (100ms) to avoid excessive checks
+
+### Step 2: Activation | 激活学习模式
+
+```
+✅ Validation passed
+            ↓
+User clicks "Learning" button (学习)
+            ↓
 System shuffles diagram nodes randomly → Selects 20% nodes to knock out
-                           ↓
+            ↓
 Generates AI questions for knocked-out nodes → Displays question panel
-                           ↓
+            ↓
 User sees diagram with blank nodes + question panel
 ```
 
-### Step 2: Question & Answer Cycle | 问答循环
+### Step 2: Initial Question & Answer | 初始问答
+
+(Same as before - user attempts to answer)
+
+### Step 3: Intelligent Error Analysis (NEW!) | 智能错误分析
+
+**When User Gives Wrong Answer:**
+
+```
+User types wrong answer → LangChain Agent activates
+                       ↓
+╔═══════════════════════════════════════════════════════════╗
+║ 🧠 MISCONCEPTION ANALYSIS AGENT                           ║
+╠═══════════════════════════════════════════════════════════╣
+║ Analyzing error...                                        ║
+║                                                           ║
+║ Correct Answer: "阳光" (Sunlight)                        ║
+║ Student Answer: "氧气" (Oxygen)                          ║
+║                                                           ║
+║ DIAGNOSIS:                                                ║
+║ • Misconception Type: Input-Output Confusion              ║
+║ • Root Cause: Doesn't understand process directionality   ║
+║ • Common Error: Yes (34% of students make this mistake)   ║
+║ • Severity: Medium (fundamental concept gap)              ║
+║ • Mental Model: Student knows O2 relates to photosynthesis║
+║   but reversed the causal flow                            ║
+╚═══════════════════════════════════════════════════════════╝
+                       ↓
+Agent generates targeted learning material
+```
+
+### Step 4: Adaptive Learning Material (NEW!) | 自适应学习材料
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║ 📚 LEARNING MATERIAL                                      ║
+╠═══════════════════════════════════════════════════════════╣
+║ 💡 Let me help you understand this concept                ║
+║                                                           ║
+║ You answered "氧气" (Oxygen), which shows you know       ║
+║ oxygen is related to photosynthesis - great!             ║
+║                                                           ║
+║ However, there's an important distinction:                ║
+║                                                           ║
+║ 📥 INPUTS (What goes IN):                                ║
+║    • 阳光 (Sunlight) ← Energy source ⚡                  ║
+║    • 水 (Water)                                          ║
+║    • 二氧化碳 (Carbon Dioxide)                           ║
+║                                                           ║
+║ 📤 OUTPUTS (What comes OUT):                             ║
+║    • 葡萄糖 (Glucose) ← Food                             ║
+║    • 氧气 (Oxygen) ← Byproduct you breathe! 🫁           ║
+║                                                           ║
+║ Visual Flow:                                              ║
+║   阳光 + 水 + CO₂  →  [光合作用]  →  葡萄糖 + O₂        ║
+║   (INPUTS)              (Process)        (OUTPUTS)        ║
+║                                                           ║
+║ 🔑 Key Point: Oxygen is what plants PRODUCE,             ║
+║    not what they NEED to start the process.               ║
+║                                                           ║
+║ 💭 Think of it like baking:                              ║
+║    Inputs: Flour + Eggs + Heat                           ║
+║    Outputs: Bread + Steam                                ║
+║    You wouldn't say steam is an ingredient, right?       ║
+║                                                           ║
+║ [I Understand Now] [Show More Examples] [Skip]            ║
+╚═══════════════════════════════════════════════════════════╝
+```
+
+### Step 5: Verification Question (NEW!) | 验证问题
+
+**After learning material, agent generates NEW question for SAME answer:**
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║ 🔄 VERIFICATION QUESTION                                  ║
+╠═══════════════════════════════════════════════════════════╣
+║ Let's make sure you've got it! Here's a different way    ║
+║ to think about the same concept:                          ║
+║                                                           ║
+║ Question 1b (Same answer, different angle):              ║
+║ "光合作用过程中，植物从天空获得什么作为能量来源，       ║
+║  用来将H₂O和CO₂转化为食物？"                             ║
+║                                                           ║
+║ Translation: "During photosynthesis, what do plants      ║
+║ obtain from the sky as an energy source to convert       ║
+║ H₂O and CO₂ into food?"                                  ║
+║                                                           ║
+║ 💡 Hint: Remember - we're looking for an INPUT,          ║
+║    not an OUTPUT. What provides the ENERGY?              ║
+║                                                           ║
+║ Your Answer: [___________________] [Submit]               ║
+╚═══════════════════════════════════════════════════════════╝
+```
+
+**Success Path:**
+```
+User types "阳光" (correct!)
+              ↓
+✅ Perfect! You've truly understood the concept!
+   You correctly identified:
+   • Sunlight is an INPUT (not output)
+   • It provides ENERGY (not material)
+   • It's obtained FROM THE SKY
+   
+   This shows you understand the photosynthesis process! 🌟
+              ↓
+Move to next question
+```
+
+**Failure Path:**
+```
+User still gets it wrong
+              ↓
+Agent generates ANOTHER micro-lesson
+              ↓
+Generate THIRD question from yet another angle
+              ↓
+Cycle continues until understanding achieved
+```
+
+### Step 6: Question & Answer Cycle | 问答循环 (Updated)
 
 ```
 Question Panel shows:
@@ -273,6 +459,11 @@ The rainbow glow creates a **"magical learning portal"** effect that:
 
 ```
 LearningModeManager (new class)
+├── Validation Module ⚠️ NEW
+│   ├── Node Completeness Checker
+│   ├── Placeholder Pattern Detector
+│   ├── Button State Manager
+│   └── Error Message Generator
 ├── Question Generation Module
 │   ├── Node Selection (20% random)
 │   ├── Shuffle Logic
@@ -301,6 +492,7 @@ LearningModeManager (new class)
 static/js/
 ├── learning/
 │   ├── learning-mode-manager.js      # Main controller
+│   ├── diagram-validator.js          # ⚠️ NEW: Pre-validation logic
 │   ├── question-generator.js         # LLM question generation
 │   ├── answer-validator.js           # Answer checking logic
 │   ├── hint-generator.js             # Progressive hint system
@@ -312,90 +504,853 @@ static/js/
     └── learning-renderer.js          # Knockout node rendering
 ```
 
+### Validation Logic Example | 验证逻辑示例
+
+```javascript
+// diagram-validator.js
+
+class DiagramValidator {
+    constructor(diagramSpec, diagramType) {
+        this.spec = diagramSpec;
+        this.type = diagramType;
+        this.placeholderPatterns = [
+            // Chinese patterns
+            /^分支\s*\d+$/i,
+            /^子项\s*\d+\.?\d*$/i,
+            /^节点\s*\d*$/i,
+            /^属性\s*\d+$/i,
+            /^新节点$/i,
+            /^主题$/i,
+            // English patterns
+            /^branch\s*\d+$/i,
+            /^child\s*\d+\.?\d*$/i,
+            /^node\s*\d*$/i,
+            /^attribute\s*\d+$/i,
+            /^new node$/i,
+            /^topic$/i
+        ];
+    }
+    
+    validateForLearningMode() {
+        const allNodes = this.extractAllNodes();
+        const invalidNodes = [];
+        
+        for (const node of allNodes) {
+            const text = node.text?.trim() || '';
+            
+            // Check 1: Empty node
+            if (text.length === 0) {
+                invalidNodes.push({
+                    id: node.id,
+                    text: text,
+                    reason: 'empty',
+                    message: 'Empty node'
+                });
+                continue;
+            }
+            
+            // Check 2: Placeholder pattern
+            const isPlaceholder = this.placeholderPatterns.some(
+                pattern => pattern.test(text)
+            );
+            if (isPlaceholder) {
+                invalidNodes.push({
+                    id: node.id,
+                    text: text,
+                    reason: 'placeholder',
+                    message: 'Placeholder pattern detected'
+                });
+                continue;
+            }
+            
+            // Check 3: Too short (suspicious)
+            if (text.length < 2) {
+                invalidNodes.push({
+                    id: node.id,
+                    text: text,
+                    reason: 'too_short',
+                    message: 'Text too short (< 2 characters)'
+                });
+            }
+        }
+        
+        return {
+            isValid: invalidNodes.length === 0,
+            totalNodes: allNodes.length,
+            invalidNodes: invalidNodes,
+            validNodes: allNodes.length - invalidNodes.length
+        };
+    }
+    
+    extractAllNodes() {
+        // Extract all text nodes based on diagram type
+        const nodes = [];
+        
+        switch (this.type) {
+            case 'bubble_map':
+                nodes.push({id: 'topic', text: this.spec.topic});
+                this.spec.attributes?.forEach((attr, i) => {
+                    nodes.push({id: `attr_${i}`, text: attr});
+                });
+                break;
+            
+            case 'mind_map':
+                nodes.push({id: 'topic', text: this.spec.topic});
+                this.spec.children?.forEach((branch, i) => {
+                    nodes.push({id: `branch_${i}`, text: branch.text});
+                    branch.children?.forEach((child, j) => {
+                        nodes.push({id: `child_${i}_${j}`, text: child.text});
+                    });
+                });
+                break;
+            
+            // ... similar for other diagram types
+        }
+        
+        return nodes;
+    }
+    
+    showValidationError(result) {
+        const message = this.language === 'zh' 
+            ? `无法启动学习模式\n\n您的图表包含 ${result.invalidNodes.length} 个未完成的节点。\n请先填写所有节点的内容。`
+            : `Cannot Start Learning Mode\n\nYour diagram contains ${result.invalidNodes.length} incomplete nodes.\nPlease fill in all nodes first.`;
+        
+        const details = result.invalidNodes
+            .slice(0, 5)  // Show max 5
+            .map(node => `• ${node.text || '(empty)'} (${node.reason})`)
+            .join('\n');
+        
+        return {
+            title: this.language === 'zh' ? '验证失败' : 'Validation Failed',
+            message: message,
+            details: details,
+            actions: [
+                {text: this.language === 'zh' ? '编辑图表' : 'Edit Diagram', primary: true},
+                {text: this.language === 'zh' ? '取消' : 'Cancel'}
+            ]
+        };
+    }
+}
+
+// Usage in LearningModeManager
+handleLearningModeClick() {
+    const validator = new DiagramValidator(this.currentSpec, this.diagramType);
+    const result = validator.validateForLearningMode();
+    
+    if (!result.isValid) {
+        const errorDialog = validator.showValidationError(result);
+        this.showNotification(errorDialog.message, 'error');
+        this.highlightInvalidNodes(result.invalidNodes);
+        return;  // Don't enter learning mode
+    }
+    
+    // Validation passed - proceed to learning mode
+    this.enterLearningMode();
+}
+```
+
+**⚠️ Code Reuse Note:**
+
+The `DiagramValidator` class shares similar logic with existing code in `toolbar-manager.js`:
+- `extractExistingNodes()` - already extracts all nodes from diagrams
+- Placeholder patterns - already defined for auto-complete filtering
+
+**Recommendation**: 
+1. Refactor existing `extractExistingNodes()` into a shared utility
+2. Reuse placeholder patterns from `toolbar-manager.js`
+3. Avoid code duplication by creating `utils/node-extractor.js`
+
+This ensures consistency between auto-complete filtering and learning mode validation.
+```
+
 ### Backend API Endpoints | 后端API端点
 
-```python
-# New endpoints needed:
+**New LangChain-powered endpoints:**
 
-POST /api/learning/generate_questions
+```python
+# ============================================================================
+# ENDPOINT 1: Initialize Learning Session
+# ============================================================================
+POST /api/learning/start_session
+
+Request:
 {
     "diagram_type": "bubble_map",
-    "spec": {...},
-    "knocked_out_nodes": ["node_1", "node_3", "node_7"],
+    "spec": {...},  // Complete diagram specification
+    "knocked_out_nodes": ["attribute_3", "attribute_5"],
     "language": "zh"
 }
-→ Returns: List of AI-generated questions with context
 
+Response:
+{
+    "success": true,
+    "session_id": "learning_session_abc123",
+    "questions": [
+        {
+            "node_id": "attribute_3",
+            "question": "这个与'光合作用'相连的空白节点代表什么？",
+            "context": {
+                "parent": "光合作用",
+                "siblings": ["水", "二氧化碳"],
+                "diagram_type": "bubble_map"
+            },
+            "difficulty": "medium"
+        }
+    ],
+    "total_questions": 2
+}
+
+# ============================================================================
+# ENDPOINT 2: Validate Answer (Triggers LangChain Agent if Wrong)
+# ============================================================================
 POST /api/learning/validate_answer
+
+Request:
 {
-    "question_id": "q1",
-    "user_answer": "阳光",
-    "correct_answer": "太阳光",
-    "node_context": {...},
+    "session_id": "learning_session_abc123",
+    "node_id": "attribute_3",
+    "user_answer": "氧气",
+    "question": "这个与'光合作用'相连的空白节点代表什么？",
+    "context": {
+        "parent": "光合作用",
+        "siblings": ["水", "二氧化碳"]
+    },
     "language": "zh"
 }
-→ Returns: {is_correct: true/false, similarity_score: 0.95}
 
-POST /api/learning/generate_hint
+Response (if CORRECT):
 {
-    "question_id": "q1",
+    "correct": true,
+    "confidence": 0.98,
+    "message": "完全正确！你理解了光合作用的能量来源！",
+    "proceed_to_next": true
+}
+
+Response (if WRONG - LangChain Agent Activates):
+{
+    "correct": false,
     "user_answer": "氧气",
     "correct_answer": "阳光",
-    "attempt_number": 2,
-    "node_context": {...},
+    
+    // Step 1: Misconception Analysis
+    "misconception_analysis": {
+        "type": "input_output_confusion",
+        "diagnosis": "学生知道氧气与光合作用有关，但混淆了输入和输出",
+        "mental_model": "认为氧气是反应物而非生成物",
+        "severity": "medium",
+        "common_error": true,
+        "prevalence": 0.34,
+        "root_cause": "不理解过程的方向性"
+    },
+    
+    // Step 2: Learning Material
+    "learning_material": {
+        "acknowledgment": "你知道氧气和光合作用有关系 - 很好！",
+        "contrast": "但是氧气是产物（输出），不是原料（输入）",
+        "visual_aid": {
+            "type": "flow_diagram",
+            "inputs": ["阳光⚡", "水💧", "CO₂"],
+            "process": "光合作用🌱",
+            "outputs": ["葡萄糖🍬", "氧气🫁"]
+        },
+        "analogy": {
+            "domain": "烘焙",
+            "explanation": "就像烘焙：面粉+鸡蛋+热量 → 面包+蒸汽。蒸汽不是原料，是副产品。"
+        },
+        "key_principle": "氧气是植物制造的，不是植物需要的",
+        "memory_trick": "光合作用 = 光（阳光）+ 合成"
+    },
+    
+    // Step 3: Verification Question (Different Angle, Same Answer)
+    "verification_question": {
+        "question": "光合作用过程中，植物从天空获得什么作为能量来源？",
+        "angle": "functional_role",
+        "hint": "记住：这是一个输入物，提供能量，不是材料或输出",
+        "tests_understanding_of": ["能量来源识别", "输入输出区分"]
+    },
+    
+    "proceed_to_next": false,  // Stay on this node
+    "show_learning_material": true,
+    "next_action": "display_material_then_verify"
+}
+
+# ============================================================================
+# ENDPOINT 3: Progressive Hint Generation
+# ============================================================================
+POST /api/learning/get_hint
+
+Request:
+{
+    "session_id": "learning_session_abc123",
+    "node_id": "attribute_3",
+    "attempt_number": 1,
+    "previous_answers": ["氧气"],
     "language": "zh"
 }
-→ Returns: Progressive hint based on attempt number
+
+Response:
+{
+    "hint": "提示 Level 1：光合作用需要能量来源。想想太阳提供什么...",
+    "hint_level": 1,
+    "remaining_hints": 2,
+    "scaffolding_type": "contextual"
+}
+
+# ============================================================================
+# ENDPOINT 4: Verify Understanding (After Learning Material)
+# ============================================================================
+POST /api/learning/verify_understanding
+
+Request:
+{
+    "session_id": "learning_session_abc123",
+    "node_id": "attribute_3",
+    "verification_answer": "阳光",
+    "original_question": "这个与'光合作用'相连的空白节点代表什么？",
+    "verification_question": "光合作用过程中，植物从天空获得什么作为能量来源？",
+    "misconception_addressed": "input_output_confusion",
+    "language": "zh"
+}
+
+Response (if VERIFIED - Understanding Achieved):
+{
+    "correct": true,
+    "understanding_verified": true,
+    "confidence": 0.95,
+    "message": "太棒了！你已经真正理解了这个概念！你正确地从两个不同角度识别了答案。",
+    "proceed_to_next": true,
+    "mastery_demonstrated": true
+}
+
+Response (if STILL WRONG - Escalate):
+{
+    "correct": false,
+    "understanding_verified": false,
+    "escalation_level": 2,
+    
+    // New teaching approach
+    "new_learning_material": {
+        "strategy": "concrete_examples_with_images",
+        "content": "让我们看一些具体例子..."
+    },
+    
+    // Yet another angle for same answer
+    "new_verification_question": {
+        "question": "太阳能板和植物都需要什么来产生能量？",
+        "angle": "analogy_based",
+        "cognitive_level": "apply"
+    },
+    
+    "encouragement": "没关系，这是很多学生觉得困难的概念。我们换个方式来理解...",
+    "proceed_to_next": false,
+    "max_attempts_reached": false
+}
 ```
 
 ---
 
 ## 🤖 LLM Integration
 
-### 1. Question Generation | 问题生成
+**🎓 Intelligent Tutoring System (ITS) Architecture:**
 
-**LLM Prompt Template:**
+This is NOT a simple quiz system. It's an **AI-powered intelligent tutor** that:
+- Diagnoses student misconceptions
+- Generates adaptive learning materials
+- Verifies understanding through multiple angles
+- Teaches concepts, not just answers
+
+**🎓 Educational-First Design Philosophy:**
+
+This Learning Mode is designed around **research-backed pedagogical principles**, not just gamification:
+
+1. **Active Recall**: Forcing retrieval strengthens neural pathways (Roediger & Butler, 2011)
+2. **Educational Scaffolding**: Progressive hints that guide discovery, not just reveal answers (Vygotsky's ZPD)
+3. **Contextual Learning**: Relationships matter more than isolated facts (Constructivist theory)
+4. **Socratic Method**: Questions that prompt thinking, not just answer-checking
+5. **Error Analysis**: Understanding WHY wrong answers occur helps correct mental models
+6. **Metacognition**: Students learn to think about their own thinking process
+7. **Multi-Faceted Understanding**: Same concept tested from different angles to ensure deep comprehension
+
+**Key Difference from Traditional Quizzes:**
+- ❌ Traditional: "What is X?" → Wrong → "Try again" → Frustration
+- ✅ Learning Mode: "What is X?" → Wrong → **AI analyzes misconception → Generates teaching material → Re-tests with different question** → True Understanding
+
+---
+
+## 🧠 LangChain Agent Architecture
+
+**Why LangChain?**
+- **Agent-based reasoning**: Iteratively analyze student responses
+- **Tool calling**: Generate materials, search knowledge, analyze patterns
+- **Memory**: Track misconceptions across questions
+- **Chains**: Multi-step pedagogical workflows
+
+### Agent Workflow | 智能代理工作流
+
+```
+Student gives wrong answer "氧气" to question about "阳光"
+                    ↓
+╔═══════════════════════════════════════════════════╗
+║  LANGCHAIN LEARNING AGENT                          ║
+╠═══════════════════════════════════════════════════╣
+║  Step 1: MISCONCEPTION ANALYSIS                    ║
+║  - Analyze: Why did student say "氧气"?           ║
+║  - Diagnosis: "Confused INPUT vs OUTPUT"           ║
+║  - Root cause: "Doesn't understand process flow"   ║
+╠═══════════════════════════════════════════════════╣
+║  Step 2: LEARNING MATERIAL GENERATION              ║
+║  - Generate: Micro-lesson on photosynthesis I/O    ║
+║  - Content: Diagram + Explanation                  ║
+║  - Format: Text, visual aids, examples             ║
+╠═══════════════════════════════════════════════════╣
+║  Step 3: VERIFICATION QUESTION                     ║
+║  - Generate: NEW question, SAME answer             ║
+║  - Angle: Different perspective on "阳光"         ║
+║  - Test: Does student truly understand now?        ║
+╚═══════════════════════════════════════════════════╝
+                    ↓
+Student answers verification question correctly
+→ True understanding achieved! ✓
+```
+
+### LangChain Tools/Components | 工具组件
 
 ```python
-QUESTION_GENERATION_PROMPT = """
-You are an educational assistant creating learning questions for a diagram.
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.tools import Tool
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import LLMChain
 
-Diagram Type: {diagram_type}
-Node to Test: {node_text}
-Node Relationships:
-- Parent: {parent_node}
-- Siblings: {sibling_nodes}
-- Children: {child_nodes}
-- Connected to: {connected_nodes}
+class LearningAgent:
+    """
+    Intelligent tutoring agent that diagnoses misconceptions
+    and generates adaptive learning materials.
+    """
+    
+    def __init__(self):
+        self.tools = [
+            self.misconception_analyzer,
+            self.learning_material_generator,
+            self.verification_question_generator,
+            self.knowledge_base_search
+        ]
+        
+        self.memory = ConversationBufferMemory(
+            memory_key="student_progress",
+            return_messages=True
+        )
+        
+        self.agent = create_openai_tools_agent(
+            llm=self.llm,
+            tools=self.tools,
+            prompt=self.system_prompt
+        )
+    
+    # Tool 1: Misconception Analysis
+    @tool
+    def misconception_analyzer(
+        self,
+        correct_answer: str,
+        student_answer: str,
+        question_context: dict
+    ) -> dict:
+        """
+        Analyze WHY student gave wrong answer.
+        Returns: {
+            "misconception_type": "input_output_confusion",
+            "root_cause": "Doesn't understand process directionality",
+            "severity": "medium",
+            "common_error": true
+        }
+        """
+        pass
+    
+    # Tool 2: Learning Material Generation
+    @tool
+    def learning_material_generator(
+        self,
+        misconception: dict,
+        topic: str,
+        language: str
+    ) -> dict:
+        """
+        Generate targeted learning material to address misconception.
+        Returns: {
+            "material_type": "micro_lesson",
+            "content": "...",
+            "visuals": [...],
+            "examples": [...]
+        }
+        """
+        pass
+    
+    # Tool 3: Verification Question Generator
+    @tool
+    def verification_question_generator(
+        self,
+        concept: str,
+        previous_question: str,
+        misconception_addressed: str
+    ) -> dict:
+        """
+        Generate NEW question about SAME concept from different angle.
+        Returns: {
+            "question": "...",
+            "angle": "definition vs application",
+            "difficulty": "same",
+            "tests_understanding_of": "input-output distinction"
+        }
+        """
+        pass
+    
+    # Tool 4: Knowledge Base Search
+    @tool
+    def knowledge_base_search(
+        self,
+        topic: str,
+        misconception: str
+    ) -> dict:
+        """
+        Search for relevant educational materials, common errors, teaching strategies.
+        """
+        pass
+```
 
-Context: This node is part of a {diagram_type} about "{diagram_topic}".
+### Complete Agent Workflow Example | 完整代理工作流示例
 
-Task: Generate 1 question that helps the user recall "{node_text}" by:
-1. Describing its relationship to other nodes
-2. Giving contextual clues (but not the answer!)
-3. Making it educational and clear
+**Scenario**: Student answers "氧气" for node that should be "阳光"
 
-Question format:
+```python
+# Step 1: Misconception Analysis
+analysis = agent.misconception_analyzer(
+    correct_answer="阳光",
+    student_answer="氧气",
+    question_context={
+        "parent": "光合作用",
+        "siblings": ["水", "二氧化碳"],
+        "question": "What energy source does photosynthesis need?"
+    }
+)
+
+# Returns:
 {
-    "question": "Fill in the blank node: ...",
-    "initial_hint": "💡 Hint: ...",
-    "difficulty": "easy/medium/hard"
+    "misconception_type": "input_output_confusion",
+    "confidence": 0.92,
+    "diagnosis": "Student understands O2 relates to photosynthesis but reversed the causal direction",
+    "mental_model": "Thinks oxygen is consumed rather than produced",
+    "common_error": True,
+    "prevalence": 0.34,  # 34% of students make this error
+    "severity": "medium",
+    "prerequisite_gaps": ["process_directionality", "energy_vs_material"],
+    "teaching_strategy": "use_flow_diagram_with_arrows"
 }
 
-Language: {language}
-Generate the question in {language} only.
+# Step 2: Generate Learning Material
+material = agent.learning_material_generator(
+    misconception=analysis,
+    topic="光合作用",
+    language="zh"
+)
+
+# Returns:
+{
+    "material_type": "micro_lesson",
+    "duration": "2-3 minutes",
+    "content": {
+        "acknowledgment": "你知道氧气和光合作用有关系 - 很好！",
+        "contrast": "但是氧气是产物（输出），不是原料（输入）",
+        "visual_aid": {
+            "type": "flow_diagram",
+            "elements": [
+                {"type": "input", "items": ["阳光", "水", "CO₂"]},
+                {"type": "process", "name": "光合作用"},
+                {"type": "output", "items": ["葡萄糖", "O₂"]}
+            ]
+        },
+        "analogy": {
+            "domain": "烘焙",
+            "mapping": {
+                "inputs": "面粉 + 鸡蛋 + 热量",
+                "outputs": "面包 + 蒸汽",
+                "lesson": "蒸汽不是原料，是副产品"
+            }
+        },
+        "key_principle": "氧气是植物制造的，不是植物需要的",
+        "memory_trick": "光合作用 = 光（阳光）+ 合成"
+    },
+    "interactive_elements": [
+        {"type": "button", "text": "我明白了", "action": "continue"},
+        {"type": "button", "text": "显示更多例子", "action": "expand"},
+        {"type": "button", "text": "跳过", "action": "skip"}
+    ]
+}
+
+# Step 3: Generate Verification Question
+verification_q = agent.verification_question_generator(
+    concept="阳光",
+    previous_question="与'光合作用'相连的空白节点是什么？",
+    misconception_addressed="input_output_confusion"
+)
+
+# Returns:
+{
+    "question": "光合作用过程中，植物从天空获得什么作为能量来源？",
+    "question_id": "q1_verification",
+    "angle": "functional_role",  # Different angle: role-based vs. relationship-based
+    "previous_angle": "structural_relationship",
+    "same_answer": "阳光",
+    "difficulty": "same",
+    "tests_understanding_of": ["energy_source_identification", "input_output_distinction"],
+    "hint": "Remember: This is an INPUT that provides ENERGY, not a material or output",
+    "why_different": "Previous question asked about connections; this asks about function and source direction"
+}
+
+# If student answers correctly:
+{
+    "correct": True,
+    "confidence_score": 0.95,  # High confidence in true understanding
+    "reason": "Student demonstrated understanding from two different angles",
+    "proceed": True
+}
+
+# If student still answers incorrectly:
+{
+    "correct": False,
+    "trigger_action": "generate_second_micro_lesson",
+    "escalation_level": 2,
+    "new_strategy": "use_concrete_examples_with_images"
+}
+```
+
+### Multi-Angle Question Strategy | 多角度提问策略
+
+**For the SAME node "阳光", generate different questions:**
+
+```python
+QUESTION_ANGLES = {
+    "structural_relationship": {
+        "question": "这个与'光合作用'和'水'相连的节点是什么？",
+        "tests": "spatial/relationship memory",
+        "cognitive_level": "recognize"
+    },
+    
+    "functional_role": {
+        "question": "光合作用的主要能量来源是什么？",
+        "tests": "conceptual understanding of function",
+        "cognitive_level": "understand"
+    },
+    
+    "process_integration": {
+        "question": "植物白天需要什么来将CO₂和H₂O转化为葡萄糖？",
+        "tests": "process understanding + causal reasoning",
+        "cognitive_level": "apply"
+    },
+    
+    "contrast_discrimination": {
+        "question": "在光合作用的输入中，哪个提供能量而不是材料？",
+        "tests": "ability to distinguish categories",
+        "cognitive_level": "analyze"
+    },
+    
+    "source_direction": {
+        "question": "光合作用中，植物从天空获得什么？",
+        "tests": "understanding of source and directionality",
+        "cognitive_level": "apply"
+    }
+}
+
+# Agent selects question angles based on:
+# 1. What misconception needs to be addressed
+# 2. What angle was used before
+# 3. Bloom's taxonomy progression
+```
+
+### Agent System Prompt | 代理系统提示词
+
+```python
+LEARNING_AGENT_SYSTEM_PROMPT = """
+You are an expert educational AI tutor specializing in diagnosing student misconceptions 
+and generating adaptive learning materials.
+
+Your goal is NOT to just check if answers are correct, but to:
+1. Understand WHY students give wrong answers
+2. Identify the root misconceptions or knowledge gaps
+3. Generate targeted teaching materials that address those specific gaps
+4. Verify true understanding through multi-angle questioning
+
+=== YOUR CAPABILITIES ===
+
+Tool 1: misconception_analyzer
+- Analyze student's wrong answer in context
+- Diagnose the type of error (e.g., input-output confusion, category mistake, partial knowledge)
+- Estimate severity and commonality
+- Recommend teaching strategies
+
+Tool 2: learning_material_generator
+- Generate micro-lessons (2-3 minutes) targeted at specific misconceptions
+- Use multiple modalities: text, visual diagrams, analogies, examples
+- Follow pedagogical best practices: acknowledge, contrast, explain, reinforce
+- Adapt difficulty and language to student level
+
+Tool 3: verification_question_generator
+- Create NEW questions about the SAME concept from different angles
+- Ensure questions test true understanding, not just memorization
+- Progress through Bloom's taxonomy (remember → understand → apply → analyze)
+- Avoid giving away the answer
+
+Tool 4: knowledge_base_search
+- Search for common student errors in this topic
+- Find effective teaching analogies and examples
+- Retrieve proven teaching strategies for this concept
+
+=== PEDAGOGICAL PRINCIPLES ===
+
+1. **Growth Mindset**: Treat errors as learning opportunities
+2. **Scaffolding**: Provide just enough support, not too much or too little
+3. **Multiple Representations**: Use text, visuals, analogies
+4. **Deep Processing**: Ask WHY, not just WHAT
+5. **Verification**: Test understanding from multiple angles
+6. **Encouragement**: Be warm, supportive, never condescending
+
+=== WORKFLOW ===
+
+When student gives wrong answer:
+1. ANALYZE: What misconception does this reveal?
+2. TEACH: Generate targeted material to address it
+3. VERIFY: Ask a different question about same concept
+4. ITERATE: If still wrong, try different teaching approach
+5. SUCCEED: When student demonstrates understanding from multiple angles
+
+=== EXAMPLE REASONING ===
+
+Student answers "氧气" for "阳光" in photosynthesis:
+
+Reasoning:
+- Student knows O2 relates to photosynthesis → Partial knowledge ✓
+- Student said O2 when answer is sunlight → INPUT/OUTPUT confusion
+- This is a PROCESS DIRECTIONALITY error → Common misconception (34%)
+- Root cause: Doesn't understand causal flow of reactions
+- Teaching strategy: Use FLOW DIAGRAM with clear arrows
+- Analogy: Baking (inputs vs. outputs)
+- Verification angle: Ask about "energy source" (functional role)
+
+Remember: Your job is to TEACH understanding, not just mark right/wrong.
 """
 ```
 
-**Example Output (Chinese):**
+### 1. Question Generation | 问题生成
+
+**Educational Philosophy | 教育理念:**
+
+The initial hints should follow **educational scaffolding principles**:
+- **Context-Rich**: Provide relationships and connections to visible nodes
+- **Progressive Disclosure**: Start with general clues, get more specific
+- **Memory Aids**: Use mnemonics, associations, or memorable characteristics
+- **Teaching, Not Telling**: Help users understand WHY, not just WHAT
+- **Socratic Questioning**: Guide discovery through leading questions
+
+**LLM Prompt Template (Enhanced):**
+
+```python
+QUESTION_GENERATION_PROMPT = """
+You are an expert educational tutor helping students learn through active recall.
+
+=== CONTEXT ===
+Diagram Type: {diagram_type}
+Diagram Topic: {diagram_topic}
+Hidden Node (answer): {node_text}
+
+Node Relationships (VISIBLE to student):
+- Parent node: {parent_node}
+- Sibling nodes: {sibling_nodes}
+- Child nodes: {child_nodes}
+- Connected nodes: {connected_nodes}
+
+=== YOUR TASK ===
+Generate an educational question that helps the student recall "{node_text}" through:
+
+1. **Contextual Clues** - Reference visible nodes they can see
+2. **Relationship Hints** - Explain HOW this node connects to others
+3. **Conceptual Understanding** - Why this node matters in the diagram
+4. **Memory Triggers** - Use characteristics, patterns, or associations
+
+=== EDUCATIONAL PRINCIPLES ===
+✓ DO: Give rich context about relationships with visible nodes
+✓ DO: Use metaphors, examples, or real-world connections
+✓ DO: Provide "thinking frameworks" (e.g., "This is the cause of X")
+✓ DO: Use memory techniques (first letter, rhymes, categories)
+
+✗ DON'T: Just describe the node in isolation
+✗ DON'T: Give overly vague hints like "It's important"
+✗ DON'T: Make it a pure guessing game
+
+=== OUTPUT FORMAT ===
+{
+    "question": "What is the blank node connected to '{parent_node}'?",
+    "initial_hint": "💡 Contextual clue: This node represents [relationship/role]. It connects to {sibling_1} and {sibling_2}, forming [pattern/concept].",
+    "educational_rationale": "Brief explanation of why this node matters",
+    "difficulty": "easy/medium/hard",
+    "memory_aid": "Optional: Mnemonic or association technique"
+}
+
+=== EXAMPLES OF GOOD HINTS ===
+
+Example 1 (Bubble Map - Attributes):
+Question: "What attribute of '太阳能' is missing?"
+Initial Hint: "💡 This node is connected to '太阳能' as one of its key benefits. 
+It relates to '清洁' (clean) and '持久' (long-lasting). 
+Think about what makes solar energy different from fossil fuels economically."
+Memory Aid: "Think: 可 + 更新 = can be renewed"
+
+Example 2 (Mind Map - Branches):
+Question: "What is the third main branch of '项目管理'?"
+Initial Hint: "💡 This branch appears after '计划' (Planning) and '执行' (Execution). 
+It's about checking progress and making sure everything stays on track. 
+What do you do to keep projects under control?"
+Memory Aid: "P-E-? (Plan-Execute-?)"
+
+Example 3 (Tree Map - Categories):
+Question: "What category contains '苹果' and '香蕉'?"
+Initial Hint: "💡 Look at what '苹果' (apple) and '香蕉' (banana) have in common. 
+They're all siblings under this category in the tree structure. 
+This is a broad classification of food items."
+Memory Aid: "They all grow on trees or plants"
+
+Language: {language}
+Generate everything in {language} only.
+Use clear, encouraging, educational tone.
+"""
+```
+
+**Enhanced Example Output (Chinese):**
 ```json
 {
-    "question": "这个节点与"光合作用"相连，是这个过程的主要能量来源。它是什么？",
-    "initial_hint": "💡 提示：它来自天空，是白天最亮的东西",
+    "question": "与'光合作用'相连的空白节点是什么？",
+    "initial_hint": "💡 上下文提示：这个节点是光合作用的主要能量来源。它与'水'和'二氧化碳'一起，被植物用来制造食物。想想植物在白天最需要什么来进行光合作用？",
+    "educational_rationale": "理解能量来源对掌握光合作用过程至关重要",
     "difficulty": "easy",
+    "memory_aid": "光（光合作用的'光'）=光源",
     "node_id": "attribute_2",
     "relationships": {
         "parent": "光合作用",
+        "siblings": ["水", "二氧化碳"],
+        "type": "attribute"
+    }
+}
+```
+
+**Enhanced Example Output (English):**
+```json
+{
+    "question": "What is the blank node connected to 'Photosynthesis'?",
+    "initial_hint": "💡 Contextual clue: This node represents the primary energy source for photosynthesis. It works together with 'Water' and 'Carbon Dioxide' - all three are essential inputs. Think about what plants need during the day to make food.",
+    "educational_rationale": "Understanding the energy source is key to grasping how photosynthesis works",
+    "difficulty": "easy",
+    "memory_aid": "Photo = Light (Greek origin)",
+    "node_id": "attribute_2",
+    "relationships": {
+        "parent": "Photosynthesis",
+        "siblings": ["Water", "Carbon Dioxide"],
         "type": "attribute"
     }
 }
@@ -439,40 +1394,212 @@ def validate_answer(user_answer, correct_answer, language):
 
 ### 3. Progressive Hint Generation | 渐进式提示生成
 
-**Hint Strategy: 3 Levels of Assistance**
+**Educational Scaffolding Strategy: 3 Levels of Assistance**
+
+Each hint should **teach progressively**, not just reveal the answer. The goal is to guide thinking, not spoon-feed.
+
+**LLM Prompt Template (Enhanced):**
 
 ```python
-HINT_GENERATION_PROMPT = """
-User is trying to recall: {correct_answer}
-User's wrong answer: {user_answer}
-Attempt number: {attempt_number} of 3
+PROGRESSIVE_HINT_PROMPT = """
+You are an expert tutor helping a student who gave an incorrect answer.
 
-Generate a hint at level {attempt_number}:
-- Level 1: Subtle hint about relationships ("It's connected to X and Y")
-- Level 2: Clearer hint about characteristics ("It's the main source of energy")
-- Level 3: Very direct hint ("It starts with '阳' and ends with '光'")
+=== LEARNING CONTEXT ===
+Correct Answer: {correct_answer}
+Student's Answer: {user_answer}
+Attempt Number: {attempt_number} of 3
+Previous Hints Shown: {previous_hints}
+
+Node Relationships (visible to student):
+- Parent: {parent_node}
+- Siblings: {sibling_nodes}
+- Connected: {connected_nodes}
+
+=== HINT LEVEL STRATEGY ===
+
+**Level 1 (First Mistake)** - Redirect Thinking:
+- Acknowledge what was GOOD about their answer (if anything)
+- Gently redirect their thinking direction
+- Focus on RELATIONSHIPS with visible nodes
+- Ask leading questions to trigger recall
+Example: "Good thinking, but not quite. This node is related to both {sibling_1} and {sibling_2}. What connects all three of these concepts?"
+
+**Level 2 (Second Mistake)** - Narrow the Focus:
+- Provide more specific context about role/function
+- Use analogies or real-world examples
+- Give characteristic hints (but not the word itself)
+- Encourage pattern recognition
+Example: "Let me help you narrow it down. This is the PRIMARY source that {parent_node} depends on. Think about what's always present during the day..."
+
+**Level 3 (Third Mistake)** - Direct but Educational:
+- Give strong clues (first character, word structure, etc.)
+- Explain WHY this answer makes sense
+- Connect to larger concept
+- Prepare for "show answer" moment
+Example: "You're almost there! The answer starts with '阳'. It's related to '太阳' (sun) but specifically the light/energy it provides. 阳__"
+
+=== PEDAGOGICAL PRINCIPLES ===
+✓ DO: Acknowledge effort ("Good try!", "You're thinking in the right direction")
+✓ DO: Explain WHY their answer might seem related
+✓ DO: Connect to visible nodes they can see
+✓ DO: Use "Socratic questioning" to guide thinking
+✓ DO: Build on what they already know
+
+✗ DON'T: Make student feel bad for wrong answer
+✗ DON'T: Just say "wrong, try again"
+✗ DON'T: Give hints that don't teach the underlying concept
+✗ DON'T: Be condescending or overly simplistic
+
+=== ANALYZING STUDENT'S WRONG ANSWER ===
+Consider WHY they might have said "{user_answer}":
+- Is it related but wrong category?
+- Is it a common misconception?
+- Is it phonetically similar?
+- Is it conceptually adjacent?
+
+Use this analysis to craft a hint that CORRECTS their mental model.
+
+=== OUTPUT FORMAT ===
+{
+    "hint": "💡 Level {level} hint text...",
+    "encouragement": "Positive, encouraging message",
+    "teaching_point": "What concept/relationship you're emphasizing",
+    "why_not_their_answer": "Brief explanation of why {user_answer} isn't correct"
+}
 
 Language: {language}
-Be encouraging and educational, not condescending.
-
-Format: {{"hint": "💡 ...", "confidence_boost": "You're getting closer!"}}
+Tone: Warm, encouraging, educational (like a patient teacher)
 """
 ```
 
-**Example Progression (Chinese):**
+**Enhanced Example Progression (Chinese - Photosynthesis):**
 
 ```
-Attempt 1: User types "水" (wrong)
-→ Hint 1: "💡 这个东西不是液体。想想植物在白天需要什么来进行光合作用？"
+Correct Answer: "阳光" (Sunlight)
+Context: Node connected to "光合作用" with siblings "水" and "二氧化碳"
 
-Attempt 2: User types "空气" (wrong)
-→ Hint 2: "💡 很接近了！但不是空气。它来自天空，是我们能看到的最亮的东西。"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Attempt 3: User types "月亮" (wrong)
-→ Hint 3: "💡 几乎对了！但是是白天而不是晚上。它是'太阳'发出的..."
+Attempt 1: User types "水" (Water) - wrong
+→ Hint 1 (Redirect Thinking):
+{
+    "hint": "💡 好的思考方向！'水'确实是光合作用的重要组成部分。
+    但我们要找的是能量来源，不是原材料。看看'水'和'二氧化碳'旁边，
+    还缺少什么来驱动整个光合作用过程？想想植物在白天从天空获得什么？",
+    
+    "encouragement": "你已经在正确的轨道上了！💪",
+    
+    "teaching_point": "区分'原材料'（水、二氧化碳）和'能量来源'",
+    
+    "why_not_their_answer": "'水'是原材料，但光合作用需要能量来转化这些原材料"
+}
 
-After 3 attempts:
-→ Show Answer: "阳光" (with explanation)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Attempt 2: User types "氧气" (Oxygen) - wrong
+→ Hint 2 (Narrow Focus):
+{
+    "hint": "💡 有趣的猜测！但'氧气'其实是光合作用的产物（输出），
+    不是输入。我们要找的是输入能量。想象一下：植物白天需要什么才能工作，
+    而晚上没有这个就停止光合作用？这个来自太阳的东西叫什么？",
+    
+    "encouragement": "你正在深入思考光合作用的过程！很好！🌱",
+    
+    "teaching_point": "区分光合作用的输入（能量+原料）和输出（产物）",
+    
+    "why_not_their_answer": "氧气是光合作用产生的，不是光合作用需要的"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Attempt 3: User types "太阳" (Sun) - very close!
+→ Hint 3 (Direct but Educational):
+{
+    "hint": "💡 非常接近了！'太阳'是正确的概念！但我们需要更准确的词。
+    我们要的不是太阳本身，而是太阳发出来的东西。
+    想想：'阳____'。这个词特指太阳的光线和能量。
+    提示：'光'合作用的'光'就是指这个！",
+    
+    "encouragement": "你几乎答对了！就差一点点！🌟",
+    
+    "teaching_point": "区分太阳（物体）和阳光（能量形式）",
+    
+    "why_not_their_answer": "'太阳'是对的概念，但科学上我们说的是'阳光'或'太阳光'"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After 3 attempts → Show Answer with Explanation:
+{
+    "answer": "阳光",
+    "explanation": "💡 答案是'阳光'！
+    
+    为什么是阳光？
+    • 阳光是光合作用的能量来源
+    • 植物用阳光的能量，把水和二氧化碳转化为葡萄糖
+    • 没有阳光，光合作用就无法进行（这就是为什么植物晚上不进行光合作用）
+    
+    记忆技巧：'光'合作用 = 光（阳光）+ 合成
+    
+    关系图：阳光 + 水 + 二氧化碳 → 葡萄糖 + 氧气",
+    
+    "encouragement": "现在你理解了阳光在光合作用中的关键作用！🌞🌿"
+}
+```
+
+**Enhanced Example Progression (English - Project Management):**
+
+```
+Correct Answer: "Monitoring" (项目监控)
+Context: Third branch after "Planning" and "Execution" in Mind Map
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Attempt 1: User types "Closing" - wrong
+→ Hint 1:
+{
+    "hint": "💡 Good thinking! 'Closing' is definitely part of project management, 
+    but it comes later. The missing branch happens DURING the project execution phase. 
+    After you plan and start executing, what do you need to do continuously to make sure 
+    everything is on track? Think: Plan → Execute → _____?",
+    
+    "encouragement": "You're thinking about the project lifecycle! Keep going! 🎯",
+    
+    "teaching_point": "Project phases sequence: Plan → Execute → Monitor → Close",
+    
+    "why_not_their_answer": "'Closing' is the final phase, but we need the middle step"
+}
+
+Attempt 2: User types "Testing" - wrong but closer
+→ Hint 2:
+{
+    "hint": "💡 Interesting! 'Testing' is related because it involves checking things. 
+    But we need a broader term. This branch is about continuously WATCHING the project's 
+    progress, checking metrics, tracking budgets, and making sure you're meeting goals. 
+    What's the management term for keeping an eye on everything? Hint: It's what you 
+    do with a baby monitor...",
+    
+    "encouragement": "You're getting warmer! You've got the 'checking' concept! 👍",
+    
+    "teaching_point": "Monitoring is broader than testing - it's ongoing observation",
+    
+    "why_not_their_answer": "'Testing' is too specific; we need the overall tracking activity"
+}
+
+Attempt 3: User types "Controlling" - so close!
+→ Hint 3:
+{
+    "hint": "💡 You're RIGHT THERE! 'Controlling' is actually a paired term with our answer! 
+    In project management, we often say 'M_____ and Controlling' together. 
+    The word starts with 'M' and means to observe, track, and watch progress. 
+    Think: baby M______.",
+    
+    "encouragement": "Almost perfect! You understand the concept! 🌟",
+    
+    "teaching_point": "Monitoring (observe) + Controlling (adjust) = project oversight",
+    
+    "why_not_their_answer": "'Controlling' is the action after monitoring; we monitor first"
+}
 ```
 
 ---
@@ -571,89 +1698,182 @@ class LearningSession {
 
 **Goals:**
 - ✅ Create LearningModeManager class
-- ✅ Add "Learning" button to toolbar
+- ✅ Add "Learning" button to toolbar with rainbow glow animation
+- ✅ **Implement DiagramValidator class** ⚠️ CRITICAL
+  - Node completeness checker
+  - Placeholder pattern detection
+  - Button enable/disable logic
+  - Validation error notifications
 - ✅ Implement 20% random node selection
 - ✅ Basic node knockout rendering (hide text)
 - ✅ Simple input field injection
 
 **Deliverables:**
-- User can click "Learning" button
-- 20% of nodes become blank with input fields
+- Rainbow-glowing "学习" button appears in toolbar
+- Button disabled when diagram has placeholders/empty nodes
+- Button enabled only when all nodes have meaningful content
+- Validation error messages show which nodes are incomplete
+- After validation passes: 20% of nodes become blank with input fields
 - No questions yet, just visual knockout
 
-### Phase 2: Question Generation (Week 2-3) | 问题生成
+**Testing Checklist:**
+- [ ] Button disabled on fresh diagram with placeholders
+- [ ] Button enabled after all nodes filled
+- [ ] Validation catches Chinese placeholders ("分支1", "节点2")
+- [ ] Validation catches English placeholders ("Branch 1", "Node 2")
+- [ ] Error message shows list of incomplete nodes
+- [ ] Clicking disabled button shows helpful tooltip
+
+### Phase 2: LangChain Agent Setup (Week 2-3) | LangChain代理设置
 
 **Goals:**
-- ✅ Backend API: `/api/learning/generate_questions`
-- ✅ LLM prompt template for question generation
-- ✅ Extract node relationships from diagram spec
-- ✅ Generate questions based on diagram structure
-- ✅ Display questions in simple modal
+- ✅ **Install LangChain dependencies** (`langchain`, `langchain-openai`)
+- ✅ Create `agents/learning_agent.py` module
+- ✅ Implement 4 core agent tools:
+  - `misconception_analyzer`
+  - `learning_material_generator`
+  - `verification_question_generator`
+  - `knowledge_base_search`
+- ✅ Set up ConversationBufferMemory
+- ✅ Create educational system prompt
+- ✅ Test agent with mock scenarios
 
 **Deliverables:**
-- LLM generates questions for knocked-out nodes
-- Questions include context about relationships
-- Questions displayed to user
+- LangChain agent framework operational
+- Agent can analyze student errors
+- Agent can generate teaching materials
+- Agent tools tested with photosynthesis example
 
-### Phase 3: Answer Validation (Week 3-4) | 答案验证
+**Testing Checklist:**
+- [ ] Agent correctly identifies "input_output_confusion"
+- [ ] Learning materials include: acknowledgment, contrast, visual aid, analogy
+- [ ] Verification questions ask about same concept from different angle
+- [ ] Agent memory persists across multiple questions
+
+### Phase 3: Question Generation & Validation (Week 3-4) | 问题生成与验证
 
 **Goals:**
-- ✅ Backend API: `/api/learning/validate_answer`
-- ✅ Exact match validation
-- ✅ Semantic match validation (LLM-based)
+- ✅ Backend API: `/api/learning/start_session`
+- ✅ Backend API: `/api/learning/validate_answer` (with agent integration)
+- ✅ LLM prompt template for initial question generation
+- ✅ Extract node relationships from diagram spec
+- ✅ Integrate agent for wrong answer handling
 - ✅ Display correct/incorrect feedback
-- ✅ Reveal node text when correct
+- ✅ Show learning material modal when answer is wrong
+- ✅ Reveal node text when verified understanding achieved
 
 **Deliverables:**
 - User types answer → System validates
-- Correct answers reveal node text
-- Incorrect answers show error message
+- Correct answers reveal node text immediately and move to next
+- **NEW**: Incorrect answers trigger LangChain agent analysis
+- **NEW**: Learning material modal displayed with visual aids, analogies, examples
+- **NEW**: Verification question presented (different angle, same answer)
+- **NEW**: Understanding verified or escalated to new teaching approach
 
-### Phase 4: Hint System (Week 4-5) | 提示系统
+**Testing Checklist:**
+- [ ] Wrong answer triggers agent misconception analysis
+- [ ] Learning material includes: acknowledgment, contrast, visual aid, analogy, key principle
+- [ ] Verification question tests same concept from different cognitive angle
+- [ ] Correct verification = understanding verified, move to next
+- [ ] Wrong verification = escalate (new material, new angle, repeat)
 
-**Goals:**
-- ✅ Backend API: `/api/learning/generate_hint`
-- ✅ Progressive hint generation (3 levels)
-- ✅ Attempt counter (max 3 attempts)
-- ✅ "Show Answer" button after 3 attempts
-- ✅ Hint display in question panel
-
-**Deliverables:**
-- Progressive hints based on attempt number
-- Encouraging feedback messages
-- User can see answer after 3 attempts
-
-### Phase 5: Session Management (Week 5-6) | 会话管理
+### Phase 4: Multi-Angle Verification & Escalation (Week 4-5) | 多角度验证与升级
 
 **Goals:**
-- ✅ Session state tracking
-- ✅ Score calculation
-- ✅ Summary screen after completion
-- ✅ "Review Mistakes" feature
-- ✅ Session persistence (optional)
+- ✅ Backend API: `/api/learning/verify_understanding`
+- ✅ **Multi-angle question generation** (5 cognitive perspectives per concept)
+- ✅ **Iterative teaching cycle**: Wrong → Analyze → Teach → Verify → Repeat if needed
+- ✅ Progressive hint system (3 levels) for original questions
+- ✅ Escalation levels (up to 3 teaching attempts)
+- ✅ Track misconception patterns across session
+- ✅ "Skip" option after max escalations
 
 **Deliverables:**
-- Complete learning session with scoring
-- Summary shows performance metrics
-- User can review incorrect answers
+- Verification questions test understanding from different angles:
+  - Structural relationship → Functional role
+  - Definition → Application
+  - Category → Example
+- Failed verification generates NEW learning material with different teaching strategy
+- Failed verification generates NEW question angle
+- System intelligently escalates teaching approach
+- Max 3 escalations before offering skip option
 
-### Phase 6: Polish & Testing (Week 6-7) | 优化和测试
+**Testing Checklist:**
+- [ ] Question angles are truly different (not just reworded)
+- [ ] Escalation Level 1: Flow diagrams + analogies
+- [ ] Escalation Level 2: Concrete examples + images
+- [ ] Escalation Level 3: Simplified explanation + memory tricks
+- [ ] Misconception patterns tracked in session memory
+- [ ] Skip option appears after 3 failed escalations
+
+### Phase 5: Learning Material UI & Animations (Week 5-6) | 学习材料界面
 
 **Goals:**
-- ✅ UI/UX refinements
-- ✅ Animations and transitions
-- ✅ Bilingual support (EN/ZH)
-- ✅ Edge case handling
-- ✅ Comprehensive testing
+- ✅ **Full-screen learning material modal** with rich content
+- ✅ Render flow diagrams (SVG or HTML visualization)
+- ✅ Display analogies with visual formatting
+- ✅ Interactive buttons ("我明白了", "显示更多例子", "跳过")
+- ✅ Progress indicator ("Understanding: 60% verified", "3/5 questions")
+- ✅ Celebration animations for verified understanding
+- ✅ Encouraging feedback for escalations
+- ✅ Mobile responsive design
+- ✅ Accessibility (ARIA labels, keyboard navigation)
 
 **Deliverables:**
-- Production-ready feature
-- Full bilingual support
-- Comprehensive test coverage
+- Beautiful learning material modal with:
+  - Acknowledgment section (warm, encouraging tone)
+  - Contrast section (highlight the misconception)
+  - Visual aid (flow diagram or illustration)
+  - Analogy (relatable real-world example)
+  - Key principle (memorable takeaway)
+  - Memory trick (mnemonic)
+- Smooth transitions between teaching, verification, escalation states
+- Visual feedback for all user actions
+- Works seamlessly on mobile and desktop
+
+### Phase 6: Session Analytics & Intelligent Reporting (Week 6-7) | 会话分析
+
+**Goals:**
+- ✅ Session persistence (localStorage + optional backend)
+- ✅ **Misconception analytics dashboard**:
+  - Most common error types
+  - Concepts requiring most escalations
+  - Learning material effectiveness scores
+  - Time spent per misconception type
+- ✅ Summary screen with insights
+- ✅ **Adaptive recommendations** (e.g., "You struggled with process flow concepts - review this topic")
+- ✅ Retry option with different 20% selection
+- ✅ Export session report (JSON/PDF)
+
+**Deliverables:**
+- Complete learning session flow with rich analytics
+- Summary shows:
+  - Overall score
+  - Questions answered correctly on first try
+  - Misconceptions identified and addressed
+  - Average escalation level
+  - Time per question
+  - Understanding verification rate
+- Intelligent insights: "You had difficulty with input-output relationships. We recommend reviewing cause-effect diagrams."
+- Export-friendly session data for teachers
+- Retry same diagram with new questions
 
 ---
 
 ## ⚠️ Potential Challenges
+
+### 0. Diagram Validation | 图表验证 ✅ ADDRESSED
+
+**Challenge**: Users might try to start learning mode with incomplete diagrams (placeholders, empty nodes)
+
+**Solution** (Already Designed):
+- Pre-validation before entering learning mode
+- Real-time button state management (disabled when invalid)
+- Clear error messages listing incomplete nodes
+- Reuse existing placeholder detection patterns
+- Automatic validation on node edits
+
+**Status**: ✅ Fully designed and specified in document
 
 ### 1. Node Selection Strategy | 节点选择策略
 
@@ -716,6 +1936,153 @@ class LearningSession {
 - Full-screen question panel on mobile
 - Swipe gesture to switch between diagram and questions
 - Simplified UI for mobile devices
+
+---
+
+## 📦 Dependencies & Technology Stack
+
+### New Python Packages | 新增Python包
+
+Add to `requirements.txt`:
+
+```txt
+# ============================================================================
+# LangChain Framework for Intelligent Tutoring System
+# ============================================================================
+langchain>=0.1.0              # Core LangChain framework
+langchain-openai>=0.0.5       # OpenAI LLM integration for LangChain
+langchain-community>=0.0.12   # Community tools and integrations
+
+# Note: LangChain will use the existing Qwen LLM client configuration
+# through OpenAI-compatible API interface
+```
+
+### Existing Dependencies (No Changes)
+
+```txt
+# Already in requirements.txt:
+flask>=3.0.0
+openai>=1.6.1     # For Qwen API calls
+requests>=2.31.0
+python-dotenv>=1.0.0
+```
+
+### Frontend Dependencies (Already Available)
+
+```javascript
+// Already loaded in templates:
+- d3.js v7 (for rendering)
+- Native browser APIs (Fetch, localStorage, DOM)
+// No new frontend dependencies needed!
+```
+
+### LangChain Configuration | LangChain配置
+
+**Integration with Existing LLM Client:**
+
+```python
+# File: agents/learning_agent.py
+
+from langchain_openai import ChatOpenAI
+from llm_clients import get_qwen_turbo_client
+import settings
+
+# Configure LangChain to use existing Qwen client
+def get_langchain_llm():
+    """
+    Configure LangChain to use Qwen through OpenAI-compatible interface.
+    Reuses existing API configuration from settings.py.
+    """
+    llm = ChatOpenAI(
+        model=settings.QWEN_MODEL,  # e.g., "qwen-turbo-latest"
+        openai_api_key=settings.QWEN_API_KEY,
+        openai_api_base=settings.QWEN_API_URL,
+        temperature=0.7,  # Slightly creative for teaching materials
+        max_tokens=1500,  # Enough for detailed explanations
+        timeout=30,       # 30s timeout for complex analyses
+    )
+    return llm
+
+# Agent will use this LLM for all tool calls
+```
+
+### File Structure Changes | 文件结构变更
+
+```
+MindGraph/
+├── agents/
+│   ├── learning/                          # NEW DIRECTORY
+│   │   ├── __init__.py
+│   │   ├── learning_agent.py              # Main LangChain agent
+│   │   ├── misconception_analyzer.py      # Tool 1: Analyze errors
+│   │   ├── material_generator.py          # Tool 2: Generate teaching materials
+│   │   ├── question_generator.py          # Tool 3: Multi-angle questions
+│   │   ├── knowledge_base.py              # Tool 4: Common misconceptions DB
+│   │   └── prompts.py                     # Educational prompt templates
+│   └── ... (existing agent files)
+│
+├── api_routes.py                          # UPDATE: Add 4 new endpoints
+│
+├── static/js/editor/
+│   ├── learning-mode-manager.js           # NEW: Main learning mode controller
+│   ├── learning-material-renderer.js      # NEW: Render visual aids/analogies
+│   ├── diagram-validator.js               # NEW: Pre-validation logic
+│   └── ... (existing editor files)
+│
+├── prompts/
+│   └── learning_mode.py                   # NEW: LLM prompts for learning mode
+│
+└── requirements.txt                       # UPDATE: Add LangChain packages
+```
+
+### Testing Dependencies (Optional)
+
+```txt
+# For testing the LangChain agent:
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+langchain-test>=0.1.0        # LangChain testing utilities
+```
+
+### Installation Commands | 安装命令
+
+```bash
+# Install new dependencies
+pip install -r requirements.txt
+
+# Verify LangChain installation
+python -c "import langchain; print(langchain.__version__)"
+
+# Test Qwen connection through LangChain
+python -c "from agents.learning.learning_agent import get_langchain_llm; llm = get_langchain_llm(); print('LLM configured successfully')"
+```
+
+### Environment Variables (No Changes Needed)
+
+```bash
+# .env file - Already has everything we need:
+QWEN_API_KEY=sk-...
+QWEN_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-turbo-latest
+```
+
+**Note**: LangChain will automatically use these existing environment variables through the OpenAI-compatible interface. No new API keys or configurations needed!
+
+### Dependency Rationale | 依赖说明
+
+**Why LangChain?**
+- **Agent Architecture**: Built-in support for tool-calling agents
+- **Memory Management**: ConversationBufferMemory for tracking student progress
+- **Chain Composition**: Easy to build multi-step pedagogical workflows
+- **Debugging**: LangSmith integration for monitoring agent decisions (optional)
+- **Flexibility**: Easy to swap LLM providers or add new tools
+
+**Why Not Custom Implementation?**
+- LangChain provides battle-tested agent frameworks
+- Reduces development time by ~70%
+- Active community and regular updates
+- Better error handling and retry logic
+- Built-in observability tools
 
 ---
 
@@ -799,19 +2166,79 @@ class LearningSession {
 
 ### Learning Science Principles Applied | 应用的学习科学原理
 
-1. **Active Recall**: Forcing retrieval strengthens memory
-2. **Spaced Repetition**: Future feature for long-term retention
-3. **Contextual Learning**: Questions include relationships
-4. **Progressive Disclosure**: Hints reveal information gradually
-5. **Immediate Feedback**: Real-time validation and correction
-6. **Gamification**: Scoring and progress tracking increase motivation
+This Learning Mode applies **evidence-based learning science**:
+
+1. **Active Recall** (Retrieval Practice)
+   - **Research**: Karpicke & Roediger (2008) - retrieval practice produces better retention than re-reading
+   - **Implementation**: Students must actively retrieve node content from memory
+   - **Benefit**: Strengthens neural pathways, not just recognition
+
+2. **Educational Scaffolding** (Vygotsky's ZPD)
+   - **Research**: Vygotsky's Zone of Proximal Development - learners need guided support
+   - **Implementation**: 3-level progressive hints that guide without giving away
+   - **Benefit**: Students learn HOW to think, not just WHAT to remember
+
+3. **Contextual Learning** (Constructivism)
+   - **Research**: Ausubel's Meaningful Learning Theory - new info connects to existing knowledge
+   - **Implementation**: Hints reference visible nodes and relationships
+   - **Benefit**: Information embedded in meaningful context, not isolated facts
+
+4. **Error Analysis** (Growth Mindset)
+   - **Research**: Dweck's Growth Mindset - mistakes are learning opportunities
+   - **Implementation**: Hints analyze WHY wrong answer makes sense, then correct the mental model
+   - **Benefit**: Students learn from errors instead of feeling defeated
+
+5. **Immediate Feedback** (Behaviorist Learning)
+   - **Research**: Skinner's Reinforcement Theory - immediate feedback reinforces learning
+   - **Implementation**: Real-time validation and encouraging messages
+   - **Benefit**: Rapid learning cycles, positive reinforcement
+
+6. **Metacognition** (Self-Regulated Learning)
+   - **Research**: Flavell's Metacognitive Theory - thinking about thinking improves learning
+   - **Implementation**: Hints explain the REASONING process, not just the answer
+   - **Benefit**: Students develop problem-solving strategies
+
+7. **Elaborative Interrogation**
+   - **Research**: Pressley et al. (1987) - asking "why" questions improves retention
+   - **Implementation**: Hints ask "Why might this be the answer?" and "How does this connect?"
+   - **Benefit**: Deeper processing leads to better memory
+
+8. **Distributed Practice** (Future Feature)
+   - **Research**: Cepeda et al. (2006) - spacing learning sessions improves retention
+   - **Implementation**: v2.0 will include spaced repetition for long-term memory
+   - **Benefit**: Combat forgetting curve
+
+### What Makes This Different from Other Learning Tools | 与其他学习工具的区别
+
+| Aspect | Traditional Flashcards | Typical Quiz Apps | **MindGraph Learning Mode** |
+|--------|------------------------|-------------------|----------------------------|
+| **Context** | Isolated facts | Isolated questions | Embedded in visual diagram structure |
+| **Hints** | None or generic | "Try again" | Progressive, context-rich, educational |
+| **Error Handling** | Mark wrong, move on | Red X, score penalty | Analyze error, teach correct thinking |
+| **Relationships** | Not shown | Not emphasized | Central to every hint (siblings, parents, etc.) |
+| **Learning Style** | Rote memorization | Testing knowledge | Teaching understanding |
+| **Feedback** | Correct/Wrong | % Score | Educational explanation + encouragement |
+| **Pedagogy** | Behaviorist | Summative assessment | Formative learning + scaffolding |
+
+### Educational Value Proposition | 教育价值主张
+
+**"From Memorization to Understanding"**
+
+Traditional learning tools focus on **knowing the answer**.  
+MindGraph Learning Mode focuses on **understanding the relationships**.
+
+Examples:
+- **Traditional**: "What is photosynthesis?" → "Process where plants make food"
+- **Learning Mode**: "What energy source drives photosynthesis, working with water and CO₂?" → Teaches the **system**, not just the term
 
 ### Target Users | 目标用户
 
-- **K-12 Students**: Learn curriculum topics (历史, 科学, 数学)
-- **Teachers**: Create interactive practice materials
-- **Professional Learners**: Memorize business concepts, technical topics
-- **Language Learners**: Vocabulary and concept retention
+- **K-12 Students**: Learn curriculum topics with context (历史, 科学, 数学)
+- **Teachers**: Create interactive practice with built-in scaffolding
+- **Professional Learners**: Master business concepts, technical topics with relationships
+- **Language Learners**: Vocabulary in meaningful semantic networks
+- **Visual Learners**: Benefit from diagram-based spatial memory
+- **Anyone preparing for exams**: Active recall beats passive re-reading
 
 ---
 
