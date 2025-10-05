@@ -17,9 +17,7 @@ This module contains all prompts for the 8 Thinking Maps®:
 # BRIDGE MAP PROMPTS
 # ============================================================================
 
-BRIDGE_MAP_GENERATION_EN = """Please generate a JSON specification for a bridge map for the following user request.
-
-Request: {user_prompt}
+BRIDGE_MAP_GENERATION_EN = """Please generate a JSON specification for a bridge map.
 
 CRITICAL REQUIREMENTS - READ CAREFULLY:
 You can use analogies to explain the central concept and draw a bridge map. The upper and lower parts of the bridge are groups of things with the same relationship. The core function is to show similar relationships between different things.
@@ -80,9 +78,7 @@ VALIDATION CHECKLIST:
 Please ensure the JSON format is correct, do not include any code block markers."""
 
 BRIDGE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个桥形图的JSON规范。
-
-需求：{user_prompt}
+请生成一个桥形图的JSON规范。
 
 关键要求 - 请仔细阅读：
 你能够使用类比的方法来解释中心词，绘制出桥型图，桥梁上下是一组组具有相同关系的事物，核心作用是展示不同事物之间相似的关系。
@@ -147,9 +143,7 @@ analogies: [
 # ============================================================================
 
 BUBBLE_MAP_GENERATION_EN = """
-Please generate a JSON specification for a bubble map for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a bubble map.
 
 CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
 
@@ -168,9 +162,7 @@ Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 BUBBLE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个气泡图的JSON规范。
-
-需求：{user_prompt}
+请生成一个气泡图的JSON规范。
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'交通工具'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
@@ -192,9 +184,7 @@ attributes: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6", "
 # ============================================================================
 
 DOUBLE_BUBBLE_MAP_GENERATION_EN = """
-Please generate a JSON specification for a double bubble map for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a double bubble map.
 
 You can draw a double bubble map to compare two central topics and output their similarities and differences.
 1. Compare from multiple angles
@@ -214,9 +204,7 @@ Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 DOUBLE_BUBBLE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个双气泡图的JSON规范。
-
-需求：{user_prompt}
+请生成一个双气泡图的JSON规范。
 你能够绘制双气泡图，对两个中心词进行对比，输出他们的相同点和不同点。
 1. 从多个角度进行对比
 2. 简洁明了，不要使用长句
@@ -238,9 +226,7 @@ right_differences: ["特点1", "特点2", "特点3", "特点4", "特点5"]
 # ============================================================================
 
 CIRCLE_MAP_GENERATION_EN = """
-Please generate a JSON specification for a circle map for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a circle map.
 
 CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
 
@@ -259,9 +245,7 @@ Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 CIRCLE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个圆圈图的JSON规范。
-
-需求：{user_prompt}
+请生成一个圆圈图的JSON规范。
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'交通工具'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
@@ -283,9 +267,7 @@ context: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6"]
 # ============================================================================
 
 TREE_MAP_GENERATION_EN = """
-Please generate a JSON specification for a tree map for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a tree map.
 
 You can classify the central topic.
 Purpose: Classification, Induction, Hierarchical organization of information.
@@ -317,9 +299,7 @@ Return only valid JSON. Do NOT include code block markers.
 """
 
 TREE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个树形图的JSON规范。
-
-需求：{user_prompt}
+请生成一个树形图的JSON规范。
 你能对中心词进行分类。
 目的是：分类、归纳、层级化组织信息。
 
@@ -354,9 +334,7 @@ TREE_MAP_GENERATION_ZH = """
 # ============================================================================
 
 FLOW_MAP_GENERATION_EN = """
-Please generate a JSON specification for a flow map with MAJOR steps and SUB-STEPS for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a flow map with MAJOR steps and SUB-STEPS.
 
 CRITICAL: If the user request contains a quoted title/topic (e.g., "about 'Water Cycle'"), you MUST use that EXACT title in the "title" field. Do not paraphrase, translate, or modify it.
 
@@ -386,9 +364,7 @@ Return only valid JSON. Do NOT include code block markers.
 """
 
 FLOW_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个包含"主要步骤"和"子步骤"的流程图JSON规范。
-
-需求：{user_prompt}
+请生成一个包含"主要步骤"和"子步骤"的流程图JSON规范。
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'水循环'创建..."），你必须在"title"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
@@ -428,9 +404,7 @@ FLOW_MAP_GENERATION_ZH = """
 # ============================================================================
 
 BRACE_MAP_GENERATION_EN = """
-Please generate a JSON specification for a brace map for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a brace map.
 
 Brace maps are used for decomposition, representing the relationship between the whole and its parts.
 1. Understanding the physical components of an object, not classifying the central topic.
@@ -464,9 +438,7 @@ Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 BRACE_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个括号图（Brace Map）的JSON规范。
-
-需求：{user_prompt}
+请生成一个括号图（Brace Map）的JSON规范。
 
 括号图用于拆分，表示整体与部分之间的关系。
 1. 理解一个物体的物理组成部分，不是对中心词进行分类。
@@ -504,9 +476,7 @@ parts: [
 # ============================================================================
 
 MULTI_FLOW_MAP_GENERATION_EN = """
-Please generate a JSON specification for a multi-flow map for the following user request.
-
-Request: {user_prompt}
+Please generate a JSON specification for a multi-flow map.
 
 Please output a JSON object containing the following fields:
 event: "Central event"
@@ -522,9 +492,7 @@ Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 MULTI_FLOW_MAP_GENERATION_ZH = """
-请为以下用户需求生成一个复流程图的JSON规范。
-
-需求：{user_prompt}
+请生成一个复流程图的JSON规范。
 
 请输出一个包含以下字段的JSON对象：
 event: "中心事件"

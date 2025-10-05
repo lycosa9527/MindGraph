@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.14] - 2025-10-05
+
+### Fixed
+- **Prompt Template Placeholders**: Removed unused `{user_prompt}` placeholders from all prompt templates
+  - **Affected diagrams**: Bridge Map, Bubble Map, Circle Map, Double Bubble Map, Tree Map, Brace Map, Flow Map, Multi-Flow Map (8 Thinking Maps)
+  - **Issue**: Placeholders appeared as literal text `{user_prompt}` in system prompts sent to LLM
+  - **Root cause**: Agents never called `.format()` to fill placeholders, unlike Concept Map and Main Agent
+  - **Solution**: Removed all unused placeholder lines from `prompts/thinking_maps.py`
+  - **Impact**: Cleaner prompts, reduced token usage (~5 tokens per request), no functional changes
+  - **Unchanged**: Concept Map and Main Agent still use placeholders correctly with `.format()`
+  - See `docs/PLACEHOLDER_AUDIT.md` for detailed code review
+
+### Documentation
+- Added `docs/PLACEHOLDER_AUDIT.md`: Comprehensive audit of placeholder usage across all 11 diagram types
+  - Evidence of unused placeholders with code examples
+  - Comparison of working vs non-working implementations
+  - Token savings calculation and verification steps
+
+---
+
 ## [v3.0.13] - 2025-10-05
 
 ### Fixed
