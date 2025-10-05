@@ -116,14 +116,51 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         .attr('font-weight', 'bold')
         .text(spec.title);
 
-    // Vertical layout
+    // RENDERING ORDER: Define arrow marker FIRST, draw arrows, THEN draw nodes on top
+    // Arrow marker definition
+    svg.append('defs').append('marker')
+        .attr('id', 'arrowhead')
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 8)
+        .attr('refY', 0)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('fill', '#666');
+
+    // Vertical layout - calculate positions first
     const centerX = rw / 2;
     let yCursor = titleY + 40;
-
-    nodes.forEach((n, i) => {
+    
+    // Calculate all node positions
+    const nodePositions = nodes.map((n, i) => {
         const x = centerX;
         const y = yCursor + n.h / 2;
+        const pos = { ...n, x, y, index: i };
+        yCursor += n.h + stepSpacing;
+        return pos;
+    });
 
+    // Draw arrows FIRST (underneath nodes)
+    nodePositions.forEach((n, i) => {
+        if (i < nodePositions.length - 1) {
+            const nextTopY = n.y + n.h / 2 + 6;
+            const nextBottomY = nextTopY + stepSpacing - 12;
+            svg.append('line')
+                .attr('x1', n.x)
+                .attr('y1', nextTopY)
+                .attr('x2', n.x)
+                .attr('y2', nextBottomY)
+                .attr('stroke', '#666')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrowhead)');
+        }
+    });
+
+    // Draw nodes and text ON TOP of arrows
+    nodePositions.forEach((n) => {
         let fill, stroke, strokeWidth, textColor;
         switch (n.step.type) {
             case 'start':
@@ -139,10 +176,10 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         if (n.step.type === 'decision') {
             // Diamond using adaptive width/height
             const points = [
-                `${x},${y - n.h/2}`,
-                `${x + n.w/2},${y}`,
-                `${x},${y + n.h/2}`,
-                `${x - n.w/2},${y}`
+                `${n.x},${n.y - n.h/2}`,
+                `${n.x + n.w/2},${n.y}`,
+                `${n.x},${n.y + n.h/2}`,
+                `${n.x - n.w/2},${n.y}`
             ].join(' ');
             svg.append('polygon')
                 .attr('points', points)
@@ -151,8 +188,8 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
                 .attr('stroke-width', strokeWidth);
         } else {
             svg.append('rect')
-                .attr('x', x - n.w/2)
-                .attr('y', y - n.h/2)
+                .attr('x', n.x - n.w/2)
+                .attr('y', n.y - n.h/2)
                 .attr('width', n.w)
                 .attr('height', n.h)
                 .attr('rx', nodeRadius)
@@ -162,43 +199,14 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         }
 
         svg.append('text')
-            .attr('x', x)
-            .attr('y', y)
+            .attr('x', n.x)
+            .attr('y', n.y)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', textColor || '#fff')
             .attr('font-size', THEME.fontNode)
             .text(n.text);
-
-        // Arrow to next node
-        if (i < nodes.length - 1) {
-            const nextTopY = y + n.h / 2 + 6;
-            const nextBottomY = nextTopY + stepSpacing - 12;
-            svg.append('line')
-                .attr('x1', x)
-                .attr('y1', nextTopY)
-                .attr('x2', x)
-                .attr('y2', nextBottomY)
-                .attr('stroke', '#666')
-                .attr('stroke-width', 2)
-                .attr('marker-end', 'url(#arrowhead)');
-        }
-
-        yCursor += n.h + stepSpacing;
     });
-
-    // Arrow marker
-    svg.append('defs').append('marker')
-        .attr('id', 'arrowhead')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 8)
-        .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
-        .attr('orient', 'auto')
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#666');
 
     // Watermark removed from canvas display - will be added during PNG export only
 }
@@ -441,7 +449,73 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         stepCenters.push(stepYCenter);
     }
     
-    // Step 3: Draw main steps at calculated positions
+    // RENDERING ORDER: Draw all connectors FIRST, then nodes on top
+    // Step 3a: Draw arrows between main steps (underneath)
+    stepSizes.forEach((s, index) => {
+        const stepXCenter = centerX;
+        const stepYCenter = stepCenters[index];
+
+        // Arrow to next step (if there is one)
+        if (index < stepSizes.length - 1) {
+            const nextStepYCenter = stepCenters[index + 1];
+            const currentBottom = stepYCenter + s.h / 2 + 6;
+            const nextTop = nextStepYCenter - stepSizes[index + 1].h / 2 - 6;
+            
+            if (nextTop > currentBottom) {
+                svg.append('line')
+                    .attr('x1', stepXCenter)
+                    .attr('y1', currentBottom)
+                    .attr('x2', stepXCenter)
+                    .attr('y2', nextTop)
+                    .attr('stroke', '#666')
+                    .attr('stroke-width', 2);
+                svg.append('polygon')
+                    .attr('points', `${stepXCenter},${nextTop} ${stepXCenter - 5},${nextTop - 10} ${stepXCenter + 5},${nextTop - 10}`)
+                    .attr('fill', '#666');
+            }
+        }
+    });
+
+    // Step 3b: Draw L-shaped connectors from steps to substeps (still underneath)
+    allSubstepPositions.forEach((stepPositions, stepIdx) => {
+        const stepYCenter = stepCenters[stepIdx];
+        const stepRightX = centerX + stepSizes[stepIdx].w / 2;
+        
+        stepPositions.forEach((substep, nodeIdx) => {
+            // Draw L-shaped connector from step to substep
+            const substepCenterY = substep.y + substep.h / 2;
+            const midX = stepRightX + Math.max(8, subOffsetX / 2);
+            
+            // Horizontal line from step
+            svg.append('line')
+                .attr('x1', stepRightX)
+                .attr('y1', stepYCenter)
+                .attr('x2', midX)
+                .attr('y2', stepYCenter)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+            
+            // Vertical line to substep level
+            svg.append('line')
+                .attr('x1', midX)
+                .attr('y1', stepYCenter)
+                .attr('x2', midX)
+                .attr('y2', substepCenterY)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+            
+            // Horizontal line to substep
+            svg.append('line')
+                .attr('x1', midX)
+                .attr('y1', substepCenterY)
+                .attr('x2', substep.x)
+                .attr('y2', substepCenterY)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+        });
+    });
+
+    // Step 3c: NOW draw main step nodes ON TOP of connectors
     stepSizes.forEach((s, index) => {
         const stepXCenter = centerX;
         const stepYCenter = stepCenters[index];
@@ -475,26 +549,6 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-step-index', index)
             .attr('cursor', 'pointer')
             .text(s.text);
-
-        // Arrow to next step (if there is one)
-        if (index < stepSizes.length - 1) {
-            const nextStepYCenter = stepCenters[index + 1];
-            const currentBottom = stepYCenter + s.h / 2 + 6;
-            const nextTop = nextStepYCenter - stepSizes[index + 1].h / 2 - 6;
-            
-            if (nextTop > currentBottom) {
-                svg.append('line')
-                    .attr('x1', stepXCenter)
-                    .attr('y1', currentBottom)
-                    .attr('x2', stepXCenter)
-                    .attr('y2', nextTop)
-                    .attr('stroke', '#666')
-                    .attr('stroke-width', 2);
-                svg.append('polygon')
-                    .attr('points', `${stepXCenter},${nextTop} ${stepXCenter - 5},${nextTop - 10} ${stepXCenter + 5},${nextTop - 10}`)
-                    .attr('fill', '#666');
-            }
-        }
     });
 
     // Calculate accurate canvas dimensions based on actual content positions
@@ -574,36 +628,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('cursor', 'pointer')
                 .text(substep.text);
             
-            // Draw L-shaped connector from step to substep
-            const substepCenterY = substep.y + substep.h / 2;
-            const midX = stepRightX + Math.max(8, subOffsetX / 2);
-            
-            // Horizontal line from step
-            svg.append('line')
-                .attr('x1', stepRightX)
-                .attr('y1', stepYCenter)
-                .attr('x2', midX)
-                .attr('y2', stepYCenter)
-                .attr('stroke', '#888')
-                .attr('stroke-width', 1.5);
-            
-            // Vertical line to substep level
-            svg.append('line')
-                .attr('x1', midX)
-                .attr('y1', stepYCenter)
-                .attr('x2', midX)
-                .attr('y2', substepCenterY)
-                .attr('stroke', '#888')
-                .attr('stroke-width', 1.5);
-            
-            // Horizontal line to substep
-            svg.append('line')
-                .attr('x1', midX)
-                .attr('y1', substepCenterY)
-                .attr('x2', substep.x)
-                .attr('y2', substepCenterY)
-                .attr('stroke', '#888')
-                .attr('stroke-width', 1.5);
+            // L-shaped connectors already drawn earlier (Step 3b) for proper z-order
         });
     });
     
@@ -852,10 +877,10 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .attr("stroke", "#666666") // Changed to grey
             .attr("stroke-width", 2); // Use attr instead of style
         
-        // 4.2 Add "as" text above the triangle - EXACTLY as in old renderer
+        // 4.2 Add "as" text below the triangle - improved positioning
         svg.append("text")
             .attr("x", xPos)
-            .attr("y", height/2 - triangleSize - 8) // Closer to triangle
+            .attr("y", height/2 + 20) // Positioned below the line with comfortable spacing
             .attr("text-anchor", "middle")
             .text("as")
             .style("font-weight", "bold")
@@ -1065,13 +1090,32 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     // Cleanup temporary SVG
     tempSvg.remove();
     
+    // RENDERING ORDER: Draw ALL arrows FIRST, then ALL nodes on top
     // Pre-compute distinct attachment points on the event rectangle to avoid stacking
     const eventLeftSlots = computeEdgeSlots(centerX, centerY, eventW, eventH, causes.length, 'left', 10);
     const eventRightSlots = computeEdgeSlots(centerX, centerY, eventW, eventH, effects.length, 'right', 10);
 
-    // Draw causes and arrows to event (right center of cause -> distributed left edge of event)
+    // STEP 1: Draw all arrows (underneath nodes)
+    // Draw arrows from causes to event
     causes.forEach((n, idx) => {
-        const rectNode = svg.append('rect')
+        const start = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'right');
+        const slotIndex = Math.min(eventLeftSlots.length - 1, Math.max(0, causes.indexOf(n)));
+        const end = eventLeftSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'left');
+        drawArrow(start.x, start.y, end.x, end.y, THEME.linkColorCause);
+    });
+    
+    // Draw arrows from event to effects
+    effects.forEach((n, idx) => {
+        const slotIndex = Math.min(eventRightSlots.length - 1, Math.max(0, effects.indexOf(n)));
+        const start = eventRightSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'right');
+        const end = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'left');
+        drawArrow(start.x, start.y, end.x, end.y, THEME.linkColorEffect);
+    });
+
+    // STEP 2: Draw all nodes ON TOP of arrows
+    // Draw cause nodes
+    causes.forEach((n, idx) => {
+        svg.append('rect')
             .attr('x', n.cx - n.w / 2)
             .attr('y', n.cy - n.h / 2)
             .attr('width', n.w)
@@ -1099,14 +1143,9 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-text-for', `multi-flow-cause-${idx}`)
             .attr('cursor', 'pointer')
             .text(n.text);
-        
-        const start = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'right');
-        const slotIndex = Math.min(eventLeftSlots.length - 1, Math.max(0, causes.indexOf(n)));
-        const end = eventLeftSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'left');
-        drawArrow(start.x, start.y, end.x, end.y, THEME.linkColorCause);
     });
     
-    // Draw effects and arrows from event (distributed right edge of event -> left center of effect)
+    // Draw effect nodes
     effects.forEach((n, idx) => {
         svg.append('rect')
             .attr('x', n.cx - n.w / 2)
@@ -1136,14 +1175,9 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-text-for', `multi-flow-effect-${idx}`)
             .attr('cursor', 'pointer')
             .text(n.text);
-        
-        const slotIndex = Math.min(eventRightSlots.length - 1, Math.max(0, effects.indexOf(n)));
-        const start = eventRightSlots[slotIndex] || sideCenterPoint(centerX, centerY, eventW, eventH, 'right');
-        const end = sideCenterPoint(n.cx, n.cy, n.w, n.h, 'left');
-        drawArrow(start.x, start.y, end.x, end.y, THEME.linkColorEffect);
     });
     
-    // Draw central event (rectangle) - AFTER arrows so it appears on top
+    // Draw central event node (on top of everything)
     svg.append('rect')
         .attr('x', centerX - eventW / 2)
         .attr('y', centerY - eventH / 2)

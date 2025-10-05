@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.12] - 2025-10-05
+
+### Fixed
+- **CRITICAL: Z-Order Issues Across All Diagrams**: Connector lines appearing on top of nodes
+  - **Root Cause**: SVG rendering order - elements drawn later appear on top
+  - **Impact**: Lines, arrows, braces, and connectors overlapping text and boxes
+  - **Solution**: Restructured all renderers to draw connectors FIRST, then nodes on top
+  - **Result**: Clean, professional appearance with proper layering across all 10+ diagram types
+
+- **Brace Map Z-Order**: Moved brace path rendering before topic node drawing
+  - Curly braces now appear underneath topic text box
+  - Ensures topic text remains clearly readable
+  - Preserved all interactive editing functionality
+
+- **Tree Map Z-Order**: Moved T-connector lines before all node rendering
+  - **CRITICAL**: Fixed regression where T-connectors were drawing AFTER nodes
+  - Vertical trunk, horizontal crossbar, and branches now drawn first
+  - Root, category, and leaf nodes render on top (with borders)
+  - Removed duplicate T-connector drawing code at end of function
+  - Clean connector appearance without obscuring text or node borders
+
+- **Concept Map Z-Order**: Restructured edge rendering for proper layering
+  - Curved relationship arrows drawn before concept boxes
+  - Both main layout and fallback layout paths fixed
+  - Edge labels positioned with collision avoidance
+  - Nodes and text render cleanly on top of edges
+
+- **Flowchart Z-Order**: Moved arrow markers and connectors before step boxes
+  - Arrow marker definitions created first
+  - All connector lines drawn before any nodes
+  - Diamond decision boxes and rectangular steps appear on top
+  - Clean flow visualization without line overlap
+
+- **Flow Map Z-Order**: Complex multi-layer rendering order fixed
+  - Step-to-step arrows drawn first
+  - L-shaped substep connectors drawn second
+  - Main step boxes drawn third
+  - Substep boxes drawn last on top
+  - Proper layering for complex hierarchical flows
+
+- **Multi-Flow Map Z-Order**: Cause-effect arrows repositioned
+  - All arrows (cause→event, event→effect) drawn first
+  - Cause nodes drawn second
+  - Effect nodes drawn third
+  - Central event node drawn last on top
+  - Clean visualization with proper arrow layering
+
+### Changed
+- **Canvas Watermark Removal**: Cleaner editing experience
+  - Removed "MindGraph" watermark from all canvas displays
+  - Watermarks only added during PNG export
+  - Applies to: Brace Map, Tree Map
+  - Verified all other diagram types already clean
+  - Consistent behavior across all 10+ diagram types
+
+- **Bridge Map "as" Label Positioning**: Improved visual clarity
+  - Moved "as" separator text from above the main line to below
+  - Reduces visual clutter in the upper area
+  - Better visual hierarchy with analogy pairs above, separators below
+  - Changed position from `height/2 - triangleSize - 8` to `height/2 + 20`
+  - Maintains clear readability while improving layout balance
+
+- **Bridge Map**: Verified correct z-order (main line before analogy pairs)
+  - Already rendering in correct order
+  - No changes needed
+
+- **Mind Map, Bubble Maps**: Verified correct z-order
+  - Mind Map: Connection lines before nodes ✓
+  - Bubble Map: Lines before circles ✓
+  - Circle Map: Lines before circles ✓
+  - Double Bubble Map: Lines before circles ✓
+  - No changes needed
+
+### Technical Details
+- **Rendering Order Pattern**: Consistent 3-layer approach
+  1. **Layer 1 (Bottom)**: All connector lines, arrows, paths, curves
+  2. **Layer 2 (Middle)**: All node boxes/shapes (rectangles, circles, polygons)
+  3. **Layer 3 (Top)**: All text labels
+  - Ensures proper z-index stacking across all diagram types
+  - **Node Borders**: SVG `<rect>` elements include both `fill` and `stroke` attributes
+    - Both fill and border render as a single element
+    - Z-order applies to the entire element (fill + border together)
+    - Verified all node borders render correctly on top of connector lines
+
+- **FlowMap Rendering Optimization**: Eliminated interleaved drawing
+  - Pre-calculated all node positions
+  - Batch-rendered all connectors first
+  - Batch-rendered all nodes second
+  - Reduced DOM manipulation operations
+
+- **Concept Map Rendering**: Eliminated node duplication
+  - Calculated bounding boxes without drawing
+  - Used temporary text elements for measurement
+  - Drew edges based on calculated positions
+  - Final node drawing pass with proper attributes
+
+- **Code Quality**: Added clear comments for rendering order
+  - `// RENDERING ORDER: Draw connectors FIRST, then nodes on top`
+  - `// Step 1: Draw all arrows (underneath nodes)`
+  - `// Step 2: Draw all nodes ON TOP of arrows`
+  - Improves maintainability and prevents future regressions
+
+- **Logging System Cleanup**: Removed all emoji characters from logging
+  - Removed emojis from `brace-renderer.js`, `tree-renderer.js`, `concept-map-renderer.js`
+  - Removed emojis from `modular-cache-manager.js`
+  - Professional, clean log output across all JavaScript files
+  - Improved log readability in production environments
+
+---
+
 ## [v3.0.11] - 2025-10-05
 
 ### Added

@@ -263,7 +263,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 Math.max(LAYOUT_CONFIG.minSpacingScale, Math.min(LAYOUT_CONFIG.maxSpacingScale, config.nodeSpacing)) : 
                 LAYOUT_CONFIG.defaultSpacingScale;
         
-        console.log('🔧 Using spacing scale:', spacingScale);
+        console.log('Using spacing scale:', spacingScale);
         
         const boxes = {};
         
@@ -279,7 +279,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 const scaled = { x: pos.x * spacingScale, y: pos.y * spacingScale };
                 const canvasPos = transformToCanvas(scaled);
                 
-                console.log('🔷 Drawing concept:', concept, {
+                console.log('Drawing concept:', concept, {
                     original: pos,
                     scaled: scaled,
                     canvas: canvasPos,
@@ -447,7 +447,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         });
     } else {
         // If no positions from agent, generate radial layout (from reference file)
-        console.log('🔄 No positions from agent, generating radial layout fallback...');
+        console.log('No positions from agent, generating radial layout fallback...');
         
         // Generate fallback positions using radial layout
         const N = Math.max(1, spec.concepts.length);
@@ -502,7 +502,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                     y: (height / 2) + (pos.y * scaleY)
                 };
                 
-                console.log('🔷 Drawing concept (fallback):', concept, canvasPos);
+                console.log('Drawing concept (fallback):', concept, canvasPos);
                 boxes[concept] = drawBox(canvasPos.x, canvasPos.y, concept, false);
             }
         });

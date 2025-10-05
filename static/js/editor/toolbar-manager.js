@@ -1590,8 +1590,9 @@ class ToolbarManager {
     handleReset() {
         if (!this.editor) return;
         
-        // Confirm with user
-        const confirmed = confirm('Are you sure you want to reset the canvas to a blank template? All current changes will be lost.');
+        // Confirm with user - language-aware message
+        const confirmMessage = this.getNotif('resetConfirm');
+        const confirmed = confirm(confirmMessage);
         if (!confirmed) return;
         
         console.log('Resetting canvas to blank template');

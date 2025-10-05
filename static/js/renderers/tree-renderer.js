@@ -14,7 +14,7 @@
 // Checking dependencies
 
 if (typeof window.MindGraphUtils === 'undefined') {
-    console.error('🌳 Tree renderer: MindGraphUtils not found! Please load shared-utilities.js first.');
+    console.error('Tree renderer: MindGraphUtils not found! Please load shared-utilities.js first.');
     // Don't continue if dependencies are missing
     throw new Error('MindGraphUtils not available - shared-utilities.js must be loaded first');
 }
@@ -22,7 +22,7 @@ if (typeof window.MindGraphUtils === 'undefined') {
 // Import required functions from shared utilities - with error handling
 // CRITICAL FIX: Don't redeclare addWatermark, use the global one
 if (typeof window.MindGraphUtils === 'undefined' || typeof window.MindGraphUtils.addWatermark !== 'function') {
-    console.error('🌳 Tree renderer: addWatermark function not found in MindGraphUtils');
+    console.error('Tree renderer: addWatermark function not found in MindGraphUtils');
     throw new Error('addWatermark function not available - shared-utilities.js must be loaded first');
 }
 
@@ -189,7 +189,50 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         rootX = width / 2; // fallback to center if no branches
     }
 
-    // Draw root node as rectangle
+    // RENDERING ORDER: Draw T-connector lines FIRST (underneath), then nodes on top
+    // ---------- T形连线实现 (Draw T-connectors FIRST for proper z-order) ----------
+    if (branchLayouts.length > 0) {
+        // 水平线 Y 坐标：根节点底部到子节点顶部的正中间
+        const rootBottom = rootY + rootBox.h / 2;
+        const branchTop = branchY - branchLayouts[0].branchBox.h / 2;
+        const tLineY = rootBottom + (branchTop - rootBottom) / 2;
+        
+        // 所有子节点 X 范围
+        const branchXs = branchLayouts.map(l => l.branchX);
+        const minX = Math.min(...branchXs);
+        const maxX = Math.max(...branchXs);
+        
+        // 垂直干线：根节点到底部中点
+        svg.append('line')
+            .attr('x1', rootX)
+            .attr('y1', rootY + rootBox.h / 2)
+            .attr('x2', rootX)
+            .attr('y2', tLineY)
+            .attr('stroke', '#bbb')
+            .attr('stroke-width', 2);
+        
+        // 水平线
+        svg.append('line')
+            .attr('x1', minX)
+            .attr('y1', tLineY)
+            .attr('x2', maxX)
+            .attr('y2', tLineY)
+            .attr('stroke', '#bbb')
+            .attr('stroke-width', 2);
+        
+        // 每个子节点竖线连接到水平线
+        branchLayouts.forEach(layout => {
+            svg.append('line')
+                .attr('x1', layout.branchX)
+                .attr('y1', tLineY)
+                .attr('x2', layout.branchX)
+                .attr('y2', branchY - layout.branchBox.h / 2)
+                .attr('stroke', '#bbb')
+                .attr('stroke-width', 2);
+        });
+    }
+
+    // Draw root node as rectangle (AFTER T-connectors for proper z-order)
     svg.append('rect')
         .attr('x', rootX - rootBox.w / 2)
         .attr('y', rootY - rootBox.h / 2)
@@ -330,47 +373,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         }
     });
 
-    // ---------- T形连线实现 ----------
-    if (branchLayouts.length > 0) {
-        // 水平线 Y 坐标：根节点底部到子节点顶部的正中间
-        const rootBottom = rootY + rootBox.h / 2;
-        const branchTop = branchY - branchLayouts[0].branchBox.h / 2;
-        const tLineY = rootBottom + (branchTop - rootBottom) / 2;
-        
-        // 所有子节点 X 范围
-        const branchXs = branchLayouts.map(l => l.branchX);
-        const minX = Math.min(...branchXs);
-        const maxX = Math.max(...branchXs);
-        
-        // 垂直干线：根节点到底部中点
-        svg.append('line')
-            .attr('x1', rootX)
-            .attr('y1', rootY + rootBox.h / 2)
-            .attr('x2', rootX)
-            .attr('y2', tLineY)
-            .attr('stroke', '#bbb')
-            .attr('stroke-width', 2);
-        
-        // 水平线
-        svg.append('line')
-            .attr('x1', minX)
-            .attr('y1', tLineY)
-            .attr('x2', maxX)
-            .attr('y2', tLineY)
-            .attr('stroke', '#bbb')
-            .attr('stroke-width', 2);
-        
-        // 每个子节点竖线连接到水平线
-        branchLayouts.forEach(layout => {
-            svg.append('line')
-                .attr('x1', layout.branchX)
-                .attr('y1', tLineY)
-                .attr('x2', layout.branchX)
-                .attr('y2', branchY - layout.branchBox.h / 2)
-                .attr('stroke', '#bbb')
-                .attr('stroke-width', 2);
-        });
-    }
+    // T-connectors already drawn at the beginning (before root node) for proper z-order
+    // This ensures connector lines appear UNDERNEATH all nodes (root, branches, and leaves)
 
     // Expand SVG height if content exceeds current height
     const finalNeededHeight = Math.ceil(requiredBottomY + padding);
@@ -378,53 +382,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         svg.attr('height', finalNeededHeight);
     }
     
-    // Watermark - matching mindmap style
-    const watermarkText = 'MindGraph';
-    
-    // Get SVG dimensions
-    const w = +svg.attr('width');
-    const h = +svg.attr('height');
-    
-    // Check if SVG uses viewBox
-    const viewBox = svg.attr('viewBox');
-    let watermarkX, watermarkY, watermarkFontSize;
-    
-    if (viewBox) {
-        // SVG uses viewBox - position within viewBox coordinate system
-        const viewBoxParts = viewBox.split(' ').map(Number);
-        const viewBoxWidth = viewBoxParts[2];
-        const viewBoxHeight = viewBoxParts[3];
-        
-        // Calculate font size based on viewBox dimensions
-        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
-        
-        // Calculate padding based on viewBox size
-        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
-        
-        // Position in lower right corner of viewBox
-        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
-        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
-    } else {
-        // SVG uses standard coordinate system
-        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
-        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
-        watermarkX = w - padding;
-        watermarkY = h - padding;
-    }
-    
-    // Add watermark with proper styling - matching mindmap
-    svg.append('text')
-        .attr('x', watermarkX)
-        .attr('y', watermarkY)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'alphabetic')
-        .attr('fill', '#2c3e50')  // Original dark blue-grey color
-        .attr('font-size', watermarkFontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif')
-        .attr('font-weight', '500')
-        .attr('opacity', 0.8)     // Original 80% opacity
-        .attr('pointer-events', 'none')
-        .text(watermarkText);
+    // Watermark removed from canvas display - will be added during PNG export only
+    // The export functionality will handle adding the watermark to the final image
     
     // Apply learning sheet text knockout if needed
     console.log('Tree renderer: Checking learning sheet metadata:', {

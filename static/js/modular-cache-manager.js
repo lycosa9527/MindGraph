@@ -146,7 +146,7 @@ class ModularCacheManager extends LazyJavaScriptCache {
             return moduleContents;
             
         } catch (error) {
-            console.error(`❌ Failed to load modules for ${graphType}:`, error);
+            console.error(`Failed to load modules for ${graphType}:`, error);
             throw error;
         }
     }
@@ -182,7 +182,7 @@ class ModularCacheManager extends LazyJavaScriptCache {
             await Promise.all(preloadPromises);
             // Common renderer modules preloaded successfully
         } catch (error) {
-            console.warn('⚠️ Some common modules failed to preload:', error);
+            console.warn('Some common modules failed to preload:', error);
         }
     }
     
