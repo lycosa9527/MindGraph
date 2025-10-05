@@ -501,23 +501,30 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     let contentBottom = 0;
     let contentRight = 0;
     
+    // Account for stroke width - half extends beyond the rect dimensions
+    const stepStrokeOffset = Math.ceil(THEME.stepStrokeWidth / 2);
+    
     // Find the bottom of main steps
     if (stepCenters.length > 0) {
         for (let i = 0; i < stepCenters.length; i++) {
-            const stepBottom = stepCenters[i] + stepSizes[i].h / 2;
-            const stepRight = centerX + stepSizes[i].w / 2;
+            const stepBottom = stepCenters[i] + stepSizes[i].h / 2 + stepStrokeOffset;
+            const stepRight = centerX + stepSizes[i].w / 2 + stepStrokeOffset;
             contentBottom = Math.max(contentBottom, stepBottom);
             contentRight = Math.max(contentRight, stepRight);
         }
     }
     
     // Find the bottom and right edge of substeps (which now control the layout)
+    // Account for stroke width - half extends beyond the rect dimensions
+    const substepStrokeWidth = Math.max(1, THEME.stepStrokeWidth - 1);
+    const strokeOffset = Math.ceil(substepStrokeWidth / 2);
+    
     for (let stepIdx = 0; stepIdx < allSubstepPositions.length; stepIdx++) {
         const stepPositions = allSubstepPositions[stepIdx];
         for (let nodeIdx = 0; nodeIdx < stepPositions.length; nodeIdx++) {
             const substep = stepPositions[nodeIdx];
-            const substepBottom = substep.y + substep.h;
-            const substepRight = substep.x + substep.w;
+            const substepBottom = substep.y + substep.h + strokeOffset; // Add stroke offset
+            const substepRight = substep.x + substep.w + strokeOffset;   // Add stroke offset
             contentBottom = Math.max(contentBottom, substepBottom);
             contentRight = Math.max(contentRight, substepRight);
         }

@@ -55,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added active element detection (INPUT, TEXTAREA, contentEditable)
   - Keyboard shortcuts (Ctrl+Z, Ctrl+A, etc.) properly ignored when typing
 
+- **Flow Map Border Rendering**: Fixed 1-pixel cutoff on substep bottom borders
+  - Added stroke width offset calculation for accurate SVG viewport dimensions
+  - Stroke extends half-width beyond rect dimensions (SVG rendering standard)
+  - Applied fix to both main steps and substeps for consistency
+
 - **Translation Corrections**: Fixed incorrect Chinese translations
   - Tree Map: 树状图 → 树形图 (more accurate terminology)
   - Flow Map: Updated default templates to use numbered patterns (步骤1, 子步骤1.1)
