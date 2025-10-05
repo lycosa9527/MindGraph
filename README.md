@@ -6,7 +6,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.0.11-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.0.14-brightgreen.svg)](CHANGELOG.md)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-success.svg)](CHANGELOG.md)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -42,9 +42,10 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
 - **Rich Editing Tools** | **丰富的编辑工具**
   - **Add/Delete Nodes**: Context-aware node operations for all diagram types | **添加/删除节点**: 所有图表类型的上下文感知节点操作
   - **Text Editing**: Double-click inline editing with properties panel | **文本编辑**: 双击内联编辑，带属性面板
-  - **Visual Styling**: Font size, color, style customization | **视觉样式**: 字体大小、颜色、样式自定义
+  - **Visual Styling**: Font size, color, style customization | **视觉样式**: 字体大小、颜色、样式自定化
   - **Line Mode**: Toggle black & white line-art mode for printing | **线稿模式**: 切换黑白线条模式用于打印
-  - **Undo/Redo**: Full history management | **撤销/重做**: 完整历史记录管理
+  - **Undo/Redo**: Full history management with state restoration (Ctrl+Z/Ctrl+Y) | **撤销/重做**: 完整历史记录管理与状态恢复（Ctrl+Z/Ctrl+Y）
+  - **Node Counter**: Real-time node count display for all diagram types | **节点计数**: 所有图表类型的实时节点计数显示
 
 - **AI-Powered Features** | **AI功能**
   - **Auto-Complete**: AI intelligently expands diagrams based on existing content | **自动完成**: AI根据现有内容智能扩展图表
@@ -151,8 +152,8 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
 
 ### Keyboard Shortcuts | 键盘快捷键
 
-- `Ctrl/Cmd + Z` - Undo | 撤销
-- `Ctrl/Cmd + Shift + Z` - Redo | 重做
+- `Ctrl/Cmd + Z` - Undo (restores previous state) | 撤销（恢复之前的状态）
+- `Ctrl/Cmd + Y` - Redo (restores undone action) | 重做（恢复撤销的操作）
 - `Delete` - Delete selected node(s) | 删除选定节点
 - `Double-click` - Edit node text | 编辑节点文本
 - `Esc` - Close panels/modals | 关闭面板/模态框
