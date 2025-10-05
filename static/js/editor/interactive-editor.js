@@ -534,9 +534,17 @@ class InteractiveEditor {
      * Handle keyboard shortcuts
      */
     handleKeyboardShortcut(event) {
-        // Delete selected nodes
+        // Ignore shortcuts if user is typing in an input field, textarea, or contenteditable element
+        const activeElement = document.activeElement;
+        const isTyping = activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.isContentEditable
+        );
+        
+        // Delete selected nodes (only if not typing in an input)
         if (event.key === 'Delete' || event.key === 'Backspace') {
-            if (this.selectedNodes.size > 0) {
+            if (!isTyping && this.selectedNodes.size > 0) {
                 event.preventDefault();
                 this.deleteSelectedNodes();
             }
@@ -544,20 +552,26 @@ class InteractiveEditor {
         
         // Undo
         if (event.ctrlKey && event.key === 'z') {
-            event.preventDefault();
-            this.undo();
+            if (!isTyping) {
+                event.preventDefault();
+                this.undo();
+            }
         }
         
         // Redo
         if (event.ctrlKey && event.key === 'y') {
-            event.preventDefault();
-            this.redo();
+            if (!isTyping) {
+                event.preventDefault();
+                this.redo();
+            }
         }
         
-        // Select all
+        // Select all - Allow Ctrl+A in inputs, but prevent on canvas
         if (event.ctrlKey && event.key === 'a') {
-            event.preventDefault();
-            this.selectAll();
+            if (!isTyping) {
+                event.preventDefault();
+                this.selectAll();
+            }
         }
     }
     

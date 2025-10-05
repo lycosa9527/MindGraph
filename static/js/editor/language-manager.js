@@ -89,6 +89,7 @@ class LanguageManager {
                 text: 'Text',
                 nodeTextPlaceholder: 'Node text',
                 apply: 'Apply',
+                resetStyles: 'Reset Styles',
                 fontSize: 'Font Size',
                 textStyle: 'Text Style',
                 textColor: 'Text Color',
@@ -241,6 +242,7 @@ class LanguageManager {
                 text: '文本',
                 nodeTextPlaceholder: '节点文本',
                 apply: '应用',
+                resetStyles: '重置样式',
                 fontSize: '字体大小',
                 textStyle: '文本样式',
                 textColor: '文本颜色',
@@ -544,8 +546,8 @@ class LanguageManager {
         const propTextApply = document.getElementById('prop-text-apply');
         if (propTextApply) propTextApply.textContent = t.apply;
         
-        const applyAllBtn = document.getElementById('apply-all-properties');
-        if (applyAllBtn) applyAllBtn.textContent = t.applyAllChanges;
+        const resetStylesBtn = document.getElementById('reset-styles-btn');
+        if (resetStylesBtn) resetStylesBtn.textContent = t.resetStyles;
         
         // Update MindMate AI Panel
         const aiTitle = document.querySelector('.ai-assistant-panel .ai-header-text h3');

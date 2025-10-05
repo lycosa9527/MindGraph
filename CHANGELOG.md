@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.11] - 2025-10-05
+
+### Added
+- **Smart Placeholder System**: Intelligent pattern-matching for template text
+  - Automatically detects ALL template variations using regex patterns
+  - English patterns: `Attribute 1-999`, `Sub-item 1.1-99.99`, `New Attribute`, etc.
+  - Chinese patterns: `属性1-999`, `子项1.1-99.99`, `新属性`, `项目4.1`, etc.
+  - Infinitely scalable - works with any number combination
+  - No hardcoded lists - future-proof solution
+
+- **Real-Time Style Updates**: Instant visual feedback for all style changes
+  - Font size, colors, stroke width, and opacity apply immediately
+  - No "Apply All" button needed - removed from UI
+  - Style toggles (bold/italic/underline) activate instantly
+  - Improved user experience with live preview
+
+- **Enhanced Reset Functionality**: Template-aware style reset
+  - "Reset Styles" button with high-contrast orange styling
+  - Resets to diagram-specific template defaults
+  - Preserves text content - only resets styles
+  - Positioned below opacity sliders for better UX
+
+### Changed
+- **Properties Panel Improvements**: Major UX overhaul
+  - **Text Input**: Now displays actual node text, not generic placeholder
+  - **Dynamic Switching**: Panel updates when selecting different nodes
+  - **Smart Placeholders**: Template text appears as grey, italic, non-editable placeholders
+  - **Keyboard Shortcuts Fixed**: Delete key works correctly in text input fields
+  - **Apply Button**: Dedicated to text changes only (press Enter or click Apply)
+  - **Color Display**: Fixed shorthand hex codes (#fff → #ffffff) for proper display
+
+- **Placeholder Behavior Enhancement**:
+  - Template text (主题, 背景1, Attribute 1, etc.) shows as grey placeholder
+  - User clicks and types → placeholder automatically disappears
+  - No need to manually delete placeholder text
+  - Greatly improved typing experience
+
+### Fixed
+- **Color Picker Bug**: Resolved issue where node colors weren't displayed correctly
+  - Added `expandHexColor()` helper to convert 3-digit to 6-digit hex codes
+  - HTML color inputs now properly show white (#FFFFFF) instead of black
+  - All colors (text, fill, stroke) now accurately reflect node properties
+
+- **Keyboard Event Conflicts**: Fixed Delete key behavior
+  - Delete key in text inputs now deletes text, not nodes
+  - Added active element detection (INPUT, TEXTAREA, contentEditable)
+  - Keyboard shortcuts (Ctrl+Z, Ctrl+A, etc.) properly ignored when typing
+
+### Technical Details
+- **Pattern Matching**: Uses Regular Expressions for scalable placeholder detection
+  - ~20 regex patterns cover infinite variations
+  - Replaces 100+ hardcoded string array entries
+  - More maintainable and extensible
+- **Event Listeners**: Real-time updates via `input` and `change` events
+- **Template Defaults**: Diagram-specific default styles (e.g., green for Double Bubble Map)
+- **CSS Enhancement**: Added `.prop-input::placeholder` styling for grey italic text
+
+---
+
 ## [v3.0.10] - 2025-10-05
 
 ### Added

@@ -734,6 +734,12 @@ body {
     border-color: #667eea;
 }
 
+.prop-input::placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 0.8;
+}
+
 .prop-select {
     width: 100%;
     padding: 10px 12px;

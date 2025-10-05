@@ -113,7 +113,6 @@ class ToolbarManager {
         this.propStrokeColorHex = document.getElementById('prop-stroke-color-hex');
         this.propStrokeWidth = document.getElementById('prop-stroke-width');
         this.propOpacity = document.getElementById('prop-opacity');
-        this.applyAllBtn = document.getElementById('apply-all-properties');
         
         // Value displays
         this.strokeWidthValue = document.getElementById('stroke-width-value');
@@ -191,57 +190,85 @@ class ToolbarManager {
         });
         
         // Property inputs - prevent event bubbling to avoid accidental diagram switches
+        // Text input: Apply on Enter key
+        this.propText?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.stopPropagation();
+                e.preventDefault();
+                this.applyText();
+            }
+        });
+        
+        // Text apply button - applies text changes
         this.propTextApply?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.applyText();
         });
+        
+        // Reset styles button - resets to template defaults
+        const resetStylesBtn = document.getElementById('reset-styles-btn');
+        resetStylesBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.resetStyles();
+        });
         this.propBold?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.toggleBold();
+            this.applyStylesRealtime(); // Apply immediately
         });
         this.propItalic?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.toggleItalic();
+            this.applyStylesRealtime(); // Apply immediately
         });
         this.propUnderline?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.toggleUnderline();
-        });
-        this.applyAllBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            this.applyAllProperties();
+            this.applyStylesRealtime(); // Apply immediately
         });
         
-        // Color pickers sync
+        // Real-time style updates
+        this.propFontSize?.addEventListener('input', () => this.applyStylesRealtime());
+        this.propFontFamily?.addEventListener('change', () => this.applyStylesRealtime());
+        this.propStrokeWidth?.addEventListener('input', () => this.applyStylesRealtime());
+        this.propOpacity?.addEventListener('input', () => this.applyStylesRealtime());
+        
+        // Color pickers sync and real-time update
         this.propTextColor?.addEventListener('input', (e) => {
             this.propTextColorHex.value = e.target.value.toUpperCase();
+            this.applyStylesRealtime(); // Apply immediately
         });
         this.propTextColorHex?.addEventListener('input', (e) => {
             if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
                 this.propTextColor.value = e.target.value;
+                this.applyStylesRealtime(); // Apply immediately
             }
         });
         
         this.propFillColor?.addEventListener('input', (e) => {
             this.propFillColorHex.value = e.target.value.toUpperCase();
+            this.applyStylesRealtime(); // Apply immediately
         });
         this.propFillColorHex?.addEventListener('input', (e) => {
             if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
                 this.propFillColor.value = e.target.value;
+                this.applyStylesRealtime(); // Apply immediately
             }
         });
         
         this.propStrokeColor?.addEventListener('input', (e) => {
             this.propStrokeColorHex.value = e.target.value.toUpperCase();
+            this.applyStylesRealtime(); // Apply immediately
         });
         this.propStrokeColorHex?.addEventListener('input', (e) => {
             if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
                 this.propStrokeColor.value = e.target.value;
+                this.applyStylesRealtime(); // Apply immediately
             }
         });
         
@@ -380,32 +407,131 @@ class ToolbarManager {
         
         if (nodeElement.empty()) return;
         
-        // Get node attributes
+        // Get node attributes (current values)
         const fill = nodeElement.attr('fill') || '#2196f3';
         const stroke = nodeElement.attr('stroke') || '#1976d2';
         const strokeWidth = nodeElement.attr('stroke-width') || '2';
         const opacity = nodeElement.attr('opacity') || '1';
         
-        // Get text element
-        const textElement = nodeElement.select('text');
-        const text = textElement.text() || '';
-        const fontSize = textElement.attr('font-size') || '14';
-        const fontFamily = textElement.attr('font-family') || 'Inter, sans-serif';
-        const textColor = textElement.attr('fill') || '#000000';
-        const fontWeight = textElement.attr('font-weight') || 'normal';
-        const fontStyle = textElement.attr('font-style') || 'normal';
-        const textDecoration = textElement.attr('text-decoration') || 'none';
+        // Get text element - try multiple methods to find it
+        let textElement = null;
+        let text = '';
+        
+        // Method 1: Try as child
+        textElement = nodeElement.select('text');
+        if (!textElement.empty()) {
+            text = textElement.text() || '';
+        } else {
+            // Method 2: Try data-text-for attribute
+            textElement = d3.select(`[data-text-for="${nodeId}"]`);
+            if (!textElement.empty()) {
+                text = textElement.text() || '';
+            } else {
+                // Method 3: Try next sibling
+                const shapeNode = nodeElement.node();
+                if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
+                    textElement = d3.select(shapeNode.nextElementSibling);
+                    text = textElement.text() || '';
+                }
+            }
+        }
+        
+        // Get text attributes (with fallbacks if text element not found)
+        const fontSize = textElement && !textElement.empty() ? (textElement.attr('font-size') || '14') : '14';
+        const fontFamily = textElement && !textElement.empty() ? (textElement.attr('font-family') || 'Inter, sans-serif') : 'Inter, sans-serif';
+        const textColor = textElement && !textElement.empty() ? (textElement.attr('fill') || '#000000') : '#000000';
+        const fontWeight = textElement && !textElement.empty() ? (textElement.attr('font-weight') || 'normal') : 'normal';
+        const fontStyle = textElement && !textElement.empty() ? (textElement.attr('font-style') || 'normal') : 'normal';
+        const textDecoration = textElement && !textElement.empty() ? (textElement.attr('text-decoration') || 'none') : 'none';
+        
+        // Helper function to expand shorthand hex color codes (e.g., #fff -> #ffffff)
+        const expandHexColor = (hex) => {
+            if (!hex || !hex.startsWith('#')) return hex;
+            // If it's a 3-digit hex code, expand it to 6 digits
+            if (hex.length === 4) {
+                return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+            }
+            return hex;
+        };
+        
+        // Expand shorthand hex codes for color inputs (HTML color inputs require 6-digit format)
+        const expandedFill = expandHexColor(fill);
+        const expandedStroke = expandHexColor(stroke);
+        const expandedTextColor = expandHexColor(textColor);
+        
+        /**
+         * Check if text is a default placeholder using smart pattern matching
+         * This covers ALL template variations without hardcoding every possible combination
+         */
+        const isDefaultPlaceholder = (text) => {
+            const trimmedText = text.trim();
+            
+            // === English Patterns ===
+            const englishPatterns = [
+                // "New X" patterns
+                /^New (Attribute|Step|Cause|Effect|Branch|Node|Item|Category|Subitem|Concept|Context|Similarity|Part|Subpart|Left|Right)$/,
+                // "X Difference" patterns
+                /^(Left|Right) Difference$/,
+                // Topic variations
+                /^(Main|Central|Root) Topic$/,
+                /^Main (Concept|Event|Idea)$/,
+                /^Topic [A-Z]$/,
+                // Numbered patterns: "Context 1", "Attribute 5", etc.
+                /^(Context|Attribute|Similarity|Cause|Effect|Item|Step|Part|Concept|Branch|Category) \d+$/,
+                // Lettered patterns: "Item A", "Item B", etc.
+                /^Item [A-Z]$/,
+                // Hierarchical patterns: "Substep 1.1", "Subpart 2.3", "Sub-item 4.1", "Child 3.2"
+                /^(Substep|Subpart|Sub-item|Child) \d+\.\d+$/,
+                // Flow/Process
+                /^(Process Flow|Title)$/
+            ];
+            
+            // === Chinese Patterns ===
+            const chinesePatterns = [
+                // "新X" patterns
+                /^新(属性|步骤|原因|结果|分支|节点|项目|类别|子项|概念|背景|相似点|部分|子部分|左项|右项)$/,
+                // "X差异" patterns
+                /^(左|右)差异$/,
+                // Topic variations
+                /^(主题|中心主题|主要概念|根主题|主要事件|核心概念)$/,
+                /^主题[A-Z]$/,
+                // Numbered patterns: "背景1", "属性5", "项目99", etc.
+                /^(背景|属性|相似点|原因|结果|项目|步骤|部分|概念|分支|类别)\d+$/,
+                // Lettered patterns: "项目A", "项目B", etc.
+                /^项目[A-Z]$/,
+                // Hierarchical patterns: "子步骤1.1", "子部分2.3", "子项4.1", "子节点3.2"
+                /^(子步骤|子部分|子项|子节点)\d+\.\d+$/,
+                // Flow/Process
+                /^(流程|标题)$/
+            ];
+            
+            // Test against all patterns
+            const allPatterns = [...englishPatterns, ...chinesePatterns];
+            return allPatterns.some(pattern => pattern.test(trimmedText));
+        };
+        
+        const isPlaceholder = isDefaultPlaceholder(text);
         
         // Update property inputs
-        if (this.propText) this.propText.value = text;
+        if (this.propText) {
+            if (isPlaceholder) {
+                // Set as placeholder attribute (grey text that disappears on type)
+                this.propText.value = '';
+                this.propText.placeholder = text;
+            } else {
+                // Set as actual value
+                this.propText.value = text;
+                this.propText.placeholder = window.languageManager?.translate('nodeTextPlaceholder') || 'Node text';
+            }
+        }
         if (this.propFontSize) this.propFontSize.value = parseInt(fontSize);
         if (this.propFontFamily) this.propFontFamily.value = fontFamily;
-        if (this.propTextColor) this.propTextColor.value = textColor;
-        if (this.propTextColorHex) this.propTextColorHex.value = textColor.toUpperCase();
-        if (this.propFillColor) this.propFillColor.value = fill;
-        if (this.propFillColorHex) this.propFillColorHex.value = fill.toUpperCase();
-        if (this.propStrokeColor) this.propStrokeColor.value = stroke;
-        if (this.propStrokeColorHex) this.propStrokeColorHex.value = stroke.toUpperCase();
+        if (this.propTextColor) this.propTextColor.value = expandedTextColor;
+        if (this.propTextColorHex) this.propTextColorHex.value = expandedTextColor.toUpperCase();
+        if (this.propFillColor) this.propFillColor.value = expandedFill;
+        if (this.propFillColorHex) this.propFillColorHex.value = expandedFill.toUpperCase();
+        if (this.propStrokeColor) this.propStrokeColor.value = expandedStroke;
+        if (this.propStrokeColorHex) this.propStrokeColorHex.value = expandedStroke.toUpperCase();
         if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(strokeWidth);
         if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${strokeWidth}px`;
         if (this.propOpacity) this.propOpacity.value = parseFloat(opacity);
@@ -431,7 +557,7 @@ class ToolbarManager {
         
         const newText = this.propText.value.trim();
         if (!newText) {
-            // Always show warning for empty text
+            // If empty, no text to apply (user didn't type anything)
             this.showNotification(this.getNotif('textEmpty'), 'warning');
             return;
         }
@@ -582,6 +708,148 @@ class ToolbarManager {
         
         console.log('ToolbarManager: applyAllProperties showing final notification');
         this.showNotification(this.getNotif('propertiesApplied'), 'success');
+    }
+    
+    /**
+     * Apply styles in real-time (without notification)
+     */
+    applyStylesRealtime() {
+        if (this.currentSelection.length === 0) return;
+        
+        const properties = {
+            fontSize: this.propFontSize?.value,
+            fontFamily: this.propFontFamily?.value,
+            textColor: this.propTextColor?.value,
+            fillColor: this.propFillColor?.value,
+            strokeColor: this.propStrokeColor?.value,
+            strokeWidth: this.propStrokeWidth?.value,
+            opacity: this.propOpacity?.value,
+            bold: this.propBold?.classList.contains('active'),
+            italic: this.propItalic?.classList.contains('active'),
+            underline: this.propUnderline?.classList.contains('active')
+        };
+        
+        // Apply to all selected nodes
+        this.currentSelection.forEach(nodeId => {
+            const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (nodeElement.empty()) return;
+            
+            // Apply shape properties
+            if (properties.fillColor) {
+                nodeElement.attr('fill', properties.fillColor);
+            }
+            if (properties.strokeColor) {
+                nodeElement.attr('stroke', properties.strokeColor);
+            }
+            if (properties.strokeWidth) {
+                nodeElement.attr('stroke-width', properties.strokeWidth);
+            }
+            if (properties.opacity) {
+                nodeElement.attr('opacity', properties.opacity);
+            }
+            
+            // Find and apply text properties
+            let textElement = nodeElement.select('text');
+            if (textElement.empty()) {
+                textElement = d3.select(`[data-text-for="${nodeId}"]`);
+            }
+            
+            if (!textElement.empty()) {
+                if (properties.fontSize) {
+                    textElement.attr('font-size', properties.fontSize);
+                }
+                if (properties.fontFamily) {
+                    textElement.attr('font-family', properties.fontFamily);
+                }
+                if (properties.textColor) {
+                    textElement.attr('fill', properties.textColor);
+                }
+                textElement.attr('font-weight', properties.bold ? 'bold' : 'normal');
+                textElement.attr('font-style', properties.italic ? 'italic' : 'normal');
+                textElement.attr('text-decoration', properties.underline ? 'underline' : 'none');
+            }
+        });
+        
+        // Save to history silently
+        this.editor?.saveToHistory('update_properties', { 
+            nodes: this.currentSelection, 
+            properties 
+        });
+    }
+    
+    /**
+     * Reset styles to template defaults (keep text unchanged)
+     */
+    resetStyles() {
+        if (this.currentSelection.length === 0) return;
+        
+        // Get template defaults based on diagram type
+        const defaultProps = this.getTemplateDefaults();
+        
+        // Update UI inputs to template defaults
+        if (this.propFontSize) this.propFontSize.value = parseInt(defaultProps.fontSize);
+        if (this.propFontFamily) this.propFontFamily.value = defaultProps.fontFamily;
+        if (this.propTextColor) this.propTextColor.value = defaultProps.textColor;
+        if (this.propTextColorHex) this.propTextColorHex.value = defaultProps.textColor.toUpperCase();
+        if (this.propFillColor) this.propFillColor.value = defaultProps.fillColor;
+        if (this.propFillColorHex) this.propFillColorHex.value = defaultProps.fillColor.toUpperCase();
+        if (this.propStrokeColor) this.propStrokeColor.value = defaultProps.strokeColor;
+        if (this.propStrokeColorHex) this.propStrokeColorHex.value = defaultProps.strokeColor.toUpperCase();
+        if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(defaultProps.strokeWidth);
+        if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${defaultProps.strokeWidth}px`;
+        if (this.propOpacity) this.propOpacity.value = parseFloat(defaultProps.opacity);
+        if (this.opacityValue) this.opacityValue.textContent = `${Math.round(parseFloat(defaultProps.opacity) * 100)}%`;
+        
+        // Reset style toggles to defaults (off)
+        this.propBold?.classList.remove('active');
+        this.propItalic?.classList.remove('active');
+        this.propUnderline?.classList.remove('active');
+        
+        // Apply template defaults to selected nodes
+        this.applyStylesRealtime();
+        
+        this.showNotification(
+            window.languageManager?.getCurrentLanguage() === 'zh' 
+                ? '样式已重置为模板默认值' 
+                : 'Styles reset to template defaults',
+            'success'
+        );
+    }
+    
+    /**
+     * Get template default styles based on diagram type
+     */
+    getTemplateDefaults() {
+        const diagramType = this.editor?.diagramType;
+        
+        // Standard defaults used across all diagram types
+        const standardDefaults = {
+            fontSize: '14',
+            fontFamily: 'Inter, sans-serif',
+            textColor: '#000000',
+            fillColor: '#2196f3',
+            strokeColor: '#1976d2',
+            strokeWidth: '2',
+            opacity: '1'
+        };
+        
+        // Diagram-specific overrides (if needed)
+        const typeSpecificDefaults = {
+            'double_bubble_map': {
+                ...standardDefaults,
+                fillColor: '#4caf50', // Green for similarities
+            },
+            'multi_flow_map': {
+                ...standardDefaults,
+                fillColor: '#ff9800', // Orange for events
+            },
+            'concept_map': {
+                ...standardDefaults,
+                fillColor: '#9c27b0', // Purple for concepts
+            }
+        };
+        
+        return typeSpecificDefaults[diagramType] || standardDefaults;
     }
     
     /**
@@ -1596,7 +1864,7 @@ class ToolbarManager {
             'add-node-btn', 'delete-node-btn', 'empty-node-btn', 'auto-complete-btn',
             'line-mode-btn', 'undo-btn', 'redo-btn', 'reset-btn', 'export-btn',
             'back-to-gallery', 'close-properties', 'prop-text-apply', 'prop-bold',
-            'prop-italic', 'prop-underline', 'apply-all-properties'
+            'prop-italic', 'prop-underline', 'reset-styles-btn'
         ];
         
         buttonsToClean.forEach(btnId => {
