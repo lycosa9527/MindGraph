@@ -6,7 +6,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.0.4-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.0.10-brightgreen.svg)](CHANGELOG.md)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-success.svg)](CHANGELOG.md)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -30,13 +30,44 @@ Transform natural language into professional diagrams. Supports 10 diagram types
 
 ## Features | 功能特性
 
-- **Interactive Editor**: Professional web-based editor for creating and editing diagrams | **交互式编辑器**: 用于创建和编辑图表的专业网页编辑器
+### 🎨 Interactive Editor | 交互式编辑器
+Professional web-based diagram editor with comprehensive bilingual support | 专业的网页图表编辑器，全面支持双语
+
+- **Full Bilingual Interface** | **完整双语界面**
+  - Seamless Chinese/English language switching | 中英文无缝切换
+  - All UI elements translated (buttons, tooltips, notifications) | 所有UI元素已翻译（按钮、工具提示、通知）
+  - Dynamic node creation in current language | 当前语言动态节点创建
+  - 60+ notification messages fully localized | 60+条通知消息完全本地化
+
+- **Rich Editing Tools** | **丰富的编辑工具**
+  - **Add/Delete Nodes**: Context-aware node operations for all diagram types | **添加/删除节点**: 所有图表类型的上下文感知节点操作
+  - **Text Editing**: Double-click inline editing with properties panel | **文本编辑**: 双击内联编辑，带属性面板
+  - **Visual Styling**: Font size, color, style customization | **视觉样式**: 字体大小、颜色、样式自定义
+  - **Line Mode**: Toggle black & white line-art mode for printing | **线稿模式**: 切换黑白线条模式用于打印
+  - **Undo/Redo**: Full history management | **撤销/重做**: 完整历史记录管理
+
+- **AI-Powered Features** | **AI功能**
+  - **Auto-Complete**: AI intelligently expands diagrams based on existing content | **自动完成**: AI根据现有内容智能扩展图表
+  - **MindMate AI Assistant**: Integrated Dify-powered AI helper in side panel | **MindMate AI助手**: 集成Dify驱动的AI助手在侧边栏
+  - **Smart Prompt Processing**: Natural language to diagram generation | **智能提示处理**: 自然语言转图表生成
+
+- **Export & Share** | **导出与分享**
+  - **PNG Export**: High-quality image export with watermark | **PNG导出**: 高质量图像导出，带水印
+  - **Share URL**: One-click URL sharing with QR code | **分享URL**: 一键URL分享，带二维码
+  - **Canvas Reset**: Quick reset to blank template | **画布重置**: 快速重置为空白模板
+
+- **Professional UI** | **专业界面**
+  - Gallery view with 10 diagram templates | 画廊视图，10种图表模板
+  - AI prompt input with history | AI提示输入，带历史记录
+  - Properties panel for fine-tuned styling | 属性面板用于精细样式调整
+  - Real-time diagram rendering with D3.js | D3.js实时图表渲染
+
+### 🚀 Core Features | 核心功能
+
 - **Smart Classification**: LLM-based diagram type detection | **智能分类**: 基于LLM的图表类型检测
 - **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的思维导图覆盖，包括思维导图和概念图
 - **Learning Sheets (半成品)**: Educational mode with 20% content hidden for student practice | **学习半成品**: 教育模式，隐藏20%内容供学生练习
-- **Multi-language**: English and Chinese support | **多语言**: 支持英文和中文
 - **API-First**: RESTful endpoints for integrations | **API优先**: 用于集成的RESTful端点
-- **Export Options**: PNG, SVG, and interactive HTML | **导出选项**: PNG、SVG和交互式HTML
 - **Production Ready**: Thread-safe, enterprise-grade architecture | **生产就绪**: 线程安全的企业级架构
 
 ## Quick Start | 快速开始
@@ -70,9 +101,76 @@ Transform natural language into professional diagrams. Supports 10 diagram types
    ```
 
 4. **Access Interface | 访问界面**
-   - Interactive Editor: `http://localhost:9527/editor` | 交互式编辑器
+   - **Interactive Editor**: `http://localhost:9527/editor` | **交互式编辑器**
    - Web UI: `http://localhost:9527/debug` | 网页界面
    - API: `http://localhost:9527/api/generate_png` | API接口
+
+## 📝 Using the Interactive Editor | 使用交互式编辑器
+
+### Getting Started | 快速入门
+
+1. **Navigate to Editor** | **进入编辑器**
+   ```
+   http://localhost:9527/editor
+   ```
+
+2. **Choose Your Workflow** | **选择工作流程**
+   
+   **Option A: AI-Generated Diagrams | 选项A: AI生成图表**
+   - Enter a natural language prompt in the input box | 在输入框中输入自然语言提示
+   - Examples: "Compare online vs offline learning" | 示例："比较线上与线下学习"
+   - AI generates complete diagram automatically | AI自动生成完整图表
+   
+   **Option B: Manual Creation | 选项B: 手动创建**
+   - Select a diagram type from the gallery (10 types available) | 从画廊选择图表类型（10种可用）
+   - Click to start with a blank template | 点击开始空白模板
+   - Build your diagram node by node | 逐个节点构建图表
+
+3. **Edit Your Diagram** | **编辑图表**
+   - **Double-click** any node to edit text | **双击**任意节点编辑文本
+   - **Click** Add button (or select node + Add) to add nodes | **点击**添加按钮（或选择节点+添加）添加节点
+   - **Select** nodes to delete, style, or modify | **选择**节点以删除、样式化或修改
+   - Use **Properties Panel** for fine-grained styling | 使用**属性面板**进行精细样式调整
+
+4. **AI Enhancement** | **AI增强**
+   - Click **Auto** button to let AI expand your diagram | 点击**自动**按钮让AI扩展你的图表
+   - AI analyzes existing content and adds relevant nodes | AI分析现有内容并添加相关节点
+   - Works with all diagram types | 适用于所有图表类型
+
+5. **Export & Share** | **导出与分享**
+   - Click **Export** to save as PNG image | 点击**导出**保存为PNG图像
+   - Click **Share** to get shareable URL with QR code | 点击**分享**获取可分享URL及二维码
+   - Toggle **Line Mode** for black & white printing | 切换**线稿模式**用于黑白打印
+
+### Language Switching | 语言切换
+
+- Click the language toggle button (EN/中文) in top right | 点击右上角语言切换按钮（EN/中文）
+- **Entire interface switches instantly** | **整个界面立即切换**
+- All buttons, tooltips, and notifications change language | 所有按钮、工具提示和通知都会改变语言
+- New nodes created in selected language | 新节点以选定语言创建
+
+### Keyboard Shortcuts | 键盘快捷键
+
+- `Ctrl/Cmd + Z` - Undo | 撤销
+- `Ctrl/Cmd + Shift + Z` - Redo | 重做
+- `Delete` - Delete selected node(s) | 删除选定节点
+- `Double-click` - Edit node text | 编辑节点文本
+- `Esc` - Close panels/modals | 关闭面板/模态框
+
+### Editor Features by Diagram Type | 各图表类型编辑功能
+
+Each diagram type has specialized node operations: | 每种图表类型都有专门的节点操作：
+
+- **Circle Map** (圆圈图): Add context nodes around central topic | 在中心主题周围添加背景节点
+- **Bubble Map** (气泡图): Add attribute bubbles to describe subject | 添加属性气泡描述主题
+- **Double Bubble Map** (双气泡图): Add similarities and differences | 添加相似点和差异
+- **Tree Map** (树状图): Add categories and hierarchical items | 添加类别和层次项目
+- **Brace Map** (括号图): Add parts and subparts in whole-part structure | 在整体-部分结构中添加部分和子部分
+- **Flow Map** (流程图): Add sequential steps and substeps | 添加顺序步骤和子步骤
+- **Multi-Flow Map** (多流程图): Add causes and effects to events | 为事件添加原因和结果
+- **Bridge Map** (桥接图): Add analogical pairs | 添加类比对
+- **Mind Map** (思维导图): Add branches and sub-branches | 添加分支和子分支
+- **Concept Map** (概念图): Add concepts and relationships | 添加概念和关系
 
 ## Docker Deployment | Docker部署
 
@@ -98,6 +196,7 @@ Transform natural language into professional diagrams. Supports 10 diagram types
    ```
 
 3. **Access the Application | 访问应用**
+   - **Interactive Editor**: `http://localhost:9527/editor` | **交互式编辑器**
    - Web UI: `http://localhost:9527/debug` | 网页界面
    - API: `http://localhost:9527/api/generate_png` | API接口
 
@@ -435,8 +534,9 @@ This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) f
 
 ## Documentation | 文档
 
+- [Interactive Editor Guide](docs/INTERACTIVE_EDITOR.md) - Complete editor usage guide | 完整编辑器使用指南
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation | 完整API文档
-- [Changelog](CHANGELOG.md) - Version history and comprehensive code review | 版本历史和全面代码审查
+- [Changelog](CHANGELOG.md) - Version history and updates | 版本历史和更新
 - [Optimization Checklist](docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md) - Performance improvements and architecture analysis | 性能改进和架构分析
 - [Test Documentation](test/test_all_agents.py) - Comprehensive testing framework | 全面测试框架
 

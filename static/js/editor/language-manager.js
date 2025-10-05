@@ -78,6 +78,7 @@ class LanguageManager {
                 undoTooltip: 'Undo',
                 redoTooltip: 'Redo',
                 switchLanguageTooltip: 'Switch Language',
+                share: 'Share',
                 shareTooltip: 'Share',
                 boldTooltip: 'Bold',
                 italicTooltip: 'Italic',
@@ -101,7 +102,64 @@ class LanguageManager {
                 online: 'Online',
                 welcomeTitle: 'Welcome to MindMate AI!',
                 welcomeMessage: "I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.",
-                askMindMatePlaceholder: 'Ask MindMate anything...'
+                askMindMatePlaceholder: 'Ask MindMate anything...',
+                // Notification Messages
+                notif: {
+                    textEmpty: 'Text cannot be empty',
+                    textUpdated: 'Text updated successfully',
+                    propertiesApplied: 'All properties applied successfully!',
+                    editorNotInit: 'Editor not initialized',
+                    selectNodeToAdd: 'Please select a node first to add',
+                    nodeAdded: 'Node added! Double-click to edit text.',
+                    nodesDeleted: (count) => `Deleted ${count} node${count > 1 ? 's' : ''}`,
+                    selectNodeToDelete: 'Select a node first to delete',
+                    nodesEmptied: (count) => `Emptied ${count} node${count > 1 ? 's' : ''}`,
+                    selectNodeToEmpty: 'Select a node first to empty',
+                    addNodesFirst: 'Please add some nodes first before using Auto',
+                    aiCompleting: (topic) => `AI is completing diagram about "${topic}"...`,
+                    diagramChanged: 'Diagram changed during auto-complete',
+                    sessionChanged: 'Session changed during auto-complete',
+                    autoCompleteSuccess: 'Diagram auto-completed successfully!',
+                    autoCompleteFailed: (error) => `Auto-complete failed: ${error}`,
+                    lineModeEnabled: 'Line mode enabled',
+                    lineModeDisabled: 'Line mode disabled',
+                    duplicateComingSoon: 'Duplicate node feature coming soon!',
+                    resetFailed: 'Failed to reset: diagram selector not found',
+                    templateNotFound: 'Failed to reset: template not found',
+                    canvasReset: 'Canvas reset to blank template',
+                    noDiagramToExport: 'No diagram to export!',
+                    diagramExported: 'Diagram exported as PNG!',
+                    exportFailed: 'Failed to export diagram',
+                    // Interactive Editor Notifications
+                    couldNotDetermineNodeType: 'Could not determine node type. Please try again.',
+                    cannotAddMainTopics: 'Cannot add main topics. Please select a similarity or difference node.',
+                    unknownNodeType: 'Unknown node type. Please select a similarity or difference node.',
+                    similarityNodeAdded: 'Similarity node added!',
+                    differencePairAdded: 'Difference pair added!',
+                    invalidPartIndex: 'Invalid part index',
+                    cannotAddToTopic: 'Cannot add to topic. Please select a part or subpart node.',
+                    unknownNodeSelectPart: 'Unknown node type. Please select a part or subpart node.',
+                    invalidStepIndex: 'Invalid step index',
+                    invalidSubstepIndex: 'Invalid substep index',
+                    cannotAddToTitle: 'Cannot add to title. Please select a step or substep node.',
+                    selectStepOrSubstep: 'Please select a step or substep node',
+                    cannotAddToEvent: 'Cannot add to event. Please select a cause or effect node.',
+                    selectCauseOrEffect: 'Please select a cause or effect node',
+                    cannotAddToTopicSelectCategory: 'Cannot add to topic. Please select a category or child node.',
+                    selectCategoryOrChild: 'Please select a category or child node',
+                    selectBranchOrSubitem: 'Please select a branch or sub-item to add',
+                    cannotAddToCentral: 'Cannot add to central topic. Please select a branch or sub-item.',
+                    invalidBranchIndex: 'Invalid branch index',
+                    newSubitemAdded: 'New sub-item added!',
+                    unknownNodeSelectBranch: 'Unknown node type. Please select a branch or sub-item.',
+                    updatingLayout: 'Updating layout...',
+                    layoutUpdateFailed: 'Failed to update layout. Changes may not be visible.',
+                    cannotDeleteTitle: 'Cannot delete the title',
+                    cannotDeleteCentralEvent: 'Cannot delete the central event',
+                    cannotDeleteRootTopic: 'Cannot delete the root topic',
+                    cannotDeleteFirstAnalogy: 'Cannot delete the first analogy pair',
+                    cannotDeleteCentralTopic: 'Cannot delete the central topic'
+                }
             },
             zh: {
                 mainTitle: 'MindGraph专业版',
@@ -172,6 +230,7 @@ class LanguageManager {
                 undoTooltip: '撤销',
                 redoTooltip: '重做',
                 switchLanguageTooltip: '切换语言',
+                share: '分享',
                 shareTooltip: '分享',
                 boldTooltip: '粗体',
                 italicTooltip: '斜体',
@@ -195,7 +254,64 @@ class LanguageManager {
                 online: '在线',
                 welcomeTitle: '欢迎使用MindMate AI！',
                 welcomeMessage: '我在这里帮助您创建图示。随时询问有关创建、编辑或改进您作品的任何问题。',
-                askMindMatePlaceholder: '向MindMate提问任何问题...'
+                askMindMatePlaceholder: '向MindMate提问任何问题...',
+                // Notification Messages
+                notif: {
+                    textEmpty: '文本不能为空',
+                    textUpdated: '文本更新成功',
+                    propertiesApplied: '所有属性应用成功！',
+                    editorNotInit: '编辑器未初始化',
+                    selectNodeToAdd: '请先选择一个节点以添加',
+                    nodeAdded: '节点已添加！双击编辑文本。',
+                    nodesDeleted: (count) => `已删除 ${count} 个节点`,
+                    selectNodeToDelete: '请先选择一个节点以删除',
+                    nodesEmptied: (count) => `已清空 ${count} 个节点`,
+                    selectNodeToEmpty: '请先选择一个节点以清空',
+                    addNodesFirst: '请先添加一些节点再使用自动完成',
+                    aiCompleting: (topic) => `AI正在完成关于"${topic}"的图示...`,
+                    diagramChanged: '自动完成期间图示已更改',
+                    sessionChanged: '自动完成期间会话已更改',
+                    autoCompleteSuccess: '图示自动完成成功！',
+                    autoCompleteFailed: (error) => `自动完成失败：${error}`,
+                    lineModeEnabled: '线稿模式已启用',
+                    lineModeDisabled: '线稿模式已禁用',
+                    duplicateComingSoon: '复制节点功能即将推出！',
+                    resetFailed: '重置失败：未找到图表选择器',
+                    templateNotFound: '重置失败：未找到模板',
+                    canvasReset: '画布已重置为空白模板',
+                    noDiagramToExport: '没有可导出的图示！',
+                    diagramExported: '图示已导出为PNG！',
+                    exportFailed: '导出图示失败',
+                    // Interactive Editor Notifications
+                    couldNotDetermineNodeType: '无法确定节点类型。请重试。',
+                    cannotAddMainTopics: '无法添加主主题。请选择相似或差异节点。',
+                    unknownNodeType: '未知节点类型。请选择相似或差异节点。',
+                    similarityNodeAdded: '相似节点已添加！',
+                    differencePairAdded: '差异对已添加！',
+                    invalidPartIndex: '无效的部分索引',
+                    cannotAddToTopic: '无法添加到主题。请选择部分或子部分节点。',
+                    unknownNodeSelectPart: '未知节点类型。请选择部分或子部分节点。',
+                    invalidStepIndex: '无效的步骤索引',
+                    invalidSubstepIndex: '无效的子步骤索引',
+                    cannotAddToTitle: '无法添加到标题。请选择步骤或子步骤节点。',
+                    selectStepOrSubstep: '请选择步骤或子步骤节点',
+                    cannotAddToEvent: '无法添加到事件。请选择原因或结果节点。',
+                    selectCauseOrEffect: '请选择原因或结果节点',
+                    cannotAddToTopicSelectCategory: '无法添加到主题。请选择类别或子节点。',
+                    selectCategoryOrChild: '请选择类别或子节点',
+                    selectBranchOrSubitem: '请选择分支或子项以添加',
+                    cannotAddToCentral: '无法添加到中心主题。请选择分支或子项。',
+                    invalidBranchIndex: '无效的分支索引',
+                    newSubitemAdded: '新子项已添加！',
+                    unknownNodeSelectBranch: '未知节点类型。请选择分支或子项。',
+                    updatingLayout: '正在更新布局...',
+                    layoutUpdateFailed: '布局更新失败。更改可能不可见。',
+                    cannotDeleteTitle: '无法删除标题',
+                    cannotDeleteCentralEvent: '无法删除中心事件',
+                    cannotDeleteRootTopic: '无法删除根主题',
+                    cannotDeleteFirstAnalogy: '无法删除第一个类比对',
+                    cannotDeleteCentralTopic: '无法删除中心主题'
+                }
             }
         };
         
@@ -379,9 +495,11 @@ class LanguageManager {
             langToggle.title = t.switchLanguageTooltip;
         }
         
-        // Update share button tooltip
+        // Update share button text and tooltip
         const shareBtn = document.getElementById('share-btn');
         if (shareBtn) {
+            const shareSpan = shareBtn.querySelector('span');
+            if (shareSpan) shareSpan.textContent = t.share;
             shareBtn.title = t.shareTooltip;
         }
         
@@ -706,6 +824,19 @@ class LanguageManager {
      */
     translate(key) {
         return this.translations[this.currentLanguage][key] || key;
+    }
+    
+    /**
+     * Get notification message in current language
+     * @param {string} key - Notification key (e.g., 'textEmpty', 'nodeAdded')
+     * @param  {...any} args - Arguments for function-based notifications
+     */
+    getNotification(key, ...args) {
+        const notif = this.translations[this.currentLanguage].notif[key];
+        if (typeof notif === 'function') {
+            return notif(...args);
+        }
+        return notif || key;
     }
 }
 

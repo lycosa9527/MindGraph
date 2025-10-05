@@ -81,6 +81,18 @@ class InteractiveEditor {
     }
     
     /**
+     * Get translated notification message
+     * @param {string} key - Notification key from language-manager
+     * @param  {...any} args - Arguments for function-based notifications
+     */
+    getNotif(key, ...args) {
+        if (window.languageManager && window.languageManager.getNotification) {
+            return window.languageManager.getNotification(key, ...args);
+        }
+        return key; // Fallback to key if language manager not available
+    }
+    
+    /**
      * Validate that we're operating within the correct session
      */
     validateSession(operation = 'Operation') {
@@ -1157,7 +1169,7 @@ class InteractiveEditor {
         
         if (!nodeType) {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Could not determine node type. Please try again.', 'error');
+                this.toolbarManager.showNotification(this.getNotif('couldNotDetermineNodeType'), 'error');
             }
             return;
         }
@@ -1194,13 +1206,13 @@ class InteractiveEditor {
             case 'left':
             case 'right':
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot add main topics. Please select a similarity or difference node.', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotAddMainTopics'), 'warning');
                 }
                 return;
                 
             default:
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Unknown node type. Please select a similarity or difference node.', 'error');
+                    this.toolbarManager.showNotification(this.getNotif('unknownNodeType'), 'error');
                 }
                 return;
         }
@@ -1216,9 +1228,9 @@ class InteractiveEditor {
         
         if (this.toolbarManager) {
             if (nodeType === 'similarity') {
-                this.toolbarManager.showNotification('Similarity node added!', 'success');
+                this.toolbarManager.showNotification(this.getNotif('similarityNodeAdded'), 'success');
             } else {
-                this.toolbarManager.showNotification('Difference pair added!', 'success');
+                this.toolbarManager.showNotification(this.getNotif('differencePairAdded'), 'success');
             }
         }
     }
@@ -1250,7 +1262,7 @@ class InteractiveEditor {
         
         if (!nodeType) {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Could not determine node type. Please try again.', 'error');
+                this.toolbarManager.showNotification(this.getNotif('couldNotDetermineNodeType'), 'error');
             }
             return;
         }
@@ -1284,7 +1296,7 @@ class InteractiveEditor {
                 
                 if (isNaN(partIndex) || partIndex < 0 || partIndex >= this.currentSpec.parts.length) {
                     if (this.toolbarManager) {
-                        this.toolbarManager.showNotification('Invalid part index', 'error');
+                        this.toolbarManager.showNotification(this.getNotif('invalidPartIndex'), 'error');
                     }
                     return;
                 }
@@ -1309,14 +1321,14 @@ class InteractiveEditor {
                 
             case 'topic':
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot add to topic. Please select a part or subpart node.', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotAddToTopic'), 'warning');
                 }
                 // Don't re-render, just return
                 return;
                 
             default:
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Unknown node type. Please select a part or subpart node.', 'error');
+                    this.toolbarManager.showNotification(this.getNotif('unknownNodeSelectPart'), 'error');
                 }
                 return;
         }
@@ -1373,7 +1385,7 @@ class InteractiveEditor {
                 
                 if (isNaN(stepIndex) || stepIndex < 0 || stepIndex >= this.currentSpec.steps.length) {
                     if (this.toolbarManager) {
-                        this.toolbarManager.showNotification('Invalid step index', 'error');
+                        this.toolbarManager.showNotification(this.getNotif('invalidStepIndex'), 'error');
                     }
                     return;
                 }
@@ -1408,14 +1420,14 @@ class InteractiveEditor {
                 
                 if (isNaN(stepIndex) || stepIndex < 0 || stepIndex >= this.currentSpec.steps.length) {
                     if (this.toolbarManager) {
-                        this.toolbarManager.showNotification('Invalid step index', 'error');
+                        this.toolbarManager.showNotification(this.getNotif('invalidStepIndex'), 'error');
                     }
                     return;
                 }
                 
                 if (isNaN(substepIndex) || substepIndex < 0) {
                     if (this.toolbarManager) {
-                        this.toolbarManager.showNotification('Invalid substep index', 'error');
+                        this.toolbarManager.showNotification(this.getNotif('invalidSubstepIndex'), 'error');
                     }
                     return;
                 }
@@ -1451,14 +1463,14 @@ class InteractiveEditor {
                 
             case 'title':
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot add to title. Please select a step or substep node.', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotAddToTitle'), 'warning');
                 }
                 // Don't re-render, just return
                 return;
                 
             default:
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Please select a step or substep node', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('selectStepOrSubstep'), 'warning');
                 }
                 return;
         }
@@ -1540,14 +1552,14 @@ class InteractiveEditor {
                 
             case 'event':
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot add to event. Please select a cause or effect node.', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotAddToEvent'), 'warning');
                 }
                 // Don't re-render, just return
                 return;
                 
             default:
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Please select a cause or effect node', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('selectCauseOrEffect'), 'warning');
                 }
                 return;
         }
@@ -1649,13 +1661,13 @@ class InteractiveEditor {
                 
             case 'topic':
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot add to topic. Please select a category or child node.', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotAddToTopicSelectCategory'), 'warning');
                 }
                 return;
                 
             default:
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Please select a category or child node', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('selectCategoryOrChild'), 'warning');
                 }
                 return;
         }
@@ -1745,7 +1757,7 @@ class InteractiveEditor {
         // Check if no node is selected
         if (selectedNodes.length === 0) {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Please select a branch or sub-item to add', 'warning');
+                this.toolbarManager.showNotification(this.getNotif('selectBranchOrSubitem'), 'warning');
             }
             console.log('MindMap: No node selected, skipping add');
             return;
@@ -1765,7 +1777,7 @@ class InteractiveEditor {
         // Don't allow adding to the central topic
         if (nodeType === 'topic' || !nodeType) {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Cannot add to central topic. Please select a branch or sub-item.', 'warning');
+                this.toolbarManager.showNotification(this.getNotif('cannotAddToCentral'), 'warning');
             }
             console.log('MindMap: Cannot add to central topic');
             return;
@@ -1778,7 +1790,7 @@ class InteractiveEditor {
             
             if (isNaN(branchIndex) || branchIndex < 0) {
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Invalid branch index', 'error');
+                    this.toolbarManager.showNotification(this.getNotif('invalidBranchIndex'), 'error');
                 }
                 return;
             }
@@ -1820,7 +1832,7 @@ class InteractiveEditor {
             
             if (isNaN(branchIndex) || branchIndex < 0 || branchIndex >= this.currentSpec.children.length) {
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Invalid branch index', 'error');
+                    this.toolbarManager.showNotification(this.getNotif('invalidBranchIndex'), 'error');
                 }
                 return;
             }
@@ -1843,11 +1855,11 @@ class InteractiveEditor {
             console.log(`Added new sub-item to branch ${branchIndex}. Total sub-items: ${branch.children.length}`);
             
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('New sub-item added!', 'success');
+                this.toolbarManager.showNotification(this.getNotif('newSubitemAdded'), 'success');
             }
         } else {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Unknown node type. Please select a branch or sub-item.', 'error');
+                this.toolbarManager.showNotification(this.getNotif('unknownNodeSelectBranch'), 'error');
             }
             return;
         }
@@ -1878,7 +1890,7 @@ class InteractiveEditor {
             
             // Show loading state
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Updating layout...', 'info');
+                this.toolbarManager.showNotification(this.getNotif('updatingLayout'), 'info');
             }
             
             // Call backend to recalculate layout
@@ -1919,7 +1931,7 @@ class InteractiveEditor {
         } catch (error) {
             console.error('Error recalculating mind map layout:', error);
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Failed to update layout. Changes may not be visible.', 'warning');
+                this.toolbarManager.showNotification(this.getNotif('layoutUpdateFailed'), 'warning');
             }
             // Still try to render even if layout calculation failed
             this.renderDiagram();
@@ -2433,7 +2445,7 @@ class InteractiveEditor {
             if (nodeType === 'title') {
                 // Don't allow deletion of title
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot delete the title', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotDeleteTitle'), 'warning');
                 }
                 return;
             } else if (nodeType === 'step') {
@@ -2533,7 +2545,7 @@ class InteractiveEditor {
             if (nodeType === 'event') {
                 // Don't allow deletion of central event
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot delete the central event', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotDeleteCentralEvent'), 'warning');
                 }
                 return;
             } else if (nodeType === 'cause') {
@@ -2604,7 +2616,7 @@ class InteractiveEditor {
             if (nodeType === 'topic') {
                 // Don't allow deletion of root topic
                 if (this.toolbarManager) {
-                    this.toolbarManager.showNotification('Cannot delete the root topic', 'warning');
+                    this.toolbarManager.showNotification(this.getNotif('cannotDeleteRootTopic'), 'warning');
                 }
                 return;
             } else if (nodeType === 'category') {
@@ -2705,7 +2717,7 @@ class InteractiveEditor {
         // Prevent deletion of the first pair (like the topic in other maps)
         if (pairIndicesToDelete.has(0)) {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Cannot delete the first analogy pair', 'warning');
+                this.toolbarManager.showNotification(this.getNotif('cannotDeleteFirstAnalogy'), 'warning');
             }
             pairIndicesToDelete.delete(0);
         }
@@ -2835,7 +2847,7 @@ class InteractiveEditor {
         // Show warning if user attempted to delete the central topic
         if (attemptedTopicDelete) {
             if (this.toolbarManager) {
-                this.toolbarManager.showNotification('Cannot delete the central topic', 'warning');
+                this.toolbarManager.showNotification(this.getNotif('cannotDeleteCentralTopic'), 'warning');
             }
         }
         

@@ -432,7 +432,7 @@ class ToolbarManager {
         const newText = this.propText.value.trim();
         if (!newText) {
             // Always show warning for empty text
-            this.showNotification('Text cannot be empty', 'warning');
+            this.showNotification(this.getNotif('textEmpty'), 'warning');
             return;
         }
         
@@ -479,7 +479,7 @@ class ToolbarManager {
         // Only show notification if not called from applyAllProperties
         if (!silent) {
             console.log('ToolbarManager: applyText showing notification (silent=false)');
-            this.showNotification('Text updated successfully', 'success');
+            this.showNotification(this.getNotif('textUpdated'), 'success');
         } else {
             console.log('ToolbarManager: applyText notification suppressed (silent=true)');
         }
@@ -581,7 +581,7 @@ class ToolbarManager {
         });
         
         console.log('ToolbarManager: applyAllProperties showing final notification');
-        this.showNotification('All properties applied successfully!', 'success');
+        this.showNotification(this.getNotif('propertiesApplied'), 'success');
     }
     
     /**
@@ -618,7 +618,7 @@ class ToolbarManager {
         
         if (!this.editor) {
             console.error('ToolbarManager: handleAddNode blocked - Editor not initialized');
-            this.showNotification('Editor not initialized', 'error');
+            this.showNotification(this.getNotif('editorNotInit'), 'error');
             return;
         }
         
@@ -627,7 +627,7 @@ class ToolbarManager {
 
         // Check if selection is required for this diagram type
         if (requiresSelection && this.currentSelection.length === 0) {
-            this.showNotification('Please select a node first to add', 'warning');
+            this.showNotification(this.getNotif('selectNodeToAdd'), 'warning');
             return;
         }
         
@@ -637,7 +637,7 @@ class ToolbarManager {
         // Only show generic success notification for diagram types that don't show their own
             const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'bridge_map', 'circle_map', 'bubble_map', 'concept_map', 'mindmap'].includes(diagramType);
             if (!showsOwnNotification) {
-                this.showNotification('Node added! Double-click to edit text.', 'success');
+                this.showNotification(this.getNotif('nodeAdded'), 'success');
             }
     }
     
@@ -649,9 +649,9 @@ class ToolbarManager {
             const count = this.currentSelection.length;
             this.editor.deleteSelectedNodes();
             this.hidePropertyPanel();
-            this.showNotification(`Deleted ${count} node${count > 1 ? 's' : ''}`, 'success');
+            this.showNotification(this.getNotif('nodesDeleted', count), 'success');
         } else {
-            this.showNotification('Select a node first to delete', 'warning');
+            this.showNotification(this.getNotif('selectNodeToDelete'), 'warning');
         }
     }
     
@@ -698,14 +698,14 @@ class ToolbarManager {
             });
             
             const count = nodeIds.length;
-            this.showNotification(`Emptied ${count} node${count > 1 ? 's' : ''}`, 'success');
+            this.showNotification(this.getNotif('nodesEmptied', count), 'success');
             
             // Update property panel if still showing
             if (this.currentSelection.length > 0) {
                 this.loadNodeProperties(this.currentSelection[0]);
             }
         } else {
-            this.showNotification('Select a node first to empty', 'warning');
+            this.showNotification(this.getNotif('selectNodeToEmpty'), 'warning');
         }
     }
     
@@ -724,7 +724,7 @@ class ToolbarManager {
         }
         
         if (!this.editor) {
-            this.showNotification('Editor not initialized', 'error');
+            this.showNotification(this.getNotif('editorNotInit'), 'error');
             console.error('ToolbarManager: Auto-complete failed - Editor not initialized');
             return;
         }
@@ -752,7 +752,7 @@ class ToolbarManager {
         console.log('ToolbarManager: Extracted nodes:', existingNodes.length);
         
         if (existingNodes.length === 0) {
-            this.showNotification('Please add some nodes first before using Auto', 'warning');
+            this.showNotification(this.getNotif('addNodesFirst'), 'warning');
             console.log('ToolbarManager: Auto-complete aborted - No nodes found');
             this.isAutoCompleting = false; // Clear flag on early return
             return;
@@ -855,7 +855,7 @@ class ToolbarManager {
         
         // Show loading state
         this.setAutoButtonLoading(true);
-        this.showNotification(`AI is completing diagram about "${mainTopic}"...`, 'info');
+        this.showNotification(this.getNotif('aiCompleting', mainTopic), 'info');
         
         try {
             // Call API to generate diagram
@@ -892,7 +892,7 @@ class ToolbarManager {
                     console.error('ToolbarManager: Expected:', currentDiagramType);
                     console.error('ToolbarManager: Current:', this.editor.diagramType);
                     // Only show notification if there's actually a mismatch
-                    this.showNotification('Diagram changed during auto-complete', 'error');
+                    this.showNotification(this.getNotif('diagramChanged'), 'error');
                     this.isAutoCompleting = false; // Clear flag on early return
                     return;
                 }
@@ -902,7 +902,7 @@ class ToolbarManager {
                     console.error('ToolbarManager: Expected:', currentSessionId);
                     console.error('ToolbarManager: Current:', this.editor.sessionId);
                     // Only show notification if there's actually a mismatch
-                    this.showNotification('Session changed during auto-complete', 'error');
+                    this.showNotification(this.getNotif('sessionChanged'), 'error');
                     this.isAutoCompleting = false; // Clear flag on early return
                     return;
                 }
@@ -953,7 +953,7 @@ class ToolbarManager {
                 console.log('ToolbarManager: Rendering updated diagram');
                 this.editor.renderDiagram();
                 console.log('ToolbarManager: Auto-complete completed successfully');
-                this.showNotification('Diagram auto-completed successfully!', 'success');
+                this.showNotification(this.getNotif('autoCompleteSuccess'), 'success');
             } else {
                 throw new Error('No diagram specification returned');
             }
@@ -961,7 +961,7 @@ class ToolbarManager {
         } catch (error) {
             console.error('ToolbarManager: Auto-complete error:', error);
             console.error('ToolbarManager: Error stack:', error.stack);
-            this.showNotification(`Auto-complete failed: ${error.message}`, 'error');
+            this.showNotification(this.getNotif('autoCompleteFailed', error.message), 'error');
         } finally {
             this.setAutoButtonLoading(false);
             this.isAutoCompleting = false; // Clear flag
@@ -1205,7 +1205,7 @@ class ToolbarManager {
                     element.style('stroke', '#000000');
                 });
             
-            this.showNotification('Line mode enabled', 'success');
+            this.showNotification(this.getNotif('lineModeEnabled'), 'success');
             
         } else {
             // Restore original colors
@@ -1261,7 +1261,7 @@ class ToolbarManager {
                     }
                 });
             
-            this.showNotification('Line mode disabled', 'success');
+            this.showNotification(this.getNotif('lineModeDisabled'), 'success');
         }
     }
     
@@ -1285,7 +1285,7 @@ class ToolbarManager {
      */
     handleDuplicateNode() {
         console.log('Duplicate node clicked');
-        this.showNotification('Duplicate node feature coming soon!');
+        this.showNotification(this.getNotif('duplicateComingSoon'));
     }
     
     /**
@@ -1322,7 +1322,7 @@ class ToolbarManager {
         const diagramSelector = window.diagramSelector;
         if (!diagramSelector) {
             console.error('Diagram selector not available');
-            this.showNotification('Failed to reset: diagram selector not found', 'error');
+            this.showNotification(this.getNotif('resetFailed'), 'error');
             return;
         }
         
@@ -1330,7 +1330,7 @@ class ToolbarManager {
         const blankTemplate = diagramSelector.getTemplate(this.editor.diagramType);
         if (!blankTemplate) {
             console.error('Failed to get blank template for:', this.editor.diagramType);
-            this.showNotification('Failed to reset: template not found', 'error');
+            this.showNotification(this.getNotif('templateNotFound'), 'error');
             return;
         }
         
@@ -1349,7 +1349,7 @@ class ToolbarManager {
             this.editor.selectionManager.clearSelection();
         }
         
-        this.showNotification('Canvas reset to blank template', 'success');
+        this.showNotification(this.getNotif('canvasReset'), 'success');
     }
     
     /**
@@ -1358,7 +1358,7 @@ class ToolbarManager {
     handleExport() {
         const svg = document.querySelector('#d3-container svg');
         if (!svg) {
-            this.showNotification('No diagram to export!', 'error');
+            this.showNotification(this.getNotif('noDiagramToExport'), 'error');
             return;
         }
         
@@ -1447,7 +1447,7 @@ class ToolbarManager {
                     // Remove temporary watermark
                     watermark.remove();
                     
-                    this.showNotification('Diagram exported as PNG!', 'success');
+                    this.showNotification(this.getNotif('diagramExported'), 'success');
                 }, 'image/png');
             };
             
@@ -1458,14 +1458,14 @@ class ToolbarManager {
                 // Remove temporary watermark on error
                 watermark.remove();
                 
-                this.showNotification('Failed to export diagram', 'error');
+                this.showNotification(this.getNotif('exportFailed'), 'error');
             };
             
             img.src = url;
             
         } catch (error) {
             console.error('Error exporting diagram:', error);
-            this.showNotification('Failed to export diagram', 'error');
+            this.showNotification(this.getNotif('exportFailed'), 'error');
         }
     }
     
@@ -1527,6 +1527,18 @@ class ToolbarManager {
         if (this.editor && this.editor.selectedNodes) {
             this.editor.selectedNodes.clear();
         }
+    }
+    
+    /**
+     * Get translated notification message
+     * @param {string} key - Notification key from language-manager
+     * @param  {...any} args - Arguments for function-based notifications
+     */
+    getNotif(key, ...args) {
+        if (window.languageManager && window.languageManager.getNotification) {
+            return window.languageManager.getNotification(key, ...args);
+        }
+        return key; // Fallback to key if language manager not available
     }
     
     /**

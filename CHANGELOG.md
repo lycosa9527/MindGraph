@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.10] - 2025-10-05
+
+### Added
+- **Complete Notification System Translation**: All editor notifications now fully support Chinese/English
+  - **60+ Notification Messages**: Comprehensive translation coverage
+    - Text/property operations: "文本不能为空" / "Text cannot be empty"
+    - Node operations: "节点已添加！双击编辑文本。" / "Node added! Double-click to edit text."
+    - Delete operations: "已删除 X 个节点" / "Deleted X nodes"
+    - Auto-complete: "AI正在完成关于'主题'的图示..." / "AI is completing diagram about 'topic'..."
+    - Line mode: "线稿模式已启用" / "Line mode enabled"
+    - Export: "图示已导出为PNG！" / "Diagram exported as PNG!"
+  
+  - **Diagram-Specific Messages**: All 10 diagram types with localized notifications
+    - Double Bubble Map: "相似节点已添加！" / "Similarity node added!"
+    - Brace Map: "无法添加到主题。请选择部分或子部分节点。" / "Cannot add to topic. Please select a part or subpart node."
+    - Flow Map: "无效的步骤索引" / "Invalid step index"
+    - Multi-Flow Map: "请选择原因或结果节点" / "Please select a cause or effect node"
+    - Tree Map: "请选择类别或子节点" / "Please select a category or child node"
+    - Mind Map: "新子项已添加！" / "New sub-item added!"
+    - And many more...
+  
+  - **Dynamic Message Support**: Function-based translations for messages with variables
+    - Node count messages: "已删除 3 个节点" / "Deleted 3 nodes"
+    - Topic-based messages: "AI正在完成关于'教育系统'的图示..." / "AI is completing diagram about 'Education System'..."
+    - Error messages with context
+
+- **Share Button Translation**: Fixed missing translation
+  - Button text: "分享" / "Share" (was previously untranslated)
+  - Tooltip: "分享" / "Share"
+
+### Changed
+- **LanguageManager Enhancement**: Added `getNotification()` method
+  - Centralized notification translation retrieval
+  - Supports both static strings and function-based translations
+  - Fallback to key if translation not found
+
+- **ToolbarManager Enhancement**: Added `getNotif()` helper method
+  - Simplified notification translation access
+  - Updated 20 notification calls to use translations
+
+- **InteractiveEditor Enhancement**: Added `getNotif()` helper method
+  - Simplified notification translation access  
+  - Updated 26 unique notification messages to use translations
+
+### Technical Details
+- **Translation Structure**: All notifications stored in `language-manager.js` under `translations.en.notif` and `translations.zh.notif`
+- **Function-Based Translations**: Support for dynamic messages like `nodesDeleted: (count) => \`已删除 ${count} 个节点\``
+- **Automatic Language Switching**: All notifications automatically adapt when user switches language
+- **No Linter Errors**: Clean implementation with no syntax or style issues
+
+---
+
 ## [v3.0.9] - 2025-10-04
 
 ### Added
