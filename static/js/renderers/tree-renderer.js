@@ -110,35 +110,10 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         }
     }
     
-    // Calculate layout
-    const rootX = width / 2;
+    // Calculate layout - rootX will be calculated after branch positions are determined
     const rootY = 80;
     const rootFont = THEME.fontRoot || 20;
     const rootBox = measureSvgTextBox(svg, spec.topic, rootFont, 16, 12);
-    // Draw root node as rectangle
-    svg.append('rect')
-        .attr('x', rootX - rootBox.w / 2)
-        .attr('y', rootY - rootBox.h / 2)
-        .attr('width', rootBox.w)
-        .attr('height', rootBox.h)
-        .attr('rx', 6)
-        .attr('ry', 6)
-        .attr('fill', THEME.rootFill)
-        .attr('stroke', THEME.rootStroke)
-        .attr('stroke-width', THEME.rootStrokeWidth)
-        .attr('data-node-id', 'tree-topic')
-        .attr('data-node-type', 'topic');
-    svg.append('text')
-        .attr('x', rootX)
-        .attr('y', rootY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.rootText)
-        .attr('font-size', rootFont)
-        .attr('font-weight', 'bold')
-        .attr('data-text-for', 'tree-topic')
-        .attr('cursor', 'pointer')
-        .text(spec.topic);
     
     // Draw branches
     const branchY = rootY + rootBox.h / 2 + 60;
@@ -193,6 +168,52 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     }
     branchLayouts.forEach(layout => { layout.branchX += offsetX; });
 
+    // Calculate rootX position - center of all branch nodes
+    let rootX;
+    if (branchLayouts.length > 0) {
+        if (branchLayouts.length === 1) {
+            // Single child: align root with child center
+            rootX = branchLayouts[0].branchX;
+        } else if (branchLayouts.length % 2 === 1) {
+            // Odd number of children: align root with middle child
+            const middleIndex = Math.floor(branchLayouts.length / 2);
+            rootX = branchLayouts[middleIndex].branchX;
+        } else {
+            // Even number of children: center between all children
+            const branchXs = branchLayouts.map(l => l.branchX);
+            const minBranchX = Math.min(...branchXs);
+            const maxBranchX = Math.max(...branchXs);
+            rootX = minBranchX + (maxBranchX - minBranchX) / 2;
+        }
+    } else {
+        rootX = width / 2; // fallback to center if no branches
+    }
+
+    // Draw root node as rectangle
+    svg.append('rect')
+        .attr('x', rootX - rootBox.w / 2)
+        .attr('y', rootY - rootBox.h / 2)
+        .attr('width', rootBox.w)
+        .attr('height', rootBox.h)
+        .attr('rx', 6)
+        .attr('ry', 6)
+        .attr('fill', THEME.rootFill)
+        .attr('stroke', THEME.rootStroke)
+        .attr('stroke-width', THEME.rootStrokeWidth)
+        .attr('data-node-id', 'tree-topic')
+        .attr('data-node-type', 'topic');
+    svg.append('text')
+        .attr('x', rootX)
+        .attr('y', rootY)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', THEME.rootText)
+        .attr('font-size', rootFont)
+        .attr('font-weight', 'bold')
+        .attr('data-text-for', 'tree-topic')
+        .attr('cursor', 'pointer')
+        .text(spec.topic);
+
     // Render branches and children stacked vertically with straight connectors
     branchLayouts.forEach((layout, branchIndex) => {
         const { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW } = layout;
@@ -224,14 +245,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('cursor', 'pointer')
             .text(childText);
 
-        // Root to branch straight connector
-        svg.append('line')
-            .attr('x1', rootX)
-            .attr('y1', rootY + rootBox.h / 2)
-            .attr('x2', branchX)
-            .attr('y2', branchY - branchBox.h / 2)
-            .attr('stroke', '#bbb')
-            .attr('stroke-width', 2);
+        // T形连线将在所有子节点绘制完成后统一绘制
 
         // Children: stacked vertically, centered, with straight vertical connectors
         const leaves = Array.isArray(child.children) ? child.children : [];
@@ -316,11 +330,101 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         }
     });
 
+    // ---------- T形连线实现 ----------
+    if (branchLayouts.length > 0) {
+        // 水平线 Y 坐标：根节点底部到子节点顶部的正中间
+        const rootBottom = rootY + rootBox.h / 2;
+        const branchTop = branchY - branchLayouts[0].branchBox.h / 2;
+        const tLineY = rootBottom + (branchTop - rootBottom) / 2;
+        
+        // 所有子节点 X 范围
+        const branchXs = branchLayouts.map(l => l.branchX);
+        const minX = Math.min(...branchXs);
+        const maxX = Math.max(...branchXs);
+        
+        // 垂直干线：根节点到底部中点
+        svg.append('line')
+            .attr('x1', rootX)
+            .attr('y1', rootY + rootBox.h / 2)
+            .attr('x2', rootX)
+            .attr('y2', tLineY)
+            .attr('stroke', '#bbb')
+            .attr('stroke-width', 2);
+        
+        // 水平线
+        svg.append('line')
+            .attr('x1', minX)
+            .attr('y1', tLineY)
+            .attr('x2', maxX)
+            .attr('y2', tLineY)
+            .attr('stroke', '#bbb')
+            .attr('stroke-width', 2);
+        
+        // 每个子节点竖线连接到水平线
+        branchLayouts.forEach(layout => {
+            svg.append('line')
+                .attr('x1', layout.branchX)
+                .attr('y1', tLineY)
+                .attr('x2', layout.branchX)
+                .attr('y2', branchY - layout.branchBox.h / 2)
+                .attr('stroke', '#bbb')
+                .attr('stroke-width', 2);
+        });
+    }
+
     // Expand SVG height if content exceeds current height
     const finalNeededHeight = Math.ceil(requiredBottomY + padding);
     if (finalNeededHeight > height) {
         svg.attr('height', finalNeededHeight);
     }
+    
+    // Watermark - matching mindmap style
+    const watermarkText = 'MindGraph';
+    
+    // Get SVG dimensions
+    const w = +svg.attr('width');
+    const h = +svg.attr('height');
+    
+    // Check if SVG uses viewBox
+    const viewBox = svg.attr('viewBox');
+    let watermarkX, watermarkY, watermarkFontSize;
+    
+    if (viewBox) {
+        // SVG uses viewBox - position within viewBox coordinate system
+        const viewBoxParts = viewBox.split(' ').map(Number);
+        const viewBoxWidth = viewBoxParts[2];
+        const viewBoxHeight = viewBoxParts[3];
+        
+        // Calculate font size based on viewBox dimensions
+        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
+        
+        // Calculate padding based on viewBox size
+        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
+        
+        // Position in lower right corner of viewBox
+        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
+        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
+    } else {
+        // SVG uses standard coordinate system
+        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
+        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
+        watermarkX = w - padding;
+        watermarkY = h - padding;
+    }
+    
+    // Add watermark with proper styling - matching mindmap
+    svg.append('text')
+        .attr('x', watermarkX)
+        .attr('y', watermarkY)
+        .attr('text-anchor', 'end')
+        .attr('dominant-baseline', 'alphabetic')
+        .attr('fill', '#2c3e50')  // Original dark blue-grey color
+        .attr('font-size', watermarkFontSize)
+        .attr('font-family', 'Inter, Segoe UI, sans-serif')
+        .attr('font-weight', '500')
+        .attr('opacity', 0.8)     // Original 80% opacity
+        .attr('pointer-events', 'none')
+        .text(watermarkText);
     
     // Apply learning sheet text knockout if needed
     console.log('Tree renderer: Checking learning sheet metadata:', {

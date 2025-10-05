@@ -504,11 +504,15 @@ class BlockBasedPositioningSystem:
         const_main_brace_visual_width = 16.0
         const_small_brace_visual_width = 12.0
 
-        # Gaps around braces
-        gap_topic_to_main_brace = 30.0
-        gap_main_brace_to_part = 30.0
-        gap_part_to_small_brace = 30.0
-        gap_small_brace_to_subpart = 30.0
+        # Gaps around braces - increased to prevent overlap
+        gap_topic_to_main_brace = 50.0  # Increased from 30.0
+        gap_main_brace_to_part = 60.0   # Increased from 40.0 for better spacing
+        gap_part_to_small_brace = 40.0  # Increased from 30.0
+        gap_small_brace_to_subpart = 40.0  # Increased from 30.0
+        
+        # Increased vertical spacing for arc display
+        vertical_padding_top = 80.0  # Increased from 50.0
+        vertical_padding_bottom = 80.0  # Increased from 40.0
 
         # Compute max widths of topic, part and subpart blocks to avoid overlap
         max_part_block_width = max((unit.part_block.width for unit in units), default=100.0)
@@ -525,9 +529,9 @@ class BlockBasedPositioningSystem:
                     if sb.width > max_topic_block_width:
                         max_topic_block_width = sb.width
 
-        # Column 1: Topic center (keep near left padding). Approximate topic width from part widths if unavailable.
+        # Column 1: Topic center (moved further left for brace space). Approximate topic width from part widths if unavailable.
         approx_topic_width = max(60.0, max_topic_block_width)
-        topic_column_x = padding + approx_topic_width / 2.0
+        topic_column_x = padding + approx_topic_width / 2.0 - 20.0  # Move left by 20px
 
         # Estimate curly brace corridor widths (adaptive, conservative so parts never overlap brace)
         estimated_main_depth = min(max(24.0, canvas_width * 0.08), 100.0)
@@ -538,9 +542,9 @@ class BlockBasedPositioningSystem:
             topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth / 2.0
         )
 
-        # Column 3: Parts center depends on estimated brace depth + gap + half of max part width
+        # Column 3: Parts center depends on estimated brace depth + gap + half of max part width (increased spacing)
         part_column_x = (
-            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth + gap_main_brace_to_part + max_part_block_width / 2.0
+            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth + gap_main_brace_to_part + 30.0 + max_part_block_width / 2.0  # Extra 30px spacing
         )
 
         # Column 4: Small brace X (use estimated small depth/2 past part-right + gap)
@@ -562,7 +566,19 @@ class BlockBasedPositioningSystem:
             
             # Position part block at computed parts column center
             unit.part_block.x = part_column_x
-            unit.part_block.y = unit.y + (unit.height - unit.part_block.height) / 2  # Center vertically in unit
+            
+            # Calculate subparts range center for part positioning
+            if unit.subpart_blocks:
+                # Calculate the vertical range of subparts for this part
+                subparts_start_y = unit.y + unit.part_block.height + 20
+                subparts_end_y = subparts_start_y + (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) + ((len(unit.subpart_blocks) - 1) * 10) - 10
+                subparts_range_center_y = (subparts_start_y + subparts_end_y) / 2
+                
+                # Position part at subparts range center
+                unit.part_block.y = subparts_range_center_y - unit.part_block.height / 2
+            else:
+                # No subparts: center vertically in unit
+                unit.part_block.y = unit.y + (unit.height - unit.part_block.height) / 2
             
             # Position subpart blocks in right column (Column 3)
             if unit.subpart_blocks:
@@ -1221,8 +1237,6 @@ class BraceMapAgent(BaseAgent):
             if not spec or not isinstance(spec, dict):
                 return {"success": False, "error": "Invalid specification"}
             
-            logger.info(f"BraceMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Parts: {len(spec.get('parts', []))}")
-            
             if 'topic' not in spec or not spec['topic']:
                 return {"success": False, "error": "Missing topic"}
             
@@ -1231,12 +1245,6 @@ class BraceMapAgent(BaseAgent):
             
             if not spec['parts']:
                 return {"success": False, "error": "At least one part is required"}
-            
-            # Log parts details
-            for i, part in enumerate(spec['parts']):
-                subparts_count = len(part.get('subparts', [])) if isinstance(part, dict) else 0
-                part_name = part.get('name', 'unnamed') if isinstance(part, dict) else 'invalid'
-                logger.info(f"BraceMapAgent: Part {i}: '{part_name}' with {subparts_count} subparts")
             
             # Normalize field names: convert 'label' to 'name' for compatibility
             spec = self._normalize_field_names(spec)
@@ -1480,24 +1488,9 @@ class BraceMapAgent(BaseAgent):
         # Since text is centered within the block, we need to adjust for the block width
         topic_x = padding + 50  # Same as topic_column_x in _position_blocks
         
-        # Calculate topic Y position to be center-aligned with the group of parts
-        if block_units:
-            # Calculate the center of all part blocks
-            part_centers = []
-            for unit in block_units:
-                # Part blocks are centered vertically within their units
-                # Use the actual part block position: unit.y + (unit.height - part_block.height) / 2
-                part_center_y = unit.y + (unit.height - unit.part_block.height) / 2 + unit.part_block.height / 2
-                part_centers.append(part_center_y)
-            
-            # Find the center of all part centers
-            parts_center_y = sum(part_centers) / len(part_centers)
-            
-            # Position topic so its center aligns with the parts center
-            topic_y = parts_center_y - topic_height / 2
-        else:
-            # Fallback: center in canvas if no parts
-            topic_y = (dimensions['height'] - topic_height) / 2
+        # Topic Y position will be calculated after brace center is determined
+        # Use temporary position for now
+        topic_y = (dimensions['height'] - topic_height) / 2
         
         # Ensure topic doesn't extend beyond canvas bounds
         if topic_x + topic_width > dimensions['width'] - dimensions['padding']:
@@ -1637,35 +1630,76 @@ class BraceMapAgent(BaseAgent):
             topic_right = topic_node['x'] + topic_node['width']
             parts_left = min(n['x'] for n in part_nodes)
 
-            # Curly (math-style) main brace opening to the right (adaptive, balanced spacing)
-            safety_gap = max(40.0, canvas_width * 0.05)
-            total_lane = max(0.0, (parts_left - safety_gap) - (topic_right + safety_gap))
-            depth = min(max(12.0, total_lane * 0.40), 80.0)
-            # Compute lane available for placing brace anchor X (excluding depth)
-            min_x = topic_right + safety_gap
-            max_x = parts_left - safety_gap - depth
-            if min_x > max_x:
-                # Very tight lane: reduce depth and pin to safe position
-                depth = max(6.0, total_lane * 0.25)
-                max_x = parts_left - safety_gap - depth
-                brace_x = max(min_x, max_x)
+            # Curly (math-style) main brace opening to the left (very conservative spacing)
+            safety_gap = max(50.0, canvas_width * 0.05)  # Increased safety gap for better spacing
+            
+            # CRITICAL: Calculate safe positioning for LEFT-opening brace
+            # Brace extends LEFT by tip_depth and RIGHT by arc_radius
+            # Calculate brace height based on first and last part centers
+            first_part_center_y = min(n['y'] + n['height'] / 2 for n in part_nodes)
+            last_part_center_y = max(n['y'] + n['height'] / 2 for n in part_nodes)
+            
+            # Current calculation gives us total range (A) = true brace height (B) + 2 * arc radius
+            # We need to solve: A = B + 2 * (B * 0.04) = B + 0.08 * B = B * (1 + 0.08) = B * 1.08
+            # So: B = A / 1.08
+            total_range_a = last_part_center_y - first_part_center_y
+            true_brace_height_b = total_range_a / 1.08  # Remove arc radius contribution
+            arc_radius = true_brace_height_b * 0.04      # Arc radius based on true height
+            tip_depth = true_brace_height_b * 0.05      # Tip depth based on true height
+            
+            # CRITICAL: Position brace to the RIGHT of topic text box
+            # Brace should be positioned after topic with sufficient gap
+            # The brace's leftmost point (brace_x - tip_depth) should be after topic's right edge
+            min_brace_x = topic_right + safety_gap + tip_depth  # Minimum X to avoid overlap with topic
+            
+            # Calculate maximum X position (before parts start)
+            max_brace_x = parts_left - safety_gap - arc_radius  # Maximum X to avoid overlap with parts
+            
+            # Position brace to the right of topic
+            if min_brace_x >= max_brace_x:
+                # Not enough space - position as close to topic as possible
+                brace_x = topic_right + safety_gap + tip_depth + 10.0  # Extra 10px buffer
             else:
-                # Center within lane segment for equal left/right spacing
-                brace_x = (min_x + max_x) / 2.0
+                # Sufficient space - position closer to topic (right side of available space)
+                brace_x = min_brace_x + (max_brace_x - min_brace_x) * 0.3  # 30% from left (slightly more centered)
+            
+            # CRITICAL: Brace boundaries include arc radius for complete display (arcs extend inward)
+            brace_start_y = first_part_center_y + arc_radius  # Include top arc radius (inward)
+            brace_end_y = last_part_center_y - arc_radius     # Include bottom arc radius (inward)
+            brace_height = brace_end_y - brace_start_y        # Total height including arcs
+            brace_center_y = (brace_start_y + brace_end_y) / 2  # Center between adjusted boundaries
+            
+            # CRITICAL: Adjust topic position to align with brace tip (left tip horizontal line)
+            # The brace tip is at the vertical center of the brace, which is brace_center_y
+            # Topic center line should align with brace_center_y
+            # Update topic node position so its center line aligns with brace center line
+            topic_node['y'] = brace_center_y - topic_node['height'] / 2
+            
+            # Calculate safe depth
+            total_lane = max(0.0, (parts_left - topic_right - (safety_gap * 2) - tip_depth - arc_radius))
+            depth = min(max(10.0, total_lane * 0.3), 40.0)
 
-            y_top = first_part_y
-            y_bot = last_part_y
+            y_top = brace_start_y
+            y_bot = brace_end_y
             y_mid = (y_top + y_bot) / 2.0
-            d1 = brace_height * 0.18
-            d2 = brace_height * 0.12
-            mid = brace_height * 0.08
-
+            
+            # New sharp tip brace design - matching kh4.html (LEFT direction, precise proportions)
+            tip_depth = brace_height * 0.05  # Tip protrudes to the LEFT (5% of height)
+            tip_width = brace_height * 0.01  # Sharp tip width (1% of height)
+            corner_arc = brace_height * 0.005  # Smooth transition at tip (0.5% of height)
+            
+            # Control points for upper and lower halves (symmetric) - LEFT direction
+            cp_top_x = brace_x - corner_arc
+            cp_top_y = y_mid - tip_width
+            cp_bottom_x = brace_x - corner_arc
+            cp_bottom_y = y_mid + tip_width
+            tip_x = brace_x - tip_depth  # LEFT direction
+            
+            # Main brace path with sharp mid-point tip
             brace_path = (
                 f"M {brace_x:.2f} {y_top:.2f} "
-                f"C {brace_x:.2f} {y_top + d2:.2f} {brace_x + depth:.2f} {y_top + d1:.2f} {brace_x + depth:.2f} {y_mid - mid:.2f} "
-                f"C {brace_x + depth:.2f} {y_mid - mid/2:.2f} {brace_x:.2f} {y_mid:.2f} {brace_x:.2f} {y_mid:.2f} "
-                f"C {brace_x:.2f} {y_mid:.2f} {brace_x + depth:.2f} {y_mid + mid/2:.2f} {brace_x + depth:.2f} {y_bot - d1:.2f} "
-                f"C {brace_x + depth:.2f} {y_bot - d2:.2f} {brace_x:.2f} {y_bot - d2/2:.2f} {brace_x:.2f} {y_bot:.2f}"
+                f"C {cp_top_x:.2f} {y_top + (y_mid - y_top - tip_width)/2:.2f} {cp_top_x:.2f} {cp_top_y:.2f} {tip_x:.2f} {y_mid:.2f} "
+                f"C {cp_bottom_x:.2f} {cp_bottom_y:.2f} {cp_bottom_x:.2f} {y_mid + (y_bot - y_mid - tip_width)/2:.2f} {brace_x:.2f} {y_bot:.2f}"
             )
             
             # Outline (draw first)
@@ -1682,6 +1716,59 @@ class BraceMapAgent(BaseAgent):
             brace_elements.append({
                 'type': 'path',
                 'd': brace_path,
+                'fill': 'none',
+                'stroke': brace_color,
+                'stroke_width': main_stroke_width,
+                'stroke_linecap': 'round',
+                'stroke_linejoin': 'round'
+            })
+            
+            # Add decorative arcs at top and bottom (if height is sufficient)
+            arc_radius = brace_height * 0.04  # Arc radius 4% of height
+            if brace_height > 50:
+                # Top arc - corrected position
+                upper_cx = brace_x + arc_radius
+                upper_start_x = upper_cx - arc_radius
+                upper_end_x = upper_cx
+                upper_end_y = y_top - arc_radius
+                top_arc_path = f"M {upper_start_x:.2f} {y_top:.2f} A {arc_radius:.2f} {arc_radius:.2f} 0 0 1 {upper_end_x:.2f} {upper_end_y:.2f}"
+                brace_elements.append({
+                    'type': 'path',
+                    'd': top_arc_path,
+                    'fill': 'none',
+                    'stroke': outline_color,
+                    'stroke_width': main_outline_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
+                brace_elements.append({
+                    'type': 'path',
+                    'd': top_arc_path,
+                    'fill': 'none',
+                    'stroke': brace_color,
+                    'stroke_width': main_stroke_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
+                
+                # Bottom arc - corrected position
+                lower_cx = brace_x + arc_radius
+                lower_start_x = lower_cx - arc_radius
+                lower_end_x = lower_cx
+                lower_end_y = y_bot + arc_radius
+                bottom_arc_path = f"M {lower_start_x:.2f} {y_bot:.2f} A {arc_radius:.2f} {arc_radius:.2f} 0 0 0 {lower_end_x:.2f} {lower_end_y:.2f}"
+                brace_elements.append({
+                    'type': 'path',
+                    'd': bottom_arc_path,
+                    'fill': 'none',
+                    'stroke': outline_color,
+                    'stroke_width': main_outline_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
+                brace_elements.append({
+                    'type': 'path',
+                    'd': bottom_arc_path,
                 'fill': 'none',
                 'stroke': brace_color,
                 'stroke_width': main_stroke_width,
@@ -1711,36 +1798,64 @@ class BraceMapAgent(BaseAgent):
                 subparts_left = min(n['x'] for n in part_subparts)
 
                 small_brace_width = 6
-                small_safety_gap = max(32.0, canvas_width * 0.04)
+                small_safety_gap = max(40.0, canvas_width * 0.04)  # Increased from 32.0 to 40.0
 
-                # Compute available lane between part and subparts
-                small_total_lane = max(0.0, (subparts_left - small_safety_gap) - (part_right + small_safety_gap))
-                s_depth = min(max(10.0, small_total_lane * 0.40), 60.0)
-
-                # Clamp small brace x so that x >= part_right+gap and x+s_depth <= subparts_left-gap
-                min_sx = part_right + small_safety_gap
-                max_sx = subparts_left - small_safety_gap - s_depth
+                # CRITICAL: Calculate safe positioning for LEFT-opening small brace
+                # Calculate small brace height based on first and last subpart centers
+                first_subpart_center_y = min(n['y'] + n['height'] / 2 for n in part_subparts)
+                last_subpart_center_y = max(n['y'] + n['height'] / 2 for n in part_subparts)
+                
+                # Apply same logic as main brace: calculate true height and arc radius
+                total_subpart_range_a = last_subpart_center_y - first_subpart_center_y
+                true_small_brace_height_b = total_subpart_range_a / 1.08  # Remove arc radius contribution
+                s_arc_radius = true_small_brace_height_b * 0.04      # Arc radius based on true height
+                s_tip_depth = true_small_brace_height_b * 0.05      # Tip depth based on true height
+                
+                # Calculate safe brace X position:
+                # 1. Tip must not overlap part: small_brace_x >= part_right + gap + tip_depth
+                # 2. Right edge must not overlap subparts: small_brace_x <= subparts_left - gap - arc_radius
+                
+                min_sx = part_right + small_safety_gap + s_tip_depth
+                max_sx = subparts_left - small_safety_gap - s_arc_radius
+                
                 if min_sx > max_sx:
-                    s_depth = max(6.0, small_total_lane * 0.25)
-                    max_sx = subparts_left - small_safety_gap - s_depth
-                    small_brace_x = max(min_sx, max_sx)
+                    # Very tight space: position as safely as possible
+                    small_brace_x = min_sx
                 else:
-                    # Center within lane segment for equal left/right spacing
+                    # Position in the middle of safe zone
                     small_brace_x = (min_sx + max_sx) / 2.0
 
-                yt = first_subpart_y
-                yb = last_subpart_y
-                ym = (yt + yb) / 2.0
-                sd1 = subpart_brace_height * 0.18
-                sd2 = subpart_brace_height * 0.12
-                smid = subpart_brace_height * 0.08
+                # Calculate safe depth
+                small_total_lane = max(0.0, (subparts_left - part_right - (small_safety_gap * 2) - s_tip_depth - s_arc_radius))
+                s_depth = min(max(8.0, small_total_lane * 0.3), 30.0)
 
+                # CRITICAL: Small brace boundaries include arc radius for complete display (arcs extend inward)
+                small_brace_start_y = first_subpart_center_y + s_arc_radius  # Include top arc radius (inward)
+                small_brace_end_y = last_subpart_center_y - s_arc_radius     # Include bottom arc radius (inward)
+                subpart_brace_height = small_brace_end_y - small_brace_start_y  # Total height including arcs
+                small_brace_center_y = (small_brace_start_y + small_brace_end_y) / 2  # Center between adjusted boundaries
+                
+                yt = small_brace_start_y
+                yb = small_brace_end_y
+                ym = small_brace_center_y
+                
+                # New sharp tip brace design for small braces - matching kh4.html (LEFT direction, precise proportions)
+                s_tip_depth = subpart_brace_height * 0.05  # Tip protrudes to the LEFT (5% of height)
+                s_tip_width = subpart_brace_height * 0.01  # Sharp tip width (1% of height)
+                s_corner_arc = subpart_brace_height * 0.005  # Smooth transition (0.5% of height)
+                
+                # Control points for upper and lower halves (symmetric) - LEFT direction
+                s_cp_top_x = small_brace_x - s_corner_arc
+                s_cp_top_y = ym - s_tip_width
+                s_cp_bottom_x = small_brace_x - s_corner_arc
+                s_cp_bottom_y = ym + s_tip_width
+                s_tip_x = small_brace_x - s_tip_depth  # LEFT direction
+                
+                # Main small brace path with sharp mid-point tip
                 small_brace_path = (
                     f"M {small_brace_x:.2f} {yt:.2f} "
-                    f"C {small_brace_x:.2f} {yt + sd2:.2f} {small_brace_x + s_depth:.2f} {yt + sd1:.2f} {small_brace_x + s_depth:.2f} {ym - smid:.2f} "
-                    f"C {small_brace_x + s_depth:.2f} {ym - smid/2:.2f} {small_brace_x:.2f} {ym:.2f} {small_brace_x:.2f} {ym:.2f} "
-                    f"C {small_brace_x:.2f} {ym:.2f} {small_brace_x + s_depth:.2f} {ym + smid/2:.2f} {small_brace_x + s_depth:.2f} {yb - sd1:.2f} "
-                    f"C {small_brace_x + s_depth:.2f} {yb - sd2:.2f} {small_brace_x:.2f} {yb - sd2/2:.2f} {small_brace_x:.2f} {yb:.2f}"
+                    f"C {s_cp_top_x:.2f} {yt + (ym - yt - s_tip_width)/2:.2f} {s_cp_top_x:.2f} {s_cp_top_y:.2f} {s_tip_x:.2f} {ym:.2f} "
+                    f"C {s_cp_bottom_x:.2f} {s_cp_bottom_y:.2f} {s_cp_bottom_x:.2f} {ym + (yb - ym - s_tip_width)/2:.2f} {small_brace_x:.2f} {yb:.2f}"
                 )
                 
                 # Outline (draw first)
@@ -1757,6 +1872,59 @@ class BraceMapAgent(BaseAgent):
                 brace_elements.append({
                     'type': 'path',
                     'd': small_brace_path,
+                    'fill': 'none',
+                    'stroke': brace_color,
+                    'stroke_width': small_stroke_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
+                
+                # Add decorative arcs at top and bottom for small braces (if height is sufficient)
+                s_arc_radius = subpart_brace_height * 0.04  # Arc radius 4% of height
+                if subpart_brace_height > 50:
+                    # Top arc - corrected position
+                    s_upper_cx = small_brace_x + s_arc_radius
+                    s_upper_start_x = s_upper_cx - s_arc_radius
+                    s_upper_end_x = s_upper_cx
+                    s_upper_end_y = yt - s_arc_radius
+                    s_top_arc_path = f"M {s_upper_start_x:.2f} {yt:.2f} A {s_arc_radius:.2f} {s_arc_radius:.2f} 0 0 1 {s_upper_end_x:.2f} {s_upper_end_y:.2f}"
+                    brace_elements.append({
+                        'type': 'path',
+                        'd': s_top_arc_path,
+                        'fill': 'none',
+                        'stroke': outline_color,
+                        'stroke_width': small_outline_width,
+                        'stroke_linecap': 'round',
+                        'stroke_linejoin': 'round'
+                    })
+                    brace_elements.append({
+                        'type': 'path',
+                        'd': s_top_arc_path,
+                        'fill': 'none',
+                        'stroke': brace_color,
+                        'stroke_width': small_stroke_width,
+                        'stroke_linecap': 'round',
+                        'stroke_linejoin': 'round'
+                    })
+                    
+                    # Bottom arc - corrected position
+                    s_lower_cx = small_brace_x + s_arc_radius
+                    s_lower_start_x = s_lower_cx - s_arc_radius
+                    s_lower_end_x = s_lower_cx
+                    s_lower_end_y = yb + s_arc_radius
+                    s_bottom_arc_path = f"M {s_lower_start_x:.2f} {yb:.2f} A {s_arc_radius:.2f} {s_arc_radius:.2f} 0 0 0 {s_lower_end_x:.2f} {s_lower_end_y:.2f}"
+                    brace_elements.append({
+                        'type': 'path',
+                        'd': s_bottom_arc_path,
+                        'fill': 'none',
+                        'stroke': outline_color,
+                        'stroke_width': small_outline_width,
+                        'stroke_linecap': 'round',
+                        'stroke_linejoin': 'round'
+                    })
+                    brace_elements.append({
+                        'type': 'path',
+                        'd': s_bottom_arc_path,
                     'fill': 'none',
                     'stroke': brace_color,
                     'stroke_width': small_stroke_width,
@@ -1807,8 +1975,9 @@ class BraceMapAgent(BaseAgent):
         estimated_part_width = max(len(part['name']) for part in parts) * 10 if parts else 100
         estimated_subpart_width = max(len(subpart['name']) for part in parts for subpart in part.get('subparts', [])) * 8 if total_subparts > 0 else 100
         
-        # 5-column layout requires more width
-        required_width = estimated_topic_width + 150 + estimated_part_width + 150 + estimated_subpart_width + 120  # Tighter trailing spacing
+        # 5-column layout requires more width + extra space for brace tip
+        brace_tip_space = 100  # Extra space for brace tip extension
+        required_width = estimated_topic_width + 150 + estimated_part_width + 150 + estimated_subpart_width + 120 + brace_tip_space
         
         # Add watermark space (bottom and right margins)
         watermark_margin = 24  # Tighter watermark margin

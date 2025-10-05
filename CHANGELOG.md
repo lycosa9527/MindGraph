@@ -9,11 +9,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v3.0.11] - 2025-10-05
 
-### 🚧 In Progress
-- **Brace Map Visual Improvements**: Enhancing brace (curly bracket) rendering
-- **Tree Map Connection Lines**: Improving hierarchical connection line rendering
-
 ### Added
+- **Brace Map Visual Enhancements**: Professional math-textbook style braces
+  - Sharp-tip curly braces with precise proportions (5% tip depth, 1% tip width)
+  - Decorative arcs at top/bottom endpoints for braces > 50px height
+  - Adaptive stroke widths that scale with canvas size (1.5-5.5px range)
+  - Dual-layer outline/stroke rendering for subtle 3D depth effect
+  - Collision-safe positioning with dynamic safety gaps
+  - Perfect topic-brace alignment (topic center aligns with brace tip)
+  - Enhanced spacing: 80px column spacing, 100px arc space allocation
+
+- **Tree Map Connection Enhancements**: Professional T-shape connector system
+  - Clean T-shape connectors (vertical trunk, horizontal crossbar, individual branches)
+  - Root node centered intelligently based on branch count (odd/even/single handling)
+  - Width-adaptive node boxes based on text content length
+  - Field name compatibility for both `text` and `label` properties
+
+- **Interactive Editor Data Attributes**: Full editing support for both diagram types
+  - Brace Map: Added `data-node-id`, `data-node-type`, `data-part-index`, `data-subpart-index`
+  - Tree Map: Added `data-node-id`, `data-node-type`, `data-category-index`, `data-leaf-index`
+  - Enables node selection, add, edit, delete, and style operations
+  - All text elements tagged with `data-text-for` for proper text binding
+
+### Changed
+- **Brace Map Field Normalization**: Enhanced backward compatibility
+  - Accepts both `label` and `name` fields from LLM responses
+  - Automatically converts `label` → `name` for consistency
+  - Prevents spec validation failures from field mismatches
+
+- **Tree Map Field Flexibility**: Dual field support for maximum compatibility
+  - Renderer accepts both `text` OR `label` fields (`child?.text || child?.label`)
+  - Agent outputs standardized `text` field
+  - Backward compatible with legacy specs using `label`
+  - Enhanced logging for debugging LLM response issues
+
+### Fixed
+- **CRITICAL: Brace Map Interactive Editing Broken**: Nodes couldn't be selected or edited
+  - **Root Cause**: Missing `data-node-type` attributes on SVG elements
+  - **Impact**: "无法确定节点类型" error when clicking Add Node button
+  - **Solution**: Added all required data attributes to topic, part, and subpart elements
+  - **Result**: Full interactive editing restored (add, edit, delete, style changes)
+
+- **CRITICAL: Tree Map Only Showing Root**: Branches and leaves not rendering
+  - **Root Cause**: Field mismatch - renderer only accepted `label`, agent outputs `text`
+  - **Secondary Issue**: Missing data attributes for interactive editing
+  - **Solution**: 
+    - Updated renderer to accept both `text` and `label` fields
+    - Added complete data attribute tagging for all node types
+  - **Result**: All tree map nodes render correctly with full editing support
+
+- **Brace Map Outline Indentation**: Fixed Python code formatting error
+  - Corrected indentation in `_generate_brace_elements` method (line 1777)
+  - Ensures proper outline rendering for decorative arcs
+
+### Technical Details
+- **Brace Rendering Algorithm**: LEFT-opening curly braces with mathematical precision
+  - Tip protrudes 5% of brace height to the left
+  - Sharp tip width: 1% of brace height
+  - Decorative arc radius: 4% of brace height
+  - Smooth corner transitions: 0.5% of brace height
+- **Safety Gap System**: Prevents node/brace overlap
+  - Minimum gaps: 20-25px between elements
+  - Dynamic calculation based on tip depth and arc radius
+  - Centered positioning within safe zones
+- **Field Compatibility Layer**: Robust fallback chain
+  - `node.get("text", node.get("label", node.get("name", "")))`
+  - Works with any LLM response format
+- **Performance Optimization**: Single-pass rendering with minimal DOM operations
+
 - **Smart Placeholder System**: Intelligent pattern-matching for template text
   - Automatically detects ALL template variations using regex patterns
   - English patterns: `Attribute 1-999`, `Sub-item 1.1-99.99`, `New Attribute`, etc.

@@ -43,7 +43,13 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             console.log('✅ Brace renderer: getTextRadius function available');
         }
 
-        // Note: addWatermark function check removed - watermark only added during export, not in canvas display
+        if (typeof window.addWatermark !== 'function') {
+            console.error('❌ Brace renderer: addWatermark function not available globally');
+            console.log('🔍 Available functions on window:', Object.keys(window).filter(k => k.includes('Watermark') || k.includes('watermark')));
+            throw new Error('addWatermark function not available globally');
+        } else {
+            console.log('✅ Brace renderer: addWatermark function available');
+        }
 
         // Check D3 availability
         if (typeof d3 === 'undefined') {
@@ -187,19 +193,67 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         return Math.max(0, bbox?.width || 0);
     }
 
-    // Helper to build a curly brace path opening to the right
+    // Helper to build a curly brace path opening to the left
+    // Based on HTML reference file kh4.html - sharp tip with decorative arcs
     function buildCurlyBracePath(braceX, yTop, yBottom, depth) {
         const height = Math.max(0, yBottom - yTop);
-        if (height <= 0 || depth <= 0) return '';
+        if (height <= 0 || depth <= 0) {
+            return {
+                main: '',
+                topArc: '',
+                bottomArc: ''
+            };
+        }
+        
         const yMid = (yTop + yBottom) / 2;
-        const d1 = height * 0.18;
-        const d2 = height * 0.12;
-        const mid = height * 0.08;
-        return `M ${braceX} ${yTop}
-                C ${braceX} ${yTop + d2} ${braceX + depth} ${yTop + d1} ${braceX + depth} ${yMid - mid}
-                C ${braceX + depth} ${yMid - mid/2} ${braceX} ${yMid} ${braceX} ${yMid}
-                C ${braceX} ${yMid} ${braceX + depth} ${yMid + mid/2} ${braceX + depth} ${yBottom - d1}
-                C ${braceX + depth} ${yBottom - d2} ${braceX} ${yBottom - d2/2} ${braceX} ${yBottom}`;
+        
+        // Tip parameters - matching kh4.html design (precise proportions based on height)
+        const tipDepth = height * 0.05;      // Tip protrudes to the left (5% of height)
+        const tipWidth = height * 0.01;      // Sharp tip width (1% of height for sharpness)
+        const cornerArc = height * 0.005;    // Smooth transition at tip (0.5% of height)
+        
+        // Control points for upper half (from top to mid-point tip) - LEFT direction
+        const cpTopX = braceX - cornerArc;
+        const cpTopY = yMid - tipWidth;
+        
+        // Control points for lower half (from mid-point tip to bottom) - symmetric - LEFT direction
+        const cpBottomX = braceX - cornerArc;
+        const cpBottomY = yMid + tipWidth;
+        
+        const tipX = braceX - tipDepth;  // Tip vertex horizontal position (LEFT)
+        
+        // Main brace path with sharp mid-point tip - exactly like kh4.html
+        const mainPath = `M ${braceX} ${yTop}
+                         C ${cpTopX} ${yTop + (yMid - yTop - tipWidth)/2} ${cpTopX} ${cpTopY} ${tipX} ${yMid}
+                         C ${cpBottomX} ${cpBottomY} ${cpBottomX} ${yMid + (yBottom - yMid - tipWidth)/2} ${braceX} ${yBottom}`;
+        
+        // Decorative arcs at top and bottom ends (only if height is sufficient)
+        const arcRadius = height * 0.04;  // Arc radius 4% of height
+        let topArcPath = '';
+        let bottomArcPath = '';
+        
+        if (height > 50) {  // Only add arcs if brace is tall enough
+            // Top arc - corrected position
+            const upperCx = braceX + arcRadius;
+            const upperStartX = upperCx - arcRadius;
+            const upperEndX = upperCx;
+            const upperEndY = yTop - arcRadius;
+            topArcPath = `M ${upperStartX} ${yTop} A ${arcRadius} ${arcRadius} 0 0 1 ${upperEndX} ${upperEndY}`;
+            
+            // Bottom arc - corrected position
+            const lowerCx = braceX + arcRadius;
+            const lowerStartX = lowerCx - arcRadius;
+            const lowerEndX = lowerCx;
+            const lowerEndY = yBottom + arcRadius;
+            bottomArcPath = `M ${lowerStartX} ${yBottom} A ${arcRadius} ${arcRadius} 0 0 0 ${lowerEndX} ${lowerEndY}`;
+        }
+        
+        // Return object with all path components
+        return {
+            main: mainPath,
+            topArc: topArcPath,
+            bottomArc: bottomArcPath
+        };
     }
 
     // Measure content widths
@@ -220,7 +274,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const subpartPadding = 8;
     const braceWidth = 3;
     const braceSpacing = 30;
-    const columnSpacing = 45;
+    const columnSpacing = 80;  // Increased from 45 to 80 to prevent overlap
     
     // Calculate dimensions
     const topicBoxWidth = topicWidth + topicPadding * 2;
@@ -228,8 +282,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const partBoxHeight = parseFontSpec(THEME.fontPart).size + partPadding * 2;
     const subpartBoxHeight = parseFontSpec(THEME.fontSubpart).size + subpartPadding * 2;
     
-    // Calculate total height needed
-    let totalHeight = topicBoxHeight + 40; // Topic + spacing
+    // Calculate total height needed - increased top padding for arc space
+    let totalHeight = topicBoxHeight + 100; // Topic + spacing (increased to 100 for arc space)
     (actualSpec.parts || []).forEach(part => {
         totalHeight += partBoxHeight + 20; // Part height + spacing
         if (part.subparts && part.subparts.length > 0) {
@@ -239,17 +293,18 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     totalHeight += 40; // Bottom padding
     
     // Calculate the actual content area (excluding top/bottom padding)
-    const contentStartY = 30; // Parts start at this Y position
-    const contentEndY = totalHeight - 40; // Bottom padding
+    const contentStartY = 80; // Parts start at this Y position (increased to 80 for arc space)
+    const contentEndY = totalHeight - 80; // Bottom padding (increased to 80 for arc space)
     const contentCenterY = contentStartY + (contentEndY - contentStartY) / 2;
     
-    // Calculate total width needed - FIXED: Ensure adequate width for all elements
+    // Calculate total width needed - EXPANDED: Ensure adequate width for brace tip extension
     const topicSectionWidth = topicBoxWidth + 30; // Topic + padding
     const partsSectionWidth = maxPartWidth + 30; // Parts + padding
     const subpartsSectionWidth = maxSubpartWidth + 30; // Subparts + padding
+    const braceTipSpace = 100; // Extra space for brace tip extension
     const totalWidth = Math.max(
-        topicSectionWidth + columnSpacing + partsSectionWidth + columnSpacing + subpartsSectionWidth + 60, // Content width
-        750 // Minimum width for readability
+        topicSectionWidth + columnSpacing + partsSectionWidth + columnSpacing + subpartsSectionWidth + braceTipSpace, // Content width + brace space
+        900 // Increased minimum width for readability
     );
     
     // Create SVG with calculated dimensions
@@ -271,40 +326,17 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.background || '#f8f9fa')
         .attr('stroke', 'none');
 
-    // Position topic in center-left, centered relative to actual content
-    const topicX = 30;
-    const topicY = contentCenterY;
-    
-    // Draw topic
-    svg.append('rect')
-        .attr('x', topicX)
-        .attr('y', topicY - topicBoxHeight / 2)
-        .attr('width', topicBoxWidth)
-        .attr('height', topicBoxHeight)
-        .attr('rx', 8)
-        .attr('fill', THEME.topicFill)
-        .attr('stroke', THEME.topicStroke)
-        .attr('stroke-width', 2)
-        .attr('data-node-id', 'topic_center')
-        .attr('data-node-type', 'topic');
-    
-    svg.append('text')
-        .attr('x', topicX + topicBoxWidth / 2)
-        .attr('y', topicY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.topicText)
-        .attr('font-size', parseFontSpec(THEME.fontTopic).size)
-        .attr('font-family', parseFontSpec(THEME.fontTopic).family)
-        .attr('font-weight', 'bold')
-        .attr('data-text-for', 'topic_center')
-        .text(actualSpec.topic);
+    // Position topic further left to give more space for brace
+    const topicX = 20;  // Moved left from 30 to 20
+    // Topic will be drawn AFTER brace center is calculated to ensure correct position
 
-    // Position parts to the right of topic - FIXED: Better positioning
-    const partsStartX = topicX + topicBoxWidth + columnSpacing;
-    const partsStartY = 30;
+    // Position parts to the right of topic with more generous spacing for brace
+    const partsStartX = topicX + topicBoxWidth + columnSpacing + 80;  // Increased from 50px to 80px for more space
+    const partsStartY = 80;  // Increased to 80 to give space for top arc
     let currentY = partsStartY;
-    let partsEndY = currentY;
+    
+    // Store part center Y positions for brace boundary calculation
+    const partCenterYs = [];
 
     (actualSpec.parts || []).forEach((part, partIndex) => {
         // Calculate the starting Y position for this part's section
@@ -317,12 +349,20 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             partSectionHeight += (part.subparts.length * (subpartBoxHeight + 10)) + 20; // Subparts + spacing
         }
         
-        // Calculate the center Y position for this part's entire section
-        const partSectionCenterY = partSectionStartY + partSectionHeight / 2;
+        // Calculate subparts range center for part positioning
+        let subpartsRangeCenterY = partSectionStartY + partSectionHeight / 2; // Default to section center
+        if (part.subparts && part.subparts.length > 0) {
+            const subpartsStartY = currentY + partBoxHeight + 20;
+            const subpartsEndY = subpartsStartY + (part.subparts.length * (subpartBoxHeight + 10)) - 10;
+            subpartsRangeCenterY = (subpartsStartY + subpartsEndY) / 2;
+        }
         
-        // Position the part at the center of its section
-        const partY = partSectionCenterY;
+        // Position the part at subparts range center
+        const partY = subpartsRangeCenterY;
         const partBoxWidth = Math.max(maxPartWidth, measureTextWidth(part?.name || '', THEME.fontPart, 'bold')) + partPadding * 2;
+        
+        // Store the part center Y for brace boundary calculation
+        partCenterYs.push(partY);
         
         // Draw part
         svg.append('rect')
@@ -390,52 +430,268 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 currentY += subpartBoxHeight + 10;
             });
 
-            // Draw small brace connecting part to subparts - FIXED: Better positioning
+            // Draw small brace connecting part to subparts - with safety gap check
             const subpartsEndY = currentY - 10;
             if (subpartsEndY > subpartsStartY) {
-                const braceX = partsStartX + partBoxWidth + (columnSpacing - braceSpacing) / 2;
-                // Drawing small brace connecting part to subparts
+                // Calculate safe brace position to avoid overlap
+                const partRight = partsStartX + partBoxWidth;
+                const subpartsLeft = subpartsStartX;
+                const safetyGap = 20;  // Minimum gap between elements
                 
-                const bracePath = buildCurlyBracePath(
+                // Calculate small brace boundaries based on subpart centers
+                const subpartCenterYs = [];
+                part.subparts.forEach((subpart, subpartIndex) => {
+                    const subpartY = subpartsStartY + (subpartIndex + 0.5) * (subpartBoxHeight + 10);
+                    subpartCenterYs.push(subpartY);
+                });
+                
+                // Apply same logic as main brace: calculate true height and arc radius
+                const totalSubpartRangeA = Math.max(...subpartCenterYs) - Math.min(...subpartCenterYs);
+                const trueSmallBraceHeightB = totalSubpartRangeA / 1.08;  // Remove arc radius contribution
+                const sArcRadius = trueSmallBraceHeightB * 0.04;     // Arc radius based on true height
+                const sTipDepth = trueSmallBraceHeightB * 0.05;      // Tip depth based on true height
+                
+                // Calculate boundaries: subpart centers ± arc radius (arcs extend inward)
+                const smallBraceStartY = Math.min(...subpartCenterYs) + sArcRadius;  // Include top arc (inward)
+                const smallBraceEndY = Math.max(...subpartCenterYs) - sArcRadius;    // Include bottom arc (inward)
+                const smallBraceHeight = smallBraceEndY - smallBraceStartY;
+                
+                // CRITICAL: Calculate safe positioning
+                // 1. Tip (braceX - tipDepth) doesn't overlap part
+                // 2. Right edge (braceX + arcRadius) doesn't overlap subparts
+                
+                const minBraceX = partRight + safetyGap + sTipDepth;
+                const maxBraceX = subpartsLeft - safetyGap - sArcRadius;
+                
+                // Position in the middle of safe zone
+                const braceX = (minBraceX + maxBraceX) / 2;
+                
+                // Calculate safe depth
+                const availableSpace = subpartsLeft - partRight - (safetyGap * 2) - sTipDepth - sArcRadius;
+                const braceDepth = Math.max(8, Math.min(availableSpace * 0.3, 30));
+                
+                const bracePaths = buildCurlyBracePath(
                     braceX,
-                    subpartsStartY,
-                    subpartsEndY,
-                    braceSpacing / 2
+                    smallBraceStartY,
+                    smallBraceEndY,
+                    braceDepth
                 );
                 
+                // Draw main brace path
+                if (bracePaths.main) {
+                    svg.append('path')
+                        .attr('d', bracePaths.main)
+                        .attr('fill', 'none')
+                        .attr('stroke', THEME.braceColor || '#666666')
+                        .attr('stroke-width', braceWidth / 2)
+                        .attr('stroke-linecap', 'round')
+                        .attr('stroke-linejoin', 'round');
+                }
+                
+                // Draw top arc (if exists)
+                if (bracePaths.topArc) {
+                    svg.append('path')
+                        .attr('d', bracePaths.topArc)
+                        .attr('fill', 'none')
+                        .attr('stroke', THEME.braceColor || '#666666')
+                        .attr('stroke-width', braceWidth / 2)
+                        .attr('stroke-linecap', 'round')
+                        .attr('stroke-linejoin', 'round');
+                }
+                
+                // Draw bottom arc (if exists)
+                if (bracePaths.bottomArc) {
                 svg.append('path')
-                    .attr('d', bracePath)
+                        .attr('d', bracePaths.bottomArc)
                     .attr('fill', 'none')
                     .attr('stroke', THEME.braceColor || '#666666')
-                    .attr('stroke-width', braceWidth / 2);
+                        .attr('stroke-width', braceWidth / 2)
+                        .attr('stroke-linecap', 'round')
+                        .attr('stroke-linejoin', 'round');
+                }
             }
         }
         
         currentY += 20; // Extra spacing between parts
-        partsEndY = currentY - 20;
     });
 
-    // Draw main brace connecting topic to parts - FIXED: Better positioning and visibility
-    if (partsEndY > partsStartY) {
-        const mainBraceX = topicX + topicBoxWidth + (columnSpacing - braceSpacing) / 2;
-        // Drawing main brace connecting topic to parts
+    // Calculate brace boundaries based on first and last part centers
+    let braceStartY, braceEndY;
+    if (partCenterYs.length > 0) {
+        // Current calculation gives us total range (A) = true brace height (B) + 2 * arc radius
+        // We need to solve: A = B + 2 * (B * 0.04) = B + 0.08 * B = B * (1 + 0.08) = B * 1.08
+        // So: B = A / 1.08
+        const totalRangeA = Math.max(...partCenterYs) - Math.min(...partCenterYs);
+        const trueBraceHeightB = totalRangeA / 1.08;  // Remove arc radius contribution
+        const arcRadius = trueBraceHeightB * 0.04;     // Arc radius based on true height
         
-        const bracePath = buildCurlyBracePath(
-            mainBraceX,
-            partsStartY,
-            partsEndY,
-            braceSpacing / 2
-        );
-        
-        svg.append('path')
-            .attr('d', bracePath)
-            .attr('fill', 'none')
-            .attr('stroke', THEME.braceColor || '#666666')
-            .attr('stroke-width', braceWidth);
+        // Calculate boundaries: part centers ± arc radius (arcs extend inward)
+        braceStartY = Math.min(...partCenterYs) + arcRadius;  // Include top arc (inward)
+        braceEndY = Math.max(...partCenterYs) - arcRadius;    // Include bottom arc (inward)
+    } else {
+        // Fallback if no parts
+        braceStartY = partsStartY;
+        braceEndY = partsStartY;
     }
 
-    // Watermark removed from canvas display - will be added during PNG export only
-    // The export functionality will handle adding the watermark to the final image
+    // Draw main brace connecting topic to parts - with safety gap check
+    if (braceEndY > braceStartY) {
+        // Calculate safe brace position to avoid overlap
+        const topicRight = topicX + topicBoxWidth;
+        const partsLeft = partsStartX;
+        const safetyGap = 25;  // Increased safety gap between topic and brace
+        
+        // Calculate main brace height and tip depth based on corrected boundaries
+        const mainBraceHeight = braceEndY - braceStartY;
+        const tipDepth = mainBraceHeight * 0.05;  // Tip extends LEFT by 5% of height
+        const arcRadius = mainBraceHeight * 0.04;  // Arc radius is 4% of height
+        
+        // CRITICAL: Position brace to the RIGHT of topic text box
+        // Brace should be positioned after topic with sufficient gap
+        // The brace's leftmost point (braceX - tipDepth) should be after topic's right edge
+        const minBraceX = topicRight + safetyGap + tipDepth;  // Minimum X to avoid overlap with topic
+        
+        // Calculate maximum X position (before parts start)
+        const maxBraceX = partsLeft - safetyGap - arcRadius;  // Maximum X to avoid overlap with parts
+        
+        // Position brace to the right of topic
+        let mainBraceX;
+        if (minBraceX >= maxBraceX) {
+            // Not enough space - position as close to topic as possible
+            mainBraceX = topicRight + safetyGap + tipDepth + 10;  // Extra 10px buffer
+        } else {
+            // Sufficient space - position closer to topic (right side of available space)
+            mainBraceX = minBraceX + (maxBraceX - minBraceX) * 0.3;  // 30% from left (slightly more centered)
+        }
+        
+        // CRITICAL: Brace boundaries align with first and last part centers
+        // braceStartY and braceEndY are already calculated above based on part centers
+        const braceCenterY = (braceStartY + braceEndY) / 2; // Center between first and last part centers
+        
+        // CRITICAL: Adjust topic position to align with brace tip (left tip horizontal line)
+        // The brace tip is at the vertical center of the brace, which is braceCenterY
+        // Topic center line should align with braceCenterY
+        topicY = braceCenterY;  // Topic center line = brace center line
+        topicCenterY = braceCenterY;
+        
+        // CRITICAL: Draw topic NOW with correct position (after brace center is calculated)
+        const topicRect = svg.append('rect')
+            .attr('x', topicX)
+            .attr('y', topicY - topicBoxHeight / 2)  // Rectangle top = center - height/2
+            .attr('width', topicBoxWidth)
+            .attr('height', topicBoxHeight)
+            .attr('rx', 8)
+            .attr('fill', THEME.topicFill)
+            .attr('stroke', THEME.topicStroke)
+            .attr('stroke-width', 2)
+            .attr('data-node-id', 'topic_center')
+            .attr('data-node-type', 'topic');
+        
+        const topicText = svg.append('text')
+            .attr('x', topicX + topicBoxWidth / 2)
+            .attr('y', topicY)  // Text at center line
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.topicText)
+            .attr('font-size', parseFontSpec(THEME.fontTopic).size)
+            .attr('font-family', parseFontSpec(THEME.fontTopic).family)
+            .attr('font-weight', 'bold')
+            .attr('data-text-for', 'topic_center')
+            .text(actualSpec.topic);
+        
+        // Calculate safe depth
+        const availableSpace = partsLeft - topicRight - (safetyGap * 2) - tipDepth - arcRadius;
+        const braceDepth = Math.max(10, Math.min(availableSpace * 0.3, 40));
+        
+        const bracePaths = buildCurlyBracePath(
+            mainBraceX,
+            braceStartY,
+            braceEndY,
+            braceDepth
+        );
+        
+        // Draw main brace path
+        if (bracePaths.main) {
+            svg.append('path')
+                .attr('d', bracePaths.main)
+                .attr('fill', 'none')
+                .attr('stroke', THEME.braceColor || '#666666')
+                .attr('stroke-width', braceWidth)
+                .attr('stroke-linecap', 'round')
+                .attr('stroke-linejoin', 'round');
+        }
+        
+        // Draw top arc (if exists)
+        if (bracePaths.topArc) {
+            svg.append('path')
+                .attr('d', bracePaths.topArc)
+                .attr('fill', 'none')
+                .attr('stroke', THEME.braceColor || '#666666')
+                .attr('stroke-width', braceWidth)
+                .attr('stroke-linecap', 'round')
+                .attr('stroke-linejoin', 'round');
+        }
+        
+        // Draw bottom arc (if exists)
+        if (bracePaths.bottomArc) {
+        svg.append('path')
+                .attr('d', bracePaths.bottomArc)
+            .attr('fill', 'none')
+            .attr('stroke', THEME.braceColor || '#666666')
+                .attr('stroke-width', braceWidth)
+                .attr('stroke-linecap', 'round')
+                .attr('stroke-linejoin', 'round');
+        }
+    }
+
+    // Watermark - matching mindmap style
+    const watermarkText = 'MindGraph';
+    
+    // Get SVG dimensions
+    const w = +svg.attr('width');
+    const h = +svg.attr('height');
+    
+    // Check if SVG uses viewBox
+    const viewBox = svg.attr('viewBox');
+    let watermarkX, watermarkY, watermarkFontSize;
+    
+    if (viewBox) {
+        // SVG uses viewBox - position within viewBox coordinate system
+        const viewBoxParts = viewBox.split(' ').map(Number);
+        const viewBoxWidth = viewBoxParts[2];
+        const viewBoxHeight = viewBoxParts[3];
+        
+        // Calculate font size based on viewBox dimensions
+        watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
+        
+        // Calculate padding based on viewBox size
+        const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
+        
+        // Position in lower right corner of viewBox
+        watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
+        watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
+    } else {
+        // SVG uses standard coordinate system
+        watermarkFontSize = Math.max(12, Math.min(20, Math.min(w, h) * 0.025));
+        const padding = Math.max(10, Math.min(20, Math.min(w, h) * 0.02));
+        watermarkX = w - padding;
+        watermarkY = h - padding;
+    }
+    
+    // Add watermark with proper styling - matching mindmap
+    svg.append('text')
+        .attr('x', watermarkX)
+        .attr('y', watermarkY)
+        .attr('text-anchor', 'end')
+        .attr('dominant-baseline', 'alphabetic')
+        .attr('fill', '#2c3e50')  // Original dark blue-grey color
+        .attr('font-size', watermarkFontSize)
+        .attr('font-family', 'Inter, Segoe UI, sans-serif')
+        .attr('font-weight', '500')
+        .attr('opacity', 0.8)     // Original 80% opacity
+        .attr('pointer-events', 'none')
+        .text(watermarkText);
+    
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
