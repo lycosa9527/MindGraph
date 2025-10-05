@@ -1097,6 +1097,14 @@ class ToolbarManager {
             } else {
                 prompt = `Create a complete brace map about "${mainTopic}". Generate relevant parts and subparts to make it comprehensive.`;
             }
+        } else if (diagramType === 'mindmap') {
+            // For mind maps, only use the main topic, not the branches/children
+            // (to avoid LLM being influenced by template placeholders or partial edits)
+            if (language === 'zh') {
+                prompt = `为主题"${mainTopic}"创建一个完整的思维导图。生成相关的分支和子节点，使其内容完整。`;
+            } else {
+                prompt = `Create a complete mind map about "${mainTopic}". Generate relevant branches and children to make it comprehensive.`;
+            }
         } else if (existingNodes.length === 1) {
             // Only one node - expand around it
             if (language === 'zh') {
@@ -1106,8 +1114,22 @@ class ToolbarManager {
             }
         } else {
             // Multiple nodes - use main topic and mention others
+            // Filter out default placeholder names (分支1-4, Branch 1-4, 新分支, New Branch, etc.)
+            const isDefaultPlaceholder = (text) => {
+                if (!text) return true;
+                const lowerText = text.toLowerCase();
+                // Chinese placeholders: 分支1, 分支2, 分支3, 分支4, 新分支
+                if (/^分支[0-9]+$/.test(text) || text === '新分支') return true;
+                // English placeholders: Branch 1, Branch 2, Branch 3, Branch 4, New Branch
+                if (/^branch\s*[0-9]+$/i.test(lowerText) || lowerText === 'new branch') return true;
+                // Other common placeholders
+                if (lowerText === '中心主题' || lowerText === 'central topic' || lowerText === 'topic') return true;
+                return false;
+            };
+            
             const otherNodes = existingNodes
                 .filter(n => n.text !== mainTopic)
+                .filter(n => !isDefaultPlaceholder(n.text)) // Exclude default placeholders
                 .map(n => n.text)
                 .slice(0, 5); // Limit to avoid too long prompt
             
@@ -1258,7 +1280,42 @@ class ToolbarManager {
         const diagramType = this.editor.diagramType;
         const spec = this.editor.currentSpec;
         
-        // Strategy 1: Use diagram-specific structure
+        // Strategy 1: For MindMap and similar diagrams, find the central node from SVG (user may have edited it)
+        // This prioritizes the actual displayed text over the spec
+        if (diagramType === 'mindmap' || diagramType === 'tree_map' || diagramType === 'bubble_map' || diagramType === 'circle_map') {
+            // Find the node closest to center (likely the main topic)
+            const svg = d3.select('#d3-container svg');
+            if (!svg.empty()) {
+                const width = parseFloat(svg.attr('width')) || 800;
+                const height = parseFloat(svg.attr('height')) || 600;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Find the node closest to center
+                let centralNode = nodes[0];
+                let minDistance = Infinity;
+                
+                nodes.forEach(node => {
+                    const distance = Math.sqrt(
+                        Math.pow(node.x - centerX, 2) + 
+                        Math.pow(node.y - centerY, 2)
+                    );
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        centralNode = node;
+                    }
+                });
+                
+                // Return the text from the central node (this is the actual edited text)
+                if (centralNode && centralNode.text) {
+                    console.log('Main topic identified from central node position:', centralNode.text);
+                    return centralNode.text;
+                }
+            }
+        }
+        
+        // Strategy 2: Use diagram-specific structure from spec (fallback)
         if (spec) {
             let mainTopic = null;
             
@@ -1364,14 +1421,19 @@ class ToolbarManager {
         // Define placeholder/template text patterns to skip
         const placeholderPatterns = [
             /^New Node$/i,
-            /^New (Left|Right|Item|Concept|Step|Substep|Category|Child|Part|Subpart|Cause|Effect|Attribute|Context)$/i,
+            /^New (Left|Right|Item|Concept|Step|Substep|Category|Child|Part|Subpart|Cause|Effect|Attribute|Context|Branch)$/i,
             /^Item [A-Z0-9]+$/i,  // Item 1, Item A, Item B, etc.
             /^Item \d+$/i,        // Item 1, Item 2, Item 3, etc.
+            /^Branch\s*\d+$/i,    // Branch 1, Branch 2, Branch 3, Branch 4, etc.
             /^as$/i,              // Bridge map relating factor default
             /^Main Topic$/i,
+            /^Central Topic$/i,   // Central topic placeholder
             /^Topic [A-Z]?$/i,
             /^主题$/,
+            /^中心主题$/,          // Chinese "Central Topic"
             /^新节点$/,
+            /^新分支$/,            // Chinese "New Branch"
+            /^分支\d+$/,           // Chinese "Branch 1", "Branch 2", etc.
             /^项目[A-Z0-9]+$/
         ];
         

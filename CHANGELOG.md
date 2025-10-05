@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v3.0.13] - 2025-10-05
+
+### Fixed
+- **Node Transparency Issues**: Fixed nodes showing connection lines through them when hovering
+  - Removed `opacity: 0.9` from Double Bubble Map topic circles (left and right)
+  - Added explicit `opacity: 1` to Mind Map nodes (topic, branches, children)
+  - Nodes now render fully opaque, hiding connection lines underneath
+  - Connection lines remain at `opacity: 0.7` for visual depth (intentional)
+
+- **MindMap Auto-Complete Prompt Issues**: Fixed placeholder content being sent to LLM
+  - **Issue**: Prompt included default branch names like "分支1, 分支2, 分支3, 分支4" or "Branch 1, 2, 3, 4"
+  - **Issue**: Prompt included child node placeholders like "子项1.1, 子项1.2" (Subitem 1.1, etc.)
+  - **Solution**: MindMap now uses simplified prompt with only the main topic (like Flow Map and Brace Map)
+  - **Result**: Clean prompts like `为主题"iPhone"创建一个完整的思维导图` instead of listing all placeholder nodes
+  - LLM now generates relevant content based on actual user topic instead of generic placeholders
+
+- **Main Topic Identification**: Fixed auto-complete using outdated topic from spec
+  - **Issue**: When user edits central topic (e.g., "中心主题" → "iPhone"), auto-complete still used old spec value
+  - **Solution**: `identifyMainTopic()` now reads actual SVG text from central node position instead of spec
+  - For MindMap, Tree Map, Bubble Map, Circle Map: finds node closest to canvas center
+  - Prioritizes displayed text over potentially stale spec data
+  - Users' edited text now correctly recognized for auto-completion
+
+- **Placeholder Filtering**: Enhanced placeholder detection in auto-complete
+  - Added Chinese patterns: `分支\d+`, `中心主题`, `新分支` 
+  - Added English patterns: `Branch\s*\d+`, `Central Topic`, `New Branch`
+  - Prevents template text from being included in LLM prompts
+  - Cleaner prompts focused on actual user content
+
+### Added
+- **Concept Map Development Notice**: Browser notification when selecting Concept Map
+  - Chinese: "概念图功能正在开发中，敬请期待！"
+  - English: "Concept Map is under development. Coming soon!"
+  - Prevents users from entering incomplete Concept Map editor
+  - Clean notification using centralized notification manager
+
+---
+
 ## [v3.0.12] - 2025-10-05
 
 ### Fixed

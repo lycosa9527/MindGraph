@@ -164,6 +164,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('fill', finalFill)
                 .attr('stroke', finalStroke)
                 .attr('stroke-width', pos.stroke_width || 3)
+                .attr('opacity', 1)
                 .attr('data-node-id', 'topic_center')
                 .attr('data-node-type', 'topic');
             
@@ -205,6 +206,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('fill', finalBranchFill)
                 .attr('stroke', finalBranchStroke)
                 .attr('stroke-width', pos.stroke_width || THEME.branchStrokeWidth || 2)
+                .attr('opacity', 1)
                 .attr('data-node-id', branchNodeId)
                 .attr('data-node-type', 'branch')
                 .attr('data-branch-index', pos.branch_index)
@@ -247,6 +249,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('fill', finalChildFill)
                 .attr('stroke', finalChildStroke)
                 .attr('stroke-width', pos.stroke_width || 2)
+                .attr('opacity', 1)
                 .attr('data-node-id', childNodeId)
                 .attr('data-node-type', 'child')
                 .attr('data-branch-index', pos.branch_index)

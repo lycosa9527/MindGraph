@@ -269,6 +269,23 @@ class DiagramSelector {
      * Select a diagram type
      */
     selectDiagram(diagramType) {
+        // Check if concept map - show under development notification
+        if (diagramType === 'concept_map') {
+            const language = window.languageManager?.currentLanguage || 'en';
+            const message = language === 'zh' 
+                ? '概念图功能正在开发中，敬请期待！' 
+                : 'Concept Map is under development. Coming soon!';
+            
+            // Show browser notification
+            if (window.notificationManager) {
+                window.notificationManager.show(message, 'info');
+            } else {
+                alert(message);
+            }
+            console.log('DiagramSelector: Concept map selection blocked - under development');
+            return;
+        }
+        
         // CRITICAL: Check if there's an active session
         if (this.currentSession) {
             console.error('DiagramSelector: BLOCKED - Active session in progress!');
