@@ -182,6 +182,8 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 'bold')
         .attr('data-text-for', 'topic_center')
+        .attr('data-node-id', 'topic_center')
+        .attr('data-node-type', 'topic')
         .text(spec.topic);
     
     // Draw attribute circles
@@ -350,6 +352,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 'bold')
         .attr('data-text-for', 'topic_center')
+        .attr('data-node-id', 'topic_center')
+        .attr('data-node-type', 'topic')
         .text(spec.topic);
     
     // Watermark removed from canvas display - will be added during PNG export only

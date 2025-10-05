@@ -1215,9 +1215,31 @@ class ToolbarManager {
         const diagramType = this.editor.diagramType;
         const spec = this.editor.currentSpec;
         
-        // Strategy 1: For MindMap and similar diagrams, find the central node from SVG (user may have edited it)
+        // Strategy 1: For diagrams with explicit node types, find by data-node-type attribute
+        // This is more reliable than distance-based detection
+        if (diagramType === 'bubble_map' || diagramType === 'circle_map') {
+            // Look for node with data-node-type='topic' (the central topic)
+            const topicNode = nodes.find(node => node.nodeType === 'topic');
+            if (topicNode && topicNode.text) {
+                console.log('Main topic identified from data-node-type="topic":', topicNode.text);
+                return topicNode.text;
+            }
+        }
+        
+        // Strategy 1b: For double bubble maps, combine both topics
+        if (diagramType === 'double_bubble_map') {
+            const leftTopic = nodes.find(node => node.nodeType === 'left');
+            const rightTopic = nodes.find(node => node.nodeType === 'right');
+            if (leftTopic && rightTopic) {
+                const combinedTopic = `${leftTopic.text} vs ${rightTopic.text}`;
+                console.log('Main topics identified from double bubble map:', combinedTopic);
+                return combinedTopic;
+            }
+        }
+        
+        // Strategy 2: For MindMap and similar diagrams, find the central node by position
         // This prioritizes the actual displayed text over the spec
-        if (diagramType === 'mindmap' || diagramType === 'tree_map' || diagramType === 'bubble_map' || diagramType === 'circle_map') {
+        if (diagramType === 'mindmap' || diagramType === 'tree_map') {
             // Find the node closest to center (likely the main topic)
             const svg = d3.select('#d3-container svg');
             if (!svg.empty()) {
@@ -1392,10 +1414,17 @@ class ToolbarManager {
             const x = parseFloat(textElement.attr('x')) || 0;
             const y = parseFloat(textElement.attr('y')) || 0;
             
+            // Capture data-node-type and data-node-id from the text element itself
+            // (these attributes help identify the central topic vs. children/branches)
+            const nodeType = textElement.attr('data-node-type') || '';
+            const nodeId = textElement.attr('data-node-id') || '';
+            
             nodes.push({
                 text: text,
                 x: x,
-                y: y
+                y: y,
+                nodeType: nodeType,
+                nodeId: nodeId
             });
         });
         

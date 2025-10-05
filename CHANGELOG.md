@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Unchanged**: Concept Map and Main Agent still use placeholders correctly with `.format()`
   - See `docs/PLACEHOLDER_AUDIT.md` for detailed code review
 
+- **Bubble Map & Circle Map Auto-Complete**: Fixed incorrect topic extraction in editor
+  - **Issue**: Auto-complete was extracting wrong node text as topic (e.g., attribute bubbles instead of central topic)
+  - **Root cause**: Topic identification relied on distance-from-center calculation, but all bubbles are equidistant from center
+  - **Solution**: 
+    1. Added `data-node-type` and `data-node-id` attributes to topic text elements in renderers
+    2. Updated `extractExistingNodes()` to capture these attributes from SVG
+    3. Updated `identifyMainTopic()` to use `data-node-type='topic'` for reliable topic detection
+  - **Impact**: Auto-complete now correctly identifies and uses the central topic (e.g., "抗日战争")
+  - **Also fixed**: Double Bubble Map now combines both topics (e.g., "Apple vs Banana")
+
 ### Documentation
 - Added `docs/PLACEHOLDER_AUDIT.md`: Comprehensive audit of placeholder usage across all 11 diagram types
   - Evidence of unused placeholders with code examples
