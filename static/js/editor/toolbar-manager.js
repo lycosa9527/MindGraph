@@ -1078,75 +1078,10 @@ class ToolbarManager {
         const language = hasChinese ? 'zh' : (window.languageManager?.getCurrentLanguage() || 'en');
         console.log('Detected language from text:', language, '(hasChinese:', hasChinese, ', text:', textForLanguageDetection, ')');
         
-        // Create a better prompt focused on the main topic (language-aware)
-        let prompt;
-        
-        // For flow maps, only use the title in the prompt, not the steps/substeps
-        // (to avoid LLM being influenced by default English template)
-        if (diagramType === 'flow_map') {
-            if (language === 'zh') {
-                prompt = `为主题"${mainTopic}"创建一个完整的流程图。生成相关的主要步骤和子步骤，使其内容完整。`;
-            } else {
-                prompt = `Create a complete flow map about "${mainTopic}". Generate relevant steps and substeps to make it comprehensive.`;
-            }
-        } else if (diagramType === 'brace_map') {
-            // For brace maps, only use the main topic, not the placeholder parts/subparts
-            // (to avoid LLM being influenced by default template placeholders)
-            if (language === 'zh') {
-                prompt = `为主题"${mainTopic}"创建一个完整的括号图。生成相关的主要部分和子部分，使其内容完整。`;
-            } else {
-                prompt = `Create a complete brace map about "${mainTopic}". Generate relevant parts and subparts to make it comprehensive.`;
-            }
-        } else if (diagramType === 'mindmap') {
-            // For mind maps, only use the main topic, not the branches/children
-            // (to avoid LLM being influenced by template placeholders or partial edits)
-            if (language === 'zh') {
-                prompt = `为主题"${mainTopic}"创建一个完整的思维导图。生成相关的分支和子节点，使其内容完整。`;
-            } else {
-                prompt = `Create a complete mind map about "${mainTopic}". Generate relevant branches and children to make it comprehensive.`;
-            }
-        } else if (existingNodes.length === 1) {
-            // Only one node - expand around it
-            if (language === 'zh') {
-                prompt = `为主题"${mainTopic}"创建一个完整的${diagramType}。生成相关的节点、连接和详细信息，使其内容完整。`;
-            } else {
-                prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
-            }
-        } else {
-            // Multiple nodes - use main topic and mention others
-            // Filter out default placeholder names (分支1-4, Branch 1-4, 新分支, New Branch, etc.)
-            const isDefaultPlaceholder = (text) => {
-                if (!text) return true;
-                const lowerText = text.toLowerCase();
-                // Chinese placeholders: 分支1, 分支2, 分支3, 分支4, 新分支
-                if (/^分支[0-9]+$/.test(text) || text === '新分支') return true;
-                // English placeholders: Branch 1, Branch 2, Branch 3, Branch 4, New Branch
-                if (/^branch\s*[0-9]+$/i.test(lowerText) || lowerText === 'new branch') return true;
-                // Other common placeholders
-                if (lowerText === '中心主题' || lowerText === 'central topic' || lowerText === 'topic') return true;
-                return false;
-            };
-            
-            const otherNodes = existingNodes
-                .filter(n => n.text !== mainTopic)
-                .filter(n => !isDefaultPlaceholder(n.text)) // Exclude default placeholders
-                .map(n => n.text)
-                .slice(0, 5); // Limit to avoid too long prompt
-            
-            if (otherNodes.length > 0) {
-                if (language === 'zh') {
-                    prompt = `以"${mainTopic}"为主题创建一个完整的${diagramType}。用户已添加：${otherNodes.join('、')}。扩展并完善图表，添加相关节点和连接。`;
-                } else {
-                    prompt = `Create a complete ${diagramType} with "${mainTopic}" as the main topic. User has added: ${otherNodes.join(', ')}. Expand and complete the diagram with relevant nodes and connections.`;
-                }
-            } else {
-                if (language === 'zh') {
-                    prompt = `为主题"${mainTopic}"创建一个完整的${diagramType}。生成相关的节点、连接和详细信息，使其内容完整。`;
-                } else {
-                    prompt = `Create a complete ${diagramType} about "${mainTopic}". Generate relevant nodes, connections, and details to make it comprehensive.`;
-                }
-            }
-        }
+        // Send clean topic to backend - let the agent add the instructions
+        // The backend agents already wrap the prompt with proper instructions
+        // (e.g., "请为以下描述创建一个思维导图：{topic}")
+        let prompt = mainTopic;
         
         console.log('Auto-complete prompt:', prompt);
         console.log('Main topic identified:', mainTopic);
