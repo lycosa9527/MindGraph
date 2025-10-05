@@ -29,8 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixed diagrams**: 
     - Bubble Map, Circle Map, Tree Map, Brace Map (added attributes today)
     - Double Bubble Map (combines both topics: "Apple vs Banana")
-    - Mind Map, Flow Map, Multi-Flow Map, Bridge Map (already had attributes)
+    - Mind Map, Flow Map, Multi-Flow Map (already had attributes)
+    - **Bridge Map** (special handling: extracts first analogy pair like "北京/中国")
   - **Impact**: Auto-complete now correctly identifies and uses the central topic (e.g., "抗日战争")
+  - **Bridge Map Impact**: Was sending relating factor "如同" (as), now sends first pair "北京/中国"
   - **All 8 Thinking Maps + Mind Map now use consistent, reliable topic extraction** ✓
 
 ### Documentation

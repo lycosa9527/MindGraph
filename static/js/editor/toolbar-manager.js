@@ -1238,6 +1238,25 @@ class ToolbarManager {
             }
         }
         
+        // Strategy 1c: For bridge maps, extract JUST the first analogy pair the user typed
+        if (diagramType === 'bridge_map') {
+            // Find the first pair (pair index 0)
+            const leftNodes = nodes.filter(node => node.nodeType === 'left');
+            const rightNodes = nodes.filter(node => node.nodeType === 'right');
+            
+            if (leftNodes.length > 0 && rightNodes.length > 0) {
+                // Use only the first pair as the main topic
+                const firstLeft = leftNodes[0]?.text;
+                const firstRight = rightNodes[0]?.text;
+                
+                if (firstLeft && firstRight) {
+                    const mainTopic = `${firstLeft}/${firstRight}`;
+                    console.log('Bridge map main topic (first pair):', mainTopic);
+                    return mainTopic;
+                }
+            }
+        }
+        
         // Strategy 2: For MindMap, find the central node by position (fallback)
         // This prioritizes the actual displayed text over the spec
         if (diagramType === 'mindmap') {
@@ -1320,8 +1339,12 @@ class ToolbarManager {
                     break;
                     
                 case 'bridge_map':
-                    // For bridge map, use the relating_factor (usually "as") or first analogy
-                    mainTopic = spec.relating_factor || (spec.analogies && spec.analogies[0]?.left);
+                    // For bridge map, extract from actual SVG nodes (Strategy 1c above)
+                    // This fallback uses spec only if node extraction failed
+                    if (spec.analogies && spec.analogies.length > 0) {
+                        const firstPair = spec.analogies[0];
+                        mainTopic = `${firstPair.left}/${firstPair.right}`;
+                    }
                     break;
             }
             
