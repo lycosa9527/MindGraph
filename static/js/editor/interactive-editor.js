@@ -178,6 +178,9 @@ class InteractiveEditor {
             // Add interaction handlers after rendering
             this.addInteractionHandlers();
             
+            // Dispatch event to update node count and other UI elements
+            window.dispatchEvent(new CustomEvent('diagram-rendered'));
+            
         } catch (error) {
             console.error('Error rendering diagram:', error);
             throw error;

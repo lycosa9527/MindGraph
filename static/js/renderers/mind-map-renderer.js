@@ -178,6 +178,8 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('font-size', THEME.fontTopic || '16px')
                 .attr('font-weight', 'bold')
                 .attr('data-text-for', 'topic_center')
+                .attr('data-node-id', 'topic_center')
+                .attr('data-node-type', 'topic')
                 .text(pos.text || 'Topic');
                 
         } else if (pos.node_type === 'branch') {
@@ -221,6 +223,8 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('fill', finalBranchTextColor)
                 .attr('font-size', THEME.fontBranch || '16px')
                 .attr('data-text-for', branchNodeId)
+                .attr('data-node-id', branchNodeId)
+                .attr('data-node-type', 'branch')
                 .text(pos.text || 'Branch');
                 
         } else if (pos.node_type === 'child') {
@@ -265,6 +269,8 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('fill', finalChildTextColor)
                 .attr('font-size', THEME.fontChild || '14px')
                 .attr('data-text-for', childNodeId)
+                .attr('data-node-id', childNodeId)
+                .attr('data-node-type', 'child')
                 .text(pos.text || 'Child');
         }
     });

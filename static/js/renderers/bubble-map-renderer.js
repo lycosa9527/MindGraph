@@ -207,6 +207,8 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             .attr('fill', THEME.attributeText)
             .attr('font-size', THEME.fontAttribute)
             .attr('data-text-for', `attribute_${node.id}`)
+            .attr('data-node-id', `attribute_${node.id}`)
+            .attr('data-node-type', 'attribute')
             .text(node.text);
     });
     
@@ -328,6 +330,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             .attr('fill', THEME.contextText)
             .attr('font-size', THEME.fontContext)
             .attr('data-text-for', `context_${node.id}`)
+            .attr('data-node-id', `context_${node.id}`)
+            .attr('data-node-type', 'context')
             .text(node.text);
     });
     

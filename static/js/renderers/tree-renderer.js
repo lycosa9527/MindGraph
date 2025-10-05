@@ -287,6 +287,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('fill', THEME.branchText)
             .attr('font-size', branchFont)
             .attr('data-text-for', `tree-category-${branchIndex}`)
+            .attr('data-node-id', `tree-category-${branchIndex}`)
+            .attr('data-node-type', 'category')
             .attr('cursor', 'pointer')
             .text(childText);
 
@@ -342,6 +344,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                     .attr('fill', THEME.leafText)
                     .attr('font-size', leafFont)
                     .attr('data-text-for', `tree-leaf-${branchIndex}-${j}`)
+                    .attr('data-node-id', `tree-leaf-${branchIndex}-${j}`)
+                    .attr('data-node-type', 'leaf')
                     .attr('cursor', 'pointer')
                     .text(leafText);
             });

@@ -387,6 +387,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('font-size', parseFontSpec(THEME.fontPart).size)
             .attr('font-family', parseFontSpec(THEME.fontPart).family)
             .attr('font-weight', 'bold')
+            .attr('data-node-id', `brace-part-${partIndex}`)
+            .attr('data-node-type', 'part')
             .attr('data-text-for', `part_${partIndex}`)
             .text(part.name || '');
 
@@ -425,6 +427,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('font-size', parseFontSpec(THEME.fontSubpart).size)
                     .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
                     .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
+                    .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
+                    .attr('data-node-type', 'subpart')
                     .text(subpart.name || '');
 
                 currentY += subpartBoxHeight + 10;

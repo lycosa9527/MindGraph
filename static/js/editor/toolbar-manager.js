@@ -117,6 +117,9 @@ class ToolbarManager {
         // Value displays
         this.strokeWidthValue = document.getElementById('stroke-width-value');
         this.opacityValue = document.getElementById('opacity-value');
+        
+        // Status bar elements
+        this.nodeCountElement = document.getElementById('node-count');
     }
     
     /**
@@ -310,6 +313,9 @@ class ToolbarManager {
             const { message, type } = event.detail;
             this.showNotification(message, type || 'info');
         });
+        
+        // Set up automatic node counter that watches for DOM changes
+        this.setupNodeCounterObserver();
     }
     
     /**
@@ -917,6 +923,8 @@ class ToolbarManager {
             if (!showsOwnNotification) {
                 this.showNotification(this.getNotif('nodeAdded'), 'success');
             }
+        
+        // Node count updates automatically via MutationObserver
     }
     
     /**
@@ -928,6 +936,8 @@ class ToolbarManager {
             this.editor.deleteSelectedNodes();
             this.hidePropertyPanel();
             this.showNotification(this.getNotif('nodesDeleted', count), 'success');
+            
+            // Node count updates automatically via MutationObserver
         } else {
             this.showNotification(this.getNotif('selectNodeToDelete'), 'warning');
         }
@@ -1883,6 +1893,83 @@ class ToolbarManager {
     }
     
     /**
+     * Set up automatic node counter using MutationObserver
+     * Watches the SVG container and updates count whenever it changes
+     */
+    setupNodeCounterObserver() {
+        const container = document.getElementById('d3-container');
+        if (!container) {
+            console.warn('ToolbarManager: d3-container not found for node counter observer');
+            return;
+        }
+        
+        // Create a MutationObserver to watch for DOM changes in the SVG
+        // Use minimal configuration for better performance
+        this.nodeCountObserver = new MutationObserver((mutations) => {
+            // Debounce updates to avoid excessive calls
+            if (this.nodeCountUpdateTimeout) {
+                clearTimeout(this.nodeCountUpdateTimeout);
+            }
+            this.nodeCountUpdateTimeout = setTimeout(() => {
+                this.updateNodeCount();
+            }, 100); // Update after 100ms of no changes
+        });
+        
+        // Start observing - only watch for added/removed children
+        // This is the most efficient way and catches all diagram updates
+        this.nodeCountObserver.observe(container, {
+            childList: true,      // Watch for added/removed children
+            subtree: true         // Watch all descendants
+            // No attributes watching - not needed, saves resources
+        });
+        
+        console.log('ToolbarManager: Node counter observer set up');
+        
+        // Initial count with longer delay to ensure SVG is fully rendered
+        setTimeout(() => this.updateNodeCount(), 500);
+    }
+    
+    /**
+     * Update node count in status bar
+     */
+    updateNodeCount() {
+        if (!this.nodeCountElement) {
+            console.warn('ToolbarManager: Node count element not found');
+            return;
+        }
+        
+        // Count all text elements in the SVG
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty()) {
+            const label = window.languageManager?.translate('nodeCount') || 'Nodes';
+            this.nodeCountElement.textContent = `${label}: 0`;
+            return;
+        }
+        
+        // Count all text elements that have data-node-id (all actual diagram nodes)
+        let count = 0;
+        const nodeIds = [];
+        
+        svg.selectAll('text').each(function() {
+            const element = d3.select(this);
+            const nodeId = element.attr('data-node-id');
+            
+            // Count any text element with a node-id
+            if (nodeId) {
+                count++;
+                nodeIds.push(nodeId);
+            }
+        });
+        
+        // Update the display
+        const label = window.languageManager?.translate('nodeCount') || 'Nodes';
+        this.nodeCountElement.textContent = `${label}: ${count}`;
+        
+        // Log details for debugging
+        console.log(`ToolbarManager: Node count = ${count}`, nodeIds.length > 0 ? `[${nodeIds.slice(0, 5).join(', ')}${nodeIds.length > 5 ? '...' : ''}]` : '');
+    }
+    
+    /**
      * Validate that this toolbar manager is still valid for the current session
      */
     validateToolbarSession(operation = 'Operation') {
@@ -1935,6 +2022,19 @@ class ToolbarManager {
                 btn.parentNode.replaceChild(clone, btn);
             }
         });
+        
+        // Disconnect node counter observer
+        if (this.nodeCountObserver) {
+            this.nodeCountObserver.disconnect();
+            this.nodeCountObserver = null;
+            console.log('ToolbarManager: Node counter observer disconnected');
+        }
+        
+        // Clear node count update timeout
+        if (this.nodeCountUpdateTimeout) {
+            clearTimeout(this.nodeCountUpdateTimeout);
+            this.nodeCountUpdateTimeout = null;
+        }
         
         // Unregister from global registry
         if (window.toolbarManagerRegistry) {

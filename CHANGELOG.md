@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v3.0.14] - 2025-10-05
 
 ### Fixed
+- **Node Counter**: Fixed non-functional node counter in lower left corner
+  - **Issue**: Counter only showed "1" instead of actual node count (e.g., showed 1 when there were 9 nodes)
+  - **Root Cause**: Multiple renderers had text elements missing `data-node-id` attribute
+    - Bubble/Circle Map: attribute and context text elements
+    - Mind Map: branch and child text elements
+    - Tree Map: category and leaf text elements
+    - Brace Map: part and subpart text elements
+  - **Solution**:
+    1. Added `data-node-id` and `data-node-type` to all text elements in 4 affected renderers
+    2. Implemented efficient MutationObserver watching SVG container for DOM changes
+    3. Debounced updates (100ms) to minimize resource usage
+    4. Observer only watches childList changes (no attribute watching for efficiency)
+  - **Impact**: Node counter now accurately shows total count like "节点: 9" or "Nodes: 9" for ALL diagram types
+  - **Performance**: Minimal resources - only watches DOM additions/removals, debounced updates
+
 - **Node Editor Translation**: Fixed missing Chinese translations when double-clicking nodes to edit
   - **Issue**: Node editor modal showed English text ("Edit Node Content", "Text:", "Cancel", "Save Changes", "characters") even in Chinese mode
   - **Solution**: 
