@@ -1,9 +1,18 @@
 # Learning Mode Design Document | 学习模式设计文档
 
 **Feature Name**: Interactive Learning Mode | 交互式学习模式  
-**Version**: 1.0  
+**Version**: 2.0 (Prerequisite-First Approach) 🧠  
 **Date**: 2025-10-05  
 **Status**: Design Phase 🎨
+
+**🆕 MAJOR UPDATE**: Prerequisite Knowledge Testing  
+Instead of giving progressive hints about the same question, the system now:
+1. Identifies missing prerequisite knowledge when student answers wrong
+2. Tests that prerequisite with simpler, domain-independent questions
+3. Teaches the prerequisite if needed
+4. Returns to original question with foundational understanding
+
+This transforms the system from a "hint-based quiz" to an **Intelligent Tutoring System** that builds foundational knowledge.
 
 ---
 
@@ -166,65 +175,103 @@ User types wrong answer → LangChain Agent activates
 Agent generates targeted learning material
 ```
 
-### Step 4: Adaptive Learning Material (NEW!) | 自适应学习材料
+### Step 4: Prerequisite Knowledge Testing (NEW!) | 先验知识测试
+
+**🧠 KEY INNOVATION**: Instead of giving hints about the SAME question, the agent identifies what **prerequisite knowledge** is missing and tests THAT first.
 
 ```
+Agent diagnosis: "Student answered '氧气' for '阳光'"
+                       ↓
+Agent reasoning: "Student doesn't understand INPUT vs OUTPUT concept"
+                       ↓
 ╔═══════════════════════════════════════════════════════════╗
-║ 📚 LEARNING MATERIAL                                      ║
+║ 🔍 PREREQUISITE KNOWLEDGE GAP DETECTED                    ║
 ╠═══════════════════════════════════════════════════════════╣
-║ 💡 Let me help you understand this concept                ║
+║ I notice you might be confusing inputs and outputs.       ║
+║ Let me test if you understand this foundational concept:  ║
 ║                                                           ║
-║ You answered "氧气" (Oxygen), which shows you know       ║
-║ oxygen is related to photosynthesis - great!             ║
+║ 📚 PREREQUISITE TEST QUESTION:                            ║
 ║                                                           ║
-║ However, there's an important distinction:                ║
+║ "In the equation: A + B → C + D                          ║
+║  Which are the INPUTS (what you start with)?             ║
 ║                                                           ║
-║ 📥 INPUTS (What goes IN):                                ║
-║    • 阳光 (Sunlight) ← Energy source ⚡                  ║
-║    • 水 (Water)                                          ║
-║    • 二氧化碳 (Carbon Dioxide)                           ║
+║  Select all that apply:                                   ║
+║  [ ] A                                                    ║
+║  [ ] B                                                    ║
+║  [ ] C                                                    ║
+║  [ ] D"                                                   ║
 ║                                                           ║
-║ 📤 OUTPUTS (What comes OUT):                             ║
-║    • 葡萄糖 (Glucose) ← Food                             ║
-║    • 氧气 (Oxygen) ← Byproduct you breathe! 🫁           ║
-║                                                           ║
-║ Visual Flow:                                              ║
-║   阳光 + 水 + CO₂  →  [光合作用]  →  葡萄糖 + O₂        ║
-║   (INPUTS)              (Process)        (OUTPUTS)        ║
-║                                                           ║
-║ 🔑 Key Point: Oxygen is what plants PRODUCE,             ║
-║    not what they NEED to start the process.               ║
-║                                                           ║
-║ 💭 Think of it like baking:                              ║
-║    Inputs: Flour + Eggs + Heat                           ║
-║    Outputs: Bread + Steam                                ║
-║    You wouldn't say steam is an ingredient, right?       ║
-║                                                           ║
-║ [I Understand Now] [Show More Examples] [Skip]            ║
+║ (Or type your answer: ____________)                       ║
 ╚═══════════════════════════════════════════════════════════╝
 ```
 
-### Step 5: Verification Question (NEW!) | 验证问题
+**If Prerequisite Test PASSES:**
+```
+✅ Great! You understand inputs vs outputs!
+              ↓
+Now let's return to the original question:
+"What energy source does photosynthesis need?"
 
-**After learning material, agent generates NEW question for SAME answer:**
+💡 Hint: Knowing that you understand inputs/outputs,
+think about which INPUT provides ENERGY (not material).
+Photosynthesis:阳光 + 水 + CO₂ → 葡萄糖 + 氧气
+                ↑_______________↑    ↑________↑
+                   INPUTS            OUTPUTS
+
+Your Answer: [___________________]
+```
+
+**If Prerequisite Test FAILS:**
+```
+❌ Let me explain inputs vs outputs:
+              ↓
+╔═══════════════════════════════════════════════════════════╗
+║ 📖 MINI-LESSON: Inputs vs Outputs                        ║
+╠═══════════════════════════════════════════════════════════╣
+║ In any process:                                           ║
+║                                                           ║
+║ 📥 INPUTS = What you START with (before process)         ║
+║    Example: Ingredients for cooking                       ║
+║                                                           ║
+║ 📤 OUTPUTS = What you END with (after process)           ║
+║    Example: The cooked food + steam + smell              ║
+║                                                           ║
+║ 💭 Baking bread:                                          ║
+║    Inputs:  Flour + Water + Yeast + Heat                 ║
+║    Process: [Baking for 30 minutes]                      ║
+║    Outputs: Bread + Steam + Aroma                        ║
+║                                                           ║
+║ 🔑 Key: Inputs are consumed/used. Outputs are created.   ║
+╚═══════════════════════════════════════════════════════════╝
+              ↓
+Now let's test again with a simpler example:
+"When you make tea: Water + Tea leaves + Heat → Hot tea + Used leaves
+ Which are the INPUTS?"
+
+Your Answer: [___________________]
+              ↓
+[If correct] → Return to original photosynthesis question
+[If wrong]   → Test even simpler prerequisite (e.g., "before vs after")
+```
+
+### Step 5: Return to Original Question | 回到原问题
+
+**After prerequisite knowledge is confirmed:**
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║ 🔄 VERIFICATION QUESTION                                  ║
+║ 🔄 BACK TO ORIGINAL QUESTION                              ║
 ╠═══════════════════════════════════════════════════════════╣
-║ Let's make sure you've got it! Here's a different way    ║
-║ to think about the same concept:                          ║
+║ Now that you understand inputs vs outputs,                ║
+║ let's try the photosynthesis question again:              ║
 ║                                                           ║
-║ Question 1b (Same answer, different angle):              ║
-║ "光合作用过程中，植物从天空获得什么作为能量来源，       ║
-║  用来将H₂O和CO₂转化为食物？"                             ║
+║ "What is the blank node connected to '光合作用'?"         ║
 ║                                                           ║
-║ Translation: "During photosynthesis, what do plants      ║
-║ obtain from the sky as an energy source to convert       ║
-║ H₂O and CO₂ into food?"                                  ║
-║                                                           ║
-║ 💡 Hint: Remember - we're looking for an INPUT,          ║
-║    not an OUTPUT. What provides the ENERGY?              ║
+║ 💡 Remember:                                              ║
+║ • We just learned that inputs are what you START with    ║
+║ • This blank node is an INPUT to photosynthesis          ║
+║ • Photosynthesis needs: Energy + Water + CO₂             ║
+║ • Which input provides the ENERGY?                        ║
 ║                                                           ║
 ║ Your Answer: [___________________] [Submit]               ║
 ╚═══════════════════════════════════════════════════════════╝
@@ -234,26 +281,27 @@ Agent generates targeted learning material
 ```
 User types "阳光" (correct!)
               ↓
-✅ Perfect! You've truly understood the concept!
-   You correctly identified:
-   • Sunlight is an INPUT (not output)
-   • It provides ENERGY (not material)
-   • It's obtained FROM THE SKY
+✅ Excellent! You've truly understood!
    
-   This shows you understand the photosynthesis process! 🌟
+   Your learning journey:
+   1. ❌ Initially confused inputs/outputs → "氧气" (output)
+   2. 📚 Learned the foundational concept (inputs vs outputs)
+   3. ✅ Successfully applied it to photosynthesis → "阳光" (input)
+   
+   This shows you don't just memorize - you UNDERSTAND! 🌟
               ↓
 Move to next question
 ```
 
-**Failure Path:**
+**Failure Path (Rare):**
 ```
-User still gets it wrong
+User still gets original question wrong
               ↓
-Agent generates ANOTHER micro-lesson
+Agent identifies NEW prerequisite gap (e.g., "doesn't understand energy concept")
               ↓
-Generate THIRD question from yet another angle
+Test that prerequisite → Teach if needed → Return to original
               ↓
-Cycle continues until understanding achieved
+Maximum 3 prerequisite levels deep before offering skip
 ```
 
 ### Step 6: Question & Answer Cycle | 问答循环 (Updated)
@@ -865,15 +913,18 @@ This Learning Mode is designed around **research-backed pedagogical principles**
 
 1. **Active Recall**: Forcing retrieval strengthens neural pathways (Roediger & Butler, 2011)
 2. **Educational Scaffolding**: Progressive hints that guide discovery, not just reveal answers (Vygotsky's ZPD)
-3. **Contextual Learning**: Relationships matter more than isolated facts (Constructivist theory)
-4. **Socratic Method**: Questions that prompt thinking, not just answer-checking
-5. **Error Analysis**: Understanding WHY wrong answers occur helps correct mental models
-6. **Metacognition**: Students learn to think about their own thinking process
-7. **Multi-Faceted Understanding**: Same concept tested from different angles to ensure deep comprehension
+3. **🆕 Prerequisite Knowledge Tracing**: Identify and test foundational knowledge gaps before tackling complex concepts
+4. **Contextual Learning**: Relationships matter more than isolated facts (Constructivist theory)
+5. **Socratic Method**: Questions that prompt thinking, not just answer-checking
+6. **Error Analysis**: Understanding WHY wrong answers occur helps correct mental models
+7. **Metacognition**: Students learn to think about their own thinking process
+8. **🆕 Domain Independence**: Teach abstract concepts first, then apply to specific domains (transfer of learning)
+9. **🆕 Dynamic Difficulty**: Agent adapts question complexity based on demonstrated knowledge (no fixed levels)
 
 **Key Difference from Traditional Quizzes:**
 - ❌ Traditional: "What is X?" → Wrong → "Try again" → Frustration
-- ✅ Learning Mode: "What is X?" → Wrong → **AI analyzes misconception → Generates teaching material → Re-tests with different question** → True Understanding
+- ❌ Hint-Based: "What is X?" → Wrong → "Hint about X" → Student guesses → Still doesn't understand WHY
+- ✅ **Learning Mode (Prerequisite-First)**: "What is X?" → Wrong → **AI identifies missing prerequisite → Tests that prerequisite → Teaches if needed → Returns to X with foundational understanding** → True Understanding
 
 ---
 
@@ -887,30 +938,64 @@ This Learning Mode is designed around **research-backed pedagogical principles**
 
 ### Agent Workflow | 智能代理工作流
 
+**🧠 PREREQUISITE-FIRST APPROACH** (Knowledge Tracing)
+
 ```
 Student gives wrong answer "氧气" to question about "阳光"
                     ↓
-╔═══════════════════════════════════════════════════╗
-║  LANGCHAIN LEARNING AGENT                          ║
-╠═══════════════════════════════════════════════════╣
-║  Step 1: MISCONCEPTION ANALYSIS                    ║
-║  - Analyze: Why did student say "氧气"?           ║
-║  - Diagnosis: "Confused INPUT vs OUTPUT"           ║
-║  - Root cause: "Doesn't understand process flow"   ║
-╠═══════════════════════════════════════════════════╣
-║  Step 2: LEARNING MATERIAL GENERATION              ║
-║  - Generate: Micro-lesson on photosynthesis I/O    ║
-║  - Content: Diagram + Explanation                  ║
-║  - Format: Text, visual aids, examples             ║
-╠═══════════════════════════════════════════════════╣
-║  Step 3: VERIFICATION QUESTION                     ║
-║  - Generate: NEW question, SAME answer             ║
-║  - Angle: Different perspective on "阳光"         ║
-║  - Test: Does student truly understand now?        ║
-╚═══════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════╗
+║  LANGCHAIN LEARNING AGENT                                 ║
+╠═══════════════════════════════════════════════════════════╣
+║  Step 1: MISCONCEPTION ANALYSIS                           ║
+║  - Analyze: Why did student say "氧气"?                  ║
+║  - Diagnosis: "Confused INPUT vs OUTPUT"                  ║
+║  - Root cause: "Doesn't understand process directionality"║
+╠═══════════════════════════════════════════════════════════╣
+║  Step 2: PREREQUISITE IDENTIFICATION 🆕                   ║
+║  - Missing knowledge: "input-output distinction"          ║
+║  - Prerequisite tree:                                     ║
+║    └─ "process_directionality"                            ║
+║       └─ "before_after_temporal_concept"                  ║
+║  - Decision: Test "input-output distinction" first        ║
+╠═══════════════════════════════════════════════════════════╣
+║  Step 3: PREREQUISITE TEST GENERATION 🆕                  ║
+║  - Generate: Simpler, abstract test question              ║
+║  - Content: "A + B → C + D. Which are inputs?"           ║
+║  - Cognitive level: Lower than original question          ║
+║  - Context: Domain-independent (not photosynthesis yet)   ║
+╠═══════════════════════════════════════════════════════════╣
+║  Step 4: ADAPTIVE BRANCHING 🆕                            ║
+║  - If prerequisite test PASSES:                           ║
+║    → Return to original question with targeted hint       ║
+║  - If prerequisite test FAILS:                            ║
+║    → Teach that prerequisite concept (mini-lesson)        ║
+║    → Test with even simpler example (recursive)           ║
+║    → Maximum 3 levels deep before offering skip           ║
+╚═══════════════════════════════════════════════════════════╝
                     ↓
-Student answers verification question correctly
-→ True understanding achieved! ✓
+Student demonstrates prerequisite knowledge
+                    ↓
+Return to original question ("阳光") with foundational understanding
+                    ↓
+Student answers correctly → True understanding achieved! ✓
+```
+
+**Key Difference from Traditional Approach:**
+
+| Traditional Learning Mode | **NEW: Prerequisite-First Approach** |
+|--------------------------|--------------------------------------|
+| Wrong answer → Hint about SAME question | Wrong answer → Test PREREQUISITE knowledge |
+| "Think about what plants need for photosynthesis..." | "First, do you understand inputs vs outputs in ANY process?" |
+| Stay in same domain (photosynthesis) | Abstract to simpler domain (A+B→C+D) |
+| Risk: Student guesses correctly without understanding | Ensures: Build foundational knowledge before application |
+| Hints get more direct about the answer | Tests get simpler until student demonstrates mastery |
+
+**Pedagogical Advantage:**
+✅ **Diagnostic** - Identifies exact knowledge gap  
+✅ **Foundational** - Teaches root concepts, not surface facts  
+✅ **Transferable** - Student can apply learning to new problems  
+✅ **Confidence-building** - Success at simpler level motivates  
+✅ **Efficient** - No wasted attempts on questions beyond student's current level
 ```
 
 ### LangChain Tools/Components | 工具组件
@@ -930,8 +1015,9 @@ class LearningAgent:
     def __init__(self):
         self.tools = [
             self.misconception_analyzer,
+            self.prerequisite_identifier,        # 🆕 NEW TOOL
+            self.prerequisite_test_generator,    # 🆕 NEW TOOL
             self.learning_material_generator,
-            self.verification_question_generator,
             self.knowledge_base_search
         ]
         
@@ -965,45 +1051,69 @@ class LearningAgent:
         """
         pass
     
-    # Tool 2: Learning Material Generation
+    # Tool 2: Prerequisite Identifier 🆕
     @tool
-    def learning_material_generator(
+    def prerequisite_identifier(
         self,
         misconception: dict,
-        topic: str,
+        correct_answer: str,
+        student_answer: str,
+        context: dict
+    ) -> dict:
+        """
+        Identify what PREREQUISITE knowledge is missing based on the error.
+        Returns: {
+            "missing_prerequisite": "input_output_distinction",
+            "prerequisite_tree": ["process_directionality", "temporal_ordering"],
+            "cognitive_level_gap": 2,  # How many levels simpler to test
+            "reasoning": "Student confused products with reactants, suggests lack of process understanding"
+        }
+        """
+        pass
+    
+    # Tool 3: Prerequisite Test Generator 🆕
+    @tool
+    def prerequisite_test_generator(
+        self,
+        prerequisite_concept: str,
+        original_question: str,
         language: str
     ) -> dict:
         """
-        Generate targeted learning material to address misconception.
+        Generate a SIMPLER test question for the prerequisite concept.
+        Uses domain-independent examples when possible.
         Returns: {
-            "material_type": "micro_lesson",
-            "content": "...",
-            "visuals": [...],
-            "examples": [...]
+            "test_question": "In A + B → C + D, which are inputs?",
+            "correct_answer": ["A", "B"],
+            "question_type": "multiple_choice | text_input",
+            "cognitive_level": "remember",  # Lower than original
+            "domain": "abstract",  # vs "photosynthesis"
+            "hints_if_wrong": [...]
         }
         """
         pass
     
-    # Tool 3: Verification Question Generator
+    # Tool 4: Learning Material Generation
     @tool
-    def verification_question_generator(
+    def learning_material_generator(
         self,
-        concept: str,
-        previous_question: str,
-        misconception_addressed: str
+        prerequisite_concept: str,
+        language: str
     ) -> dict:
         """
-        Generate NEW question about SAME concept from different angle.
+        Generate mini-lesson for prerequisite concept (NOT the original topic).
         Returns: {
-            "question": "...",
-            "angle": "definition vs application",
-            "difficulty": "same",
-            "tests_understanding_of": "input-output distinction"
+            "material_type": "micro_lesson",
+            "concept": "input_output_distinction",
+            "content": "...",
+            "visual_aid": {...},
+            "examples": ["baking", "tea_making"],  # Simple analogies
+            "practice_question": "..."
         }
         """
         pass
     
-    # Tool 4: Knowledge Base Search
+    # Tool 5: Knowledge Base Search
     @tool
     def knowledge_base_search(
         self,
@@ -1012,6 +1122,7 @@ class LearningAgent:
     ) -> dict:
         """
         Search for relevant educational materials, common errors, teaching strategies.
+        Also includes prerequisite mapping database.
         """
         pass
 ```
@@ -1021,7 +1132,9 @@ class LearningAgent:
 **Scenario**: Student answers "氧气" for node that should be "阳光"
 
 ```python
+# ========================================================================
 # Step 1: Misconception Analysis
+# ========================================================================
 analysis = agent.misconception_analyzer(
     correct_answer="阳光",
     student_answer="氧气",
@@ -1042,83 +1155,132 @@ analysis = agent.misconception_analyzer(
     "prevalence": 0.34,  # 34% of students make this error
     "severity": "medium",
     "prerequisite_gaps": ["process_directionality", "energy_vs_material"],
-    "teaching_strategy": "use_flow_diagram_with_arrows"
+    "teaching_strategy": "test_prerequisite_first"  # 🆕 Changed from "use_flow_diagram"
 }
 
-# Step 2: Generate Learning Material
-material = agent.learning_material_generator(
+# ========================================================================
+# Step 2: Identify Missing Prerequisite 🆕
+# ========================================================================
+prerequisite = agent.prerequisite_identifier(
     misconception=analysis,
-    topic="光合作用",
+    correct_answer="阳光",
+    student_answer="氧气",
+    context={
+        "parent": "光合作用",
+        "siblings": ["水", "二氧化碳"]
+    }
+)
+
+# Returns:
+{
+    "missing_prerequisite": "input_output_distinction",
+    "prerequisite_tree": [
+        "process_directionality",       # Level 1: Understanding process flow
+        "temporal_ordering",            # Level 2: Understanding before/after
+        "category_distinction"          # Level 3: Understanding types
+    ],
+    "cognitive_level_gap": 2,  # Test 2 levels simpler
+    "reasoning": "Student knows O2 relates to photosynthesis but can't distinguish reactants from products",
+    "test_strategy": "abstract_then_concrete"  # Start with domain-independent test
+}
+
+# ========================================================================
+# Step 3: Generate Prerequisite Test Question 🆕
+# ========================================================================
+prereq_test = agent.prerequisite_test_generator(
+    prerequisite_concept="input_output_distinction",
+    original_question="What energy source does photosynthesis need?",
+    language="zh"
+)
+
+# Returns:
+{
+    "test_question": "在方程式 A + B → C + D 中，哪些是输入（反应开始时就有的）？",
+    "test_question_en": "In the equation A + B → C + D, which are INPUTS (present at the start)?",
+    "correct_answer": ["A", "B"],
+    "question_type": "multiple_choice",
+    "options": ["A", "B", "C", "D"],
+    "cognitive_level": "remember",  # Simpler than original "apply" level
+    "domain": "abstract",  # NOT photosynthesis domain
+    "explanation_if_correct": "Great! You understand inputs are what you START with.",
+    "explanation_if_wrong": {
+        "answered_C_or_D": "C and D are OUTPUTS - they're created by the process.",
+        "general": "Inputs are before the arrow →, outputs are after the arrow →"
+    }
+}
+
+# ========================================================================
+# Step 4: Student Takes Prerequisite Test
+# ========================================================================
+
+## Scenario A: Student PASSES prerequisite test
+student_prereq_answer = ["A", "B"]  # Correct!
+
+response_pass = {
+    "correct": True,
+    "message": "✅ Excellent! You understand inputs vs outputs in general.",
+    "next_action": "return_to_original_question",
+    "enhanced_hint": "Now let's apply this to photosynthesis: 阳光+水+CO₂ → 葡萄糖+O₂. Which is an INPUT that provides energy?"
+}
+
+## Scenario B: Student FAILS prerequisite test
+student_prereq_answer = ["C", "D"]  # Wrong!
+
+# Agent generates SIMPLER mini-lesson
+mini_lesson = agent.learning_material_generator(
+    prerequisite_concept="input_output_distinction",
     language="zh"
 )
 
 # Returns:
 {
     "material_type": "micro_lesson",
-    "duration": "2-3 minutes",
+    "concept": "input_output_distinction",
+    "duration": "1-2 minutes",
     "content": {
-        "acknowledgment": "你知道氧气和光合作用有关系 - 很好！",
-        "contrast": "但是氧气是产物（输出），不是原料（输入）",
+        "title": "理解输入和输出",
+        "explanation": "在任何过程中：\n输入 = 开始时有的东西\n输出 = 结束时产生的东西",
         "visual_aid": {
-            "type": "flow_diagram",
-            "elements": [
-                {"type": "input", "items": ["阳光", "水", "CO₂"]},
-                {"type": "process", "name": "光合作用"},
-                {"type": "output", "items": ["葡萄糖", "O₂"]}
-            ]
+            "type": "simple_flow",
+            "example": "烘焙面包",
+            "inputs_arrow": "面粉 + 水 + 酵母 + 热量",
+            "process_box": "[烘焙]",
+            "outputs_arrow": "面包 + 蒸汽 + 香味"
         },
-        "analogy": {
-            "domain": "烘焙",
-            "mapping": {
-                "inputs": "面粉 + 鸡蛋 + 热量",
-                "outputs": "面包 + 蒸汽",
-                "lesson": "蒸汽不是原料，是副产品"
-            }
-        },
-        "key_principle": "氧气是植物制造的，不是植物需要的",
-        "memory_trick": "光合作用 = 光（阳光）+ 合成"
+        "key_point": "输入被消耗，输出被创造",
+        "memory_trick": "输入在箭头左边 ←→ 输出在箭头右边"
     },
-    "interactive_elements": [
-        {"type": "button", "text": "我明白了", "action": "continue"},
-        {"type": "button", "text": "显示更多例子", "action": "expand"},
-        {"type": "button", "text": "跳过", "action": "skip"}
-    ]
+    "practice_question": {
+        "question": "泡茶：水 + 茶叶 + 热量 → 热茶 + 茶渣。哪些是输入？",
+        "answer": ["水", "茶叶", "热量"]
+    }
 }
 
-# Step 3: Generate Verification Question
-verification_q = agent.verification_question_generator(
-    concept="阳光",
-    previous_question="与'光合作用'相连的空白节点是什么？",
-    misconception_addressed="input_output_confusion"
-)
+# Then test with practice question → If pass → Return to original question
 
-# Returns:
-{
-    "question": "光合作用过程中，植物从天空获得什么作为能量来源？",
-    "question_id": "q1_verification",
-    "angle": "functional_role",  # Different angle: role-based vs. relationship-based
-    "previous_angle": "structural_relationship",
-    "same_answer": "阳光",
-    "difficulty": "same",
-    "tests_understanding_of": ["energy_source_identification", "input_output_distinction"],
-    "hint": "Remember: This is an INPUT that provides ENERGY, not a material or output",
-    "why_different": "Previous question asked about connections; this asks about function and source direction"
+# ========================================================================
+# Step 5: Return to Original Question (After Prerequisite Mastery)
+# ========================================================================
+
+return_prompt = {
+    "message": "现在你理解了输入和输出！让我们回到光合作用问题：",
+    "original_question": "What is the blank node connected to '光合作用'?",
+    "contextualized_hint": "记住：输入在过程之前。光合作用的输入是：阳光 + 水 + CO₂。哪个提供能量？",
+    "student_confidence": "high"  # They demonstrated prerequisite knowledge
 }
 
-# If student answers correctly:
-{
+# Student now answers: "阳光" ✓
+final_response = {
     "correct": True,
-    "confidence_score": 0.95,  # High confidence in true understanding
-    "reason": "Student demonstrated understanding from two different angles",
-    "proceed": True
-}
-
-# If student still answers incorrectly:
-{
-    "correct": False,
-    "trigger_action": "generate_second_micro_lesson",
-    "escalation_level": 2,
-    "new_strategy": "use_concrete_examples_with_images"
+    "learning_path_summary": {
+        "initial_error": "氧气 (confused output for input)",
+        "prerequisite_tested": "input_output_distinction",
+        "prerequisite_result": "passed after mini-lesson",
+        "final_answer": "阳光 ✓",
+        "understanding_verified": True
+    },
+    "message": "太棒了！你不仅记住了答案，还理解了为什么！",
+    "metacognitive_reflection": "你先学会了输入输出的概念，然后成功应用到了光合作用。这是真正的理解！"
 }
 ```
 
@@ -1174,34 +1336,41 @@ and generating adaptive learning materials.
 
 Your goal is NOT to just check if answers are correct, but to:
 1. Understand WHY students give wrong answers
-2. Identify the root misconceptions or knowledge gaps
-3. Generate targeted teaching materials that address those specific gaps
-4. Verify true understanding through multi-angle questioning
+2. Identify what PREREQUISITE knowledge is missing
+3. Test prerequisite knowledge FIRST before re-asking original question
+4. Teach missing prerequisites through simple, domain-independent examples
+5. Return to original question only after prerequisite mastery is demonstrated
 
 === YOUR CAPABILITIES ===
 
 Tool 1: misconception_analyzer
 - Analyze student's wrong answer in context
 - Diagnose the type of error (e.g., input-output confusion, category mistake, partial knowledge)
+- Identify ROOT CAUSE, not just surface error
 - Estimate severity and commonality
-- Recommend teaching strategies
 
-Tool 2: learning_material_generator
-- Generate micro-lessons (2-3 minutes) targeted at specific misconceptions
-- Use multiple modalities: text, visual diagrams, analogies, examples
-- Follow pedagogical best practices: acknowledge, contrast, explain, reinforce
-- Adapt difficulty and language to student level
+Tool 2: prerequisite_identifier 🆕
+- Based on misconception, identify what PREREQUISITE knowledge is missing
+- Build prerequisite tree (e.g., "input-output" requires "process directionality")
+- Determine cognitive level gap (how many levels simpler to test)
+- Decide whether to test prerequisite or give direct hint
 
-Tool 3: verification_question_generator
-- Create NEW questions about the SAME concept from different angles
-- Ensure questions test true understanding, not just memorization
-- Progress through Bloom's taxonomy (remember → understand → apply → analyze)
-- Avoid giving away the answer
+Tool 3: prerequisite_test_generator 🆕
+- Generate SIMPLER test questions for prerequisite concepts
+- Use domain-independent examples (A+B→C+D instead of photosynthesis)
+- Cognitive level should be LOWER than original question
+- Multiple choice or simple text input
 
-Tool 4: knowledge_base_search
-- Search for common student errors in this topic
-- Find effective teaching analogies and examples
-- Retrieve proven teaching strategies for this concept
+Tool 4: learning_material_generator
+- Generate micro-lessons for PREREQUISITE concepts (not original topic yet)
+- Use simple, everyday examples (baking, making tea)
+- 1-2 minutes maximum
+- Include practice question to verify understanding
+
+Tool 5: knowledge_base_search
+- Search for common student errors and prerequisite mappings
+- Find effective teaching analogies for foundational concepts
+- Retrieve prerequisite knowledge hierarchies
 
 === PEDAGOGICAL PRINCIPLES ===
 
@@ -1212,16 +1381,20 @@ Tool 4: knowledge_base_search
 5. **Verification**: Test understanding from multiple angles
 6. **Encouragement**: Be warm, supportive, never condescending
 
-=== WORKFLOW ===
+=== WORKFLOW (Prerequisite-First Approach) ===
 
 When student gives wrong answer:
 1. ANALYZE: What misconception does this reveal?
-2. TEACH: Generate targeted material to address it
-3. VERIFY: Ask a different question about same concept
-4. ITERATE: If still wrong, try different teaching approach
-5. SUCCEED: When student demonstrates understanding from multiple angles
+2. IDENTIFY: What PREREQUISITE knowledge is missing?
+3. TEST PREREQUISITE: Ask simpler question about prerequisite (domain-independent)
+4. BRANCH:
+   - If prerequisite test PASSES → Return to original with enhanced hint
+   - If prerequisite test FAILS → Teach prerequisite with micro-lesson
+5. RE-TEST: Practice question on prerequisite concept
+6. RETURN: Back to original question with foundational understanding
+7. SUCCEED: Student answers correctly because they understand WHY
 
-=== EXAMPLE REASONING ===
+=== EXAMPLE REASONING (Prerequisite-First) ===
 
 Student answers "氧气" for "阳光" in photosynthesis:
 
@@ -1229,12 +1402,22 @@ Reasoning:
 - Student knows O2 relates to photosynthesis → Partial knowledge ✓
 - Student said O2 when answer is sunlight → INPUT/OUTPUT confusion
 - This is a PROCESS DIRECTIONALITY error → Common misconception (34%)
-- Root cause: Doesn't understand causal flow of reactions
-- Teaching strategy: Use FLOW DIAGRAM with clear arrows
-- Analogy: Baking (inputs vs. outputs)
-- Verification angle: Ask about "energy source" (functional role)
+- Root cause: Doesn't understand INPUTS vs OUTPUTS in general
 
-Remember: Your job is to TEACH understanding, not just mark right/wrong.
+🆕 **Prerequisite-First Decision:**
+- DON'T give hint about photosynthesis yet
+- DO test if student understands inputs/outputs in ANY process
+- Generate abstract test: "A + B → C + D. Which are inputs?"
+- If they fail → Teach input/output concept with simple examples (baking, making tea)
+- If they pass → Return to photosynthesis with "Now apply this: 阳光+水+CO₂ → 葡萄糖+O₂"
+
+Why This Works Better:
+- Student learns the FOUNDATIONAL concept (inputs vs outputs)
+- Student can now APPLY this to any domain (not just memorize photosynthesis)
+- Student gains CONFIDENCE from succeeding at simpler level
+- Student understands WHY, not just WHAT
+
+Remember: Your job is to BUILD FOUNDATIONS, not just give hints.
 """
 ```
 
