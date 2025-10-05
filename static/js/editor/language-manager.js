@@ -84,6 +84,11 @@ class LanguageManager {
                 italicTooltip: 'Italic',
                 underlineTooltip: 'Underline',
                 closeTooltip: 'Close',
+                // Node Editor
+                editNodeContent: 'Edit Node Content',
+                characters: 'characters',
+                cancel: 'Cancel',
+                saveChanges: 'Save Changes',
                 // Properties Panel
                 properties: 'Properties',
                 text: 'Text',
@@ -238,6 +243,11 @@ class LanguageManager {
                 italicTooltip: '斜体',
                 underlineTooltip: '下划线',
                 closeTooltip: '关闭',
+                // Node Editor
+                editNodeContent: '编辑节点内容',
+                characters: '字',
+                cancel: '取消',
+                saveChanges: '保存更改',
                 // Properties Panel
                 properties: '属性',
                 text: '文本',

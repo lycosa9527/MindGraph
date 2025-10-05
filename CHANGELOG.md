@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v3.0.14] - 2025-10-05
 
 ### Fixed
+- **Node Editor Translation**: Fixed missing Chinese translations when double-clicking nodes to edit
+  - **Issue**: Node editor modal showed English text ("Edit Node Content", "Text:", "Cancel", "Save Changes", "characters") even in Chinese mode
+  - **Solution**: 
+    1. Added translations to language-manager.js: `editNodeContent`, `characters`, `cancel`, `saveChanges`
+    2. Updated node-editor.js to use `window.languageManager.translate()` for all text
+    3. Now shows Chinese text: "编辑节点内容", "文本:", "取消", "保存更改", "字"
+  - **Impact**: Full bilingual support in node editor dialog
+
 - **Prompt Template Placeholders**: Removed unused `{user_prompt}` placeholders from all prompt templates
   - **Affected diagrams**: Bridge Map, Bubble Map, Circle Map, Double Bubble Map, Tree Map, Brace Map, Flow Map, Multi-Flow Map (8 Thinking Maps)
   - **Issue**: Placeholders appeared as literal text `{user_prompt}` in system prompts sent to LLM

@@ -109,8 +109,11 @@ class NodeEditor {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>`);
         
+        // Get language manager
+        const lang = window.languageManager;
+        
         header.append('h2')
-            .text('Edit Node Content')
+            .text(lang?.translate('editNodeContent') || 'Edit Node Content')
             .style('margin', '0')
             .style('color', '#1a1a1a')
             .style('font-size', '20px')
@@ -118,7 +121,7 @@ class NodeEditor {
         
         // Text input label
         this.modal.append('label')
-            .text('Text:')
+            .text((lang?.translate('text') || 'Text') + ':')
             .style('display', 'block')
             .style('margin-bottom', '10px')
             .style('color', '#4a5568')
@@ -164,12 +167,12 @@ class NodeEditor {
             .style('color', '#94a3b8')
             .style('font-size', '13px')
             .style('font-weight', '500')
-            .text(`${(this.nodeData.text || '').length} characters`);
+            .text(`${(this.nodeData.text || '').length} ${lang?.translate('characters') || 'characters'}`);
         
         // Update character count on input
         d3.select(this.textInput).on('input', function() {
             const length = this.value.length;
-            charCount.text(`${length} characters`);
+            charCount.text(`${length} ${lang?.translate('characters') || 'characters'}`);
             
             if (length > 200) {
                 charCount.style('color', '#ef4444').style('font-weight', '600');
@@ -190,7 +193,7 @@ class NodeEditor {
         // Cancel button
         buttonContainer.append('button')
             .attr('class', 'btn-cancel')
-            .text('Cancel')
+            .text(lang?.translate('cancel') || 'Cancel')
             .style('padding', '12px 24px')
             .style('border', '2px solid #e2e8f0')
             .style('background', 'white')
@@ -215,7 +218,7 @@ class NodeEditor {
         // Save button
         buttonContainer.append('button')
             .attr('class', 'btn-save')
-            .text('Save Changes')
+            .text(lang?.translate('saveChanges') || 'Save Changes')
             .style('padding', '12px 28px')
             .style('border', 'none')
             .style('background', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
@@ -278,7 +281,8 @@ class NodeEditor {
         
         if (newText === '') {
             console.warn('NodeEditor: Save blocked - Empty text');
-            alert('Text cannot be empty');
+            const lang = window.languageManager;
+            alert(lang?.getNotification('textEmpty') || 'Text cannot be empty');
             return;
         }
         
