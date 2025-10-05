@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v3.0.11] - 2025-10-05
 
+### 🚧 In Progress
+- **Brace Map Visual Improvements**: Enhancing brace (curly bracket) rendering
+- **Tree Map Connection Lines**: Improving hierarchical connection line rendering
+
 ### Added
 - **Smart Placeholder System**: Intelligent pattern-matching for template text
   - Automatically detects ALL template variations using regex patterns
