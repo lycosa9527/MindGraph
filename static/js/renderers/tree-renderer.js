@@ -254,6 +254,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('font-size', rootFont)
         .attr('font-weight', 'bold')
         .attr('data-text-for', 'tree-topic')
+        .attr('data-node-id', 'tree-topic')
+        .attr('data-node-type', 'topic')
         .attr('cursor', 'pointer')
         .text(spec.topic);
 

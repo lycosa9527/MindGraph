@@ -642,6 +642,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('font-family', parseFontSpec(THEME.fontTopic).family)
             .attr('font-weight', 'bold')
             .attr('data-text-for', 'topic_center')
+            .attr('data-node-id', 'topic_center')
+            .attr('data-node-type', 'topic')
             .text(actualSpec.topic);
     }
 

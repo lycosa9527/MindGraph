@@ -1217,7 +1217,8 @@ class ToolbarManager {
         
         // Strategy 1: For diagrams with explicit node types, find by data-node-type attribute
         // This is more reliable than distance-based detection
-        if (diagramType === 'bubble_map' || diagramType === 'circle_map') {
+        if (diagramType === 'bubble_map' || diagramType === 'circle_map' || 
+            diagramType === 'tree_map' || diagramType === 'brace_map') {
             // Look for node with data-node-type='topic' (the central topic)
             const topicNode = nodes.find(node => node.nodeType === 'topic');
             if (topicNode && topicNode.text) {
@@ -1237,9 +1238,9 @@ class ToolbarManager {
             }
         }
         
-        // Strategy 2: For MindMap and similar diagrams, find the central node by position
+        // Strategy 2: For MindMap, find the central node by position (fallback)
         // This prioritizes the actual displayed text over the spec
-        if (diagramType === 'mindmap' || diagramType === 'tree_map') {
+        if (diagramType === 'mindmap') {
             // Find the node closest to center (likely the main topic)
             const svg = d3.select('#d3-container svg');
             if (!svg.empty()) {
