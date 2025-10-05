@@ -141,6 +141,9 @@ class InteractiveEditor {
             backgroundColor: '#f5f5f5'
         });
         
+        // Save initial state to history (so user can undo back to start)
+        this.saveToHistory('initial_load', { diagramType: this.diagramType });
+        
         // Render initial diagram
         this.renderDiagram();
         
@@ -2954,24 +2957,27 @@ class InteractiveEditor {
     /**
      * Save state to history
      */
-    saveToHistory(action, state) {
-        // Remove any history after current index
+    saveToHistory(action, metadata) {
+        // Remove any history after current index (branch cut)
         this.history = this.history.slice(0, this.historyIndex + 1);
         
-        // Add new history entry
+        // Save a deep clone of the ENTIRE currentSpec, not just metadata
         this.history.push({
             action,
-            state: JSON.parse(JSON.stringify(state)),
+            metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : {},
+            spec: JSON.parse(JSON.stringify(this.currentSpec)), // ← THE FIX!
             timestamp: Date.now()
         });
         
         this.historyIndex = this.history.length - 1;
         
-        // Limit history size
+        // Limit history size (50 states)
         if (this.history.length > 50) {
             this.history.shift();
             this.historyIndex--;
         }
+        
+        console.log(`History saved: ${action}, total states: ${this.history.length}, current index: ${this.historyIndex}`);
     }
     
     /**
@@ -2980,9 +2986,26 @@ class InteractiveEditor {
     undo() {
         if (this.historyIndex > 0) {
             this.historyIndex--;
-            console.log('Undo:', this.history[this.historyIndex]);
-            // Re-render diagram with previous state
+            const historyEntry = this.history[this.historyIndex];
+            console.log(`Undo: ${historyEntry.action}`, historyEntry.metadata);
+            
+            // Restore the spec from history
+            this.currentSpec = JSON.parse(JSON.stringify(historyEntry.spec));
+            
+            // Clear selection (nodes may no longer exist)
+            this.selectionManager.clearSelection();
+            
+            // Re-render diagram with restored state
             this.renderDiagram();
+            
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Undo: ' + historyEntry.action, 'info');
+            }
+        } else {
+            console.log('Undo: No more history to undo');
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Nothing to undo', 'warning');
+            }
         }
     }
     
@@ -2992,9 +3015,26 @@ class InteractiveEditor {
     redo() {
         if (this.historyIndex < this.history.length - 1) {
             this.historyIndex++;
-            console.log('Redo:', this.history[this.historyIndex]);
-            // Re-render diagram with next state
+            const historyEntry = this.history[this.historyIndex];
+            console.log(`Redo: ${historyEntry.action}`, historyEntry.metadata);
+            
+            // Restore the spec from history
+            this.currentSpec = JSON.parse(JSON.stringify(historyEntry.spec));
+            
+            // Clear selection (nodes may no longer exist)
+            this.selectionManager.clearSelection();
+            
+            // Re-render diagram with restored state
             this.renderDiagram();
+            
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Redo: ' + historyEntry.action, 'info');
+            }
+        } else {
+            console.log('Redo: No more history to redo');
+            if (this.toolbarManager) {
+                this.toolbarManager.showNotification('Nothing to redo', 'warning');
+            }
         }
     }
     

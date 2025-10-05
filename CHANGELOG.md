@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v3.0.14] - 2025-10-05
 
 ### Fixed
+- **Undo/Redo System**: Fixed completely broken undo/redo functionality
+  - **Critical Bug**: Undo/redo buttons did nothing - just re-rendered current state
+  - **Root Cause**: 
+    - `saveToHistory()` only saved action metadata (node IDs, counts), NOT the actual diagram spec
+    - `undo()` and `redo()` changed historyIndex but never restored `currentSpec` from history
+    - `renderDiagram()` kept using current spec, so nothing changed visually
+  - **Solution**:
+    1. Modified `saveToHistory()` to save deep clone of entire `currentSpec` in each history entry
+    2. Modified `undo()` to restore `currentSpec` from `history[historyIndex].spec` before rendering
+    3. Modified `redo()` to restore `currentSpec` from `history[historyIndex].spec` before rendering
+    4. Added initial state save on diagram load (users can undo back to start)
+    5. Added user notifications for undo/redo actions
+    6. Clear node selection after undo/redo (nodes may no longer exist)
+  - **Impact**: Undo/redo now actually works! Users can revert any change (add node, delete node, edit text, move node)
+  - **Testing**: Try adding/deleting/editing nodes, then press Ctrl+Z (undo) and Ctrl+Y (redo)
 - **Node Counter**: Fixed non-functional node counter in lower left corner
   - **Issue**: Counter only showed "1" instead of actual node count (e.g., showed 1 when there were 9 nodes)
   - **Root Cause**: Multiple renderers had text elements missing `data-node-id` attribute
