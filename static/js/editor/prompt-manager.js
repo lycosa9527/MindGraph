@@ -233,12 +233,12 @@ class PromptManager {
             'concept_map': isZh ? '概念图' : 'Concept Map',
             'bubble_map': isZh ? '气泡图' : 'Bubble Map',
             'double_bubble_map': isZh ? '双气泡图' : 'Double Bubble Map',
-            'tree_map': isZh ? '树状图' : 'Tree Map',
+            'tree_map': isZh ? '树形图' : 'Tree Map',
             'brace_map': isZh ? '括号图' : 'Brace Map',
             'flow_map': isZh ? '流程图' : 'Flow Map',
-            'multi_flow_map': isZh ? '多流程图' : 'Multi-Flow Map',
+            'multi_flow_map': isZh ? '复流程图' : 'Multi-Flow Map',
             'circle_map': isZh ? '圆圈图' : 'Circle Map',
-            'bridge_map': isZh ? '桥接图' : 'Bridge Map'
+            'bridge_map': isZh ? '桥形图' : 'Bridge Map'
         };
         
         return typeNames[diagramType] || diagramType;

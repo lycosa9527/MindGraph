@@ -81,7 +81,7 @@ class MultiFlowMapAgent(BaseAgent):
                 logger.error(f"MultiFlowMapAgent: No prompt found for language {language}")
                 return None
                 
-            user_prompt = f"请为以下描述创建一个多流程图：{prompt}" if language == "zh" else f"Please create a multi-flow map for the following description: {prompt}"
+            user_prompt = f"请为以下描述创建一个复流程图：{prompt}" if language == "zh" else f"Please create a multi-flow map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [

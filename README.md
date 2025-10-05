@@ -164,11 +164,11 @@ Each diagram type has specialized node operations: | 每种图表类型都有专
 - **Circle Map** (圆圈图): Add context nodes around central topic | 在中心主题周围添加背景节点
 - **Bubble Map** (气泡图): Add attribute bubbles to describe subject | 添加属性气泡描述主题
 - **Double Bubble Map** (双气泡图): Add similarities and differences | 添加相似点和差异
-- **Tree Map** (树状图): Add categories and hierarchical items | 添加类别和层次项目
+- **Tree Map** (树形图): Add categories and hierarchical items | 添加类别和层次项目
 - **Brace Map** (括号图): Add parts and subparts in whole-part structure | 在整体-部分结构中添加部分和子部分
 - **Flow Map** (流程图): Add sequential steps and substeps | 添加顺序步骤和子步骤
-- **Multi-Flow Map** (多流程图): Add causes and effects to events | 为事件添加原因和结果
-- **Bridge Map** (桥接图): Add analogical pairs | 添加类比对
+- **Multi-Flow Map** (复流程图): Add causes and effects to events | 为事件添加原因和结果
+- **Bridge Map** (桥形图): Add analogical pairs | 添加类比对
 - **Mind Map** (思维导图): Add branches and sub-branches | 添加分支和子分支
 - **Concept Map** (概念图): Add concepts and relationships | 添加概念和关系
 
@@ -324,7 +324,7 @@ if result["success"]:
 3. **Double Bubble Map** - Compare and contrast concepts | **双气泡图** - 比较和对比概念
 4. **Brace Map** - Part-whole relationships | **括号图** - 部分-整体关系
 5. **Flow Map** - Processes and sequences | **流程图** - 过程和序列
-6. **Multi-Flow Map** - Complex multi-process flows | **多流程图** - 复杂的多过程流程
+6. **Multi-Flow Map** - Complex multi-process flows | **复流程图** - 复杂的多过程流程
 7. **Bridge Map** - Analogies and relationships | **桥形图** - 类比和关系
 8. **Tree Map** - Hierarchical data visualization | **树形图** - 分层数据可视化
 

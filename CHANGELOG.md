@@ -55,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added active element detection (INPUT, TEXTAREA, contentEditable)
   - Keyboard shortcuts (Ctrl+Z, Ctrl+A, etc.) properly ignored when typing
 
+- **Translation Corrections**: Fixed incorrect Chinese translations
+  - Tree Map: 树状图 → 树形图 (more accurate terminology)
+  - Flow Map: Updated default templates to use numbered patterns (步骤1, 子步骤1.1)
+  - Updated across all UI components, prompts, and documentation
+
 ### Technical Details
 - **Pattern Matching**: Uses Regular Expressions for scalable placeholder detection
   - ~20 regex patterns cover infinite variations

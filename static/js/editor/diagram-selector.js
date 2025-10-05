@@ -1153,38 +1153,38 @@ class DiagramSelector {
             return {
                 title: '流程',
                 steps: [
-                    '开始',
-                    '执行',
-                    '检查',
-                    '完成'
+                    '步骤1',
+                    '步骤2',
+                    '步骤3',
+                    '步骤4'
                 ],
                 substeps: [
                     {
-                        step: '开始',
+                        step: '步骤1',
                         substeps: [
-                            '收集需求',
-                            '明确目标'
+                            '子步骤1.1',
+                            '子步骤1.2'
                         ]
                     },
                     {
-                        step: '执行',
+                        step: '步骤2',
                         substeps: [
-                            '实施任务',
-                            '监控进度'
+                            '子步骤2.1',
+                            '子步骤2.2'
                         ]
                     },
                     {
-                        step: '检查',
+                        step: '步骤3',
                         substeps: [
-                            '检查质量',
-                            '验证完成度'
+                            '子步骤3.1',
+                            '子步骤3.2'
                         ]
                     },
                     {
-                        step: '完成',
+                        step: '步骤4',
                         substeps: [
-                            '最终交付',
-                            '记录成果'
+                            '子步骤4.1',
+                            '子步骤4.2'
                         ]
                     }
                 ],
@@ -1198,38 +1198,38 @@ class DiagramSelector {
             return {
                 title: 'Process Flow',
                 steps: [
-                    'Start',
-                    'Process',
-                    'Review',
-                    'Complete'
+                    'Step 1',
+                    'Step 2',
+                    'Step 3',
+                    'Step 4'
                 ],
                 substeps: [
                     {
-                        step: 'Start',
+                        step: 'Step 1',
                         substeps: [
-                            'Gather requirements',
-                            'Define objectives'
+                            'Substep 1.1',
+                            'Substep 1.2'
                         ]
                     },
                     {
-                        step: 'Process',
+                        step: 'Step 2',
                         substeps: [
-                            'Execute tasks',
-                            'Monitor progress'
+                            'Substep 2.1',
+                            'Substep 2.2'
                         ]
                     },
                     {
-                        step: 'Review',
+                        step: 'Step 3',
                         substeps: [
-                            'Check quality',
-                            'Verify completion'
+                            'Substep 3.1',
+                            'Substep 3.2'
                         ]
                     },
                     {
-                        step: 'Complete',
+                        step: 'Step 4',
                         substeps: [
-                            'Finalize deliverables',
-                            'Document results'
+                            'Substep 4.1',
+                            'Substep 4.2'
                         ]
                     }
                 ],

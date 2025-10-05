@@ -455,7 +455,11 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('rx', THEME.rectRadius)
             .attr('fill', THEME.stepFill)        // Deep blue fill
             .attr('stroke', THEME.stepStroke)    // Darker blue border
-            .attr('stroke-width', THEME.stepStrokeWidth);
+            .attr('stroke-width', THEME.stepStrokeWidth)
+            .attr('data-node-id', `flow-step-${index}`)
+            .attr('data-node-type', 'step')
+            .attr('data-step-index', index)
+            .attr('cursor', 'pointer');
 
         // Text
         svg.append('text')
@@ -540,7 +544,12 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('rx', Math.max(4, THEME.rectRadius - 2))
                 .attr('fill', THEME.substepFill)        // Light blue fill
                 .attr('stroke', THEME.substepStroke)    // Blue border
-                .attr('stroke-width', Math.max(1, THEME.stepStrokeWidth - 1));
+                .attr('stroke-width', Math.max(1, THEME.stepStrokeWidth - 1))
+                .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                .attr('data-node-type', 'substep')
+                .attr('data-step-index', stepIdx)
+                .attr('data-substep-index', nodeIdx)
+                .attr('cursor', 'pointer');
             
             // Draw substep text
             svg.append('text')
