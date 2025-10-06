@@ -9,6 +9,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
+### Version 3.1.2 - Documentation Consolidation 📚
+
+**Documentation**: Consolidated performance documentation into a single comprehensive guide.
+
+**文档整理**: 将性能相关文档整合为一个综合指南。
+
+#### What's New | 新增内容
+
+📚 **Performance Documentation Consolidation**
+- Merged `PERFORMANCE_CODE_REVIEW.md` and `QUICK_OPTIMIZATION_GUIDE.md` into unified guide
+- Created `PERFORMANCE_OPTIMIZATION_GUIDE.md` combining detailed analysis with quick implementation steps
+- Single source of truth for all performance optimization information
+- Better navigation with table of contents and clear sections
+
+✨ **Document Structure**
+- Quick Start section for immediate 60% performance improvement in 30 minutes
+- Detailed analysis section for understanding the technical details
+- Step-by-step implementation guide with code examples
+- Comprehensive troubleshooting section
+- Testing and verification checklists
+
+📊 **Content Organization**
+- Phase 1: Quick wins (30 min) - 811 KB savings
+- Phase 2: Async optimizations (2-3 hours) - 160 KB additional savings
+- Phase 3: Advanced optimizations (optional)
+- Git commit templates and monitoring guidelines
+
+#### Technical Details | 技术细节
+
+**Files Modified**:
+- Created: `doc/PERFORMANCE_OPTIMIZATION_GUIDE.md` - Consolidated performance guide
+- Deleted: `doc/PERFORMANCE_CODE_REVIEW.md` - Merged into new guide
+- Deleted: `doc/QUICK_OPTIMIZATION_GUIDE.md` - Merged into new guide
+
+**Benefits**:
+- ✅ Easier to maintain single document
+- ✅ No duplicate information
+- ✅ Better user experience with logical flow
+- ✅ Combines "what to do" with "why we do it"
+
+---
+
+## 🎉 Previous Releases | 历史版本
+
 ### Version 3.1.1 - Learning Mode Validation Fix 🔧
 
 **Bug Fix**: Fixed learning mode button validation to ensure consistent behavior across all diagram types and languages.
