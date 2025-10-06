@@ -1103,27 +1103,57 @@ class ToolbarManager {
         // (e.g., "请为以下描述创建一个思维导图：{topic}")
         let prompt = mainTopic;
         
+        // For brace maps, check if user has specified a decomposition dimension
+        let decompositionDimension = null;
+        if (diagramType === 'brace_map') {
+            const dimensionNode = d3.select('[data-node-type="dimension"]');
+            if (!dimensionNode.empty()) {
+                const rawDimension = dimensionNode.attr('data-dimension-value') || this.editor.currentSpec?.dimension;
+                
+                // Only use dimension if it's actually filled (not empty, not just whitespace)
+                // If empty, let LLM auto-select the best dimension for the topic
+                if (rawDimension && rawDimension.trim() !== '') {
+                    decompositionDimension = rawDimension.trim();
+                    console.log('Brace map - User specified decomposition dimension:', decompositionDimension);
+                } else {
+                    console.log('Brace map - No dimension specified, LLM will auto-select best dimension');
+                }
+            }
+        }
+        
         console.log('Auto-complete prompt:', prompt);
         console.log('Main topic identified:', mainTopic);
         console.log('Total existing nodes:', existingNodes.length);
         console.log('Language:', language);
+        if (decompositionDimension) {
+            console.log('Decomposition dimension:', decompositionDimension);
+        }
         
         // Show loading state
         this.setAutoButtonLoading(true);
         this.showNotification(this.getNotif('aiCompleting', mainTopic), 'info');
         
         try {
+            // Prepare request body
+            const requestBody = {
+                prompt: prompt,
+                diagram_type: diagramType,
+                language: language
+            };
+            
+            // Add dimension preference for brace maps ONLY if user has specified a meaningful dimension
+            // If dimension is empty/whitespace, omit it so LLM can intelligently choose the best dimension
+            if (decompositionDimension) {
+                requestBody.dimension_preference = decompositionDimension;
+            }
+            
             // Call API to generate diagram
             const response = await fetch('/api/generate_graph', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    diagram_type: diagramType,
-                    language: language
-                })
+                body: JSON.stringify(requestBody)
             });
             
             if (!response.ok) {

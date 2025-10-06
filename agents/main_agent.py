@@ -1401,7 +1401,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
     raise ValueError("All concept map generation methods failed - check LLM configuration")
 
 
-def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str) -> dict:
+def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str, dimension_preference: str = None) -> dict:
     """
     Generate specification using the appropriate specialized agent.
     
@@ -1409,6 +1409,7 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
         user_prompt: User's input prompt
         diagram_type: Type of diagram to generate
         language: Language for processing
+        dimension_preference: Optional dimension preference for brace maps
     
     Returns:
         dict: Generated specification
@@ -1485,7 +1486,12 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
         logger.debug(f"User prompt: {user_prompt}")
         logger.debug(f"Language: {language}")
         
-        result = agent.generate_graph(user_prompt, language)
+        # For brace maps, pass dimension_preference if available
+        if diagram_type == 'brace_map' and dimension_preference:
+            logger.info(f"Passing dimension preference to brace map agent: {dimension_preference}")
+            result = agent.generate_graph(user_prompt, language, dimension_preference)
+        else:
+            result = agent.generate_graph(user_prompt, language)
         
         logger.debug(f"Agent result type: {type(result)}")
         logger.debug(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
@@ -1564,7 +1570,7 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     return cleaned_prompt
 
 
-def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None):
+def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None, dimension_preference=None):
     """
     Simplified agent workflow that directly calls specialized agents.
     
@@ -1573,6 +1579,7 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_
         language (str): Language for processing ('zh' or 'en')
         forced_diagram_type (str, optional): Force a specific diagram type instead of auto-detection.
                                             Used for auto-complete to preserve current diagram type.
+        dimension_preference (str, optional): User-specified dimension for brace maps.
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
@@ -1602,7 +1609,7 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_
             logger.info(f"Agent: Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
-        spec = _generate_spec_with_agent(generation_prompt, diagram_type, language)
+        spec = _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference)
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Agent: Failed to generate spec for {diagram_type}")

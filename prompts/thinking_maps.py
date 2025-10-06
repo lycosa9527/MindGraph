@@ -407,11 +407,33 @@ BRACE_MAP_GENERATION_EN = """
 Please generate a JSON specification for a brace map.
 
 Brace maps are used for decomposition, representing the relationship between the whole and its parts.
-1. Understanding the physical components of an object, not classifying the central topic.
+
+CRITICAL CONCEPT: Decomposition Dimensions
+A brace map can decompose a topic using DIFFERENT DIMENSIONS. You must:
+✓ Pick ONE dimension and apply it CONSISTENTLY throughout the entire map
+✗ NEVER mix different dimensions in the same map
+
+Common Decomposition Dimensions (with examples for "Cars"):
+1. Physical Parts (Structural): Engine, Chassis, Transmission, Body
+2. Function Modules (Functional): Powertrain System, Safety System, Comfort System, Entertainment System
+3. Life Cycle (Temporal): Design Phase, Manufacturing Phase, Usage Phase, Recycling Phase
+4. User Experience (Experiential): Driving Experience, Comfort Experience, Safety Experience, Technology Experience
+5. Manufacturing Process: Raw Materials, Assembly, Quality Control, Distribution
+6. Price Segments: Budget Models, Mid-range Models, Luxury Models, Super-luxury Models
+
+CRITICAL: USER-SPECIFIED DIMENSION PRIORITY
+If the user explicitly specifies a decomposition dimension or standard in their request (e.g., "decompose by function", "using life cycle stages", "break down by physical components"), you MUST use that EXACT dimension for decomposition. Examples:
+- User says "decompose by function" → Use "Functional Modules" or similar functional dimension
+- User says "by physical parts" → Use "Physical Parts" dimension
+- User says "using lifecycle" → Use "Life Cycle" dimension
+- User says "按功能拆解" → Use functional dimension
+- User says "按物理部件" → Use physical parts dimension
 
 Please output a JSON object containing the following fields:
 topic: "Main topic"
+dimension: "The decomposition dimension being used (e.g., 'Physical Parts', 'Functional Modules')"
 parts: [{{"name": "Part1", "subparts": [{{"name": "Subpart1.1"}}]}}]
+alternative_dimensions: ["Dimension1", "Dimension2", "Dimension3", "Dimension4"]
 
 CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
 
@@ -421,16 +443,30 @@ Requirements:
 - Generate 3-6 main parts with clear, descriptive names
 - Each part should have 2-5 subparts that are specific and detailed
 - Use concise, clear language - avoid long sentences
-- Ensure logical whole-to-part relationships (whole → parts → subparts)
-- Parts should be major categories or divisions of the topic
-- Subparts should be specific components, features, or elements of each part
+- Ensure logical whole-to-part relationships using ONE consistent dimension
+- The "dimension" field must clearly describe the decomposition approach used
+- ALL parts and subparts must follow the SAME dimension (e.g., if using "Physical Parts", all items must be physical components)
+- If user specifies a dimension, ALWAYS respect it and use it as the primary decomposition standard
+
+CRITICAL: Alternative Dimensions Requirements
+- The "alternative_dimensions" array MUST list 4-6 OTHER valid dimensions for THIS SPECIFIC topic
+- Each alternative MUST be DIFFERENT from the dimension you chose
+- Each alternative should be equally valid for decomposing this topic (not random suggestions)
+- Think: "What other meaningful ways could we break down THIS topic?"
+- Examples for "Car" topic:
+  * If you chose "Physical Parts" → alternatives could be: "Functional Modules", "Manufacturing Process", "Price Segments", "Energy Types", "User Experience"
+  * If you chose "Functional Modules" → alternatives could be: "Physical Parts", "Life Cycle Stages", "Market Segments", "Technology Levels"
+- Make alternatives SPECIFIC to the topic, not generic dimensions
 
 Example format (for reference only):
 topic: "Car"
+dimension: "Physical Parts"
 parts: [
-  {{"name": "Body Parts", "subparts": [{{"name": "Doors"}}, {{"name": "Windows"}}, {{"name": "Roof"}}]}},
-  {{"name": "Powertrain", "subparts": [{{"name": "Engine"}}, {{"name": "Transmission"}}, {{"name": "Driveshaft"}}]}}
+  {{"name": "Engine", "subparts": [{{"name": "Cylinders"}}, {{"name": "Pistons"}}, {{"name": "Crankshaft"}}]}},
+  {{"name": "Chassis", "subparts": [{{"name": "Frame"}}, {{"name": "Suspension"}}, {{"name": "Axles"}}]}},
+  {{"name": "Transmission", "subparts": [{{"name": "Gearbox"}}, {{"name": "Clutch"}}, {{"name": "Differential"}}]}}
 ]
+alternative_dimensions: ["Functional Modules", "Life Cycle", "User Experience", "Manufacturing Process", "Price Segments"]
 
 Do not include any information about visual layout or braces; only provide the hierarchical data.
 
@@ -441,30 +477,66 @@ BRACE_MAP_GENERATION_ZH = """
 请生成一个括号图（Brace Map）的JSON规范。
 
 括号图用于拆分，表示整体与部分之间的关系。
-1. 理解一个物体的物理组成部分，不是对中心词进行分类。
+
+核心概念：拆解维度
+括号图可以使用不同的维度来拆解主题。您必须：
+✓ 选择一个维度并在整个图中保持一致
+✗ 绝不在同一张图中混合不同的维度
+
+常见拆解维度（以"汽车"为例）：
+1. 物理部件（结构性）：发动机、底盘、变速箱、车身
+2. 功能模块（功能性）：动力系统、安全系统、舒适系统、娱乐系统
+3. 生命周期（时间性）：设计阶段、制造阶段、使用阶段、回收阶段
+4. 用户体验（体验性）：驾驶体验、舒适体验、安全体验、科技体验
+5. 制造流程：原材料、组装、质量控制、配送
+6. 价格区间：经济型、中档型、豪华型、超豪华型
+
+关键：用户指定维度优先
+如果用户在请求中明确指定了拆解维度或标准（例如："按功能拆解"、"使用生命周期阶段"、"按物理部件分解"），您必须使用用户指定的维度进行拆解。示例：
+- 用户说"按功能拆解" → 使用"功能模块"或类似的功能性维度
+- 用户说"按物理部件" → 使用"物理部件"维度
+- 用户说"按生命周期" → 使用"生命周期"维度
+- 用户说"decompose by function" → 使用功能维度
+- 用户说"by physical parts" → 使用物理部件维度
 
 请输出一个包含以下字段的JSON对象：
 topic: "主题"
+dimension: "使用的拆解维度（例如：'物理部件'、'功能模块'）"
 parts: [{{"name": "部分1", "subparts": [{{"name": "子部分1.1"}}]}}]
+alternative_dimensions: ["维度1", "维度2", "维度3", "维度4"]
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'植物'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
-关键要求：必须全部使用中文生成内容，包括topic、parts数组和subparts数组中的所有文本。不要混用英文和中文。请生成全新的、有意义的部分和子部分内容，不要使用占位符文本如"部分1"、"子部分1.1"等。
+关键要求：必须全部使用中文生成内容，包括topic、dimension、parts数组、subparts数组和alternative_dimensions数组中的所有文本。不要混用英文和中文。请生成全新的、有意义的部分和子部分内容，不要使用占位符文本如"部分1"、"子部分1.1"等。
 
 要求：
 - 生成3-6个主要部分，名称清晰、描述性强
 - 每个部分应有2-5个子部分，具体且详细
 - 使用简洁、清晰的语言，避免长句
-- 确保逻辑的整体→部分→子部分关系
-- 部分应为主题的主要类别或分支
-- 子部分应为每个部分的具体组件、特征或元素
+- 确保使用一个一致的维度来建立逻辑的整体→部分→子部分关系
+- "dimension"字段必须清楚地描述所使用的拆解方法
+- 所有部分和子部分必须遵循相同的维度（例如，如果使用"物理部件"，所有项目必须是物理组件）
+- 如果用户指定了维度，必须遵循并使用该维度作为主要拆解标准
+
+关键：替代维度要求
+- "alternative_dimensions"数组必须列出4-6个针对此特定主题的其他有效维度
+- 每个替代维度必须与你选择的维度不同
+- 每个替代维度都应该是分解此主题的同样有效的方式（不是随机建议）
+- 思考："还有哪些有意义的方式可以分解这个主题？"
+- "汽车"主题示例：
+  * 如果选择"物理部件" → 替代维度可以是："功能模块"、"制造流程"、"价格区间"、"能源类型"、"用户体验"
+  * 如果选择"功能模块" → 替代维度可以是："物理部件"、"生命周期阶段"、"市场细分"、"技术水平"
+- 使替代维度针对主题具体化，而不是通用维度
 
 示例格式（仅供参考）：
 topic: "汽车"
+dimension: "物理部件"
 parts: [
-  {{"name": "车身部分", "subparts": [{{"name": "车门"}}, {{"name": "车窗"}}, {{"name": "车顶"}}]}},
-  {{"name": "动力系统", "subparts": [{{"name": "发动机"}}, {{"name": "变速箱"}}, {{"name": "传动轴"}}]}}
+  {{"name": "发动机", "subparts": [{{"name": "气缸"}}, {{"name": "活塞"}}, {{"name": "曲轴"}}]}},
+  {{"name": "底盘", "subparts": [{{"name": "车架"}}, {{"name": "悬挂系统"}}, {{"name": "车轴"}}]}},
+  {{"name": "变速箱", "subparts": [{{"name": "齿轮箱"}}, {{"name": "离合器"}}, {{"name": "差速器"}}]}}
 ]
+alternative_dimensions: ["功能模块", "生命周期", "用户体验", "制造流程", "价格区间"]
 
 不要包含任何关于可视化布局或括号形状的说明；只提供层级数据。
 

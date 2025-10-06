@@ -971,14 +971,61 @@ class InteractiveEditor {
             textLength: currentText?.length || 0
         });
         
+        // Check if this is a dimension node
+        let initialText = currentText || 'Edit me';
+        const textElement = d3.select(textNode);
+        const nodeType = textElement.attr('data-node-type');
+        
+        if (nodeType === 'dimension' && currentText) {
+            // Check if current text is placeholder text (Chinese or English)
+            const isPlaceholderCN = currentText.includes('点击填写');
+            const isPlaceholderEN = currentText.includes('click to specify');
+            
+            if (isPlaceholderCN || isPlaceholderEN) {
+                // Start with empty string so users can type immediately without deleting placeholder
+                initialText = '';
+                this.log('InteractiveEditor: Detected dimension placeholder, starting with empty text');
+            } else {
+                // Dimension has a value - extract ONLY the dimension value, not the wrapper
+                // Format is: [拆解维度: 功能模块] or [Decomposition by: Physical Parts]
+                // We want to extract only: 功能模块 or Physical Parts
+                const dimensionValueMatch = currentText.match(/\[(?:拆解维度|Decomposition by):\s*(.+?)\]/);
+                if (dimensionValueMatch && dimensionValueMatch[1]) {
+                    initialText = dimensionValueMatch[1].trim();
+                    this.log('InteractiveEditor: Extracted dimension value from wrapper', {
+                        fullText: currentText,
+                        extractedValue: initialText
+                    });
+                } else {
+                    // Fallback: if no wrapper found, use current text as-is
+                    initialText = currentText;
+                }
+            }
+        }
+        
         const editor = new NodeEditor(
-            { id: nodeId, text: currentText || 'Edit me' },
+            { id: nodeId, text: initialText },
             (newText) => {
                 this.log('InteractiveEditor: Node editor - Save callback triggered', {
                     nodeId,
                     newText: newText?.substring(0, 50)
                 });
-                this.updateNodeText(nodeId, shapeNode, textNode, newText);
+                
+                // For dimension nodes, strip any wrapper text that user might have included
+                let finalText = newText;
+                if (nodeType === 'dimension' && newText) {
+                    // If user somehow included the wrapper, extract just the value
+                    const valueMatch = newText.match(/\[(?:拆解维度|Decomposition by):\s*(.+?)\]/);
+                    if (valueMatch && valueMatch[1]) {
+                        finalText = valueMatch[1].trim();
+                        this.log('InteractiveEditor: Stripped wrapper from dimension text', {
+                            original: newText,
+                            cleaned: finalText
+                        });
+                    }
+                }
+                
+                this.updateNodeText(nodeId, shapeNode, textNode, finalText);
             },
             () => {
                 // Cancel callback
@@ -1190,6 +1237,11 @@ class InteractiveEditor {
             // Update the main topic
             this.currentSpec.topic = newText;
             console.log('Updated Brace Map topic to:', newText);
+        } else if (nodeType === 'dimension') {
+            // Update the decomposition dimension
+            // User can change this to specify how they want to decompose the topic
+            this.currentSpec.dimension = newText;
+            console.log('Updated Brace Map dimension to:', newText);
         } else if (nodeType === 'part') {
             // Update part name in the parts array
             const partIndex = parseInt(shape.attr('data-part-index'));

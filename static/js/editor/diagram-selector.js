@@ -1470,6 +1470,7 @@ class DiagramSelector {
         if (lang === 'zh') {
             return {
                 topic: '主题',
+                dimension: '',  // Empty by default - users can specify or leave empty for LLM to auto-select
                 parts: [
                     {
                         name: '部分1',
@@ -1493,6 +1494,7 @@ class DiagramSelector {
                         ]
                     }
                 ],
+                // Don't include alternative_dimensions in template - LLM will generate them
                 _recommended_dimensions: {
                     width: 800,
                     height: 600,
@@ -1502,6 +1504,7 @@ class DiagramSelector {
         } else {
             return {
                 topic: 'Main Topic',
+                dimension: '',  // Empty by default - users can specify or leave empty for LLM to auto-select
                 parts: [
                     {
                         name: 'Part 1',
@@ -1525,6 +1528,7 @@ class DiagramSelector {
                         ]
                     }
                 ],
+                // Don't include alternative_dimensions in template - LLM will generate them
                 _recommended_dimensions: {
                     width: 800,
                     height: 600,

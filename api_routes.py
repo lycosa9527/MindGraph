@@ -396,10 +396,17 @@ def generate_graph():
     
     # Get optional forced diagram type (for auto-complete feature)
     forced_diagram_type = data.get('diagram_type', None)
+    
+    # Get optional dimension preference (for brace maps)
+    dimension_preference = data.get('dimension_preference', None)
+    
     if forced_diagram_type:
         logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}, forced_type={forced_diagram_type!r}")
     else:
         logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}")
+    
+    if dimension_preference:
+        logger.info(f"User specified dimension preference: {dimension_preference!r}")
     
     # Track timing for LLM processing
     start_time = time.time()
@@ -413,7 +420,7 @@ def generate_graph():
             logger.debug("Cache hit for generate_graph - returning cached spec")
             result = cached
         else:
-            result = agent.agent_graph_workflow_with_styles(prompt, language, forced_diagram_type=forced_diagram_type)
+            result = agent.agent_graph_workflow_with_styles(prompt, language, forced_diagram_type=forced_diagram_type, dimension_preference=dimension_preference)
             # Cache on success
             try:
                 if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):

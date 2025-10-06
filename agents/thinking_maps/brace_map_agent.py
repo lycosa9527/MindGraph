@@ -1124,11 +1124,11 @@ class BraceMapAgent(BaseAgent):
             'strokeWidth': 2
         }
     
-    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """Generate a brace map from a prompt."""
         try:
             # Generate the initial brace map specification
-            spec = self._generate_brace_map_spec(prompt, language)
+            spec = self._generate_brace_map_spec(prompt, language, dimension_preference)
             if not spec:
                 return {
                     'success': False,
@@ -1165,7 +1165,7 @@ class BraceMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_brace_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    def _generate_brace_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -1177,8 +1177,16 @@ class BraceMapAgent(BaseAgent):
             if not system_prompt:
                 logger.error(f"BraceMapAgent: No prompt found for language {language}")
                 return None
-                
-            user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
+            
+            # Build user prompt with dimension preference if specified
+            if dimension_preference:
+                if language == "zh":
+                    user_prompt = f"请为以下描述创建一个括号图，使用指定的拆解维度'{dimension_preference}'：{prompt}"
+                else:
+                    user_prompt = f"Please create a brace map for the following description using the specified decomposition dimension '{dimension_preference}': {prompt}"
+                logger.info(f"BraceMapAgent: User specified dimension preference: {dimension_preference}")
+            else:
+                user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
             
             # Generate response from LLM
             response = self.llm_client.chat_completion([
