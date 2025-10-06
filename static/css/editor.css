@@ -678,14 +678,11 @@ body {
 }
 
 #d3-container {
-    /* Dimensions are set by renderers via inline styles */
-    /* These serve as fallbacks and ensure minimum viewport coverage */
-    width: 100%;
-    height: 100%;
-    min-width: 100%;
-    min-height: 100%;
-    padding: 40px;
-    box-sizing: border-box;
+    /* Container shrinks to fit SVG content - no white padding around grey background */
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+    line-height: 0;  /* Remove any line-height spacing */
 }
 
 /* Let SVG use natural dimensions set by renderers */

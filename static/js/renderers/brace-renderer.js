@@ -158,10 +158,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         throw new Error('Failed to load theme from style manager');
     }
     
-    // Apply background if specified
-    if (theme && theme.background) {
-        d3.select('#d3-container').style('background-color', theme.background);
-    }
+    // Background is set directly on SVG, not on container
+    // This ensures no white padding around the SVG
     
     // Helpers to measure text width using a temporary hidden SVG text node
     function parseFontSpec(fontSpec) {
@@ -282,19 +280,35 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const partBoxHeight = parseFontSpec(THEME.fontPart).size + partPadding * 2;
     const subpartBoxHeight = parseFontSpec(THEME.fontSubpart).size + subpartPadding * 2;
     
-    // Calculate total height needed - increased top padding for arc space
-    let totalHeight = topicBoxHeight + 100; // Topic + spacing (increased to 100 for arc space)
+    // Calculate total height needed
+    const topPadding = 60; // Reduced from 100 - more reasonable top padding
+    let totalHeight = topPadding + topicBoxHeight; // Topic + top padding
+    
+    // Add space for dimension label if it exists (25px below topic box + font size + small padding)
+    if ('dimension' in actualSpec) {
+        totalHeight += 25 + 14 + 15; // 25px gap + 14px font + 15px padding before parts
+    }
+    
+    // Calculate parts/subparts height
     (actualSpec.parts || []).forEach(part => {
         totalHeight += partBoxHeight + 20; // Part height + spacing
         if (part.subparts && part.subparts.length > 0) {
             totalHeight += (part.subparts.length * (subpartBoxHeight + 10)) + 20; // Subparts + spacing
         }
     });
-    totalHeight += 40; // Bottom padding
+    
+    // Bottom padding - tighter spacing
+    const hasAlternatives = actualSpec.alternative_dimensions && Array.isArray(actualSpec.alternative_dimensions) && actualSpec.alternative_dimensions.length > 0;
+    if (hasAlternatives) {
+        totalHeight += 70; // 15px gap + 55px for alternative dimensions content
+    } else {
+        totalHeight += 30; // Minimal bottom padding when no alternatives
+    }
     
     // Calculate the actual content area (excluding top/bottom padding)
-    const contentStartY = 80; // Parts start at this Y position (increased to 80 for arc space)
-    const contentEndY = totalHeight - 80; // Bottom padding (increased to 80 for arc space)
+    const contentStartY = topPadding; // Parts start at this Y position
+    const bottomPadding = hasAlternatives ? 70 : 30;  // Match the totalHeight calculation
+    const contentEndY = totalHeight - bottomPadding;
     const contentCenterY = contentStartY + (contentEndY - contentStartY) / 2;
     
     // Calculate total width needed - EXPANDED: Ensure adequate width for brace tip extension
@@ -307,33 +321,28 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         900 // Increased minimum width for readability
     );
     
-    // Create SVG with calculated dimensions
-    
+    // Create SVG with calculated dimensions - exact size with background
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', totalWidth)
         .attr('height', totalHeight)
         .attr('viewBox', `0 0 ${totalWidth} ${totalHeight}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
-    
-    // SVG created successfully
+        .style('display', 'block')
+        .style('background-color', THEME.background || '#f8f9fa');
 
-    // Add grey background - FIXED: Add background rectangle
-    svg.append('rect')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', totalWidth)
-        .attr('height', totalHeight)
-        .attr('fill', THEME.background || '#f8f9fa')
-        .attr('stroke', 'none');
-
-    // Position topic further left to give more space for brace
-    const topicX = 20;  // Moved left from 30 to 20
+    // Position topic with minimal left margin
+    const topicX = 15;  // Minimal left margin for clean look
     // Topic will be drawn AFTER brace center is calculated to ensure correct position
 
-    // Position parts to the right of topic with more generous spacing for brace
-    const partsStartX = topicX + topicBoxWidth + columnSpacing + 80;  // Increased from 50px to 80px for more space
-    const partsStartY = 80;  // Increased to 80 to give space for top arc
+    // Position parts to the right of topic with spacing for brace
+    const partsStartX = topicX + topicBoxWidth + columnSpacing + 80;  // Space for brace
+    const partsStartY = topPadding;  // Start at top padding (consistent with contentStartY)
     let currentY = partsStartY;
+    
+    // Track the rightmost content position for proper centering
+    let maxContentRightX = topicX + topicBoxWidth;
+    
+    // Track the actual bottom position of rendered children
+    let lastChildBottomY = partsStartY;
     
     // Store part center Y positions for brace boundary calculation
     const partCenterYs = [];
@@ -360,6 +369,12 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // Position the part at subparts range center
         const partY = subpartsRangeCenterY;
         const partBoxWidth = Math.max(maxPartWidth, measureTextWidth(part?.name || '', THEME.fontPart, 'bold')) + partPadding * 2;
+        
+        // Track rightmost content
+        maxContentRightX = Math.max(maxContentRightX, partsStartX + partBoxWidth);
+        
+        // Track the actual bottom edge of this part
+        lastChildBottomY = Math.max(lastChildBottomY, partY + partBoxHeight / 2);
         
         // Store the part center Y for brace boundary calculation
         partCenterYs.push(partY);
@@ -404,6 +419,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 const subpartY = currentY + subpartBoxHeight / 2;
                 const subpartBoxWidth = Math.max(maxSubpartWidth, measureTextWidth(subpart?.name || '', THEME.fontSubpart)) + subpartPadding * 2;
                 
+                // Track rightmost content
+                maxContentRightX = Math.max(maxContentRightX, subpartsStartX + subpartBoxWidth);
+                
                 svg.append('rect')
                     .attr('x', subpartsStartX)
                     .attr('y', subpartY - subpartBoxHeight / 2)
@@ -432,6 +450,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .text(subpart.name || '');
 
                 currentY += subpartBoxHeight + 10;
+                
+                // Track the actual bottom edge of this subpart
+                lastChildBottomY = Math.max(lastChildBottomY, subpartY + subpartBoxHeight / 2);
             });
 
             // Draw small brace connecting part to subparts - with safety gap check
@@ -649,10 +670,107 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('data-node-id', 'topic_center')
             .attr('data-node-type', 'topic')
             .text(actualSpec.topic);
+        
+        // ALWAYS show dimension field (even if empty) so users can edit it
+        // Only show if dimension field exists in spec (even if empty string)
+        if ('dimension' in actualSpec) {
+            const dimensionY = topicY + topicBoxHeight / 2 + 25;  // 25px below topic box
+            const dimensionFontSize = 14;
+            
+            let dimensionText;
+            let textOpacity;
+            
+            if (actualSpec.dimension && actualSpec.dimension.trim() !== '') {
+                // Dimension has value - show it with label
+                const hasChinese = /[\u4e00-\u9fa5]/.test(actualSpec.dimension);
+                const dimensionLabel = hasChinese ? '拆解维度' : 'Decomposition by';
+                dimensionText = `[${dimensionLabel}: ${actualSpec.dimension}]`;
+                textOpacity = 0.8;
+            } else {
+                // Dimension is empty - show placeholder
+                // Detect language from topic to show appropriate placeholder
+                const hasChinese = /[\u4e00-\u9fa5]/.test(actualSpec.topic);
+                dimensionText = hasChinese ? '[拆解维度: 点击填写...]' : '[Decomposition by: click to specify...]';
+                textOpacity = 0.4;  // Lower opacity for placeholder
+            }
+            
+            // Make dimension text EDITABLE - users can click to change/fill decomposition standard
+            svg.append('text')
+                .attr('x', topicX + topicBoxWidth / 2)
+                .attr('y', dimensionY)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.braceColor || '#666666')
+                .attr('font-size', dimensionFontSize)
+                .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
+                .attr('font-style', 'italic')
+                .style('opacity', textOpacity)
+                .style('cursor', 'pointer')  // Show it's clickable
+                .attr('data-node-id', 'dimension_label')  // Make it editable
+                .attr('data-node-type', 'dimension')  // Identify as dimension node
+                .attr('data-dimension-value', actualSpec.dimension || '')  // Store actual dimension value (or empty)
+                .text(dimensionText);
+        }
     }
 
-    // Watermark removed from canvas display - will be added during PNG export only
-    // The export functionality will handle adding the watermark to the final image
+    // Add alternative dimensions at the bottom (if alternative_dimensions field exists)
+    if (actualSpec.alternative_dimensions && Array.isArray(actualSpec.alternative_dimensions) && actualSpec.alternative_dimensions.length > 0) {
+        // Position exactly 15px below the last child node (using actual rendered position)
+        const separatorY = lastChildBottomY + 15;  // Separator line 15px below the bottom edge of last child
+        const alternativesY = separatorY + 20;  // Label 20px below separator
+        const fontSize = 13;
+        
+        // Detect language from first alternative dimension (if contains Chinese characters, use Chinese)
+        const hasChinese = /[\u4e00-\u9fa5]/.test(actualSpec.alternative_dimensions[0]);
+        const alternativeLabel = hasChinese ? '本主题的其他可能拆解维度：' : 'Other possible dimensions for this topic:';
+        
+        // Calculate center of actual content (not canvas) for proper alignment
+        const contentCenterX = (topicX + maxContentRightX) / 2;
+        
+        // Draw separator line centered on content
+        const separatorMargin = 60; // Margin from content edges
+        const separatorLeftX = Math.max(topicX, contentCenterX - (maxContentRightX - topicX) / 2);
+        const separatorRightX = Math.min(maxContentRightX, contentCenterX + (maxContentRightX - topicX) / 2);
+        
+        svg.append('line')
+            .attr('x1', separatorLeftX)
+            .attr('y1', separatorY)
+            .attr('x2', separatorRightX)
+            .attr('y2', separatorY)
+            .attr('stroke', THEME.braceColor || '#666666')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '4,4')
+            .style('opacity', 0.4);
+        
+        // Add label centered on content (not canvas)
+        svg.append('text')
+            .attr('x', contentCenterX)
+            .attr('y', alternativesY - 5)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.braceColor || '#666666')
+            .attr('font-size', fontSize)
+            .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
+            .style('opacity', 0.7)
+            .text(alternativeLabel);
+        
+        // Add dimension chips/badges centered on content
+        const dimensionChips = actualSpec.alternative_dimensions.map(d => `• ${d}`).join('  ');
+        svg.append('text')
+            .attr('x', contentCenterX)
+            .attr('y', alternativesY + 18)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.braceColor || '#666666')
+            .attr('font-size', fontSize - 1)
+            .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
+            .attr('font-weight', '600')
+            .style('opacity', 0.8)
+            .text(dimensionChips);
+    }
+    
+    // Note: Watermark is handled by the global rendering system, not individual renderers
+    // This prevents duplicate watermarks when re-rendering
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {

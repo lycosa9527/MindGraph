@@ -9,6 +9,232 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
+### Version 3.2.0 - Brace Map Enhanced with Decomposition Dimensions 🎯
+
+**New Feature**: Brace maps now show decomposition dimension and alternative perspectives!  
+**Flexible**: Leave dimension empty → LLM auto-selects; Fill it in → LLM respects your choice!  
+**User Control**: Users can specify their preferred decomposition dimension or let AI decide!  
+**Educational**: Helps K12 teachers understand different ways to break down concepts.  
+**Smart**: Intelligent dimension validation - only sends meaningful preferences to backend.
+
+**新功能**: 括号图现在显示拆解维度和替代视角！  
+**灵活**: 留空维度 → LLM自动选择；填写维度 → LLM遵循你的选择！  
+**用户控制**: 用户可以指定首选拆解维度或让AI决定！  
+**教育性**: 帮助K12教师理解分解概念的不同方法。  
+**智能**: 智能维度验证 - 仅向后端发送有意义的偏好。
+
+---
+
+## [3.2.1] - 2025-01-06 - Brace Map Layout & Canvas Export Fixes
+
+### Fixed
+- **Canvas Layout & Export Issues**
+  - Removed white padding/margin around brace map canvas for clean export
+  - Fixed double watermark bug (watermark now handled by global system)
+  - SVG background set directly on element (no container background bleed)
+  - Canvas container now uses inline-block to shrink-wrap content exactly
+  
+- **Alternative Dimensions Positioning**
+  - Now positioned exactly 15px below actual bottom child node (not estimated position)
+  - Center-aligned to actual content width (not canvas width)
+  - Separator line properly spans content area with correct margins
+  - Reduced excessive whitespace for tighter, cleaner layout
+  
+- **Dimension Field Editing**
+  - Fixed wrapper text "[拆解维度: ...]" appearing in editor
+  - Regex extraction ensures only clean dimension value is saved
+  - Placeholder text properly handled (empty string in editor)
+  
+- **CSS & Spacing**
+  - Removed 40px padding from #d3-container causing white margins
+  - Optimized top/bottom padding: 60px top, 70px/30px bottom
+  - Alternative dimensions section spacing: 15px gap + proper content alignment
+
+### Technical Changes
+- `static/js/renderers/brace-renderer.js`: Track actual rendered bottom position (`lastChildBottomY`)
+- `static/css/editor.css`: Changed #d3-container to `display: inline-block` with `padding: 0`
+- Alternative dimensions use `contentCenterX` (actual content center, not canvas center)
+- Removed manual `window.addWatermark()` call from brace renderer
+
+---
+
+## [3.2.0] - 2025-10-06
+
+### ✨ **NEW FEATURE - Brace Map Decomposition Dimensions**
+
+#### Enhanced Brace Map with Dimension Awareness
+- **Dimension Display**: Shows current decomposition dimension below the main topic
+  - Example: "[Decomposition by: Physical Parts]"
+  - Helps users understand the perspective being used
+  
+- **Alternative Dimensions**: Lists other possible ways to decompose the topic at the bottom
+  - Shows 4-6 alternative dimensions (e.g., "Functional Modules", "Life Cycle", "User Experience")
+  - Encourages exploration of different perspectives
+  - Perfect for K12 education to teach critical thinking
+
+#### User-Specified Dimension Support
+- **Dimension Preference**: Users can now specify their preferred decomposition dimension
+  - Frontend detects dimension from existing diagram when using auto-complete
+  - Backend prompts explicitly instruct LLM to respect user-specified dimensions
+  - Examples: "decompose by function", "按功能拆解", "using life cycle"
+  
+- **End-to-End Flow**: Complete implementation from frontend to backend
+  - Frontend sends `dimension_preference` in API request
+  - API passes dimension to main agent workflow
+  - Main agent forwards dimension to brace map agent
+  - Brace map agent includes dimension in LLM prompt
+  
+- **Bilingual Support**: Works for both English and Chinese specifications
+  - English: "using the specified decomposition dimension '{dimension}'"
+  - Chinese: "使用指定的拆解维度'{dimension}'"
+
+#### User Experience Flow
+
+**Scenario 1: Let LLM Auto-Select Dimension (Recommended for Beginners)**
+1. **Create New Brace Map**: Clean template with placeholder
+   - Shows topic and basic parts structure
+   - Dimension field shows clickable placeholder: `[拆解维度: 点击填写...]` (low opacity)
+   - NO alternative dimensions shown initially (clean view)
+   
+2. **Skip Dimension Editing**: Focus on topic and content
+   - Edit topic: "汽车" (Car)
+   - Edit parts as needed
+   - Ignore the dimension placeholder - leave it empty
+   
+3. **Use Auto-Complete**: LLM intelligently selects best dimension
+   - Frontend detects empty dimension field (placeholder text is not sent)
+   - Does NOT send `dimension_preference` to backend
+   - LLM analyzes "汽车" and chooses most appropriate dimension
+   - Example: "汽车" → LLM selects "物理部件" (Physical Parts)
+   
+4. **Visual Feedback**: See LLM's choice replace placeholder
+   - Placeholder disappears, actual dimension appears: `[拆解维度: 物理部件]` (normal opacity)
+   - Alternative dimensions NOW shown at bottom: `• 功能模块  • 生命周期  • 用户体验  • 制造流程`
+   - Users can explore other perspectives for future maps
+
+**Scenario 2: User Specifies Dimension (Advanced/Specific Needs)**
+1. **Create New Brace Map**: Template with editable placeholder
+   - Dimension field shows: `[拆解维度: 点击填写...]` (clickable, low opacity)
+   
+2. **Edit Dimension Before Auto-Complete**: 
+   - Click on dimension placeholder: `[拆解维度: 点击填写...]`
+   - **Editor opens with empty input** (placeholder text automatically removed!)
+   - Start typing immediately: "功能模块" (Functional Modules)
+   - No need to delete placeholder text - it's handled automatically
+   - Save → Placeholder is replaced with actual dimension text: `[拆解维度: 功能模块]`
+   - Opacity changes from 0.4 (placeholder) to 0.8 (actual value)
+   
+2b. **Edit Dimension After Auto-Complete (FIX for wrapper issue)**:
+   - Click on dimension with value: `[拆解维度: 功能模块]`
+   - **Editor extracts and shows ONLY the value**: "功能模块" (wrapper removed!)
+   - Edit the value: Change to "能源类型"
+   - Save → Value updates correctly: `[拆解维度: 能源类型]`
+   - Wrapper is automatically re-applied by renderer
+   
+3. **Use Auto-Complete**: System strictly respects the specified dimension
+   - Frontend detects non-empty dimension: "功能模块"
+   - Sends `dimension_preference: '功能模块'` to backend
+   - LLM receives explicit instruction: "使用指定的拆解维度'功能模块'"
+   - Generated content follows functional decomposition ONLY
+   
+4. **Consistent Results**: All parts follow the specified perspective
+   - Dimension shows user's choice: `[拆解维度: 功能模块]` (preserved)
+   - Alternative dimensions also appear for future reference
+   - No mixing of dimensions - coherent functional decomposition
+
+#### Updated Prompts with Dimension Guidance
+- **Comprehensive Dimension Examples**: Added 6 common decomposition dimensions
+  1. Physical Parts (Structural)
+  2. Function Modules (Functional)
+  3. Life Cycle (Temporal)
+  4. User Experience (Experiential)
+  5. Manufacturing Process
+  6. Price Segments
+  
+- **User Priority Instructions**: Added explicit instructions to prioritize user-specified dimensions
+  - "If user specifies a dimension, ALWAYS respect it and use it as the primary decomposition standard"
+  - Includes examples of how users might specify dimensions in both languages
+  
+- **Consistency Enforcement**: LLM must use ONE dimension consistently throughout the map
+  - Prevents mixing physical parts with functional modules
+  - Ensures logical coherence in decomposition
+
+- **Enhanced Alternative Dimensions Guidance** (IMPROVED):
+  - **Specific instructions**: "MUST list 4-6 OTHER valid dimensions for THIS SPECIFIC topic"
+  - **Differentiation requirement**: "Each alternative MUST be DIFFERENT from the dimension you chose"
+  - **Quality guidance**: "Each alternative should be equally valid for decomposing this topic (not random suggestions)"
+  - **Thinking prompt**: "What other meaningful ways could we break down THIS topic?"
+  - **Concrete examples**: Shows how alternatives change based on chosen dimension
+    * "Physical Parts" chosen → alternatives: "Functional Modules", "Manufacturing Process", "Price Segments", "Energy Types"
+    * "Functional Modules" chosen → alternatives: "Physical Parts", "Life Cycle Stages", "Market Segments", "Technology Levels"
+  - **Topic-specific requirement**: "Make alternatives SPECIFIC to the topic, not generic dimensions"
+  - Ensures LLM generates high-quality, contextual alternative dimensions
+
+#### Files Modified
+- `prompts/thinking_maps.py`: 
+  - Updated both EN and ZH prompts with dimension guidance
+  - Added explicit instructions to prioritize user-specified dimensions
+  - Included examples of dimension specifications in both languages
+- `agents/thinking_maps/brace_map_agent.py`:
+  - Updated `generate_graph()` to accept `dimension_preference` parameter
+  - Updated `_generate_brace_map_spec()` to include dimension in LLM prompt
+  - Added logging for dimension preference tracking
+- `agents/main_agent.py`:
+  - Updated `agent_graph_workflow_with_styles()` to accept `dimension_preference`
+  - Updated `_generate_spec_with_agent()` to pass dimension to brace map agent
+- `api_routes.py`:
+  - Extract `dimension_preference` from request data
+  - Pass dimension preference to agent workflow
+  - Added logging for dimension preference tracking
+- `static/js/editor/diagram-selector.js`:
+  - **Updated default brace map template** to include `dimension` field
+  - Default value: Empty string `''` - clean slate for users
+  - **Does NOT include** `alternative_dimensions` in template - only LLM generates these
+  - Default template shows NO dimension labels or alternatives (clean view)
+  - After LLM generation, dimension and alternatives appear automatically
+- `static/js/editor/toolbar-manager.js`:
+  - **Added smart dimension validation logic**
+  - Only sends `dimension_preference` if dimension is non-empty and not just whitespace
+  - Empty/whitespace dimensions are omitted → LLM auto-selects best dimension
+  - Trims whitespace from dimension values before sending
+  - Logs whether using user-specified dimension or LLM auto-selection
+- `static/js/renderers/brace-renderer.js`: 
+  - **ALWAYS shows dimension field** when `dimension` property exists in spec (even if empty)
+  - **Placeholder mode** when empty: `[拆解维度: 点击填写...]` with low opacity (0.4)
+  - **Value mode** when filled: `[拆解维度: 物理部件]` with normal opacity (0.8)
+  - Dimension field is always clickable and editable (cursor: pointer)
+  - Alternative dimensions shown at bottom ONLY after LLM generation (conditional rendering)
+  - Clean, professional styling with bullet points
+  - **Bilingual Support**: Auto-detects language from topic/content
+    - Chinese: `[拆解维度: 点击填写...]` / `[拆解维度: 物理部件]`
+    - English: `[Decomposition by: click to specify...]` / `[Decomposition by: Physical Parts]`
+  - **Canvas size and spacing optimization** (IMPROVED):
+    - **Reduced top padding**: 60px (from 100px) for cleaner look
+    - **Tighter dimension spacing**: 54px total (25 + 14 + 15) when dimension field exists
+    - **Optimized bottom spacing**: 
+      * With alternatives: 80px (20px gap + 60px content)
+      * Without alternatives: 30px minimal padding
+    - **Alternatives positioning**: Now at `totalHeight - 45px` (was -60px) - much closer to content
+    - **Separator positioning**: 25px above alternatives (was 20px) with 60px margins from edges
+    - **Left margin**: Reduced to 15px (from 20px) for cleaner edge alignment
+    - **Eliminates excessive white space** between bottom nodes and alternatives
+    - **Re-enabled watermark** with proper positioning at bottom-right
+- `static/js/editor/interactive-editor.js`:
+  - **Smart dimension text extraction** for dimension nodes
+  - **Placeholder mode**: When user clicks on placeholder text (`点击填写...`), editor opens with **empty input**
+  - **Value mode**: When user clicks on dimension value (`[拆解维度: 功能模块]`), editor extracts and shows **only the value** ("功能模块")
+  - **Wrapper stripping on save**: If user accidentally includes wrapper brackets, they're automatically removed
+  - Users edit only the dimension value, not the formatting/wrapper
+  - Regex pattern extracts value: `/\[(?:拆解维度|Decomposition by):\s*(.+?)\]/`
+  - Seamless editing experience - no need to manually delete wrapper text
+
+#### Educational Benefits
+- **K12 Teachers**: Can show students multiple ways to analyze the same topic
+- **Critical Thinking**: Encourages exploration of different perspectives
+- **Clarity**: Makes the decomposition approach explicit and transparent
+
+---
+
 ### Version 3.1.3 - Performance Optimization, Mind Map Fix, Mobile UX & PNG Export Quality 🚀
 
 **Performance**: 820 KB savings (45% reduction) through font optimization and dynamic loading.  
