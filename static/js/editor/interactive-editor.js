@@ -160,7 +160,7 @@ class InteractiveEditor {
     /**
      * Render the diagram
      */
-    renderDiagram() {
+    async renderDiagram() {
         this.log('InteractiveEditor: Starting diagram render', {
             specKeys: Object.keys(this.currentSpec || {})
         });
@@ -172,7 +172,7 @@ class InteractiveEditor {
             
             if (typeof renderGraph === 'function') {
                 console.log(`Rendering ${this.diagramType} with template:`, this.currentSpec);
-                renderGraph(this.diagramType, this.currentSpec, theme, dimensions);
+                await renderGraph(this.diagramType, this.currentSpec, theme, dimensions);
             } else {
                 console.error('renderGraph dispatcher function not found');
                 throw new Error('Renderer not available');

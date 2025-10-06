@@ -1109,22 +1109,8 @@ def generate_png():
                     font-display: swap;
                     font-family: 'Inter';
                     font-style: normal;
-                    font-weight: 300;
-                    src: url('data:font/truetype;base64,{_get_font_base64("inter-300.ttf")}') format('truetype');
-                }}
-                @font-face {{
-                    font-display: swap;
-                    font-family: 'Inter';
-                    font-style: normal;
                     font-weight: 400;
                     src: url('data:font/truetype;base64,{_get_font_base64("inter-400.ttf")}') format('truetype');
-                }}
-                @font-face {{
-                    font-display: swap;
-                    font-family: 'Inter';
-                    font-style: normal;
-                    font-weight: 500;
-                    src: url('data:font/truetype;base64,{_get_font_base64("inter-500.ttf")}') format('truetype');
                 }}
                 @font-face {{
                     font-display: swap;
@@ -2019,22 +2005,8 @@ def generate_dingtalk():
                     font-display: swap;
                     font-family: 'Inter';
                     font-style: normal;
-                    font-weight: 300;
-                    src: url('data:font/truetype;base64,{_get_font_base64("inter-300.ttf")}') format('truetype');
-                }}
-                @font-face {{
-                    font-display: swap;
-                    font-family: 'Inter';
-                    font-style: normal;
                     font-weight: 400;
                     src: url('data:font/truetype;base64,{_get_font_base64("inter-400.ttf")}') format('truetype');
-                }}
-                @font-face {{
-                    font-display: swap;
-                    font-family: 'Inter';
-                    font-style: normal;
-                    font-weight: 500;
-                    src: url('data:font/truetype;base64,{_get_font_base64("inter-500.ttf")}') format('truetype');
                 }}
                 @font-face {{
                     font-display: swap;

@@ -2,59 +2,49 @@
  * Renderer Dispatcher for MindGraph
  * 
  * This module provides the main rendering dispatcher function.
- * It must be loaded AFTER all individual renderer modules.
+ * Supports both dynamic loading (preferred) and static fallback.
  * 
- * Performance Impact: Minimal - just function routing
+ * Author: lycosa9527
+ * Made by MindSpring Team
  */
 
-// Main rendering dispatcher function
-function renderGraph(type, spec, theme = null, dimensions = null) {
-    console.log('=== RENDERER DISPATCHER: MAIN FUNCTION START ===');
-    console.log(`Graph type: ${type}`);
-    console.log('Spec:', spec);
-    console.log('Spec type:', typeof spec);
-    console.log('Spec keys:', Object.keys(spec || {}));
-    console.log('Theme:', theme);
-    console.log('Dimensions:', dimensions);
-    
-    // Special debug for bridge maps
-    if (type === 'bridge_map') {
+// Enable dynamic loading for better performance
+const USE_DYNAMIC_LOADING = true;
 
-        console.log('Analogies array:', spec?.analogies);
-        console.log('Analogies count:', spec?.analogies?.length || 0);
-        
-        if (spec?.analogies && Array.isArray(spec.analogies)) {
-            spec.analogies.forEach((analogy, index) => {
-                console.log(`Main function analogy ${index}:`, analogy);
-                console.log(`  Left: "${analogy.left}"`);
-                console.log(`  Right: "${analogy.right}"`);
-            });
-        }
-    }
+// Main rendering dispatcher function
+async function renderGraph(type, spec, theme = null, dimensions = null) {
+    console.log('=== RENDERER DISPATCHER: START ===');
+    console.log(`Graph type: ${type}`);
     
     // Clear the container first
     d3.select('#d3-container').html('');
     
-    // Extract style information from spec if available
+    // Prepare integrated theme
     let integratedTheme = theme;
     if (spec && spec._style) {
-        // Using integrated styles from spec
-        // Merge spec styles with backend theme (backend background takes priority)
         integratedTheme = {
             ...spec._style,
             background: theme?.background
         };
-        // Merged theme background (backend priority)
-    } else {
-        // Use theme as-is (no fallbacks)
-        integratedTheme = theme;
-        // Using backend theme background
     }
     
-    // Extract style metadata for debugging
-    if (spec && spec._style_metadata) {
-        // Style metadata available
+    // Use dynamic loading if available (PREFERRED)
+    if (USE_DYNAMIC_LOADING && window.dynamicRendererLoader) {
+        try {
+            console.log('Using dynamic renderer loader...');
+            await window.dynamicRendererLoader.renderGraph(type, spec, integratedTheme, dimensions);
+            console.log('Dynamic rendering completed successfully');
+            return;
+        } catch (error) {
+            console.error('Dynamic rendering failed:', error);
+            console.log('Falling back to static renderer...');
+            // Fall through to static rendering below
+        }
     }
+    
+    // Fallback: Static rendering (existing switch statement)
+    // NOTE: This will only work if renderers were manually loaded
+    console.warn('Using static renderer fallback (not recommended)');
     
     switch (type) {
         case 'double_bubble_map':

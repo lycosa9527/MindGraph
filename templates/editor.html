@@ -606,13 +606,6 @@
     <!-- Load all required scripts -->
     <script src="/static/js/theme-config.js"></script>
     <script src="/static/js/style-manager.js"></script>
-    <script src="/static/js/renderers/shared-utilities.js"></script>
-    <script src="/static/js/renderers/mind-map-renderer.js"></script>
-    <script src="/static/js/renderers/concept-map-renderer.js"></script>
-    <script src="/static/js/renderers/bubble-map-renderer.js"></script>
-    <script src="/static/js/renderers/flow-renderer.js"></script>
-    <script src="/static/js/renderers/tree-renderer.js"></script>
-    <script src="/static/js/renderers/brace-renderer.js"></script>
     
     <!-- Editor scripts -->
     <script src="/static/js/editor/notification-manager.js"></script>
@@ -627,7 +620,8 @@
     <script src="/static/js/editor/interactive-editor.js"></script>
     <script src="/static/js/editor/diagram-selector.js"></script>
     
-    <!-- Renderer Dispatcher -->
+    <!-- Renderer system (Dynamic loading) -->
+    <script src="/static/js/dynamic-renderer-loader.js"></script>
     <script src="/static/js/renderers/renderer-dispatcher.js"></script>
     
     <!-- Markdown Libraries for AI Assistant -->

@@ -772,20 +772,20 @@ class DiagramSelector {
                     },
                     { 
                         id: 'branch_2',
-                        label: '分支3', 
-                        text: '分支3',
+                        label: '分支4', 
+                        text: '分支4',
                         children: [
-                            { id: 'sub_2_0', label: '子项3.1', text: '子项3.1', children: [] },
-                            { id: 'sub_2_1', label: '子项3.2', text: '子项3.2', children: [] }
+                            { id: 'sub_2_0', label: '子项4.1', text: '子项4.1', children: [] },
+                            { id: 'sub_2_1', label: '子项4.2', text: '子项4.2', children: [] }
                         ] 
                     },
                     { 
                         id: 'branch_3',
-                        label: '分支4', 
-                        text: '分支4',
+                        label: '分支3', 
+                        text: '分支3',
                         children: [
-                            { id: 'sub_3_0', label: '子项4.1', text: '子项4.1', children: [] },
-                            { id: 'sub_3_1', label: '子项4.2', text: '子项4.2', children: [] }
+                            { id: 'sub_3_0', label: '子项3.1', text: '子项3.1', children: [] },
+                            { id: 'sub_3_1', label: '子项3.2', text: '子项3.2', children: [] }
                         ] 
                     }
                 ],
@@ -817,7 +817,7 @@ class DiagramSelector {
                         'branch_2': { 
                             x: -220, y: -80, 
                             width: 100, height: 50, 
-                            text: '分支3', 
+                            text: '分支4', 
                             node_type: 'branch', 
                             branch_index: 2, 
                             angle: 0 
@@ -825,7 +825,7 @@ class DiagramSelector {
                         'branch_3': { 
                             x: -220, y: 80, 
                             width: 100, height: 50, 
-                            text: '分支4', 
+                            text: '分支3', 
                             node_type: 'branch', 
                             branch_index: 3, 
                             angle: 0 
@@ -869,7 +869,7 @@ class DiagramSelector {
                         'child_2_0': { 
                             x: -370, y: -110, 
                             width: 90, height: 40, 
-                            text: '子项3.1', 
+                            text: '子项4.1', 
                             node_type: 'child', 
                             branch_index: 2, 
                             child_index: 0, 
@@ -878,7 +878,7 @@ class DiagramSelector {
                         'child_2_1': { 
                             x: -370, y: -50, 
                             width: 90, height: 40, 
-                            text: '子项3.2', 
+                            text: '子项4.2', 
                             node_type: 'child', 
                             branch_index: 2, 
                             child_index: 1, 
@@ -887,7 +887,7 @@ class DiagramSelector {
                         'child_3_0': { 
                             x: -370, y: 50, 
                             width: 90, height: 40, 
-                            text: '子项4.1', 
+                            text: '子项3.1', 
                             node_type: 'child', 
                             branch_index: 3, 
                             child_index: 0, 
@@ -896,7 +896,7 @@ class DiagramSelector {
                         'child_3_1': { 
                             x: -370, y: 110, 
                             width: 90, height: 40, 
-                            text: '子项4.2', 
+                            text: '子项3.2', 
                             node_type: 'child', 
                             branch_index: 3, 
                             child_index: 1, 
@@ -951,20 +951,20 @@ class DiagramSelector {
                     },
                     { 
                         id: 'branch_2',
-                        label: 'Branch 3', 
-                        text: 'Branch 3',
+                        label: 'Branch 4', 
+                        text: 'Branch 4',
                         children: [
-                            { id: 'sub_2_0', label: 'Sub-item 3.1', text: 'Sub-item 3.1', children: [] },
-                            { id: 'sub_2_1', label: 'Sub-item 3.2', text: 'Sub-item 3.2', children: [] }
+                            { id: 'sub_2_0', label: 'Sub-item 4.1', text: 'Sub-item 4.1', children: [] },
+                            { id: 'sub_2_1', label: 'Sub-item 4.2', text: 'Sub-item 4.2', children: [] }
                         ] 
                     },
                     { 
                         id: 'branch_3',
-                        label: 'Branch 4', 
-                        text: 'Branch 4',
+                        label: 'Branch 3', 
+                        text: 'Branch 3',
                         children: [
-                            { id: 'sub_3_0', label: 'Sub-item 4.1', text: 'Sub-item 4.1', children: [] },
-                            { id: 'sub_3_1', label: 'Sub-item 4.2', text: 'Sub-item 4.2', children: [] }
+                            { id: 'sub_3_0', label: 'Sub-item 3.1', text: 'Sub-item 3.1', children: [] },
+                            { id: 'sub_3_1', label: 'Sub-item 3.2', text: 'Sub-item 3.2', children: [] }
                         ] 
                     }
                 ],
@@ -996,7 +996,7 @@ class DiagramSelector {
                         'branch_2': { 
                             x: -220, y: -80, 
                             width: 100, height: 50, 
-                            text: 'Branch 3', 
+                            text: 'Branch 4', 
                             node_type: 'branch', 
                             branch_index: 2, 
                             angle: 0 
@@ -1004,7 +1004,7 @@ class DiagramSelector {
                         'branch_3': { 
                             x: -220, y: 80, 
                             width: 100, height: 50, 
-                            text: 'Branch 4', 
+                            text: 'Branch 3', 
                             node_type: 'branch', 
                             branch_index: 3, 
                             angle: 0 
@@ -1048,7 +1048,7 @@ class DiagramSelector {
                         'child_2_0': { 
                             x: -370, y: -110, 
                             width: 90, height: 40, 
-                            text: 'Sub-item 3.1', 
+                            text: 'Sub-item 4.1', 
                             node_type: 'child', 
                             branch_index: 2, 
                             child_index: 0, 
@@ -1057,7 +1057,7 @@ class DiagramSelector {
                         'child_2_1': { 
                             x: -370, y: -50, 
                             width: 90, height: 40, 
-                            text: 'Sub-item 3.2', 
+                            text: 'Sub-item 4.2', 
                             node_type: 'child', 
                             branch_index: 2, 
                             child_index: 1, 
@@ -1066,7 +1066,7 @@ class DiagramSelector {
                         'child_3_0': { 
                             x: -370, y: 50, 
                             width: 90, height: 40, 
-                            text: 'Sub-item 4.1', 
+                            text: 'Sub-item 3.1', 
                             node_type: 'child', 
                             branch_index: 3, 
                             child_index: 0, 
@@ -1075,7 +1075,7 @@ class DiagramSelector {
                         'child_3_1': { 
                             x: -370, y: 110, 
                             width: 90, height: 40, 
-                            text: 'Sub-item 4.2', 
+                            text: 'Sub-item 3.2', 
                             node_type: 'child', 
                             branch_index: 3, 
                             child_index: 1, 
