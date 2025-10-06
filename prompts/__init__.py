@@ -10,6 +10,7 @@ from .thinking_maps import THINKING_MAP_PROMPTS
 from .concept_maps import CONCEPT_MAP_PROMPTS
 from .mind_maps import MIND_MAP_PROMPTS
 from .main_agent import MAIN_AGENT_PROMPTS
+from .thinking_tools import THINKING_TOOLS_PROMPTS
 
 
 # Unified prompt registry
@@ -18,6 +19,7 @@ PROMPT_REGISTRY = {
     **CONCEPT_MAP_PROMPTS,
     **MIND_MAP_PROMPTS,
     **MAIN_AGENT_PROMPTS,
+    **THINKING_TOOLS_PROMPTS,
 }
 
 def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'generation') -> str:
@@ -37,7 +39,7 @@ def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'gene
 
 def get_available_diagram_types() -> list:
     """Get list of all available diagram types that the application supports."""
-    # Return only the 11 core diagram types that the application actually supports
+    # Return all supported diagram types including the new thinking tools
     supported_types = [
         'bubble_map',
         'bridge_map', 
@@ -49,7 +51,17 @@ def get_available_diagram_types() -> list:
         'multi_flow_map',
         'concept_map',
         'mindmap',
-        'mind_map'  # Note: both mindmap and mind_map are supported for compatibility
+        'mind_map',  # Note: both mindmap and mind_map are supported for compatibility
+        # Thinking Tools
+        'factor_analysis',
+        'three_position_analysis',
+        'perspective_analysis',
+        'goal_analysis',
+        'possibility_analysis',
+        'result_analysis',
+        'five_w_one_h',
+        'whwm_analysis',
+        'four_quadrant'
     ]
     
     # Filter to only include types that have prompts in the registry

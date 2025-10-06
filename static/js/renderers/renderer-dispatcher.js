@@ -228,6 +228,81 @@ function renderGraph(type, spec, theme = null, dimensions = null) {
                 showRendererError('multi_flow_map');
             }
             break;
+        
+        // Thinking Tools (all use mind map rendering structure)
+        case 'factor_analysis':
+            if (typeof renderFactorAnalysis === 'function') {
+                renderFactorAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderFactorAnalysis function not found');
+                showRendererError('factor_analysis');
+            }
+            break;
+        case 'three_position_analysis':
+            if (typeof renderThreePositionAnalysis === 'function') {
+                renderThreePositionAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderThreePositionAnalysis function not found');
+                showRendererError('three_position_analysis');
+            }
+            break;
+        case 'perspective_analysis':
+            if (typeof renderPerspectiveAnalysis === 'function') {
+                renderPerspectiveAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderPerspectiveAnalysis function not found');
+                showRendererError('perspective_analysis');
+            }
+            break;
+        case 'goal_analysis':
+            if (typeof renderGoalAnalysis === 'function') {
+                renderGoalAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderGoalAnalysis function not found');
+                showRendererError('goal_analysis');
+            }
+            break;
+        case 'possibility_analysis':
+            if (typeof renderPossibilityAnalysis === 'function') {
+                renderPossibilityAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderPossibilityAnalysis function not found');
+                showRendererError('possibility_analysis');
+            }
+            break;
+        case 'result_analysis':
+            if (typeof renderResultAnalysis === 'function') {
+                renderResultAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderResultAnalysis function not found');
+                showRendererError('result_analysis');
+            }
+            break;
+        case 'five_w_one_h':
+            if (typeof renderFiveWOneH === 'function') {
+                renderFiveWOneH(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderFiveWOneH function not found');
+                showRendererError('five_w_one_h');
+            }
+            break;
+        case 'whwm_analysis':
+            if (typeof renderWHWMAnalysis === 'function') {
+                renderWHWMAnalysis(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderWHWMAnalysis function not found');
+                showRendererError('whwm_analysis');
+            }
+            break;
+        case 'four_quadrant':
+            if (typeof renderFourQuadrant === 'function') {
+                renderFourQuadrant(spec, integratedTheme, dimensions);
+            } else {
+                console.error('renderFourQuadrant function not found');
+                showRendererError('four_quadrant');
+            }
+            break;
+        
         default:
             console.error(`Unknown graph type: ${type}`);
             showRendererError('unknown', `Unknown graph type '${type}'`);

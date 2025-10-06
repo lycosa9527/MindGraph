@@ -782,7 +782,11 @@ def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> str:
         valid_types = {
             'bubble_map', 'bridge_map', 'tree_map', 'circle_map', 
             'double_bubble_map', 'multi_flow_map', 'flow_map', 
-            'brace_map', 'concept_map', 'mind_map'
+            'brace_map', 'concept_map', 'mind_map',
+            # Thinking Tools
+            'factor_analysis', 'three_position_analysis', 'perspective_analysis',
+            'goal_analysis', 'possibility_analysis', 'result_analysis',
+            'five_w_one_h', 'whwm_analysis', 'four_quadrant'
         }
         
         if detected_type in valid_types:
@@ -1443,6 +1447,34 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
         elif diagram_type == 'concept_map':
             from .concept_maps.concept_map_agent import ConceptMapAgent
             agent = ConceptMapAgent()
+        # Thinking Tools
+        elif diagram_type == 'factor_analysis':
+            from .thinking_tools.factor_analysis_agent import FactorAnalysisAgent
+            agent = FactorAnalysisAgent()
+        elif diagram_type == 'three_position_analysis':
+            from .thinking_tools.three_position_analysis_agent import ThreePositionAnalysisAgent
+            agent = ThreePositionAnalysisAgent()
+        elif diagram_type == 'perspective_analysis':
+            from .thinking_tools.perspective_analysis_agent import PerspectiveAnalysisAgent
+            agent = PerspectiveAnalysisAgent()
+        elif diagram_type == 'goal_analysis':
+            from .thinking_tools.goal_analysis_agent import GoalAnalysisAgent
+            agent = GoalAnalysisAgent()
+        elif diagram_type == 'possibility_analysis':
+            from .thinking_tools.possibility_analysis_agent import PossibilityAnalysisAgent
+            agent = PossibilityAnalysisAgent()
+        elif diagram_type == 'result_analysis':
+            from .thinking_tools.result_analysis_agent import ResultAnalysisAgent
+            agent = ResultAnalysisAgent()
+        elif diagram_type == 'five_w_one_h':
+            from .thinking_tools.five_w_one_h_agent import FiveWOneHAgent
+            agent = FiveWOneHAgent()
+        elif diagram_type == 'whwm_analysis':
+            from .thinking_tools.whwm_analysis_agent import WHWMAnalysisAgent
+            agent = WHWMAnalysisAgent()
+        elif diagram_type == 'four_quadrant':
+            from .thinking_tools.four_quadrant_agent import FourQuadrantAgent
+            agent = FourQuadrantAgent()
         else:
             # Fallback to bubble map
             from .thinking_maps.bubble_map_agent import BubbleMapAgent

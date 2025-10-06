@@ -38,6 +38,26 @@ class LanguageManager {
                 mindMapDesc: 'Cause and effect analysis',
                 conceptMap: 'Concept Map',
                 conceptMapDesc: 'Conceptual relationships',
+                thinkingTools: 'Thinking Tools',
+                comingSoon: 'Coming Soon',
+                factorAnalysis: 'Factor Analysis',
+                factorAnalysisDesc: 'Analyzing key factors',
+                threePositionAnalysis: 'Three-Position Analysis',
+                threePositionAnalysisDesc: 'Three perspectives',
+                perspectiveAnalysis: 'Perspective Analysis',
+                perspectiveAnalysisDesc: 'Understanding viewpoints',
+                goalAnalysis: 'Goal Analysis',
+                goalAnalysisDesc: 'Breaking down goals',
+                possibilityAnalysis: 'Possibility Analysis',
+                possibilityAnalysisDesc: 'Exploring options',
+                resultAnalysis: 'Result Analysis',
+                resultAnalysisDesc: 'Analyzing outcomes',
+                fiveWOneH: '5W1H Analysis',
+                fiveWOneHDesc: 'Systematic analysis',
+                whwmAnalysis: 'WHWM Analysis',
+                whwmAnalysisDesc: 'Project planning',
+                fourQuadrant: 'Four Quadrant Analysis',
+                fourQuadrantDesc: 'Categorizing items',
                 selectButton: 'Select',
                 backToGallery: 'Back to Gallery',
                 reset: 'Reset',
@@ -232,6 +252,26 @@ class LanguageManager {
                 mindMapDesc: '因果分析',
                 conceptMap: '概念图',
                 conceptMapDesc: '概念关系',
+                thinkingTools: '思维工具',
+                comingSoon: '即将推出',
+                factorAnalysis: '因素分析法',
+                factorAnalysisDesc: '分析关键因素',
+                threePositionAnalysis: '三位分析法',
+                threePositionAnalysisDesc: '三个视角',
+                perspectiveAnalysis: '换位分析法',
+                perspectiveAnalysisDesc: '理解不同视角',
+                goalAnalysis: '目标分析法',
+                goalAnalysisDesc: '分解目标',
+                possibilityAnalysis: '可能分析法',
+                possibilityAnalysisDesc: '探索选项',
+                resultAnalysis: '结果分析法',
+                resultAnalysisDesc: '分析结果',
+                fiveWOneH: '六何分析法',
+                fiveWOneHDesc: '系统分析',
+                whwmAnalysis: 'WHWM分析法',
+                whwmAnalysisDesc: '项目规划',
+                fourQuadrant: '四象限分析法',
+                fourQuadrantDesc: '项目分类',
                 selectButton: '选择',
                 backToGallery: '返回图库',
                 reset: '重置',
@@ -496,6 +536,15 @@ class LanguageManager {
         if (categories.length >= 1) categories[0].textContent = t.thinkingMaps;
         if (categories.length >= 2) categories[1].textContent = t.advancedDiagrams;
         
+        // Update Thinking Tools header with badge
+        if (categories.length >= 3) {
+            const thinkingToolsHeader = categories[2];
+            thinkingToolsHeader.innerHTML = `
+                ${t.thinkingTools}
+                <span class="coming-soon-badge">${t.comingSoon}</span>
+            `;
+        }
+        
         // Update diagram cards - Thinking Maps
         this.updateDiagramCard('circle_map', t.circleMap, t.circleMapDesc);
         this.updateDiagramCard('bubble_map', t.bubbleMap, t.bubbleMapDesc);
@@ -509,6 +558,17 @@ class LanguageManager {
         // Update diagram cards - Advanced Diagrams
         this.updateDiagramCard('mindmap', t.mindMap, t.mindMapDesc);
         this.updateDiagramCard('concept_map', t.conceptMap, t.conceptMapDesc);
+        
+        // Update diagram cards - Thinking Tools
+        this.updateDiagramCard('factor_analysis', t.factorAnalysis, t.factorAnalysisDesc);
+        this.updateDiagramCard('three_position_analysis', t.threePositionAnalysis, t.threePositionAnalysisDesc);
+        this.updateDiagramCard('perspective_analysis', t.perspectiveAnalysis, t.perspectiveAnalysisDesc);
+        this.updateDiagramCard('goal_analysis', t.goalAnalysis, t.goalAnalysisDesc);
+        this.updateDiagramCard('possibility_analysis', t.possibilityAnalysis, t.possibilityAnalysisDesc);
+        this.updateDiagramCard('result_analysis', t.resultAnalysis, t.resultAnalysisDesc);
+        this.updateDiagramCard('five_w_one_h', t.fiveWOneH, t.fiveWOneHDesc);
+        this.updateDiagramCard('whwm_analysis', t.whwmAnalysis, t.whwmAnalysisDesc);
+        this.updateDiagramCard('four_quadrant', t.fourQuadrant, t.fourQuadrantDesc);
         
         // Update toolbar buttons (if in editor view)
         const backBtn = document.getElementById('back-to-gallery');

@@ -9,6 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
+### Version 3.1.0 - Thinking Tools Preview & UI Polish ✨
+
+**New Category Teaser**: Added a beautiful preview of the upcoming **Thinking Tools** category with 9 new diagram types, featuring an elegant "Coming Soon" badge with professional animations.
+
+**新分类预览**: 添加了即将推出的**思维工具**分类的精美预览，包含9种新图表类型，配有优雅的"即将推出"徽章和专业动画效果。
+
+#### What's New | 新增功能
+
+✨ **Thinking Tools Category Preview**
+- Professional glass-morphism "Coming Soon" badge
+- Animated shimmer and glow effects for visual appeal
+- 9 new diagram types prepared: Factor Analysis, Three-Position Analysis, Perspective Analysis, Goal Analysis, Possibility Analysis, Result Analysis, 5W1H Analysis, WHWM Analysis, Four Quadrant Analysis
+- Bilingual badge text ("COMING SOON" / "即将推出")
+- Collapsed by default to optimize page load
+
+✨ **Complete Backend Infrastructure**
+- 9 specialized agent files in `agents/thinking_tools/`
+- Centralized prompt system in `prompts/thinking_tools.py`
+- 9 renderer files ready for activation
+- Full integration with main agent classification system
+- Template factories for all 9 diagram types
+
+✨ **User Experience Enhancements**
+- "Under Development" notifications when clicking thinking tool cards
+- Bilingual notification messages
+- No unnecessary JavaScript loading (optimized performance)
+- Clean, professional badge design that builds anticipation
+
+✨ **Language Manager Updates**
+- Full bilingual support for all 9 thinking tools
+- Dynamic badge text switching
+- Consistent translation quality across UI elements
+
+#### Technical Details | 技术细节
+
+**New Files Added**:
+- `agents/thinking_tools/*.py` (9 agent files)
+- `prompts/thinking_tools.py` (centralized prompts)
+- `static/js/renderers/*-renderer.js` (9 renderer files)
+- Enhanced `api_routes.py`, `main_agent.py`, `diagram-selector.js`
+
+**Optimizations**:
+- Thinking tool renderers not loaded until feature activation
+- Collapsed grid reduces initial DOM size
+- Notification system prevents user confusion
+
+---
+
+## 🎉 Previous Release | 上一版本
+
+
+
 ### Version 3.0.16 - Interactive Learning Mode (Phase 4) 🧠
 
 **Major Educational Feature**: MindGraph now includes a complete **AI-Powered Interactive Learning Mode** that transforms static diagrams into intelligent tutoring experiences for K-12 education.

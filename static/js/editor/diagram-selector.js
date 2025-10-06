@@ -62,6 +62,51 @@ class DiagramSelector {
                 name: 'Concept Map',
                 description: 'Complex relationships',
                 templateFactory: () => this.getConceptMapTemplate()
+            },
+            'factor_analysis': {
+                name: 'Factor Analysis',
+                description: '因素分析法',
+                templateFactory: () => this.getFactorAnalysisTemplate()
+            },
+            'three_position_analysis': {
+                name: 'Three-Position Analysis',
+                description: '三位分析法',
+                templateFactory: () => this.getThreePositionAnalysisTemplate()
+            },
+            'perspective_analysis': {
+                name: 'Perspective Analysis',
+                description: '换位分析法',
+                templateFactory: () => this.getPerspectiveAnalysisTemplate()
+            },
+            'goal_analysis': {
+                name: 'Goal Analysis',
+                description: '目标分析法',
+                templateFactory: () => this.getGoalAnalysisTemplate()
+            },
+            'possibility_analysis': {
+                name: 'Possibility Analysis',
+                description: '可能分析法',
+                templateFactory: () => this.getPossibilityAnalysisTemplate()
+            },
+            'result_analysis': {
+                name: 'Result Analysis',
+                description: '结果分析法',
+                templateFactory: () => this.getResultAnalysisTemplate()
+            },
+            'five_w_one_h': {
+                name: '5W1H Analysis',
+                description: '六何分析法',
+                templateFactory: () => this.getFiveWOneHTemplate()
+            },
+            'whwm_analysis': {
+                name: 'WHWM Analysis',
+                description: 'WHWM分析法',
+                templateFactory: () => this.getWHWMAnalysisTemplate()
+            },
+            'four_quadrant': {
+                name: 'Four Quadrant Analysis',
+                description: '四象限分析法',
+                templateFactory: () => this.getFourQuadrantTemplate()
             }
         };
         
@@ -283,6 +328,26 @@ class DiagramSelector {
                 alert(message);
             }
             console.log('DiagramSelector: Concept map selection blocked - under development');
+            return;
+        }
+        
+        // Check if thinking tools - show under development notification
+        const thinkingTools = ['factor_analysis', 'three_position_analysis', 'perspective_analysis', 
+                               'goal_analysis', 'possibility_analysis', 'result_analysis', 
+                               'five_w_one_h', 'whwm_analysis', 'four_quadrant'];
+        if (thinkingTools.includes(diagramType)) {
+            const language = window.languageManager?.currentLanguage || 'en';
+            const message = language === 'zh' 
+                ? '思维工具功能正在开发中，敬请期待！' 
+                : 'Thinking Tools are under development. Coming soon!';
+            
+            // Show browser notification
+            if (window.notificationManager) {
+                window.notificationManager.show(message, 'info');
+            } else {
+                alert(message);
+            }
+            console.log('DiagramSelector: Thinking tools selection blocked - under development');
             return;
         }
         
@@ -516,7 +581,7 @@ class DiagramSelector {
         if (lang === 'zh') {
             return {
                 topic: '主题',
-                context: ['背景1', '背景2', '背景3'],
+                context: ['背景1', '背景2', '背景3', '背景4', '背景5', '背景6', '背景7', '背景8'],
                 _layout: {
                     positions: {
                         '主题': { x: 350, y: 250 }
@@ -531,7 +596,7 @@ class DiagramSelector {
         } else {
             return {
                 topic: 'Main Topic',
-                context: ['Context 1', 'Context 2', 'Context 3'],
+                context: ['Context 1', 'Context 2', 'Context 3', 'Context 4', 'Context 5', 'Context 6', 'Context 7', 'Context 8'],
                 _layout: {
                     positions: {
                         'Main Topic': { x: 350, y: 250 }
@@ -1465,6 +1530,489 @@ class DiagramSelector {
                     height: 600,
                     padding: 40
                 }
+            };
+        }
+    }
+    
+    /**
+     * Get Factor Analysis template (因素分析法)
+     */
+    getFactorAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '中心议题',
+                children: [
+                    { 
+                        id: 'branch_0',
+                        label: '因素1', 
+                        text: '因素1',
+                        children: [
+                            { id: 'sub_0_0', label: '细节1.1', text: '细节1.1', children: [] },
+                            { id: 'sub_0_1', label: '细节1.2', text: '细节1.2', children: [] }
+                        ] 
+                    },
+                    { 
+                        id: 'branch_1',
+                        label: '因素2', 
+                        text: '因素2',
+                        children: [
+                            { id: 'sub_1_0', label: '细节2.1', text: '细节2.1', children: [] },
+                            { id: 'sub_1_1', label: '细节2.2', text: '细节2.2', children: [] }
+                        ] 
+                    },
+                    { 
+                        id: 'branch_2',
+                        label: '因素3', 
+                        text: '因素3',
+                        children: [
+                            { id: 'sub_2_0', label: '细节3.1', text: '细节3.1', children: [] },
+                            { id: 'sub_2_1', label: '细节3.2', text: '细节3.2', children: [] }
+                        ] 
+                    },
+                    { 
+                        id: 'branch_3',
+                        label: '因素4', 
+                        text: '因素4',
+                        children: [
+                            { id: 'sub_3_0', label: '细节4.1', text: '细节4.1', children: [] },
+                            { id: 'sub_3_1', label: '细节4.2', text: '细节4.2', children: [] }
+                        ] 
+                    }
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Central Issue',
+                children: [
+                    { id: 'branch_0', label: 'Factor 1', text: 'Factor 1', 
+                      children: [
+                          { id: 'sub_0_0', label: 'Detail 1.1', text: 'Detail 1.1', children: [] },
+                          { id: 'sub_0_1', label: 'Detail 1.2', text: 'Detail 1.2', children: [] }
+                      ] 
+                    },
+                    { id: 'branch_1', label: 'Factor 2', text: 'Factor 2',
+                      children: [
+                          { id: 'sub_1_0', label: 'Detail 2.1', text: 'Detail 2.1', children: [] },
+                          { id: 'sub_1_1', label: 'Detail 2.2', text: 'Detail 2.2', children: [] }
+                      ] 
+                    },
+                    { id: 'branch_2', label: 'Factor 3', text: 'Factor 3',
+                      children: [
+                          { id: 'sub_2_0', label: 'Detail 3.1', text: 'Detail 3.1', children: [] },
+                          { id: 'sub_2_1', label: 'Detail 3.2', text: 'Detail 3.2', children: [] }
+                      ] 
+                    },
+                    { id: 'branch_3', label: 'Factor 4', text: 'Factor 4',
+                      children: [
+                          { id: 'sub_3_0', label: 'Detail 4.1', text: 'Detail 4.1', children: [] },
+                          { id: 'sub_3_1', label: 'Detail 4.2', text: 'Detail 4.2', children: [] }
+                      ] 
+                    }
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get Three-Position Analysis template (三位分析法)
+     */
+    getThreePositionAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '问题',
+                children: [
+                    { id: 'branch_0', label: '角度1', text: '角度1', children: [
+                        { id: 'sub_0_0', label: '观点1.1', text: '观点1.1', children: [] }
+                    ]},
+                    { id: 'branch_1', label: '角度2', text: '角度2', children: [
+                        { id: 'sub_1_0', label: '观点2.1', text: '观点2.1', children: [] }
+                    ]},
+                    { id: 'branch_2', label: '角度3', text: '角度3', children: [
+                        { id: 'sub_2_0', label: '观点3.1', text: '观点3.1', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Issue',
+                children: [
+                    { id: 'branch_0', label: 'Position 1', text: 'Position 1', children: [
+                        { id: 'sub_0_0', label: 'View 1.1', text: 'View 1.1', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Position 2', text: 'Position 2', children: [
+                        { id: 'sub_1_0', label: 'View 2.1', text: 'View 2.1', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'Position 3', text: 'Position 3', children: [
+                        { id: 'sub_2_0', label: 'View 3.1', text: 'View 3.1', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get Perspective Analysis template (换位分析法)
+     */
+    getPerspectiveAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '情境',
+                children: [
+                    { id: 'branch_0', label: '视角A', text: '视角A', children: [
+                        { id: 'sub_0_0', label: '感受1', text: '感受1', children: [] },
+                        { id: 'sub_0_1', label: '反应1', text: '反应1', children: [] }
+                    ]},
+                    { id: 'branch_1', label: '视角B', text: '视角B', children: [
+                        { id: 'sub_1_0', label: '感受2', text: '感受2', children: [] },
+                        { id: 'sub_1_1', label: '反应2', text: '反应2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Situation',
+                children: [
+                    { id: 'branch_0', label: 'Perspective A', text: 'Perspective A', children: [
+                        { id: 'sub_0_0', label: 'Feeling 1', text: 'Feeling 1', children: [] },
+                        { id: 'sub_0_1', label: 'Response 1', text: 'Response 1', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Perspective B', text: 'Perspective B', children: [
+                        { id: 'sub_1_0', label: 'Feeling 2', text: 'Feeling 2', children: [] },
+                        { id: 'sub_1_1', label: 'Response 2', text: 'Response 2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get Goal Analysis template (目标分析法)
+     */
+    getGoalAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '目标',
+                children: [
+                    { id: 'branch_0', label: '行动1', text: '行动1', children: [
+                        { id: 'sub_0_0', label: '步骤1.1', text: '步骤1.1', children: [] },
+                        { id: 'sub_0_1', label: '步骤1.2', text: '步骤1.2', children: [] }
+                    ]},
+                    { id: 'branch_1', label: '行动2', text: '行动2', children: [
+                        { id: 'sub_1_0', label: '步骤2.1', text: '步骤2.1', children: [] },
+                        { id: 'sub_1_1', label: '步骤2.2', text: '步骤2.2', children: [] }
+                    ]},
+                    { id: 'branch_2', label: '行动3', text: '行动3', children: [
+                        { id: 'sub_2_0', label: '步骤3.1', text: '步骤3.1', children: [] },
+                        { id: 'sub_2_1', label: '步骤3.2', text: '步骤3.2', children: [] }
+                    ]},
+                    { id: 'branch_3', label: '行动4', text: '行动4', children: [
+                        { id: 'sub_3_0', label: '步骤4.1', text: '步骤4.1', children: [] },
+                        { id: 'sub_3_1', label: '步骤4.2', text: '步骤4.2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Goal',
+                children: [
+                    { id: 'branch_0', label: 'Action 1', text: 'Action 1', children: [
+                        { id: 'sub_0_0', label: 'Step 1.1', text: 'Step 1.1', children: [] },
+                        { id: 'sub_0_1', label: 'Step 1.2', text: 'Step 1.2', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Action 2', text: 'Action 2', children: [
+                        { id: 'sub_1_0', label: 'Step 2.1', text: 'Step 2.1', children: [] },
+                        { id: 'sub_1_1', label: 'Step 2.2', text: 'Step 2.2', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'Action 3', text: 'Action 3', children: [
+                        { id: 'sub_2_0', label: 'Step 3.1', text: 'Step 3.1', children: [] },
+                        { id: 'sub_2_1', label: 'Step 3.2', text: 'Step 3.2', children: [] }
+                    ]},
+                    { id: 'branch_3', label: 'Action 4', text: 'Action 4', children: [
+                        { id: 'sub_3_0', label: 'Step 4.1', text: 'Step 4.1', children: [] },
+                        { id: 'sub_3_1', label: 'Step 4.2', text: 'Step 4.2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get Possibility Analysis template (可能分析法)
+     */
+    getPossibilityAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '决策',
+                children: [
+                    { id: 'branch_0', label: '可能性1', text: '可能性1', children: [
+                        { id: 'sub_0_0', label: '优势', text: '优势', children: [] },
+                        { id: 'sub_0_1', label: '劣势', text: '劣势', children: [] }
+                    ]},
+                    { id: 'branch_1', label: '可能性2', text: '可能性2', children: [
+                        { id: 'sub_1_0', label: '优势', text: '优势', children: [] },
+                        { id: 'sub_1_1', label: '劣势', text: '劣势', children: [] }
+                    ]},
+                    { id: 'branch_2', label: '可能性3', text: '可能性3', children: [
+                        { id: 'sub_2_0', label: '优势', text: '优势', children: [] },
+                        { id: 'sub_2_1', label: '劣势', text: '劣势', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Decision',
+                children: [
+                    { id: 'branch_0', label: 'Possibility 1', text: 'Possibility 1', children: [
+                        { id: 'sub_0_0', label: 'Pros', text: 'Pros', children: [] },
+                        { id: 'sub_0_1', label: 'Cons', text: 'Cons', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Possibility 2', text: 'Possibility 2', children: [
+                        { id: 'sub_1_0', label: 'Pros', text: 'Pros', children: [] },
+                        { id: 'sub_1_1', label: 'Cons', text: 'Cons', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'Possibility 3', text: 'Possibility 3', children: [
+                        { id: 'sub_2_0', label: 'Pros', text: 'Pros', children: [] },
+                        { id: 'sub_2_1', label: 'Cons', text: 'Cons', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get Result Analysis template (结果分析法)
+     */
+    getResultAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '行动',
+                children: [
+                    { id: 'branch_0', label: '短期结果', text: '短期结果', children: [
+                        { id: 'sub_0_0', label: '影响1', text: '影响1', children: [] },
+                        { id: 'sub_0_1', label: '影响2', text: '影响2', children: [] }
+                    ]},
+                    { id: 'branch_1', label: '长期结果', text: '长期结果', children: [
+                        { id: 'sub_1_0', label: '影响1', text: '影响1', children: [] },
+                        { id: 'sub_1_1', label: '影响2', text: '影响2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Action',
+                children: [
+                    { id: 'branch_0', label: 'Short-term Results', text: 'Short-term Results', children: [
+                        { id: 'sub_0_0', label: 'Impact 1', text: 'Impact 1', children: [] },
+                        { id: 'sub_0_1', label: 'Impact 2', text: 'Impact 2', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Long-term Results', text: 'Long-term Results', children: [
+                        { id: 'sub_1_0', label: 'Impact 1', text: 'Impact 1', children: [] },
+                        { id: 'sub_1_1', label: 'Impact 2', text: 'Impact 2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get 5W1H Analysis template (六何分析法)
+     */
+    getFiveWOneHTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '问题',
+                children: [
+                    { id: 'branch_0', label: 'What (什么)', text: 'What (什么)', children: [
+                        { id: 'sub_0_0', label: '内容', text: '内容', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Why (为什么)', text: 'Why (为什么)', children: [
+                        { id: 'sub_1_0', label: '原因', text: '原因', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'When (何时)', text: 'When (何时)', children: [
+                        { id: 'sub_2_0', label: '时间', text: '时间', children: [] }
+                    ]},
+                    { id: 'branch_3', label: 'Where (何地)', text: 'Where (何地)', children: [
+                        { id: 'sub_3_0', label: '地点', text: '地点', children: [] }
+                    ]},
+                    { id: 'branch_4', label: 'Who (谁)', text: 'Who (谁)', children: [
+                        { id: 'sub_4_0', label: '人物', text: '人物', children: [] }
+                    ]},
+                    { id: 'branch_5', label: 'How (如何)', text: 'How (如何)', children: [
+                        { id: 'sub_5_0', label: '方法', text: '方法', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Issue',
+                children: [
+                    { id: 'branch_0', label: 'What', text: 'What', children: [
+                        { id: 'sub_0_0', label: 'Content', text: 'Content', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Why', text: 'Why', children: [
+                        { id: 'sub_1_0', label: 'Reason', text: 'Reason', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'When', text: 'When', children: [
+                        { id: 'sub_2_0', label: 'Time', text: 'Time', children: [] }
+                    ]},
+                    { id: 'branch_3', label: 'Where', text: 'Where', children: [
+                        { id: 'sub_3_0', label: 'Location', text: 'Location', children: [] }
+                    ]},
+                    { id: 'branch_4', label: 'Who', text: 'Who', children: [
+                        { id: 'sub_4_0', label: 'Person', text: 'Person', children: [] }
+                    ]},
+                    { id: 'branch_5', label: 'How', text: 'How', children: [
+                        { id: 'sub_5_0', label: 'Method', text: 'Method', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get WHWM Analysis template (WHWM分析法)
+     */
+    getWHWMAnalysisTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '项目',
+                children: [
+                    { id: 'branch_0', label: 'What (做什么)', text: 'What (做什么)', children: [
+                        { id: 'sub_0_0', label: '任务', text: '任务', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'How (怎么做)', text: 'How (怎么做)', children: [
+                        { id: 'sub_1_0', label: '方法', text: '方法', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'Who (谁来做)', text: 'Who (谁来做)', children: [
+                        { id: 'sub_2_0', label: '负责人', text: '负责人', children: [] }
+                    ]},
+                    { id: 'branch_3', label: 'Measure (如何衡量)', text: 'Measure (如何衡量)', children: [
+                        { id: 'sub_3_0', label: '标准', text: '标准', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Project',
+                children: [
+                    { id: 'branch_0', label: 'What', text: 'What', children: [
+                        { id: 'sub_0_0', label: 'Task', text: 'Task', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'How', text: 'How', children: [
+                        { id: 'sub_1_0', label: 'Method', text: 'Method', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'Who', text: 'Who', children: [
+                        { id: 'sub_2_0', label: 'Owner', text: 'Owner', children: [] }
+                    ]},
+                    { id: 'branch_3', label: 'Measure', text: 'Measure', children: [
+                        { id: 'sub_3_0', label: 'Metrics', text: 'Metrics', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        }
+    }
+    
+    /**
+     * Get Four Quadrant Analysis template (四象限分析法)
+     */
+    getFourQuadrantTemplate() {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        
+        if (lang === 'zh') {
+            return {
+                topic: '分析主题',
+                children: [
+                    { id: 'branch_0', label: '象限1', text: '象限1', children: [
+                        { id: 'sub_0_0', label: '项目1', text: '项目1', children: [] },
+                        { id: 'sub_0_1', label: '项目2', text: '项目2', children: [] }
+                    ]},
+                    { id: 'branch_1', label: '象限2', text: '象限2', children: [
+                        { id: 'sub_1_0', label: '项目1', text: '项目1', children: [] },
+                        { id: 'sub_1_1', label: '项目2', text: '项目2', children: [] }
+                    ]},
+                    { id: 'branch_2', label: '象限3', text: '象限3', children: [
+                        { id: 'sub_2_0', label: '项目1', text: '项目1', children: [] },
+                        { id: 'sub_2_1', label: '项目2', text: '项目2', children: [] }
+                    ]},
+                    { id: 'branch_3', label: '象限4', text: '象限4', children: [
+                        { id: 'sub_3_0', label: '项目1', text: '项目1', children: [] },
+                        { id: 'sub_3_1', label: '项目2', text: '项目2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
+            };
+        } else {
+            return {
+                topic: 'Analysis Topic',
+                children: [
+                    { id: 'branch_0', label: 'Quadrant 1', text: 'Quadrant 1', children: [
+                        { id: 'sub_0_0', label: 'Item 1', text: 'Item 1', children: [] },
+                        { id: 'sub_0_1', label: 'Item 2', text: 'Item 2', children: [] }
+                    ]},
+                    { id: 'branch_1', label: 'Quadrant 2', text: 'Quadrant 2', children: [
+                        { id: 'sub_1_0', label: 'Item 1', text: 'Item 1', children: [] },
+                        { id: 'sub_1_1', label: 'Item 2', text: 'Item 2', children: [] }
+                    ]},
+                    { id: 'branch_2', label: 'Quadrant 3', text: 'Quadrant 3', children: [
+                        { id: 'sub_2_0', label: 'Item 1', text: 'Item 1', children: [] },
+                        { id: 'sub_2_1', label: 'Item 2', text: 'Item 2', children: [] }
+                    ]},
+                    { id: 'branch_3', label: 'Quadrant 4', text: 'Quadrant 4', children: [
+                        { id: 'sub_3_0', label: 'Item 1', text: 'Item 1', children: [] },
+                        { id: 'sub_3_1', label: 'Item 2', text: 'Item 2', children: [] }
+                    ]}
+                ],
+                _layout: { positions: {}, connections: [], params: { background: '#f5f5f5' } },
+                _recommended_dimensions: { width: 1000, height: 600, padding: 40 }
             };
         }
     }

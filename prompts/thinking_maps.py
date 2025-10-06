@@ -237,7 +237,7 @@ Thinking approach: Association, Divergence
 
 Please output a JSON object containing the following fields:
 topic: "Topic" (MUST match the topic mentioned in the user request EXACTLY if provided)
-context: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5", "Feature6"]
+context: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5", "Feature6", "Feature7", "Feature8"]
 
 Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.
 
@@ -255,7 +255,7 @@ CIRCLE_MAP_GENERATION_ZH = """
 2. 特征词要尽可能简洁
 请输出一个包含以下字段的JSON对象：
 topic: "主题"（如果需求中明确指定主题，必须完全匹配）
-context: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6"]
+context: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6", "特征7", "特征8"]
 
 要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。
 

@@ -544,6 +544,26 @@ def generate_graph():
             except Exception as e:
                 logger.error(f"Error enhancing bridge_map spec: {e}")
                 logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        # Thinking Tools (all use mindmap structure)
+        elif diagram_type == 'factor_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'three_position_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'perspective_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'goal_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'possibility_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'result_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'five_w_one_h':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'whwm_analysis':
+            spec = enhance_mindmap_spec(spec)
+        elif diagram_type == 'four_quadrant':
+            spec = enhance_mindmap_spec(spec)
 
         # Check for generation errors (keep this essential error handling)
         if isinstance(spec, dict) and spec.get('error'):
@@ -552,7 +572,7 @@ def generate_graph():
         # Calculate optimized dimensions
         dimensions = config.get_d3_dimensions()
         # Use agent-recommended dimensions if provided
-        if diagram_type in ('multi_flow_map', 'flow_map', 'tree_map', 'concept_map', 'mindmap', 'bubble_map', 'double_bubble_map', 'circle_map', 'bridge_map') and isinstance(spec, dict) and spec.get('_recommended_dimensions'):
+        if diagram_type in ('multi_flow_map', 'flow_map', 'tree_map', 'concept_map', 'mindmap', 'bubble_map', 'double_bubble_map', 'circle_map', 'bridge_map', 'factor_analysis', 'three_position_analysis', 'perspective_analysis', 'goal_analysis', 'possibility_analysis', 'result_analysis', 'five_w_one_h', 'whwm_analysis', 'four_quadrant') and isinstance(spec, dict) and spec.get('_recommended_dimensions'):
             rd = spec['_recommended_dimensions']
             try:
                 dimensions = {
@@ -719,6 +739,26 @@ def generate_png():
     except Exception as e:
         logger.error(f"Agent workflow failed: {e}")
         return jsonify({'error': 'Failed to generate graph specification'}), 500
+    
+    # Thinking Tools (all use mindmap structure)
+    if graph_type == 'factor_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'three_position_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'perspective_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'goal_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'possibility_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'result_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'five_w_one_h':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'whwm_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'four_quadrant':
+        spec = enhance_mindmap_spec(spec)
     
     # Check for generation errors (keep this essential error handling)
     if isinstance(spec, dict) and spec.get('error'):
@@ -1614,6 +1654,26 @@ def generate_dingtalk():
     except Exception as e:
         logger.error(f"Agent workflow failed: {e}")
         return f"❌ 图表规格生成失败：{str(e)}", 500
+    
+    # Thinking Tools (all use mindmap structure)
+    if graph_type == 'factor_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'three_position_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'perspective_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'goal_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'possibility_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'result_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'five_w_one_h':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'whwm_analysis':
+        spec = enhance_mindmap_spec(spec)
+    elif graph_type == 'four_quadrant':
+        spec = enhance_mindmap_spec(spec)
     
     # Check for generation errors (keep this essential error handling)
     if isinstance(spec, dict) and spec.get('error'):

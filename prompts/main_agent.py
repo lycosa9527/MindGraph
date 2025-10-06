@@ -64,6 +64,15 @@ Based on user intent and content analysis, select the most appropriate diagram t
 8. brace_map (Brace Map) - decomposing the central topic, whole-to-part relationships
 9. concept_map (Concept Map) - relationship networks between concepts
 10. mind_map (Mind Map) - divergent thinking, brainstorming
+11. factor_analysis (Factor Analysis) - analyzing key factors affecting a topic
+12. three_position_analysis (Three-Position Analysis) - examining from three perspectives
+13. perspective_analysis (Perspective Analysis) - understanding different viewpoints
+14. goal_analysis (Goal Analysis) - breaking down goals into actions
+15. possibility_analysis (Possibility Analysis) - exploring options and alternatives
+16. result_analysis (Result Analysis) - analyzing outcomes and consequences
+17. five_w_one_h (5W1H Analysis) - systematic analysis (What, Why, When, Where, Who, How)
+18. whwm_analysis (WHWM Analysis) - project planning (What, How, Who, Measure)
+19. four_quadrant (Four Quadrant Analysis) - categorizing into four quadrants
 
 Edge Cases and Decision Logic:
 - If user intent is unclear or ambiguous, prefer mind_map (most versatile)
@@ -104,6 +113,15 @@ CLASSIFICATION_ZH = """分析以下用户输入，判断用户想要创建的图
 8. brace_map (括号图) - 对中心词进行拆分，整体与部分的关系
 9. concept_map (概念图) - 概念间的关系网络
 10. mind_map (思维导图) - 发散思维、头脑风暴
+11. factor_analysis (因素分析法) - 分析影响主题的关键因素
+12. three_position_analysis (三位分析法) - 从三个角度审视问题
+13. perspective_analysis (换位分析法) - 理解不同的视角和立场
+14. goal_analysis (目标分析法) - 将目标分解为具体行动
+15. possibility_analysis (可能分析法) - 探索选项和替代方案
+16. result_analysis (结果分析法) - 分析结果和后果
+17. five_w_one_h (六何分析法) - 系统性分析（什么、为什么、何时、何地、谁、如何）
+18. whwm_analysis (WHWM分析法) - 项目规划（做什么、怎么做、谁来做、如何衡量）
+19. four_quadrant (四象限分析法) - 按四个象限分类
 
 边缘情况和决策逻辑：
 - 如果用户意图不明确或模糊，优先选择 mind_map（最通用）
