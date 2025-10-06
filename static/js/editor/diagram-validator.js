@@ -24,6 +24,16 @@ class DiagramValidator {
             /^原因\s*\d+$/,           // 原因1
             /^结果\s*\d+$/,           // 结果1
             /^主题\s*\d+$/,           // 主题1
+            /^主题$/,                 // 主题 (Circle Map default)
+            /^主题[A-Z]$/,            // 主题A, 主题B (Double Bubble Map)
+            /^相似点\s*\d+$/,         // 相似点1, 相似点2 (Double Bubble Map)
+            /^差异[A-Z]\d+$/,         // 差异A1, 差异B2 (Double Bubble Map)
+            /^如同$/,                 // 如同 (Bridge Map relating factor)
+            /^项目\s*\d+$/,           // 项目1, 项目2 (Bridge Map)
+            /^项目[A-Z]$/,            // 项目A, 项目B (Bridge Map)
+            /^项目[\d.]+$/,           // 项目1.1, 项目2.3 (Tree Map)
+            /^根主题$/,               // 根主题 (Tree Map)
+            /^类别\s*\d+$/,           // 类别1, 类别2 (Tree Map)
             /^分类\s*\d+$/,           // 分类1
             /^叶子\s*\d+$/,           // 叶子1
             /^部分\s*\d+$/,           // 部分1
@@ -47,7 +57,15 @@ class DiagramValidator {
             /^Cause\s+\d+$/i,         // Cause 1
             /^Effect\s+\d+$/i,        // Effect 1
             /^Topic\s+\d+$/i,         // Topic 1
-            /^Category\s+\d+$/i,      // Category 1
+            /^Topic\s+[A-Z]$/i,       // Topic A, Topic B (Double Bubble Map)
+            /^Similarity\s+\d+$/i,    // Similarity 1, 2 (Double Bubble Map)
+            /^Difference\s+[A-Z]\d+$/i, // Difference A1, B2 (Double Bubble Map)
+            /^as$/i,                  // as (Bridge Map relating factor)
+            /^Item\s+\d+$/i,          // Item 1, Item 2 (Bridge Map)
+            /^Item\s+[A-Z]$/i,        // Item A, Item B (Bridge Map)
+            /^Item\s+[\d.]+$/i,       // Item 1.1, Item 2.3 (Tree Map)
+            /^Root\s+Topic$/i,        // Root Topic (Tree Map)
+            /^Category\s+\d+$/i,      // Category 1 (Tree Map)
             /^Leaf\s+\d+$/i,          // Leaf 1
             /^Part\s+\d+$/i,          // Part 1
             /^Subpart\s+\d+$/i,       // Subpart 1

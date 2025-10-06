@@ -595,11 +595,11 @@ class DiagramSelector {
             };
         } else {
             return {
-                topic: 'Topic',
+                topic: 'Main Topic',
                 context: ['Context 1', 'Context 2', 'Context 3', 'Context 4', 'Context 5', 'Context 6', 'Context 7', 'Context 8'],
                 _layout: {
                     positions: {
-                        'Topic': { x: 350, y: 250 }
+                        'Main Topic': { x: 350, y: 250 }
                     }
                 },
                 _recommended_dimensions: {

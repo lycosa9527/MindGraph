@@ -9,6 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
+### Version 3.1.1 - Learning Mode Validation Fix 🔧
+
+**Bug Fix**: Fixed learning mode button validation to ensure consistent behavior across all diagram types and languages.
+
+**问题修复**: 修复了学习模式按钮验证，确保所有图表类型和语言的行为一致。
+
+#### What's Fixed | 修复内容
+
+🐛 **Learning Mode Button Validation**
+- Learning button now correctly disabled for default templates in all diagram types
+- Added placeholder pattern validation for Circle Map, Double Bubble Map, Bridge Map, and Tree Map
+- Fixed inconsistency where Chinese templates had learning button enabled while English templates didn't
+- Both English and Chinese default templates now require users to fill in real content before learning mode activates
+
+🔧 **Placeholder Patterns Added**
+- **Circle Map**: `主题`, `Main Topic`
+- **Double Bubble Map**: `主题A/B`, `相似点1/2`, `差异A1/B2`, `Topic A/B`, `Similarity 1/2`, `Difference A1/B2`
+- **Bridge Map**: `如同`, `项目1/2/A/B`, `as`, `Item 1/2/A/B`
+- **Tree Map**: `根主题`, `类别1/2/3/4`, `项目1.1/2.3`, `Root Topic`, `Category 1/2/3/4`, `Item 1.1/2.3`
+
+✅ **User Experience**
+- Consistent validation behavior across languages
+- Clear indication when diagram needs real content
+- Prevents premature learning mode activation with placeholder text
+
+#### Technical Details | 技术细节
+
+**Files Modified**:
+- `static/js/editor/diagram-validator.js` - Added 20+ new placeholder validation patterns
+- `static/js/editor/diagram-selector.js` - Restored proper Circle Map template
+
+---
+
+## 🎉 Previous Release | 上一版本
+
 ### Version 3.1.0 - Thinking Tools Preview & UI Polish ✨
 
 **New Category Teaser**: Added a beautiful preview of the upcoming **Thinking Tools** category with 9 new diagram types, featuring an elegant "Coming Soon" badge with professional animations.
