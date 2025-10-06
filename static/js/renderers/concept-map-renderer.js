@@ -101,7 +101,11 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     let width = baseWidth;
     let height = baseHeight;
     
-    const svg = d3.select('#d3-container').append('svg').attr('width', width).attr('height', height);
+    const svg = d3.select('#d3-container').append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet');
 
     // Add background rectangle to cover entire canvas (from reference)
     svg.append('rect')

@@ -47,9 +47,10 @@ class BrowserContextManager:
             ]
         )
         
-        # Create fresh context
+        # Create fresh context with high resolution for crisp PNG output
         self.context = await self.browser.new_context(
             viewport={'width': 1200, 'height': 800},
+            device_scale_factor=3,  # 3x for high-DPI displays (Retina quality)
             user_agent='MindGraph/2.0 (PNG Generator)'
         )
         

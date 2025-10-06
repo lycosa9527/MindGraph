@@ -75,6 +75,8 @@ class LanguageManager {
                 redo: 'Redo',
                 nodeCount: 'Nodes',
                 editMode: 'Edit Mode: Active',
+                resetView: 'Reset View',
+                resetViewTitle: 'Fit diagram to window',
                 shareSuccess: 'Link copied to clipboard!',
                 shareError: 'Unable to copy link. Please copy manually:',
                 learningModeComingSoon: 'Learning Mode: Phase 1 in progress!',
@@ -289,6 +291,8 @@ class LanguageManager {
                 redo: '重做',
                 nodeCount: '节点',
                 editMode: '编辑模式：激活',
+                resetView: '重置视图',
+                resetViewTitle: '将图表适应窗口',
                 shareSuccess: '链接已复制到剪贴板！',
                 shareError: '无法复制链接，请手动复制：',
                 learningModeComingSoon: '学习模式：第一阶段开发中！',
@@ -448,15 +452,22 @@ class LanguageManager {
      * Initialize event listeners
      */
     initializeEventListeners() {
+        // Desktop/main buttons
         const langToggle = document.getElementById('language-toggle');
         const shareBtn = document.getElementById('share-btn');
         
+        // Add language toggle listener
         if (langToggle) {
-            langToggle.addEventListener('click', () => this.toggleLanguage());
+            langToggle.addEventListener('click', () => {
+                this.toggleLanguage();
+            });
         }
         
+        // Add share button listener
         if (shareBtn) {
-            shareBtn.addEventListener('click', () => this.shareUrl());
+            shareBtn.addEventListener('click', () => {
+                this.shareUrl();
+            });
         }
     }
     
@@ -525,7 +536,11 @@ class LanguageManager {
         const emptyHistoryText = document.getElementById('empty-history-text');
         const clearHistoryBtn = document.getElementById('clear-history-btn');
         
-        if (promptInput) promptInput.placeholder = t.promptPlaceholder;
+        if (promptInput) {
+            promptInput.placeholder = t.promptPlaceholder;
+            // Enable scrolling placeholder for mobile if text is long
+            this.enableScrollingPlaceholder(promptInput, t.promptPlaceholder);
+        }
         if (historyToggleText) historyToggleText.textContent = t.recentPrompts;
         if (historyHeaderText) historyHeaderText.textContent = t.recentPrompts;
         if (emptyHistoryText) emptyHistoryText.textContent = t.noRecentPrompts;
@@ -657,6 +672,20 @@ class LanguageManager {
             shareBtn.title = t.shareTooltip;
         }
         
+        // Update mobile menu language text
+        const mobileLangText = document.getElementById('mobile-lang-text');
+        if (mobileLangText) {
+            const targetLang = this.currentLanguage === 'en' ? '中文' : 'EN';
+            mobileLangText.textContent = `Switch to ${targetLang}`;
+        }
+        
+        // Update mobile menu share text
+        const shareBtnMobile = document.getElementById('share-btn-mobile');
+        if (shareBtnMobile) {
+            const shareText = shareBtnMobile.querySelector('.menu-text:not(#mobile-lang-text)');
+            if (shareText) shareText.textContent = t.share;
+        }
+        
         // Update property panel tooltips
         const propBold = document.getElementById('prop-bold');
         const propItalic = document.getElementById('prop-italic');
@@ -677,6 +706,16 @@ class LanguageManager {
         // Update status bar
         const editMode = document.getElementById('edit-mode');
         if (editMode) editMode.textContent = t.editMode;
+        
+        // Update reset view button
+        const resetViewBtn = document.getElementById('reset-view-btn');
+        if (resetViewBtn) {
+            const resetViewText = resetViewBtn.querySelector('.reset-view-icon').nextSibling;
+            if (resetViewText) {
+                resetViewText.textContent = ' ' + t.resetView;
+            }
+            resetViewBtn.setAttribute('title', t.resetViewTitle);
+        }
         
         // Update Properties Panel
         const propHeader = document.querySelector('.property-panel .property-header h3');
@@ -742,14 +781,99 @@ class LanguageManager {
      * Update language button text
      */
     updateLanguageButton() {
+        // Update desktop/main button
         const langToggle = document.getElementById('language-toggle');
         if (langToggle) {
             const langText = langToggle.querySelector('.lang-text');
             if (langText) {
-                // Show the opposite language (what you can switch TO)
                 langText.textContent = this.currentLanguage === 'en' ? '中文' : 'EN';
             }
         }
+    }
+    
+    /**
+     * Enable scrolling placeholder on mobile for long text
+     */
+    enableScrollingPlaceholder(input, placeholderText) {
+        // Only on mobile devices
+        if (window.innerWidth > 768) return;
+        
+        // Clear any existing interval
+        if (this.placeholderInterval) {
+            clearInterval(this.placeholderInterval);
+        }
+        
+        let scrollPosition = 0;
+        const scrollSpeed = 1;
+        const pauseAtStart = 2000; // 2 seconds pause
+        const pauseAtEnd = 1000;   // 1 second pause
+        let isPaused = true;
+        let pauseTimer = null;
+        
+        // Check if text overflows
+        const checkOverflow = () => {
+            const inputWidth = input.offsetWidth - 40; // Account for padding
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const computedStyle = window.getComputedStyle(input);
+            context.font = `${computedStyle.fontSize} ${computedStyle.fontFamily}`;
+            const textWidth = context.measureText(placeholderText).width;
+            return textWidth > inputWidth;
+        };
+        
+        if (!checkOverflow()) return; // Text fits, no scrolling needed
+        
+        // Start scrolling animation
+        const startScrolling = () => {
+            pauseTimer = setTimeout(() => {
+                isPaused = false;
+                
+                this.placeholderInterval = setInterval(() => {
+                    if (!isPaused && input === document.activeElement === false) {
+                        scrollPosition += scrollSpeed;
+                        
+                        // Calculate max scroll (text length - visible area)
+                        const maxScroll = placeholderText.length * 8; // Approximate
+                        
+                        if (scrollPosition >= maxScroll) {
+                            isPaused = true;
+                            clearInterval(this.placeholderInterval);
+                            
+                            // Pause at end, then reset
+                            setTimeout(() => {
+                                scrollPosition = 0;
+                                input.placeholder = placeholderText;
+                                startScrolling();
+                            }, pauseAtEnd);
+                        } else {
+                            // Create scrolling effect by showing substring
+                            const visibleLength = Math.floor(input.offsetWidth / 9);
+                            const startChar = Math.floor(scrollPosition / 8);
+                            input.placeholder = placeholderText.substring(startChar) + '  ' + placeholderText.substring(0, startChar);
+                        }
+                    }
+                }, 50);
+            }, pauseAtStart);
+        };
+        
+        startScrolling();
+        
+        // Stop scrolling when input is focused
+        input.addEventListener('focus', () => {
+            if (this.placeholderInterval) {
+                clearInterval(this.placeholderInterval);
+                clearTimeout(pauseTimer);
+            }
+            input.placeholder = placeholderText;
+        });
+        
+        // Resume scrolling when input loses focus and is empty
+        input.addEventListener('blur', () => {
+            if (!input.value && checkOverflow()) {
+                scrollPosition = 0;
+                startScrolling();
+            }
+        });
     }
     
     /**

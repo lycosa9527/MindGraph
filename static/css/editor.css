@@ -704,8 +704,55 @@ body {
     font-size: 12px;
 }
 
+.editor-status-bar .status-left,
+.editor-status-bar .status-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
 .editor-status-bar span {
-    margin-right: 20px;
+    margin-right: 0;
+}
+
+.reset-view-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.reset-view-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.reset-view-btn:active {
+    transform: translateY(0);
+}
+
+.reset-view-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ========== Mobile Zoom Controls (Removed - users can use finger gestures) ========== */
+
+/* Prevent text selection during pinch zoom */
+#d3-container svg {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    touch-action: none; /* Enable pinch-to-zoom gestures */
 }
 
 /* ========== Selection Indicator ========== */
@@ -919,14 +966,51 @@ body {
     font-weight: 600;
 }
 
+
 /* ========== Responsive Design ========== */
 @media (max-width: 768px) {
+    /* Hide language and share buttons on mobile */
+    .top-right-controls {
+        display: none;
+    }
+    
     .editor-header h1 {
         font-size: 32px;
     }
     
+    /* Scrolling placeholder text for mobile */
+    .prompt-input::placeholder {
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+    }
+    
     .diagram-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        padding: 0 8px;
+    }
+    
+    .diagram-card {
+        padding: 16px 12px;
+    }
+    
+    .diagram-preview {
+        height: 100px;
+        margin-bottom: 12px;
+    }
+    
+    .diagram-preview svg {
+        max-height: 80px;
+    }
+    
+    .diagram-card h3 {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+    
+    .diagram-card p {
+        font-size: 12px;
     }
     
     .editor-toolbar {
@@ -938,17 +1022,6 @@ body {
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
-    }
-    
-    .top-right-controls {
-        top: 10px;
-        right: 10px;
-        gap: 8px;
-    }
-    
-    .control-btn {
-        padding: 8px 14px;
-        font-size: 12px;
     }
     
     .property-panel {

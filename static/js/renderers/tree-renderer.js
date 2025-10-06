@@ -76,6 +76,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     var svg = d3.select('#d3-container').append('svg')
         .attr('width', width)
         .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet')
         .style('background-color', containerBackground); // Use the same background color
 
     // Helpers to measure text accurately for width-adaptive rectangles

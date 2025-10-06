@@ -130,6 +130,14 @@ class InteractiveEditor {
     }
     
     /**
+     * Detect if user is on mobile device
+     */
+    isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+            || window.innerWidth <= 768;
+    }
+    
+    /**
      * Initialize the editor
      */
     initialize() {
@@ -154,6 +162,14 @@ class InteractiveEditor {
         if (typeof ToolbarManager !== 'undefined') {
             this.toolbarManager = new ToolbarManager(this);
             console.log('Toolbar manager initialized');
+        }
+        
+        // Auto-fit for mobile devices on initial load
+        if (this.isMobileDevice()) {
+            console.log('Mobile device detected - auto-fitting diagram to screen');
+            setTimeout(() => {
+                this.fitDiagramToWindow();
+            }, 500); // Slight delay to ensure rendering is complete
         }
     }
     
@@ -180,6 +196,14 @@ class InteractiveEditor {
             
             // Add interaction handlers after rendering
             this.addInteractionHandlers();
+            
+            // Enable zoom for mobile devices
+            if (this.isMobileDevice()) {
+                this.enableMobileZoom();
+            }
+            
+            // Check if diagram exceeds window bounds and auto-fit if needed
+            this.autoFitDiagramIfNeeded();
             
             // Dispatch event to update node count and other UI elements
             window.dispatchEvent(new CustomEvent('diagram-rendered'));
@@ -522,6 +546,332 @@ class InteractiveEditor {
     }
     
     /**
+     * Enable zoom functionality for mobile devices
+     */
+    enableMobileZoom() {
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty()) {
+            console.warn('No SVG found, cannot enable mobile zoom');
+            return;
+        }
+        
+        // Create a group to hold all content if it doesn't exist
+        let contentGroup = svg.select('g.zoom-group');
+        if (contentGroup.empty()) {
+            // Move all existing SVG children into a group
+            const existingChildren = svg.selectAll('*:not(defs)').nodes();
+            contentGroup = svg.insert('g', ':first-child')
+                .attr('class', 'zoom-group');
+            
+            existingChildren.forEach(child => {
+                contentGroup.node().appendChild(child);
+            });
+        }
+        
+        // Configure zoom behavior with mobile-friendly settings
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
+            .on('zoom', (event) => {
+                contentGroup.attr('transform', event.transform);
+                // Update zoom level display if needed
+                if (this.currentZoomLevel) {
+                    this.currentZoomLevel.textContent = `${Math.round(event.transform.k * 100)}%`;
+                }
+            });
+        
+        // Apply zoom behavior to SVG
+        svg.call(zoom);
+        
+        // Store zoom behavior for programmatic control
+        this.zoomBehavior = zoom;
+        this.zoomTransform = d3.zoomIdentity;
+        
+        console.log('Mobile zoom enabled - pinch to zoom, drag to pan');
+        
+        // Mobile zoom controls removed - users can use finger gestures
+        // this.addMobileZoomControls();
+    }
+    
+    /**
+     * Add zoom control buttons for mobile
+     */
+    addMobileZoomControls() {
+        // Check if controls already exist
+        if (document.getElementById('mobile-zoom-controls')) {
+            return;
+        }
+        
+        const controlsHtml = `
+            <div id="mobile-zoom-controls" class="mobile-zoom-controls">
+                <button id="zoom-in-btn" class="zoom-control-btn" title="Zoom In">
+                    <span>+</span>
+                </button>
+                <button id="zoom-out-btn" class="zoom-control-btn" title="Zoom Out">
+                    <span>−</span>
+                </button>
+                <button id="zoom-reset-btn" class="zoom-control-btn" title="Reset Zoom">
+                    <span>⊙</span>
+                </button>
+            </div>
+        `;
+        
+        // Add to d3-container
+        const container = document.getElementById('d3-container');
+        if (container) {
+            container.insertAdjacentHTML('beforeend', controlsHtml);
+            
+            // Add event listeners
+            document.getElementById('zoom-in-btn').addEventListener('click', () => {
+                this.zoomIn();
+            });
+            
+            document.getElementById('zoom-out-btn').addEventListener('click', () => {
+                this.zoomOut();
+            });
+            
+            document.getElementById('zoom-reset-btn').addEventListener('click', () => {
+                this.fitDiagramToWindow();
+            });
+            
+            console.log('Mobile zoom controls added');
+        }
+    }
+    
+    /**
+     * Zoom in programmatically
+     */
+    zoomIn() {
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty() || !this.zoomBehavior) return;
+        
+        svg.transition()
+            .duration(300)
+            .call(this.zoomBehavior.scaleBy, 1.3);
+    }
+    
+    /**
+     * Zoom out programmatically
+     */
+    zoomOut() {
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty() || !this.zoomBehavior) return;
+        
+        svg.transition()
+            .duration(300)
+            .call(this.zoomBehavior.scaleBy, 0.77);
+    }
+    
+    /**
+     * Auto-fit diagram to window if it exceeds viewport bounds
+     */
+    autoFitDiagramIfNeeded() {
+        try {
+            const container = d3.select('#d3-container');
+            const svg = container.select('svg');
+            
+            if (svg.empty()) {
+                return;
+            }
+            
+            // Get all visual elements
+            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            
+            if (allElements.empty()) {
+                return;
+            }
+            
+            // Calculate the bounding box of all SVG content
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let hasContent = false;
+            
+            allElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox.width > 0 && bbox.height > 0) {
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Skip elements without getBBox
+                }
+            });
+            
+            if (!hasContent || minX === Infinity) {
+                return;
+            }
+            
+            const contentBounds = {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+            };
+            
+            // Get container dimensions
+            const containerNode = container.node();
+            const containerWidth = containerNode.clientWidth;
+            const containerHeight = containerNode.clientHeight;
+            
+            // Get SVG dimensions
+            const svgWidth = parseFloat(svg.attr('width')) || containerWidth;
+            const svgHeight = parseFloat(svg.attr('height')) || containerHeight;
+            
+            // Check if content exceeds the visible area (with 10% tolerance)
+            const exceedsWidth = contentBounds.width > containerWidth * 0.9;
+            const exceedsHeight = contentBounds.height > containerHeight * 0.9;
+            const exceedsSvgBounds = (contentBounds.x + contentBounds.width > svgWidth * 0.9) || 
+                                     (contentBounds.y + contentBounds.height > svgHeight * 0.9);
+            
+            if (exceedsWidth || exceedsHeight || exceedsSvgBounds) {
+                console.log('Diagram exceeds window bounds - auto-fitting to view', {
+                    contentBounds,
+                    containerSize: { width: containerWidth, height: containerHeight },
+                    exceedsWidth,
+                    exceedsHeight,
+                    exceedsSvgBounds
+                });
+                
+                // Auto-fit with a slight delay to ensure rendering is complete
+                setTimeout(() => {
+                    this.fitDiagramToWindow();
+                }, 100);
+            } else {
+                console.log('Diagram fits within window - no auto-fit needed');
+            }
+            
+        } catch (error) {
+            console.error('Error in auto-fit check:', error);
+        }
+    }
+    
+    /**
+     * Fit diagram to window - calculates diagram bounds and centers it
+     */
+    fitDiagramToWindow() {
+        try {
+            console.log('Reset View clicked - fitting diagram to window');
+            
+            const container = d3.select('#d3-container');
+            const svg = container.select('svg');
+            
+            if (svg.empty()) {
+                console.warn('No SVG found, cannot reset view');
+                return;
+            }
+            
+            // Get the SVG node to calculate bounds
+            const svgNode = svg.node();
+            
+            // Get all visual elements (groups, circles, rects, paths, text, etc.)
+            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            
+            if (allElements.empty()) {
+                console.warn('No content found in SVG');
+                return;
+            }
+            
+            console.log(`Found ${allElements.size()} elements in SVG`);
+            
+            // Calculate the bounding box of all SVG content
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let hasContent = false;
+            
+            allElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox.width > 0 && bbox.height > 0) {
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Some elements might not have getBBox, skip them
+                }
+            });
+            
+            if (!hasContent || minX === Infinity) {
+                console.warn('No valid content bounds found');
+                return;
+            }
+            
+            const contentBounds = {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+            };
+            
+            console.log('Content bounds:', contentBounds);
+            
+            // Get container dimensions
+            const containerNode = container.node();
+            const containerWidth = containerNode.clientWidth;
+            const containerHeight = containerNode.clientHeight;
+            
+            console.log('Container dimensions:', { containerWidth, containerHeight });
+            
+            // Calculate scale to fit with padding (85% to add margins)
+            const scale = Math.min(
+                containerWidth / contentBounds.width,
+                containerHeight / contentBounds.height
+            ) * 0.85;
+            
+            // Calculate translation to center the content
+            const translateX = (containerWidth - contentBounds.width * scale) / 2 - contentBounds.x * scale;
+            const translateY = (containerHeight - contentBounds.height * scale) / 2 - contentBounds.y * scale;
+            
+            console.log('Applying transform:', { scale, translateX, translateY });
+            
+            // Make SVG responsive to fill container
+            svg.attr('width', '100%')
+               .attr('height', '100%');
+            
+            // Get the current viewBox or create one
+            const viewBox = svg.attr('viewBox');
+            
+            // Calculate optimal viewBox with padding
+            const padding = Math.min(contentBounds.width, contentBounds.height) * 0.1; // 10% padding
+            const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
+            
+            if (viewBox) {
+                console.log('Old viewBox:', viewBox);
+                console.log('New viewBox:', newViewBox);
+                
+                svg.transition()
+                    .duration(750)
+                    .attr('viewBox', newViewBox);
+                    
+                this.log('InteractiveEditor: Diagram fitted to window (existing viewBox)', {
+                    bounds: contentBounds,
+                    oldViewBox: viewBox,
+                    newViewBox: newViewBox
+                });
+            } else {
+                // No viewBox exists - create one
+                console.log('No viewBox found, creating one:', newViewBox);
+                
+                svg.transition()
+                    .duration(750)
+                    .attr('viewBox', newViewBox)
+                    .attr('preserveAspectRatio', 'xMidYMid meet');
+                    
+                this.log('InteractiveEditor: Diagram fitted to window (created viewBox)', {
+                    bounds: contentBounds,
+                    newViewBox: newViewBox
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error fitting diagram to window:', error);
+        }
+    }
+    
+    /**
      * Setup global event handlers
      */
     setupGlobalEventHandlers() {
@@ -534,6 +884,36 @@ class InteractiveEditor {
         d3.select('body').on('keydown', (event) => {
             this.handleKeyboardShortcut(event);
         });
+        
+        // Reset view button
+        const resetViewBtn = document.getElementById('reset-view-btn');
+        if (resetViewBtn) {
+            resetViewBtn.addEventListener('click', () => {
+                this.fitDiagramToWindow();
+            });
+        }
+        
+        // Mobile: Auto-fit on orientation change
+        if (this.isMobileDevice()) {
+            window.addEventListener('orientationchange', () => {
+                console.log('Orientation changed - re-fitting diagram to screen');
+                setTimeout(() => {
+                    this.fitDiagramToWindow();
+                }, 300); // Wait for orientation animation to complete
+            });
+            
+            // Also handle window resize for responsive mobile browsers
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                if (this.isMobileDevice()) {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        console.log('Mobile screen resized - re-fitting diagram');
+                        this.fitDiagramToWindow();
+                    }, 300);
+                }
+            });
+        }
     }
     
     /**

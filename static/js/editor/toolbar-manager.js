@@ -1702,7 +1702,7 @@ class ToolbarManager {
     }
     
     /**
-     * Handle export - Export diagram as PNG
+     * Handle export - Export diagram as PNG (DingTalk quality - 3x)
      */
     handleExport() {
         const svg = document.querySelector('#d3-container svg');
@@ -1712,33 +1712,38 @@ class ToolbarManager {
         }
         
         try {
-            // Add watermark temporarily for export
-            const svgD3 = d3.select(svg);
-            const width = parseFloat(svg.getAttribute('width')) || svg.getBoundingClientRect().width;
-            const height = parseFloat(svg.getAttribute('height')) || svg.getBoundingClientRect().height;
+            // Clone SVG for export (preserve original)
+            const svgClone = svg.cloneNode(true);
             
-            // Check if SVG uses viewBox
-            const viewBox = svg.getAttribute('viewBox');
-            let watermarkX, watermarkY, watermarkFontSize;
+            // CRITICAL FIX: Use viewBox dimensions for accurate export
+            // viewBox defines the actual coordinate system, not width/height attributes
+            const viewBox = svgClone.getAttribute('viewBox');
+            let width, height, viewBoxX = 0, viewBoxY = 0;
             
             if (viewBox) {
+                // Use viewBox dimensions (the actual content coordinate system)
+                // viewBox format: "minX minY width height"
                 const viewBoxParts = viewBox.split(' ').map(Number);
-                const viewBoxWidth = viewBoxParts[2];
-                const viewBoxHeight = viewBoxParts[3];
-                watermarkFontSize = Math.max(8, Math.min(16, Math.min(viewBoxWidth, viewBoxHeight) * 0.02));
-                const padding = Math.max(5, Math.min(15, Math.min(viewBoxWidth, viewBoxHeight) * 0.01));
-                watermarkX = viewBoxParts[0] + viewBoxWidth - padding;
-                watermarkY = viewBoxParts[1] + viewBoxHeight - padding;
+                viewBoxX = viewBoxParts[0];
+                viewBoxY = viewBoxParts[1];
+                width = viewBoxParts[2];
+                height = viewBoxParts[3];
             } else {
-                watermarkFontSize = Math.max(12, Math.min(20, Math.min(width, height) * 0.025));
-                const padding = Math.max(10, Math.min(20, Math.min(width, height) * 0.02));
-                watermarkX = width - padding;
-                watermarkY = height - padding;
+                // Fallback to getBoundingClientRect for actual displayed size
+                const rect = svg.getBoundingClientRect();
+                width = rect.width;
+                height = rect.height;
             }
             
-            // Add temporary watermark
-            const watermark = svgD3.append('text')
-                .attr('class', 'export-watermark')
+            // Calculate watermark position (bottom-right corner in viewBox coordinates)
+            const svgD3 = d3.select(svgClone);
+            const watermarkFontSize = Math.max(12, Math.min(20, Math.min(width, height) * 0.025));
+            const wmPadding = Math.max(10, Math.min(20, Math.min(width, height) * 0.02));
+            const watermarkX = viewBoxX + width - wmPadding;
+            const watermarkY = viewBoxY + height - wmPadding;
+            
+            // Add watermark to clone
+            svgD3.append('text')
                 .attr('x', watermarkX)
                 .attr('y', watermarkY)
                 .attr('text-anchor', 'end')
@@ -1746,42 +1751,36 @@ class ToolbarManager {
                 .attr('fill', '#2c3e50')
                 .attr('font-size', watermarkFontSize)
                 .attr('font-family', 'Inter, Segoe UI, sans-serif')
-                .attr('font-weight', '500')
+                .attr('font-weight', '600')
                 .attr('opacity', 0.8)
-                .attr('pointer-events', 'none')
                 .text('MindGraph');
             
-            // Get SVG dimensions
-            const svgRect = svg.getBoundingClientRect();
-            const finalWidth = parseFloat(svg.getAttribute('width')) || svgRect.width;
-            const finalHeight = parseFloat(svg.getAttribute('height')) || svgRect.height;
+            // Use DingTalk quality (3x scale for Retina displays)
+            const scale = 3;
             
-            // Create canvas
+            // Create high-quality canvas
             const canvas = document.createElement('canvas');
-            const scale = 2; // Higher resolution
-            canvas.width = finalWidth * scale;
-            canvas.height = finalHeight * scale;
+            canvas.width = width * scale;
+            canvas.height = height * scale;
             const ctx = canvas.getContext('2d');
             
-            // Scale context for higher resolution
             ctx.scale(scale, scale);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             
             // Fill white background
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, finalWidth, finalHeight);
+            ctx.fillRect(0, 0, width, height);
             
-            // Serialize SVG
-            const svgData = new XMLSerializer().serializeToString(svg);
+            // Convert SVG to PNG
+            const svgData = new XMLSerializer().serializeToString(svgClone);
             const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(svgBlob);
             
-            // Create image from SVG
             const img = new Image();
             img.onload = () => {
-                // Draw image to canvas
-                ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+                ctx.drawImage(img, 0, 0, width, height);
                 
-                // Convert canvas to PNG
                 canvas.toBlob((blob) => {
                     const pngUrl = URL.createObjectURL(blob);
                     const link = document.createElement('a');
@@ -1789,12 +1788,8 @@ class ToolbarManager {
                     link.download = `mindgraph-${Date.now()}.png`;
                     link.click();
                     
-                    // Cleanup
                     URL.revokeObjectURL(pngUrl);
                     URL.revokeObjectURL(url);
-                    
-                    // Remove temporary watermark
-                    watermark.remove();
                     
                     this.showNotification(this.getNotif('diagramExported'), 'success');
                 }, 'image/png');
@@ -1803,10 +1798,6 @@ class ToolbarManager {
             img.onerror = (error) => {
                 console.error('Error loading SVG:', error);
                 URL.revokeObjectURL(url);
-                
-                // Remove temporary watermark on error
-                watermark.remove();
-                
                 this.showNotification(this.getNotif('exportFailed'), 'error');
             };
             
