@@ -6,7 +6,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.0.14-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.0.16-brightgreen.svg)](CHANGELOG.md)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-success.svg)](CHANGELOG.md)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -38,6 +38,7 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
   - All UI elements translated (buttons, tooltips, notifications) | 所有UI元素已翻译（按钮、工具提示、通知）
   - Dynamic node creation in current language | 当前语言动态节点创建
   - 60+ notification messages fully localized | 60+条通知消息完全本地化
+  - Interactive Learning Mode fully bilingual | 交互式学习模式完全双语
 
 - **Rich Editing Tools** | **丰富的编辑工具**
   - **Add/Delete Nodes**: Context-aware node operations for all diagram types | **添加/删除节点**: 所有图表类型的上下文感知节点操作
@@ -67,6 +68,7 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
 
 - **Smart Classification**: LLM-based diagram type detection | **智能分类**: 基于LLM的图表类型检测
 - **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的思维导图覆盖，包括思维导图和概念图
+- **Interactive Learning Mode** 🧠: AI-powered interactive learning with real-time validation, multi-angle verification, and intelligent tutoring | **交互式学习模式**: AI驱动的交互式学习，实时验证、多角度验证和智能辅导
 - **Learning Sheets (半成品)**: Educational mode with 20% content hidden for student practice | **学习半成品**: 教育模式，隐藏20%内容供学生练习
 - **API-First**: RESTful endpoints for integrations | **API优先**: 用于集成的RESTful端点
 - **Production Ready**: Thread-safe, enterprise-grade architecture | **生产就绪**: 线程安全的企业级架构
@@ -333,13 +335,154 @@ if result["success"]:
 9. **Mind Map** - Clockwise branch positioning | **思维导图** - 顺时针分支定位
 10. **Concept Map** - Advanced relationship mapping | **概念图** - 高级关系映射
 
+## 🧠 Interactive Learning Mode | 交互式学习模式
+
+### AI-Powered Educational Platform for K-12 Teachers | K-12教师AI驱动的教育平台
+
+MindGraph features an advanced **Interactive Learning Mode** that transforms diagrams into AI-powered learning experiences with real-time interaction, intelligent tutoring, and adaptive feedback.
+
+MindGraph提供先进的**交互式学习模式**，将图表转换为AI驱动的学习体验，具有实时交互、智能辅导和自适应反馈。
+
+### Key Features | 核心功能
+
+#### 🎯 Interactive Practice | 交互式练习
+- **20% Random Knockout**: System hides 20% of nodes for active recall practice | **20%随机隐藏**: 系统隐藏20%的节点进行主动回忆练习
+- **Real-time Input**: Students type answers directly into blank nodes on canvas | **实时输入**: 学生直接在画布上的空白节点中输入答案
+- **Instant Validation**: AI validates answers with semantic understanding | **即时验证**: AI通过语义理解验证答案
+
+#### 🤖 Intelligent Tutoring System | 智能辅导系统
+- **Contextual Questions**: LLM generates questions based on node relationships and diagram structure | **上下文问题**: LLM根据节点关系和图表结构生成问题
+- **Multi-Angle Verification** (Phase 4 🆕): Tests understanding from 4 cognitive perspectives:
+  - Level 0: Structural relationship (how node relates to others) | 结构关系（节点如何与其他节点相关）
+  - Level 1: Functional role (node's purpose in concept) | 功能角色（节点在概念中的目的）
+  - Level 2: Application (real-world examples) | 应用（实际例子）
+  - Level 3: Definition (simplest explanation) | 定义（最简单的解释）
+- **3-Level Escalation System** 🆕: Progressive teaching when students struggle:
+  1. Wrong answer → Teaching material modal with node highlighting
+  2. Click "I Understand" → Verification question from different angle
+  3. Wrong again → Escalate to next level with new teaching strategy (up to 3 times)
+  4. After 3 attempts → "Skip" button appears for moving forward
+
+#### 📚 Adaptive Teaching Materials | 自适应教学材料
+- **Node Highlighting** (Phase 3): Visual golden pulse animation highlights the node being tested | **节点高亮**: 金色脉动动画高亮显示正在测试的节点
+- **LLM-Generated Explanations**: Personalized teaching content based on misconceptions | **LLM生成解释**: 基于误解的个性化教学内容
+- **Progressive Hints**: 3-level hint system if students need help | **渐进式提示**: 如果学生需要帮助，提供3级提示系统
+- **Misconception Tracking**: System tracks patterns across session for better insights | **误解追踪**: 系统跟踪整个会话的模式以获得更好的洞察
+
+#### 💻 Professional Learning Interface | 专业学习界面
+- **Full Bilingual Support**: Complete Chinese/English interface switching | **完整双语支持**: 完整的中英文界面切换
+- **Teaching Modal**: Purple gradient modal with smooth animations and modern design | **教学模态框**: 紫色渐变模态框，流畅动画和现代设计
+- **Progress Tracking**: Real-time display of correct answers, attempts, and progress | **进度追踪**: 实时显示正确答案、尝试次数和进度
+- **Session Management**: Backend maintains session state with LangChain agent | **会话管理**: 后端使用LangChain代理维护会话状态
+
+### How to Use | 使用方法
+
+1. **Create or Load a Complete Diagram** | **创建或加载完整图表**
+   - Generate with AI or manually create any diagram type
+   - Ensure all nodes have meaningful content (no placeholders)
+   - 使用AI生成或手动创建任何图表类型
+   - 确保所有节点都有有意义的内容（无占位符）
+
+2. **Click "Learning" Button** (学习) | **点击"学习"按钮**
+   - System validates diagram is complete
+   - Automatically selects 20% of nodes to hide
+   - Creates intelligent questions for each hidden node
+   - 系统验证图表是否完整
+   - 自动选择20%的节点进行隐藏
+   - 为每个隐藏节点创建智能问题
+
+3. **Answer Questions Interactively** | **交互式回答问题**
+   - Read the contextual question in the overlay panel
+   - Type your answer into the blank node on canvas
+   - Click "Submit" to validate
+   - 在覆盖面板中阅读上下文问题
+   - 在画布上的空白节点中输入答案
+   - 点击"提交"验证
+
+4. **Receive Intelligent Feedback** | **接收智能反馈**
+   - ✅ **Correct**: Progress to next question
+   - ❌ **Wrong**: Teaching material modal appears with:
+     - Node highlighting with golden pulse animation
+     - AI-generated explanation of the concept
+     - Correct answer display
+   - Click "I Understand" → Verification question from different angle
+   - Still wrong? System escalates with new teaching strategy (up to 3 times)
+   - ✅ **正确**: 进入下一个问题
+   - ❌ **错误**: 出现教学材料模态框：
+     - 金色脉动动画高亮节点
+     - AI生成的概念解释
+     - 显示正确答案
+   - 点击"我明白了" → 从不同角度验证问题
+   - 仍然错误？系统升级新的教学策略（最多3次）
+
+5. **Complete Session** | **完成会话**
+   - View final score and performance summary
+   - All nodes revealed with full content
+   - Exit Learning Mode to continue editing
+   - 查看最终得分和表现摘要
+   - 所有节点显示完整内容
+   - 退出学习模式继续编辑
+
+### API Integration | API集成
+
+```python
+import requests
+
+# Start learning session
+response = requests.post(
+    "http://localhost:9527/api/learning/start",
+    json={
+        "knocked_out_node_ids": ["node-1", "node-2", "node-3"],
+        "diagram_spec": {...},  # Current diagram data
+        "language": "en"
+    }
+)
+
+session = response.json()
+session_id = session["session_id"]
+questions = session["questions"]
+
+# Validate answer
+response = requests.post(
+    "http://localhost:9527/api/learning/validate_answer",
+    json={
+        "session_id": session_id,
+        "node_id": "node-1",
+        "user_answer": "Student's answer",
+        "language": "en"
+    }
+)
+
+validation = response.json()
+if validation["correct"]:
+    print("✅ Correct!")
+else:
+    print(f"❌ Wrong. Teaching material: {validation['agent_response']}")
+```
+
+### Educational Benefits | 教育价值
+
+✅ **Active Recall**: Research-proven technique for memory retention | **主动回忆**: 经过研究证明的记忆保持技术  
+✅ **Intelligent Tutoring**: AI adapts teaching based on misconceptions | **智能辅导**: AI根据误解调整教学  
+✅ **Multi-Angle Learning**: Tests understanding from 4 cognitive perspectives | **多角度学习**: 从4个认知角度测试理解  
+✅ **Immediate Feedback**: Real-time validation with contextual explanations | **即时反馈**: 实时验证和上下文解释  
+✅ **Visual Learning**: Node highlighting and animations enhance engagement | **视觉学习**: 节点高亮和动画增强参与度  
+✅ **Progress Tracking**: Monitor student performance and misconception patterns | **进度追踪**: 监控学生表现和误解模式  
+✅ **All Diagram Types**: Works with all 10 diagram types seamlessly | **所有图表类型**: 无缝适用于所有10种图表类型
+
+---
+
 ## Learning Sheets (半成品功能) | 学习半成品
 
-### Educational Feature for K-12 Teachers | K-12教师教育功能
+### Static Export Feature for K-12 Teachers | K-12教师静态导出功能
 
-MindGraph supports **Learning Sheets (半成品)** - a special mode designed for classroom learning where the system automatically generates practice diagrams with 20% of content hidden.
+MindGraph also supports **Learning Sheets (半成品)** - a simpler mode that generates static PNG exports with 20% of content hidden for paper-based practice.
 
-MindGraph支持**学习半成品功能** - 专为课堂学习设计的特殊模式，系统自动生成隐藏20%内容的练习图表。
+MindGraph还支持**学习半成品功能** - 一种更简单的模式，生成隐藏20%内容的静态PNG导出，用于纸质练习。
+
+**Note**: For interactive AI-powered learning, use the **Interactive Learning Mode** described above. For static worksheets, use Learning Sheets (半成品).
+
+**注意**: 对于交互式AI驱动学习，请使用上述**交互式学习模式**。对于静态工作表，请使用学习半成品。
 
 ### How It Works | 工作原理
 
@@ -536,6 +679,7 @@ This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) f
 ## Documentation | 文档
 
 - [Interactive Editor Guide](docs/INTERACTIVE_EDITOR.md) - Complete editor usage guide | 完整编辑器使用指南
+- [Learning Mode Design](docs/LEARNING_MODE_DESIGN.md) - Interactive Learning Mode architecture and design | 交互式学习模式架构和设计
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation | 完整API文档
 - [Changelog](CHANGELOG.md) - Version history and updates | 版本历史和更新
 - [Optimization Checklist](docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md) - Performance improvements and architecture analysis | 性能改进和架构分析

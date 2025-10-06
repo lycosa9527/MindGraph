@@ -48,6 +48,7 @@ class LanguageManager {
                 copy: 'Copy',
                 auto: 'Auto',
                 line: 'Line',
+                learn: 'Learn',
                 tools: 'Tools',
                 empty: 'Empty',
                 undo: 'Undo',
@@ -56,6 +57,7 @@ class LanguageManager {
                 editMode: 'Edit Mode: Active',
                 shareSuccess: 'Link copied to clipboard!',
                 shareError: 'Unable to copy link. Please copy manually:',
+                learningModeComingSoon: 'Learning Mode: Phase 1 in progress!',
                 languageButton: '中文',
                 // Dynamic node text for adding new nodes
                 newAttribute: 'New Attribute',
@@ -74,6 +76,39 @@ class LanguageManager {
                 deleteNodeTooltip: 'Delete Selected',
                 autoCompleteTooltip: 'Auto-complete diagram with AI',
                 lineModeTooltip: 'Toggle black & white line mode',
+                learningModeTooltip: 'Start Interactive Learning Mode',
+                // Learning Mode UI
+                learningModeTitle: 'Learning Mode',
+                learningModeProgress: (current, total) => `Question <strong>${current}</strong> of <strong>${total}</strong>`,
+                learningModeFillIn: 'Fill in the missing node:',
+                learningModeQuestionPrefix: 'What is the text for',
+                learningModeQuestionSuffix: '?',
+                learningModeContextHint: 'Hint: Look at the diagram structure and context',
+                learningModeInputPlaceholder: 'Type your answer here...',
+                learningModeSubmit: 'Submit',
+                learningModeHint: 'Hint',
+                learningModeExit: 'Exit Learning Mode',
+                learningModeCorrect: 'Correct!',
+                learningModeIncorrect: (correctAnswer) => `Not quite. The correct answer is: <strong>${correctAnswer}</strong>`,
+                learningModeEnterAnswer: 'Please enter an answer',
+                learningModeBasicHint: (firstChar, length) => `Hint: The answer starts with "<strong>${firstChar}</strong>" and has <strong>${length}</strong> characters.`,
+                learningModeComplete: 'Learning Complete!',
+                learningModeScore: (correct, total) => `You got <strong>${correct}</strong> out of <strong>${total}</strong> correct`,
+                learningModeAccuracy: (accuracy) => `Accuracy: <strong>${accuracy}%</strong>`,
+                learningModeFinish: 'Finish',
+                // Learning Material Modal
+                learningMaterialTitle: "Let's Learn This Concept!",
+                learningMaterialAcknowledgment: 'Acknowledgment',
+                learningMaterialContrast: 'Key Difference',
+                learningMaterialVisualAid: 'Visual Aid',
+                learningMaterialAnalogy: 'Analogy',
+                learningMaterialKeyPrinciple: 'Key Principle',
+                learningMaterialUnderstand: 'I Understand',
+                learningMaterialContinue: 'Continue',
+                learningMaterialClose: 'Close',
+                // Phase 4: Verification & Escalation
+                verificationTitle: 'Let\'s Verify Your Understanding',
+                skipQuestion: 'Skip',
                 emptyNodeTooltip: 'Empty selected node text',
                 undoTooltip: 'Undo',
                 redoTooltip: 'Redo',
@@ -207,6 +242,7 @@ class LanguageManager {
                 copy: '复制',
                 auto: '自动',
                 line: '线稿',
+                learn: '学习',
                 tools: '工具',
                 empty: '清空',
                 undo: '撤销',
@@ -215,6 +251,7 @@ class LanguageManager {
                 editMode: '编辑模式：激活',
                 shareSuccess: '链接已复制到剪贴板！',
                 shareError: '无法复制链接，请手动复制：',
+                learningModeComingSoon: '学习模式：第一阶段开发中！',
                 languageButton: 'EN',
                 // Dynamic node text for adding new nodes
                 newAttribute: '新属性',
@@ -233,6 +270,39 @@ class LanguageManager {
                 deleteNodeTooltip: '删除选中节点',
                 autoCompleteTooltip: '使用AI自动完成图示',
                 lineModeTooltip: '切换黑白线稿模式',
+                learningModeTooltip: '开始交互式学习模式',
+                // Learning Mode UI | 学习模式界面
+                learningModeTitle: '学习模式',
+                learningModeProgress: (current, total) => `问题 <strong>${current}</strong> / <strong>${total}</strong>`,
+                learningModeFillIn: '填写缺失的节点：',
+                learningModeQuestionPrefix: '请填写',
+                learningModeQuestionSuffix: '的文本内容',
+                learningModeContextHint: '提示：观察图示结构和上下文',
+                learningModeInputPlaceholder: '在此输入答案...',
+                learningModeSubmit: '提交',
+                learningModeHint: '提示',
+                learningModeExit: '退出学习模式',
+                learningModeCorrect: '正确！',
+                learningModeIncorrect: (correctAnswer) => `不完全正确。正确答案是：<strong>${correctAnswer}</strong>`,
+                learningModeEnterAnswer: '请输入答案',
+                learningModeBasicHint: (firstChar, length) => `提示：答案以"<strong>${firstChar}</strong>"开头，共 <strong>${length}</strong> 个字符。`,
+                learningModeComplete: '学习完成！',
+                learningModeScore: (correct, total) => `您答对了 <strong>${correct}</strong> / <strong>${total}</strong> 题`,
+                learningModeAccuracy: (accuracy) => `准确率：<strong>${accuracy}%</strong>`,
+                learningModeFinish: '完成',
+                // Learning Material Modal | 学习材料弹窗
+                learningMaterialTitle: '让我们一起学习这个概念！',
+                learningMaterialAcknowledgment: '理解你的想法',
+                learningMaterialContrast: '关键区别',
+                learningMaterialVisualAid: '视觉辅助',
+                learningMaterialAnalogy: '类比',
+                learningMaterialKeyPrinciple: '核心原则',
+                learningMaterialUnderstand: '我明白了',
+                learningMaterialContinue: '继续',
+                learningMaterialClose: '关闭',
+                // Phase 4: Verification & Escalation | 阶段4：验证与升级
+                verificationTitle: '让我们验证一下你的理解',
+                skipQuestion: '跳过',
                 emptyNodeTooltip: '清空选中节点文本',
                 undoTooltip: '撤销',
                 redoTooltip: '重做',
@@ -487,6 +557,16 @@ class LanguageManager {
                 }
             });
             lineBtn.title = t.lineModeTooltip;
+        }
+        
+        // Update Learning button text (keep icon, update text in span)
+        const learningBtn = document.getElementById('learning-btn');
+        if (learningBtn) {
+            const learningBtnText = document.getElementById('learning-btn-text');
+            if (learningBtnText) {
+                learningBtnText.textContent = t.learn;
+            }
+            learningBtn.title = t.learningModeTooltip;
         }
         
         if (emptyBtn) {
@@ -836,8 +916,15 @@ class LanguageManager {
     /**
      * Get translation for a key
      */
-    translate(key) {
-        return this.translations[this.currentLanguage][key] || key;
+    translate(key, ...args) {
+        const translation = this.translations[this.currentLanguage][key];
+        
+        // If translation is a function, call it with arguments
+        if (typeof translation === 'function') {
+            return translation(...args);
+        }
+        
+        return translation || key;
     }
     
     /**

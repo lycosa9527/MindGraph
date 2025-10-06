@@ -7,6 +7,148 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## 🎉 Latest Release Summary | 最新版本概述
+
+### Version 3.0.16 - Interactive Learning Mode (Phase 4) 🧠
+
+**Major Educational Feature**: MindGraph now includes a complete **AI-Powered Interactive Learning Mode** that transforms static diagrams into intelligent tutoring experiences for K-12 education.
+
+**主要教育功能**: MindGraph现在包含完整的**AI驱动的交互式学习模式**，将静态图表转换为K-12教育的智能辅导体验。
+
+#### What's New | 新增功能
+
+✨ **Multi-Angle Verification System** (Phase 4)
+- Tests student understanding from 4 cognitive perspectives
+- 3-level escalation system with adaptive teaching strategies
+- Skip option after maximum attempts (3 escalations)
+- Misconception pattern tracking across learning session
+
+✨ **Teaching Material Modal with Node Highlighting** (Phase 3)
+- Full-screen modal with AI-generated teaching content
+- Golden pulse animation highlights the node being tested
+- Visual "Testing Node" badge shows context (e.g., "Branch 2 of 'iPhone'")
+- "I Understand" → Verification question workflow
+
+✨ **Interactive Canvas-Based Learning**
+- Students type answers directly into hidden nodes (20% random knockout)
+- Real-time AI validation with semantic understanding
+- LLM-generated contextual questions based on node relationships
+- Progress tracking with attempts, correct answers, and escalation levels
+
+✨ **Backend Intelligence (LangChain Agent)**
+- `LearningAgentV3` with prerequisite knowledge testing
+- Session management with Flask blueprint API (`/api/learning/*`)
+- Smart question generation based on diagram structure
+- Adaptive hint generation (3 levels)
+
+✨ **Full Bilingual Support**
+- All learning UI elements in English and Chinese
+- Language-aware question and hint generation
+- Smooth language switching during learning sessions
+
+#### Educational Impact | 教育影响
+
+This release transforms MindGraph from a **diagram generation tool** into an **Intelligent Tutoring System** specifically designed for K-12 classroom learning.
+
+本版本将MindGraph从**图表生成工具**转变为专为K-12课堂学习设计的**智能辅导系统**。
+
+---
+
+## [v3.0.16] - 2025-10-05
+
+### Added
+- **Learning Mode: Phase 4 - Multi-Angle Verification & Escalation System** 🎯
+  - **Verification Questions**: After showing learning materials, system now tests understanding from different cognitive angles
+    - Level 0: Structural relationship (how node relates to others)
+    - Level 1: Functional role (node's purpose in concept)
+    - Level 2: Application (real-world examples)
+    - Level 3: Definition (simplest explanation)
+  - **3-Level Escalation System**:
+    - User clicks "I Understand" → Verification question appears in modal
+    - Wrong answer → Escalate to Level 1 (new teaching angle)
+    - Still wrong → Escalate to Level 2 (different teaching strategy)
+    - Still wrong → Escalate to Level 3 (maximum attempts)
+    - After Level 3 → "Skip" button appears (red, bottom of modal)
+  - **Escalation Tracking**:
+    - `currentNodeEscalations`: Tracks escalations for current node (0-3)
+    - `misconceptionPatterns[]`: Session-wide array of all misconceptions
+    - Each pattern stored with: nodeId, userAnswer, correctAnswer, escalationLevel, timestamp
+    - Escalation indicator badge: "📊 Attempt X of 3" shown at top of verification modal
+  - **Skip Functionality**:
+    - Only appears after 3 failed verification attempts
+    - Red button (rgba(239, 68, 68, 0.8)) with hover effects
+    - Logs skip event and resets escalation counter for next node
+  - **Verification Flow**:
+    1. User answers original question wrong → Learning material modal shows
+    2. User clicks "I Understand" → Verification UI replaces modal content
+    3. Verification question from different angle (based on escalation level)
+    4. User answers:
+       - ✅ Correct → "Understanding Verified!" → Next question (2s delay)
+       - ❌ Wrong → Escalate → New angle → Repeat (up to 3 times)
+    5. After max escalations → Skip button appears
+  - **UI Components**:
+    - Title: "🎯 Let's Verify Your Understanding" | "让我们验证一下你的理解"
+    - Attempt indicator: Yellow box showing "Attempt X of 3"
+    - Question area: Purple gradient background with perspective-based question
+    - Input field: White semi-transparent with yellow focus border
+    - Feedback area: Dynamic (green for success, red for failure, yellow for skip notice)
+    - Submit button: Blue (#3b82f6) with hover effects
+    - Skip button: Red, only after 3 escalations
+  - **Backend Integration**:
+    - Calls `/api/learning/verify_understanding` endpoint
+    - Sends: session_id, node_id, user_answer, correct_answer, verification_question, language
+    - Receives: understanding_verified (bool), message, confidence, etc.
+  - **Files Modified**:
+    - `static/js/editor/learning-mode-manager.js`: 
+      - Added escalation tracking variables
+      - `showVerificationQuestion()` - Main verification UI
+      - `_generateVerificationQuestion()` - Multi-angle question generator
+      - `handleVerificationAnswer()` - Verification logic & escalation
+      - `verifyUnderstandingWithBackend()` - API call
+    - `static/js/editor/language-manager.js`: Added `verificationTitle`, `skipQuestion` translations
+    - `CHANGELOG.md`: Documented Phase 4 implementation
+
+---
+
+## [v3.0.15] - 2025-10-05
+
+### Added
+- **Learning Mode: Phase 3 - Teaching Material Modal with Node Highlighting** 🎓
+  - **New Feature**: Full-screen modal displays LLM-generated teaching materials when answer is wrong
+  - **Node Highlighting** ⚡ (User-requested UX improvement):
+    - 🎯 **"Testing Node" badge** in modal header shows which node is being tested
+    - Context-aware descriptions: "Attribute 3 of 'acceleration'" or "Branch 2 of 'iPhone'"
+    - **Visual canvas highlighting**: Node glows with golden (#fbbf24) pulse animation
+    - Temporarily reveals text of hidden node during teaching
+    - Highlight removed when modal closes
+  - **Modal Design**:
+    - Purple gradient background with smooth fade-in/slide-up animations
+    - **Testing Node Badge**: Yellow-bordered box with 🎯 icon showing node context
+    - Displays agent's intelligent teaching response (misconception analysis, prerequisite teaching)
+    - Shows correct answer in a green highlighted box
+    - Two action buttons: "I Understand" (green) and "Close" (transparent)
+    - Fully bilingual (English/Chinese) with translations for all UI elements
+  - **Agent Integration**:
+    - Modal triggered by `LearningAgentV3` workflow when validation fails
+    - Displays `agent_workflow.agent_response` from backend
+    - Supports prerequisite knowledge testing and teaching flow
+  - **UI Components**:
+    - Gradient modal: `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`
+    - Testing Node Badge: `rgba(255, 255, 255, 0.25)` with yellow border
+    - Responsive layout: max-width 700px, max-height 80vh with scrolling
+    - Smooth animations: fadeIn (0.3s), slideUp (0.4s), pulse (1.5s infinite)
+    - Hover effects on buttons with transform animations
+  - **Translations Added**:
+    - `learningMaterialTitle`: "Let's Learn This Concept!" | "让我们一起学习这个概念！"
+    - `learningMaterialAcknowledgment`, `learningMaterialContrast`, etc.
+    - `learningMaterialUnderstand`: "I Understand" | "我明白了"
+  - **Files Modified**:
+    - `static/js/editor/learning-mode-manager.js`: Added `showLearningMaterialModal()`, `highlightNodeOnCanvas()`, `removeNodeHighlight()`, `_getNodeContextDescription()` methods
+    - `static/js/editor/language-manager.js`: Added 9 new translation keys
+    - `static/css/editor-toolbar.css`: Added fadeIn/slideUp/pulse animations
+
+---
+
 ## [v3.0.14] - 2025-10-05
 
 ### Fixed

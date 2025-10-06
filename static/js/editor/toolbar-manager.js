@@ -16,6 +16,10 @@ class ToolbarManager {
         this.sessionId = editor.sessionId;
         this.diagramType = editor.diagramType;
         
+        // Initialize DiagramValidator and LearningModeManager for Learning Mode
+        this.validator = new DiagramValidator();
+        this.learningModeManager = null; // Initialize on first use to access editor reference
+        
         const logMessage = `Created for session: ${this.sessionId?.substr(-8)} | Type: ${this.diagramType}`;
         console.log('ToolbarManager:', logMessage);
         
@@ -82,6 +86,7 @@ class ToolbarManager {
         this.deleteNodeBtn = document.getElementById('delete-node-btn');
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.lineModeBtn = document.getElementById('line-mode-btn');
+        this.learningBtn = document.getElementById('learning-btn');  // 🆕 Learning Mode button
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.emptyNodeBtn = document.getElementById('empty-node-btn');
         this.undoBtn = document.getElementById('undo-btn');
@@ -147,6 +152,11 @@ class ToolbarManager {
             e.stopPropagation();
             console.log('ToolbarManager: Line Mode button clicked');
             this.toggleLineMode();
+        });
+        this.learningBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('ToolbarManager: Learning Mode button clicked');
+            this.handleLearningMode();
         });
         this.duplicateNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1912,6 +1922,7 @@ class ToolbarManager {
             }
             this.nodeCountUpdateTimeout = setTimeout(() => {
                 this.updateNodeCount();
+                this.validateLearningMode(); // Also validate diagram for Learning Mode
             }, 100); // Update after 100ms of no changes
         });
         
@@ -1925,8 +1936,11 @@ class ToolbarManager {
         
         console.log('ToolbarManager: Node counter observer set up');
         
-        // Initial count with longer delay to ensure SVG is fully rendered
-        setTimeout(() => this.updateNodeCount(), 500);
+        // Initial count and validation with longer delay to ensure SVG is fully rendered
+        setTimeout(() => {
+            this.updateNodeCount();
+            this.validateLearningMode();
+        }, 500);
     }
     
     /**
@@ -1998,6 +2012,65 @@ class ToolbarManager {
         }
         
         return true;
+    }
+    
+    /**
+     * 🧠 Validate diagram for Learning Mode and enable/disable button
+     */
+    validateLearningMode() {
+        if (!this.validator || !this.learningBtn) {
+            return;
+        }
+        
+        const result = this.validator.validateAndUpdateButton(this.learningBtn, this.diagramType);
+        
+        // Store validation result for later use
+        this.lastValidationResult = result;
+        
+        return result;
+    }
+    
+    /**
+     * 🆕 Handle Learning Mode button click
+     */
+    async handleLearningMode() {
+        console.log('ToolbarManager: Learning Mode initiated');
+        
+        // Validate diagram first
+        const validationResult = this.validateLearningMode();
+        
+        if (!validationResult || !validationResult.isValid) {
+            // Show validation error message
+            const lang = window.languageManager;
+            const currentLang = lang?.currentLanguage || 'en';
+            const message = this.validator.getValidationMessage(validationResult, currentLang);
+            
+            this.showNotification(message, 'error');
+            console.warn('ToolbarManager: Learning Mode validation failed:', validationResult.reason);
+            return;
+        }
+        
+        // Validation passed - Enter Learning Mode!
+        console.log('ToolbarManager: ✅ Diagram validation passed!', validationResult);
+        
+        try {
+            // Initialize LearningModeManager if not already done
+            if (!this.learningModeManager) {
+                this.learningModeManager = new LearningModeManager(this, this.editor);
+            }
+            
+            // Start Learning Mode
+            await this.learningModeManager.startLearningMode(validationResult);
+            
+            console.log('ToolbarManager: Learning Mode started successfully');
+            
+        } catch (error) {
+            console.error('ToolbarManager: Failed to start Learning Mode:', error);
+            this.showNotification(
+                'Failed to start Learning Mode. Please try again.',
+                'error'
+            );
+        }
     }
     
     /**
