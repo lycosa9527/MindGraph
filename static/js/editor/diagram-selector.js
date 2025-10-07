@@ -537,6 +537,12 @@ class DiagramSelector {
             hasCurrentEditor: !!window.currentEditor
         });
         
+        // CRITICAL: Cancel all in-progress LLM requests before leaving canvas
+        if (window.currentEditor && window.currentEditor.toolbarManager) {
+            console.log('DiagramSelector: Cancelling in-progress LLM requests');
+            window.currentEditor.toolbarManager.cancelAllLLMRequests();
+        }
+        
         // End the current session FIRST (critical!)
         this.endSession();
         

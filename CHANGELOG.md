@@ -63,6 +63,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.1] - 2025-10-07 - Critical Fix: Cancel In-Progress LLM Requests
+
+### Fixed - Session Management 🔧
+- **CRITICAL**: Cancel all in-progress LLM requests when returning to gallery
+- **Fixed**: LLM requests interfering with next diagram after leaving canvas
+- **Fixed**: Session cleanup now properly aborts pending fetch requests
+- Added `activeAbortControllers` Map to track in-progress requests
+- Created `cancelAllLLMRequests()` method for proper cleanup
+- Calls cancellation in both `backToGallery()` and `destroy()` methods
+
+### Technical - Implementation 🛠️
+- Store AbortController for each LLM request in Map
+- Remove from Map when request completes (success or error)
+- Cancel all tracked requests when user returns to gallery
+- Prevents interference between different editing sessions
+- Ensures clean state transition between diagrams
+
+---
+
 ## [3.4.0] - 2025-10-07 - Canvas Optimization & Zoom/Pan Controls
 
 ### Added - Canvas Interaction 🖱️

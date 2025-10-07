@@ -28,6 +28,9 @@ class ToolbarManager {
         this.sessionId = editor.sessionId;
         this.diagramType = editor.diagramType;
         
+        // Track in-progress LLM requests for cancellation
+        this.activeAbortControllers = new Map(); // Map<modelName, AbortController>
+        
         // Initialize DiagramValidator and LearningModeManager for Learning Mode
         this.validator = new DiagramValidator();
         this.learningModeManager = null; // Initialize on first use to access editor reference
@@ -44,6 +47,21 @@ class ToolbarManager {
         this.initializeElements();
         this.attachEventListeners();
         this.listenToSelectionChanges();
+    }
+    
+    /**
+     * Cancel all in-progress LLM requests
+     * Called when returning to gallery or destroying the editor
+     */
+    cancelAllLLMRequests() {
+        if (this.activeAbortControllers.size > 0) {
+            console.log(`ToolbarManager: Cancelling ${this.activeAbortControllers.size} in-progress LLM request(s)`);
+            this.activeAbortControllers.forEach((controller, model) => {
+                console.log(`  - Aborting ${model} request`);
+                controller.abort();
+            });
+            this.activeAbortControllers.clear();
+        }
     }
     
     /**
@@ -1359,8 +1377,9 @@ class ToolbarManager {
                         request_id: requestId
                     };
                     
-                    // Create abort controller for timeout
+                    // Create abort controller for timeout and cancellation
                     const abortController = new AbortController();
+                    this.activeAbortControllers.set(model, abortController); // Track for cancellation
                     const timeoutId = setTimeout(() => abortController.abort(), LLM_CONFIG.TIMEOUT_MS);
                     
                     const response = await fetch('/api/generate_graph', {
@@ -1373,6 +1392,7 @@ class ToolbarManager {
                     });
                     
                     clearTimeout(timeoutId);
+                    this.activeAbortControllers.delete(model); // Remove when complete
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1418,6 +1438,9 @@ class ToolbarManager {
                     }
                     
                 } catch (error) {
+                    // Remove abortController from tracking when request fails
+                    this.activeAbortControllers.delete(model);
+                    
                     // Handle different error types
                     let errorMessage = error.message;
                     if (error.name === 'AbortError') {
@@ -2392,6 +2415,9 @@ class ToolbarManager {
      */
     destroy() {
         console.log('ToolbarManager: Destroying instance for session:', this.sessionId?.substr(-8));
+        
+        // CRITICAL: Cancel all in-progress LLM requests before destroying
+        this.cancelAllLLMRequests();
         
         // Clone and replace buttons to remove all event listeners
         // This is the most reliable way to remove event listeners added with arrow functions
