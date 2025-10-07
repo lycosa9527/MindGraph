@@ -99,19 +99,17 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     const totalSpacing = Math.max(0, nodes.length - 1) * stepSpacing;
     const requiredHeight = padding + (titleSize.h + 30) + totalNodesHeight + totalSpacing + padding;
 
-    // Apply dimensions by sizing container explicitly (rounded)
+    // Apply dimensions (rounded)
     const rw = __round1(requiredWidth);
     const rh = __round1(requiredHeight);
-    d3.select('#d3-container')
-        .style('width', rw + 'px')
-        .style('height', rh + 'px');
+    
+    // DON'T set explicit width/height on container - let CSS handle it (100% fill)
+    // This allows the canvas to fill the viewport and auto-fit to work properly
 
-    // Create visible SVG
+    // Create visible SVG with viewBox for proper scaling
     const svg = d3.select('#d3-container').append('svg')
-        .attr('width', rw)
-        .attr('height', rh)
         .attr('viewBox', `0 0 ${rw} ${rh}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
 
     // Remove temp svg
     tempSvg.remove();
@@ -392,17 +390,13 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     const centerX = baseWidth / 2;
     const startY = padding + titleSize.h + THEME.vPadTitle + 10; // Further reduced from 20 to 10
 
-    // Size container to content to avoid external CSS constraining the SVG
-    d3.select('#d3-container')
-        .style('width', baseWidth + 'px')
-        .style('height', baseHeight + 'px');
+    // DON'T set explicit width/height on container - let CSS handle it (100% fill)
+    // This allows the canvas to fill the viewport and auto-fit to work properly
 
-    // Create actual SVG
+    // Create actual SVG with viewBox for proper scaling
     const svg = d3.select('#d3-container').append('svg')
-        .attr('width', baseWidth)
-        .attr('height', baseHeight)
         .attr('viewBox', `0 0 ${baseWidth} ${baseHeight}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
 
     // Draw title at the top - centered to the canvas width, not the step nodes
     const titleY = padding + titleSize.h; // baseline roughly below top padding
@@ -659,12 +653,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     // Update SVG dimensions to match calculated content
     if (cw > baseWidth || ch > baseHeight) {
         svg.attr('width', cw)
-           .attr('height', ch)
-           .attr('viewBox', `0 0 ${cw} ${ch}`);
+           .attr('viewBox', `0 0 ${cw} ${ch}`)
+           .attr('preserveAspectRatio', 'xMidYMid meet');
         
-        d3.select('#d3-container')
-            .style('width', cw + 'px')
-            .style('height', ch + 'px');
+        // DON'T set explicit width/height on container - let CSS handle it (100% fill)
     }
     
     // Watermark removed from canvas display - will be added during PNG export only

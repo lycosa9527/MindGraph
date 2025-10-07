@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.3] - 2025-10-08 - Fixed Flow Map Sizing
+
+### Fixed - Flow Map Rendering 🔧
+- **Flow Map**: No longer appears tiny when entering canvas from gallery
+- **Flowchart**: Removed explicit container sizing that interfered with auto-fit
+- **Bridge Map**: Fixed viewBox scaling for proper canvas fill
+- All flow-based diagrams now use full viewport and auto-fit correctly
+
+### Technical - Renderer Updates 🛠️
+- Removed `.style('width', ...).style('height', ...)` from `#d3-container`
+- Removed explicit `.attr('width', ...).attr('height', ...)` from SVG elements
+- Kept only `viewBox` and `preserveAspectRatio` for proper scaling
+- Changed `preserveAspectRatio` from `xMinYMin meet` to `xMidYMid meet`
+- Let CSS handle container sizing (100% fill) for consistent behavior
+
+---
+
 ## [3.4.2] - 2025-10-07 - Improved Mouse Controls
 
 ### Changed - Mouse Interaction 🖱️
