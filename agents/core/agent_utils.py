@@ -22,16 +22,22 @@ logger = logging.getLogger(__name__)
 
 def get_llm_client():
     """
-    Get the LLM client instance.
+    Get the LLM client instance based on the currently selected LLM model.
     
     Returns:
-        LLM client instance
+        LLM client instance for the currently selected model
     """
     try:
         from llm_clients import get_llm_client as get_client
-        return get_client()
-    except ImportError:
-        logger.error("Failed to import get_llm_client from llm_clients")
+        from agents import main_agent
+        
+        # Get the currently selected LLM model
+        current_model = main_agent.get_llm_model()
+        logger.debug(f"get_llm_client(): Fetching client for model: {current_model}")
+        
+        return get_client(model_id=current_model)
+    except ImportError as e:
+        logger.error(f"Failed to import: {e}")
         return None
 
 

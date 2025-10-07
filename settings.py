@@ -76,6 +76,26 @@ class Config:
     def QWEN_MODEL_GENERATION(self):
         """Model for generation tasks (higher quality)"""
         return self._get_cached_value('QWEN_MODEL_GENERATION', 'qwen-plus')
+    
+    # ============================================================================
+    # DASHSCOPE MULTI-LLM SUPPORT
+    # ============================================================================
+    
+    @property
+    def DASHSCOPE_API_URL(self):
+        """Dashscope API URL for all supported models"""
+        return self._get_cached_value('DASHSCOPE_API_URL', 'https://dashscope.aliyuncs.com/api/v1/')
+    
+    @property
+    def DEEPSEEK_MODEL(self):
+        """DeepSeek model name - v3.1 is faster than R1 (no reasoning overhead)"""
+        return self._get_cached_value('DEEPSEEK_MODEL', 'deepseek-v3.1')
+    
+    @property
+    def KIMI_MODEL(self):
+        """Kimi model name (Moonshot AI)"""
+        return self._get_cached_value('KIMI_MODEL', 'Moonshot-Kimi-K2-Instruct')
+    
     @property
     def QWEN_TEMPERATURE(self):
         try:
@@ -442,7 +462,37 @@ class Config:
         """Get request data for Qwen generation tasks (high quality)"""
         return self.get_qwen_data(prompt, self.QWEN_MODEL_GENERATION)
     
-
+    def get_llm_data(self, prompt: str, model: str) -> dict:
+        """
+        Get request data for any LLM model via Dashscope.
+        
+        Args:
+            prompt (str): The prompt to send
+            model (str): Model identifier ('qwen', 'deepseek', 'kimi', 'chatglm')
+            
+        Returns:
+            dict: Request data dictionary for Dashscope API
+            
+        Note:
+            Always includes enable_thinking: False for lightweight application
+        """
+        # Map model identifiers to actual model names
+        model_map = {
+            'qwen': self.QWEN_MODEL_GENERATION,
+            'deepseek': self.DEEPSEEK_MODEL,
+            'kimi': self.KIMI_MODEL
+        }
+        
+        model_name = model_map.get(model, self.QWEN_MODEL_GENERATION)
+        
+        return {
+            'model': model_name,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': self.QWEN_TEMPERATURE,
+            'max_tokens': self.QWEN_MAX_TOKENS,
+            # Always disable thinking for lightweight application
+            'extra_body': {'enable_thinking': False}
+        }
     
     # ============================================================================
     # D3.js THEME AND DIMENSION HELPERS

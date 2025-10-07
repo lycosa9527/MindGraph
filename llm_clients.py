@@ -178,24 +178,267 @@ class QwenClient:
             raise
 
 
+# ============================================================================
+# MULTI-LLM CLIENT (DeepSeek, Kimi, ChatGLM)
+# ============================================================================
+
+class DeepSeekClient:
+    """Client for DeepSeek R1 via Dashscope API"""
+    
+    def __init__(self):
+        """Initialize DeepSeek client"""
+        self.api_url = config.QWEN_API_URL  # Dashscope uses same endpoint
+        self.api_key = config.QWEN_API_KEY
+        self.timeout = 60  # seconds (DeepSeek R1 can be slower for reasoning)
+        self.model_id = 'deepseek'
+        self.model_name = config.DEEPSEEK_MODEL
+        logger.info(f"DeepSeekClient initialized with model: {self.model_name}")
+    
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = 0.7,
+                                   max_tokens: int = 2000) -> str:
+        """
+        Send async chat completion request to DeepSeek R1
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0)
+            max_tokens: Maximum tokens in response
+            
+        Returns:
+            Response content as string
+        """
+        try:
+            payload = config.get_llm_data(
+                messages[-1]['content'] if messages else '',
+                self.model_id
+            )
+            payload['messages'] = messages
+            payload['temperature'] = temperature
+            payload['max_tokens'] = max_tokens
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            logger.debug(f"DeepSeek async API request: {self.model_name}")
+            
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
+                async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        logger.debug(f"DeepSeek response length: {len(content)} chars")
+                        return content
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"DeepSeek API error {response.status}: {error_text}")
+                        raise Exception(f"DeepSeek API error: {response.status}")
+                        
+        except asyncio.TimeoutError:
+            logger.error("DeepSeek API timeout")
+            raise Exception("DeepSeek API timeout")
+        except Exception as e:
+            logger.error(f"DeepSeek API error: {e}")
+            raise
+    
+    def chat_completion(self, messages: List[Dict], temperature: float = 0.7,
+                       max_tokens: int = 2000) -> str:
+        """
+        Send sync chat completion request to DeepSeek R1 (for agents)
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0)
+            max_tokens: Maximum tokens in response
+            
+        Returns:
+            Response content as string
+        """
+        try:
+            import requests
+            
+            payload = config.get_llm_data(
+                messages[-1]['content'] if messages else '',
+                self.model_id
+            )
+            payload['messages'] = messages
+            payload['temperature'] = temperature
+            payload['max_tokens'] = max_tokens
+            
+            # Verify thinking is disabled
+            if 'extra_body' in payload:
+                logger.info(f"DeepSeek payload extra_body: {payload['extra_body']}")
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            logger.debug(f"DeepSeek sync API request: {self.model_name} (thinking disabled: {payload.get('extra_body', {}).get('enable_thinking') == False})")
+            response = requests.post(
+                self.api_url,
+                json=payload,
+                headers=headers,
+                timeout=self.timeout
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                logger.debug(f"DeepSeek response length: {len(content)} chars")
+                return content
+            else:
+                error_text = response.text
+                logger.error(f"DeepSeek API error {response.status_code}: {error_text}")
+                raise Exception(f"DeepSeek API error: {response.status_code}")
+                
+        except Exception as e:
+            if 'Timeout' in str(type(e).__name__):
+                logger.error("DeepSeek API timeout")
+                raise Exception("DeepSeek API timeout")
+            logger.error(f"DeepSeek API error: {e}")
+            raise
+
+
+class KimiClient:
+    """Client for Kimi (Moonshot AI) via Dashscope API"""
+    
+    def __init__(self):
+        """Initialize Kimi client"""
+        self.api_url = config.QWEN_API_URL  # Dashscope uses same endpoint
+        self.api_key = config.QWEN_API_KEY
+        self.timeout = 60  # seconds
+        self.model_id = 'kimi'
+        self.model_name = config.KIMI_MODEL
+        logger.info(f"KimiClient initialized with model: {self.model_name}")
+    
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = 0.7,
+                                   max_tokens: int = 2000) -> str:
+        """Async chat completion for Kimi"""
+        try:
+            payload = config.get_llm_data(
+                messages[-1]['content'] if messages else '',
+                self.model_id
+            )
+            payload['messages'] = messages
+            payload['temperature'] = temperature
+            payload['max_tokens'] = max_tokens
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            logger.debug(f"Kimi async API request: {self.model_name}")
+            
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
+                async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        logger.debug(f"Kimi response length: {len(content)} chars")
+                        return content
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Kimi API error {response.status}: {error_text}")
+                        raise Exception(f"Kimi API error: {response.status}")
+                        
+        except asyncio.TimeoutError:
+            logger.error("Kimi API timeout")
+            raise Exception("Kimi API timeout")
+        except Exception as e:
+            logger.error(f"Kimi API error: {e}")
+            raise
+    
+    def chat_completion(self, messages: List[Dict], temperature: float = 0.7,
+                       max_tokens: int = 2000) -> str:
+        """Sync chat completion for Kimi (for agents)"""
+        try:
+            import requests
+            
+            payload = config.get_llm_data(
+                messages[-1]['content'] if messages else '',
+                self.model_id
+            )
+            payload['messages'] = messages
+            payload['temperature'] = temperature
+            payload['max_tokens'] = max_tokens
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            logger.debug(f"Kimi sync API request: {self.model_name}")
+            response = requests.post(
+                self.api_url,
+                json=payload,
+                headers=headers,
+                timeout=self.timeout
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                logger.debug(f"Kimi response length: {len(content)} chars")
+                return content
+            else:
+                error_text = response.text
+                logger.error(f"Kimi API error {response.status_code}: {error_text}")
+                raise Exception(f"Kimi API error: {response.status_code}")
+                
+        except Exception as e:
+            if 'Timeout' in str(type(e).__name__):
+                logger.error("Kimi API timeout")
+                raise Exception("Kimi API timeout")
+            logger.error(f"Kimi API error: {e}")
+            raise
+
+# ============================================================================
+# GLOBAL CLIENT INSTANCES
+# ============================================================================
+
 # Global client instances
 try:
     qwen_client_classification = QwenClient(model_type='classification')  # qwen-turbo
     qwen_client_generation = QwenClient(model_type='generation')         # qwen-plus
     qwen_client = qwen_client_classification  # Legacy compatibility
-    logger.info("LLM clients initialized successfully")
+    
+    # Multi-LLM clients - Dedicated classes for each provider
+    deepseek_client = DeepSeekClient()
+    kimi_client = KimiClient()
+    
+    logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi)")
 except Exception as e:
     logger.warning(f"Failed to initialize LLM clients: {e}")
     qwen_client = None
     qwen_client_classification = None
     qwen_client_generation = None
+    deepseek_client = None
+    kimi_client = None
 
-def get_llm_client():
-    """Get an available LLM client."""
-    # Try to return the real Qwen client if available
-    if qwen_client is not None:
-        logger.info("Using real Qwen LLM client")
-        return qwen_client
+def get_llm_client(model_id='qwen'):
+    """
+    Get an LLM client by model ID.
+    
+    Args:
+        model_id (str): 'qwen', 'deepseek', or 'kimi'
+        
+    Returns:
+        LLM client instance
+    """
+    client_map = {
+        'qwen': qwen_client_generation,
+        'deepseek': deepseek_client,
+        'kimi': kimi_client
+    }
+    
+    client = client_map.get(model_id)
+    
+    if client is not None:
+        logger.info(f"Using {model_id} LLM client")
+        return client
     else:
         logger.warning("Qwen client not available, using mock client for testing")
         # Return a mock client for testing when real client is not available

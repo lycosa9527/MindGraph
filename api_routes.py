@@ -40,6 +40,12 @@ logger = logging.getLogger(__name__)
 # Frontend logger for centralized logging
 frontend_logger = logging.getLogger('frontend')
 
+# Multi-LLM Configuration Constants
+SUPPORTED_LLM_MODELS = {'qwen', 'deepseek', 'kimi'}
+DEFAULT_LLM_MODEL = 'qwen'
+SUPPORTED_LANGUAGES = {'zh', 'en'}
+DEFAULT_LANGUAGE = 'zh'
+
 # Shared agent enhancement functions to reduce code duplication
 def enhance_mindmap_spec(spec):
     """Shared function to enhance mind map specs with layout data."""
@@ -84,14 +90,24 @@ rendering_timing_stats = {
 _LLM_RESULT_CACHE = {}
 _LLM_CACHE_TTL_SECONDS = 300  # 5 minutes
 
-def _llm_cache_key(prompt: str, language: str):
+def _llm_cache_key(prompt: str, language: str, llm_model: str = None):
+    """
+    Generate cache key including LLM model to ensure different models get different results.
+    
+    Args:
+        prompt: User prompt
+        language: Language code
+        llm_model: LLM model identifier (qwen, deepseek, kimi, chatglm)
+    """
     try:
-        return f"{language}:{prompt}".strip()
+        # Include model in cache key to prevent different models from sharing cached results
+        model_part = f":{llm_model}" if llm_model else ""
+        return f"{language}{model_part}:{prompt}".strip()
     except Exception:
         return f"{language}:".strip()
 
-def _llm_cache_get(prompt: str, language: str):
-    key = _llm_cache_key(prompt, language)
+def _llm_cache_get(prompt: str, language: str, llm_model: str = None):
+    key = _llm_cache_key(prompt, language, llm_model)
     entry = _LLM_RESULT_CACHE.get(key)
     if not entry:
         return None
@@ -104,8 +120,8 @@ def _llm_cache_get(prompt: str, language: str):
         return None
     return entry.get('result')
 
-def _llm_cache_set(prompt: str, language: str, result: dict):
-    key = _llm_cache_key(prompt, language)
+def _llm_cache_set(prompt: str, language: str, result: dict, llm_model: str = None):
+    key = _llm_cache_key(prompt, language, llm_model)
     _LLM_RESULT_CACHE[key] = {'ts': time.time(), 'result': result}
 
 def get_rendering_timing_stats():
@@ -372,10 +388,86 @@ def recalculate_mindmap_layout():
         return jsonify({'error': str(e)}), 500
 
 
+@api.route('/generate_graph_multi', methods=['POST'])
+@handle_api_errors
+def generate_graph_multi():
+    """Generate graph specifications from ALL LLM models sequentially.
+    
+    This endpoint calls all 4 LLMs (Qwen, DeepSeek, Kimi, ChatGLM) one after another
+    and returns all results so users can compare different AI outputs.
+    
+    Uses sequential execution to avoid race conditions with global state.
+    While slower than parallel, it ensures each model generates unique results.
+    """
+    
+    # Input validation
+    data = request.json
+    valid, msg = validate_request_data(data, ['prompt'])
+    if not valid:
+        return jsonify({'error': msg}), 400
+    
+    prompt = sanitize_prompt(data['prompt'])
+    if not prompt:
+        return jsonify({'error': 'Invalid or empty prompt'}), 400
+    
+    language = data.get('language', 'zh')
+    if not isinstance(language, str) or language not in ['zh', 'en']:
+        return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
+    
+    forced_diagram_type = data.get('diagram_type', None)
+    dimension_preference = data.get('dimension_preference', None)
+    
+    logger.info(f"Multi-LLM generate_graph request: prompt={prompt!r}, language={language!r}, type={forced_diagram_type!r}")
+    
+    # Call all 4 LLMs sequentially to avoid race conditions with global state
+    # Sequential is more reliable than multiprocessing on Windows
+    models = ['qwen', 'deepseek', 'kimi', 'chatglm']
+    start_time = time.time()
+    
+    logger.info("Starting sequential LLM generation (prevents race conditions)...")
+    
+    results = []
+    for model in models:
+        try:
+            logger.info(f"Generating with {model}...")
+            agent.set_llm_model(model)
+            
+            result = agent.agent_graph_workflow_with_styles(
+                prompt, language,
+                forced_diagram_type=forced_diagram_type,
+                dimension_preference=dimension_preference
+            )
+            
+            logger.info(f"Completed {model}")
+            results.append({
+                'model': model,
+                'success': True,
+                'result': result
+            })
+        except Exception as e:
+            logger.error(f"Error with {model}: {e}")
+            results.append({
+                'model': model,
+                'success': False,
+                'error': str(e)
+            })
+    
+    total_time = time.time() - start_time
+    logger.info(f"All LLMs completed in {total_time:.2f}s")
+    
+    # Format response
+    response = {
+        'results': {r['model']: r for r in results},
+        'total_time': total_time
+    }
+    
+    return jsonify(response), 200
+
+
 @api.route('/generate_graph', methods=['POST'])
 @handle_api_errors
 def generate_graph():
-    """Generate graph specification from user prompt using Qwen (default, with enhanced extraction and style integration).
+    """Generate graph specification from user prompt using selected LLM model.
     
     This endpoint returns JSON with the diagram specification for the frontend editor to render.
     For PNG file downloads, use /api/generate_png instead.
@@ -390,9 +482,9 @@ def generate_graph():
     if not prompt:
         return jsonify({'error': 'Invalid or empty prompt'}), 400
     
-    language = data.get('language', 'zh')  # Default to Chinese for Qwen
-    if not isinstance(language, str) or language not in ['zh', 'en']:
-        return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
+    language = data.get('language', DEFAULT_LANGUAGE)
+    if not isinstance(language, str) or language not in SUPPORTED_LANGUAGES:
+        return jsonify({'error': f'Invalid language. Must be one of {SUPPORTED_LANGUAGES}'}), 400
     
     # Get optional forced diagram type (for auto-complete feature)
     forced_diagram_type = data.get('diagram_type', None)
@@ -400,37 +492,66 @@ def generate_graph():
     # Get optional dimension preference (for brace maps)
     dimension_preference = data.get('dimension_preference', None)
     
-    if forced_diagram_type:
-        logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}, forced_type={forced_diagram_type!r}")
-    else:
-        logger.info(f"Frontend generate_graph request received: prompt={prompt!r}, language={language!r}")
+    # Get optional LLM model selection
+    llm_model = data.get('llm_model', DEFAULT_LLM_MODEL)
+    if not isinstance(llm_model, str) or llm_model not in SUPPORTED_LLM_MODELS:
+        logger.warning(f"Invalid llm_model received: {llm_model!r}, falling back to '{DEFAULT_LLM_MODEL}'")
+        llm_model = DEFAULT_LLM_MODEL
+    
+    # Get optional request_id for tracking
+    request_id = data.get('request_id', 'unknown')
+    
+    logger.info(f"[{request_id}] Request: llm_model={llm_model!r}, language={language!r}, forced_type={forced_diagram_type!r}")
     
     if dimension_preference:
-        logger.info(f"User specified dimension preference: {dimension_preference!r}")
+        logger.info(f"[{request_id}] Dimension preference: {dimension_preference!r}")
+    
+    # Set the LLM model for this request
+    # NOTE: This uses global state - not thread-safe for concurrent requests
+    agent.set_llm_model(llm_model)
+    current_model = agent.get_llm_model()
+    logger.info(f"[{request_id}] LLM model set to: {llm_model}, verified current model: {current_model}")
     
     # Track timing for LLM processing
     start_time = time.time()
     
     # Use enhanced agent workflow with integrated style system
     try:
-        # Try cache first to avoid duplicate LLM work for identical prompt/language
-        # Note: Cache is language-specific but not diagram-type-specific for now
-        cached = _llm_cache_get(prompt, language)
-        if cached and not forced_diagram_type:
-            logger.debug("Cache hit for generate_graph - returning cached spec")
+        # Try cache first to avoid duplicate LLM work for identical prompt/language/model/diagram_type
+        # Cache key includes llm_model AND diagram_type to ensure different models and types get unique results
+        cache_key_extra = f"{llm_model}_{forced_diagram_type}" if forced_diagram_type else llm_model
+        cache_key_full = _llm_cache_key(prompt, language, cache_key_extra)
+        cached = _llm_cache_get(prompt, language, cache_key_extra)
+        
+        logger.info(f"[{request_id}] Cache key: {cache_key_full}, has_cached: {cached is not None}, forced_type: {forced_diagram_type}")
+        
+        # FIX: Cache should be used even with forced_diagram_type since key includes it
+        if cached:
+            logger.info(f"[{request_id}] Cache HIT for {llm_model} - using cached result")
             result = cached
         else:
-            result = agent.agent_graph_workflow_with_styles(prompt, language, forced_diagram_type=forced_diagram_type, dimension_preference=dimension_preference)
-            # Cache on success
-            try:
-                if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):
-                    _llm_cache_set(prompt, language, result)
-            except Exception:
-                pass
+            logger.info(f"[{request_id}] Cache MISS - generating FRESH with {llm_model}")
+            logger.info(f"[{request_id}] About to call agent_graph_workflow_with_styles, current LLM: {agent.get_llm_model()}")
+            result = agent.agent_graph_workflow_with_styles(
+                prompt, language, 
+                forced_diagram_type=forced_diagram_type, 
+                dimension_preference=dimension_preference
+            )
+            logger.info(f"[{request_id}] Generation completed, result diagram_type: {result.get('diagram_type')}, spec_nodes: {len(result.get('spec', {}).get('nodes', []))}")
+            
+            # Cache on success with model-specific key
+            if isinstance(result, dict) and result.get('spec') and not result['spec'].get('error'):
+                _llm_cache_set(prompt, language, result, cache_key_extra)
+                logger.info(f"[{request_id}] Cached result for {llm_model} with key: {cache_key_full}")
+                # Log first node for verification
+                first_node = result.get('spec', {}).get('nodes', [{}])[0]
+                logger.info(f"[{request_id}] Cached spec first node: id={first_node.get('id')}, text={first_node.get('text', '')[:30]}")
+            else:
+                logger.warning(f"[{request_id}] Not caching - spec has error or invalid format")
         
         # Calculate LLM processing time
         llm_time = time.time() - start_time
-        logger.info(f"LLM processing completed successfully in {llm_time:.3f}s")
+        logger.info(f"[{request_id}] {llm_model} completed successfully in {llm_time:.3f}s")
         
         # Add timing information to response
         timing_info = {
@@ -640,8 +761,13 @@ def generate_graph():
         })
         
     except Exception as e:
-        logger.error(f"Enhanced agent workflow failed: {e}")
-        return jsonify({'error': 'Failed to generate graph specification'}), 500
+        logger.error(f"[{request_id}] Enhanced agent workflow failed for {llm_model}: {e}", exc_info=True)
+        return jsonify({
+            'error': 'Failed to generate graph specification',
+            'details': str(e),
+            'llm_model': llm_model,
+            'request_id': request_id
+        }), 500
 
 
 @api.route('/generate_png', methods=['POST'])
@@ -665,7 +791,12 @@ def generate_png():
     
     language = data.get('language', 'zh')
     
-    logger.info(f"Frontend generate_png request received [Thread-{thread_id}|{thread_name}]: prompt='{prompt}', language='{language}'")
+    # Get optional LLM model selection (for filename)
+    llm_model = data.get('llm_model', DEFAULT_LLM_MODEL)
+    if not isinstance(llm_model, str) or llm_model not in SUPPORTED_LLM_MODELS:
+        llm_model = DEFAULT_LLM_MODEL
+    
+    logger.info(f"Frontend generate_png request received [Thread-{thread_id}|{thread_name}]: prompt='{prompt}', language='{language}', llm_model='{llm_model}'")
     if not isinstance(language, str) or language not in ['zh', 'en']:
         return jsonify({'error': 'Invalid language. Must be "zh" or "en"'}), 400
     
@@ -1574,11 +1705,16 @@ def generate_png():
                 tmp.flush()
                 tmp.seek(0)
                 
+                # Generate filename with diagram type and LLM model
+                diagram_type = result.get('diagram_type', 'diagram')
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                download_filename = f'{diagram_type}_{llm_model}_{timestamp}.png'
+                
                 return send_file(
                     tmp.name, 
                     mimetype='image/png', 
                     as_attachment=True, 
-                    download_name='graph.png'
+                    download_name=download_filename
                 )
         except Exception as e:
             # Clean up temp file on error

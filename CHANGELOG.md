@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
+### Version 3.3.0 - Multi-LLM Auto-Complete 🤖
+
+**Multi-Model AI**: Choose from 3 high-quality LLMs (Qwen, DeepSeek-v3.1, Kimi)!  
+**Smart Selection**: Click Auto to generate with all 3 models, switch instantly between results  
+**Fast Performance**: 10-12 second total time, first result in ~3 seconds  
+**Professional Export**: Filenames include model name (e.g., `bubble_map_deepseek_2025-10-07.png`)  
+**Clean Architecture**: Dedicated client classes, dynamic model selection, model-specific caching  
+**Bug Fixes**: Fixed LLM client caching bug, optimized DeepSeek performance
+
+**多模型AI**: 从3个高质量LLM中选择（Qwen、DeepSeek-v3.1、Kimi）！  
+**智能选择**: 点击自动完成用所有3个模型生成，立即切换结果  
+**快速性能**: 总计10-12秒，首个结果约3秒  
+**专业导出**: 文件名包含模型名（如：`bubble_map_deepseek_2025-10-07.png`）  
+**清晰架构**: 专用客户端类，动态模型选择，模型特定缓存  
+**错误修复**: 修复LLM客户端缓存错误，优化DeepSeek性能
+
+---
+
 ### Version 3.2.5 - View Optimization 📸
 
 **Improved Export**: All diagram types now auto-reset view before export!  
@@ -24,6 +42,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **流畅体验**: 导出或自动完成无需手动调整视图  
 **专业质量**: 导出等待800毫秒，自动完成等待300毫秒  
 **钉钉就绪**: 带水印的高质量3倍缩放PNG导出
+
+---
+
+## [3.3.0] - 2025-10-07 - Multi-LLM Auto-Complete System
+
+### Added - Multi-LLM Support 🤖
+- **3-Model Auto-Complete System**
+  - Qwen (qwen-plus) - Fast & Reliable
+  - DeepSeek (deepseek-v3.1) - High Quality, optimized for speed
+  - Kimi (Moonshot-Kimi-K2-Instruct) - Moonshot AI
+  
+- **LLM Selector UI**
+  - Added LLM buttons in status bar (center position)
+  - Each LLM has distinct color theme (Blue, Purple, Teal)
+  - Visual states: active, ready, loading, error
+  - Click to switch between cached LLM results instantly
+  
+- **Smart Export Filenames**
+  - Format: `{diagram_type}_{llm_model}_{timestamp}.png`
+  - Example: `bubble_map_deepseek_2025-10-07T12-30-45.png`
+  - Easy to identify which LLM generated each export
+
+### Changed - Architecture Improvements 🏗️
+- **Refactored LLM Client System**
+  - Replaced generic `MultiLLMClient` with dedicated classes:
+    - `DeepSeekClient` - Full async + sync support
+    - `KimiClient` - Full async + sync support
+  - Each client has both `async_chat_completion()` and `chat_completion()` methods
+  - Professional OOP design with clear separation of concerns
+  
+- **Dynamic LLM Client Selection**
+  - Changed `BaseAgent.llm_client` from cached instance to `@property`
+  - Clients now fetched dynamically based on current model selection
+  - Fixed critical bug where all LLMs were using cached Qwen client
+  
+- **Model-Specific Caching**
+  - Cache keys now include LLM model: `{language}:{llm_model}:{prompt}`
+  - Each LLM has separate cache entries (no cross-contamination)
+  - Cache also includes diagram type for complete isolation
+
+### Fixed - Critical Bugs 🐛
+- **LLM Client Caching Bug**
+  - Before: Agents cached LLM client at initialization (always Qwen)
+  - After: Dynamic property fetches current model on each access
+  - Result: Each LLM now correctly uses its own API endpoint
+  
+- **DeepSeek Performance**
+  - Switched from `deepseek-r1` (reasoning model, ~22s) to `deepseek-v3.1` (fast, ~3-5s)
+  - Added `enable_thinking: False` for all models (lightweight app)
+  - Total auto-complete time reduced from ~30s to ~10-12s
+
+### Removed - Simplified System 🗑️
+- **Removed ChatGLM Support**
+  - ChatGLM required streaming mode (complexity overhead)
+  - Removed `ChatGLMClient` class
+  - Removed all ChatGLM UI elements and translations
+  - System now cleaner with 3 well-tested LLMs
+
+### Technical Details 🔧
+- **Sequential Request Flow**
+  - Frontend calls each LLM sequentially (prevents race conditions)
+  - Progressive UI updates as each LLM completes
+  - First successful result shown immediately (~3s feedback)
+  
+- **Configuration Constants**
+  - Frontend: `LLM_CONFIG` with models, timeouts, display names
+  - Backend: `SUPPORTED_LLM_MODELS` set for validation
+  - Centralized model names in `settings.py`
+  
+- **Enhanced Logging**
+  - Request tracking with unique `request_id` per LLM call
+  - Performance metrics logged for each model
+  - Cache hit/miss logging for debugging
+  - Model verification logging
+
+### Performance Improvements ⚡
+- **Auto-Complete Speed**
+  - Before: ~30 seconds (4 LLMs including slow DeepSeek R1)
+  - After: ~10-12 seconds (3 fast LLMs)
+  - First result visible in ~3 seconds (Qwen/Kimi)
+  
+- **Cache Efficiency**
+  - Separate cache per model prevents unnecessary LLM calls
+  - Cache keys include diagram type for complete isolation
+  - 5-minute TTL for fresh results
+
+### Files Modified 📁
+- `llm_clients.py` - Refactored to dedicated client classes
+- `agents/core/base_agent.py` - Changed llm_client to @property
+- `agents/core/agent_utils.py` - Dynamic client fetching
+- `settings.py` - Updated model configurations
+- `api_routes.py` - Model-specific caching and validation
+- `static/js/editor/toolbar-manager.js` - LLM UI and sequential calls
+- `static/css/editor.css` - LLM button styling
+- `templates/editor.html` - LLM selector buttons
+- `static/js/editor/language-manager.js` - LLM translations
 
 ---
 

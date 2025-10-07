@@ -26,14 +26,21 @@ class BaseAgent(ABC):
     
     def __init__(self):
         """Initialize the base agent."""
-        try:
-            from ..core.agent_utils import get_llm_client
-            self.llm_client = get_llm_client()
-        except Exception as e:
-            logger.warning(f"Failed to initialize LLM client: {e}")
-            self.llm_client = None
         self.language = 'zh'
         self.logger = logger
+    
+    @property
+    def llm_client(self):
+        """
+        Get the LLM client dynamically based on current selection.
+        This ensures each agent uses the currently selected LLM model.
+        """
+        try:
+            from ..core.agent_utils import get_llm_client
+            return get_llm_client()
+        except Exception as e:
+            logger.warning(f"Failed to get LLM client: {e}")
+            return None
     
     @abstractmethod
     def generate_graph(self, user_prompt: str, language: str = 'zh') -> Dict[str, Any]:

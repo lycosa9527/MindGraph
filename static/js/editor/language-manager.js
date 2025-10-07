@@ -77,6 +77,14 @@ class LanguageManager {
                 editMode: 'Edit Mode: Active',
                 resetView: 'Reset View',
                 resetViewTitle: 'Fit diagram to window',
+                // LLM Selector
+                aiModel: 'AI Model',
+                llmQwen: 'Qwen',
+                llmQwenTooltip: 'Qwen (Fast & Reliable)',
+                llmDeepSeek: 'DeepSeek',
+                llmDeepSeekTooltip: 'DeepSeek-v3.1 (High Quality)',
+                llmKimi: 'Kimi',
+                llmKimiTooltip: 'Kimi (Moonshot AI)',
                 shareSuccess: 'Link copied to clipboard!',
                 shareError: 'Unable to copy link. Please copy manually:',
                 learningModeComingSoon: 'Learning Mode: Phase 1 in progress!',
@@ -293,6 +301,14 @@ class LanguageManager {
                 editMode: '编辑模式：激活',
                 resetView: '重置视图',
                 resetViewTitle: '将图表适应窗口',
+                // LLM Selector
+                aiModel: 'AI模型',
+                llmQwen: 'Qwen',
+                llmQwenTooltip: 'Qwen（快速可靠）',
+                llmDeepSeek: 'DeepSeek',
+                llmDeepSeekTooltip: 'DeepSeek-v3.1（高质量）',
+                llmKimi: 'Kimi',
+                llmKimiTooltip: 'Kimi（月之暗面）',
                 shareSuccess: '链接已复制到剪贴板！',
                 shareError: '无法复制链接，请手动复制：',
                 learningModeComingSoon: '学习模式：第一阶段开发中！',
@@ -762,6 +778,28 @@ class LanguageManager {
             const btnText = mindmateBtn.querySelector('span');
             if (btnText) btnText.textContent = t.mindMateAI;
         }
+        
+        // Update LLM selector label and tooltips
+        const llmLabel = document.querySelector('.llm-label');
+        if (llmLabel) {
+            llmLabel.textContent = t.aiModel;
+        }
+        
+        // Update LLM button text and tooltips
+        const llmButtons = document.querySelectorAll('.llm-btn');
+        llmButtons.forEach(btn => {
+            const llmModel = btn.getAttribute('data-llm');
+            if (llmModel === 'qwen') {
+                btn.textContent = t.llmQwen;
+                btn.title = t.llmQwenTooltip;
+            } else if (llmModel === 'deepseek') {
+                btn.textContent = t.llmDeepSeek;
+                btn.title = t.llmDeepSeekTooltip;
+            } else if (llmModel === 'kimi') {
+                btn.textContent = t.llmKimi;
+                btn.title = t.llmKimiTooltip;
+            }
+        });
     }
     
     /**

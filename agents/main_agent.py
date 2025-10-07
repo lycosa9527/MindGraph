@@ -302,18 +302,21 @@ class QwenLLM:
         """
         start_time = time.time()
         
-        # Select appropriate model based on task type
+        # For classification, always use Qwen for speed
+        # For generation, use the selected LLM model
         if self.model_type == 'classification':
             model_name = config.QWEN_MODEL_CLASSIFICATION
             data = config.get_qwen_classification_data(prompt)
+            selected_model_id = 'qwen'
         else:  # generation
-            model_name = config.QWEN_MODEL_GENERATION
-            data = config.get_qwen_generation_data(prompt)
+            selected_model_id = get_llm_model()
+            data = config.get_llm_data(prompt, selected_model_id)
+            model_name = data.get('model')
         
-        logger.debug(f"QwenLLM._call() - Model: {model_name} ({self.model_type})")
+        logger.debug(f"QwenLLM._call() - Model: {model_name} ({self.model_type}, llm_id: {selected_model_id})")
         logger.debug(f"QwenLLM._call() - Max tokens: {data.get('max_tokens', 'NOT_SET')}")
         logger.debug(f"QwenLLM._call() - Temperature: {data.get('temperature', 'NOT_SET')}")
-        logger.debug(f"Prompt sent to Qwen:\n{prompt[:1000]}{'...' if len(prompt) > 1000 else ''}")
+        logger.debug(f"Prompt sent to LLM:\n{prompt[:1000]}{'...' if len(prompt) > 1000 else ''}")
 
         headers = config.get_qwen_headers()
         logger.debug(f"Making request to: {config.QWEN_API_URL}")
@@ -380,6 +383,25 @@ llm_generation = QwenLLM(model_type='generation')         # qwen-plus for high-q
 
 # Legacy compatibility - default to classification model
 llm = llm_classification
+
+# Global variable to track selected LLM model for generation
+_selected_llm_model = 'qwen'  # Default to Qwen
+
+def set_llm_model(model_id='qwen'):
+    """
+    Set the LLM model to use for generation tasks.
+    Classification always uses Qwen for speed.
+    
+    Args:
+        model_id (str): 'qwen', 'deepseek', 'kimi', or 'chatglm'
+    """
+    global _selected_llm_model
+    _selected_llm_model = model_id
+    logger.info(f"LLM model set to: {model_id}")
+
+def get_llm_model():
+    """Get the currently selected LLM model."""
+    return _selected_llm_model
 
 
 # ============================================================================

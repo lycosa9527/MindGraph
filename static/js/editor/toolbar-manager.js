@@ -5,6 +5,18 @@
  * @made_by MindSpring Team
  */
 
+// Multi-LLM Configuration
+const LLM_CONFIG = {
+    MODELS: ['qwen', 'deepseek', 'kimi'],
+    TIMEOUT_MS: 60000, // 60 seconds per LLM request
+    RENDER_DELAY_MS: 300, // Delay before fitting diagram to window
+    MODEL_NAMES: {
+        'qwen': 'Qwen',
+        'deepseek': 'DeepSeek',
+        'kimi': 'Kimi'
+    }
+};
+
 class ToolbarManager {
     constructor(editor) {
         this.editor = editor;
@@ -83,6 +95,9 @@ class ToolbarManager {
     initializeElements() {
         // Toolbar buttons
         this.addNodeBtn = document.getElementById('add-node-btn');
+        
+        // LLM selector buttons
+        this.llmButtons = document.querySelectorAll('.llm-btn');
         this.deleteNodeBtn = document.getElementById('delete-node-btn');
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.lineModeBtn = document.getElementById('line-mode-btn');
@@ -125,12 +140,28 @@ class ToolbarManager {
         
         // Status bar elements
         this.nodeCountElement = document.getElementById('node-count');
+        
+        // Initialize LLM selection and results cache
+        this.selectedLLM = 'qwen';  // Default to Qwen
+        this.llmResults = {};  // Cache for all LLM results
+        this.isGeneratingMulti = false;  // Flag for multi-LLM generation
     }
     
     /**
      * Attach event listeners
      */
     attachEventListeners() {
+        // LLM selector buttons
+        this.llmButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleLLMSelection(btn);
+            });
+        });
+        
+        // Set initial active state based on saved selection
+        this.updateLLMButtonStates();
+        
         // Toolbar buttons - stop event propagation to prevent conflicts
         this.addNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -293,6 +324,100 @@ class ToolbarManager {
         this.propOpacity?.addEventListener('input', (e) => {
             const percent = Math.round(e.target.value * 100);
             this.opacityValue.textContent = `${percent}%`;
+        });
+    }
+    
+    /**
+     * Handle LLM selection button click
+     */
+    handleLLMSelection(button) {
+        const llmModel = button.getAttribute('data-llm');
+        if (!llmModel) return;
+        
+        // If we have cached results, switch to that result
+        if (this.llmResults[llmModel]) {
+            this.selectedLLM = llmModel;
+            this.updateLLMButtonStates();
+            
+            // Render the cached result
+            this.renderCachedLLMResult(llmModel);
+            
+            const modelNames = {
+                'qwen': 'Qwen',
+                'deepseek': 'DeepSeek',
+                'kimi': 'Kimi',
+                'chatglm': 'ChatGLM'
+            };
+            console.log(`Switched to ${modelNames[llmModel]} result`);
+        } else if (!this.isGeneratingMulti) {
+            // No cached results yet, just update selection
+            this.selectedLLM = llmModel;
+            this.updateLLMButtonStates();
+            console.log(`Selected ${llmModel} (no results cached yet)`);
+        }
+    }
+    
+    /**
+     * Render cached LLM result
+     */
+    renderCachedLLMResult(llmModel) {
+        const cachedData = this.llmResults[llmModel];
+        if (!cachedData || !cachedData.success) {
+            this.showNotification(`Error loading ${llmModel} result`, 'error');
+            return;
+        }
+        
+        const result = cachedData.result;
+        const spec = result.spec;
+        
+        // DEBUG: Log what we're rendering
+        console.log(`Rendering ${llmModel} - spec:`, {
+            nodes: spec?.nodes?.length || 0,
+            firstNodeId: spec?.nodes?.[0]?.id,
+            firstNodeText: spec?.nodes?.[0]?.text?.substring(0, 30)
+        });
+        const diagramType = result.diagram_type;
+        
+        // Update editor with cached spec
+        if (this.editor) {
+            this.editor.currentSpec = spec;
+            this.editor.diagramType = diagramType;
+            this.editor.renderDiagram();
+            
+            console.log(`Rendered ${llmModel} cached result`);
+            
+            // Reset view to optimal position after rendering completes
+            setTimeout(() => {
+                console.log(`Resetting view for ${llmModel} result`);
+                this.editor.fitDiagramToWindow();
+            }, 300);
+        }
+    }
+    
+    /**
+     * Update LLM button active states
+     */
+    updateLLMButtonStates() {
+        this.llmButtons.forEach(btn => {
+            const llmModel = btn.getAttribute('data-llm');
+            
+            // Set active state
+            if (llmModel === this.selectedLLM) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+            
+            // Set ready state (has cached result)
+            if (this.llmResults[llmModel] && this.llmResults[llmModel].success) {
+                btn.classList.add('ready');
+                btn.classList.remove('error');
+            } else if (this.llmResults[llmModel] && !this.llmResults[llmModel].success) {
+                btn.classList.add('error');
+                btn.classList.remove('ready');
+            } else {
+                btn.classList.remove('ready', 'error');
+            }
         });
     }
     
@@ -1163,130 +1288,204 @@ class ToolbarManager {
         this.showNotification(this.getNotif('aiCompleting', mainTopic), 'info');
         
         try {
-            // Prepare request body
-            const requestBody = {
+            // Prepare base request body
+            const baseRequestBody = {
                 prompt: prompt,
                 diagram_type: diagramType,
-                language: language
+                language: language,
+                session_id: this.editor.sessionId  // Track session
             };
             
-            // Add dimension preference for brace maps, tree maps, and bridge maps ONLY if user has specified a meaningful dimension
-            // If dimension is empty/whitespace, omit it so LLM can intelligently choose the best dimension/pattern
+            // Add dimension preference if specified
             if (dimensionPreference) {
-                requestBody.dimension_preference = dimensionPreference;
+                baseRequestBody.dimension_preference = dimensionPreference;
             }
             
-            // Call API to generate diagram
-            const response = await fetch('/api/generate_graph', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody)
-            });
+            console.log('Auto-complete: Starting progressive LLM generation...');
+            this.isGeneratingMulti = true;
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            // Set all buttons to loading state
+            this.setAllLLMButtonsLoading(true);
             
-            const data = await response.json();
+            // Clear previous results
+            this.llmResults = {};
             
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            // Call each LLM sequentially and update UI as each completes
+            const models = LLM_CONFIG.MODELS;
+            let firstSuccessfulModel = null;
             
-            // Update diagram with new specification
-            if (data.spec) {
-                console.log('ToolbarManager: Received spec from LLM');
-                console.log('ToolbarManager: Spec preview:', JSON.stringify(data.spec).substring(0, 200));
-                
-                // CRITICAL SAFEGUARD: Verify diagram type and session haven't changed
-                if (this.editor.diagramType !== currentDiagramType) {
-                    console.error('ToolbarManager: DIAGRAM TYPE MISMATCH DETECTED!');
-                    console.error('ToolbarManager: Expected:', currentDiagramType);
-                    console.error('ToolbarManager: Current:', this.editor.diagramType);
-                    // Only show notification if there's actually a mismatch
-                    this.showNotification(this.getNotif('diagramChanged'), 'error');
-                    this.isAutoCompleting = false; // Clear flag on early return
-                    return;
+            for (const model of models) {
+                // Check if session/diagram changed during generation
+                if (this.editor.diagramType !== currentDiagramType || 
+                    this.editor.sessionId !== currentSessionId) {
+                    console.log('Auto-complete: Session/diagram changed, aborting');
+                    throw new Error('Session changed during generation');
                 }
                 
-                if (this.editor.sessionId !== currentSessionId) {
-                    console.error('ToolbarManager: SESSION ID MISMATCH DETECTED!');
-                    console.error('ToolbarManager: Expected:', currentSessionId);
-                    console.error('ToolbarManager: Current:', this.editor.sessionId);
-                    // Only show notification if there's actually a mismatch
-                    this.showNotification(this.getNotif('sessionChanged'), 'error');
-                    this.isAutoCompleting = false; // Clear flag on early return
-                    return;
-                }
-                
-                // CRITICAL: Preserve the original root topic to prevent it from being overwritten
-                // For tree maps and other hierarchical diagrams, always keep the user's original topic
-                // Note: Bridge maps don't have a topic field, so skip this for bridge_map
-                if (diagramType !== 'bridge_map') {
-                    if (originalTopic && data.spec.topic) {
-                        console.log(`ToolbarManager: Preserving original topic: "${originalTopic}" (LLM generated: "${data.spec.topic}")`);
-                        data.spec.topic = originalTopic;
-                    } else if (originalTopic) {
-                        console.warn(`ToolbarManager: Original topic exists but spec.topic is missing. Adding original topic.`);
-                        data.spec.topic = originalTopic;
+                try {
+                    const requestId = `${currentSessionId}_${model}_${Date.now()}`;
+                    console.log(`Auto-complete: Calling ${model} (request_id: ${requestId})...`);
+                    
+                    // Call single LLM endpoint with model parameter
+                    const modelRequestBody = {
+                        ...baseRequestBody,
+                        llm_model: model,
+                        request_id: requestId
+                    };
+                    
+                    // Create abort controller for timeout
+                    const abortController = new AbortController();
+                    const timeoutId = setTimeout(() => abortController.abort(), LLM_CONFIG.TIMEOUT_MS);
+                    
+                    const response = await fetch('/api/generate_graph', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(modelRequestBody),
+                        signal: abortController.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // DEBUG: Log the actual spec received for this model
+                    console.log(`Auto-complete: ${model} received spec:`, {
+                        nodes: data.spec?.nodes?.length || 0,
+                        links: data.spec?.links?.length || 0,
+                        firstNodeId: data.spec?.nodes?.[0]?.id,
+                        firstNodeText: data.spec?.nodes?.[0]?.text?.substring(0, 30)
+                    });
+                    
+                    // Cache this model's result
+                    this.llmResults[model] = {
+                        model: model,
+                        success: true,
+                        result: {
+                            spec: data.spec,
+                            diagram_type: data.diagram_type || diagramType,
+                            topics: data.topics || [],
+                            style_preferences: data.style_preferences || {}
+                        }
+                    };
+                    
+                    console.log(`Auto-complete: ${model} completed successfully - cached result`);
+                    
+                    // Update button state for this model immediately
+                    this.setLLMButtonState(model, 'ready');
+                    
+                    // Render first successful result
+                    if (!firstSuccessfulModel) {
+                        firstSuccessfulModel = model;
+                        this.selectedLLM = model;
+                        this.renderCachedLLMResult(model);
+                        this.updateLLMButtonStates();
+                    }
+                    
+                } catch (error) {
+                    // Handle different error types
+                    let errorMessage = error.message;
+                    if (error.name === 'AbortError') {
+                        errorMessage = `Timeout (>${LLM_CONFIG.TIMEOUT_MS/1000}s)`;
+                        console.error(`Auto-complete: ${model} timed out after ${LLM_CONFIG.TIMEOUT_MS}ms`);
                     } else {
-                        console.warn(`ToolbarManager: No original topic found. Using LLM generated topic: "${data.spec.topic}"`);
+                        console.error(`Auto-complete: ${model} failed:`, error);
                     }
+                    
+                    // Cache error result with details
+                    this.llmResults[model] = {
+                        model: model,
+                        success: false,
+                        error: errorMessage,
+                        timestamp: Date.now()
+                    };
+                    
+                    // Update button to error state
+                    this.setLLMButtonState(model, 'error');
                 }
-                
-                // For flow maps, preserve the title field (but replace steps/substeps with LLM output)
-                if (diagramType === 'flow_map') {
-                    const originalTitle = this.editor.currentSpec?.title || mainTopic;
-                    if (originalTitle && data.spec.title) {
-                        console.log(`ToolbarManager: Preserving original flow map title: "${originalTitle}" (LLM generated: "${data.spec.title}")`);
-                        data.spec.title = originalTitle;
-                    } else if (originalTitle) {
-                        console.warn(`ToolbarManager: Original title exists but spec.title is missing. Adding original title.`);
-                        data.spec.title = originalTitle;
-                    }
-                    // Note: Steps and substeps are completely replaced by LLM output
-                    console.log(`ToolbarManager: Flow map - Replacing with ${data.spec.steps?.length || 0} new steps`);
-                }
-                
-                // For brace maps, preserve the topic but replace parts/subparts with LLM output
-                if (diagramType === 'brace_map') {
-                    // Topic is already preserved above in the generic topic preservation
-                    // Note: Parts and subparts are completely replaced by LLM output
-                    console.log(`ToolbarManager: Brace map - Replacing with ${data.spec.parts?.length || 0} new parts`);
-                }
-                
-                // For bridge maps, just use the LLM output directly (no topic preservation needed)
-                if (diagramType === 'bridge_map') {
-                    console.log(`ToolbarManager: Bridge map - Using ${data.spec.analogies?.length || 0} analogy pairs from LLM`);
-                }
-                
-                console.log('ToolbarManager: Updating editor spec');
-                this.editor.currentSpec = data.spec;
-                console.log('ToolbarManager: Rendering updated diagram');
-                this.editor.renderDiagram();
-                console.log('ToolbarManager: Auto-complete completed successfully');
-                this.showNotification(this.getNotif('autoCompleteSuccess'), 'success');
-                
-                // Reset view to optimal position after rendering completes
-                setTimeout(() => {
-                    console.log('ToolbarManager: Resetting view after auto-complete');
-                    this.editor.fitDiagramToWindow();
-                }, 300); // Wait for diagram render to complete
-            } else {
-                throw new Error('No diagram specification returned');
             }
+            
+            // Count successful results
+            const successCount = Object.values(this.llmResults).filter(r => r.success).length;
+            console.log(`Auto-complete: ${successCount}/4 LLMs completed`);
+            
+            // Clear loading states
+            this.setAllLLMButtonsLoading(false);
+            this.updateLLMButtonStates();
+            
+            // Validate at least one model succeeded
+            if (!firstSuccessfulModel || successCount === 0) {
+                throw new Error('All LLMs failed to generate results');
+            }
+            
+            // Success notification (firstSuccessfulModel already rendered in loop)
+            this.showNotification(
+                `${successCount}/${LLM_CONFIG.MODELS.length} models ready. Showing ${LLM_CONFIG.MODEL_NAMES[firstSuccessfulModel]}. Click buttons to switch.`,
+                'success'
+            );
+            
+            // Reset view to optimal position after rendering completes
+            setTimeout(() => {
+                console.log('ToolbarManager: Resetting view after auto-complete');
+                this.editor.fitDiagramToWindow();
+            }, LLM_CONFIG.RENDER_DELAY_MS);
             
         } catch (error) {
             console.error('ToolbarManager: Auto-complete error:', error);
             console.error('ToolbarManager: Error stack:', error.stack);
             this.showNotification(this.getNotif('autoCompleteFailed', error.message), 'error');
+            this.setAllLLMButtonsLoading(false);
         } finally {
             this.setAutoButtonLoading(false);
-            this.isAutoCompleting = false; // Clear flag
+            this.isAutoCompleting = false;
+            this.isGeneratingMulti = false;
             console.log('ToolbarManager: =============== AUTO-COMPLETE ENDED ===============');
         }
+    }
+    
+    /**
+     * Set loading state for all LLM buttons
+     */
+    setAllLLMButtonsLoading(isLoading) {
+        this.llmButtons.forEach(btn => {
+            if (isLoading) {
+                btn.classList.add('loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        });
+    }
+    
+    /**
+     * Set state for specific LLM button
+     */
+    setLLMButtonState(model, state) {
+        this.llmButtons.forEach(btn => {
+            const llmModel = btn.getAttribute('data-llm');
+            if (llmModel === model) {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                
+                if (state === 'ready') {
+                    btn.classList.add('ready');
+                    btn.classList.remove('error');
+                } else if (state === 'error') {
+                    btn.classList.add('error');
+                    btn.classList.remove('ready');
+                }
+            }
+        });
     }
     
     /**
@@ -1793,6 +1992,8 @@ class ToolbarManager {
     
     /**
      * Perform the actual PNG export after view reset (if needed)
+     * Filename format: {diagram_type}_{llm_model}_{timestamp}.png
+     * Example: bubble_map_qwen_2025-10-07T12-30-45.png
      */
     performPNGExport() {
         const svg = document.querySelector('#d3-container svg');
@@ -1875,7 +2076,13 @@ class ToolbarManager {
                     const pngUrl = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = pngUrl;
-                    link.download = `mindgraph-${Date.now()}.png`;
+                    
+                    // Generate filename with diagram type and LLM model
+                    const diagramType = this.editor.diagramType || 'diagram';
+                    const llmModel = this.selectedLLM || 'qwen';
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                    link.download = `${diagramType}_${llmModel}_${timestamp}.png`;
+                    
                     link.click();
                     
                     URL.revokeObjectURL(pngUrl);

@@ -7,7 +7,7 @@ Specialized agent for generating double bubble maps that compare and contrast tw
 import logging
 from typing import Dict, List, Any, Optional, Tuple
 from ..core.base_agent import BaseAgent
-from ..core.agent_utils import get_llm_client, extract_json_from_response
+from ..core.agent_utils import extract_json_from_response
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class DoubleBubbleMapAgent(BaseAgent):
     
     def __init__(self):
         super().__init__()
-        self.llm_client = get_llm_client()
+        # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "double_bubble_map"
         
     def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
