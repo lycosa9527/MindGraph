@@ -990,9 +990,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // Calculate center position based on content width
     const contentCenterX = width / 2;
     
-    // Draw dotted separator line centered on content (matching tree/brace map)
-    const separatorLeftX = Math.max(leftPadding, contentCenterX - 200);
-    const separatorRightX = Math.min(width - rightPadding, contentCenterX + 200);
+    // Draw dotted separator line spanning full diagram width (matching tree/brace map)
+    const separatorLeftX = leftPadding;
+    const separatorRightX = width - rightPadding;
     
     svg.append('line')
         .attr('x1', separatorLeftX)

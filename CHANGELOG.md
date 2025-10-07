@@ -84,13 +84,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Time Saving**: Eliminates manual view adjustment steps
   - **Consistent Results**: Same auto-reset behavior for all 8 thinking map types + concept maps + mind maps
 
+### Fixed - Bridge Map Layout
+- **Alternative Dimensions Separator Width**
+  - Dotted separator line for alternative dimensions now spans full diagram width
+  - Changed from centered 400px width to full-width (`leftPadding` to `width - rightPadding`)
+  - Matches tree map and brace map styling for consistency
+  - Ensures visual harmony across all three dimension-enabled map types
+
 ### Technical Details
 - Files Modified:
   - `static/js/editor/toolbar-manager.js` - Updated `handleExport()` to reset view for all diagram types (not just brace maps)
   - `static/js/editor/toolbar-manager.js` - Updated `handleAutoComplete()` to reset view after successful diagram regeneration
+  - `static/js/renderers/flow-renderer.js` - Updated alternative dimensions separator line to span full diagram width
 - Previous Behavior (Export): Only brace maps auto-reset before export
 - Previous Behavior (Auto-Complete): No auto-reset after regeneration
-- New Behavior: All diagram types auto-reset view for both export and auto-complete operations
+- Previous Behavior (Bridge Map Separator): Centered 400px width
+- New Behavior: All diagram types auto-reset view for both export and auto-complete operations; bridge map separator spans full width
 
 ---
 
