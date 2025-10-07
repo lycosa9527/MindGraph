@@ -493,7 +493,24 @@ class ToolbarManager {
      */
     showPropertyPanel() {
         if (this.propertyPanel) {
+            console.log('ToolbarManager: Showing property panel');
             this.propertyPanel.style.display = 'block';
+            console.log('ToolbarManager: Property panel display set to:', this.propertyPanel.style.display);
+            
+            // Only resize if diagram is currently at full width
+            // If already sized for panel, just show the panel without resizing
+            if (window.currentEditor && !window.currentEditor.isSizedForPanel) {
+                setTimeout(() => {
+                    console.log('ToolbarManager: Diagram at full width, fitting with panel space (animated)');
+                    if (typeof window.currentEditor.fitToCanvasWithPanel === 'function') {
+                        window.currentEditor.fitToCanvasWithPanel(true); // true = animate
+                    }
+                }, 50); // Small delay to ensure panel is visible
+            } else {
+                console.log('ToolbarManager: Diagram already sized for panel, no resize needed');
+            }
+        } else {
+            console.warn('ToolbarManager: Property panel element not found!');
         }
     }
     
@@ -503,6 +520,15 @@ class ToolbarManager {
     hidePropertyPanel() {
         if (this.propertyPanel) {
             this.propertyPanel.style.display = 'none';
+            
+            // Always resize to full width when panel is hidden
+            // This allows diagram to expand and use all available space
+            setTimeout(() => {
+                console.log('ToolbarManager: Fitting diagram to full canvas width (animated)');
+                if (window.currentEditor && typeof window.currentEditor.fitToFullCanvas === 'function') {
+                    window.currentEditor.fitToFullCanvas(true); // true = animate
+                }
+            }, 50); // Small delay to ensure panel is hidden
         }
     }
     

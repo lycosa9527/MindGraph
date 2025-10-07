@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
+### Version 3.4.0 - Canvas Optimization & Zoom/Pan 🖱️
+
+**Smart Canvas Sizing**: Diagrams automatically reserve space for properties panel!  
+**Intelligent Resizing**: No unnecessary resize when panel shows/hides  
+**Mouse Controls**: Scroll to zoom, click & drag to pan around canvas  
+**Full Viewport**: Canvas now fills entire available space  
+**Smooth Experience**: State tracking prevents jarring animations  
+**Professional UX**: Diagram stays perfectly sized for editing
+
+**智能画布尺寸**: 图表自动为属性面板预留空间！  
+**智能调整大小**: 面板显示/隐藏时无不必要的调整  
+**鼠标控制**: 滚轮缩放，点击拖动平移画布  
+**全视口**: 画布现在填充整个可用空间  
+**流畅体验**: 状态跟踪防止突兀的动画  
+**专业体验**: 图表始终完美适配编辑需求
+
+---
+
 ### Version 3.3.0 - Multi-LLM Auto-Complete 🤖
 
 **Multi-Model AI**: Choose from 3 high-quality LLMs (Qwen, DeepSeek-v3.1, Kimi)!  
@@ -42,6 +60,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **流畅体验**: 导出或自动完成无需手动调整视图  
 **专业质量**: 导出等待800毫秒，自动完成等待300毫秒  
 **钉钉就绪**: 带水印的高质量3倍缩放PNG导出
+
+---
+
+## [3.4.0] - 2025-10-07 - Canvas Optimization & Zoom/Pan Controls
+
+### Added - Canvas Interaction 🖱️
+- **Mouse Scroll Zoom**: Use mouse wheel to zoom in/out on canvas
+- **Click & Drag Pan**: Left mouse button drag to pan around diagram
+- **Middle Mouse Pan**: Middle mouse button (scroll wheel click) drag for panning
+- **State Tracking**: Added `isSizedForPanel` flag to track canvas sizing mode
+- **Dual Sizing Functions**: 
+  - `fitToFullCanvas()` - Expands diagram to full window width
+  - `fitToCanvasWithPanel()` - Reserves 320px for properties panel
+
+### Changed - Canvas Behavior 🎨
+- **Smart Auto-Sizing**: Diagrams load with panel space reserved from the start
+- **Conditional Resize**: Properties panel show/hide only resizes when needed
+- **Full Viewport Canvas**: Canvas now fills 100% of available space
+- **No Scrollbars**: Replaced scrollbars with zoom/pan navigation
+- **Adaptive Dimensions**: Removed conflicting adaptive dimension calculations for templates
+
+### Fixed - Canvas Sizing 🔧
+- **Fixed**: Canvas not filling entire viewport - now uses full height/width
+- **Fixed**: Diagram cut-off issues when zooming/panning
+- **Fixed**: Unnecessary resize animations when clicking first node
+- **Fixed**: Canvas sizing reference - now uses window width instead of CSS-constrained container width
+- **Fixed**: Dual sizing triggers causing wrong initial diagram size
+
+### Technical - Architecture 📐
+- Refactored `autoFitToCanvasArea()` into two focused functions
+- Renamed `enableMobileZoom()` to `enableZoomAndPan()` - works on all devices
+- Added mouse button filter to prevent right-click interference
+- Removed redundant scrollbar CSS (`.canvas-panel::-webkit-scrollbar-*`)
+- Updated CSS: `#d3-container` and `.canvas-panel` now use `width: 100%; height: 100%`
+
+### User Experience - Workflow 💡
+1. **Gallery → Canvas**: Diagram appears instantly at correct size (no shrinking animation)
+2. **Click Node**: Properties panel slides in, diagram stays same size (already reserved space)
+3. **Close Panel**: Diagram expands to full width with smooth animation
+4. **Click Node Again**: Diagram shrinks to reserve panel space with smooth animation
+5. **Navigate**: Scroll to zoom, drag to pan - smooth and responsive
 
 ---
 

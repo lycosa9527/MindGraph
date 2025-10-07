@@ -104,6 +104,19 @@ class AIAssistantManager {
         const isCollapsed = this.panel.classList.toggle('collapsed');
         console.log('Panel collapsed state:', isCollapsed);
         
+        // If opening AI panel, close property panel to prevent overlap
+        if (!isCollapsed) {
+            const propertyPanel = document.getElementById('property-panel');
+            if (propertyPanel && propertyPanel.style.display !== 'none') {
+                // Access toolbar manager through current editor to properly hide property panel
+                if (window.currentEditor?.toolbarManager && typeof window.currentEditor.toolbarManager.hidePropertyPanel === 'function') {
+                    window.currentEditor.toolbarManager.hidePropertyPanel();
+                } else {
+                    propertyPanel.style.display = 'none';
+                }
+            }
+        }
+        
         // Update MindMate button state
         if (this.mindmateBtn) {
             if (isCollapsed) {
@@ -116,6 +129,13 @@ class AIAssistantManager {
                 }
             }
         }
+        
+        // Trigger canvas resize to accommodate AI panel
+        setTimeout(() => {
+            if (window.currentEditor && typeof window.currentEditor.fitDiagramToWindow === 'function') {
+                window.currentEditor.fitDiagramToWindow();
+            }
+        }, 450); // Wait for CSS transition (400ms) + buffer
     }
     
     /**

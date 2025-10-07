@@ -20,6 +20,10 @@ class InteractiveEditor {
         this.sessionId = null;
         this.sessionDiagramType = null;
         
+        // Track current canvas sizing mode
+        // true = sized with panel space reserved, false = full width
+        this.isSizedForPanel = false;
+        
         // Initialize components
         this.selectionManager = new SelectionManager();
         this.canvasManager = new CanvasManager();
@@ -182,16 +186,22 @@ class InteractiveEditor {
         });
         
         try {
-            // Recalculate adaptive dimensions based on current window size
-            // This ensures templates fit properly when entering canvas from gallery
-            if (this.currentSpec && !this.currentSpec._llm_generated) {
-                console.log('Recalculating adaptive dimensions for template...');
-                this.currentSpec._recommended_dimensions = this.calculateAdaptiveDimensions();
-            }
-            
-            // Use the renderGraph dispatcher function to handle all diagram types
+            // For templates: don't set adaptive dimensions during render
+            // Let the renderer use its default size, then fitToCanvasWithPanel will handle sizing
+            // For LLM-generated diagrams: keep their recommended dimensions
             const theme = null; // Use default theme
-            const dimensions = this.currentSpec._recommended_dimensions || null;
+            let dimensions = null;
+            
+            if (this.currentSpec && this.currentSpec._llm_generated) {
+                // LLM-generated: use their recommended dimensions
+                dimensions = this.currentSpec._recommended_dimensions || null;
+                console.log('Using LLM-generated diagram dimensions:', dimensions);
+            } else {
+                // Template: render at default size, fitToCanvasWithPanel will handle sizing via viewBox
+                console.log('Template will render at default size, then be fitted to canvas with panel space');
+                // Set flag to indicate we'll be sizing for panel after render
+                this.isSizedForPanel = true;
+            }
             
             if (typeof renderGraph === 'function') {
                 console.log(`Rendering ${this.diagramType} with template:`, this.currentSpec);
@@ -204,25 +214,14 @@ class InteractiveEditor {
             // Add interaction handlers after rendering
             this.addInteractionHandlers();
             
-            // Enable zoom for mobile devices
-            if (this.isMobileDevice()) {
-                this.enableMobileZoom();
-            }
+            // Enable zoom and pan for all devices
+            // - Mouse wheel: zoom in/out
+            // - Click and drag: pan around
+            // - Middle mouse button drag: pan around
+            this.enableZoomAndPan();
             
-            // Only auto-fit if we don't have adaptive dimensions or if the diagram is too large
-            // This prevents overriding properly calculated adaptive dimensions
-            setTimeout(() => {
-                const hasAdaptiveDimensions = this.currentSpec._recommended_dimensions && 
-                                            this.currentSpec._recommended_dimensions.width && 
-                                            this.currentSpec._recommended_dimensions.height;
-                
-                if (!hasAdaptiveDimensions) {
-                    console.log('No adaptive dimensions found, applying auto-fit...');
-                    this.autoFitToCanvasArea();
-                } else {
-                    console.log('Adaptive dimensions found, skipping auto-fit to preserve sizing');
-                }
-            }, 100); // Small delay to ensure rendering is complete
+            // NOTE: Auto-fit is handled by DiagramSelector after initialization
+            // This prevents duplicate triggers and ensures clean initial load
             
             // Dispatch event to update node count and other UI elements
             window.dispatchEvent(new CustomEvent('diagram-rendered'));
@@ -565,12 +564,15 @@ class InteractiveEditor {
     }
     
     /**
-     * Enable zoom functionality for mobile devices
+     * Enable zoom and pan functionality for canvas
+     * - Mouse wheel: zoom in/out
+     * - Left click + drag: pan around
+     * - Middle mouse button + drag: pan around
      */
-    enableMobileZoom() {
+    enableZoomAndPan() {
         const svg = d3.select('#d3-container svg');
         if (svg.empty()) {
-            console.warn('No SVG found, cannot enable mobile zoom');
+            console.warn('No SVG found, cannot enable zoom and pan');
             return;
         }
         
@@ -587,9 +589,17 @@ class InteractiveEditor {
             });
         }
         
-        // Configure zoom behavior with mobile-friendly settings
+        // Configure zoom behavior
         const zoom = d3.zoom()
             .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
+            .filter((event) => {
+                // Allow zoom/pan with:
+                // - Mouse wheel (event.type === 'wheel')
+                // - Left mouse button drag (event.button === 0)
+                // - Middle mouse button drag (event.button === 1)
+                // Prevent zoom/pan when right clicking (context menu)
+                return event.type !== 'mousedown' || event.button !== 2;
+            })
             .on('zoom', (event) => {
                 contentGroup.attr('transform', event.transform);
                 // Update zoom level display if needed
@@ -605,10 +615,9 @@ class InteractiveEditor {
         this.zoomBehavior = zoom;
         this.zoomTransform = d3.zoomIdentity;
         
-        console.log('Mobile zoom enabled - pinch to zoom, drag to pan');
-        
-        // Mobile zoom controls removed - users can use finger gestures
-        // this.addMobileZoomControls();
+        console.log('Zoom and pan enabled:');
+        console.log('  - Mouse wheel: Zoom in/out');
+        console.log('  - Left/Middle mouse + drag: Pan around');
     }
     
     /**
@@ -683,6 +692,7 @@ class InteractiveEditor {
     /**
      * Calculate adaptive dimensions based on current window size
      * This ensures templates are sized appropriately for the user's screen
+     * CRITICAL: Always reserves space for properties panel to prevent overlap when clicking nodes
      */
     calculateAdaptiveDimensions() {
         try {
@@ -696,20 +706,25 @@ class InteractiveEditor {
             const statusBarHeight = 40;
             const availableHeight = windowHeight - toolbarHeight - statusBarHeight;
             
-            // Calculate available width (accounting for properties panel space)
-            // Always reserve space for properties panel to prevent overlap
+            // CRITICAL: Always reserve space for properties panel to prevent diagram overlap
+            // When user clicks a node, the properties panel will appear and should not cover the diagram
             const propertyPanelWidth = 320;
             const availableWidth = windowWidth - propertyPanelWidth;
+            
+            // Calculate optimal dimensions with appropriate padding for visual comfort
+            // Use 85% of available space to ensure good margins and prevent edge clipping
+            const widthUsageRatio = 0.85;
+            const heightUsageRatio = 0.88;
             
             // Calculate optimal dimensions with padding
             const padding = Math.min(40, Math.max(20, Math.min(availableWidth, availableHeight) * 0.05));
             
-            // Ensure minimum dimensions for readability
+            // Ensure minimum dimensions for readability (especially on smaller screens)
             const minWidth = 400;
             const minHeight = 300;
             
-            const adaptiveWidth = Math.max(minWidth, availableWidth * 0.9);
-            const adaptiveHeight = Math.max(minHeight, availableHeight * 0.9);
+            const adaptiveWidth = Math.max(minWidth, availableWidth * widthUsageRatio);
+            const adaptiveHeight = Math.max(minHeight, availableHeight * heightUsageRatio);
             
             const dimensions = {
                 width: Math.round(adaptiveWidth),
@@ -717,9 +732,11 @@ class InteractiveEditor {
                 padding: Math.round(padding)
             };
             
-            console.log('InteractiveEditor: Calculated adaptive dimensions:', {
+            console.log('InteractiveEditor: Calculated adaptive dimensions (reserved space for properties panel):', {
                 windowSize: { width: windowWidth, height: windowHeight },
+                reservedForPropertyPanel: propertyPanelWidth,
                 availableSpace: { width: availableWidth, height: availableHeight },
+                usageRatios: { width: widthUsageRatio, height: heightUsageRatio },
                 finalDimensions: dimensions
             });
             
@@ -737,124 +754,166 @@ class InteractiveEditor {
     }
 
     /**
-     * Auto-fit diagram to canvas area accounting for properties panel space
-     * This is called when users first enter the canvas to ensure proper initial sizing
+     * Fit diagram to full canvas area (entire window width)
+     * Used when properties panel is hidden - diagram expands to full width
+     * @param {boolean} animate - Whether to animate the transition (default: true)
      */
-    autoFitToCanvasArea() {
+    fitToFullCanvas(animate = true) {
         try {
-            console.log('Auto-fitting diagram to canvas area (accounting for properties panel space)');
-            
-            const container = d3.select('#d3-container');
-            const svg = container.select('svg');
-            
-            if (svg.empty()) {
-                console.warn('No SVG found for auto-fit');
-                return;
-            }
-            
-            // Get all visual elements to calculate content bounds
-            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
-            
-            if (allElements.empty()) {
-                console.warn('No content found for auto-fit');
-                return;
-            }
-            
-            // Calculate content bounds
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            let hasContent = false;
-            
-            allElements.each(function() {
-                try {
-                    const bbox = this.getBBox();
-                    if (bbox.width > 0 && bbox.height > 0) {
-                        minX = Math.min(minX, bbox.x);
-                        minY = Math.min(minY, bbox.y);
-                        maxX = Math.max(maxX, bbox.x + bbox.width);
-                        maxY = Math.max(maxY, bbox.y + bbox.height);
-                        hasContent = true;
-                    }
-                } catch (e) {
-                    // Skip elements without getBBox
+            console.log('Fitting diagram to full canvas width');
+            this._fitToCanvas(animate, false);
+            this.isSizedForPanel = false; // Update state
+        } catch (error) {
+            console.error('Error fitting to full canvas:', error);
+        }
+    }
+
+    /**
+     * Fit diagram to canvas with properties panel space reserved
+     * Used when properties panel is visible or will be visible - reserves 320px for panel
+     * @param {boolean} animate - Whether to animate the transition (default: true)
+     */
+    fitToCanvasWithPanel(animate = true) {
+        try {
+            console.log('Fitting diagram to canvas (reserving space for properties panel)');
+            this._fitToCanvas(animate, true);
+            this.isSizedForPanel = true; // Update state
+        } catch (error) {
+            console.error('Error fitting to canvas with panel:', error);
+        }
+    }
+
+    /**
+     * Internal method: Fit diagram to canvas area
+     * @private
+     * @param {boolean} animate - Whether to animate the transition
+     * @param {boolean} reserveForPanel - Whether to reserve space for properties panel (320px)
+     */
+    _fitToCanvas(animate, reserveForPanel) {
+        const container = d3.select('#d3-container');
+        const svg = container.select('svg');
+        
+        if (svg.empty()) {
+            console.warn('No SVG found for auto-fit');
+            return;
+        }
+        
+        // Get all visual elements to calculate content bounds
+        const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+        
+        if (allElements.empty()) {
+            console.warn('No content found for auto-fit');
+            return;
+        }
+        
+        // Calculate content bounds
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let hasContent = false;
+        
+        allElements.each(function() {
+            try {
+                const bbox = this.getBBox();
+                if (bbox.width > 0 && bbox.height > 0) {
+                    minX = Math.min(minX, bbox.x);
+                    minY = Math.min(minY, bbox.y);
+                    maxX = Math.max(maxX, bbox.x + bbox.width);
+                    maxY = Math.max(maxY, bbox.y + bbox.height);
+                    hasContent = true;
                 }
-            });
-            
-            if (!hasContent) {
-                console.warn('No valid content for auto-fit');
-                return;
+            } catch (e) {
+                // Skip elements without getBBox
             }
-            
-            const contentBounds = {
-                x: minX,
-                y: minY,
-                width: maxX - minX,
-                height: maxY - minY
-            };
-            
-            // Get container dimensions
-            const containerNode = container.node();
-            const containerWidth = containerNode.clientWidth;
-            const containerHeight = containerNode.clientHeight;
-            
-            // Calculate available canvas width (always account for properties panel space)
-            // This ensures diagram fits properly even when properties panel appears
-            const propertyPanelWidth = 320; // Properties panel width
-            const availableCanvasWidth = containerWidth - propertyPanelWidth;
-            
-            console.log('Canvas auto-fit:', {
-                containerSize: { width: containerWidth, height: containerHeight },
-                availableCanvasWidth,
-                contentBounds
-            });
-            
-            // Calculate scale to fit available space with padding
-            const padding = 0.15; // 15% padding around content
-            const scale = Math.min(
-                (availableCanvasWidth * (1 - 2 * padding)) / contentBounds.width,
-                (containerHeight * (1 - 2 * padding)) / contentBounds.height
-            );
-            
-            // CRITICAL FIX: Don't shrink diagrams that are already reasonably sized
-            // If the content is smaller than 60% of available space, use a minimum scale
-            const minScale = Math.min(
-                (availableCanvasWidth * 0.6) / contentBounds.width,
-                (containerHeight * 0.6) / contentBounds.height
-            );
-            const finalScale = Math.max(scale, minScale);
-            
-            // Calculate the viewBox to center content in available space
-            // Center the content in the available canvas width (left portion)
-            const scaledContentWidth = contentBounds.width * finalScale;
-            const scaledContentHeight = contentBounds.height * finalScale;
-            
-            // Calculate viewBox coordinates using final scale
-            const viewBoxX = contentBounds.x - (availableCanvasWidth * padding) / finalScale;
-            const viewBoxY = contentBounds.y - (containerHeight * padding) / finalScale;
-            const viewBoxWidth = availableCanvasWidth / finalScale;
-            const viewBoxHeight = containerHeight / finalScale;
-            
-            const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
-            
-            console.log('Auto-fit calculation:', {
-                availableCanvasWidth,
-                contentBounds,
-                originalScale: scale,
-                minScale: minScale,
-                finalScale: finalScale,
-                scaledContentSize: { width: scaledContentWidth, height: scaledContentHeight },
-                viewBoxCoords: { x: viewBoxX, y: viewBoxY, width: viewBoxWidth, height: viewBoxHeight }
-            });
-            
+        });
+        
+        if (!hasContent) {
+            console.warn('No valid content for auto-fit');
+            return;
+        }
+        
+        const contentBounds = {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+        
+        // Get container dimensions
+        const containerNode = container.node();
+        const containerWidth = containerNode.clientWidth;
+        const containerHeight = containerNode.clientHeight;
+        const windowWidth = window.innerWidth;
+        
+        // Check panel visibility for CSS class updates
+        const propertyPanel = document.getElementById('property-panel');
+        const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
+        
+        const aiPanel = document.getElementById('ai-assistant-panel');
+        const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
+        
+        // Update canvas panel classes for dynamic width adjustment
+        const canvasPanel = document.querySelector('.canvas-panel');
+        if (canvasPanel) {
+            canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
+            canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
+        }
+        
+        // Calculate available canvas width based on reserveForPanel parameter
+        // CRITICAL: Always use windowWidth as reference, not containerWidth (which may be CSS-constrained)
+        const propertyPanelWidth = 320;
+        const availableCanvasWidth = reserveForPanel 
+            ? windowWidth - propertyPanelWidth  // Reserve space for panel
+            : windowWidth;                      // Use full window width
+        
+        console.log('Canvas fit calculation:', {
+            mode: reserveForPanel ? 'WITH panel space reserved' : 'FULL width',
+            windowWidth,
+            containerSize: { width: containerWidth, height: containerHeight },
+            propertyPanelWidth: reserveForPanel ? propertyPanelWidth : 0,
+            availableCanvasWidth,
+            contentBounds,
+            animate
+        });
+        
+        // Calculate scale to fit available space with padding
+        const padding = 0.12; // 12% padding around content for visual comfort
+        const scale = Math.min(
+            (availableCanvasWidth * (1 - 2 * padding)) / contentBounds.width,
+            (containerHeight * (1 - 2 * padding)) / contentBounds.height
+        );
+        
+        // Don't shrink diagrams that are already reasonably sized
+        const minScale = Math.min(
+            (availableCanvasWidth * 0.6) / contentBounds.width,
+            (containerHeight * 0.6) / contentBounds.height
+        );
+        const finalScale = Math.max(scale, minScale);
+        
+        // Calculate viewBox to center content in available space
+        const viewBoxX = contentBounds.x - (availableCanvasWidth * padding) / finalScale;
+        const viewBoxY = contentBounds.y - (containerHeight * padding) / finalScale;
+        const viewBoxWidth = availableCanvasWidth / finalScale;
+        const viewBoxHeight = containerHeight / finalScale;
+        
+        const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
+        
+        console.log('Fit calculation result:', {
+            availableCanvasWidth,
+            finalScale: finalScale,
+            viewBox: newViewBox
+        });
+        
+        // Apply viewBox with or without animation
+        if (animate) {
             svg.transition()
                 .duration(750)
                 .attr('viewBox', newViewBox)
                 .attr('preserveAspectRatio', 'xMidYMid meet');
-            
-            console.log('Auto-fit applied:', { newViewBox, finalScale });
-            
-        } catch (error) {
-            console.error('Error in auto-fit to canvas area:', error);
+        } else {
+            svg.attr('viewBox', newViewBox)
+                .attr('preserveAspectRatio', 'xMidYMid meet');
         }
+        
+        console.log(`Diagram fitted ${animate ? 'with animation' : 'instantly'}`);
     }
 
     /**
@@ -1009,16 +1068,62 @@ class InteractiveEditor {
             const containerWidth = containerNode.clientWidth;
             const containerHeight = containerNode.clientHeight;
             
-            // Calculate available canvas width (excluding properties panel)
-            // Properties panel is 320px wide, so reduce available width when panel is visible
+            // Check panel visibility
             const propertyPanel = document.getElementById('property-panel');
             const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
-            const propertyPanelWidth = isPropertyPanelVisible ? 320 : 0;
-            const availableCanvasWidth = containerWidth - propertyPanelWidth;
+            console.log('DEBUG: Property panel check:', {
+                panelExists: !!propertyPanel,
+                displayStyle: propertyPanel?.style.display,
+                isVisible: isPropertyPanelVisible
+            });
             
-            console.log('Container dimensions:', { containerWidth, containerHeight });
-            console.log('Available canvas space:', { availableCanvasWidth, propertyPanelVisible: isPropertyPanelVisible });
+            const aiPanel = document.getElementById('ai-assistant-panel');
+            const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
             
+            // Update canvas panel classes for visual feedback (border, shadow, etc.)
+            const canvasPanel = document.querySelector('.canvas-panel');
+            if (canvasPanel) {
+                canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
+                canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
+                console.log('DEBUG: Canvas panel classes updated:', {
+                    hasPropertyClass: canvasPanel.classList.contains('property-panel-visible'),
+                    hasAIClass: canvasPanel.classList.contains('ai-panel-visible'),
+                    allClasses: canvasPanel.className
+                });
+            }
+            
+            // Calculate available width manually (don't wait for CSS transition)
+            let availableCanvasWidth = containerWidth;
+            if (isPropertyPanelVisible) {
+                availableCanvasWidth = containerWidth - 320; // Property panel width
+            } else if (isAIPanelVisible) {
+                availableCanvasWidth = containerWidth - 420; // AI panel width
+            }
+            
+            console.log('Container dimensions:', { 
+                containerWidth, 
+                containerHeight,
+                panelReduction: containerWidth - availableCanvasWidth 
+            });
+            console.log('Available canvas space:', { 
+                availableCanvasWidth, 
+                propertyPanelVisible: isPropertyPanelVisible, 
+                aiPanelVisible: isAIPanelVisible 
+            });
+            
+            // Continue with the rest of the fitting logic
+            this._applyViewBoxTransform(svg, contentBounds, availableCanvasWidth, containerHeight);
+        } catch (error) {
+            console.error('Error fitting diagram to window:', error);
+        }
+    }
+    
+    /**
+     * Apply viewBox transform to fit content
+     * @private
+     */
+    _applyViewBoxTransform(svg, contentBounds, availableCanvasWidth, containerHeight) {
+        try {
             // Calculate scale to fit with padding (85% to add margins)
             // Use available canvas width (accounting for properties panel)
             const scale = Math.min(
@@ -1072,7 +1177,7 @@ class InteractiveEditor {
             }
             
         } catch (error) {
-            console.error('Error fitting diagram to window:', error);
+            console.error('Error applying viewBox transform:', error);
         }
     }
     

@@ -643,52 +643,50 @@ body {
 
 .canvas-panel {
     flex: 1;
-    overflow: auto;
+    overflow: hidden; /* Use zoom/pan instead of scrollbars */
     background: #f5f5f5;
     position: relative;
-    scroll-behavior: smooth;
-    
-    /* Firefox scrollbar styling */
-    scrollbar-width: thin;
-    scrollbar-color: #667eea #e0e0e0;
+    width: 100%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-right 0.3s ease;
 }
 
-/* Custom scrollbar styling for canvas */
-.canvas-panel::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+/* Canvas panel constrained when property panel is visible */
+.canvas-panel.property-panel-visible {
+    flex: none; /* Override flex: 1 to use explicit width */
+    width: calc(100% - 320px);
+    border-right: 3px solid rgba(102, 126, 234, 0.3);
+    box-shadow: inset -4px 0 8px rgba(102, 126, 234, 0.05);
 }
 
-.canvas-panel::-webkit-scrollbar-track {
-    background: #e0e0e0;
-    border-radius: 6px;
+/* Canvas panel constrained when AI assistant is visible */
+.canvas-panel.ai-panel-visible {
+    flex: none; /* Override flex: 1 to use explicit width */
+    width: calc(100% - 420px);
+    border-right: 3px solid rgba(102, 126, 234, 0.3);
+    box-shadow: inset -4px 0 8px rgba(102, 126, 234, 0.05);
 }
 
-.canvas-panel::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 6px;
-    border: 2px solid #e0e0e0;
-}
-
-.canvas-panel::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-}
-
-.canvas-panel::-webkit-scrollbar-corner {
-    background: #e0e0e0;
+/* Both panels visible - prioritize property panel (smaller, more specific) */
+.canvas-panel.property-panel-visible.ai-panel-visible {
+    flex: none; /* Override flex: 1 to use explicit width */
+    width: calc(100% - 320px);
 }
 
 #d3-container {
-    /* Container shrinks to fit SVG content - no white padding around grey background */
-    display: inline-block;
+    /* Container fills the entire canvas panel for full viewport */
+    width: 100%;
+    height: 100%;
     padding: 0;
     margin: 0;
     line-height: 0;  /* Remove any line-height spacing */
+    overflow: hidden; /* Prevent scrollbars, use zoom/pan instead */
 }
 
-/* Let SVG use natural dimensions set by renderers */
+/* SVG fills the container completely */
 #d3-container svg {
     display: block;
+    width: 100%;
+    height: 100%;
 }
 
 /* ========== Status Bar ========== */

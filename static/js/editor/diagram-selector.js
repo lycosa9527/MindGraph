@@ -465,6 +465,19 @@ class DiagramSelector {
             window.currentEditor.sessionDiagramType = diagramType;
             window.currentEditor.initialize();
             
+            // CRITICAL: Single auto-fit trigger for initial load
+            // This is the ONLY place where auto-fit is called when entering canvas from gallery
+            // - Waits for rendering to complete (250ms delay)
+            // - Uses instant fit (no animation) to prevent visible shrinking
+            // - Reserves space for properties panel (windowWidth - 320px) even though panel is hidden
+            // Result: Diagram appears at perfect size, ready for editing when user clicks a node
+            setTimeout(() => {
+                if (window.currentEditor && typeof window.currentEditor.fitToCanvasWithPanel === 'function') {
+                    console.log('DiagramSelector: Fitting diagram with panel space reserved (instant, no animation)');
+                    window.currentEditor.fitToCanvasWithPanel(false); // false = no animation
+                }
+            }, 250);
+            
             console.log(`DiagramSelector: Editor initialized successfully for: ${diagramType}`);
             console.log('DiagramSelector: ============= TRANSITION COMPLETE =============');
         } catch (error) {
