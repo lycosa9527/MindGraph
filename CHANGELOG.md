@@ -7,59 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## 🎉 Latest Release Summary | 最新版本概述
+## [3.4.2] - 2025-10-07 - Improved Mouse Controls
 
-### Version 3.4.0 - Canvas Optimization & Zoom/Pan 🖱️
+### Changed - Mouse Interaction 🖱️
+- **Left Click + Drag**: Now reserved for node selection/interaction (no panning)
+- **Middle Mouse Button**: ONLY middle mouse (scroll wheel click) can pan canvas
+- **Mouse Wheel**: Continues to zoom in/out smoothly
+- Improved user experience - left click won't accidentally pan the canvas
 
-**Smart Canvas Sizing**: Diagrams automatically reserve space for properties panel!  
-**Intelligent Resizing**: No unnecessary resize when panel shows/hides  
-**Mouse Controls**: Scroll to zoom, click & drag to pan around canvas  
-**Full Viewport**: Canvas now fills entire available space  
-**Smooth Experience**: State tracking prevents jarring animations  
-**Professional UX**: Diagram stays perfectly sized for editing
-
-**智能画布尺寸**: 图表自动为属性面板预留空间！  
-**智能调整大小**: 面板显示/隐藏时无不必要的调整  
-**鼠标控制**: 滚轮缩放，点击拖动平移画布  
-**全视口**: 画布现在填充整个可用空间  
-**流畅体验**: 状态跟踪防止突兀的动画  
-**专业体验**: 图表始终完美适配编辑需求
-
----
-
-### Version 3.3.0 - Multi-LLM Auto-Complete 🤖
-
-**Multi-Model AI**: Choose from 3 high-quality LLMs (Qwen, DeepSeek-v3.1, Kimi)!  
-**Smart Selection**: Click Auto to generate with all 3 models, switch instantly between results  
-**Fast Performance**: 10-12 second total time, first result in ~3 seconds  
-**Professional Export**: Filenames include model name (e.g., `bubble_map_deepseek_2025-10-07.png`)  
-**Clean Architecture**: Dedicated client classes, dynamic model selection, model-specific caching  
-**Bug Fixes**: Fixed LLM client caching bug, optimized DeepSeek performance
-
-**多模型AI**: 从3个高质量LLM中选择（Qwen、DeepSeek-v3.1、Kimi）！  
-**智能选择**: 点击自动完成用所有3个模型生成，立即切换结果  
-**快速性能**: 总计10-12秒，首个结果约3秒  
-**专业导出**: 文件名包含模型名（如：`bubble_map_deepseek_2025-10-07.png`）  
-**清晰架构**: 专用客户端类，动态模型选择，模型特定缓存  
-**错误修复**: 修复LLM客户端缓存错误，优化DeepSeek性能
-
----
-
-### Version 3.2.5 - View Optimization 📸
-
-**Improved Export**: All diagram types now auto-reset view before export!  
-**Smart Auto-Complete**: View automatically resets to optimal position after AI regeneration  
-**Optimal Snapshots**: Ensures exported PNG captures the best view of your diagram  
-**Seamless UX**: No manual view adjustment needed for export or auto-complete  
-**Professional Quality**: 800ms wait for export, 300ms for auto-complete  
-**DingTalk Ready**: High-quality 3x scale PNG export with watermark
-
-**改进导出**: 所有图表类型现在在导出前自动重置视图！  
-**智能自动完成**: AI重新生成后视图自动重置到最佳位置  
-**最佳快照**: 确保导出的PNG捕获图表的最佳视图  
-**流畅体验**: 导出或自动完成无需手动调整视图  
-**专业质量**: 导出等待800毫秒，自动完成等待300毫秒  
-**钉钉就绪**: 带水印的高质量3倍缩放PNG导出
+### Technical - Filter Logic 🛠️
+- Updated d3.zoom filter to only accept `button === 1` (middle mouse) for panning
+- Block `button === 0` (left mouse) from triggering pan
+- Block `button === 2` (right mouse) to preserve context menu
+- Allow all wheel events for smooth zooming
 
 ---
 

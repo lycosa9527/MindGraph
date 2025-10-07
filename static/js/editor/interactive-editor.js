@@ -593,12 +593,17 @@ class InteractiveEditor {
         const zoom = d3.zoom()
             .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
             .filter((event) => {
-                // Allow zoom/pan with:
-                // - Mouse wheel (event.type === 'wheel')
-                // - Left mouse button drag (event.button === 0)
-                // - Middle mouse button drag (event.button === 1)
-                // Prevent zoom/pan when right clicking (context menu)
-                return event.type !== 'mousedown' || event.button !== 2;
+                // Allow mouse wheel for zooming
+                if (event.type === 'wheel') return true;
+                
+                // For panning: ONLY allow middle mouse button (scroll wheel click)
+                // Block left mouse (button 0) and right mouse (button 2)
+                if (event.type === 'mousedown') {
+                    return event.button === 1; // Only middle mouse button for panning
+                }
+                
+                // Allow other event types (mousemove, mouseup, etc.)
+                return true;
             })
             .on('zoom', (event) => {
                 contentGroup.attr('transform', event.transform);
@@ -617,7 +622,7 @@ class InteractiveEditor {
         
         console.log('Zoom and pan enabled:');
         console.log('  - Mouse wheel: Zoom in/out');
-        console.log('  - Left/Middle mouse + drag: Pan around');
+        console.log('  - Middle mouse (scroll wheel click) + drag: Pan around');
     }
     
     /**
