@@ -29,11 +29,11 @@ class TreeMapAgent(BaseAgent):
         super().__init__()
         self.diagram_type = "tree_map"
     
-    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """Generate a tree map from a prompt."""
         try:
             # Generate the initial tree map specification
-            spec = self._generate_tree_map_spec(prompt, language)
+            spec = self._generate_tree_map_spec(prompt, language, dimension_preference)
             if not spec:
                 return {
                     'success': False,
@@ -72,7 +72,7 @@ class TreeMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_tree_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    def _generate_tree_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -84,8 +84,16 @@ class TreeMapAgent(BaseAgent):
             if not system_prompt:
                 logger.error(f"TreeMapAgent: No prompt found for language {language}")
                 return None
-                
-            user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
+            
+            # Build user prompt with dimension preference if specified
+            if dimension_preference:
+                if language == "zh":
+                    user_prompt = f"请为以下描述创建一个树形图，使用指定的分类维度'{dimension_preference}'：{prompt}"
+                else:
+                    user_prompt = f"Please create a tree map for the following description using the specified classification dimension '{dimension_preference}': {prompt}"
+                logger.info(f"TreeMapAgent: User specified dimension preference: {dimension_preference}")
+            else:
+                user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
             
             # Generate response from LLM
             messages = [
@@ -132,11 +140,25 @@ class TreeMapAgent(BaseAgent):
             
             topic = spec.get("topic")
             children = spec.get("children")
+            dimension = spec.get("dimension")
+            alternative_dimensions = spec.get("alternative_dimensions")
             
             if not topic or not isinstance(topic, str):
                 return False, "Missing or invalid topic"
             if not children or not isinstance(children, list):
                 return False, "Missing or invalid children"
+            
+            # dimension field is optional but should be a string if present
+            if dimension is not None and not isinstance(dimension, str):
+                return False, "Invalid dimension field - must be a string"
+            
+            # alternative_dimensions field is optional but should be a list if present
+            if alternative_dimensions is not None:
+                if not isinstance(alternative_dimensions, list):
+                    return False, "Invalid alternative_dimensions field - must be a list"
+                # Check that all items are strings
+                if not all(isinstance(d, str) for d in alternative_dimensions):
+                    return False, "All alternative dimensions must be strings"
             
             return True, "Valid tree map specification"
         except Exception as e:
@@ -307,6 +329,12 @@ class TreeMapAgent(BaseAgent):
                     "height": base_height,
                 },
             }
+            
+            # Preserve dimension and alternative_dimensions fields from original spec
+            if "dimension" in spec:
+                enhanced_spec["dimension"] = spec["dimension"]
+            if "alternative_dimensions" in spec:
+                enhanced_spec["alternative_dimensions"] = spec["alternative_dimensions"]
 
             return {"success": True, "spec": enhanced_spec}
         except Exception as exc:

@@ -20,13 +20,14 @@ class BridgeMapAgent(BaseAgent):
         self.llm_client = get_llm_client()
         self.diagram_type = "bridge_map"
         
-    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """
         Generate a bridge map from a prompt.
         
         Args:
             prompt: User's description of what analogy they want to show
             language: Language for generation ("en" or "zh")
+            dimension_preference: Optional analogy relationship pattern preference
             
         Returns:
             Dict containing success status and generated spec
@@ -35,7 +36,7 @@ class BridgeMapAgent(BaseAgent):
             logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
             # Generate the bridge map specification
-            spec = self._generate_bridge_map_spec(prompt, language)
+            spec = self._generate_bridge_map_spec(prompt, language, dimension_preference)
             
             if not spec:
                 return {
@@ -89,6 +90,15 @@ class BridgeMapAgent(BaseAgent):
             if 'analogies' not in spec or 'relating_factor' not in spec:
                 return False, "Missing required fields. Expected (relating_factor, analogies)"
             
+            # Validate optional dimension and alternative_dimensions fields
+            if 'dimension' in spec and not isinstance(spec['dimension'], str):
+                return False, "dimension field must be a string"
+            if 'alternative_dimensions' in spec:
+                if not isinstance(spec['alternative_dimensions'], list):
+                    return False, "alternative_dimensions must be a list"
+                if not all(isinstance(d, str) for d in spec['alternative_dimensions']):
+                    return False, "All alternative dimensions must be strings"
+            
             analogies = spec.get('analogies', [])
             if not analogies:
                 return False, "Analogies array is empty"
@@ -109,7 +119,7 @@ class BridgeMapAgent(BaseAgent):
         except Exception as e:
             return False, f"Basic validation error: {str(e)}"
     
-    def _generate_bridge_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    def _generate_bridge_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the bridge map specification using LLM."""
         try:
             logger.debug(f"=== BRIDGE MAP SPEC GENERATION START ===")
@@ -128,8 +138,16 @@ class BridgeMapAgent(BaseAgent):
             
             logger.debug(f"System prompt length: {len(system_prompt)}")
             logger.debug(f"System prompt preview: {system_prompt[:200]}...")
-                
-            user_prompt = f"请为以下描述创建一个桥形图：{prompt}" if language == "zh" else f"Please create a bridge map for the following description: {prompt}"
+            
+            # Build user prompt with dimension preference if specified
+            if dimension_preference:
+                if language == "zh":
+                    user_prompt = f"请为以下描述创建一个桥形图，使用指定的类比关系模式'{dimension_preference}'：{prompt}"
+                else:
+                    user_prompt = f"Please create a bridge map for the following description using the specified analogy relationship pattern '{dimension_preference}': {prompt}"
+                logger.info(f"BridgeMapAgent: User specified relationship pattern preference: {dimension_preference}")
+            else:
+                user_prompt = f"请为以下描述创建一个桥形图：{prompt}" if language == "zh" else f"Please create a bridge map for the following description: {prompt}"
             logger.debug(f"User prompt: {user_prompt}")
             
             # Generate response from LLM
@@ -165,6 +183,8 @@ class BridgeMapAgent(BaseAgent):
                 return None
             
             logger.debug(f"Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            logger.info(f"BridgeMapAgent: Dimension field from LLM: {spec.get('dimension', 'NOT PROVIDED')}")
+            logger.info(f"BridgeMapAgent: Alternative dimensions from LLM: {spec.get('alternative_dimensions', 'NOT PROVIDED')}")
             logger.debug("=== JSON EXTRACTION COMPLETE ===")
                 
             return spec
@@ -180,6 +200,19 @@ class BridgeMapAgent(BaseAgent):
             
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()
+            
+            # Ensure dimension and alternative_dimensions fields are preserved
+            if 'dimension' in spec:
+                enhanced_spec['dimension'] = spec['dimension']
+                logger.info(f"BridgeMapAgent: Preserving dimension: {spec['dimension']}")
+            else:
+                logger.warning("BridgeMapAgent: No dimension field in spec - LLM did not provide it")
+            
+            if 'alternative_dimensions' in spec:
+                enhanced_spec['alternative_dimensions'] = spec['alternative_dimensions']
+                logger.info(f"BridgeMapAgent: Preserving {len(spec['alternative_dimensions'])} alternative dimensions")
+            else:
+                logger.warning("BridgeMapAgent: No alternative_dimensions field in spec - LLM did not provide it")
             
             # Ensure we have exactly 5 analogies (renderer expects this)
             if 'analogies' in enhanced_spec and len(enhanced_spec['analogies']) > 5:

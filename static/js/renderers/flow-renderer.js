@@ -24,8 +24,20 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         return;
     }
 
-    // Use provided padding; width/height will be derived from content
-    const padding = dimensions?.padding || 40;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        padding = spec._recommended_dimensions.padding;
+        console.log('Flowchart: Using adaptive padding:', padding);
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        padding = dimensions.padding || 40;
+    } else {
+        // Default padding
+        padding = 40;
+    }
 
     // Get theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
@@ -220,8 +232,20 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         return;
     }
 
-    // Use provided padding from dimensions; width/height will be computed from content
-    const padding = dimensions?.padding || 40;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        padding = spec._recommended_dimensions.padding;
+        console.log('Flow Map: Using adaptive padding:', padding);
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        padding = dimensions.padding || 40;
+    } else {
+        // Default padding
+        padding = 40;
+    }
 
     const THEME = {
         titleFill: '#1976d2',
@@ -665,6 +689,8 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     console.log('Spec keys:', Object.keys(spec || {}));
     console.log('Analogies array:', spec?.analogies);
     console.log('Analogies count:', spec?.analogies?.length || 0);
+    console.log('Dimension:', spec?.dimension);
+    console.log('Alternative dimensions:', spec?.alternative_dimensions);
     
     // Log each analogy for debugging
     if (spec?.analogies && Array.isArray(spec.analogies)) {
@@ -699,10 +725,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     const contentWidth = (numAnalogies * minWidthPerAnalogy) + ((numAnalogies - 1) * 60); // 60px for separator spacing
     const optimalWidth = Math.max(contentWidth + (2 * minPadding), dimensions?.baseWidth || 600);
     
-    // Calculate optimal height: enough space for text + vertical lines + padding
+    // Calculate optimal height: enough space for text + vertical lines + padding + alternative dimensions
     const textHeight = 40; // Height for text elements
     const lineHeight = 50; // Height for vertical connection lines
-    const optimalHeight = Math.max(textHeight + lineHeight + (2 * minPadding), dimensions?.baseHeight || 200);
+    const altDimensionsHeight = 80; // Always reserve space for alternative dimensions section (even if empty)
+    const optimalHeight = Math.max(textHeight + lineHeight + (2 * minPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
     
     // Use calculated dimensions or fall back to provided dimensions
     const width = optimalWidth;
@@ -861,6 +888,50 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .attr("stroke-width", 3); // Use attr instead of style
     });
     
+    // 3.5 Add dimension label on the left side (two lines)
+    if (spec.analogies.length > 0) {
+        const dimensionText = spec.dimension || '';
+        console.log('Rendering dimension label - dimensionText:', dimensionText);
+        
+        // Detect language from dimension text or spec content
+        const hasChineseContent = dimensionText ? /[\u4e00-\u9fa5]/.test(dimensionText) : 
+                                  (spec.analogies[0] && /[\u4e00-\u9fa5]/.test(spec.analogies[0].left + spec.analogies[0].right));
+        const isEnglish = !hasChineseContent;
+        
+        const labelLine1 = isEnglish ? "Analogy Pattern:" : "类比关系:";
+        const labelLine2 = dimensionText || (isEnglish ? "[click to specify]" : "[点击设置]");
+        console.log('Label line 1:', labelLine1);
+        console.log('Label line 2:', labelLine2);
+        console.log('Is English:', isEnglish);
+        
+        const leftX = padding - 10; // Position on the left side
+        
+        // Line 1: Label
+        svg.append("text")
+            .attr("x", leftX)
+            .attr("y", height/2 - 8)
+            .attr("text-anchor", "end")
+            .text(labelLine1)
+            .style("font-size", "11px")
+            .style("fill", THEME.dimensionLabelColor || '#1976d2')
+            .style("font-weight", "bold");
+        
+        // Line 2: Value (clickable)
+        svg.append("text")
+            .attr("x", leftX)
+            .attr("y", height/2 + 8)
+            .attr("text-anchor", "end")
+            .text(labelLine2)
+            .style("font-size", "12px")
+            .style("fill", THEME.dimensionLabelColor || '#1976d2')
+            .style("font-style", dimensionText ? "normal" : "italic")
+            .style("opacity", dimensionText ? 1 : 0.6)
+            .attr("data-node-id", "dimension_label")
+            .attr("data-node-type", "dimension")
+            .attr("data-dimension-value", dimensionText)
+            .attr("cursor", "pointer");
+    }
+    
     // 4. Draw "as" separators (one less than analogy pairs) - positioned to the right of analogy pairs
     // EXACTLY as in old renderer
     for (let i = 0; i < spec.analogies.length - 1; i++) {
@@ -888,6 +959,68 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .style("fill", "#666666"); // Changed to grey to match triangles
     }
     
+    // 5. Add alternative dimensions section at the bottom (ALWAYS show, even if empty)
+    const hasAlternatives = spec.alternative_dimensions && Array.isArray(spec.alternative_dimensions) && spec.alternative_dimensions.length > 0;
+    console.log('Has alternative dimensions:', hasAlternatives);
+    if (hasAlternatives) {
+        console.log('Rendering alternative dimensions:', spec.alternative_dimensions);
+    }
+    
+    // Always show the section (with or without alternatives)
+    const altY = height - 55;
+    const lineY = altY - 15;
+    console.log('Alternative dimensions Y position:', altY, 'Total height:', height);
+    
+    // Draw separator line
+    svg.append("line")
+        .attr("x1", padding + 20)
+        .attr("y1", lineY)
+        .attr("x2", width - padding - 20)
+        .attr("y2", lineY)
+        .attr("stroke", THEME.dimensionLabelColor || '#1976d2')
+        .attr("stroke-width", 1)
+        .attr("opacity", 0.3);
+    
+    // Add label (detect language from spec)
+    const hasChineseInSpec = spec.dimension ? /[\u4e00-\u9fa5]/.test(spec.dimension) : 
+                              (spec.analogies && spec.analogies[0] && /[\u4e00-\u9fa5]/.test(spec.analogies[0].left + spec.analogies[0].right));
+    const isEnglishSpec = !hasChineseInSpec;
+    const altLabel = isEnglishSpec ? "Other possible analogy patterns for this topic:" : "其他可能的类比关系:";
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", altY)
+        .attr("text-anchor", "middle")
+        .text(altLabel)
+        .style("font-size", "11px")
+        .style("fill", THEME.dimensionLabelColor || '#1976d2')
+        .style("opacity", 0.7);
+    
+    // Display 4-6 alternative dimensions as chips (or placeholder)
+    if (hasAlternatives) {
+        const altsToShow = spec.alternative_dimensions.slice(0, 6);
+        const chipsText = altsToShow.map(d => `• ${d}`).join('  ');
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", altY + 18)
+            .attr("text-anchor", "middle")
+            .text(chipsText)
+            .style("font-size", "10px")
+            .style("fill", THEME.dimensionLabelColor || '#1976d2')
+            .style("opacity", 0.6);
+    } else {
+        // Show placeholder when no alternatives available
+        const placeholderText = isEnglishSpec ? "[Alternatives will appear here]" : "[替代关系将在此显示]";
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", altY + 18)
+            .attr("text-anchor", "middle")
+            .text(placeholderText)
+            .style("font-size", "10px")
+            .style("fill", THEME.dimensionLabelColor || '#1976d2')
+            .style("font-style", "italic")
+            .style("opacity", 0.4);
+    }
+    
     // Watermark removed from canvas display - will be added during PNG export only
     
     console.log('Final rendered analogies count:', spec.analogies.length);
@@ -910,10 +1043,26 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Use provided theme and dimensions (no hardcoded fallbacks for adaptive sizing)
-    let baseWidth = dimensions?.baseWidth || dimensions?.width || 900;
-    let baseHeight = dimensions?.baseHeight || dimensions?.height || 500;
-    const padding = dimensions?.padding || 40;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let baseWidth, baseHeight, padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        baseWidth = spec._recommended_dimensions.width;
+        baseHeight = spec._recommended_dimensions.height;
+        padding = spec._recommended_dimensions.padding;
+        console.log('Multi-Flow Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 900;
+        baseHeight = dimensions.height || dimensions.baseHeight || 500;
+        padding = dimensions.padding || 40;
+    } else {
+        // Default dimensions
+        baseWidth = 900;
+        baseHeight = 500;
+        padding = 40;
+    }
     
     const THEME = {
         eventFill: '#1976d2',      // Deep blue central event (matching double bubble map topic)

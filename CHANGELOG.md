@@ -9,23 +9,160 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
-### Version 3.2.0 - Brace Map Enhanced with Decomposition Dimensions 🎯
+### Version 3.2.4 - Bridge Map Analogy Patterns 🌉
 
-**New Feature**: Brace maps now show decomposition dimension and alternative perspectives!  
-**Flexible**: Leave dimension empty → LLM auto-selects; Fill it in → LLM respects your choice!  
-**User Control**: Users can specify their preferred decomposition dimension or let AI decide!  
-**Educational**: Helps K12 teachers understand different ways to break down concepts.  
-**Smart**: Intelligent dimension validation - only sends meaningful preferences to backend.
+**New Feature**: Bridge maps now display analogy relationship patterns!  
+**Pattern Labels**: Shows the relationship type used (e.g., "[Capital to Country]", "[Author to Work]")  
+**Alternative Patterns**: Displays 4-6 other analogy relationships at the bottom  
+**Enhanced AI**: Comprehensive LLM prompts with 7+ relationship pattern examples  
+**Editable**: Click pattern label to change analogy relationship type  
+**Classroom Ready**: Dark blue labels optimized for classroom projector visibility  
+**Rich Examples**: "Capital to Country", "Function to Object", "Cause to Effect", etc.
 
-**新功能**: 括号图现在显示拆解维度和替代视角！  
-**灵活**: 留空维度 → LLM自动选择；填写维度 → LLM遵循你的选择！  
-**用户控制**: 用户可以指定首选拆解维度或让AI决定！  
-**教育性**: 帮助K12教师理解分解概念的不同方法。  
-**智能**: 智能维度验证 - 仅向后端发送有意义的偏好。
+**新功能**: 桥形图现在显示类比关系模式！  
+**模式标签**: 显示正在使用的关系类型（例如："[首都到国家]"、"[作者到作品]"）  
+**替代模式**: 在底部显示4-6种其他类比关系  
+**增强AI**: 包含7+关系模式示例的综合LLM提示  
+**可编辑**: 点击模式标签可更改类比关系类型  
+**课堂优化**: 深蓝色标签优化课堂投影仪可见性  
+**丰富示例**: "首都到国家"、"功能到对象"、"因到果"等
 
 ---
 
-## [3.2.1] - 2025-01-06 - Brace Map Layout & Canvas Export Fixes
+## [3.2.3] - 2025-01-07 - Tree Map Classification Dimensions Enhancement
+
+### Added - Tree Map Improvements 🌳
+- **Classification Dimension Feature**
+  - Added dimension label below main topic node (similar to brace map's decomposition dimension)
+  - Shows classification standard being used (e.g., "Classification by: Biological Taxonomy")
+  - Editable dimension label with placeholder text when empty
+  - Language-aware labels (English/Chinese) with automatic detection
+  - Always visible (even for old diagrams) - shows placeholder if dimension not set
+
+- **Alternative Dimensions Display**
+  - Shows 4-6 alternative classification dimensions at bottom of tree map
+  - Helps users understand different ways to categorize the same topic
+  - Formatted as chips/badges with separator line above
+  - Example: "Other possible dimensions: Habitat • Diet • Size • Conservation Status"
+
+- **Enhanced LLM Prompts**
+  - Comprehensive classification dimensions documentation with real-world examples
+  - 7+ common classification dimensions for various topics (Biological Taxonomy, Habitat, Diet, Size, etc.)
+  - User-specified dimension priority (respects explicit user requests)
+  - Alternative dimensions must be specific to the topic (not generic)
+  - Detailed validation checklist and format requirements
+
+- **Auto-Completion with Dimension Preference**
+  - When dimension label is changed and auto-complete is triggered, regenerates tree map using new dimension
+  - Preserves main topic while reclassifying with user-specified dimension
+  - Backend support for `dimension_preference` parameter in tree map agent
+  - Frontend sends dimension preference to API during auto-complete
+
+- **Visual Enhancements**
+  - Extended vertical connector line to go beyond dimension label for better visual flow
+  - Connector extends 40px below dimension label before T-junction
+  - Dark blue color (`#1976d2`) for dimension labels - optimized for classroom/projector visibility
+  - Matches primary blue theme while ensuring high contrast
+
+### Changed - Tree Map Agent & Renderer
+- **Agent Validation**: Now validates `dimension` and `alternative_dimensions` fields
+- **Agent Enhancement**: Preserves dimension fields during spec enhancement
+- **Renderer Display**: Added dimension label and alternative dimensions sections
+- **Prompt Quality**: Upgraded prompts from basic to comprehensive with examples
+- **Interactive Editing**: Dimension label is fully editable via properties panel
+- **Color Scheme**: Added `dimensionLabelColor` to theme (dark blue for visibility)
+
+### Technical Details
+- Files Modified:
+  - `prompts/thinking_maps.py` - Added detailed classification dimension prompts (EN & ZH)
+  - `agents/thinking_maps/tree_map_agent.py` - Enhanced validation, spec preservation, dimension preference support
+  - `agents/main_agent.py` - Extended dimension preference to tree maps
+  - `static/js/renderers/tree-renderer.js` - Added dimension label, alternatives display, extended connector lines
+  - `static/js/editor/interactive-editor.js` - Added dimension node type handling in updateTreeMapText
+  - `static/js/editor/toolbar-manager.js` - Extended auto-complete to send dimension preference for tree maps
+  - `static/js/style-manager.js` - Added dimensionLabelColor to both brace_map and tree_map themes
+
+---
+
+## [3.2.4] - 2025-01-07 - Bridge Map Analogy Pattern Enhancement
+
+### Added - Bridge Map Improvements 🌉
+- **Analogy Relationship Pattern Feature**
+  - Added dimension label below first analogy pair (between left and right items)
+  - Shows the analogy relationship pattern being used (e.g., "[Capital to Country]", "[Author to Work]")
+  - Editable dimension label with placeholder text when empty
+  - Language-aware labels (English/Chinese) with automatic detection
+  - Always visible - shows placeholder "[Analogy pattern: click to specify...]" if dimension not set
+
+- **Alternative Relationship Patterns Display**
+  - Shows 4-6 alternative analogy patterns at bottom of bridge map
+  - Helps users understand different relationship types that could illustrate the concept
+  - Formatted as chips/badges with separator line above
+  - Example: "Other possible analogy patterns: Currency to Country • Language to Country • Famous Landmark to Country"
+
+- **Enhanced LLM Prompts**
+  - Comprehensive analogy relationship patterns documentation with concrete examples
+  - 7 common analogy patterns: Capital to Country, Author to Work, Function to Object, Part to Whole, Tool to Worker, Cause to Effect, Animal to Habitat
+  - Each pattern includes clear examples (e.g., "Paris is to France as London is to England")
+  - User-specified dimension priority (respects explicit user requests)
+  - Alternative dimensions must be specific to the topic (not generic)
+  - Requirements section ensures dimension field quality and consistency
+  - Detailed validation checklist and format requirements
+
+- **Auto-Completion with Relationship Pattern Preference**
+  - When dimension label is changed and auto-complete is triggered, regenerates bridge map using new relationship pattern
+  - Preserves main topic while creating new analogies with user-specified pattern
+  - Backend support for `dimension_preference` parameter in bridge map agent
+  - Frontend sends relationship pattern preference to API during auto-complete
+
+- **Visual Enhancements**
+  - Dimension label positioned on the LEFT side of the bridge map (before analogy pairs)
+  - Two-line format: "类比关系:" (label) on first line, dimension value on second line
+  - Language-aware display: detects Chinese content and shows Chinese labels automatically
+  - Alternative dimensions section ALWAYS visible below diagram (shows placeholder if empty)
+  - Height automatically adjusted to accommodate alternative dimensions section
+  - Comprehensive console logging for debugging dimension and alternative_dimensions fields
+  - Dark blue color (`#1976d2`) for dimension labels - optimized for classroom/projector visibility
+  - Matches primary blue theme while ensuring high contrast
+  - Consistent styling with tree map and brace map dimension labels
+
+### Changed - Bridge Map Agent & Renderer
+- **Agent Validation**: Now validates `dimension` and `alternative_dimensions` fields as optional string and array
+- **Agent Enhancement**: Explicitly preserves dimension fields during spec enhancement with comprehensive logging
+- **Agent Generation**: Accepts `dimension_preference` parameter to use user-specified relationship pattern
+- **Agent Logging**: Added detailed logging to track dimension and alternative_dimensions from LLM response
+- **Renderer Display**: Added dimension label on left side (two-line format) and alternative patterns section at bottom
+- **Prompt Restructure**: Complete rewrite with 3-step analysis process (EN & ZH):
+  - **Step 1**: ANALYZE the relationship pattern between analogy pairs
+  - **Step 2**: GENERATE 6 analogies using that consistent pattern
+  - **Step 3**: IDENTIFY 4-6 alternative relationship patterns
+- **Prompt Quality**: Added 10 common relationship pattern examples with concrete analogies
+- **Prompt Enforcement**: Mandatory requirements section with checkboxes for dimension/alternative_dimensions
+- **LLM Guidance**: Process-oriented prompts that force relationship analysis before generation
+- **Interactive Editing**: Dimension label is fully editable via properties panel
+- **Auto-Complete Integration**: Sends dimension preference to backend when regenerating bridge maps
+- **Color Scheme**: Added complete `bridge_map` theme with `dimensionLabelColor` (dark blue for visibility)
+
+### Technical Details
+- Files Modified:
+  - `prompts/thinking_maps.py` - Added detailed analogy relationship pattern prompts (EN & ZH)
+  - `agents/thinking_maps/bridge_map_agent.py` - Enhanced validation, added dimension_preference support
+  - `agents/main_agent.py` - Extended dimension preference to bridge maps
+  - `static/js/renderers/flow-renderer.js` - Added dimension label (left side, two-line) and alternatives display in renderBridgeMap function
+  - `static/js/editor/interactive-editor.js` - Added dimension node type handling in updateBridgeMapText
+  - `static/js/editor/toolbar-manager.js` - Extended auto-complete to send dimension preference for bridge maps
+  - `static/js/style-manager.js` - Added complete bridge_map theme with dimensionLabelColor and analogy styling
+
+---
+
+## [3.2.2] - 2025-01-07 - Adaptive Sizing & Canvas Improvements
+
+### Added
+- **Adaptive Canvas Sizing System**
+  - All diagram types now automatically adapt to window size when entering canvas
+  - Templates recalculate dimensions based on current window size (not gallery display time)
+  - Adaptive dimensions account for toolbar (60px), status bar (40px), and properties panel (320px)
+  - Smart auto-fit logic: only applies when no adaptive dimensions are available
 
 ### Fixed
 - **Canvas Layout & Export Issues**
@@ -34,6 +171,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SVG background set directly on element (no container background bleed)
   - Canvas container now uses inline-block to shrink-wrap content exactly
   
+- **Adaptive Sizing Implementation**
+  - **Brace Maps**: Full width/height adaptive sizing with proper content centering
+  - **Mind Maps**: Width/height adaptive sizing with fallback to provided dimensions
+  - **Bubble/Circle/Double Bubble Maps**: Width/height adaptive sizing with content centering
+  - **Tree Maps**: Width/height adaptive sizing with fallback structure
+  - **Flow/Multi-Flow Maps**: Padding adaptive sizing (content-driven width/height)
+  - **Concept Maps**: Width/height adaptive sizing with larger defaults for complexity
+
+- **Double Bubble Map Specific Fixes**
+  - Fixed content positioning within adaptive canvas (was appearing tiny in large canvas)
+  - Added horizontal centering for content within adaptive width
+  - Added vertical centering for content within adaptive height
+  - Eliminated purple scrollbar issues caused by oversized content
+  - Proper viewBox handling with xMinYMin meet for consistent positioning
+
 - **Alternative Dimensions Positioning**
   - Now positioned exactly 15px below actual bottom child node (not estimated position)
   - Center-aligned to actual content width (not canvas width)
@@ -51,8 +203,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Alternative dimensions section spacing: 15px gap + proper content alignment
 
 ### Technical Changes
-- `static/js/renderers/brace-renderer.js`: Track actual rendered bottom position (`lastChildBottomY`)
-- `static/css/editor.css`: Changed #d3-container to `display: inline-block` with `padding: 0`
+- **Adaptive Sizing System**:
+  - `static/js/editor/interactive-editor.js`: Added `calculateAdaptiveDimensions()` method and dimension recalculation logic
+  - `static/js/editor/interactive-editor.js`: Smart auto-fit logic that preserves adaptive dimensions
+  - `static/js/editor/diagram-selector.js`: Enhanced `calculateAdaptiveDimensions()` for window-based sizing
+  - `static/js/renderers/brace-renderer.js`: Updated to use adaptive width/height instead of content-based sizing
+  - `static/js/renderers/mind-map-renderer.js`: Enhanced dimension handling with adaptive fallback
+  - `static/js/renderers/bubble-map-renderer.js`: Added adaptive sizing to all three functions (bubble, circle, double bubble)
+  - `static/js/renderers/tree-renderer.js`: Updated dimension handling with adaptive support
+  - `static/js/renderers/flow-renderer.js`: Added adaptive padding sizing to all flow functions
+  - `static/js/renderers/concept-map-renderer.js`: Enhanced with adaptive width/height handling
+
+- **Double Bubble Map Centering**:
+  - `static/js/renderers/bubble-map-renderer.js`: Added horizontal and vertical content centering logic
+  - `static/js/renderers/bubble-map-renderer.js`: Fixed viewBox positioning with xMinYMin meet
+  - `static/js/renderers/bubble-map-renderer.js`: Enhanced debug logging for centering calculations
+
+- **Canvas Layout Improvements**:
+  - `static/js/renderers/brace-renderer.js`: Track actual rendered bottom position (`lastChildBottomY`)
+  - `static/css/editor.css`: Changed #d3-container to `display: inline-block` with `padding: 0`
 - Alternative dimensions use `contentCenterX` (actual content center, not canvas center)
 - Removed manual `window.addWatermark()` call from brace renderer
 

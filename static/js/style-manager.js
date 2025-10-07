@@ -94,6 +94,8 @@ class StyleManager {
                 subpartText: '#333333',
                 subpartStroke: '#90caf9',
                 subpartStrokeWidth: 1,
+                braceColor: '#666666',          // Gray for brace lines
+                dimensionLabelColor: '#1976d2', // Dark blue for dimension label (classroom visibility)
                 fontTopic: 18,
                 fontPart: 16,
                 fontSubpart: 12
@@ -113,6 +115,7 @@ class StyleManager {
                 leafText: '#333333',
                 leafStroke: '#c8d6e5',
                 leafStrokeWidth: 1,
+                dimensionLabelColor: '#1976d2', // Dark blue for dimension label (classroom visibility)
                 fontRoot: 20,
                 fontBranch: 16,
                 fontLeaf: 14
@@ -138,6 +141,17 @@ class StyleManager {
                 endStrokeWidth: 2,
                 fontNode: 14,
                 fontEdge: 12
+            },
+            bridge_map: {
+                background: '#f5f5f5',         // Light grey background
+                bridgeLineColor: '#666666',    // Gray for the main bridge line
+                analogyTextColor: '#333333',   // Dark gray for analogy text
+                analogyFontSize: 14,           // Font size for analogy items
+                dimensionLabelColor: '#1976d2', // Dark blue for dimension label (classroom visibility)
+                firstPairFill: '#1976d2',      // Deep blue for first pair boxes
+                firstPairText: '#ffffff',      // White text for first pair
+                firstPairStroke: '#0d47a1',    // Darker blue border for first pair
+                firstPairStrokeWidth: 2
             }
         };
 

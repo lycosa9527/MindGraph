@@ -5,6 +5,8 @@
  * Requires: shared-utilities.js, style-manager.js
  * 
  * Performance Impact: Loads only ~50KB instead of full 213KB
+ * 
+ * Last Updated: 2024-12-19 - Fixed adaptive sizing for double bubble maps
  */
 
 // Check if shared utilities are available
@@ -21,10 +23,26 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 700;
-    const baseHeight = dimensions?.baseHeight || 500;
-    const padding = dimensions?.padding || 40;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let baseWidth, baseHeight, padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        baseWidth = spec._recommended_dimensions.width;
+        baseHeight = spec._recommended_dimensions.height;
+        padding = spec._recommended_dimensions.padding;
+        console.log('Bubble Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 700;
+        baseHeight = dimensions.height || dimensions.baseHeight || 500;
+        padding = dimensions.padding || 40;
+    } else {
+        // Default dimensions
+        baseWidth = 700;
+        baseHeight = 500;
+        padding = 40;
+    }
     
     // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
@@ -227,10 +245,26 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 700;
-    const baseHeight = dimensions?.baseHeight || 500;
-    const padding = dimensions?.padding || 40;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let baseWidth, baseHeight, padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        baseWidth = spec._recommended_dimensions.width;
+        baseHeight = spec._recommended_dimensions.height;
+        padding = spec._recommended_dimensions.padding;
+        console.log('Circle Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 700;
+        baseHeight = dimensions.height || dimensions.baseHeight || 500;
+        padding = dimensions.padding || 40;
+    } else {
+        // Default dimensions
+        baseWidth = 700;
+        baseHeight = 500;
+        padding = 40;
+    }
     
     const THEME = {
         outerCircleFill: 'none',
@@ -404,15 +438,36 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     
     // Validation passed, proceeding with rendering
     
-    const baseWidth = dimensions?.baseWidth || 800;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let baseWidth, baseHeight, padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        baseWidth = spec._recommended_dimensions.width;
+        baseHeight = spec._recommended_dimensions.height;
+        padding = spec._recommended_dimensions.padding;
+        console.log('Double Bubble Map: Using adaptive dimensions:', { 
+            baseWidth, baseHeight, padding,
+            adaptiveWidth: spec._recommended_dimensions.width,
+            adaptiveHeight: spec._recommended_dimensions.height
+        });
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 800;
+        baseHeight = dimensions.height || dimensions.baseHeight || 600;
+        padding = dimensions.padding || 40;
+    } else {
+        // Default dimensions
+        baseWidth = 800;
+        baseHeight = 600;
+        padding = 40;
+    }
     
     // Apply background if specified (like bubble map)
     if (theme && theme.background) {
         // Setting container background to theme background
         d3.select('#d3-container').style('background-color', theme.background);
     }
-    const baseHeight = dimensions?.baseHeight || 600;
-    const padding = dimensions?.padding || 40;
     
     const THEME = {
         topicFill: '#1976d2',          // Deep blue for both topics (matches original)
@@ -456,20 +511,57 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const leftColHeight = leftDiffCount > 0 ? (leftDiffCount - 1) * (leftDiffR * 2 + 10) + leftDiffR * 2 : 0;
     const rightColHeight = rightDiffCount > 0 ? (rightDiffCount - 1) * (rightDiffR * 2 + 10) + rightDiffR * 2 : 0;
     const maxColHeight = Math.max(simColHeight, leftColHeight, rightColHeight, topicR * 2);
-    const height = Math.max(baseHeight, maxColHeight + padding * 2);
+    const requiredHeight = maxColHeight + padding * 2;
+    
+    // Use adaptive height if provided, otherwise use content-based height
+    // This ensures consistent sizing with other diagrams
+    const height = spec._recommended_dimensions ? baseHeight : Math.max(baseHeight, requiredHeight);
     
     // Position columns with 50px spacing between them (matching original)
     const columnSpacing = 50;
-    const leftDiffX = padding + leftDiffR;
-    const leftTopicX = leftDiffX + leftDiffR + columnSpacing + topicR;
-    const simX = leftTopicX + topicR + columnSpacing + simR;
-    const rightTopicX = simX + simR + columnSpacing + topicR;
-    const rightDiffX = rightTopicX + topicR + columnSpacing + rightDiffR;
+    
+    // First calculate positions without centering offset
+    let leftDiffX = padding + leftDiffR;
+    let leftTopicX = leftDiffX + leftDiffR + columnSpacing + topicR;
+    let simX = leftTopicX + topicR + columnSpacing + simR;
+    let rightTopicX = simX + simR + columnSpacing + topicR;
+    let rightDiffX = rightTopicX + topicR + columnSpacing + rightDiffR;
     
     // Calculate width to accommodate all columns
     const requiredWidth = rightDiffX + rightDiffR + padding * 2;
-    const width = Math.max(baseWidth, requiredWidth);
-    const topicY = height / 2;
+    
+    // Use adaptive width if provided, otherwise use content-based width
+    // This prevents the diagram from being too wide and causing scrollbars
+    const width = spec._recommended_dimensions ? baseWidth : Math.max(baseWidth, requiredWidth);
+    
+    // Center content horizontally within adaptive width
+    let horizontalOffset = 0;
+    if (spec._recommended_dimensions && width > requiredWidth) {
+        horizontalOffset = (width - requiredWidth) / 2;
+    }
+    
+    // Apply horizontal centering offset
+    leftDiffX += horizontalOffset;
+    leftTopicX += horizontalOffset;
+    simX += horizontalOffset;
+    rightTopicX += horizontalOffset;
+    rightDiffX += horizontalOffset;
+    
+    // Center content vertically within the adaptive height
+    // If using adaptive dimensions, center the content properly
+    const contentHeight = maxColHeight + padding * 2;
+    const topicY = spec._recommended_dimensions ? 
+        (height - contentHeight) / 2 + contentHeight / 2 : // Center within adaptive height
+        height / 2; // Use middle for content-based height
+    
+    console.log('Double Bubble Map: Final dimensions:', {
+        baseWidth, baseHeight, requiredWidth, maxColHeight,
+        finalWidth: width, finalHeight: height,
+        usingAdaptiveWidth: spec._recommended_dimensions ? 'YES' : 'NO',
+        usingAdaptiveHeight: spec._recommended_dimensions ? 'YES' : 'NO',
+        horizontalOffset, contentHeight,
+        adaptiveDimensions: spec._recommended_dimensions
+    });
     
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', width)

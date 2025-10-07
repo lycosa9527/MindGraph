@@ -1462,6 +1462,62 @@ class DiagramSelector {
     }
     
     /**
+     * Calculate adaptive dimensions based on current window size
+     * This ensures templates are sized appropriately for the user's screen
+     */
+    calculateAdaptiveDimensions() {
+        try {
+            // Get current window dimensions
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            // Calculate available canvas space (accounting for toolbar and status bar)
+            // Toolbar height: ~60px, Status bar height: ~40px
+            const toolbarHeight = 60;
+            const statusBarHeight = 40;
+            const availableHeight = windowHeight - toolbarHeight - statusBarHeight;
+            
+            // Calculate available width (accounting for properties panel space)
+            // Always reserve space for properties panel to prevent overlap
+            const propertyPanelWidth = 320;
+            const availableWidth = windowWidth - propertyPanelWidth;
+            
+            // Calculate optimal dimensions with padding
+            const padding = Math.min(40, Math.max(20, Math.min(availableWidth, availableHeight) * 0.05));
+            
+            // Ensure minimum dimensions for readability
+            const minWidth = 400;
+            const minHeight = 300;
+            
+            const adaptiveWidth = Math.max(minWidth, availableWidth * 0.9);
+            const adaptiveHeight = Math.max(minHeight, availableHeight * 0.9);
+            
+            const dimensions = {
+                width: Math.round(adaptiveWidth),
+                height: Math.round(adaptiveHeight),
+                padding: Math.round(padding)
+            };
+            
+            console.log('DiagramSelector: Calculated adaptive dimensions:', {
+                windowSize: { width: windowWidth, height: windowHeight },
+                availableSpace: { width: availableWidth, height: availableHeight },
+                finalDimensions: dimensions
+            });
+            
+            return dimensions;
+            
+        } catch (error) {
+            console.error('Error calculating adaptive dimensions:', error);
+            // Fallback to reasonable defaults
+            return {
+                width: 800,
+                height: 600,
+                padding: 40
+            };
+        }
+    }
+
+    /**
      * Get Brace Map template
      */
     getBraceMapTemplate() {
@@ -1495,11 +1551,7 @@ class DiagramSelector {
                     }
                 ],
                 // Don't include alternative_dimensions in template - LLM will generate them
-                _recommended_dimensions: {
-                    width: 800,
-                    height: 600,
-                    padding: 40
-                }
+                _recommended_dimensions: this.calculateAdaptiveDimensions()
             };
         } else {
             return {
@@ -1529,11 +1581,7 @@ class DiagramSelector {
                     }
                 ],
                 // Don't include alternative_dimensions in template - LLM will generate them
-                _recommended_dimensions: {
-                    width: 800,
-                    height: 600,
-                    padding: 40
-                }
+                _recommended_dimensions: this.calculateAdaptiveDimensions()
             };
         }
     }

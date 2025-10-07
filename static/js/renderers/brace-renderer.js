@@ -139,9 +139,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     // Spec validation passed, starting rendering
     console.log(' Brace renderer: Spec validation passed, starting rendering');
     
-    // Use provided dimensions only - no hardcoded defaults
+    // Use provided adaptive dimensions - this ensures templates fit the window properly
     const padding = dimensions?.padding || 40;
-    console.log(' Brace renderer: Using padding:', padding);
+    const adaptiveWidth = dimensions?.width;
+    const adaptiveHeight = dimensions?.height;
+    console.log(' Brace renderer: Using adaptive dimensions:', { padding, adaptiveWidth, adaptiveHeight });
     
     // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
@@ -305,27 +307,30 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         totalHeight += 30; // Minimal bottom padding when no alternatives
     }
     
+    // Use adaptive height if provided, otherwise use calculated content height
+    const finalHeight = adaptiveHeight ? adaptiveHeight : totalHeight;
+    
     // Calculate the actual content area (excluding top/bottom padding)
     const contentStartY = topPadding; // Parts start at this Y position
     const bottomPadding = hasAlternatives ? 70 : 30;  // Match the totalHeight calculation
     const contentEndY = totalHeight - bottomPadding;
     const contentCenterY = contentStartY + (contentEndY - contentStartY) / 2;
     
-    // Calculate total width needed - EXPANDED: Ensure adequate width for brace tip extension
+    // Calculate total width needed - use adaptive dimensions if provided
     const topicSectionWidth = topicBoxWidth + 30; // Topic + padding
     const partsSectionWidth = maxPartWidth + 30; // Parts + padding
     const subpartsSectionWidth = maxSubpartWidth + 30; // Subparts + padding
     const braceTipSpace = 100; // Extra space for brace tip extension
-    const totalWidth = Math.max(
-        topicSectionWidth + columnSpacing + partsSectionWidth + columnSpacing + subpartsSectionWidth + braceTipSpace, // Content width + brace space
-        900 // Increased minimum width for readability
-    );
+    const contentWidth = topicSectionWidth + columnSpacing + partsSectionWidth + columnSpacing + subpartsSectionWidth + braceTipSpace;
     
-    // Create SVG with calculated dimensions - exact size with background
+    // Use adaptive width if provided, otherwise use calculated content width
+    const totalWidth = adaptiveWidth ? adaptiveWidth : Math.max(contentWidth, 900);
+    
+    // Create SVG with adaptive dimensions - fits window size properly
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', totalWidth)
-        .attr('height', totalHeight)
-        .attr('viewBox', `0 0 ${totalWidth} ${totalHeight}`)
+        .attr('height', finalHeight)
+        .attr('viewBox', `0 0 ${totalWidth} ${finalHeight}`)
         .style('display', 'block')
         .style('background-color', THEME.background || '#f8f9fa');
 
@@ -700,7 +705,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 .attr('y', dimensionY)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.braceColor || '#666666')
+                .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
                 .attr('font-size', dimensionFontSize)
                 .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
                 .attr('font-style', 'italic')
@@ -737,7 +742,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('y1', separatorY)
             .attr('x2', separatorRightX)
             .attr('y2', separatorY)
-            .attr('stroke', THEME.braceColor || '#666666')
+            .attr('stroke', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
             .attr('stroke-width', 1)
             .attr('stroke-dasharray', '4,4')
             .style('opacity', 0.4);
@@ -748,7 +753,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('y', alternativesY - 5)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.braceColor || '#666666')
+            .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
             .attr('font-size', fontSize)
             .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
             .style('opacity', 0.7)
@@ -761,7 +766,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('y', alternativesY + 18)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.braceColor || '#666666')
+            .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
             .attr('font-size', fontSize - 1)
             .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
             .attr('font-weight', '600')

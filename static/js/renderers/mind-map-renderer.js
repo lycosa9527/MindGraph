@@ -23,18 +23,19 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Determine canvas dimensions
+    // Determine canvas dimensions - use adaptive dimensions if provided
     let baseWidth, baseHeight, padding;
     
     if (spec._recommended_dimensions) {
-        // Python agent dimensions
+        // Adaptive dimensions from template (calculated based on window size)
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
+        console.log('Mind Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
-        // Provided dimensions
-        baseWidth = dimensions.baseWidth || 700;
-        baseHeight = dimensions.baseHeight || 500;
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 700;
+        baseHeight = dimensions.height || dimensions.baseHeight || 500;
         padding = dimensions.padding || 40;
     } else {
         // Default dimensions

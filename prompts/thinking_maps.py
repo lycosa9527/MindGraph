@@ -19,124 +19,192 @@ This module contains all prompts for the 8 Thinking Maps®:
 
 BRIDGE_MAP_GENERATION_EN = """Please generate a JSON specification for a bridge map.
 
-CRITICAL REQUIREMENTS - READ CAREFULLY:
-You can use analogies to explain the central concept and draw a bridge map. The upper and lower parts of the bridge are groups of things with the same relationship. The core function is to show similar relationships between different things.
-1. **Clear Relationship Pattern**: Clearly define the core analogy relationship. The relationship between each group of elements must follow the same pattern. The format is usually "A is to B as C is to D".
-2. **ABSOLUTE UNIQUENESS**: Every element must appear EXACTLY ONCE on each side. NO DUPLICATES ALLOWED.
-3. **Consistent Count**: Generate exactly 6 elements for each side (we'll use 5, keeping 1 as backup)
-4. **No Repetition**: Never repeat the same element, category, or similar concept on either side
+=== STEP 1: ANALYZE THE RELATIONSHIP PATTERN ===
+Before generating any analogies, you MUST first analyze and identify the core relationship pattern between the topic elements.
 
-FORMAT REQUIREMENTS:
-- Use the EXACT structure shown below
-- Generate exactly 6 analogy pairs (6 elements per side)
-- Each element must be completely unique
-- No variations of the same concept (e.g., don't use "China" and "Chinese" or "Beijing" and "Beijing City")
+Ask yourself:
+- What is the relationship between the left and right items?
+- How are they connected? (e.g., capital to country, author to work, part to whole, cause to effect)
+- Can I apply this SAME relationship pattern to other examples?
 
-Please output a JSON object containing the following fields:
-relating_factor: "as" (fixed relationship identifier)
+Common Analogy Relationship Patterns:
+1. Capital to Country: Paris is to France as London is to England
+2. Author to Work: Shakespeare is to Hamlet as Tolkien is to Lord of the Rings
+3. Function to Object: Fly is to Bird as Swim is to Fish
+4. Part to Whole: Wheel is to Car as Key is to Keyboard
+5. Tool to Worker: Hammer is to Carpenter as Brush is to Painter
+6. Cause to Effect: Rain is to Flood as Fire is to Ash
+7. Animal to Habitat: Fish is to Ocean as Bird is to Sky
+8. Product to Company: iPhone is to Apple as Galaxy is to Samsung
+9. Inventor to Invention: Edison is to Light Bulb as Bell is to Telephone
+10. Symptom to Disease: Cough is to Cold as Fever is to Flu
+
+CRITICAL: USER-SPECIFIED DIMENSION PRIORITY
+If the user explicitly specifies a relationship pattern in their request:
+✓ You MUST use that exact relationship pattern for the dimension field
+✓ All analogy pairs MUST follow that specific relationship type
+✗ NEVER ignore or change the user's explicitly requested relationship pattern
+
+=== STEP 2: GENERATE ANALOGIES USING THAT PATTERN ===
+Now generate exactly 6 analogy pairs that ALL follow the SAME relationship pattern you identified.
+
+Requirements:
+1. **ABSOLUTE UNIQUENESS**: Every element must appear EXACTLY ONCE on each side. NO DUPLICATES.
+2. **Consistent Pattern**: All 6 pairs MUST use the SAME relationship pattern
+3. **No Repetition**: Never repeat the same element or similar concept on either side
+
+=== STEP 3: IDENTIFY ALTERNATIVE RELATIONSHIP PATTERNS ===
+Now think of 4-6 OTHER relationship patterns that could ALSO be used to create analogies about this topic.
+
+Ask yourself:
+- "What other ways could I show analogies related to this topic?"
+- "What other relationship patterns would make sense here?"
+- Each alternative MUST be a DIFFERENT relationship type, not just variations
+
+Examples:
+- If using "Capital to Country" → alternatives could be: "Currency to Country", "Language to Country", "Famous Landmark to Country"
+- If using "Author to Work" → alternatives could be: "Genre to Example", "Character to Story", "Publisher to Book"
+- If using "Animal to Habitat" → alternatives could be: "Animal to Diet", "Predator to Prey", "Animal to Adaptation"
+
+=== OUTPUT FORMAT ===
+Your response MUST be valid JSON with these EXACT fields:
+
+{
+  "relating_factor": "as",
+  "dimension": "The relationship pattern name (e.g., 'Capital to Country', 'Author to Work')",
+  "analogies": [
+    {"left": "Item1", "right": "Related1", "id": 0},
+    {"left": "Item2", "right": "Related2", "id": 1},
+    {"left": "Item3", "right": "Related3", "id": 2},
+    {"left": "Item4", "right": "Related4", "id": 3},
+    {"left": "Item5", "right": "Related5", "id": 4},
+    {"left": "Item6", "right": "Related6", "id": 5}
+  ],
+  "alternative_dimensions": [
+    "Alternative Pattern 1",
+    "Alternative Pattern 2",
+    "Alternative Pattern 3",
+    "Alternative Pattern 4"
+  ]
+}
+
+=== EXAMPLE (for reference) ===
+relating_factor: "as"
+dimension: "Capital to Country"
 analogies: [
-  {
-    "left": "First item in analogy pair",
-    "right": "Second item in analogy pair",
-    "id": 0
-  },
-  {
-    "left": "First item in analogy pair", 
-    "right": "Second item in analogy pair",
-    "id": 1
-  },
-  {
-    "left": "First item in analogy pair",
-    "right": "Second item in analogy pair", 
-    "id": 2
-  },
-  {
-    "left": "First item in analogy pair",
-    "right": "Second item in analogy pair", 
-    "id": 3
-  },
-  {
-    "left": "First item in analogy pair",
-    "right": "Second item in analogy pair", 
-    "id": 4
-  },
-  {
-    "left": "First item in analogy pair",
-    "right": "Second item in analogy pair", 
-    "id": 5
-  }
+  {{"left": "Paris", "right": "France", "id": 0}},
+  {{"left": "London", "right": "England", "id": 1}},
+  {{"left": "Tokyo", "right": "Japan", "id": 2}},
+  {{"left": "Rome", "right": "Italy", "id": 3}},
+  {{"left": "Berlin", "right": "Germany", "id": 4}},
+  {{"left": "Madrid", "right": "Spain", "id": 5}}
 ]
+alternative_dimensions: ["Currency to Country", "Language to Country", "Famous Landmark to Country", "National Animal to Country"]
 
-VALIDATION CHECKLIST:
-- [ ] Exactly 6 analogy pairs (6 elements per side)
-- [ ] Each left element appears only once
-- [ ] Each right element appears only once  
-- [ ] No conceptual duplicates (e.g., "China" vs "Chinese")
-- [ ] All analogies follow the same relationship pattern
-- [ ] JSON format is valid and complete
+=== MANDATORY REQUIREMENTS ===
+✓ MUST include "dimension" field with the relationship pattern name
+✓ MUST include "alternative_dimensions" array with 4-6 other patterns
+✓ MUST generate exactly 6 analogy pairs
+✓ ALL pairs MUST follow the SAME relationship pattern
+✓ NO duplicate elements on either side
+✓ Output ONLY valid JSON (no code blocks, no markdown)
 
-Please ensure the JSON format is correct, do not include any code block markers."""
+DO NOT SKIP ANY FIELDS. The "dimension" and "alternative_dimensions" fields are REQUIRED."""
 
 BRIDGE_MAP_GENERATION_ZH = """
 请生成一个桥形图的JSON规范。
 
-关键要求 - 请仔细阅读：
-你能够使用类比的方法来解释中心词，绘制出桥型图，桥梁上下是一组组具有相同关系的事物，核心作用是展示不同事物之间相似的关系。
-1. **明确关系模式**：明确核心的类比关系，每组元素之间的关系必须遵循同一个模式。格式通常是 "A 对于 B，如同 C 对于 D"。
-2. **绝对唯一性**：每个元素在每一边必须出现且仅出现一次。绝对不允许重复。
-3. **数量一致**：每一边生成恰好6个元素（我们将使用5个，保留1个作为备用）
-4. **无重复**：永远不要在任一边重复相同的元素、类别或相似概念
+=== 步骤1：分析关系模式 ===
+在生成任何类比之前，您必须首先分析并识别主题元素之间的核心关系模式。
 
-格式要求：
-- 使用下面显示的确切结构
-- 生成恰好6个类比对（每边6个元素）
-- 每个元素必须完全唯一
-- 不要使用同一概念的变化形式（例如，不要使用"中国"和"中国的"或"北京"和"北京城"）
+问自己：
+- 左边和右边的项之间是什么关系？
+- 它们如何连接？（例如：首都到国家、作者到作品、部分到整体、因到果）
+- 我能将相同的关系模式应用到其他示例吗？
 
-请输出一个包含以下字段的JSON对象：
-relating_factor: "as" (固定关系标识符)
+常见类比关系模式：
+1. 首都到国家：巴黎对于法国，如同伦敦对于英国
+2. 作者到作品：莎士比亚对于哈姆雷特，如同托尔金对于魔戒
+3. 功能到对象：飞对于鸟，如同游对于鱼
+4. 部分到整体：轮子对于汽车，如同按键对于键盘
+5. 工具到工作者：锤子对于木匠，如同画笔对于画家
+6. 因到果：雨对于洪水，如同火对于灰烬
+7. 动物到栖息地：鱼对于海洋，如同鸟对于天空
+8. 产品到公司：iPhone对于苹果，如同Galaxy对于三星
+9. 发明者到发明：爱迪生对于灯泡，如同贝尔对于电话
+10. 症状到疾病：咳嗽对于感冒，如同发烧对于流感
+
+关键：用户指定的维度优先级
+如果用户在请求中明确指定了关系模式：
+✓ 您必须在dimension字段中使用该确切的关系模式
+✓ 所有类比对必须遵循该特定关系类型
+✗ 绝不忽略或更改用户明确请求的关系模式
+
+=== 步骤2：使用该模式生成类比 ===
+现在生成恰好6个类比对，所有类比对都遵循您识别的相同关系模式。
+
+要求：
+1. **绝对唯一性**：每个元素在每一边必须出现且仅出现一次。绝对不允许重复。
+2. **一致模式**：所有6对必须使用相同的关系模式
+3. **无重复**：永远不要在任一边重复相同的元素或相似概念
+
+=== 步骤3：识别替代关系模式 ===
+现在思考4-6个其他关系模式，这些模式也可以用来创建关于此主题的类比。
+
+问自己：
+- "我还能用什么其他方式来展示与此主题相关的类比？"
+- "还有哪些关系模式在这里有意义？"
+- 每个替代模式必须是不同的关系类型，而不仅仅是变体
+
+示例：
+- 如果使用"首都到国家" → 替代模式可以是："货币到国家"、"语言到国家"、"著名地标到国家"
+- 如果使用"作者到作品" → 替代模式可以是："体裁到示例"、"角色到故事"、"出版商到书籍"
+- 如果使用"动物到栖息地" → 替代模式可以是："动物到食性"、"捕食者到猎物"、"动物到适应性"
+
+=== 输出格式 ===
+您的响应必须是包含这些确切字段的有效JSON：
+
+{
+  "relating_factor": "as",
+  "dimension": "关系模式名称（例如：'首都到国家'、'作者到作品'）",
+  "analogies": [
+    {"left": "项目1", "right": "相关1", "id": 0},
+    {"left": "项目2", "right": "相关2", "id": 1},
+    {"left": "项目3", "right": "相关3", "id": 2},
+    {"left": "项目4", "right": "相关4", "id": 3},
+    {"left": "项目5", "right": "相关5", "id": 4},
+    {"left": "项目6", "right": "相关6", "id": 5}
+  ],
+  "alternative_dimensions": [
+    "替代模式1",
+    "替代模式2",
+    "替代模式3",
+    "替代模式4"
+  ]
+}
+
+=== 示例（仅供参考）===
+relating_factor: "as"
+dimension: "首都到国家"
 analogies: [
-  {
-    "left": "类比对中的第一项",
-    "right": "类比对中的第二项", 
-    "id": 0
-  },
-  {
-    "left": "类比对中的第一项",
-    "right": "类比对中的第二项", 
-    "id": 1
-  },
-  {
-    "left": "类比对中的第一项",
-    "right": "类比对中的第二项", 
-    "id": 2
-  },
-  {
-    "left": "类比对中的第一项",
-    "right": "类比对中的第二项", 
-    "id": 3
-  },
-  {
-    "left": "类比对中的第一项",
-    "right": "类比对中的第二项", 
-    "id": 4
-  },
-  {
-    "left": "类比对中的第一项",
-    "right": "类比对中的第二项", 
-    "id": 5
-  }
+  {{"left": "巴黎", "right": "法国", "id": 0}},
+  {{"left": "伦敦", "right": "英国", "id": 1}},
+  {{"left": "东京", "right": "日本", "id": 2}},
+  {{"left": "罗马", "right": "意大利", "id": 3}},
+  {{"left": "柏林", "right": "德国", "id": 4}},
+  {{"left": "马德里", "right": "西班牙", "id": 5}}
 ]
+alternative_dimensions: ["货币到国家", "语言到国家", "著名地标到国家", "国家动物到国家"]
 
-验证清单：
-- [ ] 恰好6个类比对（每边6个元素）
-- [ ] 每个左侧元素只出现一次
-- [ ] 每个右侧元素只出现一次
-- [ ] 无概念重复（例如，"中国"与"中国的"）
-- [ ] 所有类比遵循相同的关系模式
-- [ ] JSON格式有效且完整
+=== 强制要求 ===
+✓ 必须包含"dimension"字段，其中包含关系模式名称
+✓ 必须包含"alternative_dimensions"数组，其中包含4-6个其他模式
+✓ 必须生成恰好6个类比对
+✓ 所有类比对必须遵循相同的关系模式
+✓ 两边都不能有重复元素
+✓ 仅输出有效的JSON（无代码块，无markdown）
 
-请确保JSON格式正确，不要包含任何代码块标记。"""
+不要跳过任何字段。"dimension"和"alternative_dimensions"字段是必需的。"""
 
 # ============================================================================
 # BUBBLE MAP PROMPTS
@@ -269,14 +337,34 @@ context: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6", "特
 TREE_MAP_GENERATION_EN = """
 Please generate a JSON specification for a tree map.
 
-You can classify the central topic.
-Purpose: Classification, Induction, Hierarchical organization of information.
+Tree maps are used for classification, representing hierarchical categorization of information.
 
-CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
+CRITICAL CONCEPT: Classification Dimensions
+A tree map can classify a topic using DIFFERENT DIMENSIONS. You must:
+✓ Pick ONE dimension and apply it CONSISTENTLY throughout the entire map
+✗ NEVER mix different dimensions in the same map
 
-Output a SINGLE JSON object with the following fields (example shown below):
-- topic: "Main topic" (MUST match the topic mentioned in the user request EXACTLY if provided)
-- children: [
+Common Classification Dimensions (with examples for "Animals"):
+1. Biological Taxonomy (Scientific): Mammals, Birds, Reptiles, Fish, Amphibians
+2. Habitat (Environmental): Land Animals, Water Animals, Air Animals, Amphibious Animals
+3. Diet (Nutritional): Carnivores, Herbivores, Omnivores, Insectivores
+4. Size (Physical): Tiny Animals, Small Animals, Medium Animals, Large Animals, Giant Animals
+5. Domestication Status: Wild Animals, Domestic Animals, Farm Animals, Pet Animals
+6. Geographic Region: African Animals, Asian Animals, European Animals, American Animals
+7. Conservation Status: Endangered, Vulnerable, Near Threatened, Least Concern
+
+CRITICAL: USER-SPECIFIED DIMENSION PRIORITY
+If the user explicitly specifies a classification dimension or standard in their request (e.g., "classify by habitat", "using biological taxonomy", "categorize by diet"), you MUST use that EXACT dimension for classification. Examples:
+- User says "classify by habitat" → Use "Habitat" or similar environmental dimension
+- User says "by biological taxonomy" → Use "Biological Taxonomy" dimension
+- User says "using diet categories" → Use "Diet" dimension
+- User says "按栖息地分类" → Use habitat dimension
+- User says "按生物分类" → Use biological taxonomy dimension
+
+Please output a JSON object containing the following fields:
+topic: "Main topic"
+dimension: "The classification dimension being used (e.g., 'Biological Taxonomy', 'Habitat', 'Diet')"
+children: [
   {{"text": "Category 1", "children": [
     {{"text": "Item 1", "children": []}},
     {{"text": "Item 2", "children": []}}
@@ -285,29 +373,77 @@ Output a SINGLE JSON object with the following fields (example shown below):
     {{"text": "Item A", "children": []}}
   ]}}
 ]
+alternative_dimensions: ["Dimension1", "Dimension2", "Dimension3", "Dimension4"]
 
-Strict requirements:
-- Topic: Use the EXACT topic from the request if specified (e.g., if request says "about 'Transportation'", use "Transportation")
-- Top-level children: generate 4–6 categories under "children" (each a short phrase, 1–5 words)
-- For EACH top-level child, generate 2–6 sub-children in its "children" array (short phrases, 1–5 words)
-- Each child MUST have a "text" field (the label) and a "children" field (array, can be empty)
-- Use concise phrases only; no punctuation; no numbering prefixes; avoid full sentences
-- All text labels must be unique and non-redundant
-- Do not include extra fields beyond topic, children, text
+CRITICAL: If the user request contains a quoted topic (e.g., "about 'Transportation'"), you MUST use that EXACT topic word in the "topic" field. Do not paraphrase, translate, or modify it.
 
-Return only valid JSON. Do NOT include code block markers.
+IMPORTANT: Generate fresh, meaningful content for categories and items. Do not use placeholder text like "Category 1", "Item 1", etc.
+
+Requirements:
+- Generate 4-6 main categories with clear, descriptive names
+- Each category should have 2-6 items that are specific and detailed
+- Use concise, clear language - avoid long sentences
+- Ensure logical topic-to-category-to-item relationships using ONE consistent dimension
+- The "dimension" field must clearly describe the classification approach used
+- ALL categories and items must follow the SAME dimension (e.g., if using "Habitat", all categories must be habitat types)
+- If user specifies a dimension, ALWAYS respect it and use it as the primary classification standard
+
+CRITICAL: Alternative Dimensions Requirements
+- The "alternative_dimensions" array MUST list 4-6 OTHER valid dimensions for THIS SPECIFIC topic
+- Each alternative MUST be DIFFERENT from the dimension you chose
+- Each alternative should be equally valid for classifying this topic (not random suggestions)
+- Think: "What other meaningful ways could we categorize THIS topic?"
+- Examples for "Animals" topic:
+  * If you chose "Biological Taxonomy" → alternatives could be: "Habitat", "Diet", "Size", "Conservation Status", "Geographic Region"
+  * If you chose "Habitat" → alternatives could be: "Biological Taxonomy", "Diet", "Domestication Status", "Size", "Activity Pattern"
+- Make alternatives SPECIFIC to the topic, not generic dimensions
+
+Example format (for reference only):
+topic: "Animals"
+dimension: "Biological Taxonomy"
+children: [
+  {{"text": "Mammals", "children": [{{"text": "Dogs", "children": []}}, {{"text": "Cats", "children": []}}, {{"text": "Whales", "children": []}}]}},
+  {{"text": "Birds", "children": [{{"text": "Eagles", "children": []}}, {{"text": "Sparrows", "children": []}}, {{"text": "Penguins", "children": []}}]}},
+  {{"text": "Reptiles", "children": [{{"text": "Snakes", "children": []}}, {{"text": "Lizards", "children": []}}, {{"text": "Turtles", "children": []}}]}}
+]
+alternative_dimensions: ["Habitat", "Diet", "Size", "Geographic Region", "Conservation Status"]
+
+Do not include any information about visual layout; only provide the hierarchical data.
+
+Please ensure the JSON format is correct, do not include any code block markers.
 """
 
 TREE_MAP_GENERATION_ZH = """
-请生成一个树形图的JSON规范。
-你能对中心词进行分类。
-目的是：分类、归纳、层级化组织信息。
+请生成一个树形图（Tree Map）的JSON规范。
 
-重要提示：如果用户需求中包含引号标注的主题（例如："为主题'交通工具'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
+树形图用于分类，表示信息的层级化分类。
 
-输出且仅输出一个JSON对象，包含以下字段（示例如下）：
-- topic: "主题"（如果需求中明确指定主题，必须完全匹配）
-- children: [
+核心概念：分类维度
+树形图可以使用不同的维度来分类主题。您必须：
+✓ 选择一个维度并在整个图中保持一致
+✗ 绝不在同一张图中混合不同的维度
+
+常见分类维度（以"动物"为例）：
+1. 生物分类（科学性）：哺乳动物、鸟类、爬行动物、鱼类、两栖动物
+2. 栖息地（环境性）：陆生动物、水生动物、飞行动物、两栖动物
+3. 食性（营养性）：肉食动物、草食动物、杂食动物、食虫动物
+4. 体型（物理性）：微型动物、小型动物、中型动物、大型动物、巨型动物
+5. 驯化状态：野生动物、家养动物、农场动物、宠物动物
+6. 地理区域：非洲动物、亚洲动物、欧洲动物、美洲动物
+7. 保护状态：濒危、易危、近危、无危
+
+关键：用户指定维度优先
+如果用户在请求中明确指定了分类维度或标准（例如："按栖息地分类"、"使用生物分类学"、"按食性分类"），您必须使用用户指定的维度进行分类。示例：
+- 用户说"按栖息地分类" → 使用"栖息地"或类似的环境性维度
+- 用户说"按生物分类" → 使用"生物分类"维度
+- 用户说"按食性分类" → 使用"食性"维度
+- 用户说"classify by habitat" → 使用栖息地维度
+- 用户说"by biological taxonomy" → 使用生物分类维度
+
+请输出一个包含以下字段的JSON对象：
+topic: "主题"
+dimension: "使用的分类维度（例如：'生物分类'、'栖息地'、'食性'）"
+children: [
   {{"text": "类别一", "children": [
     {{"text": "条目一", "children": []}},
     {{"text": "条目二", "children": []}}
@@ -316,17 +452,44 @@ TREE_MAP_GENERATION_ZH = """
     {{"text": "条目甲", "children": []}}
   ]}}
 ]
+alternative_dimensions: ["维度1", "维度2", "维度3", "维度4"]
 
-严格要求：
-- 主题：如果需求中指定了主题（例如"为主题'交通工具'创建..."），必须使用"交通工具"作为topic
-- 顶层 children：生成 4–6 个类别（短语，1–5 个词/字）
-- 每个顶层 child 的 "children" 数组：生成 2–6 个子项（短语，1–5 个词/字）
-- 每个 child 必须有 "text" 字段（标签）和 "children" 字段（数组，可以为空）
-- 仅用简短短语；不要标点；不要编号前缀；不要完整句子
-- 所有 text 标签必须唯一且不冗余
-- 不要包含 topic、children、text 之外的字段
+重要提示：如果用户需求中包含引号标注的主题（例如："为主题'动物'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
-只返回有效 JSON，不要包含代码块标记。
+关键要求：必须全部使用中文生成内容，包括topic、dimension、children数组和alternative_dimensions数组中的所有文本。不要混用英文和中文。请生成全新的、有意义的类别和条目内容，不要使用占位符文本如"类别一"、"条目一"等。
+
+要求：
+- 生成4-6个主要类别，名称清晰、描述性强
+- 每个类别应有2-6个条目，具体且详细
+- 使用简洁、清晰的语言，避免长句
+- 确保使用一个一致的维度来建立逻辑的主题→类别→条目关系
+- "dimension"字段必须清楚地描述所使用的分类方法
+- 所有类别和条目必须遵循相同的维度（例如，如果使用"栖息地"，所有类别必须是栖息地类型）
+- 如果用户指定了维度，必须遵循并使用该维度作为主要分类标准
+
+关键：替代维度要求
+- "alternative_dimensions"数组必须列出4-6个针对此特定主题的其他有效维度
+- 每个替代维度必须与你选择的维度不同
+- 每个替代维度都应该是分类此主题的同样有效的方式（不是随机建议）
+- 思考："还有哪些有意义的方式可以分类这个主题？"
+- "动物"主题示例：
+  * 如果选择"生物分类" → 替代维度可以是："栖息地"、"食性"、"体型"、"保护状态"、"地理区域"
+  * 如果选择"栖息地" → 替代维度可以是："生物分类"、"食性"、"驯化状态"、"体型"、"活动模式"
+- 使替代维度针对主题具体化，而不是通用维度
+
+示例格式（仅供参考）：
+topic: "动物"
+dimension: "生物分类"
+children: [
+  {{"text": "哺乳动物", "children": [{{"text": "狗", "children": []}}, {{"text": "猫", "children": []}}, {{"text": "鲸鱼", "children": []}}]}},
+  {{"text": "鸟类", "children": [{{"text": "老鹰", "children": []}}, {{"text": "麻雀", "children": []}}, {{"text": "企鹅", "children": []}}]}},
+  {{"text": "爬行动物", "children": [{{"text": "蛇", "children": []}}, {{"text": "蜥蜴", "children": []}}, {{"text": "海龟", "children": []}}]}}
+]
+alternative_dimensions: ["栖息地", "食性", "体型", "地理区域", "保护状态"]
+
+不要包含任何关于可视化布局的说明；只提供层级数据。
+
+请确保JSON格式正确，不要包含任何代码块标记。
 """
 
 # ============================================================================

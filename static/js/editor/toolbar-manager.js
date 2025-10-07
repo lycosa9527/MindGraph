@@ -433,21 +433,37 @@ class ToolbarManager {
         let textElement = null;
         let text = '';
         
-        // Method 1: Try as child
-        textElement = nodeElement.select('text');
-        if (!textElement.empty()) {
-            text = textElement.text() || '';
-        } else {
-            // Method 2: Try data-text-for attribute
+        // Check if this is a dimension node - special handling needed
+        const nodeType = nodeElement.attr('data-node-type');
+        if (nodeType === 'dimension') {
+            // For dimension nodes, get the actual value from data-dimension-value attribute
+            const dimensionValue = nodeElement.attr('data-dimension-value') || '';
+            text = dimensionValue;
+            
+            // Still find the text element for styling attributes
             textElement = d3.select(`[data-text-for="${nodeId}"]`);
+            if (textElement.empty()) {
+                // Try as child
+                textElement = nodeElement.select('text');
+            }
+        } else {
+            // Regular node handling - get display text
+            // Method 1: Try as child
+            textElement = nodeElement.select('text');
             if (!textElement.empty()) {
                 text = textElement.text() || '';
             } else {
-                // Method 3: Try next sibling
-                const shapeNode = nodeElement.node();
-                if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
-                    textElement = d3.select(shapeNode.nextElementSibling);
+                // Method 2: Try data-text-for attribute
+                textElement = d3.select(`[data-text-for="${nodeId}"]`);
+                if (!textElement.empty()) {
                     text = textElement.text() || '';
+                } else {
+                    // Method 3: Try next sibling
+                    const shapeNode = nodeElement.node();
+                    if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
+                        textElement = d3.select(shapeNode.nextElementSibling);
+                        text = textElement.text() || '';
+                    }
                 }
             }
         }
@@ -536,7 +552,8 @@ class ToolbarManager {
             return allPatterns.some(pattern => pattern.test(trimmedText));
         };
         
-        const isPlaceholder = isDefaultPlaceholder(text);
+        // For dimension nodes, never treat as placeholder since we're showing the actual value
+        const isPlaceholder = (nodeType === 'dimension') ? false : isDefaultPlaceholder(text);
         
         // Update property inputs
         if (this.propText) {
@@ -1103,9 +1120,9 @@ class ToolbarManager {
         // (e.g., "请为以下描述创建一个思维导图：{topic}")
         let prompt = mainTopic;
         
-        // For brace maps, check if user has specified a decomposition dimension
-        let decompositionDimension = null;
-        if (diagramType === 'brace_map') {
+        // For brace maps, tree maps, and bridge maps, check if user has specified a dimension
+        let dimensionPreference = null;
+        if (diagramType === 'brace_map' || diagramType === 'tree_map' || diagramType === 'bridge_map') {
             const dimensionNode = d3.select('[data-node-type="dimension"]');
             if (!dimensionNode.empty()) {
                 const rawDimension = dimensionNode.attr('data-dimension-value') || this.editor.currentSpec?.dimension;
@@ -1113,10 +1130,22 @@ class ToolbarManager {
                 // Only use dimension if it's actually filled (not empty, not just whitespace)
                 // If empty, let LLM auto-select the best dimension for the topic
                 if (rawDimension && rawDimension.trim() !== '') {
-                    decompositionDimension = rawDimension.trim();
-                    console.log('Brace map - User specified decomposition dimension:', decompositionDimension);
+                    dimensionPreference = rawDimension.trim();
+                    if (diagramType === 'brace_map') {
+                        console.log('Brace map - User specified decomposition dimension:', dimensionPreference);
+                    } else if (diagramType === 'tree_map') {
+                        console.log('Tree map - User specified classification dimension:', dimensionPreference);
+                    } else if (diagramType === 'bridge_map') {
+                        console.log('Bridge map - User specified analogy relationship pattern:', dimensionPreference);
+                    }
                 } else {
-                    console.log('Brace map - No dimension specified, LLM will auto-select best dimension');
+                    if (diagramType === 'brace_map') {
+                        console.log('Brace map - No dimension specified, LLM will auto-select best dimension');
+                    } else if (diagramType === 'tree_map') {
+                        console.log('Tree map - No dimension specified, LLM will auto-select best dimension');
+                    } else if (diagramType === 'bridge_map') {
+                        console.log('Bridge map - No relationship pattern specified, LLM will auto-select best pattern');
+                    }
                 }
             }
         }
@@ -1125,8 +1154,8 @@ class ToolbarManager {
         console.log('Main topic identified:', mainTopic);
         console.log('Total existing nodes:', existingNodes.length);
         console.log('Language:', language);
-        if (decompositionDimension) {
-            console.log('Decomposition dimension:', decompositionDimension);
+        if (dimensionPreference) {
+            console.log('Dimension preference:', dimensionPreference);
         }
         
         // Show loading state
@@ -1141,10 +1170,10 @@ class ToolbarManager {
                 language: language
             };
             
-            // Add dimension preference for brace maps ONLY if user has specified a meaningful dimension
-            // If dimension is empty/whitespace, omit it so LLM can intelligently choose the best dimension
-            if (decompositionDimension) {
-                requestBody.dimension_preference = decompositionDimension;
+            // Add dimension preference for brace maps, tree maps, and bridge maps ONLY if user has specified a meaningful dimension
+            // If dimension is empty/whitespace, omit it so LLM can intelligently choose the best dimension/pattern
+            if (dimensionPreference) {
+                requestBody.dimension_preference = dimensionPreference;
             }
             
             // Call API to generate diagram
@@ -1735,6 +1764,31 @@ class ToolbarManager {
      * Handle export - Export diagram as PNG (DingTalk quality - 3x)
      */
     handleExport() {
+        const svg = document.querySelector('#d3-container svg');
+        if (!svg) {
+            this.showNotification(this.getNotif('noDiagramToExport'), 'error');
+            return;
+        }
+        
+        // Reset view first for brace maps to ensure optimal export view
+        if (this.editor && this.editor.diagramType === 'brace_map') {
+            console.log('Resetting view before PNG export for brace map');
+            this.editor.fitDiagramToWindow();
+            
+            // Wait for the view reset animation to complete before exporting
+            setTimeout(() => {
+                this.performPNGExport();
+            }, 800); // Slightly longer than the 750ms transition duration
+        } else {
+            // For other diagram types, export immediately
+            this.performPNGExport();
+        }
+    }
+    
+    /**
+     * Perform the actual PNG export after view reset (if needed)
+     */
+    performPNGExport() {
         const svg = document.querySelector('#d3-container svg');
         if (!svg) {
             this.showNotification(this.getNotif('noDiagramToExport'), 'error');

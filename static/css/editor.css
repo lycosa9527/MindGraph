@@ -638,6 +638,7 @@ body {
     flex: 1;
     display: flex;
     overflow: hidden;
+    position: relative; /* Establish positioning context for property panel */
 }
 
 .canvas-panel {
@@ -770,6 +771,7 @@ body {
     overflow-y: auto;
     z-index: 100;
     animation: slideInRight 0.3s ease;
+    /* Positioned relative to editor-main-content container - automatically fits between toolbar and status bar */
 }
 
 @keyframes slideInRight {

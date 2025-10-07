@@ -42,10 +42,26 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Use provided theme and dimensions or defaults
-    const baseWidth = dimensions?.baseWidth || 800;
-    const baseHeight = dimensions?.baseHeight || 600;
-    const padding = dimensions?.padding || 40;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let baseWidth, baseHeight, padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        baseWidth = spec._recommended_dimensions.width;
+        baseHeight = spec._recommended_dimensions.height;
+        padding = spec._recommended_dimensions.padding;
+        console.log('Tree Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 800;
+        baseHeight = dimensions.height || dimensions.baseHeight || 600;
+        padding = dimensions.padding || 40;
+    } else {
+        // Default dimensions
+        baseWidth = 800;
+        baseHeight = 600;
+        padding = 40;
+    }
     
     // Load theme from style manager - FIXED: No more hardcoded overrides
     let THEME;
@@ -194,22 +210,29 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     // RENDERING ORDER: Draw T-connector lines FIRST (underneath), then nodes on top
     // ---------- T形连线实现 (Draw T-connectors FIRST for proper z-order) ----------
     if (branchLayouts.length > 0) {
-        // 水平线 Y 坐标：根节点底部到子节点顶部的正中间
+        // Calculate vertical line positions
+        // Dimension label is at rootY + rootBox.h / 2 + 20
         const rootBottom = rootY + rootBox.h / 2;
+        const dimensionLabelY = rootBottom + 20;  // Dimension label position
         const branchTop = branchY - branchLayouts[0].branchBox.h / 2;
-        const tLineY = rootBottom + (branchTop - rootBottom) / 2;
+        
+        // T-junction Y: ensure it's at least 40px below dimension label for clear visual separation
+        const minTLineY = dimensionLabelY + 40;  // At least 40px below label
+        const calculatedTLineY = rootBottom + (branchTop - rootBottom) / 2;
+        const tLineY = Math.max(minTLineY, calculatedTLineY);  // Use the lower of the two
         
         // 所有子节点 X 范围
         const branchXs = branchLayouts.map(l => l.branchX);
         const minX = Math.min(...branchXs);
         const maxX = Math.max(...branchXs);
         
-        // 垂直干线：根节点到底部中点
+        // 垂直干线：从根节点底部延伸，穿过dimension label区域
+        // Extended line: starts at root bottom, extends through and beyond dimension label area
         svg.append('line')
             .attr('x1', rootX)
-            .attr('y1', rootY + rootBox.h / 2)
+            .attr('y1', rootY + rootBox.h / 2)  // Start at root node bottom
             .attr('x2', rootX)
-            .attr('y2', tLineY)
+            .attr('y2', tLineY)  // Extend down to T-junction (already beyond label at +25px)
             .attr('stroke', '#bbb')
             .attr('stroke-width', 2);
         
@@ -260,6 +283,45 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('data-node-type', 'topic')
         .attr('cursor', 'pointer')
         .text(spec.topic);
+    
+    // ALWAYS show dimension label (even for old diagrams without dimension field)
+    // This allows users to click and add/edit the classification dimension
+    const dimensionY = rootY + rootBox.h / 2 + 20;  // 20px below topic box
+    const dimensionFontSize = 14;
+    
+    let dimensionText;
+    let textOpacity;
+    
+    if (spec.dimension && spec.dimension.trim() !== '') {
+        // Dimension has value - show it with label
+        const hasChinese = /[\u4e00-\u9fa5]/.test(spec.dimension);
+        const dimensionLabel = hasChinese ? '分类维度' : 'Classification by';
+        dimensionText = `[${dimensionLabel}: ${spec.dimension}]`;
+        textOpacity = 0.8;
+    } else {
+        // Dimension is empty or doesn't exist - show placeholder
+        // Detect language from topic to show appropriate placeholder
+        const hasChinese = /[\u4e00-\u9fa5]/.test(spec.topic);
+        dimensionText = hasChinese ? '[分类维度: 点击填写...]' : '[Classification by: click to specify...]';
+        textOpacity = 0.4;  // Lower opacity for placeholder
+    }
+    
+    // Make dimension text EDITABLE - users can click to change/fill classification standard
+    svg.append('text')
+        .attr('x', rootX)
+        .attr('y', dimensionY)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+        .attr('font-size', dimensionFontSize)
+        .attr('font-family', 'Inter, Segoe UI, sans-serif')
+        .attr('font-style', 'italic')
+        .style('opacity', textOpacity)
+        .style('cursor', 'pointer')  // Show it's clickable
+        .attr('data-node-id', 'dimension_label')  // Make it editable
+        .attr('data-node-type', 'dimension')  // Identify as dimension node
+        .attr('data-dimension-value', spec.dimension || '')  // Store actual dimension value (or empty)
+        .text(dimensionText);
 
     // Render branches and children stacked vertically with straight connectors
     branchLayouts.forEach((layout, branchIndex) => {
@@ -384,6 +446,65 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     // T-connectors already drawn at the beginning (before root node) for proper z-order
     // This ensures connector lines appear UNDERNEATH all nodes (root, branches, and leaves)
 
+    // Add alternative dimensions at the bottom (if alternative_dimensions field exists)
+    if (spec.alternative_dimensions && Array.isArray(spec.alternative_dimensions) && spec.alternative_dimensions.length > 0) {
+        // Position exactly 15px below the last rendered content
+        const separatorY = requiredBottomY + 15;  // Separator line 15px below the bottom edge of last content
+        const alternativesY = separatorY + 20;  // Label 20px below separator
+        const fontSize = 13;
+        
+        // Detect language from first alternative dimension (if contains Chinese characters, use Chinese)
+        const hasChinese = /[\u4e00-\u9fa5]/.test(spec.alternative_dimensions[0]);
+        const alternativeLabel = hasChinese ? '本主题的其他可能分类维度：' : 'Other possible dimensions for this topic:';
+        
+        // Calculate center position based on content width
+        const contentCenterX = rootX;  // Center on root node position
+        
+        // Draw separator line centered on content
+        const separatorMargin = 60; // Margin from content edges
+        const separatorLeftX = Math.max(padding, rootX - 200);
+        const separatorRightX = Math.min(width - padding, rootX + 200);
+        
+        svg.append('line')
+            .attr('x1', separatorLeftX)
+            .attr('y1', separatorY)
+            .attr('x2', separatorRightX)
+            .attr('y2', separatorY)
+            .attr('stroke', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '4,4')
+            .style('opacity', 0.4);
+        
+        // Add label centered on content
+        svg.append('text')
+            .attr('x', contentCenterX)
+            .attr('y', alternativesY - 5)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+            .attr('font-size', fontSize)
+            .attr('font-family', 'Inter, Segoe UI, sans-serif')
+            .style('opacity', 0.7)
+            .text(alternativeLabel);
+        
+        // Add dimension chips/badges centered on content
+        const dimensionChips = spec.alternative_dimensions.map(d => `• ${d}`).join('  ');
+        svg.append('text')
+            .attr('x', contentCenterX)
+            .attr('y', alternativesY + 18)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+            .attr('font-size', fontSize - 1)
+            .attr('font-family', 'Inter, Segoe UI, sans-serif')
+            .attr('font-weight', '600')
+            .style('opacity', 0.8)
+            .text(dimensionChips);
+        
+        // Update required bottom Y to account for alternative dimensions section
+        requiredBottomY = alternativesY + 35; // Add space for the alternative dimensions content
+    }
+    
     // Expand SVG height if content exceeds current height
     const finalNeededHeight = Math.ceil(requiredBottomY + padding);
     if (finalNeededHeight > height) {

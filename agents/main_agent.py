@@ -1409,7 +1409,7 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
         user_prompt: User's input prompt
         diagram_type: Type of diagram to generate
         language: Language for processing
-        dimension_preference: Optional dimension preference for brace maps
+        dimension_preference: Optional dimension preference for brace maps (decomposition), tree maps (classification), and bridge maps (analogy pattern)
     
     Returns:
         dict: Generated specification
@@ -1486,9 +1486,14 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
         logger.debug(f"User prompt: {user_prompt}")
         logger.debug(f"Language: {language}")
         
-        # For brace maps, pass dimension_preference if available
-        if diagram_type == 'brace_map' and dimension_preference:
-            logger.info(f"Passing dimension preference to brace map agent: {dimension_preference}")
+        # For brace maps, tree maps, and bridge maps, pass dimension_preference if available
+        if (diagram_type == 'brace_map' or diagram_type == 'tree_map' or diagram_type == 'bridge_map') and dimension_preference:
+            if diagram_type == 'brace_map':
+                logger.info(f"Passing decomposition dimension preference to brace map agent: {dimension_preference}")
+            elif diagram_type == 'tree_map':
+                logger.info(f"Passing classification dimension preference to tree map agent: {dimension_preference}")
+            elif diagram_type == 'bridge_map':
+                logger.info(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
             result = agent.generate_graph(user_prompt, language, dimension_preference)
         else:
             result = agent.generate_graph(user_prompt, language)
@@ -1579,7 +1584,7 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_
         language (str): Language for processing ('zh' or 'en')
         forced_diagram_type (str, optional): Force a specific diagram type instead of auto-detection.
                                             Used for auto-complete to preserve current diagram type.
-        dimension_preference (str, optional): User-specified dimension for brace maps.
+        dimension_preference (str, optional): User-specified dimension for brace maps (decomposition) and tree maps (classification).
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering

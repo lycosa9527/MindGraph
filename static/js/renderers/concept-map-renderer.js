@@ -61,9 +61,26 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     }
     console.log('Concept map renderer: Spec validation passed');
     
-    const baseWidth = dimensions?.baseWidth || 1600;
-    const baseHeight = dimensions?.baseHeight || 1000;
-    const padding = dimensions?.padding || 80;
+    // Use adaptive dimensions if provided, otherwise use fallback dimensions
+    let baseWidth, baseHeight, padding;
+    
+    if (spec._recommended_dimensions) {
+        // Adaptive dimensions from template (calculated based on window size)
+        baseWidth = spec._recommended_dimensions.width;
+        baseHeight = spec._recommended_dimensions.height;
+        padding = spec._recommended_dimensions.padding;
+        console.log('Concept Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
+    } else if (dimensions) {
+        // Provided dimensions (fallback)
+        baseWidth = dimensions.width || dimensions.baseWidth || 1600;
+        baseHeight = dimensions.height || dimensions.baseHeight || 1000;
+        padding = dimensions.padding || 80;
+    } else {
+        // Default dimensions
+        baseWidth = 1600;
+        baseHeight = 1000;
+        padding = 80;
+    }
     
     // Starting concept map rendering with specified dimensions
     
