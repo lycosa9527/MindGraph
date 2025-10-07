@@ -1268,6 +1268,12 @@ class ToolbarManager {
                 this.editor.renderDiagram();
                 console.log('ToolbarManager: Auto-complete completed successfully');
                 this.showNotification(this.getNotif('autoCompleteSuccess'), 'success');
+                
+                // Reset view to optimal position after rendering completes
+                setTimeout(() => {
+                    console.log('ToolbarManager: Resetting view after auto-complete');
+                    this.editor.fitDiagramToWindow();
+                }, 300); // Wait for diagram render to complete
             } else {
                 throw new Error('No diagram specification returned');
             }
@@ -1770,9 +1776,9 @@ class ToolbarManager {
             return;
         }
         
-        // Reset view first for brace maps to ensure optimal export view
-        if (this.editor && this.editor.diagramType === 'brace_map') {
-            console.log('Resetting view before PNG export for brace map');
+        // Reset view first for all diagram types to ensure optimal export view
+        if (this.editor) {
+            console.log('Resetting view before PNG export');
             this.editor.fitDiagramToWindow();
             
             // Wait for the view reset animation to complete before exporting
@@ -1780,7 +1786,7 @@ class ToolbarManager {
                 this.performPNGExport();
             }, 800); // Slightly longer than the 750ms transition duration
         } else {
-            // For other diagram types, export immediately
+            // Fallback if editor not available - export immediately
             this.performPNGExport();
         }
     }

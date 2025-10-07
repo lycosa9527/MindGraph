@@ -334,8 +334,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .style('display', 'block')
         .style('background-color', THEME.background || '#f8f9fa');
 
-    // Position topic with minimal left margin
-    const topicX = 15;  // Minimal left margin for clean look
+    // Position topic with adequate left margin to prevent dimension label cutoff
+    const topicX = 50;  // Increased from 15 to 50 to provide space for centered dimension label
     // Topic will be drawn AFTER brace center is calculated to ensure correct position
 
     // Position parts to the right of topic with spacing for brace
@@ -732,10 +732,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // Calculate center of actual content (not canvas) for proper alignment
         const contentCenterX = (topicX + maxContentRightX) / 2;
         
-        // Draw separator line centered on content
-        const separatorMargin = 60; // Margin from content edges
-        const separatorLeftX = Math.max(topicX, contentCenterX - (maxContentRightX - topicX) / 2);
-        const separatorRightX = Math.min(maxContentRightX, contentCenterX + (maxContentRightX - topicX) / 2);
+        // Draw separator line spanning the full width of diagram (from left to right edge)
+        const separatorLeftX = padding;
+        const separatorRightX = totalWidth - padding;
         
         svg.append('line')
             .attr('x1', separatorLeftX)

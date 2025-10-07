@@ -719,22 +719,23 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // Calculate optimal dimensions based on content (exactly as in old renderer)
     const numAnalogies = spec.analogies.length;
     const minWidthPerAnalogy = 120; // Minimum width needed per analogy pair
-    const minPadding = 40; // Minimum padding on sides
+    const leftPadding = 110; // Extra left padding for dimension label (text extends leftward with text-anchor: end)
+    const rightPadding = 40; // Right padding
+    const topBottomPadding = 40; // Top and bottom padding
     
     // Calculate optimal width: enough space for all analogies + separators + padding
     const contentWidth = (numAnalogies * minWidthPerAnalogy) + ((numAnalogies - 1) * 60); // 60px for separator spacing
-    const optimalWidth = Math.max(contentWidth + (2 * minPadding), dimensions?.baseWidth || 600);
+    const optimalWidth = Math.max(contentWidth + leftPadding + rightPadding, dimensions?.baseWidth || 600);
     
     // Calculate optimal height: enough space for text + vertical lines + padding + alternative dimensions
     const textHeight = 40; // Height for text elements
     const lineHeight = 50; // Height for vertical connection lines
     const altDimensionsHeight = 80; // Always reserve space for alternative dimensions section (even if empty)
-    const optimalHeight = Math.max(textHeight + lineHeight + (2 * minPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
+    const optimalHeight = Math.max(textHeight + lineHeight + (2 * topBottomPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
     
     // Use calculated dimensions or fall back to provided dimensions
     const width = optimalWidth;
     const height = optimalHeight;
-    const padding = minPadding; // Use minimal padding to reduce empty space
     
     // Create SVG
     const svg = d3.select(`#${containerId}`)
@@ -758,15 +759,15 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     
     // 1. Create horizontal main line (ensure it's visible) - EXACTLY as in old renderer
     const mainLine = svg.append("line")
-        .attr("x1", padding)
+        .attr("x1", leftPadding)
         .attr("y1", height/2)
-        .attr("x2", width - padding)
+        .attr("x2", width - rightPadding)
         .attr("y2", height/2)
         .attr("stroke", "#666666") // Changed to grey
         .attr("stroke-width", 4); // Use attr instead of style
     
     // 2. Calculate separator positions with better spacing - EXACTLY as in old renderer
-    const availableWidth = width - (2 * padding);
+    const availableWidth = width - leftPadding - rightPadding;
     const sectionWidth = availableWidth / (spec.analogies.length + 1);
     
     // 3. Draw analogy pairs first - EXACTLY as in old renderer
@@ -775,9 +776,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         console.log(`  Analogy data:`, analogy);
         console.log(`  Left text: "${analogy.left}"`);
         console.log(`  Right text: "${analogy.right}"`);
-        console.log(`  Position: x=${padding + (sectionWidth * (i + 1))}, y=${height/2}`);
+        console.log(`  Position: x=${leftPadding + (sectionWidth * (i + 1))}, y=${height/2}`);
         
-        const xPos = padding + (sectionWidth * (i + 1));
+        const xPos = leftPadding + (sectionWidth * (i + 1));
         const isFirstPair = i === 0; // Check if this is the first pair
         
         // 3.1 Add upstream item (left) - above the main line
@@ -904,7 +905,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         console.log('Label line 2:', labelLine2);
         console.log('Is English:', isEnglish);
         
-        const leftX = padding - 10; // Position on the left side
+        const leftX = leftPadding - 10; // Position 10px left of the main content area
         
         // Line 1: Label
         svg.append("text")
@@ -936,7 +937,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // EXACTLY as in old renderer
     for (let i = 0; i < spec.analogies.length - 1; i++) {
         // Position separator between analogy pairs (to the right of current pair)
-        const xPos = padding + (sectionWidth * (i + 1.5)); // Position between pairs
+        const xPos = leftPadding + (sectionWidth * (i + 1.5)); // Position between pairs
         
         // 4.1 Add little triangle separator on the main line - pointing UPWARD
         const triangleSize = 8; // Back to normal size
@@ -959,66 +960,91 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .style("fill", "#666666"); // Changed to grey to match triangles
     }
     
-    // 5. Add alternative dimensions section at the bottom (ALWAYS show, even if empty)
+    // 5. Add alternative dimensions section at the bottom (matching tree/brace map style)
     const hasAlternatives = spec.alternative_dimensions && Array.isArray(spec.alternative_dimensions) && spec.alternative_dimensions.length > 0;
     console.log('Has alternative dimensions:', hasAlternatives);
     if (hasAlternatives) {
         console.log('Rendering alternative dimensions:', spec.alternative_dimensions);
     }
     
-    // Always show the section (with or without alternatives)
-    const altY = height - 55;
-    const lineY = altY - 15;
-    console.log('Alternative dimensions Y position:', altY, 'Total height:', height);
+    // Calculate the actual bottom of all analogy nodes
+    // Lower nodes are positioned at height/2 + 40
+    // First pair has rectangles with height 30, centered at height/2 + 40
+    // So bottom of rectangle is: height/2 + 40 + (30/2) = height/2 + 55
+    // Regular text extends ~7px below baseline, so bottom is: height/2 + 40 + 7 = height/2 + 47
+    const rectHeight = 30;
+    const lastContentBottomY = height / 2 + 40 + (rectHeight / 2); // Bottom of the lower rectangle nodes (height/2 + 55)
+    const separatorY = lastContentBottomY + 15;  // Separator line 15px below the bottom edge of last content
+    const alternativesY = separatorY + 20;  // Label 20px below separator
+    const fontSize = 13;
+    console.log('Alternative dimensions Y position:', alternativesY, 'Total height:', height);
     
-    // Draw separator line
-    svg.append("line")
-        .attr("x1", padding + 20)
-        .attr("y1", lineY)
-        .attr("x2", width - padding - 20)
-        .attr("y2", lineY)
-        .attr("stroke", THEME.dimensionLabelColor || '#1976d2')
-        .attr("stroke-width", 1)
-        .attr("opacity", 0.3);
-    
-    // Add label (detect language from spec)
-    const hasChineseInSpec = spec.dimension ? /[\u4e00-\u9fa5]/.test(spec.dimension) : 
-                              (spec.analogies && spec.analogies[0] && /[\u4e00-\u9fa5]/.test(spec.analogies[0].left + spec.analogies[0].right));
+    // Detect language from first alternative dimension or spec
+    const hasChineseInSpec = spec.alternative_dimensions && spec.alternative_dimensions.length > 0 ? 
+                              /[\u4e00-\u9fa5]/.test(spec.alternative_dimensions[0]) :
+                              (spec.dimension ? /[\u4e00-\u9fa5]/.test(spec.dimension) : 
+                              (spec.analogies && spec.analogies[0] && /[\u4e00-\u9fa5]/.test(spec.analogies[0].left + spec.analogies[0].right)));
     const isEnglishSpec = !hasChineseInSpec;
-    const altLabel = isEnglishSpec ? "Other possible analogy patterns for this topic:" : "其他可能的类比关系:";
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", altY)
-        .attr("text-anchor", "middle")
-        .text(altLabel)
-        .style("font-size", "11px")
-        .style("fill", THEME.dimensionLabelColor || '#1976d2')
-        .style("opacity", 0.7);
+    const alternativeLabel = isEnglishSpec ? 'Other possible analogy patterns for this topic:' : '本主题的其他可能类比关系:';
+    
+    // Calculate center position based on content width
+    const contentCenterX = width / 2;
+    
+    // Draw dotted separator line centered on content (matching tree/brace map)
+    const separatorLeftX = Math.max(leftPadding, contentCenterX - 200);
+    const separatorRightX = Math.min(width - rightPadding, contentCenterX + 200);
+    
+    svg.append('line')
+        .attr('x1', separatorLeftX)
+        .attr('y1', separatorY)
+        .attr('x2', separatorRightX)
+        .attr('y2', separatorY)
+        .attr('stroke', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+        .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '4,4')  // Dotted line matching tree/brace map
+        .style('opacity', 0.4);  // Match tree/brace map opacity
+    
+    // Add label centered on content
+    svg.append('text')
+        .attr('x', contentCenterX)
+        .attr('y', alternativesY - 5)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+        .attr('font-size', fontSize)
+        .attr('font-family', 'Inter, Segoe UI, sans-serif')
+        .style('opacity', 0.7)  // Match tree/brace map opacity
+        .text(alternativeLabel);
     
     // Display 4-6 alternative dimensions as chips (or placeholder)
     if (hasAlternatives) {
         const altsToShow = spec.alternative_dimensions.slice(0, 6);
-        const chipsText = altsToShow.map(d => `• ${d}`).join('  ');
-        svg.append("text")
-            .attr("x", width / 2)
-            .attr("y", altY + 18)
-            .attr("text-anchor", "middle")
-            .text(chipsText)
-            .style("font-size", "10px")
-            .style("fill", THEME.dimensionLabelColor || '#1976d2')
-            .style("opacity", 0.6);
+        const dimensionChips = altsToShow.map(d => `• ${d}`).join('  ');  // Match tree/brace map format
+        svg.append('text')
+            .attr('x', contentCenterX)
+            .attr('y', alternativesY + 18)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+            .attr('font-size', fontSize - 1)  // 12px matching tree/brace map
+            .attr('font-family', 'Inter, Segoe UI, sans-serif')
+            .attr('font-weight', '600')
+            .style('opacity', 0.8)  // Match tree/brace map opacity
+            .text(dimensionChips);
     } else {
         // Show placeholder when no alternatives available
-        const placeholderText = isEnglishSpec ? "[Alternatives will appear here]" : "[替代关系将在此显示]";
-        svg.append("text")
-            .attr("x", width / 2)
-            .attr("y", altY + 18)
-            .attr("text-anchor", "middle")
-            .text(placeholderText)
-            .style("font-size", "10px")
-            .style("fill", THEME.dimensionLabelColor || '#1976d2')
-            .style("font-style", "italic")
-            .style("opacity", 0.4);
+        const placeholderText = isEnglishSpec ? '[Alternatives will appear here]' : '[替代关系将在此显示]';
+        svg.append('text')
+            .attr('x', contentCenterX)
+            .attr('y', alternativesY + 18)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.dimensionLabelColor || '#1976d2')
+            .attr('font-size', fontSize - 1)
+            .attr('font-family', 'Inter, Segoe UI, sans-serif')
+            .attr('font-style', 'italic')
+            .style('opacity', 0.4)
+            .text(placeholderText);
     }
     
     // Watermark removed from canvas display - will be added during PNG export only

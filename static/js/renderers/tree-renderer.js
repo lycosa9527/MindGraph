@@ -460,10 +460,9 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         // Calculate center position based on content width
         const contentCenterX = rootX;  // Center on root node position
         
-        // Draw separator line centered on content
-        const separatorMargin = 60; // Margin from content edges
-        const separatorLeftX = Math.max(padding, rootX - 200);
-        const separatorRightX = Math.min(width - padding, rootX + 200);
+        // Draw separator line spanning the full width of diagram (from left to right padding)
+        const separatorLeftX = padding;
+        const separatorRightX = width - padding;
         
         svg.append('line')
             .attr('x1', separatorLeftX)

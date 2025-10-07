@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 Latest Release Summary | 最新版本概述
 
-### Version 3.2.4 - Bridge Map Analogy Patterns 🌉
+### Version 3.2.5 - View Optimization 📸
+
+**Improved Export**: All diagram types now auto-reset view before export!  
+**Smart Auto-Complete**: View automatically resets to optimal position after AI regeneration  
+**Optimal Snapshots**: Ensures exported PNG captures the best view of your diagram  
+**Seamless UX**: No manual view adjustment needed for export or auto-complete  
+**Professional Quality**: 800ms wait for export, 300ms for auto-complete  
+**DingTalk Ready**: High-quality 3x scale PNG export with watermark
+
+**改进导出**: 所有图表类型现在在导出前自动重置视图！  
+**智能自动完成**: AI重新生成后视图自动重置到最佳位置  
+**最佳快照**: 确保导出的PNG捕获图表的最佳视图  
+**流畅体验**: 导出或自动完成无需手动调整视图  
+**专业质量**: 导出等待800毫秒，自动完成等待300毫秒  
+**钉钉就绪**: 带水印的高质量3倍缩放PNG导出
+
+---
+
+## [3.2.4] - Bridge Map Analogy Patterns 🌉
 
 **New Feature**: Bridge maps now display analogy relationship patterns!  
 **Pattern Labels**: Shows the relationship type used (e.g., "[Capital to Country]", "[Author to Work]")  
@@ -26,6 +44,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **可编辑**: 点击模式标签可更改类比关系类型  
 **课堂优化**: 深蓝色标签优化课堂投影仪可见性  
 **丰富示例**: "首都到国家"、"功能到对象"、"因到果"等
+
+---
+
+## [3.2.5] - 2025-01-07 - View Optimization Enhancement
+
+### Changed - Export & Auto-Complete Functionality 📸
+- **Auto-Reset View Before Export**
+  - Export button now triggers `fitDiagramToWindow()` for ALL diagram types (previously only brace maps)
+  - Ensures exported PNG always captures the optimal view of the diagram
+  - Users no longer need to manually reset view before exporting
+  - Provides consistent export experience across all diagram types
+
+- **Auto-Reset View After Auto-Complete**
+  - Auto-complete now automatically resets view to optimal position after diagram regeneration
+  - Ensures newly generated content is immediately visible and well-framed
+  - 300ms delay allows diagram to render before view adjustment
+  - Provides seamless user experience without manual view adjustment
+
+- **Export Workflow**
+  1. User clicks Export button
+  2. System automatically resets view to optimal fit
+  3. 800ms wait for smooth animation completion
+  4. High-quality PNG capture (3x scale for DingTalk/Retina displays)
+  5. Watermark applied ("MindGraph" in bottom-right corner)
+  6. File downloaded with timestamp
+
+- **Auto-Complete Workflow**
+  1. User clicks Auto-Complete button (or edits dimension and auto-completes)
+  2. AI generates new diagram content
+  3. Diagram renders with new specification
+  4. System automatically resets view to optimal fit (after 300ms)
+  5. User sees perfectly framed diagram
+
+- **Benefits**
+  - **Classroom Ready**: Teachers can export/regenerate diagrams without worrying about zoom/pan state
+  - **Professional Quality**: Every exported diagram is perfectly framed
+  - **Seamless UX**: Auto-complete shows new content in optimal view automatically
+  - **Time Saving**: Eliminates manual view adjustment steps
+  - **Consistent Results**: Same auto-reset behavior for all 8 thinking map types + concept maps + mind maps
+
+### Technical Details
+- Files Modified:
+  - `static/js/editor/toolbar-manager.js` - Updated `handleExport()` to reset view for all diagram types (not just brace maps)
+  - `static/js/editor/toolbar-manager.js` - Updated `handleAutoComplete()` to reset view after successful diagram regeneration
+- Previous Behavior (Export): Only brace maps auto-reset before export
+- Previous Behavior (Auto-Complete): No auto-reset after regeneration
+- New Behavior: All diagram types auto-reset view for both export and auto-complete operations
 
 ---
 
@@ -86,6 +151,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.2.4] - 2025-01-07 - Bridge Map Analogy Pattern Enhancement
 
+### Fixed - Layout & Rendering
+- **Brace Map Dimension Label Cutoff**: Increased left margin (`topicX`) from 15px to 50px to prevent centered dimension label text from extending beyond left canvas edge
+- **Bridge Map Dimension Label Cutoff**: Increased left padding from 40px to 110px to accommodate left-aligned dimension label with `text-anchor: end`
+- **Bridge Map Alternative Dimensions Position**: Fixed calculation to position section 15px below the actual bottom border of lower analogy nodes (height/2 + 55) instead of crossing over them
+- **Tree Map Alternative Dimensions Separator**: Changed dotted line to span full diagram width (padding to padding) instead of centered 400px width
+- **Brace Map Alternative Dimensions Separator**: Changed dotted line to span full diagram width (padding to padding) for consistency with tree map
+
 ### Added - Bridge Map Improvements 🌉
 - **Analogy Relationship Pattern Feature**
   - Added dimension label below first analogy pair (between left and right items)
@@ -132,6 +204,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Agent Generation**: Accepts `dimension_preference` parameter to use user-specified relationship pattern
 - **Agent Logging**: Added detailed logging to track dimension and alternative_dimensions from LLM response
 - **Renderer Display**: Added dimension label on left side (two-line format) and alternative patterns section at bottom
+- **Alternative Dimensions Styling**: Matched tree/brace map visual design:
+  - Dotted separator line (`stroke-dasharray: '4,4'`) with 0.4 opacity
+  - Positioned 15px below the bottom border of lower analogy nodes (height/2 + 55)
+  - Correctly calculates position based on rectangle height (30px) of first analogy pair
+  - Increased font sizes: 13px for label, 12px for chips (from 11px/10px)
+  - Enhanced opacities: 0.7 for label, 0.8 for chips (from 0.7/0.6)
+  - Consistent dark blue color (#1976d2) throughout
+- **Layout Padding Fix**: Resolved dimension label cutoff issue:
+  - Increased left padding from 40px to 110px to accommodate dimension label
+  - Dimension label positioned at `leftPadding - 10` with `text-anchor: end`
+  - Separate left (110px), right (40px), and top/bottom (40px) padding values
+  - All content elements (main line, analogies, separators) adjusted for new padding
 - **Prompt Restructure**: Complete rewrite with 3-step analysis process (EN & ZH):
   - **Step 1**: ANALYZE the relationship pattern between analogy pairs
   - **Step 2**: GENERATE 6 analogies using that consistent pattern
