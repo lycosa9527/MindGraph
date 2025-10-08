@@ -82,7 +82,7 @@ class UnifiedFormatter(logging.Formatter):
             source = 'API'
         elif source == 'settings':
             source = 'CONF'
-        elif source == 'uvicorn':
+        elif source.startswith('uvicorn'):
             source = 'SRVR'
         elif source == 'asyncio':
             source = 'ASYN'
@@ -110,6 +110,14 @@ logging.basicConfig(
     handlers=[console_handler, file_handler],
     force=True
 )
+
+# Configure Uvicorn's loggers to use our custom formatter
+for uvicorn_logger_name in ['uvicorn', 'uvicorn.error', 'uvicorn.access']:
+    uvicorn_logger = logging.getLogger(uvicorn_logger_name)
+    uvicorn_logger.handlers = []  # Remove default handlers
+    uvicorn_logger.addHandler(console_handler)
+    uvicorn_logger.addHandler(file_handler)
+    uvicorn_logger.propagate = False
 
 logger = logging.getLogger(__name__)
 logger.info(f"Logging initialized: {log_level_str}")

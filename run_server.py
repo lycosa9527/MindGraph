@@ -80,10 +80,10 @@ def run_uvicorn():
             workers=1 if reload else workers,  # Use 1 worker in dev mode for reload
             reload=reload,
             log_level=log_level,
+            log_config=None,  # Use logging configured in main.py instead of Uvicorn's default
             timeout_keep_alive=300,  # 5 minutes for SSE
             timeout_graceful_shutdown=10,  # Reduced from 30s to 10s for faster shutdown
             access_log=True,
-            use_colors=True,
             # Limit worker connections to prevent hanging on shutdown
             limit_concurrency=1000 if not reload else None
         )
