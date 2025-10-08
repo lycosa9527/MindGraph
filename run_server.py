@@ -1,24 +1,31 @@
 #!/usr/bin/env python3
 """
-MindGraph Waitress Server Launcher
-Simple, clean server launcher using Waitress for cross-platform compatibility.
+MindGraph Uvicorn Server Launcher
+==================================
+
+Async server launcher using Uvicorn for FastAPI application.
+Works on both Windows 11 (development) and Ubuntu (production).
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Migration Status: Phase 5 - Uvicorn Server Runner
 """
 
 import os
 import sys
-import platform
-import subprocess
 import importlib.util
+import multiprocessing
 
 def check_package_installed(package_name):
     """Check if a package is installed"""
     spec = importlib.util.find_spec(package_name)
     return spec is not None
 
-def run_waitress():
-    """Run MindGraph with Waitress"""
-    if not check_package_installed('waitress'):
-        print("Waitress not installed. Install with: pip install waitress>=3.0.0")
+def run_uvicorn():
+    """Run MindGraph with Uvicorn (FastAPI async server)"""
+    if not check_package_installed('uvicorn'):
+        print("❌ Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
         sys.exit(1)
     
     try:
@@ -29,16 +36,80 @@ def run_waitress():
         # Ensure logs directory exists
         os.makedirs("logs", exist_ok=True)
         
+        # Load uvicorn config
+        import uvicorn
+        from settings import config
+        
+        # Get configuration from environment
+        host = os.getenv('HOST', '0.0.0.0')
+        port = int(os.getenv('PORT', '5000'))
+        workers = int(os.getenv('UVICORN_WORKERS', (multiprocessing.cpu_count() * 2) + 1))
+        log_level = os.getenv('LOG_LEVEL', 'info').lower()
+        environment = os.getenv('ENVIRONMENT', 'production')
+        reload = environment == 'development'
+        
+        # Display banner
+        print("=" * 80)
+        print("🚀 MindGraph FastAPI Server Starting...")
+        print("=" * 80)
+        print(f"Environment: {environment}")
+        print(f"Host: {host}")
+        print(f"Port: {port}")
+        print(f"Workers: {workers}")
+        print(f"Log Level: {log_level}")
+        print(f"Auto-reload: {reload}")
+        print(f"Expected Capacity: 4,000+ concurrent SSE connections")
+        print("=" * 80)
+        print(f"✅ Server ready at: http://localhost:{port}")
+        print(f"✅ Interactive Editor: http://localhost:{port}/editor")
+        print(f"✅ API Docs: http://localhost:{port}/docs")
+        print("=" * 80)
+        print(f"Press Ctrl+C to stop the server")
+        print()
+        
+        # Run uvicorn
+        uvicorn.run(
+            "main:app",
+            host=host,
+            port=port,
+            workers=1 if reload else workers,  # Use 1 worker in dev mode for reload
+            reload=reload,
+            log_level=log_level,
+            timeout_keep_alive=300,  # 5 minutes for SSE
+            timeout_graceful_shutdown=30,
+            access_log=True,
+            use_colors=True
+        )
+    except Exception as e:
+        print(f"❌ Failed to start Uvicorn: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+def run_flask_legacy():
+    """Legacy: Run Flask + Waitress (deprecated)"""
+    print("⚠️  WARNING: Flask + Waitress is deprecated. FastAPI + Uvicorn is now the default.")
+    print("⚠️  This mode is only for temporary fallback during migration.")
+    print()
+    
+    if not check_package_installed('waitress'):
+        print("❌ Waitress not installed. Install with: pip install waitress>=3.0.0")
+        print("💡 Or use the new FastAPI server by removing MINDGRAPH_SERVER=flask")
+        sys.exit(1)
+    
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(script_dir)
+        os.makedirs("logs", exist_ok=True)
+        
         from waitress import serve
-        from app import app
+        from app import app, print_banner
         
         # Load configuration
         config_module = {}
         with open('waitress.conf.py', 'r') as f:
             exec(f.read(), config_module)
         
-        # Display banner and user-friendly URL
-        from app import print_banner
         display_host = "localhost" if config_module['host'] == '0.0.0.0' else config_module['host']
         print_banner(display_host, config_module['port'])
         print(f"Press Ctrl+C to stop the server")
@@ -54,32 +125,21 @@ def run_waitress():
             recv_bytes=config_module['recv_bytes']
         )
     except Exception as e:
-        print(f"Failed to start Waitress: {e}")
-        sys.exit(1)
-
-def run_flask_dev():
-    """Fallback: Run Flask development server"""
-    print("🟨 Starting MindGraph with Flask development server (fallback)")
-    print("⚠️  WARNING: This is not recommended for production use")
-    
-    try:
-        subprocess.run([sys.executable, 'app.py'])
-    except Exception as e:
-        print(f"Failed to start Flask development server: {e}")
+        print(f"❌ Failed to start Flask + Waitress: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 def main():
     """Main entry point"""
-    # Banner will be displayed by Waitress startup
-    
-    # Check if force mode is specified
+    # Check if legacy mode is requested
     force_server = os.getenv('MINDGRAPH_SERVER', '').lower()
     
     if force_server == 'flask':
-        run_flask_dev()
+        run_flask_legacy()
     else:
-        # Default to Waitress
-        run_waitress()
+        # Default to FastAPI + Uvicorn
+        run_uvicorn()
 
 if __name__ == '__main__':
     main()

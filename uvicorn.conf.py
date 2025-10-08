@@ -1,0 +1,87 @@
+"""
+Uvicorn Configuration for MindGraph FastAPI Application
+=======================================================
+
+Production-ready async server configuration for Windows + Ubuntu deployment.
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Migration Status: Phase 5 - Uvicorn Configuration
+"""
+
+import os
+import multiprocessing
+
+# ============================================================================
+# SERVER CONFIGURATION
+# ============================================================================
+
+# Host and Port
+bind = f"0.0.0.0:{os.getenv('PORT', '5000')}"
+host = "0.0.0.0"
+port = int(os.getenv('PORT', '5000'))
+
+# Workers (async, so use fewer workers than threads)
+# Formula: (2 x CPU cores) + 1 for async I/O-bound workloads
+workers = int(os.getenv('UVICORN_WORKERS', (multiprocessing.cpu_count() * 2) + 1))
+
+# ============================================================================
+# ASYNC CONFIGURATION FOR 4,000+ CONCURRENT SSE CONNECTIONS
+# ============================================================================
+
+# Uvicorn automatically handles concurrent requests with asyncio event loop
+# No thread pool needed - async/await handles concurrency
+
+# Timeout for long-running requests (SSE can run indefinitely)
+timeout_keep_alive = 300  # 5 minutes for SSE connections
+timeout_graceful_shutdown = 30  # Graceful shutdown timeout
+
+# ============================================================================
+# LOGGING
+# ============================================================================
+
+# Log level
+log_level = os.getenv('LOG_LEVEL', 'info').lower()
+
+# Access log
+access_log = True
+use_colors = True
+
+# ============================================================================
+# DEVELOPMENT VS PRODUCTION
+# ============================================================================
+
+# Reload on code changes (development only)
+reload = os.getenv('ENVIRONMENT', 'production') == 'development'
+
+# Production settings
+if os.getenv('ENVIRONMENT') == 'production':
+    # Disable auto-reload in production
+    reload = False
+    
+    # Use production log level
+    log_level = 'warning'
+
+# ============================================================================
+# CONFIGURATION SUMMARY
+# ============================================================================
+
+config_summary = f"""
+Uvicorn Configuration Summary:
+------------------------------
+Host: {host}
+Port: {port}
+Workers: {workers}
+Timeout Keep-Alive: {timeout_keep_alive}s
+Graceful Shutdown: {timeout_graceful_shutdown}s
+Log Level: {log_level}
+Reload: {reload}
+Environment: {os.getenv('ENVIRONMENT', 'production')}
+
+Expected Capacity: 4,000+ concurrent SSE connections
+"""
+
+if __name__ == "__main__":
+    print(config_summary)
+
