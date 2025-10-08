@@ -59,7 +59,7 @@ validate_environment() {
     echo "✓ Required directories created"
     
     # Check essential log files (matching setup.py requirements)
-    local log_files=("waitress_access.log" "waitress_error.log" "waitress.pid" "app.log" "agent.log")
+    local log_files=("app.log" "agent.log")
     for log_file in "${log_files[@]}"; do
         if [ ! -f "logs/$log_file" ]; then
             touch "logs/$log_file"
@@ -68,10 +68,10 @@ validate_environment() {
     done
     
     # Check Python dependencies
-    if python -c "import flask, playwright, langchain" 2>/dev/null; then
-        echo "✓ Core Python dependencies are available"
+    if python -c "import fastapi, uvicorn, playwright, langchain" 2>/dev/null; then
+        echo "✓ Core Python dependencies are available (FastAPI + Uvicorn)"
     else
-        echo "✗ Missing core Python dependencies"
+        echo "✗ Missing core Python dependencies (FastAPI, Uvicorn, Playwright, or LangChain)"
         exit 1
     fi
 }

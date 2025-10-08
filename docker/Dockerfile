@@ -1,6 +1,6 @@
 # MindGraph - Optimized Docker Build
 # Multi-stage build with aggressive size optimization
-# Version: 2.5.3
+# Version: 4.0.0 (FastAPI + Uvicorn)
 
 # ============================================================================
 # STAGE 1: Base Python Environment (Minimal)
@@ -79,17 +79,22 @@ FROM playwright-deps AS app
 # Create non-root user
 RUN groupadd -r mindgraph && useradd -r -g mindgraph mindgraph
 
-# Copy only essential application files
-COPY --chown=mindgraph:mindgraph app.py run_server.py settings.py api_routes.py browser_manager.py llm_clients.py urls.py web_pages.py waitress.conf.py setup.py LICENSE ./
+# Copy only essential application files (FastAPI structure)
+COPY --chown=mindgraph:mindgraph main.py run_server.py uvicorn.conf.py setup.py LICENSE ./
 COPY --chown=mindgraph:mindgraph agents/ ./agents/
 COPY --chown=mindgraph:mindgraph prompts/ ./prompts/
 COPY --chown=mindgraph:mindgraph static/ ./static/
 COPY --chown=mindgraph:mindgraph templates/ ./templates/
 COPY --chown=mindgraph:mindgraph test/ ./test/
+COPY --chown=mindgraph:mindgraph routers/ ./routers/
+COPY --chown=mindgraph:mindgraph models/ ./models/
+COPY --chown=mindgraph:mindgraph clients/ ./clients/
+COPY --chown=mindgraph:mindgraph services/ ./services/
+COPY --chown=mindgraph:mindgraph config/ ./config/
 
 # Create minimal directories and files
 RUN mkdir -p logs static/images test/images \
-    && touch logs/waitress_access.log logs/waitress_error.log logs/waitress.pid logs/app.log logs/agent.log \
+    && touch logs/app.log logs/agent.log \
     && chown -R mindgraph:mindgraph logs static/images test/images
 
 # Copy entrypoint script

@@ -2,11 +2,13 @@
 
 This folder contains all Docker-related files for the MindGraph application.
 
+**Version**: 4.0.0 (FastAPI + Uvicorn)
+
 ## Files
 
-- **`Dockerfile`** - Multi-stage optimized Docker build configuration
+- **`Dockerfile`** - Multi-stage optimized Docker build configuration (FastAPI stack)
 - **`docker-compose.yml`** - Docker Compose configuration for easy deployment
-- **`docker-entrypoint.sh`** - Container startup script with Playwright validation
+- **`docker-entrypoint.sh`** - Container startup script with FastAPI/Uvicorn validation
 - **`docker.env.example`** - Environment variables template
 - **`README.md`** - This file
 
@@ -36,12 +38,22 @@ cp docker/docker.env.example .env
 
 ## Features
 
-- **Optimized multi-stage build** (2.93GB final image)
+- **FastAPI + Uvicorn stack** for high-performance async SSE support
+- **Optimized multi-stage build** (~2.93GB final image)
 - **Pre-installed Playwright browser** (no runtime downloads)
 - **Comprehensive environment variable support**
 - **Health checks and monitoring**
 - **Non-root user for security**
-- **Automatic Playwright validation**
+- **Automatic dependency validation** (FastAPI, Uvicorn, Playwright, LangChain)
+- **4,000+ concurrent SSE connections support**
+
+## Architecture
+
+MindGraph uses **FastAPI** with **Uvicorn** (async ASGI server) to support:
+- 4,000+ concurrent SSE (Server-Sent Events) connections
+- Non-blocking I/O for diagram generation
+- Async browser automation (Playwright)
+- High-performance bilingual API (zh/en)
 
 ## Docker Hub Deployment
 
