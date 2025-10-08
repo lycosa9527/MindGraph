@@ -25,7 +25,7 @@ def check_package_installed(package_name):
 def run_uvicorn():
     """Run MindGraph with Uvicorn (FastAPI async server)"""
     if not check_package_installed('uvicorn'):
-        print("❌ Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
+        print("[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
         sys.exit(1)
     
     try:
@@ -52,7 +52,7 @@ def run_uvicorn():
         
         # Display banner
         print("=" * 80)
-        print("🚀 MindGraph FastAPI Server Starting...")
+        print("MindGraph FastAPI Server Starting...")
         print("=" * 80)
         print(f"Environment: {environment}")
         print(f"Host: {host}")
@@ -62,9 +62,9 @@ def run_uvicorn():
         print(f"Auto-reload: {reload}")
         print(f"Expected Capacity: 4,000+ concurrent SSE connections")
         print("=" * 80)
-        print(f"✅ Server ready at: http://localhost:{port}")
-        print(f"✅ Interactive Editor: http://localhost:{port}/editor")
-        print(f"✅ API Docs: http://localhost:{port}/docs")
+        print(f"Server ready at: http://localhost:{port}")
+        print(f"Interactive Editor: http://localhost:{port}/editor")
+        print(f"API Docs: http://localhost:{port}/docs")
         print("=" * 80)
         print(f"Press Ctrl+C to stop the server")
         print()
@@ -85,20 +85,20 @@ def run_uvicorn():
             limit_concurrency=1000 if not reload else None
         )
     except Exception as e:
-        print(f"❌ Failed to start Uvicorn: {e}")
+        print(f"[ERROR] Failed to start Uvicorn: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
 
 def run_flask_legacy():
     """Legacy: Run Flask + Waitress (deprecated)"""
-    print("⚠️  WARNING: Flask + Waitress is deprecated. FastAPI + Uvicorn is now the default.")
-    print("⚠️  This mode is only for temporary fallback during migration.")
+    print("[WARNING] Flask + Waitress is deprecated. FastAPI + Uvicorn is now the default.")
+    print("[WARNING] This mode is only for temporary fallback during migration.")
     print()
     
     if not check_package_installed('waitress'):
-        print("❌ Waitress not installed. Install with: pip install waitress>=3.0.0")
-        print("💡 Or use the new FastAPI server by removing MINDGRAPH_SERVER=flask")
+        print("[ERROR] Waitress not installed. Install with: pip install waitress>=3.0.0")
+        print("[INFO] Or use the new FastAPI server by removing MINDGRAPH_SERVER=flask")
         sys.exit(1)
     
     try:
@@ -129,7 +129,7 @@ def run_flask_legacy():
             recv_bytes=config_module['recv_bytes']
         )
     except Exception as e:
-        print(f"❌ Failed to start Flask + Waitress: {e}")
+        print(f"[ERROR] Failed to start Flask + Waitress: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
