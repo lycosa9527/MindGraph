@@ -50,6 +50,30 @@ class Messages:
         "invalid_request": {
             "zh": "请求无效",
             "en": "Invalid request"
+        },
+        "learning_session_start_failed": {
+            "zh": "创建学习会话失败",
+            "en": "Failed to start learning session"
+        },
+        "learning_session_not_found": {
+            "zh": "学习会话未找到或已过期",
+            "en": "Learning session not found or expired"
+        },
+        "learning_node_not_found": {
+            "zh": "节点未在图示中找到",
+            "en": "Node not found in diagram"
+        },
+        "learning_validation_failed": {
+            "zh": "答案验证失败",
+            "en": "Answer validation failed"
+        },
+        "learning_hint_failed": {
+            "zh": "提示生成失败",
+            "en": "Hint generation failed"
+        },
+        "learning_verification_failed": {
+            "zh": "理解验证失败",
+            "en": "Understanding verification failed"
         }
     }
     

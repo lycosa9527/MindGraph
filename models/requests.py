@@ -166,3 +166,20 @@ class FrontendLogRequest(BaseModel):
             raise ValueError(f"Level must be one of {valid_levels}")
         return v.lower()
 
+
+class LearningVerifyUnderstandingRequest(BaseModel):
+    """Request model for /api/learning/verify_understanding endpoint"""
+    session_id: str = Field(..., description="Learning session ID")
+    node_id: str = Field(..., description="Node ID being verified")
+    user_explanation: str = Field(..., min_length=1, max_length=1000, description="User's explanation of understanding")
+    language: Language = Field(Language.EN, description="Language for verification feedback")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "session_id": "learning_123",
+                "node_id": "attribute_3",
+                "user_explanation": "光合作用通过叶绿素吸收光能，将二氧化碳和水转化为氧气和葡萄糖",
+                "language": "zh"
+            }
+        }
