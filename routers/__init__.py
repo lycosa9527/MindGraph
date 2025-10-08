@@ -2,7 +2,7 @@
 MindGraph FastAPI Routers
 ==========================
 
-This package contains all FastAPI route modules, replacing Flask Blueprints.
+This package contains all FastAPI route modules organized by functionality.
 
 Routers:
 - api.py: Main API endpoints (diagrams, LLM, agents)

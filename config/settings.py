@@ -130,12 +130,12 @@ class Config:
 
     @property
     def HOST(self):
-        """Flask application host address."""
+        """FastAPI application host address."""
         return self._get_cached_value('HOST', '0.0.0.0')
     
     @property
     def PORT(self):
-        """Flask application port number."""
+        """FastAPI application port number."""
         try:
             val = int(self._get_cached_value('PORT', '9527'))
             if not (1 <= val <= 65535):
@@ -183,7 +183,7 @@ class Config:
     
     @property
     def DEBUG(self):
-        """Flask debug mode setting."""
+        """FastAPI debug mode setting."""
         return self._get_cached_value('DEBUG', 'False').lower() == 'true'
     
     @property
@@ -404,13 +404,13 @@ class Config:
         Print a comprehensive configuration summary.
         
         Displays:
-        - Flask application settings
+        - FastAPI application settings
         - API configurations and availability
         - D3.js visualization settings
         - Theme and styling options
         """
         logger.info("Configuration Summary:")
-        logger.info(f"   Flask: {self.HOST}:{self.PORT} (Debug: {self.DEBUG})")
+        logger.info(f"   FastAPI: {self.HOST}:{self.PORT} (Debug: {self.DEBUG})")
         logger.info(f"   Qwen: {self.QWEN_API_URL}")
         logger.info(f"     - Classification: {self.QWEN_MODEL_CLASSIFICATION} (fast/cheap)")
         logger.info(f"     - Generation: {self.QWEN_MODEL_GENERATION} (high quality)")

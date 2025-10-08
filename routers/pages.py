@@ -2,7 +2,7 @@
 MindGraph Template Rendering Routes
 ====================================
 
-FastAPI routes for serving HTML templates (migrated from web_pages.py).
+FastAPI routes for serving HTML templates.
 
 All template routes are async for consistency, though they perform minimal I/O.
 

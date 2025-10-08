@@ -2,7 +2,7 @@
 MindGraph Cache Status Routes
 ==============================
 
-FastAPI routes for JavaScript cache status endpoints (migrated from app.py).
+FastAPI routes for JavaScript cache status endpoints.
 
 Provides real-time monitoring of the lazy loading JavaScript cache system.
 

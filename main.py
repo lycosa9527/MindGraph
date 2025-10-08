@@ -2,7 +2,7 @@
 MindGraph - AI-Powered Graph Generation Application (FastAPI)
 ==============================================================
 
-FastAPI migration from Flask application with full async support.
+Modern async web application for AI-powered diagram generation.
 
 Version: 4.0.0 (FastAPI)
 Author: lycosa9527
@@ -14,9 +14,9 @@ Features:
 - FastAPI with Pydantic models for type safety
 - Uvicorn ASGI server (Windows + Ubuntu compatible)
 - Auto-generated OpenAPI documentation at /docs
-- Preserved logging, middleware, and business logic from Flask version
+- Comprehensive logging, middleware, and business logic
 
-Migration Status: Phase 2 - Core Framework Setup
+Status: Production Ready
 """
 
 import os
@@ -33,14 +33,14 @@ load_dotenv()
 os.makedirs("logs", exist_ok=True)
 
 # ============================================================================
-# EARLY LOGGING SETUP (Preserved from Flask app)
+# EARLY LOGGING SETUP
 # ============================================================================
 
 log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
 log_level = getattr(logging, log_level_str, logging.INFO)
 
 class UnifiedFormatter(logging.Formatter):
-    """Unified logging formatter with ANSI color support (preserved from Flask)."""
+    """Unified logging formatter with ANSI color support."""
     
     COLORS = {
         'DEBUG': '\033[36m',    # Cyan
@@ -135,7 +135,7 @@ from config.settings import config
 async def lifespan(app: FastAPI):
     """
     Lifespan context manager for startup and shutdown events.
-    Replaces Flask's @app.before_first_request and similar decorators.
+    Handles application initialization and cleanup.
     """
     # Startup
     app.state.start_time = time.time()
@@ -177,7 +177,7 @@ app = FastAPI(
 # MIDDLEWARE CONFIGURATION
 # ============================================================================
 
-# CORS Middleware (preserved settings from Flask-CORS)
+# CORS Middleware
 if config.DEBUG:
     # Development: Allow multiple origins
     server_url = config.SERVER_URL
@@ -207,11 +207,11 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 async def log_requests(request: Request, call_next):
     """
     Log all HTTP requests and responses with timing information.
-    Preserves Flask @app.before_request and @app.after_request functionality.
+    Handles request/response lifecycle events.
     """
     start_time = time.time()
     
-    # Block access to deprecated files (preserved from Flask)
+    # Block access to deprecated files
     if request.url.path == '/static/js/d3-renderers.js':
         logger.warning(f"BLOCKED: Attempted access to old d3-renderers.js from {request.client.host}")
         return JSONResponse(
