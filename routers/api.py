@@ -24,7 +24,8 @@ from models import (
     AIAssistantRequest,
     GenerateRequest,
     GenerateResponse,
-    ExportPNGRequest
+    ExportPNGRequest,
+    FrontendLogRequest
 )
 
 # Import async clients
@@ -231,7 +232,7 @@ async def export_png(req: ExportPNGRequest):
 # ============================================================================
 
 @router.post('/frontend_log')
-async def frontend_log(data: Dict[str, str]):
+async def frontend_log(req: FrontendLogRequest):
     """Log frontend messages to backend console"""
     level_map = {
         'error': logging.ERROR,
@@ -239,9 +240,8 @@ async def frontend_log(data: Dict[str, str]):
         'info': logging.INFO,
         'debug': logging.DEBUG
     }
-    level = level_map.get(data.get('level', 'info').lower(), logging.INFO)
-    message = data.get('message', '')
-    logger.log(level, f"[FRONTEND] {message}")
+    level = level_map.get(req.level.lower(), logging.INFO)
+    logger.log(level, f"[FRONTEND] {req.message}")
     return {'status': 'logged'}
 
 

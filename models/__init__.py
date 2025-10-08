@@ -16,6 +16,7 @@ from .requests import (
     LearningStartSessionRequest,
     LearningValidateAnswerRequest,
     LearningHintRequest,
+    FrontendLogRequest,
 )
 
 from .responses import (
@@ -36,6 +37,7 @@ __all__ = [
     "LearningStartSessionRequest",
     "LearningValidateAnswerRequest",
     "LearningHintRequest",
+    "FrontendLogRequest",
     # Responses
     "GenerateResponse",
     "ErrorResponse",
