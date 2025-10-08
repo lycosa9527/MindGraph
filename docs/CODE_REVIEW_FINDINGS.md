@@ -33,7 +33,7 @@
 
 1. **ALL 10 Agent Classes**: Sync methods calling async LLM client without `await`
    - **Result**: `RuntimeWarning: coroutine was never awaited`
-   - **Impact**: Diagram generation completely broken
+   - **Impact**: Diagram generation, autocomplete, and initial prompts completely broken
    
 2. **Learning Routes**: Not migrated, still 100% Flask Blueprint code
    - **Result**: All 4 learning endpoints return 404  
@@ -178,12 +178,17 @@ Line 5: "This package contains all FastAPI route modules, replacing Flask Bluepr
 **Problem Discovered**:
 During migration, `agents/core/agent_utils.py` was updated to return the **async** client from `clients/llm.py`, but **ALL agent classes** were left as synchronous functions. This creates a catastrophic async/sync mismatch.
 
-**Actual Error**:
+**Actual Error** (from autocomplete feature):
 ```python
 RuntimeWarning: coroutine 'QwenClient.chat_completion' was never awaited
   spec = self._generate_circle_map_spec(prompt, language)
 RuntimeWarning: Enable tracemalloc to get the object allocation traceback
 ```
+
+**User-Facing Symptoms**:
+- Clicking "AI Complete" button (autocomplete) → fails with JSON parse error
+- Entering prompt on homepage → fails to generate diagram
+- All LLM-based generation features non-functional
 
 **Root Cause**:
 ```python
@@ -197,10 +202,18 @@ def _generate_circle_map_spec(self, prompt: str, language: str):  # ❌ SYNC fun
 
 **Impact**:
 - ❌ **ALL diagram generation completely broken**
+- ❌ **Auto-complete feature broken** (toolbar "AI Complete" button)
+- ❌ **Initial prompt generation broken** (homepage prompt input)
 - ❌ Frontend gets JSON parsing errors
 - ❌ FastAPI validation fails: `ResponseValidationError`
 - ❌ Cannot handle ANY requests (breaks immediately)
 - ❌ Defeats entire purpose of FastAPI migration
+
+**User-Facing Features Broken**:
+1. 🔴 **Homepage Prompt Input** (`/` or `/index`) - Cannot generate any diagrams from prompts
+2. 🔴 **Autocomplete Feature** (Toolbar "AI Complete" button) - Fails when trying to expand diagrams
+3. 🔴 **Manual Diagram Creation** - All diagram types fail to generate
+4. 🔴 **All 10 Diagram Types** - Circle, Bubble, Mind Map, Tree, Flow, etc. all broken
 
 **Affected Agent Files** (ALL need async refactor):
 1. `agents/thinking_maps/circle_map_agent.py` (6 methods)
@@ -589,7 +602,10 @@ Migrate learning mode to FastAPI (independent of agents):
 ---
 
 ### **PHASE 3: Async Agent Refactor** (3-4 hours) - ⚠️ **MUST DO FIRST**
-**This is BLOCKING - must be done to fix diagram generation**:
+**This is BLOCKING - must be done to fix ALL user-facing features**:
+- Homepage prompt generation
+- Autocomplete (AI Complete button)
+- All manual diagram creation
 
 #### Step 1: Delete Sync LLM Code (10 min)
 - Delete `QwenLLM` class from `agents/main_agent.py` (lines 278-350)
