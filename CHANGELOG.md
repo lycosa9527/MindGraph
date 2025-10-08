@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.1.0] - 2025-10-08 - Tencent Hunyuan LLM Support & Visual Enhancements
 
 ### Fixed
+- **Critical: DoubleBubbleMap Async Event Loop Error**
+  - Fixed `RuntimeError: This event loop is already running` in DoubleBubbleMapAgent
+  - Converted `extract_double_bubble_topics_llm` from sync wrapper to fully async
+  - Removed problematic `loop.run_until_complete()` pattern
+  - DoubleBubbleMap now works with all 4 LLMs in autocomplete and manual generation
+
 - **Critical: Agent Model Parameter Propagation**
   - All 9 agent classes now properly accept `model` parameter in `__init__()`
   - Fixed `TypeError: __init__() got an unexpected keyword argument 'model'`
