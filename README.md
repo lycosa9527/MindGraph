@@ -7,29 +7,41 @@
 [![Uvicorn](https://img.shields.io/badge/Uvicorn-0.24+-purple.svg)](https://www.uvicorn.org/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.0.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.1.0-brightgreen.svg)](CHANGELOG.md)
 [![Async Ready](https://img.shields.io/badge/Async-100%25-success.svg)](CHANGELOG.md)
+[![Multi-LLM](https://img.shields.io/badge/LLMs-4_Models-blue.svg)](CHANGELOG.md)
+[![Bilingual](https://img.shields.io/badge/Languages-EN%20%7C%20中文-orange.svg)](CHANGELOG.md)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
 Transform natural language into professional diagrams. Supports 10 diagram types including Thinking Maps, Mind Maps, and Concept Maps with intelligent LLM classification and D3.js rendering.
 
 将自然语言转换为专业图表。支持10种图表类型，包括思维导图、思维导图和概念图，具有智能LLM分类和D3.js渲染功能。
 
-## 🎯 **v4.0 - Full Async Architecture** | **v4.0 - 完全异步架构**
+## 🎯 **v4.1 - Multi-LLM & Visual Enhancements** | **v4.1 - 多LLM与视觉增强**
 
-✅ **FastAPI + Uvicorn** - Modern async ASGI framework for high-performance  
-✅ **4,000+ Concurrent SSE Connections** - Non-blocking event loop architecture  
-✅ **100% Async HTTP** - Zero blocking I/O, all requests use aiohttp  
-✅ **Auto-Generated API Docs** - Interactive Swagger UI at `/docs`  
-✅ **Type-Safe with Pydantic** - Full request/response validation  
-✅ **Cross-Platform** - Same codebase runs on Windows 11 & Ubuntu  
+### 🤖 **4 LLM Models with Smart Switching** | **4种LLM模型智能切换**
+✅ **Qwen (通义千问)** - Fast & reliable, default model | 快速可靠，默认模型  
+✅ **DeepSeek-v3.1** - High quality reasoning | 高质量推理  
+✅ **Tencent Hunyuan (混元)** - Tencent Cloud AI | 腾讯云AI  
+✅ **Kimi (月之暗面)** - Moonshot AI | 月之暗面AI  
 
-✅ **FastAPI + Uvicorn** - 现代异步ASGI框架，高性能  
-✅ **4,000+并发SSE连接** - 非阻塞事件循环架构  
-✅ **100%异步HTTP** - 零阻塞I/O，所有请求使用aiohttp  
-✅ **自动生成API文档** - 交互式Swagger UI在 `/docs`  
-✅ **Pydantic类型安全** - 完整请求/响应验证  
-✅ **跨平台** - 相同代码运行在Windows 11和Ubuntu
+### ✨ **Professional Visual Feedback** | **专业视觉反馈**
+✅ **Glowing Button Effects** - Color-coded completion indicators | 色彩编码完成指示器  
+✅ **Pulsing Animations** - Smooth 2s pulse when results ready | 结果就绪时平滑2秒脉动  
+✅ **Unique Colors** - Blue, Purple, Orange, Teal for each LLM | 每个LLM使用独特颜色  
+
+### 🌐 **100% Bilingual Support** | **100%双语支持**
+✅ **Complete Translation** - All UI, notifications, and errors | 所有界面、通知和错误  
+✅ **Seamless Switching** - Instant language toggle | 即时语言切换  
+✅ **K-12 Ready** - Designed for classroom use | 专为课堂使用设计  
+
+### 🚀 **v4.0 - Full Async Architecture** | **v4.0 - 完全异步架构**
+✅ **FastAPI + Uvicorn** - Modern async ASGI framework | 现代异步ASGI框架  
+✅ **4,000+ Concurrent SSE Connections** - Non-blocking event loop | 非阻塞事件循环  
+✅ **100% Async HTTP** - Zero blocking I/O with aiohttp | 零阻塞I/O  
+✅ **Auto-Generated API Docs** - Interactive Swagger UI at `/docs` | 交互式Swagger UI  
+✅ **Type-Safe with Pydantic** - Full validation | 完整验证  
+✅ **Cross-Platform** - Windows 11 & Ubuntu | 跨平台
 
 ## Features | 功能特性
 
@@ -52,9 +64,13 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
   - **Node Counter**: Real-time node count display for all diagram types | **节点计数**: 所有图表类型的实时节点计数显示
 
 - **AI-Powered Features** | **AI功能**
-  - **Auto-Complete**: AI intelligently expands diagrams based on existing content | **自动完成**: AI根据现有内容智能扩展图表
+  - **Multi-LLM Auto-Complete**: Compare 4 AI models simultaneously with visual feedback | **多LLM自动完成**: 同时比较4个AI模型，视觉反馈
+    - Click one button → Get 4 different AI perspectives | 点击一个按钮 → 获得4个不同AI视角
+    - Each LLM glows with unique color when ready | 每个LLM就绪时发出独特颜色光芒
+    - Switch between results instantly | 即时切换结果
   - **MindMate AI Assistant**: Integrated Dify-powered AI helper in side panel | **MindMate AI助手**: 集成Dify驱动的AI助手在侧边栏
   - **Smart Prompt Processing**: Natural language to diagram generation | **智能提示处理**: 自然语言转图表生成
+  - **LLM Selection**: Choose your preferred AI model for generation | **LLM选择**: 选择您喜欢的AI模型进行生成
 
 - **Export & Share** | **导出与分享**
   - **PNG Export**: High-quality image export with watermark | **PNG导出**: 高质量图像导出，带水印
