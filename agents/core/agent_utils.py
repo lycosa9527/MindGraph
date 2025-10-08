@@ -20,22 +20,20 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def get_llm_client():
+def get_llm_client(model_id='qwen'):
     """
-    Get the LLM client instance based on the currently selected LLM model.
+    Get the LLM client instance for a specific model.
+    
+    Args:
+        model_id (str): LLM model ID ('qwen', 'deepseek', 'kimi'). Defaults to 'qwen'.
     
     Returns:
-        LLM client instance for the currently selected model
+        LLM client instance for the specified model
     """
     try:
         from clients.llm import get_llm_client as get_client
-        from agents import main_agent
-        
-        # Get the currently selected LLM model
-        current_model = main_agent.get_llm_model()
-        logger.debug(f"get_llm_client(): Fetching client for model: {current_model}")
-        
-        return get_client(model_id=current_model)
+        logger.debug(f"get_llm_client(): Fetching client for model: {model_id}")
+        return get_client(model_id=model_id)
     except ImportError as e:
         logger.error(f"Failed to import: {e}")
         return None

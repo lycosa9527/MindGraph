@@ -24,22 +24,28 @@ class BaseAgent(ABC):
     specialized agents must implement.
     """
     
-    def __init__(self):
-        """Initialize the base agent."""
+    def __init__(self, model='qwen'):
+        """
+        Initialize the base agent.
+        
+        Args:
+            model (str): LLM model to use ('qwen', 'deepseek', 'kimi'). Defaults to 'qwen'.
+        """
         self.language = 'zh'
+        self.model = model  # Store model for this agent instance
         self.logger = logger
     
     @property
     def llm_client(self):
         """
-        Get the LLM client dynamically based on current selection.
-        This ensures each agent uses the currently selected LLM model.
+        Get the LLM client for this agent's model.
+        Each agent instance uses its own model (no global state).
         """
         try:
             from ..core.agent_utils import get_llm_client
-            return get_llm_client()
+            return get_llm_client(model_id=self.model)  # Pass model explicitly
         except Exception as e:
-            logger.warning(f"Failed to get LLM client: {e}")
+            logger.warning(f"Failed to get LLM client for model {self.model}: {e}")
             return None
     
     @abstractmethod

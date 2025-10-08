@@ -1372,7 +1372,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
     raise ValueError("All concept map generation methods failed - check LLM configuration")
 
 
-async def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str, dimension_preference: str = None) -> dict:
+async def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str, dimension_preference: str = None, model: str = 'qwen') -> dict:
     """
     Generate specification using the appropriate specialized agent.
     
@@ -1381,76 +1381,77 @@ async def _generate_spec_with_agent(user_prompt: str, diagram_type: str, languag
         diagram_type: Type of diagram to generate
         language: Language for processing
         dimension_preference: Optional dimension preference for brace maps (decomposition), tree maps (classification), and bridge maps (analogy pattern)
+        model: LLM model to use ('qwen', 'deepseek', 'kimi'). Passed to agent for LLM client selection.
     
     Returns:
         dict: Generated specification
     """
     try:
-        # Import and instantiate the appropriate agent
+        # Import and instantiate the appropriate agent with model
         if diagram_type == 'bubble_map':
             from .thinking_maps.bubble_map_agent import BubbleMapAgent
-            agent = BubbleMapAgent()
+            agent = BubbleMapAgent(model=model)
         elif diagram_type == 'bridge_map':
             logger.debug("Bridge map agent selection started")
             from .thinking_maps.bridge_map_agent import BridgeMapAgent
-            agent = BridgeMapAgent()
+            agent = BridgeMapAgent(model=model)
             logger.debug("BridgeMapAgent imported and instantiated successfully")
         elif diagram_type == 'tree_map':
             from .thinking_maps.tree_map_agent import TreeMapAgent
-            agent = TreeMapAgent()
+            agent = TreeMapAgent(model=model)
         elif diagram_type == 'circle_map':
             from .thinking_maps.circle_map_agent import CircleMapAgent
-            agent = CircleMapAgent()
+            agent = CircleMapAgent(model=model)
         elif diagram_type == 'double_bubble_map':
             from .thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
-            agent = DoubleBubbleMapAgent()
+            agent = DoubleBubbleMapAgent(model=model)
         elif diagram_type == 'flow_map':
             from .thinking_maps.flow_map_agent import FlowMapAgent
-            agent = FlowMapAgent()
+            agent = FlowMapAgent(model=model)
         elif diagram_type == 'brace_map':
             from .thinking_maps.brace_map_agent import BraceMapAgent
-            agent = BraceMapAgent()
+            agent = BraceMapAgent(model=model)
         elif diagram_type == 'multi_flow_map':
             from .thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
-            agent = MultiFlowMapAgent()
+            agent = MultiFlowMapAgent(model=model)
         elif diagram_type == 'mind_map' or diagram_type == 'mindmap':
             from .mind_maps.mind_map_agent import MindMapAgent
-            agent = MindMapAgent()
+            agent = MindMapAgent(model=model)
         elif diagram_type == 'concept_map':
             from .concept_maps.concept_map_agent import ConceptMapAgent
-            agent = ConceptMapAgent()
+            agent = ConceptMapAgent(model=model)
         # Thinking Tools
         elif diagram_type == 'factor_analysis':
             from .thinking_tools.factor_analysis_agent import FactorAnalysisAgent
-            agent = FactorAnalysisAgent()
+            agent = FactorAnalysisAgent(model=model)
         elif diagram_type == 'three_position_analysis':
             from .thinking_tools.three_position_analysis_agent import ThreePositionAnalysisAgent
-            agent = ThreePositionAnalysisAgent()
+            agent = ThreePositionAnalysisAgent(model=model)
         elif diagram_type == 'perspective_analysis':
             from .thinking_tools.perspective_analysis_agent import PerspectiveAnalysisAgent
-            agent = PerspectiveAnalysisAgent()
+            agent = PerspectiveAnalysisAgent(model=model)
         elif diagram_type == 'goal_analysis':
             from .thinking_tools.goal_analysis_agent import GoalAnalysisAgent
-            agent = GoalAnalysisAgent()
+            agent = GoalAnalysisAgent(model=model)
         elif diagram_type == 'possibility_analysis':
             from .thinking_tools.possibility_analysis_agent import PossibilityAnalysisAgent
-            agent = PossibilityAnalysisAgent()
+            agent = PossibilityAnalysisAgent(model=model)
         elif diagram_type == 'result_analysis':
             from .thinking_tools.result_analysis_agent import ResultAnalysisAgent
-            agent = ResultAnalysisAgent()
+            agent = ResultAnalysisAgent(model=model)
         elif diagram_type == 'five_w_one_h':
             from .thinking_tools.five_w_one_h_agent import FiveWOneHAgent
-            agent = FiveWOneHAgent()
+            agent = FiveWOneHAgent(model=model)
         elif diagram_type == 'whwm_analysis':
             from .thinking_tools.whwm_analysis_agent import WHWMAnalysisAgent
-            agent = WHWMAnalysisAgent()
+            agent = WHWMAnalysisAgent(model=model)
         elif diagram_type == 'four_quadrant':
             from .thinking_tools.four_quadrant_agent import FourQuadrantAgent
-            agent = FourQuadrantAgent()
+            agent = FourQuadrantAgent(model=model)
         else:
             # Fallback to bubble map
             from .thinking_maps.bubble_map_agent import BubbleMapAgent
-            agent = BubbleMapAgent()
+            agent = BubbleMapAgent(model=model)
         
         # Generate using the agent
         logger.debug(f"Calling {diagram_type} agent")
@@ -1546,7 +1547,7 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     return cleaned_prompt
 
 
-async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None, dimension_preference=None):
+async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None, dimension_preference=None, model='qwen'):
     """
     Simplified agent workflow that directly calls specialized agents.
     
@@ -1556,6 +1557,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
         forced_diagram_type (str, optional): Force a specific diagram type instead of auto-detection.
                                             Used for auto-complete to preserve current diagram type.
         dimension_preference (str, optional): User-specified dimension for brace maps (decomposition) and tree maps (classification).
+        model (str): LLM model to use ('qwen', 'deepseek', 'kimi'). Passed through call chain to avoid race conditions.
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
@@ -1585,7 +1587,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
             logger.info(f"Agent: Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
-        spec = await _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference)
+        spec = await _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference, model)
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Agent: Failed to generate spec for {diagram_type}")
