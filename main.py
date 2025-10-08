@@ -302,13 +302,18 @@ async def get_status():
     }
 
 # ============================================================================
-# ROUTER REGISTRATION (Will be added in Phase 2.2)
+# ROUTER REGISTRATION
 # ============================================================================
 
-# TODO Phase 2.2: Import and include routers
-# from routers import api, pages, learning
+from routers import pages, cache
+
+# Register routers
+app.include_router(pages.router)
+app.include_router(cache.router)
+
+# TODO Phase 2.2: Import remaining routers (complex)
+# from routers import api, learning
 # app.include_router(api.router)
-# app.include_router(pages.router)
 # app.include_router(learning.router)
 
 # ============================================================================
