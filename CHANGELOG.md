@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.1.1] - 2025-10-08 - CDN Dependency Removal
+
+### Fixed
+- **Critical: External CDN Dependencies Causing Load Failures**
+  - Replaced CDN links with local copies of markdown-it and DOMPurify libraries
+  - Fixed `ERR_CONNECTION_TIMED_OUT` errors when loading from cdn.jsdelivr.net
+  - Fixed `window.markdownit is not a function` error in AI Assistant initialization
+  - AI Assistant panel now initializes properly without external dependencies
+  - Improved reliability for users in restricted networks (China GFW, corporate firewalls)
+  - Added `markdown-it.min.js` (103KB) to `/static/js/`
+  - Added `purify.min.js` (21KB) to `/static/js/`
+  - Updated `templates/editor.html` to reference local JavaScript files
+  - Application now works completely offline (except for LLM API calls)
+
+### Impact
+- ✅ No more external CDN timeouts
+- ✅ Faster page load times
+- ✅ Works in China and restricted network environments
+- ✅ More reliable AI Assistant initialization
+- ✅ Reduced dependency on third-party services
+
+---
+
 ## [4.1.0] - 2025-10-08 - Tencent Hunyuan LLM Support & Visual Enhancements
 
 ### Fixed
