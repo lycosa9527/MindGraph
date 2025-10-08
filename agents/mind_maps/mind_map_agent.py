@@ -98,7 +98,7 @@ class MindMapAgent(BaseAgent):
                 }
             
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self.enhance_spec(spec)
+            enhanced_spec = await self.enhance_spec(spec)
             
             logger.info(f"MindMapAgent: Successfully generated mind map")
             return {
@@ -319,7 +319,7 @@ class MindMapAgent(BaseAgent):
         except:
             return False
     
-    def enhance_spec(self, spec: Dict) -> Dict:
+    async def enhance_spec(self, spec: Dict) -> Dict:
         """Enhance mind map specification with layout data"""
         try:
             if not spec or not isinstance(spec, dict):
