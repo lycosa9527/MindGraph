@@ -310,6 +310,50 @@ llm_classification = _LegacyLLMStub()
 llm_generation = _LegacyLLMStub()
 llm = _LegacyLLMStub()
 
+
+class QwenLLM:
+    """
+    Backward-compatible sync wrapper for learning agents that haven't been migrated to async yet.
+    
+    This provides the same interface as the old QwenLLM class but uses the async client underneath.
+    Used by: LearningAgent, LearningAgentV3, and qwen_langchain.py
+    """
+    def __init__(self, model_type='generation'):
+        """
+        Initialize QwenLLM wrapper.
+        
+        Args:
+            model_type: 'generation' or 'classification' (both use generation model now)
+        """
+        self.model_type = model_type
+    
+    def _call(self, prompt: str, stop=None):
+        """
+        Synchronous wrapper for async chat_completion.
+        
+        Args:
+            prompt: The prompt to send to the LLM
+            stop: Stop sequences (not used, kept for compatibility)
+            
+        Returns:
+            str: The LLM response content
+        """
+        import asyncio
+        from .core.agent_utils import get_llm_client
+        
+        async def _async_call():
+            client = get_llm_client()
+            messages = [{"role": "user", "content": prompt}]
+            return await client.chat_completion(messages)
+        
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        return loop.run_until_complete(_async_call())
+
 def set_llm_model(model_id='qwen'):
     """
     Set the LLM model to use for generation tasks.
