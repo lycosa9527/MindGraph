@@ -163,9 +163,9 @@ async def generate_graph(req: GenerateRequest, x_language: str = None):
     
     try:
         # Generate diagram specification using thread pool to unblock event loop
-        # NOTE: agent.generate_graph_spec_with_styles() is sync - running in thread pool
+        # NOTE: agent.agent_graph_workflow_with_styles() is sync - running in thread pool
         result = await asyncio.to_thread(
-            agent.generate_graph_spec_with_styles,
+            agent.agent_graph_workflow_with_styles,
             prompt,
             language=language,
             forced_diagram_type=req.diagram_type.value if req.diagram_type else None,
