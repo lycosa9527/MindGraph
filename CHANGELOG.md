@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.4] - 2025-10-08 - MindMate AI Panel Initialization Fix
+
+### Fixed - AI Assistant Panel 🔧
+- **MindMate AI Button**: Fixed panel not appearing when clicking the MindMate AI button
+- **DOM Timing**: Resolved initialization race condition when DOM loads before script
+- **Event Binding**: Added preventDefault() and stopPropagation() to prevent event conflicts
+- **Display State**: Ensured panel doesn't get stuck with display:none
+
+### Added - Debug & Testing Tools 🛠️
+- **Manual Controls**: Added `window.openMindMatePanel()` to manually open the panel
+- **Manual Controls**: Added `window.closeMindMatePanel()` to manually close the panel
+- **Debug Function**: Added `window.testMindMatePanel()` for testing with detailed logs
+- **Comprehensive Logging**: Added detailed console logs for initialization and state changes
+- **Error Alerts**: Added user-friendly alerts when critical elements are missing
+- **Debug Guide**: Created MINDMATE_AI_DEBUG_GUIDE.md with troubleshooting steps
+
+### Technical - Initialization Logic 🛠️
+- Check `document.readyState` before choosing initialization method
+- Initialize immediately if DOM already loaded (not just on DOMContentLoaded)
+- Added element existence checks with descriptive error messages
+- Enhanced togglePanel() with state logging and display:none protection
+- Exposed global functions for manual panel control and testing
+
+### User Experience - Debugging 💡
+1. **Panel Opening**: Click "MindMate AI" button → Panel slides in from right (420px)
+2. **Active State**: Button highlights with reversed gradient when panel is open
+3. **Auto-Close**: Property panel automatically closes when AI panel opens
+4. **Auto-Focus**: Chat input receives focus 300ms after panel opens
+5. **Console Testing**: Use browser console commands if button doesn't work
+
+---
+
 ## [3.4.3] - 2025-10-08 - Fixed Flow Map Sizing
 
 ### Fixed - Flow Map Rendering 🔧

@@ -45,6 +45,14 @@ class AIAssistantManager {
             chatInput: !!this.chatInput,
             sendBtn: !!this.sendBtn
         });
+        
+        // Error checking
+        if (!this.panel) {
+            console.error('CRITICAL: AI Assistant panel (#ai-assistant-panel) not found in DOM!');
+        }
+        if (!this.mindmateBtn) {
+            console.error('CRITICAL: MindMate AI button (#mindmate-ai-btn) not found in DOM!');
+        }
     }
     
     /**
@@ -53,8 +61,10 @@ class AIAssistantManager {
     bindEvents() {
         // Close button in panel
         if (this.toggleBtn) {
-            this.toggleBtn.addEventListener('click', () => {
-                console.log('Close button clicked');
+            this.toggleBtn.addEventListener('click', (e) => {
+                console.log('Close button clicked', e);
+                e.preventDefault();
+                e.stopPropagation();
                 this.togglePanel();
             });
             console.log('Bound event to close button');
@@ -62,14 +72,45 @@ class AIAssistantManager {
         
         // MindMate AI button in toolbar
         if (this.mindmateBtn) {
-            this.mindmateBtn.addEventListener('click', () => {
-                console.log('MindMate AI button clicked');
+            this.mindmateBtn.addEventListener('click', (e) => {
+                console.log('MindMate AI button clicked', e);
+                e.preventDefault();
+                e.stopPropagation();
                 this.togglePanel();
             });
             console.log('Bound event to MindMate AI button');
         } else {
             console.warn('MindMate AI button not found during initialization');
         }
+        
+        // Add test function to window for debugging
+        window.testMindMatePanel = () => {
+            console.log('Testing MindMate panel...');
+            console.log('Panel element:', this.panel);
+            console.log('Panel classes:', this.panel?.className);
+            console.log('Button element:', this.mindmateBtn);
+            this.togglePanel();
+        };
+        
+        // Add method to manually open the panel
+        window.openMindMatePanel = () => {
+            console.log('Manually opening MindMate panel...');
+            if (this.panel && this.panel.classList.contains('collapsed')) {
+                this.togglePanel();
+            } else {
+                console.log('Panel is already open');
+            }
+        };
+        
+        // Add method to manually close the panel
+        window.closeMindMatePanel = () => {
+            console.log('Manually closing MindMate panel...');
+            if (this.panel && !this.panel.classList.contains('collapsed')) {
+                this.togglePanel();
+            } else {
+                console.log('Panel is already closed');
+            }
+        };
         
         // Send message
         if (this.sendBtn) {
@@ -94,18 +135,29 @@ class AIAssistantManager {
      * Toggle AI assistant panel
      */
     togglePanel() {
-        console.log('Toggle panel called, panel:', this.panel);
+        console.log('Toggle panel called');
+        console.log('Panel element:', this.panel);
+        console.log('Panel display:', this.panel?.style.display);
+        console.log('Panel className before toggle:', this.panel?.className);
         
         if (!this.panel) {
             console.error('AI Assistant panel not found!');
+            alert('AI Assistant panel not found. Please reload the page.');
             return;
         }
         
+        // Ensure the panel is visible (not display:none)
+        if (this.panel.style.display === 'none') {
+            this.panel.style.display = 'flex';
+        }
+        
         const isCollapsed = this.panel.classList.toggle('collapsed');
-        console.log('Panel collapsed state:', isCollapsed);
+        console.log('Panel collapsed state after toggle:', isCollapsed);
+        console.log('Panel className after toggle:', this.panel.className);
         
         // If opening AI panel, close property panel to prevent overlap
         if (!isCollapsed) {
+            console.log('Opening AI panel');
             const propertyPanel = document.getElementById('property-panel');
             if (propertyPanel && propertyPanel.style.display !== 'none') {
                 // Access toolbar manager through current editor to properly hide property panel
@@ -115,6 +167,8 @@ class AIAssistantManager {
                     propertyPanel.style.display = 'none';
                 }
             }
+        } else {
+            console.log('Closing AI panel');
         }
         
         // Update MindMate button state
@@ -407,8 +461,17 @@ class AIAssistantManager {
 
 // Initialize AI Assistant when DOM is ready
 if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', () => {
+    // Check if DOM is already loaded
+    if (document.readyState === 'loading') {
+        // DOM is still loading, wait for DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('AI Assistant: Initializing via DOMContentLoaded');
+            window.aiAssistant = new AIAssistantManager();
+        });
+    } else {
+        // DOM is already loaded, initialize immediately
+        console.log('AI Assistant: Initializing immediately (DOM already loaded)');
         window.aiAssistant = new AIAssistantManager();
-    });
+    }
 }
 
