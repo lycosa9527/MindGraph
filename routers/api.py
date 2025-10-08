@@ -25,7 +25,9 @@ from models import (
     GenerateRequest,
     GenerateResponse,
     ExportPNGRequest,
-    FrontendLogRequest
+    FrontendLogRequest,
+    Messages,
+    get_request_language
 )
 
 # Import async clients
@@ -44,7 +46,7 @@ router = APIRouter(prefix="/api", tags=["api"])
 # ============================================================================
 
 @router.post('/ai_assistant/stream')
-async def ai_assistant_stream(req: AIAssistantRequest):
+async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
     """
     Stream AI assistant responses using Dify API with SSE (async version).
     
@@ -52,10 +54,16 @@ async def ai_assistant_stream(req: AIAssistantRequest):
     Uses AsyncDifyClient for non-blocking streaming.
     """
     
+    # Get language for error messages
+    lang = get_request_language(x_language)
+    
     # Validate message
     message = req.message.strip()
     if not message:
-        raise HTTPException(status_code=400, detail="Message is required")
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("message_required", lang)
+        )
     
     # Get Dify configuration from environment
     api_key = os.getenv('DIFY_API_KEY')
@@ -66,7 +74,10 @@ async def ai_assistant_stream(req: AIAssistantRequest):
     
     if not api_key:
         logger.error("DIFY_API_KEY not configured in environment")
-        raise HTTPException(status_code=500, detail="AI assistant not configured")
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("ai_not_configured", lang)
+        )
     
     logger.info(f"AI assistant request from user {req.user_id}: {message[:50]}...")
     
@@ -117,7 +128,7 @@ async def ai_assistant_stream(req: AIAssistantRequest):
 # ============================================================================
 
 @router.post('/generate_graph', response_model=GenerateResponse)
-async def generate_graph(req: GenerateRequest):
+async def generate_graph(req: GenerateRequest, x_language: str = None):
     """
     Generate graph specification from user prompt using selected LLM model (async).
     
@@ -125,9 +136,15 @@ async def generate_graph(req: GenerateRequest):
     For PNG file downloads, use /api/export_png instead.
     """
     
+    # Get language for error messages
+    lang = get_request_language(x_language)
+    
     prompt = req.prompt.strip()
     if not prompt:
-        raise HTTPException(status_code=400, detail="Invalid or empty prompt")
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
     
     request_id = f"gen_{int(time.time()*1000)}"
     llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
@@ -165,7 +182,10 @@ async def generate_graph(req: GenerateRequest):
         
     except Exception as e:
         logger.error(f"[{request_id}] Error generating graph: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to generate graph: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
 
 
 # ============================================================================
@@ -173,18 +193,24 @@ async def generate_graph(req: GenerateRequest):
 # ============================================================================
 
 @router.post('/export_png')
-async def export_png(req: ExportPNGRequest):
+async def export_png(req: ExportPNGRequest, x_language: str = None):
     """
     Export diagram as PNG using Playwright browser automation (async).
     
     This endpoint is already async-compatible (BrowserContextManager uses async_playwright).
     """
     
+    # Get language for error messages
+    lang = get_request_language(x_language)
+    
     diagram_data = req.diagram_data
     diagram_type = req.diagram_type.value if hasattr(req.diagram_type, 'value') else str(req.diagram_type)
     
     if not diagram_data:
-        raise HTTPException(status_code=400, detail="Diagram data is required")
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("diagram_data_required", lang)
+        )
     
     logger.info(f"PNG export request - diagram_type: {diagram_type}, data keys: {list(diagram_data.keys())}")
     
@@ -224,7 +250,10 @@ async def export_png(req: ExportPNGRequest):
             
     except Exception as e:
         logger.error(f"PNG export error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"PNG export failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("export_failed", lang, str(e))
+        )
 
 
 # ============================================================================

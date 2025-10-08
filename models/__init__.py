@@ -26,7 +26,8 @@ from .responses import (
     StatusResponse,
 )
 
-from .common import DiagramType, LLMModel
+from .common import DiagramType, LLMModel, Language
+from .messages import Messages, get_request_language
 
 __all__ = [
     # Requests
@@ -46,5 +47,9 @@ __all__ = [
     # Common
     "DiagramType",
     "LLMModel",
+    "Language",
+    # Bilingual Messages
+    "Messages",
+    "get_request_language",
 ]
 
