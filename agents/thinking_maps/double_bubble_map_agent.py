@@ -75,8 +75,8 @@ class DoubleBubbleMapAgent(BaseAgent):
             from prompts import get_prompt
             from ..main_agent import extract_double_bubble_topics_llm
             
-            # Extract two topics for comparison using specialized LLM extraction
-            topics = extract_double_bubble_topics_llm(prompt, language)
+            # Extract two topics for comparison using specialized LLM extraction (async)
+            topics = await extract_double_bubble_topics_llm(prompt, language)
             logger.debug(f"DoubleBubbleMapAgent: Extracted topics: {topics}")
             
             # Get prompt from centralized system - use agent-specific format

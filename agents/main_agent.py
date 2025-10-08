@@ -108,20 +108,17 @@ def extract_central_topic_llm(user_prompt: str, language: str = 'zh') -> str:
         logger.error(f"LLM topic extraction error: {e}, using original prompt")
         return user_prompt.strip()
 
-def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh') -> str:
+async def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh') -> str:
     """
     Extract two topics for double bubble map comparison using LLM.
     This is specialized for double bubble maps that need two separate topics.
-    NOTE: This is a sync wrapper for backward compatibility. 
-    TODO: Convert calling code to async.
+    Fully async - no event loop wrappers.
     """
-    import asyncio
     from .core.agent_utils import get_llm_client
     
-    async def _extract_async():
-        try:
-            if language == 'zh':
-                prompt = f"""从以下用户输入中提取两个要比较的主题，只返回两个主题，用"和"连接，不要其他文字：
+    try:
+        if language == 'zh':
+            prompt = f"""从以下用户输入中提取两个要比较的主题，只返回两个主题，用"和"连接，不要其他文字：
 {user_prompt}
 
 重要：忽略动作词如"生成"、"创建"、"比较"、"制作"等，只提取实际要比较的两个主题。
@@ -133,8 +130,8 @@ def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh') -> 
 输入："制作一个关于太阳和月亮的对比图" → 输出："太阳和月亮"
 
 你的输出："""
-            else:
-                prompt = f"""Extract two topics for comparison from this user input, return only the two topics separated by "and", no other text:
+        else:
+            prompt = f"""Extract two topics for comparison from this user input, return only the two topics separated by "and", no other text:
 {user_prompt}
 
 Examples:
@@ -143,32 +140,23 @@ Input: "compare apples and oranges" → Output: "apples and oranges"
 Input: "create a comparison chart about cats and dogs" → Output: "cats and dogs"
 
 Your output:"""
+        
+        llm_client = get_llm_client()
+        result = await llm_client.chat_completion([{"role": "user", "content": prompt}])
+        
+        # Clean up the result - remove any extra whitespace or formatting
+        topics = result.strip()
+        
+        # Fallback to original prompt if extraction fails
+        if not topics or len(topics) < 3:
+            logger.warning(f"LLM double bubble topic extraction failed, using original prompt: {user_prompt}")
+            topics = user_prompt.strip()
             
-            llm_client = get_llm_client()
-            result = await llm_client.chat_completion([{"role": "user", "content": prompt}])
-            
-            # Clean up the result - remove any extra whitespace or formatting
-            topics = result.strip()
-            
-            # Fallback to original prompt if extraction fails
-            if not topics or len(topics) < 3:
-                logger.warning(f"LLM double bubble topic extraction failed, using original prompt: {user_prompt}")
-                topics = user_prompt.strip()
-                
-            return topics
-            
-        except Exception as e:
-            logger.error(f"LLM double bubble topic extraction error: {e}, using original prompt")
-            return user_prompt.strip()
-    
-    # Run the async function in a sync wrapper
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    return loop.run_until_complete(_extract_async())
+        return topics
+        
+    except Exception as e:
+        logger.error(f"LLM double bubble topic extraction error: {e}, using original prompt")
+        return user_prompt.strip()
 
 def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = 'en') -> dict:
     """
