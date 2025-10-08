@@ -144,9 +144,10 @@ async def generate_graph(req: GenerateRequest):
     logger.info(f"[{request_id}] Set agent LLM model to: {current_model!r}")
     
     try:
-        # Generate diagram specification
-        # NOTE: This is still sync - will be converted to async in Phase 3.4
-        result = agent.generate_graph_spec_with_styles(
+        # Generate diagram specification using thread pool to unblock event loop
+        # NOTE: agent.generate_graph_spec_with_styles() is sync - running in thread pool
+        result = await asyncio.to_thread(
+            agent.generate_graph_spec_with_styles,
             prompt,
             language=language,
             forced_diagram_type=req.diagram_type.value if req.diagram_type else None,
