@@ -1478,10 +1478,12 @@ class ToolbarManager {
             }
             
             // Success notification (firstSuccessfulModel already rendered in loop)
-            this.showNotification(
-                `${successCount}/${LLM_CONFIG.MODELS.length} models ready. Showing ${LLM_CONFIG.MODEL_NAMES[firstSuccessfulModel]}. Click buttons to switch.`,
-                'success'
+            const notifMessage = this.getNotif('multiLLMReady', 
+                successCount, 
+                LLM_CONFIG.MODELS.length, 
+                LLM_CONFIG.MODEL_NAMES[firstSuccessfulModel]
             );
+            this.showNotification(notifMessage, 'success');
             
             // Reset view to optimal position after rendering completes
             setTimeout(() => {
