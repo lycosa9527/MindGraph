@@ -7,12 +7,13 @@
 
 // Multi-LLM Configuration
 const LLM_CONFIG = {
-    MODELS: ['qwen', 'deepseek', 'kimi'],
+    MODELS: ['qwen', 'deepseek', 'hunyuan', 'kimi'],
     TIMEOUT_MS: 60000, // 60 seconds per LLM request
     RENDER_DELAY_MS: 300, // Delay before fitting diagram to window
     MODEL_NAMES: {
         'qwen': 'Qwen',
         'deepseek': 'DeepSeek',
+        'hunyuan': 'Hunyuan',
         'kimi': 'Kimi'
     }
 };

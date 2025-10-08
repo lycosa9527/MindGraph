@@ -42,6 +42,7 @@ class LLMModel(str, Enum):
     QWEN = "qwen"
     DEEPSEEK = "deepseek"
     KIMI = "kimi"
+    HUNYUAN = "hunyuan"
 
 
 class Language(str, Enum):

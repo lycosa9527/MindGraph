@@ -96,6 +96,30 @@ class Config:
         """Kimi model name (Moonshot AI)"""
         return self._get_cached_value('KIMI_MODEL', 'Moonshot-Kimi-K2-Instruct')
     
+    # ============================================================================
+    # TENCENT HUNYUAN SUPPORT
+    # ============================================================================
+    
+    @property
+    def HUNYUAN_API_KEY(self):
+        """Tencent Hunyuan API Secret Key"""
+        return self._get_cached_value('HUNYUAN_API_KEY', '')
+    
+    @property
+    def HUNYUAN_SECRET_ID(self):
+        """Tencent Hunyuan API Secret ID"""
+        return self._get_cached_value('HUNYUAN_SECRET_ID', '')
+    
+    @property
+    def HUNYUAN_API_URL(self):
+        """Tencent Hunyuan API URL"""
+        return self._get_cached_value('HUNYUAN_API_URL', 'https://hunyuan.tencentcloudapi.com')
+    
+    @property
+    def HUNYUAN_MODEL(self):
+        """Hunyuan model name"""
+        return self._get_cached_value('HUNYUAN_MODEL', 'hunyuan-turbo')
+    
     @property
     def QWEN_TEMPERATURE(self):
         try:
@@ -490,7 +514,8 @@ class Config:
         model_map = {
             'qwen': self.QWEN_MODEL_GENERATION,
             'deepseek': self.DEEPSEEK_MODEL,
-            'kimi': self.KIMI_MODEL
+            'kimi': self.KIMI_MODEL,
+            'hunyuan': self.HUNYUAN_MODEL
         }
         
         model_name = model_map.get(model, self.QWEN_MODEL_GENERATION)

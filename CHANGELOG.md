@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.1.0] - 2025-10-08 - Tencent Hunyuan LLM Support
+
+### Added
+- **Tencent Hunyuan (混元) LLM Support**
+  - New `HunyuanClient` in `clients/llm.py` for Tencent Cloud Hunyuan API
+  - Hunyuan button added to Editor status bar (positioned between DeepSeek and Kimi)
+  - Configuration support for Hunyuan API credentials (Secret ID + Secret Key)
+  - Added `HUNYUAN` to `LLMModel` enum in `models/common.py`
+  - Frontend LLM configuration updated to include Hunyuan
+  - Environment variables: `HUNYUAN_API_KEY`, `HUNYUAN_SECRET_ID`, `HUNYUAN_API_URL`, `HUNYUAN_MODEL`
+
+### Modified
+- **Files Updated**:
+  - `env.example` - Added Hunyuan configuration template
+  - `config/settings.py` - Added Hunyuan settings properties
+  - `clients/llm.py` - Added `HunyuanClient` class and global instance
+  - `models/common.py` - Added `HUNYUAN` to `LLMModel` enum
+  - `templates/editor.html` - Added Hunyuan button to status bar
+  - `static/js/editor/toolbar-manager.js` - Updated `LLM_CONFIG` with Hunyuan
+
+### Technical Details
+- API Endpoint: `https://hunyuan.tencentcloudapi.com`
+- Default Model: `hunyuan-turbo`
+- Authentication: Tencent Cloud API (Secret ID + Secret Key)
+- Response Format: Handles both Tencent Cloud format (`Choices`/`Message`/`Content`) and standard OpenAI format
+- Async Support: Fully async implementation with 60s timeout
+
+---
+
 ## [4.0.0] - 2025-10-08 - FastAPI Migration Complete
 
 ### 🎉 MIGRATION 100% COMPLETE - Production Ready

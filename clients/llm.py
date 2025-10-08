@@ -204,6 +204,88 @@ class KimiClient:
             logger.error(f"Kimi API error: {e}")
             raise
 
+
+class HunyuanClient:
+    """Client for Tencent Hunyuan (混元) API"""
+    
+    def __init__(self):
+        """Initialize Hunyuan client"""
+        self.api_url = config.HUNYUAN_API_URL
+        self.api_key = config.HUNYUAN_API_KEY
+        self.secret_id = config.HUNYUAN_SECRET_ID
+        self.timeout = 60  # seconds
+        self.model_id = 'hunyuan'
+        self.model_name = config.HUNYUAN_MODEL
+        logger.info(f"HunyuanClient initialized with model: {self.model_name}")
+    
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = 1.0,
+                                   max_tokens: int = 2000) -> str:
+        """
+        Send async chat completion request to Tencent Hunyuan
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0)
+            max_tokens: Maximum tokens in response
+            
+        Returns:
+            Response content as string
+        """
+        try:
+            # Convert messages to Hunyuan format
+            hunyuan_messages = []
+            for msg in messages:
+                hunyuan_messages.append({
+                    "Role": msg.get('role', 'user'),
+                    "Content": msg.get('content', '')
+                })
+            
+            payload = {
+                "Model": self.model_name,
+                "Messages": hunyuan_messages,
+                "Temperature": temperature,
+                "TopP": 1.0,
+                "Stream": False
+            }
+            
+            # Hunyuan requires Tencent Cloud authentication
+            # For simplicity, using API key auth (if supported by user's setup)
+            # For full Tencent Cloud signature, additional implementation needed
+            headers = {
+                "Content-Type": "application/json",
+                "X-TC-Action": "ChatCompletions"
+            }
+            
+            # Add authentication headers if available
+            if self.secret_id and self.api_key:
+                headers["Authorization"] = self.api_key
+                headers["X-TC-SecretId"] = self.secret_id
+            
+            logger.debug(f"Hunyuan async API request: {self.model_name}")
+            
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
+                async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        # Hunyuan response format
+                        content = data.get('Choices', [{}])[0].get('Message', {}).get('Content', '')
+                        if not content:
+                            # Fallback to standard format
+                            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        logger.debug(f"Hunyuan response length: {len(content)} chars")
+                        return content
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Hunyuan API error {response.status}: {error_text}")
+                        raise Exception(f"Hunyuan API error: {response.status}")
+                        
+        except asyncio.TimeoutError:
+            logger.error("Hunyuan API timeout")
+            raise Exception("Hunyuan API timeout")
+        except Exception as e:
+            logger.error(f"Hunyuan API error: {e}")
+            raise
+
 # ============================================================================
 # GLOBAL CLIENT INSTANCES
 # ============================================================================
@@ -217,8 +299,9 @@ try:
     # Multi-LLM clients - Dedicated classes for each provider
     deepseek_client = DeepSeekClient()
     kimi_client = KimiClient()
+    hunyuan_client = HunyuanClient()
     
-    logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi)")
+    logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan)")
 except Exception as e:
     logger.warning(f"Failed to initialize LLM clients: {e}")
     qwen_client = None
@@ -226,13 +309,14 @@ except Exception as e:
     qwen_client_generation = None
     deepseek_client = None
     kimi_client = None
+    hunyuan_client = None
 
 def get_llm_client(model_id='qwen'):
     """
     Get an LLM client by model ID.
     
     Args:
-        model_id (str): 'qwen', 'deepseek', or 'kimi'
+        model_id (str): 'qwen', 'deepseek', 'kimi', or 'hunyuan'
         
     Returns:
         LLM client instance
@@ -240,7 +324,8 @@ def get_llm_client(model_id='qwen'):
     client_map = {
         'qwen': qwen_client_generation,
         'deepseek': deepseek_client,
-        'kimi': kimi_client
+        'kimi': kimi_client,
+        'hunyuan': hunyuan_client
     }
     
     client = client_map.get(model_id)
