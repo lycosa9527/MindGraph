@@ -22,22 +22,36 @@
 #    python setup.py
 
 # ============================================================================
-# CORE FLASK DEPENDENCIES (Required for Production)
+# WEB FRAMEWORK - MIGRATION IN PROGRESS
 # ============================================================================
+# Flask (Current - will be removed after FastAPI migration complete)
 Flask>=3.1.1
 Werkzeug>=3.1.0
 flask-cors>=6.0.0
 
+# FastAPI (New - target framework)
+fastapi>=0.104.0
+
 # ============================================================================
-# WSGI SERVER (Required for Production)
+# SERVER - MIGRATION IN PROGRESS
 # ============================================================================
+# Waitress (Current WSGI - will be removed after migration)
 waitress>=3.0.0
+
+# Uvicorn (New ASGI - target server, works on Windows + Ubuntu)
+uvicorn[standard]>=0.24.0
 
 # ============================================================================
 # HTTP AND NETWORKING (Required for Production)
 # ============================================================================
+# requests (Current - will be removed after 100% async migration)
 requests>=2.31.0
+
+# aiohttp (Async HTTP client - target for 100% async)
 aiohttp>=3.12.0
+
+# python-multipart (For FastAPI form data and file uploads)
+python-multipart>=0.0.6
 
 # ============================================================================
 # AI AND LANGUAGE PROCESSING (Required for Production)
