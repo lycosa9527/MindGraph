@@ -1565,6 +1565,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Agent: Failed to generate spec for {diagram_type}")
             return {
+                'success': False,
                 'spec': spec or create_error_response('Failed to generate specification', 'generation', {'diagram_type': diagram_type}),
                 'diagram_type': diagram_type,
                 'topics': [],
@@ -1579,6 +1580,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
         
         # Add metadata to the result
         result = {
+            'success': True,
             'spec': spec,
             'diagram_type': diagram_type,
             'topics': [],  # No longer extracted
@@ -1594,6 +1596,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
     except ValueError as e:
         logger.error(f"Agent: Input validation failed: {e}")
         return {
+            'success': False,
             'spec': create_error_response(f'Invalid input: {str(e)}', 'validation', {'language': language}),
             'diagram_type': 'bubble_map',
             'topics': [],
@@ -1603,6 +1606,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
     except Exception as e:
         logger.error(f"Agent: Simplified workflow failed: {e}")
         return {
+            'success': False,
             'spec': create_error_response(f'Generation failed: {str(e)}', 'workflow', {'language': language}),
             'diagram_type': 'bubble_map',
             'topics': [],
