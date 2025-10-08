@@ -746,6 +746,7 @@ body {
 }
 
 /* Individual LLM button colors */
+/* Qwen - Blue */
 .llm-btn[data-llm="qwen"] {
     border-color: rgba(52, 152, 219, 0.4);
 }
@@ -767,6 +768,7 @@ body {
     background: rgba(52, 152, 219, 1);
 }
 
+/* DeepSeek - Purple */
 .llm-btn[data-llm="deepseek"] {
     border-color: rgba(155, 89, 182, 0.4);
 }
@@ -788,6 +790,29 @@ body {
     background: rgba(155, 89, 182, 1);
 }
 
+/* Hunyuan - Orange/Gold */
+.llm-btn[data-llm="hunyuan"] {
+    border-color: rgba(243, 156, 18, 0.4);
+}
+
+.llm-btn[data-llm="hunyuan"]:hover {
+    background: rgba(243, 156, 18, 0.2);
+    border-color: rgba(243, 156, 18, 0.6);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.llm-btn[data-llm="hunyuan"].active {
+    background: rgba(243, 156, 18, 0.8);
+    color: white;
+    border-color: rgba(243, 156, 18, 1);
+    font-weight: 600;
+}
+
+.llm-btn[data-llm="hunyuan"].active:hover {
+    background: rgba(243, 156, 18, 1);
+}
+
+/* Kimi - Teal/Green */
 .llm-btn[data-llm="kimi"] {
     border-color: rgba(26, 188, 156, 0.4);
 }
@@ -833,9 +858,100 @@ body {
     50% { opacity: 0.5; }
 }
 
-/* Ready state (has cached result) - add glow effect */
-.llm-btn.ready {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+/* Ready state (has cached result) - Professional glowing ring effect */
+/* Smooth pulsing animation for the glow */
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 
+            0 0 8px var(--glow-color-light),
+            0 0 12px var(--glow-color-medium),
+            0 0 16px var(--glow-color-dark),
+            inset 0 0 8px var(--glow-color-light);
+    }
+    50% {
+        box-shadow: 
+            0 0 12px var(--glow-color-light),
+            0 0 20px var(--glow-color-medium),
+            0 0 28px var(--glow-color-dark),
+            inset 0 0 12px var(--glow-color-light);
+    }
+}
+
+/* Qwen - Blue glow */
+.llm-btn[data-llm="qwen"].ready {
+    --glow-color-light: rgba(52, 152, 219, 0.6);
+    --glow-color-medium: rgba(52, 152, 219, 0.4);
+    --glow-color-dark: rgba(52, 152, 219, 0.2);
+    animation: glow-pulse 2s ease-in-out infinite;
+    border-color: rgba(52, 152, 219, 0.8);
+    background: rgba(52, 152, 219, 0.15);
+}
+
+/* DeepSeek - Purple glow */
+.llm-btn[data-llm="deepseek"].ready {
+    --glow-color-light: rgba(155, 89, 182, 0.6);
+    --glow-color-medium: rgba(155, 89, 182, 0.4);
+    --glow-color-dark: rgba(155, 89, 182, 0.2);
+    animation: glow-pulse 2s ease-in-out infinite;
+    border-color: rgba(155, 89, 182, 0.8);
+    background: rgba(155, 89, 182, 0.15);
+}
+
+/* Hunyuan - Orange/Gold glow */
+.llm-btn[data-llm="hunyuan"].ready {
+    --glow-color-light: rgba(243, 156, 18, 0.6);
+    --glow-color-medium: rgba(243, 156, 18, 0.4);
+    --glow-color-dark: rgba(243, 156, 18, 0.2);
+    animation: glow-pulse 2s ease-in-out infinite;
+    border-color: rgba(243, 156, 18, 0.8);
+    background: rgba(243, 156, 18, 0.15);
+}
+
+/* Kimi - Teal/Green glow */
+.llm-btn[data-llm="kimi"].ready {
+    --glow-color-light: rgba(26, 188, 156, 0.6);
+    --glow-color-medium: rgba(26, 188, 156, 0.4);
+    --glow-color-dark: rgba(26, 188, 156, 0.2);
+    animation: glow-pulse 2s ease-in-out infinite;
+    border-color: rgba(26, 188, 156, 0.8);
+    background: rgba(26, 188, 156, 0.15);
+}
+
+/* Active + Ready state: Stop pulsing, keep solid glow */
+.llm-btn.ready.active {
+    animation: none;
+}
+
+.llm-btn[data-llm="qwen"].ready.active {
+    box-shadow: 
+        0 0 8px rgba(52, 152, 219, 0.6),
+        0 0 12px rgba(52, 152, 219, 0.4),
+        0 0 16px rgba(52, 152, 219, 0.2),
+        inset 0 0 8px rgba(52, 152, 219, 0.3);
+}
+
+.llm-btn[data-llm="deepseek"].ready.active {
+    box-shadow: 
+        0 0 8px rgba(155, 89, 182, 0.6),
+        0 0 12px rgba(155, 89, 182, 0.4),
+        0 0 16px rgba(155, 89, 182, 0.2),
+        inset 0 0 8px rgba(155, 89, 182, 0.3);
+}
+
+.llm-btn[data-llm="hunyuan"].ready.active {
+    box-shadow: 
+        0 0 8px rgba(243, 156, 18, 0.6),
+        0 0 12px rgba(243, 156, 18, 0.4),
+        0 0 16px rgba(243, 156, 18, 0.2),
+        inset 0 0 8px rgba(243, 156, 18, 0.3);
+}
+
+.llm-btn[data-llm="kimi"].ready.active {
+    box-shadow: 
+        0 0 8px rgba(26, 188, 156, 0.6),
+        0 0 12px rgba(26, 188, 156, 0.4),
+        0 0 16px rgba(26, 188, 156, 0.2),
+        inset 0 0 8px rgba(26, 188, 156, 0.3);
 }
 
 /* Error state */

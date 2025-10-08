@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.1.0] - 2025-10-08 - Tencent Hunyuan LLM Support
+## [4.1.0] - 2025-10-08 - Tencent Hunyuan LLM Support & Visual Enhancements
 
 ### Added
 - **Tencent Hunyuan (混元) LLM Support**
@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Frontend LLM configuration updated to include Hunyuan
   - Environment variables: `HUNYUAN_API_KEY`, `HUNYUAN_SECRET_ID`, `HUNYUAN_API_URL`, `HUNYUAN_MODEL`
 
+- **Professional Glowing Ring Effect for Completed LLM Results**
+  - Each LLM button now displays a unique colored glow when results are ready
+  - Smooth pulsing animation (2s cycle) to indicate availability
+  - Color-coded glows: Blue (Qwen), Purple (DeepSeek), Orange/Gold (Hunyuan), Teal (Kimi)
+  - Multi-layered box-shadow for elegant depth and halo effect
+  - Inner glow (inset shadow) for professional appearance
+  - Pulsing stops when button is active/selected, showing solid glow
+  - Clean, neat design with subtle background tint and enhanced borders
+
 ### Modified
 - **Files Updated**:
   - `env.example` - Added Hunyuan configuration template
@@ -26,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `models/common.py` - Added `HUNYUAN` to `LLMModel` enum
   - `templates/editor.html` - Added Hunyuan button to status bar
   - `static/js/editor/toolbar-manager.js` - Updated `LLM_CONFIG` with Hunyuan
+  - `static/css/editor.css` - Complete redesign of LLM button ready states with glowing effects
 
 ### Technical Details
 - API Endpoint: `https://hunyuan.tencentcloudapi.com`
