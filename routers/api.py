@@ -162,7 +162,7 @@ async def generate_graph(req: GenerateRequest, x_language: str = None):
     logger.info(f"[{request_id}] Set agent LLM model to: {current_model!r}")
     
     try:
-        # Generate diagram specification - all agents are now async
+        # Generate diagram specification - fully async
         result = await agent.agent_graph_workflow_with_styles(
             prompt,
             language=language,
