@@ -3,7 +3,7 @@
 MindGraph Complete Setup Script
 
 This script handles the complete installation and setup of MindGraph, including:
-- Python dependency installation
+- Python dependency installation (FastAPI stack)
 - Playwright browser setup
 - Logging system configuration
 - Comprehensive verification
@@ -17,7 +17,7 @@ Usage:
     python setup.py
 
 Author: MindGraph Development Team
-Version: 1.0.0
+Version: 4.0.0 (FastAPI)
 """
 
 import subprocess
@@ -31,15 +31,13 @@ from typing import List, Dict
 
 # Constants
 CORE_DEPENDENCIES = {
-    # Web framework
-    'flask': 'Flask',
-    'werkzeug': 'Werkzeug', 
-    'flask_cors': 'flask-cors',
-    'waitress': 'Waitress',
+    # Web framework (FastAPI)
+    'fastapi': 'FastAPI',
+    'uvicorn': 'Uvicorn',
     
-    # HTTP and networking
-    'requests': 'Requests',
+    # HTTP and networking (async)
     'aiohttp': 'aiohttp',
+    'multipart': 'python-multipart',
     
     # AI and language processing
     'langchain': 'LangChain',
@@ -66,25 +64,28 @@ MAX_LINE_LENGTH = 100
 SETUP_STEPS = 5
 
 REQUIRED_LOG_FILES = [
-    "waitress_access.log",
-    "waitress_error.log", 
-    "waitress.pid",
+    "uvicorn_access.log",
+    "uvicorn_error.log",
     "app.log",
     "agent.log"
 ]
 
 ESSENTIAL_FILES = [
-    "app.py",
-    "api_routes.py", 
-            "settings.py",
+    "main.py",
     "run_server.py",
-    "requirements.txt"
+    "requirements.txt",
+    "uvicorn.conf.py"
 ]
 
 ESSENTIAL_DIRECTORIES = [
     "logs",
     "static",
-    "templates"
+    "templates",
+    "routers",
+    "models",
+    "clients",
+    "services",
+    "config"
 ]
 
 
@@ -347,8 +348,8 @@ def check_dependencies_already_installed() -> bool:
             # Handle special cases for packages with different import names
             if module_name == 'PIL':
                 import PIL
-            elif module_name == 'flask_cors':
-                import flask_cors
+            elif module_name == 'multipart':
+                import multipart
             elif module_name == 'yaml':
                 import yaml
             elif module_name == 'dotenv':
@@ -549,9 +550,9 @@ def verify_dependencies() -> bool:
             if module_name == 'PIL':
                 import PIL
                 version = get_package_version('Pillow')
-            elif module_name == 'flask_cors':
-                import flask_cors
-                version = get_package_version('flask-cors')
+            elif module_name == 'multipart':
+                import multipart
+                version = get_package_version('python-multipart')
             elif module_name == 'yaml':
                 import yaml
                 version = get_package_version('PyYAML')
