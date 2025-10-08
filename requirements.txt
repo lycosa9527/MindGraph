@@ -1,5 +1,5 @@
 # MindGraph - AI-Powered Graph Generation Application
-# Version: 2.5.4
+# Version: 4.0.0
 # Requirements for Python 3.8+ (Tested with Python 3.13.5)
 # 
 # Core Features:
@@ -22,35 +22,24 @@
 #    python setup.py
 
 # ============================================================================
-# WEB FRAMEWORK - MIGRATION IN PROGRESS
+# WEB FRAMEWORK (Required for Production)
 # ============================================================================
-# Flask (Current - will be removed after FastAPI migration complete)
-Flask>=3.1.1
-Werkzeug>=3.1.0
-flask-cors>=6.0.0
-
-# FastAPI (New - target framework)
 fastapi>=0.104.0
 
 # ============================================================================
-# SERVER - MIGRATION IN PROGRESS
+# ASGI SERVER (Required for Production)
 # ============================================================================
-# Waitress (Current WSGI - will be removed after migration)
-waitress>=3.0.0
-
-# Uvicorn (New ASGI - target server, works on Windows + Ubuntu)
+# Uvicorn with standard extras (uvloop, httptools, websockets)
+# Works on Windows (development) and Ubuntu (production)
 uvicorn[standard]>=0.24.0
 
 # ============================================================================
 # HTTP AND NETWORKING (Required for Production)
 # ============================================================================
-# requests (Current - will be removed after 100% async migration)
-requests>=2.31.0
-
-# aiohttp (Async HTTP client - target for 100% async)
+# Async HTTP client for all external API calls
 aiohttp>=3.12.0
 
-# python-multipart (For FastAPI form data and file uploads)
+# FastAPI form data and file upload support
 python-multipart>=0.0.6
 
 # ============================================================================
@@ -92,16 +81,21 @@ psutil>=6.0.0
 # DEPENDENCY SUMMARY
 # ============================================================================
 # 
-# REQUIRED THIRD-PARTY PACKAGES (16):
-# - Flask, Werkzeug, flask-cors (Web framework)
-# - waitress (Production WSGI server)
+# REQUIRED THIRD-PARTY PACKAGES (13):
+# - fastapi (Modern async web framework)
+# - uvicorn[standard] (ASGI server with performance extras)
+# - aiohttp, python-multipart (Async HTTP client, form uploads)
 # - langchain, langchain-community, langchain-core (AI/LLM)
-# - requests, aiohttp (HTTP clients)
 # - playwright, Pillow (Browser automation & image processing)
 # - python-dotenv (Environment configuration)
 # - PyYAML (Configuration parsing)
 # - nest_asyncio (Async utilities)
 # - psutil (System monitoring)
+#
+# REMOVED IN v4.0.0 (FastAPI Migration):
+# - Flask, Werkzeug, flask-cors (replaced by FastAPI)
+# - waitress (replaced by Uvicorn)
+# - requests (replaced by aiohttp for 100% async)
 #
 # REMOVED UNUSED PACKAGES (v2.5.4):
 # - pyee, asgiref, typing-extensions (not used in codebase)
@@ -133,4 +127,4 @@ psutil>=6.0.0
 # - Node.js 18.19+ for D3.js dependencies
 # - All packages use >= for minimum version compatibility
 #
-# ANALYSIS LAST UPDATED: 2025-10-01 (Version 2.5.4)
+# ANALYSIS LAST UPDATED: 2025-10-08 (Version 4.0.0 - FastAPI Migration Complete)
