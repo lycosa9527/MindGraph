@@ -46,7 +46,7 @@ class MultiFlowMapAgent(BaseAgent):
                 }
             
             # Enhance the spec with layout and dimensions
-            enhanced_result = self.enhance_spec(spec)
+            enhanced_result = await self.enhance_spec(spec)
             if not enhanced_result.get('success'):
                 return {
                     'success': False,
