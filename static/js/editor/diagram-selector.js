@@ -483,7 +483,9 @@ class DiagramSelector {
         } catch (error) {
             console.error('DiagramSelector: Error initializing editor:', error);
             this.endSession();  // End session on error
-            alert('Error loading editor. Please try again.');
+            const message = window.languageManager?.getNotification('editorLoadError') 
+                || 'Error loading editor. Please try again.';
+            alert(message);
             this.backToGallery();
         }
     }

@@ -142,7 +142,9 @@ class AIAssistantManager {
         
         if (!this.panel) {
             console.error('AI Assistant panel not found!');
-            alert('AI Assistant panel not found. Please reload the page.');
+            const message = window.languageManager?.getNotification('aiPanelNotFound') 
+                || 'AI Assistant panel not found. Please reload the page.';
+            alert(message);
             return;
         }
         

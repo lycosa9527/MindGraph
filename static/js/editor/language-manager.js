@@ -230,7 +230,11 @@ class LanguageManager {
                     cannotDeleteCentralEvent: 'Cannot delete the central event',
                     cannotDeleteRootTopic: 'Cannot delete the root topic',
                     cannotDeleteFirstAnalogy: 'Cannot delete the first analogy pair',
-                    cannotDeleteCentralTopic: 'Cannot delete the central topic'
+                    cannotDeleteCentralTopic: 'Cannot delete the central topic',
+                    // System errors
+                    aiPanelNotFound: 'AI Assistant panel not found. Please reload the page.',
+                    editorLoadError: 'Error loading editor. Please try again.',
+                    clearHistoryConfirm: 'Clear all history?'
                 }
             },
             zh: {
@@ -454,7 +458,11 @@ class LanguageManager {
                     cannotDeleteCentralEvent: '无法删除中心事件',
                     cannotDeleteRootTopic: '无法删除根主题',
                     cannotDeleteFirstAnalogy: '无法删除第一个类比对',
-                    cannotDeleteCentralTopic: '无法删除中心主题'
+                    cannotDeleteCentralTopic: '无法删除中心主题',
+                    // System errors
+                    aiPanelNotFound: '未找到AI助手面板。请刷新页面。',
+                    editorLoadError: '加载编辑器错误。请重试。',
+                    clearHistoryConfirm: '确定要清除所有历史记录吗？'
                 }
             }
         };

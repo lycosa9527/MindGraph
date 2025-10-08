@@ -339,9 +339,8 @@ class PromptManager {
      * Clear history
      */
     clearHistory() {
-        const confirmMessage = window.languageManager?.currentLanguage === 'zh'
-            ? '确定要清除所有历史记录吗？'
-            : 'Clear all history?';
+        const confirmMessage = window.languageManager?.getNotification('clearHistoryConfirm') 
+            || 'Clear all history?';
             
         if (confirm(confirmMessage)) {
             this.history = [];
