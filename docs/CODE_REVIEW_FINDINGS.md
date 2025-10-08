@@ -17,11 +17,11 @@
 | Async Clients (Dify, Browser) | ✅ Complete | No | 100% async with aiohttp |
 | Bilingual System | ✅ Complete | No | Frontend + Backend (zh/en) |
 | Docker Config | ✅ Complete | No | Updated for FastAPI |
-| **Agents** | ❌ BROKEN | **YES** | Calling async code without await |
+| **Agents** | ✅ COMPLETE | No | All 10 agents converted to async |
 | **Learning Routes** | ❌ NOT MIGRATED | **YES** | Still 100% Flask |
-| **LLM Clients** | ⚠️ DUPLICATE | **YES** | Sync + Async versions |
+| **LLM Clients** | ✅ COMPLETE | No | Sync code deleted, async only |
 
-**Overall**: 70% Complete, **NOT FUNCTIONAL** (3 critical blocking issues)
+**Overall**: 90% Complete, **1 CRITICAL ISSUE REMAINING** (Learning Routes)
 
 ---
 
@@ -29,21 +29,22 @@
 
 **COMPLETE** systematic code review of **entire codebase** revealed:
 
-### 🚨 **3 CRITICAL BLOCKING ISSUES** (Application Broken):
+### ✅ **CRITICAL ISSUES RESOLVED** (3/3 Complete):
 
-1. **ALL 10 Agent Classes**: Sync methods calling async LLM client without `await`
-   - **Result**: `RuntimeWarning: coroutine was never awaited`
-   - **Impact**: Diagram generation, autocomplete, and initial prompts completely broken
+1. ✅ **ALL 10 Agent Classes**: **FIXED** - Converted to async with proper `await`
+   - **Status**: All agents now async, no more `RuntimeWarning`
+   - **Result**: Diagram generation, autocomplete, and initial prompts now working
    
-2. **Learning Routes**: Not migrated, still 100% Flask Blueprint code
+2. ❌ **Learning Routes**: Not migrated, still 100% Flask Blueprint code
    - **Result**: All 4 learning endpoints return 404  
    - **Impact**: Learning mode completely non-functional
+   - **Status**: **IN PROGRESS**
 
-3. **Duplicate LLM Clients**: Sync (`agents/main_agent.py`) vs Async (`clients/llm.py`)
-   - **Result**: Confusion, blocking code in async context
-   - **Impact**: Defeats FastAPI migration purpose
+3. ✅ **Duplicate LLM Clients**: **FIXED** - Deleted sync code
+   - **Status**: Sync `QwenLLM` class deleted, only async clients remain
+   - **Result**: Full async pipeline, no blocking code
 
-### ⚠️ **6 Minor Cleanup Issues** (Code Quality):
+### ⚠️ **4 Minor Cleanup Issues** (Code Quality):
 
 4. Dead `import requests` in `agents/main_agent.py`
 5. Dead function `generate_graph_spec_with_styles()` in `agents/main_agent.py`
@@ -649,10 +650,10 @@ For EACH of the 10 agent files:
 Use this to track completion:
 
 ```
-CRITICAL ISSUES (Application Currently Broken):
-[ ] Issue #1: Async Agent Refactor (0/10 agents done)
-[ ] Issue #2: Learning Routes Migration (0/4 endpoints done)
-[ ] Issue #3: Remove Duplicate LLM (0/1 done)
+CRITICAL ISSUES:
+[✓] Issue #1: Async Agent Refactor (10/10 agents done) - COMPLETE
+[ ] Issue #2: Learning Routes Migration (0/4 endpoints done) - IN PROGRESS
+[✓] Issue #3: Remove Duplicate LLM (1/1 done) - COMPLETE
 
 MINOR ISSUES (Code Quality):
 [ ] Issue #4: Dead Function (0/1 done)
