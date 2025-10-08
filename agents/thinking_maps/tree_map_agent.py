@@ -29,7 +29,7 @@ class TreeMapAgent(BaseAgent):
         super().__init__()
         self.diagram_type = "tree_map"
     
-    async async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
+    async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """Generate a tree map from a prompt."""
         try:
             # Generate the initial tree map specification
@@ -72,7 +72,7 @@ class TreeMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    async async def _generate_tree_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
+    async def _generate_tree_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -167,7 +167,7 @@ class TreeMapAgent(BaseAgent):
     MAX_BRANCHES: int = 10
     MAX_LEAVES_PER_BRANCH: int = 10
 
-    async async def enhance_spec(self, spec: Dict) -> Dict:
+    async def enhance_spec(self, spec: Dict) -> Dict:
         """
         Clean and enhance a tree map spec.
 
