@@ -43,7 +43,9 @@ def run_uvicorn():
         # Get configuration from environment
         host = os.getenv('HOST', '0.0.0.0')
         port = int(os.getenv('PORT', '5000'))
-        workers = int(os.getenv('UVICORN_WORKERS', (multiprocessing.cpu_count() * 2) + 1))
+        # For async servers: 1-2 workers per CPU core (NOT 2x+1 like sync servers!)
+        # Each worker can handle 1000s of concurrent connections via async event loop
+        workers = int(os.getenv('UVICORN_WORKERS', min(multiprocessing.cpu_count(), 4)))
         log_level = os.getenv('LOG_LEVEL', 'info').lower()
         environment = os.getenv('ENVIRONMENT', 'production')
         reload = environment == 'development'

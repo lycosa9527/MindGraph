@@ -22,9 +22,10 @@ bind = f"0.0.0.0:{os.getenv('PORT', '5000')}"
 host = "0.0.0.0"
 port = int(os.getenv('PORT', '5000'))
 
-# Workers (async, so use fewer workers than threads)
-# Formula: (2 x CPU cores) + 1 for async I/O-bound workloads
-workers = int(os.getenv('UVICORN_WORKERS', (multiprocessing.cpu_count() * 2) + 1))
+# Workers (async, so we need FAR fewer than sync servers)
+# Formula: 1-2 workers per CPU core (async handles 1000s per worker)
+# Default: Number of CPU cores (not 2x+1 like sync servers)
+workers = int(os.getenv('UVICORN_WORKERS', multiprocessing.cpu_count()))
 
 # ============================================================================
 # ASYNC CONFIGURATION FOR 4,000+ CONCURRENT SSE CONNECTIONS
@@ -72,14 +73,15 @@ Uvicorn Configuration Summary:
 ------------------------------
 Host: {host}
 Port: {port}
-Workers: {workers}
+Workers: {workers} (async - each handles 1000s of connections)
 Timeout Keep-Alive: {timeout_keep_alive}s
 Graceful Shutdown: {timeout_graceful_shutdown}s
 Log Level: {log_level}
 Reload: {reload}
 Environment: {os.getenv('ENVIRONMENT', 'production')}
 
-Expected Capacity: 4,000+ concurrent SSE connections
+Expected Capacity: 4,000+ concurrent SSE connections per worker
+Total Capacity: ~{workers * 4000} concurrent connections
 """
 
 if __name__ == "__main__":
