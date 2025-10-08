@@ -36,7 +36,10 @@ workers = int(os.getenv('UVICORN_WORKERS', multiprocessing.cpu_count()))
 
 # Timeout for long-running requests (SSE can run indefinitely)
 timeout_keep_alive = 300  # 5 minutes for SSE connections
-timeout_graceful_shutdown = 30  # Graceful shutdown timeout
+timeout_graceful_shutdown = 10  # Reduced to 10s for faster shutdown (was 30s)
+
+# Connection limits to prevent shutdown hangs
+limit_concurrency = 1000  # Max concurrent connections per worker
 
 # ============================================================================
 # LOGGING

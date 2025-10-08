@@ -78,9 +78,11 @@ def run_uvicorn():
             reload=reload,
             log_level=log_level,
             timeout_keep_alive=300,  # 5 minutes for SSE
-            timeout_graceful_shutdown=30,
+            timeout_graceful_shutdown=10,  # Reduced from 30s to 10s for faster shutdown
             access_log=True,
-            use_colors=True
+            use_colors=True,
+            # Limit worker connections to prevent hanging on shutdown
+            limit_concurrency=1000 if not reload else None
         )
     except Exception as e:
         print(f"❌ Failed to start Uvicorn: {e}")
