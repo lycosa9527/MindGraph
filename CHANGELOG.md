@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.0.0] - 2025-10-08 - FastAPI Migration Complete
+
+### Removed (Phase 8 Cleanup)
+- **Deprecated Flask/Waitress Files**
+  - `waitress.conf.py` - Old Waitress WSGI server configuration
+  - `app.py` - Old Flask application (replaced by `main.py`)
+  - `api_routes.py` - Old Flask API routes (replaced by `routers/api.py`)
+  - `web_pages.py` - Old Flask template routes (replaced by `routers/pages.py`)
+  - `urls.py` - Old URL configuration (no longer needed)
+  - `dify_client.py` - Old synchronous Dify client (replaced by `async_dify_client.py`)
+
+### Technical Improvements
+- **100% FastAPI/Uvicorn Stack**: All Flask/Waitress dependencies removed from codebase
+- **Graceful Shutdown Optimized**: Reduced timeout from 30s to 10s, capped workers at 4 for async
+- **Connection Limits**: Added `limit_concurrency=1000` to prevent shutdown hangs
+
+---
+
 ## [4.0.0-alpha] - 2025-10-08 - FastAPI Migration (Phases 1-5 Complete)
 
 ### Added
