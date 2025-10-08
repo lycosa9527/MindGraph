@@ -265,18 +265,32 @@ class HunyuanClient:
             
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
                 async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    data = await response.json()
+                    
+                    # Check for Tencent Cloud error response format
+                    if 'Response' in data and 'Error' in data['Response']:
+                        error = data['Response']['Error']
+                        error_msg = f"Hunyuan API error [{error.get('Code')}]: {error.get('Message')}"
+                        logger.error(error_msg)
+                        raise Exception(error_msg)
+                    
+                    # Parse successful response (non-streaming format)
                     if response.status == 200:
-                        data = await response.json()
-                        # Hunyuan response format
-                        content = data.get('Choices', [{}])[0].get('Message', {}).get('Content', '')
-                        if not content:
-                            # Fallback to standard format
-                            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                        logger.debug(f"Hunyuan response length: {len(content)} chars")
-                        return content
+                        # Hunyuan response: Choices[0].Message.Content
+                        choices = data.get('Choices', [])
+                        if choices and len(choices) > 0:
+                            message = choices[0].get('Message', {})
+                            content = message.get('Content', '')
+                            if content:
+                                logger.debug(f"Hunyuan response length: {len(content)} chars")
+                                return content
+                        
+                        # If no content found, log the response structure for debugging
+                        logger.error(f"Hunyuan unexpected response format: {data}")
+                        raise Exception("Hunyuan API returned empty content")
                     else:
                         error_text = await response.text()
-                        logger.error(f"Hunyuan API error {response.status}: {error_text}")
+                        logger.error(f"Hunyuan API HTTP error {response.status}: {error_text}")
                         raise Exception(f"Hunyuan API error: {response.status}")
                         
         except asyncio.TimeoutError:

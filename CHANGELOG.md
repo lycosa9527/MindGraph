@@ -31,7 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API Endpoint: `https://hunyuan.tencentcloudapi.com`
 - Default Model: `hunyuan-turbo`
 - Authentication: Tencent Cloud API (Secret ID + Secret Key)
-- Response Format: Handles both Tencent Cloud format (`Choices`/`Message`/`Content`) and standard OpenAI format
+- Response Format: Correctly parses Tencent Cloud format
+  - Success: `Choices[0].Message.Content`
+  - Error: `Response.Error.Code` and `Response.Error.Message`
+  - Streaming: `Choices[0].Delta.Content` (for future SSE support)
+- Temperature Constraint: Must be ≤ 2.0 (API requirement, default 1.0)
 - Async Support: Fully async implementation with 60s timeout
 
 ---
