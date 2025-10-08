@@ -155,25 +155,23 @@ async def generate_graph(req: GenerateRequest, x_language: str = None):
     if req.dimension_preference:
         logger.info(f"[{request_id}] Dimension preference: {req.dimension_preference!r}")
     
-    # Set the LLM model for this request
-    # TODO: Make this thread-safe or use dependency injection
-    agent.set_llm_model(llm_model)
-    current_model = agent.get_llm_model()
-    logger.info(f"[{request_id}] Set agent LLM model to: {current_model!r}")
+    logger.info(f"[{request_id}] Using LLM model: {llm_model!r}")
     
     try:
         # Generate diagram specification - fully async
+        # Pass model directly through call chain (no global state)
         result = await agent.agent_graph_workflow_with_styles(
             prompt,
             language=language,
             forced_diagram_type=req.diagram_type.value if req.diagram_type else None,
-            dimension_preference=req.dimension_preference
+            dimension_preference=req.dimension_preference,
+            model=llm_model  # Pass model explicitly (fixes race condition)
         )
         
-        logger.info(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram")
+        logger.info(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram with {llm_model}")
         
         # Add metadata
-        result['llm_model'] = current_model
+        result['llm_model'] = llm_model
         result['request_id'] = request_id
         
         return result
