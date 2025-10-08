@@ -38,9 +38,9 @@ def run_uvicorn():
         import uvicorn
         from config.settings import config
         
-        # Get configuration from environment
-        host = os.getenv('HOST', '0.0.0.0')
-        port = int(os.getenv('PORT', '5000'))
+        # Get configuration from centralized settings
+        host = config.HOST
+        port = config.PORT
         # For async servers: 1-2 workers per CPU core (NOT 2x+1 like sync servers!)
         # Each worker can handle 1000s of concurrent connections via async event loop
         workers = int(os.getenv('UVICORN_WORKERS', min(multiprocessing.cpu_count(), 4)))
