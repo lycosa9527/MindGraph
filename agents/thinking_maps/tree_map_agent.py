@@ -29,11 +29,11 @@ class TreeMapAgent(BaseAgent):
         super().__init__()
         self.diagram_type = "tree_map"
     
-    def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
+    async async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """Generate a tree map from a prompt."""
         try:
             # Generate the initial tree map specification
-            spec = self._generate_tree_map_spec(prompt, language, dimension_preference)
+            spec = await self._generate_tree_map_spec(prompt, language, dimension_preference)
             if not spec:
                 return {
                     'success': False,
@@ -72,7 +72,7 @@ class TreeMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_tree_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
+    async async def _generate_tree_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -100,7 +100,7 @@ class TreeMapAgent(BaseAgent):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
-            response = self.llm_client.chat_completion(messages)
+            response = await self.llm_client.chat_completion(messages)
             
             if not response:
                 logger.error("TreeMapAgent: No response from LLM")
@@ -167,7 +167,7 @@ class TreeMapAgent(BaseAgent):
     MAX_BRANCHES: int = 10
     MAX_LEAVES_PER_BRANCH: int = 10
 
-    def enhance_spec(self, spec: Dict) -> Dict:
+    async async def enhance_spec(self, spec: Dict) -> Dict:
         """
         Clean and enhance a tree map spec.
 

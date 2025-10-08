@@ -75,13 +75,13 @@ class MindMapAgent(BaseAgent):
         self._font_size_cache.clear()
         self._node_height_cache.clear()
     
-    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
         """Generate a mind map from a prompt."""
         try:
             # Clear caches at the start of each generation
             self._clear_caches()
             # Generate the initial mind map specification
-            spec = self._generate_mind_map_spec(prompt, language)
+            spec = await self._generate_mind_map_spec(prompt, language)
             if not spec:
                 return {
                     'success': False,
@@ -114,7 +114,7 @@ class MindMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_mind_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    async def _generate_mind_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the mind map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -134,7 +134,7 @@ class MindMapAgent(BaseAgent):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
-            response = self.llm_client.chat_completion(messages)
+            response = await self.llm_client.chat_completion(messages)
             
             if not response:
                 logger.error("MindMapAgent: No response from LLM")

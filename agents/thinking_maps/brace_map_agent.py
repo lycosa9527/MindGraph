@@ -1124,11 +1124,11 @@ class BraceMapAgent(BaseAgent):
             'strokeWidth': 2
         }
     
-    def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
+    async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """Generate a brace map from a prompt."""
         try:
             # Generate the initial brace map specification
-            spec = self._generate_brace_map_spec(prompt, language, dimension_preference)
+            spec = await self._generate_brace_map_spec(prompt, language, dimension_preference)
             if not spec:
                 return {
                     'success': False,
@@ -1165,7 +1165,7 @@ class BraceMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_brace_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
+    async def _generate_brace_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -1189,7 +1189,7 @@ class BraceMapAgent(BaseAgent):
                 user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
             
             # Generate response from LLM
-            response = self.llm_client.chat_completion([
+            response = await self.llm_client.chat_completion([
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ])
@@ -1239,7 +1239,7 @@ class BraceMapAgent(BaseAgent):
         except Exception as e:
             return False, f"Validation error: {str(e)}"
     
-    def enhance_spec(self, spec: Dict) -> Dict:
+    async def enhance_spec(self, spec: Dict) -> Dict:
         """Enhance a brace map specification with layout data."""
         try:
             if not spec or not isinstance(spec, dict):

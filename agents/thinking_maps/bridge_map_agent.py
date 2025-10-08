@@ -20,7 +20,7 @@ class BridgeMapAgent(BaseAgent):
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "bridge_map"
         
-    def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
+    async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
         """
         Generate a bridge map from a prompt.
         
@@ -36,7 +36,7 @@ class BridgeMapAgent(BaseAgent):
             logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
             # Generate the bridge map specification
-            spec = self._generate_bridge_map_spec(prompt, language, dimension_preference)
+            spec = await self._generate_bridge_map_spec(prompt, language, dimension_preference)
             
             if not spec:
                 return {
@@ -119,7 +119,7 @@ class BridgeMapAgent(BaseAgent):
         except Exception as e:
             return False, f"Basic validation error: {str(e)}"
     
-    def _generate_bridge_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
+    async def _generate_bridge_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
         """Generate the bridge map specification using LLM."""
         try:
             logger.debug(f"=== BRIDGE MAP SPEC GENERATION START ===")
@@ -157,7 +157,7 @@ class BridgeMapAgent(BaseAgent):
             ]
             
             logger.debug("Calling LLM for bridge map generation...")
-            response = self.llm_client.chat_completion(messages)
+            response = await self.llm_client.chat_completion(messages)
             
             logger.debug(f"LLM response received: {response[:500] if response else 'None'}...")
             
@@ -260,7 +260,7 @@ class BridgeMapAgent(BaseAgent):
             logger.error(f"BridgeMapAgent: Error enhancing spec: {e}")
             return spec
     
-    def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
+    async def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
         """
         Enhance an existing bridge map specification.
         

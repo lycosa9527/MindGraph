@@ -41,7 +41,7 @@ class ConceptMapAgent(BaseAgent):
     MAX_CONCEPTS: int = 30
     MAX_LABEL_LEN: int = 60
 
-    def enhance_spec(self, spec: Dict) -> Dict:
+    async def enhance_spec(self, spec: Dict) -> Dict:
         try:
             if not isinstance(spec, dict):
                 return {"success": False, "error": "Spec must be a dictionary"}
@@ -182,7 +182,7 @@ class ConceptMapAgent(BaseAgent):
         except Exception as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
 
-    def generate_graph(self, user_prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def generate_graph(self, user_prompt: str, language: str = "en") -> Dict[str, Any]:
         """
         Generate a concept map graph specification from user prompt.
         

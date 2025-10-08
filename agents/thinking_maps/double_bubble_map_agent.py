@@ -19,7 +19,7 @@ class DoubleBubbleMapAgent(BaseAgent):
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "double_bubble_map"
         
-    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
         """
         Generate a double bubble map from a prompt.
         
@@ -34,7 +34,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             logger.info(f"DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
             
             # Generate the double bubble map specification
-            spec = self._generate_double_bubble_map_spec(prompt, language)
+            spec = await self._generate_double_bubble_map_spec(prompt, language)
             
             if not spec:
                 return {
@@ -68,7 +68,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_double_bubble_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    async def _generate_double_bubble_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the double bubble map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -94,7 +94,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
-            response = self.llm_client.chat_completion(messages)
+            response = await self.llm_client.chat_completion(messages)
             
             # Response already generated above with centralized prompts
             
@@ -211,7 +211,7 @@ class DoubleBubbleMapAgent(BaseAgent):
         except Exception as e:
             return False, f"Validation error: {str(e)}"
     
-    def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
+    async def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
         """
         Enhance an existing double bubble map specification.
         

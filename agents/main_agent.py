@@ -1304,7 +1304,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
     raise ValueError("All concept map generation methods failed - check LLM configuration")
 
 
-def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str, dimension_preference: str = None) -> dict:
+async def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str, dimension_preference: str = None) -> dict:
     """
     Generate specification using the appropriate specialized agent.
     
@@ -1397,9 +1397,9 @@ def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str
                 logger.info(f"Passing classification dimension preference to tree map agent: {dimension_preference}")
             elif diagram_type == 'bridge_map':
                 logger.info(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
-            result = agent.generate_graph(user_prompt, language, dimension_preference)
+            result = await agent.generate_graph(user_prompt, language, dimension_preference)
         else:
-            result = agent.generate_graph(user_prompt, language)
+            result = await agent.generate_graph(user_prompt, language)
         
         logger.debug(f"Agent result type: {type(result)}")
         logger.debug(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
@@ -1478,7 +1478,7 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     return cleaned_prompt
 
 
-def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None, dimension_preference=None):
+async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None, dimension_preference=None):
     """
     Simplified agent workflow that directly calls specialized agents.
     
@@ -1517,7 +1517,7 @@ def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_
             logger.info(f"Agent: Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
-        spec = _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference)
+        spec = await _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference)
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Agent: Failed to generate spec for {diagram_type}")
@@ -1586,7 +1586,7 @@ class MainAgent:
         self.language = 'zh'  # Default language
         self.logger = logger
     
-    def generate_graph(self, user_prompt: str, language: str = "zh") -> dict:
+    async def generate_graph(self, user_prompt: str, language: str = "zh") -> dict:
         """
         Generate a graph specification from user prompt.
         
@@ -1614,7 +1614,7 @@ class MainAgent:
             # Generate the graph specification using the simplified workflow
             ConceptMapAgent = _get_concept_map_agent()
             agent = ConceptMapAgent()
-            result = agent.generate_graph(user_prompt, language)
+            result = await agent.generate_graph(user_prompt, language)
             return result.get('spec', create_error_response("Failed to generate concept map", "generation"))
             
         except Exception as e:

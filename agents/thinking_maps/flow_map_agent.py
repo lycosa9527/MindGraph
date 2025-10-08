@@ -28,11 +28,11 @@ class FlowMapAgent(BaseAgent):
         super().__init__()
         self.diagram_type = "flow_map"
     
-    def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
         """Generate a flow map from a prompt."""
         try:
             # Generate the initial flow map specification
-            spec = self._generate_flow_map_spec(prompt, language)
+            spec = await self._generate_flow_map_spec(prompt, language)
             if not spec:
                 return {
                     'success': False,
@@ -71,7 +71,7 @@ class FlowMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _generate_flow_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    async def _generate_flow_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
         """Generate the flow map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -91,7 +91,7 @@ class FlowMapAgent(BaseAgent):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
-            response = self.llm_client.chat_completion(messages)
+            response = await self.llm_client.chat_completion(messages)
             
             # Response already generated above with centralized prompts
             
@@ -141,7 +141,7 @@ class FlowMapAgent(BaseAgent):
     MAX_STEPS: int = 15
     MAX_SUBSTEPS_PER_STEP: int = 8
 
-    def enhance_spec(self, spec: Dict) -> Dict:
+    async def enhance_spec(self, spec: Dict) -> Dict:
         """
         Clean and enhance a flow map spec.
 
