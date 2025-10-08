@@ -210,7 +210,7 @@ class ConceptMapAgent(BaseAgent):
                 return {"error": "Failed to generate concept map specification"}
             
             # Enhance the specification using this agent's enhancement capabilities
-            enhanced_result = self.enhance_spec(spec)
+            enhanced_result = await self.enhance_spec(spec)
             
             if not enhanced_result.get('success'):
                 logger.warning(f"ConceptMapAgent: Enhancement failed: {enhanced_result.get('error')}")
