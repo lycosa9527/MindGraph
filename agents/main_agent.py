@@ -282,9 +282,6 @@ def get_llm_timing_stats():
 # All agents now use get_llm_client() from agents/core/agent_utils.py which
 # returns async clients (QwenClient, DeepSeekClient, etc.) from clients/llm.py
 
-# Global variable to track selected LLM model for generation
-_selected_llm_model = 'qwen'  # Default to Qwen
-
 # Temporary stub for backward compatibility with concept map functions
 # TODO: Refactor concept map generation to use async clients directly
 class _LegacyLLMStub:
@@ -353,22 +350,6 @@ class QwenLLM:
             asyncio.set_event_loop(loop)
         
         return loop.run_until_complete(_async_call())
-
-def set_llm_model(model_id='qwen'):
-    """
-    Set the LLM model to use for generation tasks.
-    Classification always uses Qwen for speed.
-    
-    Args:
-        model_id (str): 'qwen', 'deepseek', 'kimi', or 'chatglm'
-    """
-    global _selected_llm_model
-    _selected_llm_model = model_id
-    logger.info(f"LLM model set to: {model_id}")
-
-def get_llm_model():
-    """Get the currently selected LLM model."""
-    return _selected_llm_model
 
 
 # ============================================================================
