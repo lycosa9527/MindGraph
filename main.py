@@ -305,15 +305,15 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache
+from routers import pages, cache, api
 
 # Register routers
 app.include_router(pages.router)
 app.include_router(cache.router)
+app.include_router(api.router)
 
-# TODO Phase 2.2: Import remaining routers (complex)
-# from routers import api, learning
-# app.include_router(api.router)
+# TODO Phase 2.2: Import remaining routers
+# from routers import learning
 # app.include_router(learning.router)
 
 # ============================================================================
