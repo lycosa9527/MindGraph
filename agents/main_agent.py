@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 from langchain.prompts import PromptTemplate
 import requests
 import yaml
-from settings import config
+from config.settings import config
 import json
 from prompts import get_prompt
 

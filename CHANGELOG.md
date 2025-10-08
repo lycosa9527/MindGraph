@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.0.0] - 2025-10-08 - FastAPI Migration Complete
 
+### Reorganized Project Structure
+- **New Package Organization** (Following FastAPI best practices)
+  - `clients/` - External API clients
+    - `clients/dify.py` (renamed from `async_dify_client.py`)
+    - `clients/llm.py` (renamed from `llm_clients.py`)
+  - `services/` - Internal services
+    - `services/browser.py` (renamed from `browser_manager.py`)
+  - `config/` - Configuration
+    - `config/settings.py` (moved from root)
+  - `models/` - Pydantic request/response models
+  - `routers/` - FastAPI route handlers
+
 ### Removed (Phase 8 Cleanup)
 - **Deprecated Flask/Waitress Files**
   - `waitress.conf.py` - Old Waitress WSGI server configuration
@@ -16,10 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `api_routes.py` - Old Flask API routes (replaced by `routers/api.py`)
   - `web_pages.py` - Old Flask template routes (replaced by `routers/pages.py`)
   - `urls.py` - Old URL configuration (no longer needed)
-  - `dify_client.py` - Old synchronous Dify client (replaced by `async_dify_client.py`)
+  - `dify_client.py` - Old synchronous Dify client (replaced by `clients/dify.py`)
+  - `test_fastapi_migration.py` - Migration test file (no longer needed)
 
 ### Technical Improvements
 - **100% FastAPI/Uvicorn Stack**: All Flask/Waitress dependencies removed from codebase
+- **Clean Project Structure**: Follows FastAPI best practices with organized packages
+- **All Imports Updated**: 11 files updated to use new package structure
 - **Graceful Shutdown Optimized**: Reduced timeout from 30s to 10s, capped workers at 4 for async
 - **Connection Limits**: Added `limit_concurrency=1000` to prevent shutdown hangs
 

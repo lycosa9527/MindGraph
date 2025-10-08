@@ -29,10 +29,10 @@ from models import (
 )
 
 # Import async clients
-from async_dify_client import AsyncDifyClient
-from llm_clients import qwen_client_generation, qwen_client_classification
+from clients.dify import AsyncDifyClient
+from clients.llm import qwen_client_generation, qwen_client_classification
 from agents import main_agent as agent
-from browser_manager import BrowserContextManager
+from services.browser import BrowserContextManager
 
 logger = logging.getLogger(__name__)
 

@@ -44,7 +44,7 @@ CHAR_WIDTH_CONFIG = {
 }
 
 # Import required components
-from settings import Config
+from config.settings import Config
 
 
 # Debug logging removed for production

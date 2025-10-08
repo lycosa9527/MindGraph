@@ -12,7 +12,7 @@ import logging
 import os
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
-from settings import config
+from config.settings import config
 
 # Load environment variables for logging configuration
 load_dotenv()

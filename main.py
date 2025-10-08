@@ -125,7 +125,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from settings import config
+from config.settings import config
 
 # ============================================================================
 # LIFESPAN CONTEXT (Startup/Shutdown Events)

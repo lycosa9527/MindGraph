@@ -27,7 +27,7 @@ from ..core.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
-from settings import Config
+from config.settings import Config
 
 
 @dataclass

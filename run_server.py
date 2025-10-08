@@ -38,7 +38,7 @@ def run_uvicorn():
         
         # Load uvicorn config
         import uvicorn
-        from settings import config
+        from config.settings import config
         
         # Get configuration from environment
         host = os.getenv('HOST', '0.0.0.0')

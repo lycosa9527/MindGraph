@@ -10,7 +10,7 @@ import re
 import json
 import yaml
 import os
-from settings import config
+from config.settings import config
 import logging
 from dotenv import load_dotenv
 
@@ -28,7 +28,7 @@ def get_llm_client():
         LLM client instance for the currently selected model
     """
     try:
-        from llm_clients import get_llm_client as get_client
+        from clients.llm import get_llm_client as get_client
         from agents import main_agent
         
         # Get the currently selected LLM model
