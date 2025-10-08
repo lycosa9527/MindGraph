@@ -41,22 +41,27 @@ def run_uvicorn():
         # Get configuration from centralized settings
         host = config.HOST
         port = config.PORT
+        debug = config.DEBUG
+        log_level = config.LOG_LEVEL.lower()
+        
+        # Derive environment and reload from DEBUG setting
+        environment = 'development' if debug else 'production'
+        reload = debug
+        
         # For async servers: 1-2 workers per CPU core (NOT 2x+1 like sync servers!)
         # Each worker can handle 1000s of concurrent connections via async event loop
+        # Allow override via UVICORN_WORKERS env var for fine-tuning
         workers = int(os.getenv('UVICORN_WORKERS', min(multiprocessing.cpu_count(), 4)))
-        log_level = os.getenv('LOG_LEVEL', 'info').lower()
-        environment = os.getenv('ENVIRONMENT', 'production')
-        reload = environment == 'development'
         
         # Display banner
         print("=" * 80)
         print("MindGraph FastAPI Server Starting...")
         print("=" * 80)
-        print(f"Environment: {environment}")
+        print(f"Environment: {environment} (DEBUG={debug})")
         print(f"Host: {host}")
         print(f"Port: {port}")
         print(f"Workers: {workers}")
-        print(f"Log Level: {log_level}")
+        print(f"Log Level: {log_level.upper()}")
         print(f"Auto-reload: {reload}")
         print(f"Expected Capacity: 4,000+ concurrent SSE connections")
         print("=" * 80)

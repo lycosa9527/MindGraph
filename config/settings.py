@@ -186,6 +186,16 @@ class Config:
         """Flask debug mode setting."""
         return self._get_cached_value('DEBUG', 'False').lower() == 'true'
     
+    @property
+    def LOG_LEVEL(self):
+        """Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)."""
+        level = self._get_cached_value('LOG_LEVEL', 'INFO').upper()
+        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        if level not in valid_levels:
+            logger.warning(f"Invalid LOG_LEVEL '{level}', using INFO")
+            return 'INFO'
+        return level
+    
     # ============================================================================
     # GRAPH LANGUAGE AND CONTENT SETTINGS
     # ============================================================================
