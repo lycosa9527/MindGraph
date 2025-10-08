@@ -28,7 +28,6 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 from langchain.prompts import PromptTemplate
-import requests
 import yaml
 from config.settings import config
 import json
@@ -170,17 +169,6 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
         "suggested_diagram_type": "concept_map"
     }
 
-def generate_graph_spec_with_styles(user_prompt: str, graph_type: str, language: str = 'zh', style_preferences: dict = None) -> dict:
-    """
-    Simple replacement for the removed complex style generation function.
-    Uses the new simplified workflow.
-    """
-    try:
-        result = agent_graph_workflow_with_styles(user_prompt, language)
-        return result.get('spec', create_error_response("Failed to generate graph spec", "generation"))
-    except Exception as e:
-        return create_error_response(f"Generation failed: {str(e)}", "generation")
-
 def _salvage_json_string(raw: str) -> str:
     """Attempt to salvage a JSON object from messy LLM output."""
     if not raw:
@@ -271,118 +259,11 @@ def get_llm_timing_stats():
 
 
 # ----------------------------------------------------------------------------
-# LLM Client Implementation
+# LLM Client Implementation (REMOVED - Now using async clients from clients/llm.py)
 # ----------------------------------------------------------------------------
-
-
-class QwenLLM:
-    """
-    Simple Qwen API client with timing tracking - no LangChain inheritance issues
-    """
-    
-    def __init__(self, model_type='classification'):
-        """
-        Initialize QwenLLM with specific model type
-        
-        Args:
-            model_type (str): 'classification' for qwen-turbo, 'generation' for qwen-plus
-        """
-        self.model_type = model_type
-    
-    def _call(self, prompt, stop=None):
-        """
-        Make API call to Qwen with timing tracking
-        
-        Args:
-            prompt (str): The prompt to send
-            stop (optional): Not used, kept for compatibility
-            
-        Returns:
-            str: Response content from Qwen
-        """
-        start_time = time.time()
-        
-        # For classification, always use Qwen for speed
-        # For generation, use the selected LLM model
-        if self.model_type == 'classification':
-            model_name = config.QWEN_MODEL_CLASSIFICATION
-            data = config.get_qwen_classification_data(prompt)
-            selected_model_id = 'qwen'
-        else:  # generation
-            selected_model_id = get_llm_model()
-            data = config.get_llm_data(prompt, selected_model_id)
-            model_name = data.get('model')
-        
-        logger.debug(f"QwenLLM._call() - Model: {model_name} ({self.model_type}, llm_id: {selected_model_id})")
-        logger.debug(f"QwenLLM._call() - Max tokens: {data.get('max_tokens', 'NOT_SET')}")
-        logger.debug(f"QwenLLM._call() - Temperature: {data.get('temperature', 'NOT_SET')}")
-        logger.debug(f"Prompt sent to LLM:\n{prompt[:1000]}{'...' if len(prompt) > 1000 else ''}")
-
-        headers = config.get_qwen_headers()
-        logger.debug(f"Making request to: {config.QWEN_API_URL}")
-        try:
-            resp = requests.post(
-                config.QWEN_API_URL,
-                headers=headers,
-                json=data
-            )
-            resp.raise_for_status()
-            result = resp.json()
-            content = result["choices"][0]["message"]["content"]
-            
-            # Log the full API response to debug token limits
-            logger.debug(f"QwenLLM API response - Usage: {result.get('usage', 'NO_USAGE_INFO')}")
-            logger.debug(f"QwenLLM API response - Finish reason: {result['choices'][0].get('finish_reason', 'NO_FINISH_REASON')}")
-            
-            # Calculate timing and update thread-safe tracker
-            call_time = time.time() - start_time
-            llm_timing_stats.add_call_time(call_time)
-            
-            logger.debug(f"QwenLLM response received - Length: {len(content)} characters - Time: {call_time:.3f}s")
-            logger.debug(f"Qwen Output:\n{content[:1000]}{'...' if len(content) > 1000 else ''}")
-            return content
-        except Exception as e:
-            # Still track timing even on error
-            call_time = time.time() - start_time
-            llm_timing_stats.add_call_time(call_time)
-            
-            logger.error(f"QwenLLM API call failed: {e} - Time: {call_time:.3f}s", exc_info=True)
-            raise
-
-    def invoke(self, variables):
-        """
-        LangChain compatibility method - converts variables to prompt and calls _call
-        
-        Args:
-            variables (dict): Variables for the prompt template
-            
-        Returns:
-            str: Response from Qwen
-        """
-        # Extract the prompt from variables (assuming it's a PromptTemplate)
-        if hasattr(variables, 'template'):
-            # It's a PromptTemplate object
-            prompt = variables.template
-        elif isinstance(variables, dict) and 'user_prompt' in variables:
-            # It's a variables dict with user_prompt
-            prompt = variables['user_prompt']
-        else:
-            # Fallback - try to convert to string
-            prompt = str(variables)
-        
-        return self._call(prompt)
-
-    @property
-    def _llm_type(self):
-        return f"qwen-{self.model_type}"
-
-
-# Initialize the LLM instances for different tasks
-llm_classification = QwenLLM(model_type='classification')  # qwen-turbo for fast classification
-llm_generation = QwenLLM(model_type='generation')         # qwen-plus for high-quality generation
-
-# Legacy compatibility - default to classification model
-llm = llm_classification
+# The sync QwenLLM class has been deleted as part of FastAPI async migration.
+# All agents now use get_llm_client() from agents/core/agent_utils.py which
+# returns async clients (QwenClient, DeepSeekClient, etc.) from clients/llm.py
 
 # Global variable to track selected LLM model for generation
 _selected_llm_model = 'qwen'  # Default to Qwen
