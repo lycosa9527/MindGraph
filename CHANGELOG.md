@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.1.0] - 2025-10-08 - Tencent Hunyuan LLM Support & Visual Enhancements
 
 ### Fixed
+- **Multi-LLM Completion Notification - Bilingual Support**
+  - Multi-LLM autocomplete success notification now supports both English and Chinese
+  - English: "3/4 models ready. Showing Qwen. Click buttons to switch."
+  - Chinese: "3/4 个模型就绪。正在显示 Qwen。点击按钮切换。"
+  - Uses centralized `languageManager.getNotif('multiLLMReady')` system
+
 - **Critical: DoubleBubbleMap Async Event Loop Error**
   - Fixed `RuntimeError: This event loop is already running` in DoubleBubbleMapAgent
   - Converted `extract_double_bubble_topics_llm` from sync wrapper to fully async
