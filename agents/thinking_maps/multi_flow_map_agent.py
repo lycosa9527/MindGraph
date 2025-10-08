@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 class MultiFlowMapAgent(BaseAgent):
     """Utility agent to improve multi-flow map specs before rendering."""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model='qwen'):
+        super().__init__(model=model)
         self.diagram_type = "multi_flow_map"
     
     async def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:

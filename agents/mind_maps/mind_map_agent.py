@@ -60,8 +60,8 @@ class MindMapAgent(BaseAgent):
     - Enterprise-grade positioning algorithms
     """
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model='qwen'):
+        super().__init__(model=model)
         self.config = Config()
         self.diagram_type = "mindmap"
         # Cache for expensive font calculations

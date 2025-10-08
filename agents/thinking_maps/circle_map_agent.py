@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class CircleMapAgent(BaseAgent):
     """Agent for generating circle maps."""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model='qwen'):
+        super().__init__(model=model)
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "circle_map"
         

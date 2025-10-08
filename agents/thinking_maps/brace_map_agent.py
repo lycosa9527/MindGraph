@@ -1103,8 +1103,8 @@ class FlexibleLayoutCalculator:
 class BraceMapAgent(BaseAgent):
     """Brace Map Agent with block-based positioning system"""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model='qwen'):
+        super().__init__(model=model)
         self.context_manager = ContextManager()
         self.llm_processor = LLMHybridProcessor()
         self.algorithm_selector = ContextAwareAlgorithmSelector(self.context_manager)

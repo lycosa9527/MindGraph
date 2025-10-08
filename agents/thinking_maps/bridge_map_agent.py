@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class BridgeMapAgent(BaseAgent):
     """Agent for generating bridge maps."""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model='qwen'):
+        super().__init__(model=model)
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "bridge_map"
         

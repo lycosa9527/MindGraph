@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class DoubleBubbleMapAgent(BaseAgent):
     """Agent for generating double bubble maps."""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model='qwen'):
+        super().__init__(model=model)
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "double_bubble_map"
         
