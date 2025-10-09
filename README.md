@@ -7,7 +7,7 @@
 [![Uvicorn](https://img.shields.io/badge/Uvicorn-0.24+-purple.svg)](https://www.uvicorn.org/)
 [![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.1.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.1.1-brightgreen.svg)](CHANGELOG.md)
 [![Async Ready](https://img.shields.io/badge/Async-100%25-success.svg)](CHANGELOG.md)
 [![Multi-LLM](https://img.shields.io/badge/LLMs-4_Models-blue.svg)](CHANGELOG.md)
 [![Bilingual](https://img.shields.io/badge/Languages-EN%20%7C%20中文-orange.svg)](CHANGELOG.md)
@@ -15,7 +15,7 @@
 
 Transform natural language into professional diagrams. Supports 10 diagram types including Thinking Maps, Mind Maps, and Concept Maps with intelligent LLM classification and D3.js rendering.
 
-将自然语言转换为专业图表。支持10种图表类型，包括思维导图、思维导图和概念图，具有智能LLM分类和D3.js渲染功能。
+将自然语言转换为专业图表。支持10种图表类型，包括八大思维图示、思维导图和概念图，具有智能LLM分类和D3.js渲染功能。
 
 ---
 
@@ -96,7 +96,7 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
 ### 🚀 Core Features | 核心功能
 
 - **Smart Classification**: LLM-based diagram type detection | **智能分类**: 基于LLM的图表类型检测
-- **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的思维导图覆盖，包括思维导图和概念图
+- **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的八大思维图示覆盖，加上思维导图和概念图
 - **Interactive Learning Mode** 🧠: AI-powered interactive learning with real-time validation, multi-angle verification, and intelligent tutoring | **交互式学习模式**: AI驱动的交互式学习，实时验证、多角度验证和智能辅导
 - **Learning Sheets (半成品)**: Educational mode with 20% content hidden for student practice | **学习半成品**: 教育模式，隐藏20%内容供学生练习
 - **API-First**: FastAPI RESTful endpoints with auto-documentation | **API优先**: FastAPI RESTful端点，带自动文档
@@ -137,7 +137,7 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
    Environment: production
    Host: 0.0.0.0
    Port: 9527
-   Workers: 9
+   Workers: 4
    Expected Capacity: 4,000+ concurrent SSE connections
    ✅ Server ready at: http://localhost:9527
    ✅ Interactive Editor: http://localhost:9527/editor
@@ -363,7 +363,7 @@ if result["success"]:
 
 ## Supported Diagram Types | 支持的图表类型
 
-### Thinking Maps | 思维导图
+### Thinking Maps | 八大思维图示
 1. **Bubble Map** - Define concepts and characteristics | **气泡图** - 定义概念和特征
 2. **Circle Map** - Brainstorming and context definition | **圆圈图** - 头脑风暴和上下文定义
 3. **Double Bubble Map** - Compare and contrast concepts | **双气泡图** - 比较和对比概念
@@ -681,7 +681,7 @@ python test/test_all_agents.py production
 
 ### Production Server | 生产服务器
 ```bash
-python run_server.py  # Waitress WSGI server | Waitress WSGI服务器
+python run_server.py  # Uvicorn ASGI server | Uvicorn ASGI服务器
 ```
 
 ### Environment Variables | 环境变量
@@ -720,11 +720,10 @@ This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) f
 
 ## Documentation | 文档
 
-- [Interactive Editor Guide](docs/INTERACTIVE_EDITOR.md) - Complete editor usage guide | 完整编辑器使用指南
-- [Learning Mode Design](docs/LEARNING_MODE_DESIGN.md) - Interactive Learning Mode architecture and design | 交互式学习模式架构和设计
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation | 完整API文档
 - [Changelog](CHANGELOG.md) - Version history and updates | 版本历史和更新
 - [Optimization Checklist](docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md) - Performance improvements and architecture analysis | 性能改进和架构分析
+- [Console Logging Guide](docs/CONSOLE_LOGGING_GUIDE.md) - Frontend and backend logging system | 前端和后端日志系统
 - [Test Documentation](test/test_all_agents.py) - Comprehensive testing framework | 全面测试框架
 
 ## Code Review & Architecture | 代码审查和架构

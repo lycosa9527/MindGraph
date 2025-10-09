@@ -4,10 +4,10 @@ MindGraph - AI-Powered Graph Generation Application (FastAPI)
 
 Modern async web application for AI-powered diagram generation.
 
-Version: 4.0.0 (FastAPI)
+Version: 4.1.1 (FastAPI)
 Author: lycosa9527
 Made by: MindSpring Team
-License: MIT
+License: AGPLv3
 
 Features:
 - Full async/await support for 4,000+ concurrent SSE connections
@@ -292,7 +292,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="MindGraph API",
     description="AI-Powered Graph Generation with FastAPI + Uvicorn",
-    version="4.0.0",
+    version="4.1.1",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan
@@ -407,7 +407,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 async def health_check():
     """Basic health check endpoint"""
-    return {"status": "ok", "version": "4.0.0-fastapi"}
+    return {"status": "ok", "version": "4.1.1"}
 
 @app.get("/status")
 async def get_status():
