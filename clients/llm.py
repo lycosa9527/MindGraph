@@ -12,6 +12,7 @@ import logging
 import os
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from config.settings import config
 
 # Load environment variables for logging configuration
@@ -34,21 +35,27 @@ class QwenClient:
         self.api_key = config.QWEN_API_KEY
         self.timeout = 30  # seconds
         self.model_type = model_type
+        # DIVERSITY FIX: Use higher temperature for generation to increase variety
+        self.default_temperature = 0.9 if model_type == 'generation' else 0.7
         
-    async def chat_completion(self, messages: List[Dict], temperature: float = 0.7, 
+    async def chat_completion(self, messages: List[Dict], temperature: float = None,
                             max_tokens: int = 1000) -> str:
         """
         Send chat completion request to Qwen (async version)
         
         Args:
             messages: List of message dictionaries with 'role' and 'content'
-            temperature: Sampling temperature (0.0 to 1.0)
+            temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
             
         Returns:
             Response content as string
         """
         try:
+            # Use instance default if not specified
+            if temperature is None:
+                temperature = self.default_temperature
+            
             # Select appropriate model based on task type
             if self.model_type == 'classification':
                 model_name = config.QWEN_MODEL_CLASSIFICATION
@@ -103,22 +110,28 @@ class DeepSeekClient:
         self.timeout = 60  # seconds (DeepSeek R1 can be slower for reasoning)
         self.model_id = 'deepseek'
         self.model_name = config.DEEPSEEK_MODEL
+        # DIVERSITY FIX: Lower temperature for DeepSeek (reasoning model, more deterministic)
+        self.default_temperature = 0.6
         logger.info(f"DeepSeekClient initialized with model: {self.model_name}")
     
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = 0.7,
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
                                    max_tokens: int = 2000) -> str:
         """
         Send async chat completion request to DeepSeek R1
         
         Args:
             messages: List of message dictionaries with 'role' and 'content'
-            temperature: Sampling temperature (0.0 to 1.0)
+            temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
             
         Returns:
             Response content as string
         """
         try:
+            # Use instance default if not specified
+            if temperature is None:
+                temperature = self.default_temperature
+            
             payload = config.get_llm_data(
                 messages[-1]['content'] if messages else '',
                 self.model_id
@@ -152,6 +165,12 @@ class DeepSeekClient:
         except Exception as e:
             logger.error(f"DeepSeek API error: {e}")
             raise
+    
+    # Alias for compatibility with agents that call chat_completion
+    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+                             max_tokens: int = 2000) -> str:
+        """Alias for async_chat_completion for API consistency"""
+        return await self.async_chat_completion(messages, temperature, max_tokens)
 
 
 class KimiClient:
@@ -164,12 +183,18 @@ class KimiClient:
         self.timeout = 60  # seconds
         self.model_id = 'kimi'
         self.model_name = config.KIMI_MODEL
+        # DIVERSITY FIX: Higher temperature for Kimi to increase creative variation
+        self.default_temperature = 1.0
         logger.info(f"KimiClient initialized with model: {self.model_name}")
     
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = 0.7,
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
                                    max_tokens: int = 2000) -> str:
         """Async chat completion for Kimi"""
         try:
+            # Use instance default if not specified
+            if temperature is None:
+                temperature = self.default_temperature
+            
             payload = config.get_llm_data(
                 messages[-1]['content'] if messages else '',
                 self.model_id
@@ -203,102 +228,83 @@ class KimiClient:
         except Exception as e:
             logger.error(f"Kimi API error: {e}")
             raise
+    
+    # Alias for compatibility with agents that call chat_completion
+    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+                             max_tokens: int = 2000) -> str:
+        """Alias for async_chat_completion for API consistency"""
+        return await self.async_chat_completion(messages, temperature, max_tokens)
 
 
 class HunyuanClient:
-    """Client for Tencent Hunyuan (混元) API"""
+    """Client for Tencent Hunyuan (混元) using OpenAI-compatible API"""
     
     def __init__(self):
-        """Initialize Hunyuan client"""
-        self.api_url = config.HUNYUAN_API_URL
+        """Initialize Hunyuan client with OpenAI SDK"""
         self.api_key = config.HUNYUAN_API_KEY
-        self.secret_id = config.HUNYUAN_SECRET_ID
+        self.base_url = "https://api.hunyuan.cloud.tencent.com/v1"
+        self.model_name = "hunyuan-turbo"  # Using standard model name
         self.timeout = 60  # seconds
-        self.model_id = 'hunyuan'
-        self.model_name = config.HUNYUAN_MODEL
-        logger.info(f"HunyuanClient initialized with model: {self.model_name}")
+        
+        # DIVERSITY FIX: Highest temperature for HunYuan for maximum variation
+        self.default_temperature = 1.2
+        
+        # Initialize AsyncOpenAI client with custom base URL
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=self.timeout
+        )
+        
+        logger.info(f"HunyuanClient initialized with OpenAI-compatible API: {self.model_name}")
     
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = 1.0,
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
                                    max_tokens: int = 2000) -> str:
         """
-        Send async chat completion request to Tencent Hunyuan
+        Send async chat completion request to Tencent Hunyuan (OpenAI-compatible)
         
         Args:
             messages: List of message dictionaries with 'role' and 'content'
-            temperature: Sampling temperature (0.0 to 1.0)
+            temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
             
         Returns:
             Response content as string
         """
         try:
-            # Convert messages to Hunyuan format
-            hunyuan_messages = []
-            for msg in messages:
-                hunyuan_messages.append({
-                    "Role": msg.get('role', 'user'),
-                    "Content": msg.get('content', '')
-                })
+            # Use instance default if not specified
+            if temperature is None:
+                temperature = self.default_temperature
             
-            payload = {
-                "Model": self.model_name,
-                "Messages": hunyuan_messages,
-                "Temperature": temperature,
-                "TopP": 1.0,
-                "Stream": False
-            }
+            logger.debug(f"Hunyuan async API request: {self.model_name} (temp: {temperature})")
             
-            # Hunyuan requires Tencent Cloud authentication
-            # For simplicity, using API key auth (if supported by user's setup)
-            # For full Tencent Cloud signature, additional implementation needed
-            headers = {
-                "Content-Type": "application/json",
-                "X-TC-Action": "ChatCompletions"
-            }
+            # Call OpenAI-compatible API
+            completion = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
             
-            # Add authentication headers if available
-            if self.secret_id and self.api_key:
-                headers["Authorization"] = self.api_key
-                headers["X-TC-SecretId"] = self.secret_id
+            # Extract content from response
+            content = completion.choices[0].message.content
             
-            logger.debug(f"Hunyuan async API request: {self.model_name}")
-            
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
-                async with session.post(self.api_url, json=payload, headers=headers) as response:
-                    data = await response.json()
-                    
-                    # Check for Tencent Cloud error response format
-                    if 'Response' in data and 'Error' in data['Response']:
-                        error = data['Response']['Error']
-                        error_msg = f"Hunyuan API error [{error.get('Code')}]: {error.get('Message')}"
-                        logger.error(error_msg)
-                        raise Exception(error_msg)
-                    
-                    # Parse successful response (non-streaming format)
-                    if response.status == 200:
-                        # Hunyuan response: Choices[0].Message.Content
-                        choices = data.get('Choices', [])
-                        if choices and len(choices) > 0:
-                            message = choices[0].get('Message', {})
-                            content = message.get('Content', '')
-                            if content:
-                                logger.debug(f"Hunyuan response length: {len(content)} chars")
-                                return content
-                        
-                        # If no content found, log the response structure for debugging
-                        logger.error(f"Hunyuan unexpected response format: {data}")
-                        raise Exception("Hunyuan API returned empty content")
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"Hunyuan API HTTP error {response.status}: {error_text}")
-                        raise Exception(f"Hunyuan API error: {response.status}")
-                        
-        except asyncio.TimeoutError:
-            logger.error("Hunyuan API timeout")
-            raise Exception("Hunyuan API timeout")
+            if content:
+                logger.debug(f"Hunyuan response length: {len(content)} chars")
+                return content
+            else:
+                logger.error("Hunyuan API returned empty content")
+                raise Exception("Hunyuan API returned empty content")
+                
         except Exception as e:
             logger.error(f"Hunyuan API error: {e}")
             raise
+    
+    # Alias for compatibility with agents that call chat_completion
+    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+                             max_tokens: int = 2000) -> str:
+        """Alias for async_chat_completion for API consistency"""
+        return await self.async_chat_completion(messages, temperature, max_tokens)
 
 # ============================================================================
 # GLOBAL CLIENT INSTANCES

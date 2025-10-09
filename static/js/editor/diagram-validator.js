@@ -122,6 +122,13 @@ class DiagramValidator {
             const nodeType = textElement.attr('data-node-type');
             const textContent = textElement.text().trim();
             
+            // CRITICAL FIX: Skip dimension nodes - they are OPTIONAL for all diagram types
+            // Users can leave them blank and LLM will auto-select the best dimension
+            if (nodeType === 'dimension') {
+                validator.logger.log('DiagramValidator', `  ⏭️  Skipping dimension node validation (optional field)`);
+                return; // Skip validation for dimension nodes
+            }
+            
             // Check for empty text
             if (!textContent || textContent.length === 0) {
                 invalidNodes.push({

@@ -38,6 +38,7 @@ uvicorn[standard]>=0.24.0
 # ============================================================================
 # Async HTTP client for all external API calls
 aiohttp>=3.12.0
+openai>=1.0.0
 
 # FastAPI form data and file upload support
 python-multipart>=0.0.6

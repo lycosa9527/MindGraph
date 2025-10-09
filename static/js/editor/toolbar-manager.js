@@ -353,23 +353,50 @@ class ToolbarManager {
         const llmModel = button.getAttribute('data-llm');
         if (!llmModel) return;
         
-        // If we have cached results, switch to that result
+        // Check if this LLM has cached results
         if (this.llmResults[llmModel]) {
-            this.selectedLLM = llmModel;
-            this.updateLLMButtonStates();
-            
-            // Render the cached result
-            this.renderCachedLLMResult(llmModel);
-            
+            // Check if it's a successful result
+            if (this.llmResults[llmModel].success) {
+                this.selectedLLM = llmModel;
+                this.updateLLMButtonStates();
+                
+                // Render the cached result
+                this.renderCachedLLMResult(llmModel);
+                
+                const modelNames = {
+                    'qwen': 'Qwen',
+                    'deepseek': 'DeepSeek',
+                    'kimi': 'Kimi',
+                    'hunyuan': 'HunYuan'
+                };
+                console.log(`Switched to ${modelNames[llmModel] || llmModel} result`);
+            } else {
+                // Error result - show notification
+                const error = this.llmResults[llmModel].error || 'Generation failed';
+                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                const message = lang === 'zh' 
+                    ? `${llmModel} 生成失败: ${error}` 
+                    : `${llmModel} generation failed: ${error}`;
+                this.showNotification(message, 'error');
+            }
+        } else if (this.isGeneratingMulti) {
+            // CRITICAL FIX: User clicked before this LLM finished generating
+            // Show notification instead of silently ignoring the click
+            const lang = window.languageManager?.getCurrentLanguage() || 'en';
             const modelNames = {
                 'qwen': 'Qwen',
                 'deepseek': 'DeepSeek',
                 'kimi': 'Kimi',
-                'chatglm': 'ChatGLM'
+                'hunyuan': 'HunYuan'
             };
-            console.log(`Switched to ${modelNames[llmModel]} result`);
-        } else if (!this.isGeneratingMulti) {
-            // No cached results yet, just update selection
+            const modelName = modelNames[llmModel] || llmModel;
+            const message = lang === 'zh' 
+                ? `${modelName} 还在生成中，请稍候...` 
+                : `${modelName} is still generating, please wait...`;
+            this.showNotification(message, 'warning');
+            console.log(`User clicked ${llmModel} but it's still generating (no cached result yet)`);
+        } else {
+            // No cached results yet, not generating - just update selection
             this.selectedLLM = llmModel;
             this.updateLLMButtonStates();
             console.log(`Selected ${llmModel} (no results cached yet)`);
@@ -427,15 +454,26 @@ class ToolbarManager {
                 btn.classList.remove('active');
             }
             
-            // Set ready state (has cached result)
+            // Set ready/error/disabled states based on cached results
             if (this.llmResults[llmModel] && this.llmResults[llmModel].success) {
+                // Has successful result - enable and mark as ready
                 btn.classList.add('ready');
-                btn.classList.remove('error');
+                btn.classList.remove('error', 'disabled');
+                btn.disabled = false;
             } else if (this.llmResults[llmModel] && !this.llmResults[llmModel].success) {
+                // Has error result - enable but mark as error (user can click to see error)
                 btn.classList.add('error');
-                btn.classList.remove('ready');
-            } else {
+                btn.classList.remove('ready', 'disabled');
+                btn.disabled = false;
+            } else if (this.isGeneratingMulti) {
+                // CRITICAL FIX: No result yet and still generating - disable to prevent confusion
+                btn.classList.add('disabled');
                 btn.classList.remove('ready', 'error');
+                btn.disabled = true; // Actually disable the button
+            } else {
+                // No result yet, not generating - reset to default state
+                btn.classList.remove('ready', 'error', 'disabled');
+                btn.disabled = false;
             }
         });
     }
@@ -1374,7 +1412,7 @@ class ToolbarManager {
                     // Call single LLM endpoint with model parameter
                     const modelRequestBody = {
                         ...baseRequestBody,
-                        llm_model: model,
+                        llm: model,  // Fixed: backend expects 'llm', not 'llm_model'
                         request_id: requestId
                     };
                     
@@ -1551,52 +1589,59 @@ class ToolbarManager {
         const diagramType = this.editor.diagramType;
         const spec = this.editor.currentSpec;
         
-        // Strategy 1: For diagrams with explicit node types, find by data-node-type attribute
-        // This is more reliable than distance-based detection
+        // Strategy 1: For diagrams with topic field, read from currentSpec first
+        // CONSISTENCY FIX: Prioritize spec over DOM for all diagram types
         if (diagramType === 'bubble_map' || diagramType === 'circle_map' || 
             diagramType === 'tree_map' || diagramType === 'brace_map') {
-            // Look for node with data-node-type='topic' (the central topic)
+            // First, try to get from spec (source of truth)
+            if (spec && spec.topic) {
+                console.log(`${diagramType} main topic (from spec):`, spec.topic);
+                return spec.topic;
+            }
+            // Fallback: Look for node with data-node-type='topic'
             const topicNode = nodes.find(node => node.nodeType === 'topic');
             if (topicNode && topicNode.text) {
-                console.log('Main topic identified from data-node-type="topic":', topicNode.text);
+                console.log(`${diagramType} main topic (from DOM fallback):`, topicNode.text);
                 return topicNode.text;
             }
         }
         
-        // Strategy 1b: For double bubble maps, combine both topics
+        // Strategy 1b: For double bubble maps, ALWAYS read from currentSpec first
+        // CONSISTENCY FIX: Like bridge_map, use spec as source of truth
         if (diagramType === 'double_bubble_map') {
-            const leftTopic = nodes.find(node => node.nodeType === 'left');
-            const rightTopic = nodes.find(node => node.nodeType === 'right');
-            if (leftTopic && rightTopic) {
-                const combinedTopic = `${leftTopic.text} vs ${rightTopic.text}`;
-                console.log('Main topics identified from double bubble map:', combinedTopic);
+            if (spec && spec.left && spec.right) {
+                const combinedTopic = `${spec.left} vs ${spec.right}`;
+                console.log('Double bubble map topics (from spec):', combinedTopic);
                 return combinedTopic;
             }
+            console.warn('Double bubble map: No valid left/right topics in spec');
         }
         
-        // Strategy 1c: For bridge maps, extract JUST the first analogy pair the user typed
+        // Strategy 1c: For bridge maps, ALWAYS read from currentSpec
+        // ROOT CAUSE FIX: DOM node array order ≠ pair index order
+        // currentSpec.analogies[0] is the source of truth (updated by updateBridgeMapText)
         if (diagramType === 'bridge_map') {
-            // Find the first pair (pair index 0)
-            const leftNodes = nodes.filter(node => node.nodeType === 'left');
-            const rightNodes = nodes.filter(node => node.nodeType === 'right');
-            
-            if (leftNodes.length > 0 && rightNodes.length > 0) {
-                // Use only the first pair as the main topic
-                const firstLeft = leftNodes[0]?.text;
-                const firstRight = rightNodes[0]?.text;
-                
-                if (firstLeft && firstRight) {
-                    const mainTopic = `${firstLeft}/${firstRight}`;
-                    console.log('Bridge map main topic (first pair):', mainTopic);
+            if (spec && spec.analogies && spec.analogies.length > 0) {
+                const firstPair = spec.analogies[0];
+                if (firstPair.left && firstPair.right) {
+                    const mainTopic = `${firstPair.left}/${firstPair.right}`;
+                    console.log('Bridge map main topic (from spec):', mainTopic);
                     return mainTopic;
                 }
             }
+            console.warn('Bridge map: No valid analogies in spec');
         }
         
-        // Strategy 2: For MindMap, find the central node by position (fallback)
-        // This prioritizes the actual displayed text over the spec
+        // Strategy 1d: For MindMap, prioritize spec first
+        // CONSISTENCY FIX: Read from spec before geometric detection
         if (diagramType === 'mindmap') {
-            // Find the node closest to center (likely the main topic)
+            // First, try to get from spec (source of truth)
+            if (spec && spec.topic) {
+                console.log('MindMap main topic (from spec):', spec.topic);
+                return spec.topic;
+            }
+            
+            // Fallback: Find the node closest to center by position
             const svg = d3.select('#d3-container svg');
             if (!svg.empty()) {
                 const width = parseFloat(svg.attr('width')) || 800;
@@ -1620,9 +1665,9 @@ class ToolbarManager {
                     }
                 });
                 
-                // Return the text from the central node (this is the actual edited text)
+                // Return the text from the central node
                 if (centralNode && centralNode.text) {
-                    console.log('Main topic identified from central node position:', centralNode.text);
+                    console.log('MindMap main topic (from geometric center):', centralNode.text);
                     return centralNode.text;
                 }
             }

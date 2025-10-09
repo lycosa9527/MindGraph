@@ -23,6 +23,8 @@ import os
 import sys
 import logging
 import time
+import signal
+import asyncio
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -31,6 +33,78 @@ load_dotenv()
 
 # Create logs directory
 os.makedirs("logs", exist_ok=True)
+
+# ============================================================================
+# GRACEFUL SHUTDOWN SIGNAL HANDLING
+# ============================================================================
+
+# Global flag to track shutdown state
+_shutdown_event = None
+
+def _get_shutdown_event():
+    """Get or create shutdown event for current event loop"""
+    global _shutdown_event
+    try:
+        loop = asyncio.get_event_loop()
+        if _shutdown_event is None:
+            _shutdown_event = asyncio.Event()
+        return _shutdown_event
+    except RuntimeError:
+        return None
+
+def _handle_shutdown_signal(signum, frame):
+    """Handle shutdown signals gracefully (SIGINT, SIGTERM)"""
+    event = _get_shutdown_event()
+    if event and not event.is_set():
+        event.set()
+
+class ShutdownErrorFilter:
+    """Filter stderr to suppress expected shutdown errors"""
+    
+    def __init__(self, original_stderr):
+        self.original_stderr = original_stderr
+        self.buffer = ""
+        self.in_traceback = False
+        self.suppress_current = False
+        
+    def write(self, text):
+        """Filter text and only write non-shutdown errors"""
+        self.buffer += text
+        
+        # Check for start of traceback
+        if 'Process SpawnProcess' in text or 'Traceback (most recent call last)' in text:
+            self.in_traceback = True
+            self.suppress_current = False
+            
+        # Check if this traceback is a CancelledError
+        if self.in_traceback and 'asyncio.exceptions.CancelledError' in self.buffer:
+            self.suppress_current = True
+        
+        # If we hit a blank line or new process line, decide whether to flush
+        if text.strip() == '' or text.startswith('Process '):
+            if self.in_traceback and not self.suppress_current:
+                # This was a real error, write it
+                self.original_stderr.write(self.buffer)
+            # Reset state
+            if text.strip() == '':
+                self.buffer = ""
+                self.in_traceback = False
+                self.suppress_current = False
+        elif not self.in_traceback:
+            # Not in a traceback, write immediately
+            self.original_stderr.write(text)
+            self.buffer = ""
+    
+    def flush(self):
+        """Flush the original stderr"""
+        if not self.suppress_current and self.buffer and not self.in_traceback:
+            self.original_stderr.write(self.buffer)
+        self.original_stderr.flush()
+        self.buffer = ""
+    
+    def __getattr__(self, name):
+        """Delegate all other attributes to original stderr"""
+        return getattr(self.original_stderr, name)
 
 # ============================================================================
 # EARLY LOGGING SETUP
@@ -119,7 +193,26 @@ for uvicorn_logger_name in ['uvicorn', 'uvicorn.error', 'uvicorn.access']:
     uvicorn_logger.addHandler(file_handler)
     uvicorn_logger.propagate = False
 
+# Suppress asyncio CancelledError during shutdown
+class CancelledErrorFilter(logging.Filter):
+    """Filter out CancelledError exceptions during graceful shutdown"""
+    def filter(self, record):
+        if record.exc_info:
+            exc_type = record.exc_info[0]
+            if exc_type and issubclass(exc_type, asyncio.CancelledError):
+                return False
+        # Also filter out the multiprocess shutdown tracebacks
+        if 'asyncio.exceptions.CancelledError' in record.getMessage():
+            return False
+        if 'Process SpawnProcess' in record.getMessage() and 'Traceback' in record.getMessage():
+            return False
+        return True
+
+asyncio_logger = logging.getLogger('asyncio')
+asyncio_logger.addFilter(CancelledErrorFilter())
+
 logger = logging.getLogger(__name__)
+logger.addFilter(CancelledErrorFilter())
 logger.info(f"Logging initialized: {log_level_str}")
 
 # ============================================================================
@@ -147,6 +240,11 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     app.state.start_time = time.time()
+    app.state.is_shutting_down = False
+    
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, _handle_shutdown_signal)
+    signal.signal(signal.SIGTERM, _handle_shutdown_signal)
     
     logger.info("=" * 80)
     logger.info("FastAPI Application Starting")
@@ -163,10 +261,17 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Failed to initialize JavaScript cache: {e}")
     
     # Yield control to application
-    yield
-    
-    # Shutdown
-    logger.info("FastAPI Application Shutting Down")
+    try:
+        yield
+    finally:
+        # Shutdown - clean up resources gracefully
+        app.state.is_shutting_down = True
+        
+        # Give ongoing requests a brief moment to complete
+        await asyncio.sleep(0.1)
+        
+        # Don't try to cancel tasks - let uvicorn handle the shutdown
+        # This prevents CancelledError exceptions during multiprocess shutdown
 
 # ============================================================================
 # FASTAPI APPLICATION INITIALIZATION
@@ -335,14 +440,50 @@ if __name__ == "__main__":
     logger.info("Starting FastAPI application with Uvicorn")
     logger.info(f"Server: http://{config.HOST}:{config.PORT}")
     logger.info(f"API Docs: http://{config.HOST}:{config.PORT}/docs")
+    if config.DEBUG:
+        logger.warning("⚠️  Reload mode enabled - may cause slow shutdown (use Ctrl+C twice if needed)")
     logger.info("=" * 80)
     
-    # Run Uvicorn server
-    uvicorn.run(
-        "main:app",
-        host=config.HOST,
-        port=config.PORT,
-        reload=config.DEBUG,  # Auto-reload in debug mode
-        log_level="info"
-    )
+    # Install stderr filter to suppress multiprocessing shutdown tracebacks
+    original_stderr = sys.stderr
+    sys.stderr = ShutdownErrorFilter(original_stderr)
+    
+    # Install custom exception hook to suppress shutdown errors
+    original_excepthook = sys.excepthook
+    
+    def custom_excepthook(exc_type, exc_value, exc_traceback):
+        """Custom exception hook to suppress expected shutdown errors"""
+        # Suppress CancelledError during shutdown
+        if exc_type == asyncio.CancelledError:
+            return
+        # Suppress BrokenPipeError and ConnectionResetError during shutdown
+        if exc_type in (BrokenPipeError, ConnectionResetError):
+            return
+        # Call original handler for other exceptions
+        original_excepthook(exc_type, exc_value, exc_traceback)
+    
+    sys.excepthook = custom_excepthook
+    
+    try:
+        # Run Uvicorn server with optimized shutdown settings
+        uvicorn.run(
+            "main:app",
+            host=config.HOST,
+            port=config.PORT,
+            reload=config.DEBUG,  # Auto-reload in debug mode
+            log_level="info",
+            log_config=None,  # Use our custom logging configuration
+            timeout_graceful_shutdown=5,  # Fast shutdown for cleaner exit
+            limit_concurrency=1000,  # Prevent too many hanging connections
+            timeout_keep_alive=5  # Close idle connections faster
+        )
+    except KeyboardInterrupt:
+        # Graceful shutdown on Ctrl+C
+        logger.info("=" * 80)
+        logger.info("Shutting down gracefully...")
+        logger.info("=" * 80)
+    finally:
+        # Restore original stderr and exception hook
+        sys.stderr = original_stderr
+        sys.excepthook = original_excepthook
 

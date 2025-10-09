@@ -529,6 +529,43 @@ class Config:
             'extra_body': {'enable_thinking': False}
         }
     
+    def prepare_llm_messages(self, system_prompt: str, user_prompt: str, 
+                            model: str = 'qwen') -> list:
+        """
+        Centralized message preparation for all LLM clients.
+        
+        This allows future modifications like:
+        - Adding common system instructions
+        - Formatting adjustments
+        - Model-specific message tweaks
+        
+        Args:
+            system_prompt: The system/instruction prompt
+            user_prompt: The user's input prompt
+            model: Model identifier ('qwen', 'deepseek', 'kimi', 'hunyuan')
+            
+        Returns:
+            list: Formatted messages array ready for chat_completion()
+            
+        Example:
+            >>> messages = config.prepare_llm_messages(
+            ...     "You are a helpful assistant",
+            ...     "Hello!",
+            ...     model='hunyuan'
+            ... )
+            >>> # Returns: [{'role': 'system', 'content': '...'}, ...]
+        """
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        # Future: Add model-specific tweaks here
+        # if model == 'hunyuan':
+        #     messages[0]['content'] += "\n请用简洁的中文回答。"
+        
+        return messages
+    
     # ============================================================================
     # D3.js THEME AND DIMENSION HELPERS
     # ============================================================================

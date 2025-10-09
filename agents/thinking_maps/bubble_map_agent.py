@@ -83,11 +83,9 @@ class BubbleMapAgent(BaseAgent):
                 
             user_prompt = f"请为以下描述创建一个气泡图：{prompt}" if language == "zh" else f"Please create a bubble map for the following description: {prompt}"
             
-            # Generate response from LLM
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
+            # Generate response from LLM using centralized message preparation
+            from config.settings import config
+            messages = config.prepare_llm_messages(system_prompt, user_prompt, model='qwen')
             response = await self.llm_client.chat_completion(messages)
             
             # Extract JSON from response

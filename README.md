@@ -17,6 +17,16 @@ Transform natural language into professional diagrams. Supports 10 diagram types
 
 将自然语言转换为专业图表。支持10种图表类型，包括思维导图、思维导图和概念图，具有智能LLM分类和D3.js渲染功能。
 
+---
+
+## 🤯 **Built with Zero Programming Knowledge!** | **零编程基础打造！**
+
+**Fun Fact**: This entire application was built using **Cursor AI** by someone with **absolutely zero programming experience**. Every line of code, from the FastAPI backend to the D3.js visualizations, was created through AI pair programming. If you're new to coding, this project proves that with the right AI tools, you can build production-ready applications! 😄
+
+**有趣的事实**: 这整个应用是由一个**完全没有编程经验**的人使用**Cursor AI**构建的。从FastAPI后端到D3.js可视化的每一行代码，都是通过AI结对编程创建的。如果你是编程新手，这个项目证明了有了正确的AI工具，你也可以构建生产级应用！😄
+
+---
+
 ## 🎯 **v4.1 - Multi-LLM & Visual Enhancements** | **v4.1 - 多LLM与视觉增强**
 
 ### 🤖 **4 LLM Models with Smart Switching** | **4种LLM模型智能切换**

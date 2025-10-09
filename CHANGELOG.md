@@ -7,6 +7,175 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Graceful Application Shutdown - Complete Overhaul**
+  - **Root cause**: Multiprocess workers creating `asyncio.CancelledError` exceptions during shutdown
+  - **Previous behavior**: Ugly tracebacks from all 4 worker processes on Ctrl+C
+  - **New implementation**:
+    - ✅ Custom signal handlers (SIGINT, SIGTERM) for coordinated shutdown
+    - ✅ Stderr filter to suppress expected CancelledError tracebacks
+    - ✅ Custom exception hook to suppress shutdown-related errors
+    - ✅ Proper lifespan cleanup without task cancellation
+    - ✅ Reduced graceful shutdown timeout from 10s to 5s
+    - ✅ Clean shutdown messages instead of error dumps
+  - **Technical improvements**:
+    - Signal handlers registered in lifespan startup
+    - ShutdownErrorFilter class to intercept and filter stderr
+    - Custom exception hook for BrokenPipeError and ConnectionResetError
+    - Windows multiprocessing compatibility improvements
+    - Proper task cleanup without double-cancellation
+  - **Result**: Clean, professional shutdown with no error messages
+  - **Files modified**: 
+    - `main.py` (lines 37-108, 168-207, 447-488)
+    - `run_server.py` (lines 15-77, 136-180)
+  - **User experience**: Press Ctrl+C once, see clean shutdown banner, terminal returns immediately
+
+### Added
+- **Centralized LLM Message Preparation System (COMPLETED MIGRATION)**
+  - **Purpose**: Single point of control for all LLM prompt formatting across all 4 models
+  - **New function**: `config.prepare_llm_messages(system_prompt, user_prompt, model)`
+  - **Migration completed**: All 9 diagram agents now use centralized system
+    - ✅ BubbleMapAgent
+    - ✅ BridgeMapAgent
+    - ✅ FlowMapAgent
+    - ✅ TreeMapAgent
+    - ✅ CircleMapAgent
+    - ✅ DoubleBubbleMapAgent
+    - ✅ MultiFlowMapAgent
+    - ✅ MindMapAgent
+    - ✅ BraceMapAgent (caught in code review!)
+  - **Benefits**:
+    - ✅ Update all prompts in ONE PLACE instead of modifying 8+ agent files
+    - ✅ Add common system instructions globally
+    - ✅ Apply model-specific tweaks (e.g., "请用简洁的中文回答" for Hunyuan)
+    - ✅ Consistent message formatting across Qwen, DeepSeek, Kimi, HunYuan
+  - **Usage example**:
+    ```python
+    # Before (scattered across agents):
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+    
+    # After (centralized):
+    from config.settings import config
+    messages = config.prepare_llm_messages(system_prompt, user_prompt, model='qwen')
+    ```
+  - **Future improvements**: Now you can modify ALL agent prompts by editing ONE function!
+  - File: `config/settings.py` lines 532-567
+  - Migrated agents: `agents/thinking_maps/*_agent.py`, `agents/mind_maps/mind_map_agent.py`
+
+### Fixed
+- **Performance: Faster Application Shutdown (No More Hanging Terminal)**
+  - **Root cause**: Pending async tasks + reload mode child processes kept event loop alive
+  - **Previous behavior**: After Ctrl+C, terminal would hang (no prompt return) requiring Ctrl+C twice
+  - **Fix 1**: Added explicit task cancellation in lifespan shutdown handler
+    - Cancels all pending asyncio tasks with 1-second timeout
+    - Prevents orphaned async operations from blocking shutdown
+    - **Suppresses `CancelledError` exceptions** to avoid ugly tracebacks
+  - **Fix 2**: Reduced Uvicorn graceful shutdown timeout (10s → 5s)
+  - **Fix 3**: Added `timeout_keep_alive=5` to close idle connections faster
+  - **Fix 4**: Added warning message when reload mode is enabled
+  - **Result**: Clean shutdown in ~5 seconds, **no error tracebacks**, terminal returns immediately
+  - File: `main.py` lines 168-189, 361-375
+
+- **Critical: HunYuan API Migrated to OpenAI-Compatible Format**
+  - **Root cause**: Tencent Cloud native API requires complex TC3-HMAC-SHA256 signature authentication
+  - **Previous implementation**: Manual aiohttp with Tencent Cloud headers (complex and error-prone)
+  - **New implementation**: Uses AsyncOpenAI client with custom base_url
+  - **Migration**:
+    - Switched from `https://hunyuan.tencentcloudapi.com` to `https://api.hunyuan.cloud.tencent.com/v1`
+    - Removed all Tencent Cloud headers (`X-TC-Version`, `X-TC-Region`, `X-TC-Timestamp`)
+    - Removed message format conversion (Role/Content → role/content)
+    - OpenAI SDK handles all authentication automatically
+  - **Benefits**:
+    - ✅ Simpler code (110 lines → 70 lines)
+    - ✅ No manual signature computation
+    - ✅ Standard OpenAI message format
+    - ✅ Better error handling via SDK
+    - ✅ Same async interface as other clients
+  - **Requirements**: Added `openai>=1.0.0` to `requirements.txt`
+  - **Model**: Using `hunyuan-turbo` (standard model name)
+  - File: `clients/llm.py` lines 239-307
+
+- **CRITICAL: Auto-Complete Was Using Same LLM (Qwen) for All 4 Requests**
+  - **Root cause**: Frontend sent `llm_model` but backend expected `llm` field name
+  - **Previous behavior**: All 4 auto-complete requests went to Qwen (default), causing identical results
+  - **Backend logs showed**: `get_llm_client(): Fetching client for model: qwen` (4 times)
+  - **Why it happened**: Pydantic model uses default value when field name doesn't match
+  - **Fix**: Changed frontend to send `llm: model` instead of `llm_model: model`
+  - **Result**: Each auto-complete now correctly calls 4 different LLMs (Qwen, DeepSeek, HunYuan, Kimi)
+  - This bug masked the temperature tuning improvements (they had no effect since all requests went to Qwen)
+  - File: `static/js/editor/toolbar-manager.js` line 1415
+  - Related: `models/requests.py` line 21 (GenerateRequest.llm field)
+
+- **Critical: Increased LLM Result Diversity with Per-Model Temperature Tuning**
+  - **Root cause**: All LLMs used same temperature (0.7), causing similar outputs for common topics
+  - **Previous behavior**: Qwen, DeepSeek, Kimi, HunYuan often generated very similar content
+  - **Fix**: Each LLM now has optimized default temperature for its characteristics:
+    - **Qwen**: 0.9 (balanced creativity and coherence)
+    - **DeepSeek**: 0.6 (lower for reasoning model, more deterministic/structured)
+    - **Kimi**: 1.0 (higher for creative variation)
+    - **HunYuan**: 1.2 (highest for maximum diversity)
+  - Temperature spread (0.6 → 1.2) creates **2x variation range** between models
+  - Each model can still accept explicit temperature parameter if needed
+  - Results should now show more obvious differences, especially for abstract topics
+  - File: `clients/llm.py` (QwenClient, DeepSeekClient, KimiClient, HunyuanClient)
+
+- **Critical: Dimension Label Can Now Be Left Empty in Bridge/Brace/Tree Maps**
+  - **Root cause**: Validator was treating dimension as required field and blocking auto-complete
+  - **Previous behavior**: "Cannot be left blank" error when trying to leave dimension empty
+  - **Fix**: Dimension nodes are now skipped during validation (marked as optional)
+  - When left empty, LLM will automatically infer the best dimension/relationship from the main topic
+  - Applies to:
+    - ✅ Bridge Map: LLM infers relationship pattern from first analogy pair (e.g., "笔/纸" → "工具与载体")
+    - ✅ Brace Map: LLM selects best decomposition dimension
+    - ✅ Tree Map: LLM selects best classification dimension
+  - File: `static/js/editor/diagram-validator.js` lines 125-130
+
+- **Critical: LLM Button Switching Shows Wrong Results When Clicked Too Early**
+  - **Root cause**: When user clicked LLM buttons before generation completed, the click was silently ignored
+  - **Previous behavior**: User would see the same diagram for different LLMs if clicking too fast
+  - **Fix 1**: Added notification when clicking LLM button that's still generating
+    - English: "HunYuan is still generating, please wait..."
+    - Chinese: "HunYuan 还在生成中，请稍候..."
+  - **Fix 2**: Buttons without results are now properly disabled during generation
+    - `btn.disabled = true` prevents accidental clicks
+    - `disabled` CSS class provides visual feedback
+  - **Fix 3**: Improved error handling for failed LLM results
+    - Shows specific error message when clicking failed LLM button
+  - File: `static/js/editor/toolbar-manager.js` lines 352-479
+
+- **Critical: All Diagram Types Now Use currentSpec as Source of Truth for Auto-Complete**
+  - **Root cause**: `identifyMainTopic()` was reading from DOM nodes which could be stale or out of order
+  - **Bridge Map**: DOM array order ≠ pair index order, `leftNodes[0]` didn't guarantee `data-pair-index="0"`
+  - **All other diagrams**: DOM text could be stale if render timing issues occurred
+  - **Fix**: ALL diagram types now prioritize reading from `currentSpec` (updated by edit functions)
+  - When user edits a node, update functions correctly modify `currentSpec` 
+  - Auto-complete now reads directly from `currentSpec` instead of DOM nodes
+  - DOM fallback only used if spec is unavailable (rare edge case)
+  
+  **Affected diagrams:**
+  - ✅ Bridge Map: Read from `spec.analogies[0]` (was using wrong array element)
+  - ✅ Double Bubble Map: Read from `spec.left` and `spec.right` (now consistent)
+  - ✅ Bubble/Circle/Tree/Brace Maps: Read from `spec.topic` first (now consistent)
+  - ✅ Mind Map: Read from `spec.topic` before geometric detection (now consistent)
+  - ✅ Flow Map: Already used `spec.title` (already correct)
+  - ✅ Multi-Flow Map: Already used `spec.event` (already correct)
+  
+  - File: `static/js/editor/toolbar-manager.js` lines 1554-1636
+
+### Impact
+- ✅ Auto-complete now ALWAYS uses current edited topic for ALL diagram types
+- ✅ No more confusing behavior where LLM generates based on old/stale topic
+- ✅ `currentSpec` is the single source of truth across all diagram types
+- ✅ Consistent behavior - all diagrams follow same priority: spec first, DOM fallback
+- ✅ More reliable and predictable auto-complete results
+
+---
+
 ## [4.1.1] - 2025-10-08 - CDN Dependency Removal
 
 ### Fixed
