@@ -87,7 +87,7 @@ class DiagramValidator {
      * @returns {Object} Validation result: { isValid, invalidNodes, reason }
      */
     validateDiagram(diagramType) {
-        this.logger.log('DiagramValidator', `Validating diagram type: ${diagramType}`);
+        this.logger.debug('DiagramValidator', `Validating diagram type: ${diagramType}`);
         
         const container = d3.select('#d3-container svg');
         if (container.empty()) {
@@ -154,7 +154,7 @@ class DiagramValidator {
         
         // Generate validation result
         if (invalidNodes.length === 0) {
-            this.logger.log('DiagramValidator', `✅ Validation passed! ${totalNodes} nodes all valid.`);
+            this.logger.debug('DiagramValidator', `✅ Validation passed! ${totalNodes} nodes all valid.`);
             return {
                 isValid: true,
                 invalidNodes: [],
@@ -174,12 +174,15 @@ class DiagramValidator {
                 reason = `Found ${placeholderCount} placeholder(s)`;
             }
             
-            this.logger.log('DiagramValidator', `❌ Validation failed: ${reason}`);
+            this.logger.debug('DiagramValidator', `❌ Validation failed: ${reason}`);
             
-            // Log details of invalid nodes for debugging
-            invalidNodes.forEach(node => {
-                this.logger.log('DiagramValidator', `  ❌ Invalid node: [${node.id}] "${node.text}" (${node.reason})`);
-            });
+            // Log details of invalid nodes only in debug mode (reduces console noise)
+            // To enable: add ?debug=1 to URL or run: localStorage.setItem('mindgraph_debug', 'true')
+            if (this.logger.debugMode) {
+                invalidNodes.forEach(node => {
+                    this.logger.debug('DiagramValidator', `  ❌ Invalid node: [${node.id}] "${node.text}" (${node.reason})`);
+                });
+            }
             
             return {
                 isValid: false,
@@ -229,11 +232,11 @@ class DiagramValidator {
         if (result.isValid) {
             learningBtn.disabled = false;
             learningBtn.classList.remove('disabled');
-            this.logger.log('DiagramValidator', '✅ Learning button enabled');
+            this.logger.debug('DiagramValidator', '✅ Learning button enabled');
         } else {
             learningBtn.disabled = true;
             learningBtn.classList.add('disabled');
-            this.logger.log('DiagramValidator', `❌ Learning button disabled: ${result.reason}`);
+            this.logger.debug('DiagramValidator', `❌ Learning button disabled: ${result.reason}`);
         }
         
         return result;

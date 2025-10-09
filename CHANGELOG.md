@@ -9,6 +9,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - 2025-10-09
+- **MindMap Auto-Complete Critical Fixes**
+  - **Fixed HTTP 422 validation error** for mindmap diagram type
+    - Added Pydantic v2 field validator in `models/requests.py` to normalize "mindmap" → "mind_map"
+    - Updated validator syntax from `@validator` to `@field_validator` for Pydantic v2 compatibility
+    - Backend now accepts both "mindmap" and "mind_map" diagram types
+  
+  - **Fixed placeholder text extraction** in auto-complete
+    - Root cause: `identifyMainTopic()` was extracting "中心主题" instead of user-entered text
+    - Added 18 calls to `this.validator.isPlaceholderText()` across all topic extraction strategies
+    - Now properly skips placeholder patterns in Chinese and English
+    - Affects all diagram types (mindmap, bubble_map, circle_map, tree_map, brace_map, etc.)
+  
+  - **Fixed multi-LLM session validation** 
+    - Changed validation from checking both `diagramType` and `sessionId` to only `diagramType`
+    - Allows spec updates from first successful LLM without aborting remaining LLMs
+    - Prevents false "Session changed during generation" errors
+    - All 4 LLMs now complete successfully instead of aborting after first success
+  
+  - **Fixed diagram type normalization mismatch**
+    - Backend returns `"mind_map"` (enum), frontend uses `"mindmap"` (internal type)
+    - Added normalization in 2 places: response caching (line 1386) and rendering (line 408)
+    - Prevents "Diagram type changed during generation" false alarms
+    - Fixed `renderCachedLLMResult()` to normalize before updating editor state
+  
+  - **Reduced console spam from DiagramValidator**
+    - Changed all validation logging from `log` to `debug` level
+    - Placeholder validation details only show when debug mode enabled
+    - Clean, professional console output during normal usage
+    - Enable detailed logs with `?debug=1` URL parameter or `localStorage.setItem('mindgraph_debug', 'true')`
+
+- **Documentation**
+  - Added comprehensive code review: `docs/MINDMAP_AUTOCOMPLETE_CODE_REVIEW.md`
+    - Complete end-to-end analysis of auto-complete architecture
+    - Detailed flow documentation for all 4 LLM calls (sequential, not parallel)
+    - Security review and performance metrics
+    - Test coverage recommendations
+    - 13 sections covering entry point to response handling
+
+### Technical Details - 2025-10-09
+- **Files Modified**:
+  - `models/requests.py` - Field validator for diagram type normalization
+  - `static/js/editor/toolbar-manager.js` - 20+ changes for placeholder handling, type normalization, session validation
+  - `static/js/editor/diagram-validator.js` - Changed log levels to debug
+- **Impact**: All diagram types benefit from placeholder text fixes and validation improvements
+- **Testing**: Requires hard browser refresh (Ctrl+F5) to load new JavaScript
+- **Performance**: Sequential LLM execution maintained (10-25s first result, 60-80s total)
+
+---
+
 ### Added - 2025-01-09
 - **Centralized Frontend Logger** (`static/js/logger.js`)
   - Unified logging system for all JavaScript files with color-coded log levels (DEBUG, INFO, WARN, ERROR)

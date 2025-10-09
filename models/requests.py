@@ -9,7 +9,7 @@ Made by: MindSpring Team
 """
 
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from .common import DiagramType, LLMModel, Language
 
 
@@ -20,6 +20,23 @@ class GenerateRequest(BaseModel):
     language: Language = Field(Language.ZH, description="Language for diagram generation")
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     dimension_preference: Optional[str] = Field(None, description="Optional dimension preference for certain diagrams")
+    
+    @field_validator('diagram_type', mode='before')
+    @classmethod
+    def normalize_diagram_type(cls, v):
+        """Normalize diagram type aliases (e.g., 'mindmap' -> 'mind_map')"""
+        if v is None:
+            return v
+        
+        # Convert to string if it's already an enum
+        v_str = v.value if hasattr(v, 'value') else str(v)
+        
+        # Normalize known aliases
+        aliases = {
+            'mindmap': 'mind_map',
+        }
+        
+        return aliases.get(v_str, v_str)
     
     class Config:
         json_schema_extra = {
@@ -159,7 +176,8 @@ class FrontendLogRequest(BaseModel):
     source: Optional[str] = Field(None, description="Source component")
     timestamp: Optional[float] = Field(None, description="Client timestamp")
     
-    @validator('level')
+    @field_validator('level')
+    @classmethod
     def validate_level(cls, v):
         valid_levels = ['debug', 'info', 'warn', 'error']
         if v.lower() not in valid_levels:

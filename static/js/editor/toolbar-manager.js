@@ -402,7 +402,12 @@ class ToolbarManager {
         logger.debug('ToolbarManager', `Rendering ${llmModel} result`, {
             nodes: spec?.nodes?.length || 0
         });
-        const diagramType = result.diagram_type;
+        
+        // Normalize diagram type (backend returns "mind_map", frontend uses "mindmap")
+        let diagramType = result.diagram_type;
+        if (diagramType === 'mind_map') {
+            diagramType = 'mindmap';
+        }
         
         // Update editor with cached spec
         if (this.editor) {
@@ -1328,11 +1333,11 @@ class ToolbarManager {
             let firstSuccessfulModel = null;
             
             for (const model of models) {
-                // Check if session/diagram changed during generation
-                if (this.editor.diagramType !== currentDiagramType || 
-                    this.editor.sessionId !== currentSessionId) {
-                    logger.warn('ToolbarManager', 'Auto-complete aborted - session changed');
-                    throw new Error('Session changed during generation');
+                // Check if diagram type changed during generation (session ID may change when spec updates)
+                // We only check diagram type to allow spec updates from the first successful result
+                if (this.editor.diagramType !== currentDiagramType) {
+                    logger.warn('ToolbarManager', 'Auto-complete aborted - diagram type changed');
+                    throw new Error('Diagram type changed during generation');
                 }
                 
                 try {
@@ -1376,13 +1381,19 @@ class ToolbarManager {
                         nodes: data.spec?.nodes?.length || 0
                     });
                     
+                    // Normalize diagram type (backend returns "mind_map", frontend uses "mindmap")
+                    let responseDiagramType = data.diagram_type || diagramType;
+                    if (responseDiagramType === 'mind_map') {
+                        responseDiagramType = 'mindmap';
+                    }
+                    
                     // Cache this model's result
                     this.llmResults[model] = {
                         model: model,
                         success: true,
                         result: {
                             spec: data.spec,
-                            diagram_type: data.diagram_type || diagramType,
+                            diagram_type: responseDiagramType,
                             topics: data.topics || [],
                             style_preferences: data.style_preferences || {}
                         }
@@ -1513,13 +1524,13 @@ class ToolbarManager {
         // CONSISTENCY FIX: Prioritize spec over DOM for all diagram types
         if (diagramType === 'bubble_map' || diagramType === 'circle_map' || 
             diagramType === 'tree_map' || diagramType === 'brace_map') {
-            // First, try to get from spec (source of truth)
-            if (spec && spec.topic) {
+            // First, try to get from spec (source of truth), skip placeholders
+            if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
                 return spec.topic;
             }
-            // Fallback: Look for node with data-node-type='topic'
+            // Fallback: Look for node with data-node-type='topic', skip placeholders
             const topicNode = nodes.find(node => node.nodeType === 'topic');
-            if (topicNode && topicNode.text) {
+            if (topicNode && topicNode.text && !this.validator.isPlaceholderText(topicNode.text)) {
                 return topicNode.text;
             }
         }
@@ -1552,7 +1563,7 @@ class ToolbarManager {
         // CONSISTENCY FIX: Read from spec before geometric detection
         if (diagramType === 'mindmap') {
             // First, try to get from spec (source of truth)
-            if (spec && spec.topic) {
+            if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
                 return spec.topic;
             }
             
@@ -1580,8 +1591,8 @@ class ToolbarManager {
                     }
                 });
                 
-                // Return the text from the central node
-                if (centralNode && centralNode.text) {
+                // Return the text from the central node (skip if placeholder)
+                if (centralNode && centralNode.text && !this.validator.isPlaceholderText(centralNode.text)) {
                     return centralNode.text;
                 }
             }
@@ -1593,44 +1604,48 @@ class ToolbarManager {
             
             switch (diagramType) {
                 case 'bubble_map':
-                    // For bubble map, the main topic is spec.topic
-                    mainTopic = spec.topic;
+                    // For bubble map, the main topic is spec.topic (skip placeholders)
+                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
                     break;
                     
                 case 'circle_map':
-                    // For circle map, the main topic is spec.topic
-                    mainTopic = spec.topic;
+                    // For circle map, the main topic is spec.topic (skip placeholders)
+                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
                     break;
                     
                 case 'tree_map':
                 case 'mindmap':
-                    // For tree/mind maps, the main topic is spec.topic
-                    mainTopic = spec.topic;
+                    // For tree/mind maps, the main topic is spec.topic (skip placeholders)
+                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
                     break;
                     
                 case 'brace_map':
-                    // For brace map, the main topic is spec.topic
-                    mainTopic = spec.topic;
+                    // For brace map, the main topic is spec.topic (skip placeholders)
+                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
                     break;
                     
                 case 'double_bubble_map':
-                    // For double bubble map, use the left topic as primary
-                    mainTopic = spec.left || spec.right;
+                    // For double bubble map, use the left topic as primary (skip placeholders)
+                    const leftTopic = spec.left && !this.validator.isPlaceholderText(spec.left) ? spec.left : null;
+                    const rightTopic = spec.right && !this.validator.isPlaceholderText(spec.right) ? spec.right : null;
+                    mainTopic = leftTopic || rightTopic;
                     break;
                     
                 case 'multi_flow_map':
-                    // For multi-flow map, the main topic is spec.event
-                    mainTopic = spec.event;
+                    // For multi-flow map, the main topic is spec.event (skip placeholders)
+                    mainTopic = spec.event && !this.validator.isPlaceholderText(spec.event) ? spec.event : null;
                     break;
                     
                 case 'flow_map':
-                    // For flow map, use the title or first step
-                    mainTopic = spec.title || (spec.steps && spec.steps[0]);
+                    // For flow map, use the title or first step (skip placeholders)
+                    const title = spec.title && !this.validator.isPlaceholderText(spec.title) ? spec.title : null;
+                    const firstStep = spec.steps && spec.steps[0] && !this.validator.isPlaceholderText(spec.steps[0]) ? spec.steps[0] : null;
+                    mainTopic = title || firstStep;
                     break;
                     
                 case 'concept_map':
-                    // For concept map, the main topic is spec.topic
-                    mainTopic = spec.topic;
+                    // For concept map, the main topic is spec.topic (skip placeholders)
+                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
                     break;
                     
                 case 'bridge_map':
@@ -1638,7 +1653,11 @@ class ToolbarManager {
                     // This fallback uses spec only if node extraction failed
                     if (spec.analogies && spec.analogies.length > 0) {
                         const firstPair = spec.analogies[0];
-                        mainTopic = `${firstPair.left}/${firstPair.right}`;
+                        const leftItem = firstPair.left && !this.validator.isPlaceholderText(firstPair.left) ? firstPair.left : null;
+                        const rightItem = firstPair.right && !this.validator.isPlaceholderText(firstPair.right) ? firstPair.right : null;
+                        if (leftItem && rightItem) {
+                            mainTopic = `${leftItem}/${rightItem}`;
+                        }
                     }
                     break;
             }
@@ -1656,34 +1675,38 @@ class ToolbarManager {
             const centerX = width / 2;
             const centerY = height / 2;
             
-            // Calculate distance from center for each node
-            let closestNode = nodes[0];
+            // Calculate distance from center for each node (skip placeholders)
+            let closestNode = null;
             let minDistance = Infinity;
             
             nodes.forEach(node => {
-                const distance = Math.sqrt(
-                    Math.pow(node.x - centerX, 2) + 
-                    Math.pow(node.y - centerY, 2)
-                );
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestNode = node;
+                if (!this.validator.isPlaceholderText(node.text)) {
+                    const distance = Math.sqrt(
+                        Math.pow(node.x - centerX, 2) + 
+                        Math.pow(node.y - centerY, 2)
+                    );
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestNode = node;
+                    }
                 }
             });
             
-            return closestNode.text;
+            if (closestNode) {
+                return closestNode.text;
+            }
         }
         
-        // Strategy 3: Fallback - find first meaningful node
+        // Strategy 3: Fallback - find first meaningful node (skip placeholders)
         const meaningfulNode = nodes.find(n => 
-            n.text.length > 1 && 
-            n.text !== 'New Node' && 
-            !n.text.startsWith('Context') &&
-            !n.text.startsWith('Attribute')
+            n.text && 
+            n.text.trim().length > 1 && 
+            !this.validator.isPlaceholderText(n.text)
         );
         
-        return meaningfulNode ? meaningfulNode.text : nodes[0].text;
+        // Last resort: return first node's text (even if placeholder - user needs to edit it)
+        return meaningfulNode ? meaningfulNode.text : (nodes[0]?.text || '');
     }
     
     /**
