@@ -11,7 +11,7 @@ function renderFactorAnalysis(spec, theme = null, dimensions = null) {
     if (typeof renderMindMap === 'function') {
         return renderMindMap(spec, theme, dimensions);
     } else {
-        console.error('renderMindMap function not found. Please load mind-map-renderer.js first.');
+        logger.error('FactorAnalysisRenderer', 'renderMindMap function not found. Please load mind-map-renderer.js first.');
     }
 }
 

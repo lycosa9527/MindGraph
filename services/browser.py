@@ -73,4 +73,7 @@ class BrowserContextManager:
         
         logger.debug("Fresh browser instance cleaned up")
 
-logger.info("Browser manager module loaded - fresh browser per request approach")
+# Only log from main worker to avoid duplicate messages
+import os
+if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+    logger.debug("Browser manager module loaded")

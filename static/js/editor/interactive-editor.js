@@ -13,9 +13,6 @@ class InteractiveEditor {
         this.history = [];
         this.historyIndex = -1;
         
-        // Enable debug logging
-        this.debugMode = true;
-        
         // Session info (will be set by DiagramSelector)
         this.sessionId = null;
         this.sessionDiagramType = null;
@@ -31,57 +28,27 @@ class InteractiveEditor {
         this.renderer = null;
         
         // Log editor initialization
-        this.log('InteractiveEditor: Created', { diagramType, templateKeys: Object.keys(template || {}) });
+        logger.debug('Editor', 'Editor created', { 
+            diagramType, 
+            hasTemplate: !!template 
+        });
         
         // Bind selection change callback
         this.selectionManager.setSelectionChangeCallback((selectedNodes) => {
             this.selectedNodes = new Set(selectedNodes);
-            this.log('InteractiveEditor: Selection changed', { count: selectedNodes.length, nodes: selectedNodes });
+            logger.debug('Editor', 'Selection changed', { 
+                count: selectedNodes.length 
+            });
             this.updateToolbarState();
         });
     }
     
     /**
-     * Centralized logging for debugging - sends to both browser console and backend terminal
+     * Legacy log method - now uses centralized logger
+     * @deprecated Use logger.debug/info/warn/error directly
      */
     log(message, data = null) {
-        if (!this.debugMode) return;
-        
-        const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-        const sessionInfo = this.sessionId ? ` [Session: ${this.sessionId.substr(-8)}]` : '';
-        const prefix = `[${timestamp}]${sessionInfo} [${this.diagramType}]`;
-        
-        // Log to browser console
-        if (data) {
-            console.log(`${prefix} ${message}`, data);
-        } else {
-            console.log(`${prefix} ${message}`);
-        }
-        
-        // Send to backend for centralized terminal logging
-        this.sendToBackendLogger('INFO', message, data);
-    }
-    
-    /**
-     * Send log to backend terminal console
-     */
-    sendToBackendLogger(level, message, data = null) {
-        // Don't block execution if logging fails
-        try {
-            fetch('/api/frontend_log', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level: level,
-                    message: message,
-                    data: data,
-                    source: 'InteractiveEditor',
-                    sessionId: this.sessionId
-                })
-            }).catch(() => {}); // Fail silently - don't break frontend if backend logging fails
-        } catch (e) {
-            // Silently ignore logging errors
-        }
+        logger.debug('Editor', message, data);
     }
     
     /**
@@ -101,31 +68,31 @@ class InteractiveEditor {
      */
     validateSession(operation = 'Operation') {
         if (!this.sessionId) {
-            console.error(`${operation} blocked - No session ID set!`);
+            logger.error('Editor', `${operation} blocked - No session ID set!`);
             return false;
         }
         
         if (this.diagramType !== this.sessionDiagramType) {
-            console.error(`${operation} blocked - Diagram type mismatch!`);
-            console.error('Editor diagram type:', this.diagramType);
-            console.error('Session diagram type:', this.sessionDiagramType);
-            console.error('Session ID:', this.sessionId);
+            logger.error('Editor', `${operation} blocked - Diagram type mismatch!`, {
+                editorType: this.diagramType,
+                sessionType: this.sessionDiagramType,
+                sessionId: this.sessionId
+            });
             return false;
         }
         
         // Cross-check with DiagramSelector session
         if (window.diagramSelector?.currentSession) {
             if (window.diagramSelector.currentSession.id !== this.sessionId) {
-                console.error(`${operation} blocked - Session ID mismatch!`);
-                console.error('Editor session:', this.sessionId);
-                console.error('DiagramSelector session:', window.diagramSelector.currentSession.id);
+                logger.error('Editor', `${operation} blocked - Session ID mismatch!`, {
+                    editorSession: this.sessionId,
+                    selectorSession: window.diagramSelector.currentSession.id
+                });
                 return false;
             }
             
             if (window.diagramSelector.currentSession.diagramType !== this.diagramType) {
-                console.error(`${operation} blocked - DiagramSelector session type mismatch!`);
-                console.error('Editor type:', this.diagramType);
-                console.error('Session type:', window.diagramSelector.currentSession.diagramType);
+                logger.error('Editor', `${operation} blocked - DiagramSelector session type mismatch!`);
                 return false;
             }
         }
@@ -145,7 +112,7 @@ class InteractiveEditor {
      * Initialize the editor
      */
     initialize() {
-        console.log(`Initializing interactive editor for ${this.diagramType}`);
+        logger.info('Editor', `Initializing editor for ${this.diagramType}`);
         
         // Setup canvas
         this.canvasManager.setupCanvas('#d3-container', {
@@ -165,12 +132,12 @@ class InteractiveEditor {
         // Initialize toolbar manager
         if (typeof ToolbarManager !== 'undefined') {
             this.toolbarManager = new ToolbarManager(this);
-            console.log('Toolbar manager initialized');
+            logger.debug('Editor', 'Toolbar manager initialized');
         }
         
         // Auto-fit for mobile devices on initial load
         if (this.isMobileDevice()) {
-            console.log('Mobile device detected - auto-fitting diagram to screen');
+            logger.debug('Editor', 'Mobile device detected - auto-fitting to screen');
             setTimeout(() => {
                 this.fitDiagramToWindow();
             }, 500); // Slight delay to ensure rendering is complete
@@ -195,19 +162,23 @@ class InteractiveEditor {
             if (this.currentSpec && this.currentSpec._llm_generated) {
                 // LLM-generated: use their recommended dimensions
                 dimensions = this.currentSpec._recommended_dimensions || null;
-                console.log('Using LLM-generated diagram dimensions:', dimensions);
+                logger.debug('Editor', 'Using LLM-generated dimensions', dimensions);
             } else {
                 // Template: render at default size, fitToCanvasWithPanel will handle sizing via viewBox
-                console.log('Template will render at default size, then be fitted to canvas with panel space');
+                logger.debug('Editor', 'Will render at default size then fit to canvas');
                 // Set flag to indicate we'll be sizing for panel after render
                 this.isSizedForPanel = true;
             }
             
             if (typeof renderGraph === 'function') {
-                console.log(`Rendering ${this.diagramType} with template:`, this.currentSpec);
+                logger.debug('Editor', `Rendering ${this.diagramType}`, {
+                    nodes: this.currentSpec?.nodes?.length || 0,
+                    hasTitle: !!this.currentSpec?.title,
+                    hasTopic: !!this.currentSpec?.topic
+                });
                 await renderGraph(this.diagramType, this.currentSpec, theme, dimensions);
             } else {
-                console.error('renderGraph dispatcher function not found');
+                logger.error('Editor', 'renderGraph dispatcher not found');
                 throw new Error('Renderer not available');
             }
             
@@ -227,7 +198,7 @@ class InteractiveEditor {
             window.dispatchEvent(new CustomEvent('diagram-rendered'));
             
         } catch (error) {
-            console.error('Error rendering diagram:', error);
+            logger.error('Editor', 'Diagram rendering failed', error);
             throw error;
         }
     }
@@ -572,7 +543,7 @@ class InteractiveEditor {
     enableZoomAndPan() {
         const svg = d3.select('#d3-container svg');
         if (svg.empty()) {
-            console.warn('No SVG found, cannot enable zoom and pan');
+            logger.warn('Editor', 'No SVG found - zoom/pan disabled');
             return;
         }
         
@@ -620,9 +591,7 @@ class InteractiveEditor {
         this.zoomBehavior = zoom;
         this.zoomTransform = d3.zoomIdentity;
         
-        console.log('Zoom and pan enabled:');
-        console.log('  - Mouse wheel: Zoom in/out');
-        console.log('  - Middle mouse (scroll wheel click) + drag: Pan around');
+        logger.debug('Editor', 'Zoom and pan enabled (mouse wheel + middle button)');
     }
     
     /**
@@ -666,7 +635,7 @@ class InteractiveEditor {
                 this.fitDiagramToWindow();
             });
             
-            console.log('Mobile zoom controls added');
+            logger.debug('Editor', 'Mobile zoom controls added');
         }
     }
     
@@ -737,7 +706,7 @@ class InteractiveEditor {
                 padding: Math.round(padding)
             };
             
-            console.log('InteractiveEditor: Calculated adaptive dimensions (reserved space for properties panel):', {
+            logger.debug('Editor', 'InteractiveEditor: Calculated adaptive dimensions (reserved space for properties panel):', {
                 windowSize: { width: windowWidth, height: windowHeight },
                 reservedForPropertyPanel: propertyPanelWidth,
                 availableSpace: { width: availableWidth, height: availableHeight },
@@ -748,7 +717,7 @@ class InteractiveEditor {
             return dimensions;
             
         } catch (error) {
-            console.error('Error calculating adaptive dimensions:', error);
+            logger.error('Editor', 'Failed to calculate adaptive dimensions', error);
             // Fallback to reasonable defaults
             return {
                 width: 800,
@@ -765,11 +734,11 @@ class InteractiveEditor {
      */
     fitToFullCanvas(animate = true) {
         try {
-            console.log('Fitting diagram to full canvas width');
+            logger.debug('Editor', 'Fitting to full canvas width');
             this._fitToCanvas(animate, false);
             this.isSizedForPanel = false; // Update state
         } catch (error) {
-            console.error('Error fitting to full canvas:', error);
+            logger.error('Editor', 'Failed to fit to full canvas', error);
         }
     }
 
@@ -780,11 +749,11 @@ class InteractiveEditor {
      */
     fitToCanvasWithPanel(animate = true) {
         try {
-            console.log('Fitting diagram to canvas (reserving space for properties panel)');
+            logger.debug('Editor', 'Fitting to canvas (panel space reserved)');
             this._fitToCanvas(animate, true);
             this.isSizedForPanel = true; // Update state
         } catch (error) {
-            console.error('Error fitting to canvas with panel:', error);
+            logger.error('Editor', 'Error fitting to canvas with panel:', error);
         }
     }
 
@@ -799,7 +768,7 @@ class InteractiveEditor {
         const svg = container.select('svg');
         
         if (svg.empty()) {
-            console.warn('No SVG found for auto-fit');
+            logger.warn('Editor', 'No SVG found for auto-fit');
             return;
         }
         
@@ -807,7 +776,7 @@ class InteractiveEditor {
         const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
         
         if (allElements.empty()) {
-            console.warn('No content found for auto-fit');
+            logger.warn('Editor', 'No content found for auto-fit');
             return;
         }
         
@@ -831,7 +800,7 @@ class InteractiveEditor {
         });
         
         if (!hasContent) {
-            console.warn('No valid content for auto-fit');
+            logger.warn('Editor', 'No valid content for auto-fit');
             return;
         }
         
@@ -869,7 +838,7 @@ class InteractiveEditor {
             ? windowWidth - propertyPanelWidth  // Reserve space for panel
             : windowWidth;                      // Use full window width
         
-        console.log('Canvas fit calculation:', {
+        logger.debug('Editor', 'Canvas fit calculation:', {
             mode: reserveForPanel ? 'WITH panel space reserved' : 'FULL width',
             windowWidth,
             containerSize: { width: containerWidth, height: containerHeight },
@@ -901,7 +870,7 @@ class InteractiveEditor {
         
         const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
         
-        console.log('Fit calculation result:', {
+        logger.debug('Editor', 'Fit calculation result:', {
             availableCanvasWidth,
             finalScale: finalScale,
             viewBox: newViewBox
@@ -918,7 +887,7 @@ class InteractiveEditor {
                 .attr('preserveAspectRatio', 'xMidYMid meet');
         }
         
-        console.log(`Diagram fitted ${animate ? 'with animation' : 'instantly'}`);
+        logger.debug('Editor', `Diagram fitted ${animate ? 'with animation' : 'instantly'}`);
     }
 
     /**
@@ -986,7 +955,7 @@ class InteractiveEditor {
                                      (contentBounds.y + contentBounds.height > svgHeight * 0.9);
             
             if (exceedsWidth || exceedsHeight || exceedsSvgBounds) {
-                console.log('Diagram exceeds window bounds - auto-fitting to view', {
+                logger.debug('Editor', 'Diagram exceeds window bounds - auto-fitting to view', {
                     contentBounds,
                     containerSize: { width: containerWidth, height: containerHeight },
                     exceedsWidth,
@@ -999,11 +968,11 @@ class InteractiveEditor {
                     this.fitDiagramToWindow();
                 }, 100);
             } else {
-                console.log('Diagram fits within window - no auto-fit needed');
+                logger.debug('Editor', 'Diagram fits within window - no auto-fit needed');
             }
             
         } catch (error) {
-            console.error('Error in auto-fit check:', error);
+            logger.error('Editor', 'Error in auto-fit check:', error);
         }
     }
     
@@ -1012,13 +981,13 @@ class InteractiveEditor {
      */
     fitDiagramToWindow() {
         try {
-            console.log('Reset View clicked - fitting diagram to window');
+            logger.debug('Editor', 'Reset View clicked - fitting diagram to window');
             
             const container = d3.select('#d3-container');
             const svg = container.select('svg');
             
             if (svg.empty()) {
-                console.warn('No SVG found, cannot reset view');
+                logger.warn('Editor', 'No SVG found, cannot reset view');
                 return;
             }
             
@@ -1029,11 +998,11 @@ class InteractiveEditor {
             const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
             
             if (allElements.empty()) {
-                console.warn('No content found in SVG');
+                logger.warn('Editor', 'No content found in SVG');
                 return;
             }
             
-            console.log(`Found ${allElements.size()} elements in SVG`);
+            logger.debug('Editor', `Found ${allElements.size()} elements in SVG`);
             
             // Calculate the bounding box of all SVG content
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1055,7 +1024,7 @@ class InteractiveEditor {
             });
             
             if (!hasContent || minX === Infinity) {
-                console.warn('No valid content bounds found');
+                logger.warn('Editor', 'No valid content bounds found');
                 return;
             }
             
@@ -1066,7 +1035,7 @@ class InteractiveEditor {
                 height: maxY - minY
             };
             
-            console.log('Content bounds:', contentBounds);
+            logger.debug('Editor', 'Content bounds:', contentBounds);
             
             // Get container dimensions - account for properties panel space
             const containerNode = container.node();
@@ -1076,7 +1045,7 @@ class InteractiveEditor {
             // Check panel visibility
             const propertyPanel = document.getElementById('property-panel');
             const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
-            console.log('DEBUG: Property panel check:', {
+            logger.debug('Editor', 'DEBUG: Property panel check:', {
                 panelExists: !!propertyPanel,
                 displayStyle: propertyPanel?.style.display,
                 isVisible: isPropertyPanelVisible
@@ -1090,7 +1059,7 @@ class InteractiveEditor {
             if (canvasPanel) {
                 canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
                 canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
-                console.log('DEBUG: Canvas panel classes updated:', {
+                logger.debug('Editor', 'DEBUG: Canvas panel classes updated:', {
                     hasPropertyClass: canvasPanel.classList.contains('property-panel-visible'),
                     hasAIClass: canvasPanel.classList.contains('ai-panel-visible'),
                     allClasses: canvasPanel.className
@@ -1105,12 +1074,12 @@ class InteractiveEditor {
                 availableCanvasWidth = containerWidth - 420; // AI panel width
             }
             
-            console.log('Container dimensions:', { 
+            logger.debug('Editor', 'Container dimensions:', { 
                 containerWidth, 
                 containerHeight,
                 panelReduction: containerWidth - availableCanvasWidth 
             });
-            console.log('Available canvas space:', { 
+            logger.debug('Editor', 'Available canvas space:', { 
                 availableCanvasWidth, 
                 propertyPanelVisible: isPropertyPanelVisible, 
                 aiPanelVisible: isAIPanelVisible 
@@ -1119,7 +1088,7 @@ class InteractiveEditor {
             // Continue with the rest of the fitting logic
             this._applyViewBoxTransform(svg, contentBounds, availableCanvasWidth, containerHeight);
         } catch (error) {
-            console.error('Error fitting diagram to window:', error);
+            logger.error('Editor', 'Error fitting diagram to window:', error);
         }
     }
     
@@ -1140,7 +1109,7 @@ class InteractiveEditor {
             const translateX = (availableCanvasWidth - contentBounds.width * scale) / 2 - contentBounds.x * scale;
             const translateY = (containerHeight - contentBounds.height * scale) / 2 - contentBounds.y * scale;
             
-            console.log('Applying transform:', { scale, translateX, translateY });
+            logger.debug('Editor', 'Applying transform:', { scale, translateX, translateY });
             
             // Make SVG responsive to fill container
             svg.attr('width', '100%')
@@ -1154,8 +1123,8 @@ class InteractiveEditor {
             const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
             
             if (viewBox) {
-                console.log('Old viewBox:', viewBox);
-                console.log('New viewBox:', newViewBox);
+                logger.debug('Editor', 'Old viewBox:', viewBox);
+                logger.debug('Editor', 'New viewBox:', newViewBox);
                 
                 svg.transition()
                     .duration(750)
@@ -1168,7 +1137,7 @@ class InteractiveEditor {
                 });
             } else {
                 // No viewBox exists - create one
-                console.log('No viewBox found, creating one:', newViewBox);
+                logger.debug('Editor', 'No viewBox found, creating one:', newViewBox);
                 
                 svg.transition()
                     .duration(750)
@@ -1182,7 +1151,7 @@ class InteractiveEditor {
             }
             
         } catch (error) {
-            console.error('Error applying viewBox transform:', error);
+            logger.error('Editor', 'Error applying viewBox transform:', error);
         }
     }
     
@@ -1211,7 +1180,7 @@ class InteractiveEditor {
         // Mobile: Auto-fit on orientation change
         if (this.isMobileDevice()) {
             window.addEventListener('orientationchange', () => {
-                console.log('Orientation changed - re-fitting diagram to screen');
+                logger.debug('Editor', 'Orientation changed - re-fitting diagram to screen');
                 setTimeout(() => {
                     this.fitDiagramToWindow();
                 }, 300); // Wait for orientation animation to complete
@@ -1223,7 +1192,7 @@ class InteractiveEditor {
                 if (this.isMobileDevice()) {
                     clearTimeout(resizeTimeout);
                     resizeTimeout = setTimeout(() => {
-                        console.log('Mobile screen resized - re-fitting diagram');
+                        logger.debug('Editor', 'Mobile screen resized - re-fitting diagram');
                         this.fitDiagramToWindow();
                     }, 300);
                 }
@@ -1398,14 +1367,14 @@ class InteractiveEditor {
      */
     updateCircleMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1414,13 +1383,13 @@ class InteractiveEditor {
         if (nodeType === 'topic') {
             // Update the central topic
             this.currentSpec.topic = newText;
-            console.log('Updated Circle Map topic to:', newText);
+            logger.debug('Editor', 'Updated Circle Map topic to:', newText);
         } else if (nodeType === 'context') {
             // Update context array
             const arrayIndex = parseInt(shape.attr('data-array-index'));
             if (!isNaN(arrayIndex) && Array.isArray(this.currentSpec.context)) {
                 this.currentSpec.context[arrayIndex] = newText;
-                console.log(`Updated context[${arrayIndex}] to:`, newText);
+                logger.debug('Editor', `Updated context[${arrayIndex}] to:`, newText);
             }
         }
         
@@ -1433,14 +1402,14 @@ class InteractiveEditor {
      */
     updateBubbleMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1449,13 +1418,13 @@ class InteractiveEditor {
         if (nodeType === 'topic') {
             // Update the central topic
             this.currentSpec.topic = newText;
-            console.log('Updated Bubble Map topic to:', newText);
+            logger.debug('Editor', 'Updated Bubble Map topic to:', newText);
         } else if (nodeType === 'attribute') {
             // Update attributes array
             const arrayIndex = parseInt(shape.attr('data-array-index'));
             if (!isNaN(arrayIndex) && Array.isArray(this.currentSpec.attributes)) {
                 this.currentSpec.attributes[arrayIndex] = newText;
-                console.log(`Updated attribute[${arrayIndex}] to:`, newText);
+                logger.debug('Editor', `Updated attribute[${arrayIndex}] to:`, newText);
             }
         }
         
@@ -1468,14 +1437,14 @@ class InteractiveEditor {
      */
     updateDoubleBubbleMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1485,13 +1454,13 @@ class InteractiveEditor {
             case 'left':
                 // Update left topic
                 this.currentSpec.left = newText;
-                console.log('Updated Double Bubble Map left topic to:', newText);
+                logger.debug('Editor', 'Updated Double Bubble Map left topic to:', newText);
                 break;
                 
             case 'right':
                 // Update right topic
                 this.currentSpec.right = newText;
-                console.log('Updated Double Bubble Map right topic to:', newText);
+                logger.debug('Editor', 'Updated Double Bubble Map right topic to:', newText);
                 break;
                 
             case 'similarity':
@@ -1499,7 +1468,7 @@ class InteractiveEditor {
                 const simIndex = parseInt(shape.attr('data-array-index'));
                 if (!isNaN(simIndex) && Array.isArray(this.currentSpec.similarities)) {
                     this.currentSpec.similarities[simIndex] = newText;
-                    console.log(`Updated similarity[${simIndex}] to:`, newText);
+                    logger.debug('Editor', `Updated similarity[${simIndex}] to:`, newText);
                 }
                 break;
                 
@@ -1508,7 +1477,7 @@ class InteractiveEditor {
                 const leftDiffIndex = parseInt(shape.attr('data-array-index'));
                 if (!isNaN(leftDiffIndex) && Array.isArray(this.currentSpec.left_differences)) {
                     this.currentSpec.left_differences[leftDiffIndex] = newText;
-                    console.log(`Updated left_difference[${leftDiffIndex}] to:`, newText);
+                    logger.debug('Editor', `Updated left_difference[${leftDiffIndex}] to:`, newText);
                 }
                 break;
                 
@@ -1517,12 +1486,12 @@ class InteractiveEditor {
                 const rightDiffIndex = parseInt(shape.attr('data-array-index'));
                 if (!isNaN(rightDiffIndex) && Array.isArray(this.currentSpec.right_differences)) {
                     this.currentSpec.right_differences[rightDiffIndex] = newText;
-                    console.log(`Updated right_difference[${rightDiffIndex}] to:`, newText);
+                    logger.debug('Editor', `Updated right_difference[${rightDiffIndex}] to:`, newText);
                 }
                 break;
                 
             default:
-                console.warn(`Unknown node type: ${nodeType}`);
+                logger.warn('Editor', `Unknown node type: ${nodeType}`);
                 return;
         }
         
@@ -1535,14 +1504,14 @@ class InteractiveEditor {
      */
     updateBraceMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1551,18 +1520,18 @@ class InteractiveEditor {
         if (nodeType === 'topic') {
             // Update the main topic
             this.currentSpec.topic = newText;
-            console.log('Updated Brace Map topic to:', newText);
+            logger.debug('Editor', 'Updated Brace Map topic to:', newText);
         } else if (nodeType === 'dimension') {
             // Update the decomposition dimension
             // User can change this to specify how they want to decompose the topic
             this.currentSpec.dimension = newText;
-            console.log('Updated Brace Map dimension to:', newText);
+            logger.debug('Editor', 'Updated Brace Map dimension to:', newText);
         } else if (nodeType === 'part') {
             // Update part name in the parts array
             const partIndex = parseInt(shape.attr('data-part-index'));
             if (!isNaN(partIndex) && this.currentSpec.parts && partIndex < this.currentSpec.parts.length) {
                 this.currentSpec.parts[partIndex].name = newText;
-                console.log(`Updated part ${partIndex} to:`, newText);
+                logger.debug('Editor', `Updated part ${partIndex} to:`, newText);
             }
         } else if (nodeType === 'subpart') {
             // Update subpart name in the parts array
@@ -1573,7 +1542,7 @@ class InteractiveEditor {
                 const part = this.currentSpec.parts[partIndex];
                 if (part.subparts && subpartIndex < part.subparts.length) {
                     part.subparts[subpartIndex].name = newText;
-                    console.log(`Updated subpart ${partIndex}-${subpartIndex} to:`, newText);
+                    logger.debug('Editor', `Updated subpart ${partIndex}-${subpartIndex} to:`, newText);
                 }
             }
         }
@@ -1587,14 +1556,14 @@ class InteractiveEditor {
      */
     updateFlowMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1603,13 +1572,13 @@ class InteractiveEditor {
         if (nodeType === 'title') {
             // Update the title
             this.currentSpec.title = newText;
-            console.log('Updated Flow Map title to:', newText);
+            logger.debug('Editor', 'Updated Flow Map title to:', newText);
         } else if (nodeType === 'step') {
             // Update step in the steps array
             const stepIndex = parseInt(shape.attr('data-step-index'));
             if (!isNaN(stepIndex) && this.currentSpec.steps && stepIndex < this.currentSpec.steps.length) {
                 this.currentSpec.steps[stepIndex] = newText;
-                console.log(`Updated step ${stepIndex} to:`, newText);
+                logger.debug('Editor', `Updated step ${stepIndex} to:`, newText);
             }
         } else if (nodeType === 'substep') {
             // Update substep in the substeps array
@@ -1621,7 +1590,7 @@ class InteractiveEditor {
                 const substepsEntry = this.currentSpec.substeps.find(s => s.step === this.currentSpec.steps[stepIndex]);
                 if (substepsEntry && substepsEntry.substeps && substepIndex < substepsEntry.substeps.length) {
                     substepsEntry.substeps[substepIndex] = newText;
-                    console.log(`Updated substep ${stepIndex}-${substepIndex} to:`, newText);
+                    logger.debug('Editor', `Updated substep ${stepIndex}-${substepIndex} to:`, newText);
                 }
             }
         }
@@ -1638,14 +1607,14 @@ class InteractiveEditor {
      */
     updateMultiFlowMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1654,20 +1623,20 @@ class InteractiveEditor {
         if (nodeType === 'event') {
             // Update the central event
             this.currentSpec.event = newText;
-            console.log('Updated Multi-Flow Map event to:', newText);
+            logger.debug('Editor', 'Updated Multi-Flow Map event to:', newText);
         } else if (nodeType === 'cause') {
             // Update cause in the causes array
             const causeIndex = parseInt(shape.attr('data-cause-index'));
             if (!isNaN(causeIndex) && this.currentSpec.causes && causeIndex < this.currentSpec.causes.length) {
                 this.currentSpec.causes[causeIndex] = newText;
-                console.log(`Updated cause ${causeIndex} to:`, newText);
+                logger.debug('Editor', `Updated cause ${causeIndex} to:`, newText);
             }
         } else if (nodeType === 'effect') {
             // Update effect in the effects array
             const effectIndex = parseInt(shape.attr('data-effect-index'));
             if (!isNaN(effectIndex) && this.currentSpec.effects && effectIndex < this.currentSpec.effects.length) {
                 this.currentSpec.effects[effectIndex] = newText;
-                console.log(`Updated effect ${effectIndex} to:`, newText);
+                logger.debug('Editor', `Updated effect ${effectIndex} to:`, newText);
             }
         }
         
@@ -1683,14 +1652,14 @@ class InteractiveEditor {
      */
     updateTreeMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1699,19 +1668,19 @@ class InteractiveEditor {
         if (nodeType === 'topic') {
             // Update the root topic
             this.currentSpec.topic = newText;
-            console.log('Updated Tree Map topic to:', newText);
+            logger.debug('Editor', 'Updated Tree Map topic to:', newText);
         } else if (nodeType === 'dimension') {
             // Update the classification dimension
             this.currentSpec.dimension = newText;
             // Also update the data-dimension-value attribute
             shape.attr('data-dimension-value', newText);
-            console.log('Updated Tree Map dimension to:', newText);
+            logger.debug('Editor', 'Updated Tree Map dimension to:', newText);
         } else if (nodeType === 'category') {
             // Update category text in children array
             const categoryIndex = parseInt(shape.attr('data-category-index'));
             if (!isNaN(categoryIndex) && this.currentSpec.children && categoryIndex < this.currentSpec.children.length) {
                 this.currentSpec.children[categoryIndex].text = newText;
-                console.log(`Updated category ${categoryIndex} to:`, newText);
+                logger.debug('Editor', `Updated category ${categoryIndex} to:`, newText);
             }
         } else if (nodeType === 'leaf') {
             // Update leaf text within its category
@@ -1727,7 +1696,7 @@ class InteractiveEditor {
                     } else {
                         category.children[leafIndex] = newText;
                     }
-                    console.log(`Updated leaf ${leafIndex} in category ${categoryIndex} to:`, newText);
+                    logger.debug('Editor', `Updated leaf ${leafIndex} in category ${categoryIndex} to:`, newText);
                 }
             }
         }
@@ -1744,14 +1713,14 @@ class InteractiveEditor {
      */
     updateBridgeMapText(nodeId, shapeNode, newText) {
         if (!this.currentSpec) {
-            console.error('No spec available');
+            logger.error('Editor', 'No spec available');
             return;
         }
         
         // Get the shape element to extract metadata
         const shape = d3.select(shapeNode || `[data-node-id="${nodeId}"]`);
         if (shape.empty()) {
-            console.error('Cannot find node shape');
+            logger.error('Editor', 'Cannot find node shape');
             return;
         }
         
@@ -1761,7 +1730,7 @@ class InteractiveEditor {
         if (nodeType === 'dimension') {
             // Update dimension label
             this.currentSpec.dimension = newText;
-            console.log(`Updated dimension to: "${newText}"`);
+            logger.debug('Editor', `Updated dimension to: "${newText}"`);
             
             // Update the data attribute
             shape.attr('data-dimension-value', newText);
@@ -1773,11 +1742,11 @@ class InteractiveEditor {
             if (nodeType === 'left') {
                 // Update left item in the pair
                 this.currentSpec.analogies[pairIndex].left = newText;
-                console.log(`Updated left item in pair ${pairIndex} to: "${newText}"`);
+                logger.debug('Editor', `Updated left item in pair ${pairIndex} to: "${newText}"`);
             } else if (nodeType === 'right') {
                 // Update right item in the pair
                 this.currentSpec.analogies[pairIndex].right = newText;
-                console.log(`Updated right item in pair ${pairIndex} to: "${newText}"`);
+                logger.debug('Editor', `Updated right item in pair ${pairIndex} to: "${newText}"`);
             }
         }
         
@@ -1883,7 +1852,7 @@ class InteractiveEditor {
      */
     addNodeToCircleMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.context)) {
-            console.error('Invalid circle map spec');
+            logger.error('Editor', 'Invalid circle map spec');
             return;
         }
         
@@ -1900,7 +1869,7 @@ class InteractiveEditor {
             contextCount: this.currentSpec.context.length 
         });
         
-        console.log('Added new context node to Circle Map');
+        logger.debug('Editor', 'Added new context node to Circle Map');
     }
     
     /**
@@ -1908,7 +1877,7 @@ class InteractiveEditor {
      */
     addNodeToBubbleMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.attributes)) {
-            console.error('Invalid bubble map spec');
+            logger.error('Editor', 'Invalid bubble map spec');
             return;
         }
         
@@ -1925,7 +1894,7 @@ class InteractiveEditor {
             attributeCount: this.currentSpec.attributes.length 
         });
         
-        console.log('Added new attribute node to Bubble Map');
+        logger.debug('Editor', 'Added new attribute node to Bubble Map');
     }
     
     /**
@@ -1934,7 +1903,7 @@ class InteractiveEditor {
      */
     addNodeToDoubleBubbleMap() {
         if (!this.currentSpec) {
-            console.error('Invalid double bubble map spec');
+            logger.error('Editor', 'Invalid double bubble map spec');
             return;
         }
         
@@ -1943,7 +1912,7 @@ class InteractiveEditor {
         if (selected.length === 0) {
             // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
             // Don't show duplicate notification here
-            console.log('DoubleBubbleMap: No node selected, skipping add (notification already shown by toolbar)');
+            logger.debug('Editor', 'DoubleBubbleMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -1968,7 +1937,7 @@ class InteractiveEditor {
                 }
                 const newSimilarityText = lang === 'zh' ? '新相似点' : 'New Similarity';
                 this.currentSpec.similarities.push(newSimilarityText);
-                console.log('Added new similarity node');
+                logger.debug('Editor', 'Added new similarity node');
                 break;
                 
             case 'left_difference':
@@ -1984,7 +1953,7 @@ class InteractiveEditor {
                 const rightDiffText = lang === 'zh' ? '右差异' : 'Right Difference';
                 this.currentSpec.left_differences.push(leftDiffText);
                 this.currentSpec.right_differences.push(rightDiffText);
-                console.log('Added paired difference nodes');
+                logger.debug('Editor', 'Added paired difference nodes');
                 break;
                 
             case 'left':
@@ -2027,7 +1996,7 @@ class InteractiveEditor {
      */
     addNodeToBraceMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.parts)) {
-            console.error('Invalid brace map spec');
+            logger.error('Editor', 'Invalid brace map spec');
             return;
         }
         
@@ -2036,7 +2005,7 @@ class InteractiveEditor {
         if (selected.length === 0) {
             // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
             // Don't show duplicate notification here
-            console.log('BraceMap: No node selected, skipping add (notification already shown by toolbar)');
+            logger.debug('Editor', 'BraceMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -2065,7 +2034,7 @@ class InteractiveEditor {
                         { name: `${newSubpartText}2` }
                     ]
                 });
-                console.log('Added new part node with 2 subparts');
+                logger.debug('Editor', 'Added new part node with 2 subparts');
                 
                 if (this.toolbarManager) {
                     const message = lang === 'zh' ? '新部分及2个子部分已添加！' : 'New part added with 2 subparts!';
@@ -2094,7 +2063,7 @@ class InteractiveEditor {
                 this.currentSpec.parts[partIndex].subparts.push({
                     name: newSubpartText
                 });
-                console.log(`Added new subpart to part ${partIndex}`);
+                logger.debug('Editor', `Added new subpart to part ${partIndex}`);
                 
                 if (this.toolbarManager) {
                     const message = lang === 'zh' ? '新子部分已添加！' : 'New subpart added!';
@@ -2136,7 +2105,7 @@ class InteractiveEditor {
      */
     addNodeToFlowMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.steps)) {
-            console.error('Invalid flow map spec');
+            logger.error('Editor', 'Invalid flow map spec');
             return;
         }
         
@@ -2145,7 +2114,7 @@ class InteractiveEditor {
         if (selectedNodes.length === 0) {
             // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
             // Don't show duplicate notification here
-            console.log('FlowMap: No node selected, skipping add (notification already shown by toolbar)');
+            logger.debug('Editor', 'FlowMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -2154,12 +2123,12 @@ class InteractiveEditor {
         const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
         
         if (selectedElement.empty()) {
-            console.error('Selected node not found');
+            logger.error('Editor', 'Selected node not found');
             return;
         }
         
         const nodeType = selectedElement.attr('data-node-type');
-        console.log('Adding to flow map, selected node type:', nodeType);
+        logger.debug('Editor', 'Adding to flow map, selected node type:', nodeType);
         
         // Handle different node types
         switch (nodeType) {
@@ -2188,7 +2157,7 @@ class InteractiveEditor {
                     substeps: [`${newSubstepText}1`, `${newSubstepText}2`]
                 });
                 
-                console.log(`Inserted new step after step ${stepIndex} with 2 substeps`);
+                logger.debug('Editor', `Inserted new step after step ${stepIndex} with 2 substeps`);
                 
                 if (this.toolbarManager) {
                     const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新步骤及2个子步骤已添加！' : 'New step added with 2 substeps!';
@@ -2236,7 +2205,7 @@ class InteractiveEditor {
                 const newSubstepText = window.languageManager?.translate('newSubitem') || 'New Substep';
                 substepsEntry.substeps.splice(substepIndex + 1, 0, newSubstepText);
                 
-                console.log(`Inserted new substep after substep ${substepIndex} in step ${stepIndex}`);
+                logger.debug('Editor', `Inserted new substep after substep ${substepIndex} in step ${stepIndex}`);
                 
                 if (this.toolbarManager) {
                     const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新子步骤已添加！' : 'New substep added!';
@@ -2279,7 +2248,7 @@ class InteractiveEditor {
      */
     addNodeToMultiFlowMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.causes) || !Array.isArray(this.currentSpec.effects)) {
-            console.error('Invalid multi-flow map spec');
+            logger.error('Editor', 'Invalid multi-flow map spec');
             return;
         }
         
@@ -2288,7 +2257,7 @@ class InteractiveEditor {
         if (selectedNodes.length === 0) {
             // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
             // Don't show duplicate notification here
-            console.log('MultiFlowMap: No node selected, skipping add (notification already shown by toolbar)');
+            logger.debug('Editor', 'MultiFlowMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -2297,12 +2266,12 @@ class InteractiveEditor {
         const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
         
         if (selectedElement.empty()) {
-            console.error('Selected node not found');
+            logger.error('Editor', 'Selected node not found');
             return;
         }
         
         const nodeType = selectedElement.attr('data-node-type');
-        console.log('Adding to multi-flow map, selected node type:', nodeType);
+        logger.debug('Editor', 'Adding to multi-flow map, selected node type:', nodeType);
         
         // Handle different node types
         switch (nodeType) {
@@ -2311,7 +2280,7 @@ class InteractiveEditor {
                 const newCauseText = window.languageManager?.translate('newCause') || 'New Cause';
                 this.currentSpec.causes.push(newCauseText);
                 
-                console.log(`Added new cause. Total causes: ${this.currentSpec.causes.length}`);
+                logger.debug('Editor', `Added new cause. Total causes: ${this.currentSpec.causes.length}`);
                 
                 if (this.toolbarManager) {
                     const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新原因已添加！' : 'New cause added!';
@@ -2325,7 +2294,7 @@ class InteractiveEditor {
                 const newEffectText = window.languageManager?.translate('newEffect') || 'New Effect';
                 this.currentSpec.effects.push(newEffectText);
                 
-                console.log(`Added new effect. Total effects: ${this.currentSpec.effects.length}`);
+                logger.debug('Editor', `Added new effect. Total effects: ${this.currentSpec.effects.length}`);
                 
                 if (this.toolbarManager) {
                     const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新结果已添加！' : 'New effect added!';
@@ -2363,7 +2332,7 @@ class InteractiveEditor {
      */
     addNodeToTreeMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
-            console.error('Invalid tree map spec');
+            logger.error('Editor', 'Invalid tree map spec');
             return;
         }
         
@@ -2371,7 +2340,7 @@ class InteractiveEditor {
         const selectedNodes = Array.from(this.selectedNodes);
         if (selectedNodes.length === 0) {
             // NOTE: Notification is already shown by ToolbarManager.handleAddNode()
-            console.log('TreeMap: No node selected, skipping add (notification already shown by toolbar)');
+            logger.debug('Editor', 'TreeMap: No node selected, skipping add (notification already shown by toolbar)');
             return;
         }
         
@@ -2380,12 +2349,12 @@ class InteractiveEditor {
         const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
         
         if (selectedElement.empty()) {
-            console.error('Selected node not found');
+            logger.error('Editor', 'Selected node not found');
             return;
         }
         
         const nodeType = selectedElement.attr('data-node-type');
-        console.log('Adding to tree map, selected node type:', nodeType);
+        logger.debug('Editor', 'Adding to tree map, selected node type:', nodeType);
         
         // Handle different node types
         switch (nodeType) {
@@ -2406,7 +2375,7 @@ class InteractiveEditor {
                 // Insert after selected category
                 this.currentSpec.children.splice(categoryIndex + 1, 0, newCategory);
                 
-                console.log(`Added new category after index ${categoryIndex}. Total categories: ${this.currentSpec.children.length}`);
+                logger.debug('Editor', `Added new category after index ${categoryIndex}. Total categories: ${this.currentSpec.children.length}`);
                 
                 if (this.toolbarManager) {
                     const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新类别及3个子项已添加！' : 'New category added with 3 children!';
@@ -2421,7 +2390,7 @@ class InteractiveEditor {
                 const leafIndex = parseInt(selectedElement.attr('data-leaf-index'));
                 
                 if (categoryIndex < 0 || categoryIndex >= this.currentSpec.children.length) {
-                    console.error('Invalid category index');
+                    logger.error('Editor', 'Invalid category index');
                     return;
                 }
                 
@@ -2434,7 +2403,7 @@ class InteractiveEditor {
                 const newItemText = window.languageManager?.translate('newItem') || 'New Child';
                 category.children.splice(leafIndex + 1, 0, { text: newItemText });
                 
-                console.log(`Added new child to category ${categoryIndex} after leaf ${leafIndex}. Total children: ${category.children.length}`);
+                logger.debug('Editor', `Added new child to category ${categoryIndex} after leaf ${leafIndex}. Total children: ${category.children.length}`);
                 
                 if (this.toolbarManager) {
                     const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新子项已添加！' : 'New child added!';
@@ -2471,7 +2440,7 @@ class InteractiveEditor {
      */
     addNodeToBridgeMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.analogies)) {
-            console.error('Invalid bridge map spec');
+            logger.error('Editor', 'Invalid bridge map spec');
             return;
         }
         
@@ -2485,7 +2454,7 @@ class InteractiveEditor {
         
         this.currentSpec.analogies.push(newPair);
         
-        console.log(`Added new analogy pair at end. Total pairs: ${this.currentSpec.analogies.length}`);
+        logger.debug('Editor', `Added new analogy pair at end. Total pairs: ${this.currentSpec.analogies.length}`);
         
         // Re-render the diagram with new pair
         this.renderDiagram();
@@ -2502,7 +2471,7 @@ class InteractiveEditor {
      */
     addNodeToConceptMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.concepts)) {
-            console.error('Invalid concept map spec');
+            logger.error('Editor', 'Invalid concept map spec');
             return;
         }
         
@@ -2523,7 +2492,7 @@ class InteractiveEditor {
             conceptCount: this.currentSpec.concepts.length 
         });
         
-        console.log('Added new concept node to Concept Map');
+        logger.debug('Editor', 'Added new concept node to Concept Map');
     }
     
     /**
@@ -2531,7 +2500,7 @@ class InteractiveEditor {
      */
     async addNodeToMindMap() {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
-            console.error('Invalid mind map spec');
+            logger.error('Editor', 'Invalid mind map spec');
             return;
         }
         
@@ -2543,7 +2512,7 @@ class InteractiveEditor {
             if (this.toolbarManager) {
                 this.toolbarManager.showNotification(this.getNotif('selectBranchOrSubitem'), 'warning');
             }
-            console.log('MindMap: No node selected, skipping add');
+            logger.debug('Editor', 'MindMap: No node selected, skipping add');
             return;
         }
         
@@ -2552,7 +2521,7 @@ class InteractiveEditor {
         const selectedElement = d3.select(`[data-node-id="${selectedNodeId}"]`);
         
         if (selectedElement.empty()) {
-            console.error('Selected node not found');
+            logger.error('Editor', 'Selected node not found');
             return;
         }
         
@@ -2563,7 +2532,7 @@ class InteractiveEditor {
             if (this.toolbarManager) {
                 this.toolbarManager.showNotification(this.getNotif('cannotAddToCentral'), 'warning');
             }
-            console.log('MindMap: Cannot add to central topic');
+            logger.debug('Editor', 'MindMap: Cannot add to central topic');
             return;
         }
         
@@ -2603,7 +2572,7 @@ class InteractiveEditor {
                 ]
             });
             
-            console.log(`Added new branch with 2 subitems. Total branches: ${this.currentSpec.children.length}`);
+            logger.debug('Editor', `Added new branch with 2 subitems. Total branches: ${this.currentSpec.children.length}`);
             
             if (this.toolbarManager) {
                 const message = window.languageManager?.getCurrentLanguage() === 'zh' ? '新分支及2个子项已添加！' : 'New branch with 2 sub-items added!';
@@ -2623,7 +2592,7 @@ class InteractiveEditor {
             
             const branch = this.currentSpec.children[branchIndex];
             if (!branch || !Array.isArray(branch.children)) {
-                console.error('Invalid branch structure');
+                logger.error('Editor', 'Invalid branch structure');
                 return;
             }
             
@@ -2636,7 +2605,7 @@ class InteractiveEditor {
                 children: []
             });
             
-            console.log(`Added new sub-item to branch ${branchIndex}. Total sub-items: ${branch.children.length}`);
+            logger.debug('Editor', `Added new sub-item to branch ${branchIndex}. Total sub-items: ${branch.children.length}`);
             
             if (this.toolbarManager) {
                 this.toolbarManager.showNotification(this.getNotif('newSubitemAdded'), 'success');
@@ -2665,12 +2634,12 @@ class InteractiveEditor {
      */
     async recalculateMindMapLayout() {
         if (!this.currentSpec) {
-            console.error('No spec available for recalculation');
+            logger.error('Editor', 'No spec available for recalculation');
             return;
         }
         
         try {
-            console.log('Recalculating mind map layout from backend...');
+            logger.debug('Editor', 'Recalculating mind map layout from backend...');
             
             // Show loading state
             if (this.toolbarManager) {
@@ -2702,18 +2671,18 @@ class InteractiveEditor {
             if (data.spec && data.spec._layout) {
                 this.currentSpec._layout = data.spec._layout;
                 this.currentSpec._recommended_dimensions = data.spec._recommended_dimensions;
-                console.log('Layout recalculated successfully');
+                logger.debug('Editor', 'Layout recalculated successfully');
                 
                 // Re-render with new layout
                 this.renderDiagram();
             } else {
-                console.warn('Backend did not return layout data');
+                logger.warn('Editor', 'Backend did not return layout data');
                 // Still try to render
                 this.renderDiagram();
             }
             
         } catch (error) {
-            console.error('Error recalculating mind map layout:', error);
+            logger.error('Editor', 'Error recalculating mind map layout:', error);
             if (this.toolbarManager) {
                 this.toolbarManager.showNotification(this.getNotif('layoutUpdateFailed'), 'warning');
             }
@@ -2729,7 +2698,7 @@ class InteractiveEditor {
         // Get SVG container dimensions for positioning
         const svg = d3.select('#d3-container svg');
         if (svg.empty()) {
-            console.error('SVG container not found');
+            logger.error('Editor', 'SVG container not found');
             return;
         }
         
@@ -2814,7 +2783,7 @@ class InteractiveEditor {
         // Save to history
         this.saveToHistory('add_node', { nodeId, x: newX, y: newY });
         
-        console.log(`Node ${nodeId} added at (${newX.toFixed(0)}, ${newY.toFixed(0)})`);
+        logger.debug('Editor', `Node ${nodeId} added at (${newX.toFixed(0)}, ${newY.toFixed(0)})`);
     }
     
     /**
@@ -2865,7 +2834,7 @@ class InteractiveEditor {
         // Save to history
         this.saveToHistory('delete_nodes', { nodeIds: nodesToDelete });
         
-        console.log(`Successfully deleted ${nodesToDelete.length} node(s)`);
+        logger.debug('Editor', `Successfully deleted ${nodesToDelete.length} node(s)`);
     }
     
     /**
@@ -2873,7 +2842,7 @@ class InteractiveEditor {
      */
     deleteCircleMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.context)) {
-            console.error('Invalid circle map spec');
+            logger.error('Editor', 'Invalid circle map spec');
             return;
         }
         
@@ -2921,7 +2890,7 @@ class InteractiveEditor {
             this.currentSpec.context.splice(index, 1);
         });
         
-        console.log(`Deleted ${indicesToDelete.length} context node(s) from Circle Map`);
+        logger.debug('Editor', `Deleted ${indicesToDelete.length} context node(s) from Circle Map`);
         
         // Re-render
         this.renderDiagram();
@@ -2932,7 +2901,7 @@ class InteractiveEditor {
      */
     deleteBubbleMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.attributes)) {
-            console.error('Invalid bubble map spec');
+            logger.error('Editor', 'Invalid bubble map spec');
             return;
         }
         
@@ -2980,7 +2949,7 @@ class InteractiveEditor {
             this.currentSpec.attributes.splice(index, 1);
         });
         
-        console.log(`Deleted ${indicesToDelete.length} attribute node(s) from Bubble Map`);
+        logger.debug('Editor', `Deleted ${indicesToDelete.length} attribute node(s) from Bubble Map`);
         
         // Re-render
         this.renderDiagram();
@@ -2993,7 +2962,7 @@ class InteractiveEditor {
      */
     deleteDoubleBubbleMapNodes(nodeIds) {
         if (!this.currentSpec) {
-            console.error('Invalid double bubble map spec');
+            logger.error('Editor', 'Invalid double bubble map spec');
             return;
         }
         
@@ -3056,7 +3025,7 @@ class InteractiveEditor {
                 this.currentSpec.similarities.splice(index, 1);
                 deletedCount++;
             });
-            console.log(`Deleted ${uniqueIndices.length} similarity node(s)`);
+            logger.debug('Editor', `Deleted ${uniqueIndices.length} similarity node(s)`);
         }
         
         // Delete differences in PAIRS
@@ -3075,7 +3044,7 @@ class InteractiveEditor {
             });
             
             deletedCount += uniqueIndices.length * 2; // Count both left and right
-            console.log(`Deleted ${uniqueIndices.length} difference pair(s) (${uniqueIndices.length * 2} nodes total)`);
+            logger.debug('Editor', `Deleted ${uniqueIndices.length} difference pair(s) (${uniqueIndices.length * 2} nodes total)`);
             
             // Show notification about paired deletion
             window.dispatchEvent(new CustomEvent('show-notification', {
@@ -3086,7 +3055,7 @@ class InteractiveEditor {
             }));
         }
         
-        console.log(`Total deleted from Double Bubble Map: ${deletedCount} node(s)`);
+        logger.debug('Editor', `Total deleted from Double Bubble Map: ${deletedCount} node(s)`);
         
         // Re-render - this will automatically remove connecting lines
         this.renderDiagram();
@@ -3097,7 +3066,7 @@ class InteractiveEditor {
      */
     deleteBraceMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.parts)) {
-            console.error('Invalid brace map spec');
+            logger.error('Editor', 'Invalid brace map spec');
             return;
         }
         
@@ -3181,7 +3150,7 @@ class InteractiveEditor {
                     }
                 }
             });
-            console.log(`Deleted ${deletedCount} subpart(s)`);
+            logger.debug('Editor', `Deleted ${deletedCount} subpart(s)`);
         }
         
         // Delete parts (this will also remove any remaining subparts)
@@ -3195,10 +3164,10 @@ class InteractiveEditor {
                     deletedCount++;
                 }
             });
-            console.log(`Deleted ${uniquePartIndices.length} part(s)`);
+            logger.debug('Editor', `Deleted ${uniquePartIndices.length} part(s)`);
         }
         
-        console.log(`Total deleted from Brace Map: ${deletedCount} node(s)`);
+        logger.debug('Editor', `Total deleted from Brace Map: ${deletedCount} node(s)`);
         
         // Re-render - this will automatically rebuild the diagram
         this.renderDiagram();
@@ -3209,7 +3178,7 @@ class InteractiveEditor {
      */
     deleteFlowMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.steps)) {
-            console.error('Invalid flow map spec');
+            logger.error('Editor', 'Invalid flow map spec');
             return;
         }
         
@@ -3220,7 +3189,7 @@ class InteractiveEditor {
         nodeIds.forEach(nodeId => {
             const element = d3.select(`[data-node-id="${nodeId}"]`);
             if (element.empty()) {
-                console.warn(`Node ${nodeId} not found`);
+                logger.warn('Editor', `Node ${nodeId} not found`);
                 return;
             }
             
@@ -3246,7 +3215,7 @@ class InteractiveEditor {
             }
         });
         
-        console.log('Flow map deletion:', { stepNodesToDelete, substepNodesToDelete });
+        logger.debug('Editor', 'Flow map deletion:', { stepNodesToDelete, substepNodesToDelete });
         
         // Delete substeps first (grouped by step, highest index first to avoid index shifting)
         const substepsByStep = {};
@@ -3266,7 +3235,7 @@ class InteractiveEditor {
                 indices.forEach(index => {
                     if (index >= 0 && index < substepsEntry.substeps.length) {
                         substepsEntry.substeps.splice(index, 1);
-                        console.log(`Deleted substep ${index} from step ${stepIndex}`);
+                        logger.debug('Editor', `Deleted substep ${index} from step ${stepIndex}`);
                     }
                 });
             }
@@ -3283,14 +3252,14 @@ class InteractiveEditor {
                 
                 // Remove step from steps array
                 this.currentSpec.steps.splice(index, 1);
-                console.log(`Deleted step ${index}: ${stepName}`);
+                logger.debug('Editor', `Deleted step ${index}: ${stepName}`);
                 
                 // Remove corresponding substeps entry
                 if (Array.isArray(this.currentSpec.substeps)) {
                     const substepsIndex = this.currentSpec.substeps.findIndex(s => s.step === stepName);
                     if (substepsIndex !== -1) {
                         this.currentSpec.substeps.splice(substepsIndex, 1);
-                        console.log(`Deleted substeps entry for step: ${stepName}`);
+                        logger.debug('Editor', `Deleted substeps entry for step: ${stepName}`);
                     }
                 }
             }
@@ -3298,7 +3267,7 @@ class InteractiveEditor {
         
         // Note: Notification is shown by ToolbarManager.handleDeleteNode()
         // Don't show duplicate notification here
-        console.log(`FlowMap: Deleted ${stepNodesToDelete.length + substepNodesToDelete.length} node(s)`);
+        logger.debug('Editor', `FlowMap: Deleted ${stepNodesToDelete.length + substepNodesToDelete.length} node(s)`);
         
         // Re-render the diagram
         this.renderDiagram();
@@ -3309,7 +3278,7 @@ class InteractiveEditor {
      */
     deleteMultiFlowMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.causes) || !Array.isArray(this.currentSpec.effects)) {
-            console.error('Invalid multi-flow map spec');
+            logger.error('Editor', 'Invalid multi-flow map spec');
             return;
         }
         
@@ -3320,7 +3289,7 @@ class InteractiveEditor {
         nodeIds.forEach(nodeId => {
             const element = d3.select(`[data-node-id="${nodeId}"]`);
             if (element.empty()) {
-                console.warn(`Node ${nodeId} not found`);
+                logger.warn('Editor', `Node ${nodeId} not found`);
                 return;
             }
             
@@ -3345,7 +3314,7 @@ class InteractiveEditor {
             }
         });
         
-        console.log('Multi-flow map deletion:', { causeIndicesToDelete, effectIndicesToDelete });
+        logger.debug('Editor', 'Multi-flow map deletion:', { causeIndicesToDelete, effectIndicesToDelete });
         
         // Delete causes (sort by index descending to avoid index shifting)
         const sortedCauseIndices = causeIndicesToDelete.sort((a, b) => b - a);
@@ -3353,7 +3322,7 @@ class InteractiveEditor {
             if (index >= 0 && index < this.currentSpec.causes.length) {
                 const causeText = this.currentSpec.causes[index];
                 this.currentSpec.causes.splice(index, 1);
-                console.log(`Deleted cause ${index}: ${causeText}`);
+                logger.debug('Editor', `Deleted cause ${index}: ${causeText}`);
             }
         });
         
@@ -3363,13 +3332,13 @@ class InteractiveEditor {
             if (index >= 0 && index < this.currentSpec.effects.length) {
                 const effectText = this.currentSpec.effects[index];
                 this.currentSpec.effects.splice(index, 1);
-                console.log(`Deleted effect ${index}: ${effectText}`);
+                logger.debug('Editor', `Deleted effect ${index}: ${effectText}`);
             }
         });
         
         // Note: Notification is shown by ToolbarManager.handleDeleteNode()
         // Don't show duplicate notification here
-        console.log(`MultiFlowMap: Deleted ${causeIndicesToDelete.length + effectIndicesToDelete.length} node(s)`);
+        logger.debug('Editor', `MultiFlowMap: Deleted ${causeIndicesToDelete.length + effectIndicesToDelete.length} node(s)`);
         
         // Re-render the diagram
         this.renderDiagram();
@@ -3380,7 +3349,7 @@ class InteractiveEditor {
      */
     deleteTreeMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
-            console.error('Invalid tree map spec');
+            logger.error('Editor', 'Invalid tree map spec');
             return;
         }
         
@@ -3391,7 +3360,7 @@ class InteractiveEditor {
         nodeIds.forEach(nodeId => {
             const element = d3.select(`[data-node-id="${nodeId}"]`);
             if (element.empty()) {
-                console.warn(`Node ${nodeId} not found`);
+                logger.warn('Editor', `Node ${nodeId} not found`);
                 return;
             }
             
@@ -3417,7 +3386,7 @@ class InteractiveEditor {
             }
         });
         
-        console.log('Tree map deletion:', { categoriesToDelete, leavesToDelete });
+        logger.debug('Editor', 'Tree map deletion:', { categoriesToDelete, leavesToDelete });
         
         // Delete leaves first (sort by leaf index descending within each category)
         // Group by category
@@ -3441,7 +3410,7 @@ class InteractiveEditor {
                         if (leafIndex >= 0 && leafIndex < category.children.length) {
                             const leafText = category.children[leafIndex].text || category.children[leafIndex];
                             category.children.splice(leafIndex, 1);
-                            console.log(`Deleted leaf ${leafIndex} from category ${categoryIndex}: ${leafText}`);
+                            logger.debug('Editor', `Deleted leaf ${leafIndex} from category ${categoryIndex}: ${leafText}`);
                         }
                     });
                 }
@@ -3454,13 +3423,13 @@ class InteractiveEditor {
             if (index >= 0 && index < this.currentSpec.children.length) {
                 const categoryText = this.currentSpec.children[index].text;
                 this.currentSpec.children.splice(index, 1);
-                console.log(`Deleted category ${index}: ${categoryText}`);
+                logger.debug('Editor', `Deleted category ${index}: ${categoryText}`);
             }
         });
         
         // Note: Notification is shown by ToolbarManager.handleDeleteNode()
         // Don't show duplicate notification here
-        console.log(`TreeMap: Deleted ${categoriesToDelete.length + leavesToDelete.length} node(s)`);
+        logger.debug('Editor', `TreeMap: Deleted ${categoriesToDelete.length + leavesToDelete.length} node(s)`);
         
         // Re-render the diagram
         this.renderDiagram();
@@ -3471,7 +3440,7 @@ class InteractiveEditor {
      */
     deleteBridgeMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.analogies)) {
-            console.error('Invalid bridge map spec');
+            logger.error('Editor', 'Invalid bridge map spec');
             return;
         }
         
@@ -3482,7 +3451,7 @@ class InteractiveEditor {
         nodeIds.forEach(nodeId => {
             const element = d3.select(`[data-node-id="${nodeId}"]`);
             if (element.empty()) {
-                console.warn(`Node ${nodeId} not found`);
+                logger.warn('Editor', `Node ${nodeId} not found`);
                 return;
             }
             
@@ -3492,11 +3461,11 @@ class InteractiveEditor {
             if (!isNaN(pairIndex)) {
                 // Add the pair index (whether it's left or right, we delete the whole pair)
                 pairIndicesToDelete.add(pairIndex);
-                console.log(`Marking pair ${pairIndex} for deletion (${nodeType} node)`);
+                logger.debug('Editor', `Marking pair ${pairIndex} for deletion (${nodeType} node)`);
             }
         });
         
-        console.log('Bridge map deletion:', { pairIndicesToDelete: Array.from(pairIndicesToDelete) });
+        logger.debug('Editor', 'Bridge map deletion:', { pairIndicesToDelete: Array.from(pairIndicesToDelete) });
         
         // Prevent deletion of the first pair (like the topic in other maps)
         if (pairIndicesToDelete.has(0)) {
@@ -3512,13 +3481,13 @@ class InteractiveEditor {
             if (index >= 0 && index < this.currentSpec.analogies.length) {
                 const pair = this.currentSpec.analogies[index];
                 this.currentSpec.analogies.splice(index, 1);
-                console.log(`Deleted pair ${index}: "${pair.left}" / "${pair.right}"`);
+                logger.debug('Editor', `Deleted pair ${index}: "${pair.left}" / "${pair.right}"`);
             }
         });
         
         // Note: Notification is shown by ToolbarManager.handleDeleteNode()
         // Don't show duplicate notification here
-        console.log(`BridgeMap: Deleted ${sortedPairIndices.length} pair(s)`);
+        logger.debug('Editor', `BridgeMap: Deleted ${sortedPairIndices.length} pair(s)`);
         
         // Re-render the diagram
         this.renderDiagram();
@@ -3529,7 +3498,7 @@ class InteractiveEditor {
      */
     deleteConceptMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.concepts)) {
-            console.error('Invalid concept map spec');
+            logger.error('Editor', 'Invalid concept map spec');
             return;
         }
         
@@ -3573,7 +3542,7 @@ class InteractiveEditor {
             );
         }
         
-        console.log(`Deleted ${textsToDelete.size} concept node(s) from Concept Map`);
+        logger.debug('Editor', `Deleted ${textsToDelete.size} concept node(s) from Concept Map`);
         
         // Re-render to update layout and connections
         this.renderDiagram();
@@ -3584,7 +3553,7 @@ class InteractiveEditor {
      */
     async deleteMindMapNodes(nodeIds) {
         if (!this.currentSpec || !Array.isArray(this.currentSpec.children)) {
-            console.error('Invalid mind map spec');
+            logger.error('Editor', 'Invalid mind map spec');
             return;
         }
         
@@ -3596,7 +3565,7 @@ class InteractiveEditor {
         nodeIds.forEach(nodeId => {
             const element = d3.select(`[data-node-id="${nodeId}"]`);
             if (element.empty()) {
-                console.warn(`Node ${nodeId} not found`);
+                logger.warn('Editor', `Node ${nodeId} not found`);
                 return;
             }
             
@@ -3612,7 +3581,7 @@ class InteractiveEditor {
                 const branchIndex = parseInt(element.attr('data-array-index') || element.attr('data-branch-index'));
                 if (!isNaN(branchIndex) && branchIndex >= 0) {
                     branchesToDelete.add(branchIndex);
-                    console.log(`Marking branch ${branchIndex} for deletion`);
+                    logger.debug('Editor', `Marking branch ${branchIndex} for deletion`);
                 }
             } else if (nodeType === 'child' || nodeType === 'subitem') {
                 const branchIndex = parseInt(element.attr('data-branch-index'));
@@ -3623,7 +3592,7 @@ class InteractiveEditor {
                         subItemsToDelete.set(branchIndex, new Set());
                     }
                     subItemsToDelete.get(branchIndex).add(childIndex);
-                    console.log(`Marking sub-item ${childIndex} of branch ${branchIndex} for deletion`);
+                    logger.debug('Editor', `Marking sub-item ${childIndex} of branch ${branchIndex} for deletion`);
                 }
             }
         });
@@ -3646,7 +3615,7 @@ class InteractiveEditor {
                         if (childIndex >= 0 && childIndex < branch.children.length) {
                             const childText = branch.children[childIndex].text || branch.children[childIndex].label || 'unknown';
                             branch.children.splice(childIndex, 1);
-                            console.log(`Deleted sub-item ${childIndex} from branch ${branchIndex}: ${childText}`);
+                            logger.debug('Editor', `Deleted sub-item ${childIndex} from branch ${branchIndex}: ${childText}`);
                         }
                     });
                 }
@@ -3659,12 +3628,12 @@ class InteractiveEditor {
             if (index >= 0 && index < this.currentSpec.children.length) {
                 const branchText = this.currentSpec.children[index].text || this.currentSpec.children[index].label || 'unknown';
                 this.currentSpec.children.splice(index, 1);
-                console.log(`Deleted branch ${index}: ${branchText}`);
+                logger.debug('Editor', `Deleted branch ${index}: ${branchText}`);
             }
         });
         
         const totalDeleted = sortedBranchIndices.length + Array.from(subItemsToDelete.values()).reduce((sum, set) => sum + set.size, 0);
-        console.log(`MindMap: Deleted ${totalDeleted} node(s)`);
+        logger.debug('Editor', `MindMap: Deleted ${totalDeleted} node(s)`);
         
         // For mind maps, we need to recalculate layout from backend before rendering
         await this.recalculateMindMapLayout();
@@ -3703,7 +3672,7 @@ class InteractiveEditor {
             d3.select(`[data-text-id="${nodeId}"]`).remove();
         });
         
-        console.log(`Deleted ${nodeIds.length} generic node(s) - DOM only (no spec update)`);
+        logger.debug('Editor', `Deleted ${nodeIds.length} generic node(s) - DOM only (no spec update)`);
     }
     
     /**
@@ -3741,7 +3710,7 @@ class InteractiveEditor {
             this.historyIndex--;
         }
         
-        console.log(`History saved: ${action}, total states: ${this.history.length}, current index: ${this.historyIndex}`);
+        logger.debug('Editor', `History saved: ${action}, total states: ${this.history.length}, current index: ${this.historyIndex}`);
     }
     
     /**
@@ -3751,7 +3720,7 @@ class InteractiveEditor {
         if (this.historyIndex > 0) {
             this.historyIndex--;
             const historyEntry = this.history[this.historyIndex];
-            console.log(`Undo: ${historyEntry.action}`, historyEntry.metadata);
+            logger.debug('Editor', `Undo: ${historyEntry.action}`, historyEntry.metadata);
             
             // Restore the spec from history
             this.currentSpec = JSON.parse(JSON.stringify(historyEntry.spec));
@@ -3766,7 +3735,7 @@ class InteractiveEditor {
                 this.toolbarManager.showNotification('Undo: ' + historyEntry.action, 'info');
             }
         } else {
-            console.log('Undo: No more history to undo');
+            logger.debug('Editor', 'Undo: No more history to undo');
             if (this.toolbarManager) {
                 this.toolbarManager.showNotification('Nothing to undo', 'warning');
             }
@@ -3780,7 +3749,7 @@ class InteractiveEditor {
         if (this.historyIndex < this.history.length - 1) {
             this.historyIndex++;
             const historyEntry = this.history[this.historyIndex];
-            console.log(`Redo: ${historyEntry.action}`, historyEntry.metadata);
+            logger.debug('Editor', `Redo: ${historyEntry.action}`, historyEntry.metadata);
             
             // Restore the spec from history
             this.currentSpec = JSON.parse(JSON.stringify(historyEntry.spec));
@@ -3795,7 +3764,7 @@ class InteractiveEditor {
                 this.toolbarManager.showNotification('Redo: ' + historyEntry.action, 'info');
             }
         } else {
-            console.log('Redo: No more history to redo');
+            logger.debug('Editor', 'Redo: No more history to redo');
             if (this.toolbarManager) {
                 this.toolbarManager.showNotification('Nothing to redo', 'warning');
             }

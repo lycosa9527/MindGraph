@@ -70,7 +70,7 @@ async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
     api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
     timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
     
-    logger.info(f"Dify Configuration - API URL: {api_url}, Has API Key: {bool(api_key)}, Timeout: {timeout}")
+    logger.debug(f"Dify Configuration - API URL: {api_url}, Has API Key: {bool(api_key)}, Timeout: {timeout}")
     
     if not api_key:
         logger.error("DIFY_API_KEY not configured in environment")
@@ -79,17 +79,17 @@ async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
             detail=Messages.error("ai_not_configured", lang)
         )
     
-    logger.info(f"AI assistant request from user {req.user_id}: {message[:50]}...")
+    logger.debug(f"AI assistant request from user {req.user_id}: {message[:50]}...")
     
     async def generate():
         """Async generator function for SSE streaming"""
-        logger.info(f"[GENERATOR] Async generator function called - starting execution")
+        logger.debug(f"[GENERATOR] Async generator function called - starting execution")
         try:
-            logger.info(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
+            logger.debug(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
-            logger.info(f"[STREAM] AsyncDifyClient created successfully")
+            logger.debug(f"[STREAM] AsyncDifyClient created successfully")
             
-            logger.info(f"[STREAM] Starting async stream_chat for message: {message[:50]}...")
+            logger.debug(f"[STREAM] Starting async stream_chat for message: {message[:50]}...")
             chunk_count = 0
             async for chunk in client.stream_chat(message, req.user_id, req.conversation_id):
                 chunk_count += 1
@@ -97,7 +97,7 @@ async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
                 # Format as SSE
                 yield f"data: {json.dumps(chunk)}\n\n"
             
-            logger.info(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
+            logger.debug(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
                 
         except Exception as e:
             logger.error(f"[STREAM] AI assistant streaming error: {e}", exc_info=True)
@@ -111,7 +111,7 @@ async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
             }
             yield f"data: {json.dumps(error_data)}\n\n"
     
-    logger.info(f"[SETUP] Creating StreamingResponse with async generator")
+    logger.debug(f"[SETUP] Creating StreamingResponse with async generator")
     return StreamingResponse(
         generate(),
         media_type='text/event-stream',
@@ -150,12 +150,12 @@ async def generate_graph(req: GenerateRequest, x_language: str = None):
     llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     
-    logger.info(f"[{request_id}] Request: llm={llm_model!r}, language={language!r}, diagram_type={req.diagram_type}")
+    logger.debug(f"[{request_id}] Request: llm={llm_model!r}, language={language!r}, diagram_type={req.diagram_type}")
     
     if req.dimension_preference:
-        logger.info(f"[{request_id}] Dimension preference: {req.dimension_preference!r}")
+        logger.debug(f"[{request_id}] Dimension preference: {req.dimension_preference!r}")
     
-    logger.info(f"[{request_id}] Using LLM model: {llm_model!r}")
+    logger.debug(f"[{request_id}] Using LLM model: {llm_model!r}")
     
     try:
         # Generate diagram specification - fully async
@@ -168,7 +168,7 @@ async def generate_graph(req: GenerateRequest, x_language: str = None):
             model=llm_model  # Pass model explicitly (fixes race condition)
         )
         
-        logger.info(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram with {llm_model}")
+        logger.debug(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram with {llm_model}")
         
         # Add metadata
         result['llm_model'] = llm_model
@@ -208,18 +208,18 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
             detail=Messages.error("diagram_data_required", lang)
         )
     
-    logger.info(f"PNG export request - diagram_type: {diagram_type}, data keys: {list(diagram_data.keys())}")
+    logger.debug(f"PNG export request - diagram_type: {diagram_type}, data keys: {list(diagram_data.keys())}")
     
     try:
         # Use async browser manager
         async with BrowserContextManager() as (browser, page):
-            logger.info("Browser context created successfully")
+            logger.debug("Browser context created successfully")
             
             # Navigate to editor page
             editor_url = f"http://localhost:{os.getenv('PORT', '5000')}/editor"
             await page.goto(editor_url, wait_until='networkidle', timeout=30000)
             
-            logger.info(f"Navigated to {editor_url}")
+            logger.debug(f"Navigated to {editor_url}")
             
             # Inject diagram data and render
             await page.evaluate(f"""
@@ -232,7 +232,7 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
             # Take screenshot
             screenshot_bytes = await page.screenshot(full_page=True)
             
-            logger.info(f"PNG generated successfully ({len(screenshot_bytes)} bytes)")
+            logger.debug(f"PNG generated successfully ({len(screenshot_bytes)} bytes)")
             
             # Return PNG as response
             from fastapi.responses import Response
@@ -258,7 +258,10 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
 
 @router.post('/frontend_log')
 async def frontend_log(req: FrontendLogRequest):
-    """Log frontend messages to backend console"""
+    """
+    Log frontend messages to backend console.
+    Receives logs from browser and displays them in Python terminal.
+    """
     level_map = {
         'error': logging.ERROR,
         'warn': logging.WARNING,
@@ -266,9 +269,19 @@ async def frontend_log(req: FrontendLogRequest):
         'debug': logging.DEBUG
     }
     level = level_map.get(req.level.lower(), logging.INFO)
-    logger.log(level, f"[FRONTEND] {req.message}")
+    
+    # Create a dedicated frontend logger with custom formatter
+    frontend_logger = logging.getLogger('frontend')
+    frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
+    
+    # Log with clean formatting
+    frontend_logger.log(level, req.message)
+    
     return {'status': 'logged'}
 
 
-logger.info("API router loaded successfully - SSE, diagram generation, PNG export")
+# Only log from main worker to avoid duplicate messages
+import os
+if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+    logger.info("API router loaded successfully")
 

@@ -183,7 +183,9 @@ class Config:
             external_host = os.environ.get('EXTERNAL_HOST')
             if external_host:
                 host = external_host
-                logger.info(f"Using EXTERNAL_HOST from environment: {external_host}")
+                # Only log from main worker
+                if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+                    logger.info(f"Using EXTERNAL_HOST from environment: {external_host}")
             else:
                 # Fallback to LAN IP if EXTERNAL_HOST not set
                 import socket

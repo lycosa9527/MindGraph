@@ -126,5 +126,8 @@ async def timing_stats(request: Request):
         logger.error(f"/timing_stats route failed: {e}", exc_info=True)
         raise
 
-logger.info("Page routes initialized: 11 routes registered")
+# Only log from main worker to avoid duplicate messages
+import os
+if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+    logger.debug("Page routes initialized: 11 routes registered")
 

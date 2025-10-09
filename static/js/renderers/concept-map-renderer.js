@@ -7,11 +7,11 @@
  * Performance Impact: Loads only ~95KB instead of full 213KB
  */
 
-// CRITICAL DEBUG: Add comprehensive logging
-console.log('Concept map renderer: Module loading started');
-
 function renderConceptMap(spec, theme = null, dimensions = null) {
-    console.log('Concept map renderer: renderConceptMap called with:', { spec, theme, dimensions });
+    logger.debug('ConceptMapRenderer', 'Rendering concept map', { 
+        nodesCount: spec?.nodes?.length || 0,
+        linksCount: spec?.links?.length || 0
+    });
     
     // Self-contained measurement utilities (from reference file)
     let measurementContainer = null;
@@ -20,7 +20,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         if (!measurementContainer) {
             const body = d3.select('body');
             if (body.empty()) {
-                console.warn('Body element not found, creating measurement container in document');
+                logger.warn('ConceptMapRenderer', 'Body element not found, creating measurement container in document');
                 measurementContainer = d3.select(document.documentElement)
                     .append('div')
                     .attr('id', 'measurement-container')
@@ -40,26 +40,18 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     }
 
     // Try to use shared utilities if available, otherwise use self-contained functions
-    console.log('Concept map renderer: Checking for shared utilities...');
     let useSharedUtilities = false;
     if (typeof window.MindGraphUtils !== 'undefined' && 
         typeof window.MindGraphUtils.getMeasurementContainer === 'function') {
         useSharedUtilities = true;
-        console.log('Using shared utilities from MindGraphUtils');
-    } else {
-        console.log('Using self-contained utilities (fallback mode)');
     }
     
     d3.select('#d3-container').html('');
-    console.log('Concept map renderer: Container cleared');
     
-    console.log('Concept map renderer: Validating spec...');
     if (!spec || !spec.topic || !Array.isArray(spec.concepts) || !Array.isArray(spec.relationships)) {
-        console.error('Concept map renderer: Invalid spec for concept map:', { spec, topic: spec?.topic, concepts: spec?.concepts, relationships: spec?.relationships });
-        console.error('Invalid spec for concept map');
+        logger.error('ConceptMapRenderer', 'Invalid spec for concept map');
         return;
     }
-    console.log('Concept map renderer: Spec validation passed');
     
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let baseWidth, baseHeight, padding;
@@ -69,7 +61,6 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Concept Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 1600;
@@ -93,13 +84,12 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('concept_map', theme, theme);
-            console.log('Concept Map: Using centralized theme from style manager');
         } else {
-            console.error('Style manager not available - this should not happen');
+            logger.error('ConceptMapRenderer', 'Style manager not available');
             throw new Error('Style manager not available for concept map rendering');
         }
     } catch (e) {
-        console.error('Error getting theme from style manager:', e);
+        logger.error('ConceptMapRenderer', 'Error getting theme from style manager', e);
         throw new Error('Failed to load theme from style manager');
     }
     
@@ -231,7 +221,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
 
     function transformToCanvas(p) {
         if (!p || typeof p.x !== 'number' || typeof p.y !== 'number') {
-            console.warn('Invalid position data:', p);
+            logger.warn('ConceptMapRenderer', 'Invalid position data', p);
             return { x: width / 2, y: height / 2 };
         }
         
@@ -244,7 +234,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
             // Validate transformed coordinates
             if (px < LAYOUT_CONFIG.minValidCoordinate || px > LAYOUT_CONFIG.maxValidCoordinate ||
                 py < LAYOUT_CONFIG.minValidCoordinate || py > LAYOUT_CONFIG.maxValidCoordinate) {
-                console.warn('Transformed coordinates out of bounds:', { input: p, output: { x: px, y: py } });
+                logger.warn('ConceptMapRenderer', 'Transformed coordinates out of bounds', { input: p, output: { x: px, y: py } });
                 return { x: width / 2, y: height / 2 };
             }
             
@@ -254,7 +244,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         // If not normalized, validate and return as-is
         if (p.x < LAYOUT_CONFIG.minValidCoordinate || p.x > LAYOUT_CONFIG.maxValidCoordinate ||
             p.y < LAYOUT_CONFIG.minValidCoordinate || p.y > LAYOUT_CONFIG.maxValidCoordinate) {
-            console.warn('Raw coordinates out of bounds:', p);
+            logger.warn('ConceptMapRenderer', 'Raw coordinates out of bounds', p);
             return { x: width / 2, y: height / 2 };
         }
         
@@ -268,7 +258,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         const params = spec._layout.params || {};
         const extents = spec._layout.extents;
         
-        console.log('Concept map renderer: Position data debug:', {
+        logger.debug('ConceptMapRenderer', 'Position data debug', {
             positionsKeys: Object.keys(positions),
             topicKey: spec.topic,
             conceptKeys: spec.concepts,
@@ -284,13 +274,11 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 Math.max(LAYOUT_CONFIG.minSpacingScale, Math.min(LAYOUT_CONFIG.maxSpacingScale, config.nodeSpacing)) : 
                 LAYOUT_CONFIG.defaultSpacingScale;
         
-        console.log('Using spacing scale:', spacingScale);
         
         const boxes = {};
         
         // Draw topic first - at canvas center
         boxes.topic = drawBox(width / 2, height / 2, spec.topic, true);
-        console.log('Drawing topic at canvas center:', {x: width / 2, y: height / 2});
         
         // Draw concepts - positions are keyed by concept text with coordinate transformation
         spec.concepts.forEach((concept, i) => {
@@ -300,7 +288,8 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 const scaled = { x: pos.x * spacingScale, y: pos.y * spacingScale };
                 const canvasPos = transformToCanvas(scaled);
                 
-                console.log('Drawing concept:', concept, {
+                logger.debug('ConceptMapRenderer', 'Drawing concept', {
+                    concept,
                     original: pos,
                     scaled: scaled,
                     canvas: canvasPos,
@@ -309,7 +298,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 
                 boxes[concept] = drawBox(canvasPos.x, canvasPos.y, concept, false);
             } else {
-                console.warn('No position found for concept:', concept);
+                logger.warn('ConceptMapRenderer', 'No position found for concept', concept);
             }
         });
         
@@ -468,7 +457,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         });
     } else {
         // If no positions from agent, generate radial layout (from reference file)
-        console.log('No positions from agent, generating radial layout fallback...');
+        logger.debug('ConceptMapRenderer', 'No positions from agent, generating radial layout fallback');
         
         // Generate fallback positions using radial layout
         const N = Math.max(1, spec.concepts.length);
@@ -510,7 +499,6 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         
         // Draw topic at canvas center
         boxes.topic = drawBox(width / 2, height / 2, spec.topic, true);
-        console.log('Drawing topic at canvas center (fallback)');
         
         // Draw concepts with coordinate transformation
         spec.concepts.forEach((concept) => {
@@ -523,7 +511,6 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                     y: (height / 2) + (pos.y * scaleY)
                 };
                 
-                console.log('Drawing concept (fallback):', concept, canvasPos);
                 boxes[concept] = drawBox(canvasPos.x, canvasPos.y, concept, false);
             }
         });
@@ -593,7 +580,6 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
 function renderConceptMapWithForceLayout(spec, svg, THEME, width, height) {
     // This function is kept for compatibility but not actively used
     // The main renderer now uses the radial layout fallback from the reference file
-    console.log('Force layout function called - using radial fallback instead');
 }
 
 // Export functions for module system
@@ -611,14 +597,12 @@ if (typeof window !== 'undefined') {
     }
     
     // ConceptMapRenderer exported to window.ConceptMapRenderer
-    console.log('Concept map renderer: Module loaded successfully in browser environment');
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
         renderConceptMap,
         renderConceptMapWithForceLayout
     };
-    console.log('Concept map renderer: Module loaded successfully in Node.js environment');
 } else {
-    console.error('Concept map renderer: Module failed to load in any environment');
+    logger.error('ConceptMapRenderer', 'Module failed to load in any environment');
 }

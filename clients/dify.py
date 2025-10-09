@@ -160,5 +160,8 @@ class AsyncDifyClient:
                 'timestamp': int(time.time() * 1000)
             }
 
-logger.info("Async Dify client module loaded - ready for non-blocking SSE streaming")
+# Only log from main worker to avoid duplicate messages
+import os
+if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+    logger.debug("Dify client module loaded")
 

@@ -136,19 +136,19 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
    🚀 MindGraph FastAPI Server Starting...
    Environment: production
    Host: 0.0.0.0
-   Port: 5000
+   Port: 9527
    Workers: 9
    Expected Capacity: 4,000+ concurrent SSE connections
-   ✅ Server ready at: http://localhost:5000
-   ✅ Interactive Editor: http://localhost:5000/editor
-   ✅ API Docs: http://localhost:5000/docs
+   ✅ Server ready at: http://localhost:9527
+   ✅ Interactive Editor: http://localhost:9527/editor
+   ✅ API Docs: http://localhost:9527/docs
    ```
 
 4. **Access Application | 访问应用**
-   - **Interactive Editor**: `http://localhost:5000/editor` | **交互式编辑器**
-   - **API Documentation (Swagger UI)**: `http://localhost:5000/docs` | **API文档**
-   - **Health Check**: `http://localhost:5000/health` | **健康检查**
-   - **Landing Page**: `http://localhost:5000/` | **首页**
+   - **Interactive Editor**: `http://localhost:9527/editor` | **交互式编辑器**
+   - **API Documentation (Swagger UI)**: `http://localhost:9527/docs` | **API文档**
+   - **Health Check**: `http://localhost:9527/health` | **健康检查**
+   - **Landing Page**: `http://localhost:9527/` | **首页**
 
 ## 📝 Using the Interactive Editor | 使用交互式编辑器
 

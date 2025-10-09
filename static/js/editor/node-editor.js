@@ -18,9 +18,9 @@ class NodeEditor {
      * Show the editor modal
      */
     show() {
-        console.log('NodeEditor: Opening modal', {
+        logger.debug('NodeEditor', 'Opening modal', {
             nodeId: this.nodeData.nodeId,
-            currentText: this.nodeData.currentText?.substring(0, 50)
+            textLength: this.nodeData.currentText?.length || 0
         });
         
         this.createModal();
@@ -271,16 +271,14 @@ class NodeEditor {
     handleSave() {
         const newText = this.textInput.value.trim();
         
-        console.log('NodeEditor: handleSave called', {
+        logger.debug('NodeEditor', 'Saving node', {
             nodeId: this.nodeData.id,
-            oldText: this.nodeData.text?.substring(0, 50),
-            newText: newText?.substring(0, 50),
             textLength: newText?.length || 0,
-            textChanged: this.nodeData.text !== newText
+            changed: this.nodeData.text !== newText
         });
         
         if (newText === '') {
-            console.warn('NodeEditor: Save blocked - Empty text');
+            logger.warn('NodeEditor', 'Save blocked - text cannot be empty');
             const lang = window.languageManager;
             alert(lang?.getNotification('textEmpty') || 'Text cannot be empty');
             return;
@@ -297,9 +295,7 @@ class NodeEditor {
      * Handle cancel action
      */
     handleCancel() {
-        console.log('NodeEditor: handleCancel called', {
-            nodeId: this.nodeData.id
-        });
+        logger.debug('NodeEditor', 'Edit cancelled');
         
         if (this.onCancel) {
             this.onCancel();

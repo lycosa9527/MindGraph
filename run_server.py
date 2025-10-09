@@ -114,10 +114,19 @@ def run_uvicorn():
         # Allow override via UVICORN_WORKERS env var for fine-tuning
         workers = int(os.getenv('UVICORN_WORKERS', min(multiprocessing.cpu_count(), 4)))
         
-        # Display banner
+        # Display fancy ASCII art banner
+        print()
+        print("    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗")
+        print("    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║")
+        print("    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║")
+        print("    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║")
+        print("    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║")
+        print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
         print("=" * 80)
-        print("MindGraph FastAPI Server Starting...")
+        print("    AI-Powered Visual Thinking Tools for K12 Education")
+        print("    Made by MindSpring Team | Author: lycosa9527")
         print("=" * 80)
+        print()
         print(f"Environment: {environment} (DEBUG={debug})")
         print(f"Host: {host}")
         print(f"Port: {port}")
@@ -155,6 +164,9 @@ def run_uvicorn():
         sys.excepthook = custom_excepthook
         
         try:
+            # Load custom uvicorn logging config for consistent formatting
+            from uvicorn_log_config import LOGGING_CONFIG
+            
             # Run uvicorn with proper shutdown configuration
             uvicorn.run(
                 "main:app",
@@ -163,7 +175,8 @@ def run_uvicorn():
                 workers=1 if reload else workers,  # Use 1 worker in dev mode for reload
                 reload=reload,
                 log_level=log_level,
-                log_config=None,  # Use logging configured in main.py
+                log_config=LOGGING_CONFIG,  # Use our unified formatter
+                use_colors=False,  # Disable uvicorn colors (we use our own)
                 timeout_keep_alive=300,  # 5 minutes for SSE
                 timeout_graceful_shutdown=5,  # 5s for graceful shutdown
                 access_log=True,

@@ -14,7 +14,7 @@
 // Checking dependencies
 
 if (typeof window.MindGraphUtils === 'undefined') {
-    console.error('Tree renderer: MindGraphUtils not found! Please load shared-utilities.js first.');
+    logger.error('TreeRenderer', 'MindGraphUtils not found! Please load shared-utilities.js first');
     // Don't continue if dependencies are missing
     throw new Error('MindGraphUtils not available - shared-utilities.js must be loaded first');
 }
@@ -22,7 +22,7 @@ if (typeof window.MindGraphUtils === 'undefined') {
 // Import required functions from shared utilities - with error handling
 // CRITICAL FIX: Don't redeclare addWatermark, use the global one
 if (typeof window.MindGraphUtils === 'undefined' || typeof window.MindGraphUtils.addWatermark !== 'function') {
-    console.error('Tree renderer: addWatermark function not found in MindGraphUtils');
+    logger.error('TreeRenderer', 'addWatermark function not found in MindGraphUtils');
     throw new Error('addWatermark function not available - shared-utilities.js must be loaded first');
 }
 
@@ -32,13 +32,13 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     
     // Validate spec
     if (!spec || !spec.topic || !Array.isArray(spec.children)) {
-        console.error('Invalid spec for tree map');
+        logger.error('TreeRenderer', 'Invalid spec for tree map');
         return;
     }
     
     // Handle empty children case
     if (spec.children.length === 0) {
-        console.warn('Tree map has no branches to display');
+        logger.warn('TreeRenderer', 'Tree map has no branches to display');
         return;
     }
     
@@ -50,7 +50,6 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Tree Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 800;
@@ -68,13 +67,12 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('tree_map', theme, theme);
-            console.log('Tree: Using centralized theme from style manager');
         } else {
-            console.error('Style manager not available - this should not happen');
+            logger.error('TreeRenderer', 'Style manager not available');
             throw new Error('Style manager not available for tree map rendering');
         }
     } catch (error) {
-        console.error('Error getting theme from style manager:', error);
+        logger.error('TreeRenderer', 'Error getting theme from style manager', error);
         throw new Error('Failed to load theme from style manager');
     }
     
@@ -142,7 +140,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         // Validate child structure - accept both 'text' and 'label' properties
         const childText = child?.text || child?.label;
         if (!child || typeof childText !== 'string') {
-            console.warn('Invalid child structure:', child);
+            logger.warn('TreeRenderer', 'Invalid child structure', child);
             return null;
         }
         
@@ -153,7 +151,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         const leafBoxes = (Array.isArray(child.children) ? child.children : []).map(leaf => {
             const leafText = leaf?.text || leaf?.label;
             if (!leaf || typeof leafText !== 'string') {
-                console.warn('Invalid leaf structure:', leaf);
+                logger.warn('TreeRenderer', 'Invalid leaf structure', leaf);
                 return null;
             }
             const b = measureSvgTextBox(svg, leafText, leafFont, 12, 8);
@@ -514,16 +512,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     // The export functionality will handle adding the watermark to the final image
     
     // Apply learning sheet text knockout if needed
-    console.log('Tree renderer: Checking learning sheet metadata:', {
-        is_learning_sheet: spec.is_learning_sheet,
-        hidden_node_percentage: spec.hidden_node_percentage,
-        spec_keys: Object.keys(spec)
-    });
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
-        console.log('Tree renderer: Calling knockout function with percentage:', spec.hidden_node_percentage);
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
-    } else {
-        console.log('Tree renderer: Skipping knockout - conditions not met');
     }
 }
 
@@ -573,13 +563,13 @@ try {
         if (typeof window.renderTreeMap === 'function') {
             // renderTreeMap property defined
         } else {
-            console.error('�?FAILED: renderTreeMap is not available globally');
+            logger.error('TreeRenderer', '�?FAILED: renderTreeMap is not available globally');
         }
         
         if (typeof window.TreeRenderer === 'object' && window.TreeRenderer.renderTreeMap) {
             // renderTreeMap property defined
         } else {
-            console.error('�?FAILED: TreeRenderer.renderTreeMap is not available globally');
+            logger.error('TreeRenderer', '�?FAILED: TreeRenderer.renderTreeMap is not available globally');
         }
         
     } else if (typeof module !== 'undefined' && module.exports) {
@@ -592,7 +582,7 @@ try {
         };
     }
 } catch (error) {
-    console.error('�?CRITICAL ERROR during function export:', error);
+    logger.error('TreeRenderer', '�?CRITICAL ERROR during function export:', error);
     // Try alternative export method
     try {
         // Alternative export completed
@@ -602,7 +592,7 @@ try {
             // Alternative export completed
         }
     } catch (altError) {
-        console.error('�?Alternative export also failed:', altError);
+        logger.error('TreeRenderer', '�?Alternative export also failed:', altError);
     }
 }
 

@@ -11,7 +11,7 @@
 
 // Check if shared utilities are available
 if (typeof window.MindGraphUtils === 'undefined') {
-    console.error('MindGraphUtils not found. Please load shared-utilities.js first.');
+    logger.error('MindMapRenderer', 'MindGraphUtils not found. Please load shared-utilities.js first.');
 }
 
 // Note: getTextRadius and addWatermark are available globally from shared-utilities.js
@@ -19,7 +19,7 @@ if (typeof window.MindGraphUtils === 'undefined') {
 function renderMindMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.children)) {
-        console.error('Invalid spec for mindmap');
+        logger.error('MindMapRenderer', 'Invalid spec for mindmap');
         return;
     }
     
@@ -31,7 +31,7 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Mind Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
+        logger.info('MindMapRenderer', 'Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 700;
@@ -53,7 +53,7 @@ function renderMindMap(spec, theme = null, dimensions = null) {
             throw new Error('Style manager not available for mindmap rendering');
         }
     } catch (error) {
-        console.error('Failed to load theme:', error);
+        logger.error('MindMapRenderer', 'Failed to load theme:', error);
         throw new Error('Failed to load theme from style manager');
     }
     
@@ -84,7 +84,7 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         renderMindMapWithLayout(spec._layout, svg, centerX, centerY, THEME);
     } else {
         // Error: No layout data
-        console.error('Mindmap rendering failed: No layout data from Python agent');
+        logger.error('MindMapRenderer', 'Mindmap rendering failed: No layout data from Python agent');
         return;
     }
     

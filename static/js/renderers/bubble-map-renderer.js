@@ -11,7 +11,7 @@
 
 // Check if shared utilities are available
 if (typeof window.MindGraphUtils === 'undefined') {
-    console.error('MindGraphUtils not found. Please load shared-utilities.js first.');
+    logger.error('BubbleMapRenderer', 'MindGraphUtils not found. Please load shared-utilities.js first');
 }
 
 // Note: getTextRadius and addWatermark are available globally from shared-utilities.js
@@ -19,7 +19,7 @@ if (typeof window.MindGraphUtils === 'undefined') {
 function renderBubbleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.attributes)) {
-        console.error('Invalid spec for bubble_map');
+        logger.error('BubbleMapRenderer', 'Invalid spec for bubble_map');
         return;
     }
     
@@ -31,7 +31,6 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Bubble Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 700;
@@ -49,13 +48,12 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('bubble_map', theme, theme);
-            console.log('Bubble Map: Using centralized theme from style manager');
         } else {
-            console.error('Style manager not available - this should not happen');
+            logger.error('BubbleMapRenderer', 'Style manager not available');
             throw new Error('Style manager not available for bubble map rendering');
         }
     } catch (error) {
-        console.error('Error getting theme from style manager:', error);
+        logger.error('BubbleMapRenderer', 'Error getting theme from style manager', error);
         throw new Error('Failed to load theme from style manager');
     }
     
@@ -156,7 +154,6 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('stroke', 'none');
     
     // Debug: Log the calculated dimensions
-    console.log(`Bubble Map SVG dimensions: ${width} x ${height}, bounds: [${minX}, ${minY}] to [${maxX}, ${maxY}]`);
     
     // Draw connecting lines from topic to attributes
     nodes.forEach(node => {
@@ -241,7 +238,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
 function renderCircleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.context)) {
-        console.error('Invalid spec for circle_map');
+        logger.error('BubbleMapRenderer', 'Invalid spec for circle_map');
         return;
     }
     
@@ -253,7 +250,6 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Circle Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 700;
@@ -407,31 +403,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     
     // Enhanced validation with detailed error messages
     if (!spec) {
-        console.error('renderDoubleBubbleMap: spec is null or undefined');
+        logger.error('BubbleMapRenderer', 'spec is null or undefined');
 
         return;
     }
     
     if (!spec.left || !spec.right) {
-        console.error('renderDoubleBubbleMap: missing left or right topic', { left: spec.left, right: spec.right });
+        logger.error('BubbleMapRenderer', 'missing left or right topic', { left: spec.left, right: spec.right });
 
         return;
     }
     
     if (!Array.isArray(spec.similarities)) {
-        console.error('renderDoubleBubbleMap: similarities is not an array', spec.similarities);
+        logger.error('BubbleMapRenderer', 'similarities is not an array', spec.similarities);
 
         return;
     }
     
     if (!Array.isArray(spec.left_differences)) {
-        console.error('renderDoubleBubbleMap: left_differences is not an array', spec.left_differences);
+        logger.error('BubbleMapRenderer', 'left_differences is not an array', spec.left_differences);
 
         return;
     }
     
     if (!Array.isArray(spec.right_differences)) {
-        console.error('renderDoubleBubbleMap: right_differences is not an array', spec.right_differences);
+        logger.error('BubbleMapRenderer', 'right_differences is not an array', spec.right_differences);
 
         return;
     }
@@ -446,11 +442,6 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Double Bubble Map: Using adaptive dimensions:', { 
-            baseWidth, baseHeight, padding,
-            adaptiveWidth: spec._recommended_dimensions.width,
-            adaptiveHeight: spec._recommended_dimensions.height
-        });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 800;
@@ -553,15 +544,6 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     const topicY = spec._recommended_dimensions ? 
         (height - contentHeight) / 2 + contentHeight / 2 : // Center within adaptive height
         height / 2; // Use middle for content-based height
-    
-    console.log('Double Bubble Map: Final dimensions:', {
-        baseWidth, baseHeight, requiredWidth, maxColHeight,
-        finalWidth: width, finalHeight: height,
-        usingAdaptiveWidth: spec._recommended_dimensions ? 'YES' : 'NO',
-        usingAdaptiveHeight: spec._recommended_dimensions ? 'YES' : 'NO',
-        horizontalOffset, contentHeight,
-        adaptiveDimensions: spec._recommended_dimensions
-    });
     
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', width)

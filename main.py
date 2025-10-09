@@ -149,7 +149,7 @@ class UnifiedFormatter(logging.Formatter):
         # Source abbreviation
         source = record.name
         if source == '__main__':
-            source = 'APP'
+            source = 'MAIN'
         elif source == 'frontend':
             source = 'FRNT'
         elif source.startswith('routers'):
@@ -160,6 +160,12 @@ class UnifiedFormatter(logging.Formatter):
             source = 'SRVR'
         elif source == 'asyncio':
             source = 'ASYN'
+        elif source.startswith('clients'):
+            source = 'CLIE'
+        elif source.startswith('services'):
+            source = 'SERV'
+        elif source.startswith('agents'):
+            source = 'AGNT'
         else:
             source = source[:4].upper()
         
@@ -213,7 +219,9 @@ asyncio_logger.addFilter(CancelledErrorFilter())
 
 logger = logging.getLogger(__name__)
 logger.addFilter(CancelledErrorFilter())
-logger.info(f"Logging initialized: {log_level_str}")
+# Only log from main process, not each worker
+if os.getenv('UVICORN_WORKER_ID') is None:
+    logger.debug(f"Logging initialized: {log_level_str}")
 
 # ============================================================================
 # FASTAPI APPLICATION IMPORTS
@@ -246,19 +254,23 @@ async def lifespan(app: FastAPI):
     signal.signal(signal.SIGINT, _handle_shutdown_signal)
     signal.signal(signal.SIGTERM, _handle_shutdown_signal)
     
-    logger.info("=" * 80)
-    logger.info("FastAPI Application Starting")
-    logger.info("=" * 80)
+    # Only log startup banner from first worker to avoid repetition
+    worker_id = os.getenv('UVICORN_WORKER_ID', '0')
+    if worker_id == '0' or not worker_id:
+        logger.info("=" * 80)
+        logger.info("FastAPI Application Starting")
+        logger.info("=" * 80)
     
-    # Initialize JavaScript cache
+    # Initialize JavaScript cache (log only from first worker)
     try:
         from static.js.lazy_cache_manager import lazy_js_cache
         if not lazy_js_cache.is_initialized():
             logger.error("JavaScript cache failed to initialize")
-        else:
+        elif worker_id == '0' or not worker_id:
             logger.info("JavaScript cache initialized successfully")
     except Exception as e:
-        logger.warning(f"Failed to initialize JavaScript cache: {e}")
+        if worker_id == '0' or not worker_id:
+            logger.warning(f"Failed to initialize JavaScript cache: {e}")
     
     # Yield control to application
     try:

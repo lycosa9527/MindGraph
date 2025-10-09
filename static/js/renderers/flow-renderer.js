@@ -9,7 +9,7 @@
 
 // Check if shared utilities are available
 if (typeof window.MindGraphUtils === 'undefined') {
-    console.error('MindGraphUtils not found! Please load shared-utilities.js first.');
+    logger.error('FlowRenderer', 'MindGraphUtils not found! Please load shared-utilities.js first');
 }
 
 // Helper: round to 1 decimal to reduce floating-point precision noise in canvas calcs
@@ -20,7 +20,7 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
 
     // Validate spec
     if (!spec || !spec.title || !Array.isArray(spec.steps)) {
-        console.error('Invalid spec for flowchart');
+        logger.error('FlowRenderer', 'Invalid spec for flowchart');
         return;
     }
 
@@ -30,7 +30,6 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     if (spec._recommended_dimensions) {
         // Adaptive dimensions from template (calculated based on window size)
         padding = spec._recommended_dimensions.padding;
-        console.log('Flowchart: Using adaptive padding:', padding);
     } else if (dimensions) {
         // Provided dimensions (fallback)
         padding = dimensions.padding || 40;
@@ -44,13 +43,12 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     try {
         if (typeof styleManager !== 'undefined' && styleManager.getTheme) {
             THEME = styleManager.getTheme('flowchart', theme, theme);
-            console.log('Flow: Using centralized theme from style manager');
         } else {
-            console.error('Style manager not available - this should not happen');
+            logger.error('FlowRenderer', 'Style manager not available');
             throw new Error('Style manager not available for flow map rendering');
         }
     } catch (error) {
-        console.error('Error getting theme from style manager:', error);
+        logger.error('FlowRenderer', 'Error getting theme from style manager', error);
         throw new Error('Failed to load theme from style manager');
     }
 
@@ -226,7 +224,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
 
     // Validate spec
     if (!spec || !spec.title || !Array.isArray(spec.steps)) {
-        console.error('Invalid spec for flow map');
+        logger.error('FlowRenderer', 'Invalid spec for flow map');
         return;
     }
 
@@ -236,7 +234,6 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     if (spec._recommended_dimensions) {
         // Adaptive dimensions from template (calculated based on window size)
         padding = spec._recommended_dimensions.padding;
-        console.log('Flow Map: Using adaptive padding:', padding);
     } else if (dimensions) {
         // Provided dimensions (fallback)
         padding = dimensions.padding || 40;
@@ -661,50 +658,29 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     
     // Watermark removed from canvas display - will be added during PNG export only
     // Apply learning sheet text knockout if needed
-    console.log('FlowMap renderer: Checking learning sheet metadata:', {
-        is_learning_sheet: spec.is_learning_sheet,
-        hidden_node_percentage: spec.hidden_node_percentage,
-        spec_keys: Object.keys(spec)
-    });
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
-        console.log('FlowMap renderer: Calling knockout function with percentage:', spec.hidden_node_percentage);
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
-    } else {
-        console.log('FlowMap renderer: Skipping knockout - conditions not met');
     }
 }
 
 function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd3-container') {
 
-    console.log('Input spec:', spec);
-    console.log('Spec type:', typeof spec);
-    console.log('Spec keys:', Object.keys(spec || {}));
-    console.log('Analogies array:', spec?.analogies);
-    console.log('Analogies count:', spec?.analogies?.length || 0);
-    console.log('Dimension:', spec?.dimension);
-    console.log('Alternative dimensions:', spec?.alternative_dimensions);
-    
-    // Log each analogy for debugging
-    if (spec?.analogies && Array.isArray(spec.analogies)) {
-        spec.analogies.forEach((analogy, index) => {
-            console.log(`Frontend Analogy ${index}:`, analogy);
-            console.log(`  Left: "${analogy.left}" (type: ${typeof analogy.left})`);
-            console.log(`  Right: "${analogy.right}" (type: ${typeof analogy.right})`);
-        });
-    }
+    logger.debug('FlowRenderer', 'Rendering bridge map', {
+        analogiesCount: spec?.analogies?.length || 0,
+        dimension: spec?.dimension
+    });
     
     d3.select(`#${containerId}`).html('');
     
     // Validate spec
     if (!spec || !Array.isArray(spec.analogies) || spec.analogies.length === 0) {
-        console.error('Frontend Error: Invalid spec for bridge map');
-        console.error('Invalid spec for bridge map');
+        logger.error('FlowRenderer', 'Invalid spec for bridge map');
         return;
     }
     
     // Validate that analogies have the correct structure
     if (!spec.analogies.every(analogy => analogy.left && analogy.right)) {
-        console.error('Invalid analogy structure. Each analogy must have left and right properties.');
+        logger.error('FlowRenderer', 'Invalid analogy structure');
         return;
     }
     
@@ -765,10 +741,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // 3. Draw analogy pairs first - EXACTLY as in old renderer
     spec.analogies.forEach((analogy, i) => {
 
-        console.log(`  Analogy data:`, analogy);
-        console.log(`  Left text: "${analogy.left}"`);
-        console.log(`  Right text: "${analogy.right}"`);
-        console.log(`  Position: x=${leftPadding + (sectionWidth * (i + 1))}, y=${height/2}`);
         
         const xPos = leftPadding + (sectionWidth * (i + 1));
         const isFirstPair = i === 0; // Check if this is the first pair
@@ -884,7 +856,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // 3.5 Add dimension label on the left side (two lines)
     if (spec.analogies.length > 0) {
         const dimensionText = spec.dimension || '';
-        console.log('Rendering dimension label - dimensionText:', dimensionText);
         
         // Detect language from dimension text or spec content
         const hasChineseContent = dimensionText ? /[\u4e00-\u9fa5]/.test(dimensionText) : 
@@ -893,9 +864,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         
         const labelLine1 = isEnglish ? "Analogy Pattern:" : "类比关系:";
         const labelLine2 = dimensionText || (isEnglish ? "[click to specify]" : "[点击设置]");
-        console.log('Label line 1:', labelLine1);
-        console.log('Label line 2:', labelLine2);
-        console.log('Is English:', isEnglish);
         
         const leftX = leftPadding - 10; // Position 10px left of the main content area
         
@@ -954,9 +922,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     
     // 5. Add alternative dimensions section at the bottom (matching tree/brace map style)
     const hasAlternatives = spec.alternative_dimensions && Array.isArray(spec.alternative_dimensions) && spec.alternative_dimensions.length > 0;
-    console.log('Has alternative dimensions:', hasAlternatives);
     if (hasAlternatives) {
-        console.log('Rendering alternative dimensions:', spec.alternative_dimensions);
     }
     
     // Calculate the actual bottom of all analogy nodes
@@ -969,7 +935,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     const separatorY = lastContentBottomY + 15;  // Separator line 15px below the bottom edge of last content
     const alternativesY = separatorY + 20;  // Label 20px below separator
     const fontSize = 13;
-    console.log('Alternative dimensions Y position:', alternativesY, 'Total height:', height);
     
     // Detect language from first alternative dimension or spec
     const hasChineseInSpec = spec.alternative_dimensions && spec.alternative_dimensions.length > 0 ? 
@@ -1041,10 +1006,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     
     // Watermark removed from canvas display - will be added during PNG export only
     
-    console.log('Final rendered analogies count:', spec.analogies.length);
-    console.log('SVG dimensions:', { width, height });
-    console.log('Container ID:', containerId);
-    console.log('All rendered elements should be visible above');
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
@@ -1057,7 +1018,7 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     
     // Validate spec - use the correct format that matches the working spec
     if (!spec || !spec.event || !Array.isArray(spec.causes) || !Array.isArray(spec.effects)) {
-        console.error('Invalid spec for multi-flow map');
+        logger.error('FlowRenderer', 'Invalid spec for multi-flow map');
         return;
     }
     
@@ -1069,7 +1030,6 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         baseWidth = spec._recommended_dimensions.width;
         baseHeight = spec._recommended_dimensions.height;
         padding = spec._recommended_dimensions.padding;
-        console.log('Multi-Flow Map: Using adaptive dimensions:', { baseWidth, baseHeight, padding });
     } else if (dimensions) {
         // Provided dimensions (fallback)
         baseWidth = dimensions.width || dimensions.baseWidth || 900;
@@ -1375,16 +1335,8 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     
     // Watermark removed from canvas display - will be added during PNG export only
     // Apply learning sheet text knockout if needed
-    console.log('MultiFlowMap renderer: Checking learning sheet metadata:', {
-        is_learning_sheet: spec.is_learning_sheet,
-        hidden_node_percentage: spec.hidden_node_percentage,
-        spec_keys: Object.keys(spec)
-    });
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
-        console.log('MultiFlowMap renderer: Calling knockout function with percentage:', spec.hidden_node_percentage);
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
-    } else {
-        console.log('MultiFlowMap renderer: Skipping knockout - conditions not met');
     }
 }
 

@@ -13,8 +13,7 @@ const USE_DYNAMIC_LOADING = true;
 
 // Main rendering dispatcher function
 async function renderGraph(type, spec, theme = null, dimensions = null) {
-    console.log('=== RENDERER DISPATCHER: START ===');
-    console.log(`Graph type: ${type}`);
+    logger.debug('RendererDispatcher', 'Rendering graph', { type });
     
     // Clear the container first
     d3.select('#d3-container').html('');
@@ -31,27 +30,24 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
     // Use dynamic loading if available (PREFERRED)
     if (USE_DYNAMIC_LOADING && window.dynamicRendererLoader) {
         try {
-            console.log('Using dynamic renderer loader...');
             await window.dynamicRendererLoader.renderGraph(type, spec, integratedTheme, dimensions);
-            console.log('Dynamic rendering completed successfully');
             return;
         } catch (error) {
-            console.error('Dynamic rendering failed:', error);
-            console.log('Falling back to static renderer...');
+            logger.warn('RendererDispatcher', 'Dynamic rendering failed, falling back to static', error);
             // Fall through to static rendering below
         }
     }
     
     // Fallback: Static rendering (existing switch statement)
     // NOTE: This will only work if renderers were manually loaded
-    console.warn('Using static renderer fallback (not recommended)');
+    logger.warn('RendererDispatcher', 'Using static renderer fallback (not recommended)');
     
     switch (type) {
         case 'double_bubble_map':
             if (typeof renderDoubleBubbleMap === 'function') {
                 renderDoubleBubbleMap(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderDoubleBubbleMap function not found');
+                logger.error('RendererDispatcher', 'renderDoubleBubbleMap function not found');
                 showRendererError('double_bubble_map');
             }
             break;
@@ -59,7 +55,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderBubbleMap === 'function') {
                 renderBubbleMap(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderBubbleMap function not found');
+                logger.error('RendererDispatcher', 'renderBubbleMap function not found');
                 showRendererError('bubble_map');
             }
             break;
@@ -67,7 +63,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderCircleMap === 'function') {
                 renderCircleMap(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderCircleMap function not found');
+                logger.error('RendererDispatcher', 'renderCircleMap function not found');
                 showRendererError('circle_map');
             }
             break;
@@ -94,40 +90,29 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
                 // Calling tree map renderer
                 treeMapRenderer(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderTreeMap function not found anywhere');
+                logger.error('RendererDispatcher', 'renderTreeMap function not found');
                 showRendererError('tree_map');
             }
             break;
         case 'concept_map':
-            // CRITICAL FIX: Check all possible locations for the function
-            console.log('Renderer dispatcher: Looking for concept_map renderer...');
-            console.log('Available functions:', {
-                'renderConceptMap (global)': typeof renderConceptMap,
-                'window.ConceptMapRenderer': typeof window.ConceptMapRenderer,
-                'window.ConceptMapRenderer.renderConceptMap': window.ConceptMapRenderer ? typeof window.ConceptMapRenderer.renderConceptMap : 'N/A'
-            });
-            
+            // Check all possible locations for the function
             let conceptMapRenderer = null;
             if (typeof renderConceptMap === 'function') {
                 conceptMapRenderer = renderConceptMap;
-                console.log('Using global renderConceptMap function');
             } else if (window.ConceptMapRenderer && typeof window.ConceptMapRenderer.renderConceptMap === 'function') {
                 conceptMapRenderer = window.ConceptMapRenderer.renderConceptMap;
-                console.log('Using window.ConceptMapRenderer.renderConceptMap function');
             }
             
             if (conceptMapRenderer) {
                 // Calling concept map renderer
                 try {
-                    console.log('Calling concept map renderer...');
                     conceptMapRenderer(spec, integratedTheme, dimensions);
-                    console.log('Concept map rendering completed');
                 } catch (error) {
-                    console.error('Error rendering concept map:', error);
+                    logger.error('RendererDispatcher', 'Error rendering concept map', error);
                     showRendererError('concept_map', error.message);
                 }
             } else {
-                console.error('renderConceptMap function not found anywhere');
+                logger.error('RendererDispatcher', 'renderConceptMap function not found');
                 showRendererError('concept_map');
             }
             break;
@@ -136,7 +121,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderMindMap === 'function') {
                 renderMindMap(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderMindMap function not found');
+                logger.error('RendererDispatcher', 'renderMindMap function not found');
                 showRendererError('mind_map');
             }
             break;
@@ -144,34 +129,20 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderFlowchart === 'function') {
                 renderFlowchart(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderFlowchart function not found');
+                logger.error('RendererDispatcher', 'renderFlowchart function not found');
                 showRendererError('flowchart');
             }
             break;
 
         case 'bridge_map':
-            console.log('=== RENDERER DISPATCHER: BRIDGE MAP CASE ===');
-            console.log('Spec received:', spec);
-            console.log('Spec type:', typeof spec);
-            console.log('Spec keys:', Object.keys(spec || {}));
-            console.log('Analogies array:', spec?.analogies);
-            console.log('Analogies count:', spec?.analogies?.length || 0);
+            logger.debug('RendererDispatcher', 'Rendering bridge map', {
+                analogiesCount: spec?.analogies?.length || 0
+            });
             
-            // Log each analogy before calling renderer
-            if (spec?.analogies && Array.isArray(spec.analogies)) {
-                spec.analogies.forEach((analogy, index) => {
-                    console.log(`Dispatcher Analogy ${index}:`, analogy);
-                    console.log(`  Left: "${analogy.left}"`);
-                    console.log(`  Right: "${analogy.right}"`);
-                });
-            }
-            
-            console.log('Calling renderBridgeMap...');
             if (typeof renderBridgeMap === 'function') {
                 renderBridgeMap(spec, integratedTheme, dimensions, 'd3-container');
-                console.log('renderBridgeMap call completed');
             } else {
-                console.error('renderBridgeMap function not found');
+                logger.error('RendererDispatcher', 'renderBridgeMap function not found');
                 showRendererError('bridge_map');
             }
             break;
@@ -192,13 +163,12 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
                 // Calling brace map renderer
                 try {
                     braceMapRenderer(spec, integratedTheme, dimensions);
-                    // Brace map rendering completed
                 } catch (error) {
-                    console.error('Error rendering brace map:', error);
+                    logger.error('RendererDispatcher', 'Error rendering brace map', error);
                     showRendererError('brace_map', error.message);
                 }
             } else {
-                console.error('renderBraceMap function not found anywhere');
+                logger.error('RendererDispatcher', 'renderBraceMap function not found');
                 showRendererError('brace_map');
             }
             break;
@@ -206,7 +176,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderFlowMap === 'function') {
                 renderFlowMap(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderFlowMap function not found');
+                logger.error('RendererDispatcher', 'renderFlowMap function not found');
                 showRendererError('flow_map');
             }
             break;
@@ -214,7 +184,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderMultiFlowMap === 'function') {
                 renderMultiFlowMap(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderMultiFlowMap function not found');
+                logger.error('RendererDispatcher', 'renderMultiFlowMap function not found');
                 showRendererError('multi_flow_map');
             }
             break;
@@ -224,7 +194,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderFactorAnalysis === 'function') {
                 renderFactorAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderFactorAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderFactorAnalysis function not found');
                 showRendererError('factor_analysis');
             }
             break;
@@ -232,7 +202,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderThreePositionAnalysis === 'function') {
                 renderThreePositionAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderThreePositionAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderThreePositionAnalysis function not found');
                 showRendererError('three_position_analysis');
             }
             break;
@@ -240,7 +210,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderPerspectiveAnalysis === 'function') {
                 renderPerspectiveAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderPerspectiveAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderPerspectiveAnalysis function not found');
                 showRendererError('perspective_analysis');
             }
             break;
@@ -248,7 +218,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderGoalAnalysis === 'function') {
                 renderGoalAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderGoalAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderGoalAnalysis function not found');
                 showRendererError('goal_analysis');
             }
             break;
@@ -256,7 +226,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderPossibilityAnalysis === 'function') {
                 renderPossibilityAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderPossibilityAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderPossibilityAnalysis function not found');
                 showRendererError('possibility_analysis');
             }
             break;
@@ -264,7 +234,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderResultAnalysis === 'function') {
                 renderResultAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderResultAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderResultAnalysis function not found');
                 showRendererError('result_analysis');
             }
             break;
@@ -272,7 +242,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderFiveWOneH === 'function') {
                 renderFiveWOneH(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderFiveWOneH function not found');
+                logger.error('RendererDispatcher', 'renderFiveWOneH function not found');
                 showRendererError('five_w_one_h');
             }
             break;
@@ -280,7 +250,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderWHWMAnalysis === 'function') {
                 renderWHWMAnalysis(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderWHWMAnalysis function not found');
+                logger.error('RendererDispatcher', 'renderWHWMAnalysis function not found');
                 showRendererError('whwm_analysis');
             }
             break;
@@ -288,13 +258,13 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
             if (typeof renderFourQuadrant === 'function') {
                 renderFourQuadrant(spec, integratedTheme, dimensions);
             } else {
-                console.error('renderFourQuadrant function not found');
+                logger.error('RendererDispatcher', 'renderFourQuadrant function not found');
                 showRendererError('four_quadrant');
             }
             break;
         
         default:
-            console.error(`Unknown graph type: ${type}`);
+            logger.error('RendererDispatcher', `Unknown graph type: ${type}`);
             showRendererError('unknown', `Unknown graph type '${type}'`);
     }
 }
@@ -302,7 +272,7 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
 // Helper function to show renderer errors
 function showRendererError(type, message = null) {
     const errorMsg = message || `Renderer for '${type}' not loaded or not available`;
-    console.error(`Error: ${errorMsg}`);
+    logger.error('RendererDispatcher', errorMsg);
 }
 
 // Export functions for module system

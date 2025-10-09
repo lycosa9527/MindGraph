@@ -523,7 +523,10 @@ class LanguageManager {
             // We're in editor mode, refresh with new template
             if (window.interactiveEditor && window.diagramSelector) {
                 const currentDiagramType = window.interactiveEditor.diagramType;
-                console.log(`Refreshing ${currentDiagramType} with ${this.currentLanguage} template`);
+                logger.debug('LanguageManager', 'Refreshing diagram', {
+                    type: currentDiagramType,
+                    language: this.currentLanguage
+                });
                 
                 // Get fresh template in new language
                 const freshTemplate = window.diagramSelector.getTemplate(currentDiagramType);
@@ -1066,7 +1069,7 @@ class LanguageManager {
                     copyBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 }, 2000);
             } catch (err) {
-                console.error('Copy failed:', err);
+                logger.error('LanguageManager', 'Copy to clipboard failed', err);
             }
         });
         
@@ -1134,7 +1137,7 @@ class LanguageManager {
         if (window.notificationManager) {
             window.notificationManager.show(message, type);
         } else {
-            console.error('NotificationManager not available');
+            logger.error('LanguageManager', 'NotificationManager not available');
         }
     }
     

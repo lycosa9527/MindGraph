@@ -112,7 +112,7 @@ class DeepSeekClient:
         self.model_name = config.DEEPSEEK_MODEL
         # DIVERSITY FIX: Lower temperature for DeepSeek (reasoning model, more deterministic)
         self.default_temperature = 0.6
-        logger.info(f"DeepSeekClient initialized with model: {self.model_name}")
+        logger.debug(f"DeepSeekClient initialized with model: {self.model_name}")
     
     async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
                                    max_tokens: int = 2000) -> str:
@@ -185,7 +185,7 @@ class KimiClient:
         self.model_name = config.KIMI_MODEL
         # DIVERSITY FIX: Higher temperature for Kimi to increase creative variation
         self.default_temperature = 1.0
-        logger.info(f"KimiClient initialized with model: {self.model_name}")
+        logger.debug(f"KimiClient initialized with model: {self.model_name}")
     
     async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
                                    max_tokens: int = 2000) -> str:
@@ -321,7 +321,10 @@ try:
     kimi_client = KimiClient()
     hunyuan_client = HunyuanClient()
     
-    logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan)")
+    # Only log from main worker to avoid duplicate messages
+    import os
+    if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+        logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan)")
 except Exception as e:
     logger.warning(f"Failed to initialize LLM clients: {e}")
     qwen_client = None

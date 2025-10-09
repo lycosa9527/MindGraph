@@ -136,7 +136,7 @@ class PromptManager {
             this.hideLoadingSpinner();
             
         } catch (error) {
-            console.error('Error generating diagram:', error);
+            logger.error('PromptManager', 'Diagram generation failed', error);
             
             // Hide loading spinner
             this.hideLoadingSpinner();
@@ -158,7 +158,7 @@ class PromptManager {
      * Transition to editor with generated diagram
      */
     transitionToEditorWithDiagram(data) {
-        console.log('PromptManager: Transitioning to editor with AI-generated diagram', {
+        logger.info('PromptManager', 'Transitioning to editor', {
             diagramType: data.diagram_type || data.type,
             hasSpec: !!data.spec
         });
@@ -167,7 +167,7 @@ class PromptManager {
         const diagramType = data.diagram_type || data.type;
         
         if (!diagramType || !data.spec) {
-            console.error('PromptManager: Missing diagram type or spec');
+            logger.error('PromptManager', 'Missing diagram type or spec');
             this.showNotification(
                 window.languageManager?.currentLanguage === 'zh' 
                     ? '数据不完整' 
@@ -179,7 +179,7 @@ class PromptManager {
         
         // CRITICAL: Use DiagramSelector to properly create session-aware editor
         if (!window.diagramSelector) {
-            console.error('PromptManager: DiagramSelector not available!');
+            logger.error('PromptManager', 'DiagramSelector not available');
             this.showNotification(
                 window.languageManager?.currentLanguage === 'zh' 
                     ? '系统错误' 
@@ -193,7 +193,7 @@ class PromptManager {
             // Get localized diagram name
             const diagramName = this.getDiagramName(diagramType);
             
-            console.log('PromptManager: Using DiagramSelector.transitionToEditor for session management');
+            logger.debug('PromptManager', 'Using DiagramSelector for session management');
             
             // This will:
             // 1. Start a proper session with unique ID
@@ -202,7 +202,7 @@ class PromptManager {
             // 4. Initialize the editor properly
             window.diagramSelector.transitionToEditor(diagramType, data.spec, diagramName);
             
-            console.log('PromptManager: Transition complete - editor now has session protection');
+            logger.debug('PromptManager', 'Transition complete');
             
             // Show success notification
             this.showNotification(
@@ -212,7 +212,7 @@ class PromptManager {
                 'success'
             );
         } catch (error) {
-            console.error('PromptManager: Error during transition:', error);
+            logger.error('PromptManager', 'Transition error', error);
             this.showNotification(
                 window.languageManager?.currentLanguage === 'zh' 
                     ? '创建编辑器失败' 
@@ -376,7 +376,7 @@ class PromptManager {
         try {
             localStorage.setItem('mindgraph_prompt_history', JSON.stringify(this.history));
         } catch (e) {
-            console.error('Failed to save history:', e);
+            logger.error('PromptManager', 'Failed to save history', e);
         }
     }
     
@@ -495,7 +495,7 @@ class PromptManager {
         if (window.notificationManager) {
             window.notificationManager.show(message, type);
         } else {
-            console.error('NotificationManager not available');
+            logger.error('PromptManager', 'NotificationManager not available');
         }
     }
 }

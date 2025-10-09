@@ -146,7 +146,7 @@ class ModularCacheManager extends LazyJavaScriptCache {
             return moduleContents;
             
         } catch (error) {
-            console.error(`Failed to load modules for ${graphType}:`, error);
+            logger.error('ModularCacheManager', `Failed to load modules for ${graphType}:`, error);
             throw error;
         }
     }
@@ -174,7 +174,7 @@ class ModularCacheManager extends LazyJavaScriptCache {
         const commonGraphTypes = ['mindmap', 'concept_map', 'bubble_map'];
         const preloadPromises = commonGraphTypes.map(graphType => 
             this.loadModulesForGraphType(graphType).catch(error => 
-                console.warn(`Failed to preload modules for ${graphType}:`, error)
+                logger.warn('ModularCacheManager', `Failed to preload modules for ${graphType}:`, error)
             )
         );
         
@@ -182,7 +182,7 @@ class ModularCacheManager extends LazyJavaScriptCache {
             await Promise.all(preloadPromises);
             // Common renderer modules preloaded successfully
         } catch (error) {
-            console.warn('Some common modules failed to preload:', error);
+            logger.warn('ModularCacheManager', 'Some common modules failed to preload:', error);
         }
     }
     

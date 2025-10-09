@@ -91,7 +91,7 @@ class NotificationManager {
      * @param {number} duration - Duration in ms (optional)
      */
     show(message, type = 'info', duration = null) {
-        console.log('NotificationManager: Showing notification', { message, type });
+        logger.debug('NotificationManager', 'Showing notification', { type });
         
         // Auto duration based on type
         if (!duration) {
@@ -105,7 +105,7 @@ class NotificationManager {
         
         // Add to queue if max reached
         if (this.currentNotifications.length >= this.maxVisible) {
-            console.log('NotificationManager: Queue full, adding to queue');
+            logger.debug('NotificationManager', 'Queue full, adding to queue');
             this.queue.push({ message, type, duration });
             return;
         }
@@ -235,6 +235,6 @@ class NotificationManager {
 // Create global singleton instance
 if (typeof window !== 'undefined') {
     window.notificationManager = new NotificationManager();
-    console.log('NotificationManager: Global instance created');
+    logger.debug('NotificationManager', 'Global instance created');
 }
 

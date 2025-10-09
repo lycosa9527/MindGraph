@@ -9,7 +9,6 @@
  */
 
 // CRITICAL DEBUG: Add comprehensive logging
-console.log('Shared utilities: Module loading started');
 
 // --- Safe, memory-leak-free text radius measurement ---
 let measurementContainer = null;
@@ -18,7 +17,7 @@ function getMeasurementContainer() {
     if (!measurementContainer) {
         const body = d3.select('body');
         if (body.empty()) {
-            console.warn('Body element not found, creating measurement container in document');
+            logger.warn('SharedUtilities', 'Body element not found, creating measurement container in document');
             measurementContainer = d3.select(document.documentElement)
                 .append('div')
                 .attr('id', 'measurement-container')
@@ -50,7 +49,7 @@ function getTextRadius(text, fontSize, padding) {
         const radius = Math.ceil(Math.sqrt(bbox.width * bbox.width + bbox.height * bbox.height) / 2 + (padding || 12));
         return Math.max(radius, 30); // Minimum radius
     } catch (error) {
-        console.error('Error calculating text radius:', error);
+        logger.error('SharedUtilities', 'Error calculating text radius', error);
         return 30; // Default fallback
     } finally {
         if (textElement) {
@@ -184,7 +183,7 @@ function centerContent(svg, contentGroup, dimensions) {
         
         contentGroup.attr('transform', `translate(${translateX}, ${translateY})`);
     } catch (error) {
-        console.warn('Could not center content:', error);
+        logger.warn('SharedUtilities', 'Could not center content', error);
     }
 }
 
@@ -233,7 +232,6 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
     try {
         // Get all text elements, excluding watermarks, titles, and critical structural elements
         const allTextElements = svg.selectAll('text');
-        console.log(`Learning sheet: Total text elements found: ${allTextElements.size()}`);
         
         const textElements = allTextElements
             .filter(function() {
@@ -258,24 +256,19 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 
                 // Debug logging for each text element
                 if (!isWatermark && !isMainTopic && !isEmpty) {
-                    console.log(`Learning sheet: Text "${text.substring(0, 20)}..." - fontSize: ${fontSize}, fontWeight: ${fontWeight}, fillColor: ${fillColor}, isMainStep: ${isMainStep}`);
                 }
                 
                 return !isWatermark && !isMainTopic && !isEmpty && !isMainStep;
             });
         
         const totalTexts = textElements.size();
-        console.log(`Learning sheet: Eligible text elements after filtering: ${totalTexts}`);
         if (totalTexts === 0) {
-            console.log('Learning sheet: No eligible text elements found - skipping knockout');
             return;
         }
         
         // Ensure at least 2 elements are hidden (20% rate)
         const hideCount = Math.max(2, Math.floor(totalTexts * hiddenPercentage));
-        console.log(`Learning sheet: Will hide ${hideCount} out of ${totalTexts} elements (${Math.round(hiddenPercentage * 100)}%)`);
         if (hideCount === 0) {
-            console.log('Learning sheet: Hide count is 0 - skipping knockout');
             return;
         }
         
@@ -303,7 +296,6 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
             }
         });
         
-        console.log(`Learning sheet: Hidden ${hideCount} out of ${totalTexts} text elements (${Math.round(hiddenPercentage * 100)}%)`);
         
         // Add answer key below the diagram
         if (hiddenTexts.length > 0) {
@@ -334,7 +326,6 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 answerX = minX + 20;
                 answerY = minY + newHeight - 20; // 20px from new bottom
                 
-                console.log(`Learning sheet: Expanded viewBox from ${width}x${height} to ${width}x${newHeight}`);
             } else {
                 // Use regular coordinates
                 const bbox = svg.node().getBBox();
@@ -349,7 +340,6 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 answerX = 20;
                 answerY = newHeight - 20; // 20px from new bottom
                 
-                console.log(`Learning sheet: Expanded SVG height from ${currentHeight} to ${newHeight}`);
             }
             
             // Add answer key at the bottom
@@ -362,11 +352,10 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 .attr('fill', '#374151')
                 .text(answerText);
             
-            console.log(`Learning sheet: Added answer key with ${hiddenTexts.length} items at (${answerX}, ${answerY})`);
         }
         
     } catch (error) {
-        console.error('Error in knockoutTextForLearningSheet:', error);
+        logger.error('SharedUtilities', 'Error in knockoutTextForLearningSheet', error);
     }
 }
 
@@ -406,8 +395,6 @@ if (typeof window !== 'undefined') {
     }
     
     // Shared utilities exported to global scope
-    console.log('Shared utilities: Module loaded successfully in browser environment');
-    console.log('Shared utilities: Functions exported to window:', Object.keys(window).filter(k => k.includes('getTextRadius') || k.includes('addWatermark')));
 } else if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
@@ -423,7 +410,6 @@ if (typeof window !== 'undefined') {
         wrapText,
         knockoutTextForLearningSheet
     };
-    console.log('Shared utilities: Module loaded successfully in Node.js environment');
 } else {
-    console.error('Shared utilities: Module failed to load in any environment');
+    logger.error('SharedUtilities', 'Module failed to load in any environment');
 }

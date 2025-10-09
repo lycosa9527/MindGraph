@@ -22,7 +22,7 @@ class AIAssistantManager {
         this.initializeElements();
         this.bindEvents();
         
-        console.log(`AI Assistant initialized for user: ${this.userId}`);
+        logger.debug('AIAssistant', 'Initialized', { userId: this.userId });
     }
     
     /**
@@ -36,22 +36,12 @@ class AIAssistantManager {
         this.chatInput = document.getElementById('ai-chat-input');
         this.sendBtn = document.getElementById('ai-chat-send');
         
-        // Debug: Log element status
-        console.log('AI Assistant Elements:', {
-            panel: !!this.panel,
-            toggleBtn: !!this.toggleBtn,
-            mindmateBtn: !!this.mindmateBtn,
-            chatMessages: !!this.chatMessages,
-            chatInput: !!this.chatInput,
-            sendBtn: !!this.sendBtn
-        });
-        
         // Error checking
         if (!this.panel) {
-            console.error('CRITICAL: AI Assistant panel (#ai-assistant-panel) not found in DOM!');
+            logger.error('AIAssistant', 'Panel element not found in DOM');
         }
         if (!this.mindmateBtn) {
-            console.error('CRITICAL: MindMate AI button (#mindmate-ai-btn) not found in DOM!');
+            logger.error('AIAssistant', 'MindMate button not found in DOM');
         }
     }
     
@@ -62,53 +52,43 @@ class AIAssistantManager {
         // Close button in panel
         if (this.toggleBtn) {
             this.toggleBtn.addEventListener('click', (e) => {
-                console.log('Close button clicked', e);
                 e.preventDefault();
                 e.stopPropagation();
                 this.togglePanel();
             });
-            console.log('Bound event to close button');
         }
         
         // MindMate AI button in toolbar
         if (this.mindmateBtn) {
             this.mindmateBtn.addEventListener('click', (e) => {
-                console.log('MindMate AI button clicked', e);
                 e.preventDefault();
                 e.stopPropagation();
                 this.togglePanel();
             });
-            console.log('Bound event to MindMate AI button');
         } else {
-            console.warn('MindMate AI button not found during initialization');
+            logger.warn('AIAssistant', 'MindMate button not found during initialization');
         }
         
         // Add test function to window for debugging
         window.testMindMatePanel = () => {
-            console.log('Testing MindMate panel...');
-            console.log('Panel element:', this.panel);
-            console.log('Panel classes:', this.panel?.className);
-            console.log('Button element:', this.mindmateBtn);
+            logger.debug('AIAssistant', 'Testing panel', {
+                hasPanel: !!this.panel,
+                classes: this.panel?.className
+            });
             this.togglePanel();
         };
         
         // Add method to manually open the panel
         window.openMindMatePanel = () => {
-            console.log('Manually opening MindMate panel...');
             if (this.panel && this.panel.classList.contains('collapsed')) {
                 this.togglePanel();
-            } else {
-                console.log('Panel is already open');
             }
         };
         
         // Add method to manually close the panel
         window.closeMindMatePanel = () => {
-            console.log('Manually closing MindMate panel...');
             if (this.panel && !this.panel.classList.contains('collapsed')) {
                 this.togglePanel();
-            } else {
-                console.log('Panel is already closed');
             }
         };
         
@@ -135,13 +115,10 @@ class AIAssistantManager {
      * Toggle AI assistant panel
      */
     togglePanel() {
-        console.log('Toggle panel called');
-        console.log('Panel element:', this.panel);
-        console.log('Panel display:', this.panel?.style.display);
-        console.log('Panel className before toggle:', this.panel?.className);
+        logger.debug('AIAssistant', 'Toggling panel');
         
         if (!this.panel) {
-            console.error('AI Assistant panel not found!');
+            logger.error('AIAssistant', 'Panel not found');
             const message = window.languageManager?.getNotification('aiPanelNotFound') 
                 || 'AI Assistant panel not found. Please reload the page.';
             alert(message);
@@ -154,12 +131,12 @@ class AIAssistantManager {
         }
         
         const isCollapsed = this.panel.classList.toggle('collapsed');
-        console.log('Panel collapsed state after toggle:', isCollapsed);
-        console.log('Panel className after toggle:', this.panel.className);
+        logger.debug('AIAssistant', 'Panel toggled', {
+            collapsed: isCollapsed
+        });
         
         // If opening AI panel, close property panel to prevent overlap
         if (!isCollapsed) {
-            console.log('Opening AI panel');
             const propertyPanel = document.getElementById('property-panel');
             if (propertyPanel && propertyPanel.style.display !== 'none') {
                 // Access toolbar manager through current editor to properly hide property panel
@@ -169,8 +146,6 @@ class AIAssistantManager {
                     propertyPanel.style.display = 'none';
                 }
             }
-        } else {
-            console.log('Closing AI panel');
         }
         
         // Update MindMate button state
@@ -231,7 +206,7 @@ class AIAssistantManager {
             await this.streamResponse(message);
             
         } catch (error) {
-            console.error('Error sending message:', error);
+            logger.error('AIAssistant', 'Failed to send message', error);
             this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
         } finally {
             // Remove typing indicator
@@ -299,7 +274,7 @@ class AIAssistantManager {
                                     const data = JSON.parse(line.slice(6));
                                     this.handleStreamEvent(data);
                                 } catch (e) {
-                                    console.debug('Skipping malformed JSON:', line);
+                                    logger.debug('AIAssistant', 'Skipping malformed JSON in stream');
                                 }
                             }
                         }
@@ -350,7 +325,7 @@ class AIAssistantManager {
             
         } else if (event === 'error') {
             // Handle error
-            console.error('AI Assistant error:', data.error);
+            logger.error('AIAssistant', 'Stream error', { error: data.error });
             
             if (this.currentStreamingMessage && this.currentStreamingMessage.parentNode) {
                 this.currentStreamingMessage.parentNode.removeChild(this.currentStreamingMessage);
@@ -467,12 +442,12 @@ if (typeof window !== 'undefined') {
     if (document.readyState === 'loading') {
         // DOM is still loading, wait for DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('AI Assistant: Initializing via DOMContentLoaded');
+            logger.debug('AIAssistant', 'Initializing via DOMContentLoaded');
             window.aiAssistant = new AIAssistantManager();
         });
     } else {
         // DOM is already loaded, initialize immediately
-        console.log('AI Assistant: Initializing immediately (DOM already loaded)');
+        logger.debug('AIAssistant', 'Initializing (DOM already loaded)');
         window.aiAssistant = new AIAssistantManager();
     }
 }

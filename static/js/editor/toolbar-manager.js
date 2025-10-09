@@ -36,11 +36,9 @@ class ToolbarManager {
         this.validator = new DiagramValidator();
         this.learningModeManager = null; // Initialize on first use to access editor reference
         
-        const logMessage = `Created for session: ${this.sessionId?.substr(-8)} | Type: ${this.diagramType}`;
-        console.log('ToolbarManager:', logMessage);
-        
-        // Send to backend terminal
-        this.logToBackend('INFO', logMessage);
+        logger.debug('ToolbarManager', `Created for session ${this.sessionId?.substr(-8)}`, {
+            diagramType: this.diagramType
+        });
         
         // Register this instance in the global registry
         this.registerInstance();
@@ -56,9 +54,8 @@ class ToolbarManager {
      */
     cancelAllLLMRequests() {
         if (this.activeAbortControllers.size > 0) {
-            console.log(`ToolbarManager: Cancelling ${this.activeAbortControllers.size} in-progress LLM request(s)`);
+            logger.info('ToolbarManager', `Cancelling ${this.activeAbortControllers.size} LLM requests`);
             this.activeAbortControllers.forEach((controller, model) => {
-                console.log(`  - Aborting ${model} request`);
                 controller.abort();
             });
             this.activeAbortControllers.clear();
@@ -66,22 +63,18 @@ class ToolbarManager {
     }
     
     /**
-     * Send log to backend terminal console
+     * @deprecated - Use logger.debug/info/warn/error directly instead
+     * Legacy method for backward compatibility
      */
     logToBackend(level, message, data = null) {
-        try {
-            fetch('/api/frontend_log', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level: level,
-                    message: message,
-                    data: data,
-                    source: 'ToolbarManager',
-                    sessionId: this.sessionId
-                })
-            }).catch(() => {});
-        } catch (e) {}
+        // Now handled by centralized logger
+        const levelMap = {
+            'DEBUG': () => logger.debug('ToolbarManager', message, data),
+            'INFO': () => logger.info('ToolbarManager', message, data),
+            'WARN': () => logger.warn('ToolbarManager', message, data),
+            'ERROR': () => logger.error('ToolbarManager', message, data)
+        };
+        (levelMap[level] || levelMap['INFO'])();
     }
     
     /**
@@ -91,13 +84,15 @@ class ToolbarManager {
         // Initialize global registry if it doesn't exist
         if (!window.toolbarManagerRegistry) {
             window.toolbarManagerRegistry = new Map();
-            console.log('ToolbarManager: Registry initialized');
+            logger.debug('ToolbarManager', 'Registry initialized');
         }
         
         // Clean up any existing toolbar manager from a different session
         window.toolbarManagerRegistry.forEach((oldManager, oldSessionId) => {
             if (oldSessionId !== this.sessionId) {
-                console.log('ToolbarManager: Cleaning up old instance from session:', oldSessionId?.substr(-8));
+                logger.debug('ToolbarManager', 'Cleaning up old instance', {
+                    oldSession: oldSessionId?.substr(-8)
+                });
                 oldManager.destroy();
                 window.toolbarManagerRegistry.delete(oldSessionId);
             }
@@ -105,7 +100,9 @@ class ToolbarManager {
         
         // Register this instance
         window.toolbarManagerRegistry.set(this.sessionId, this);
-        console.log('ToolbarManager: Instance registered for session:', this.sessionId?.substr(-8));
+        logger.debug('ToolbarManager', 'Instance registered', {
+            session: this.sessionId?.substr(-8)
+        });
     }
     
     /**
@@ -184,63 +181,51 @@ class ToolbarManager {
         // Toolbar buttons - stop event propagation to prevent conflicts
         this.addNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Add Node button clicked');
             this.handleAddNode();
         });
         this.deleteNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Delete Node button clicked');
             this.handleDeleteNode();
         });
         this.autoCompleteBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();  // Also prevent default to be extra safe
-            console.log('ToolbarManager: Auto-Complete button clicked');
             this.handleAutoComplete();
         });
         this.lineModeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Line Mode button clicked');
             this.toggleLineMode();
         });
         this.learningBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Learning Mode button clicked');
             this.handleLearningMode();
         });
         this.duplicateNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Duplicate Node button clicked');
             this.handleDuplicateNode();
         });
         this.emptyNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Empty Node button clicked');
             this.handleEmptyNode();
         });
         this.undoBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Undo button clicked');
             this.handleUndo();
         });
         this.redoBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Redo button clicked');
             this.handleRedo();
         });
         this.resetBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Reset button clicked');
             this.handleReset();
         });
         this.exportBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Export button clicked');
             this.handleExport();
         });
         this.backBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('ToolbarManager: Back to Gallery button clicked');
             this.handleBackToGallery();
         });
         
@@ -369,7 +354,7 @@ class ToolbarManager {
                     'kimi': 'Kimi',
                     'hunyuan': 'HunYuan'
                 };
-                console.log(`Switched to ${modelNames[llmModel] || llmModel} result`);
+                logger.debug('ToolbarManager', `Switched to ${modelNames[llmModel] || llmModel} result`);
             } else {
                 // Error result - show notification
                 const error = this.llmResults[llmModel].error || 'Generation failed';
@@ -394,12 +379,10 @@ class ToolbarManager {
                 ? `${modelName} 还在生成中，请稍候...` 
                 : `${modelName} is still generating, please wait...`;
             this.showNotification(message, 'warning');
-            console.log(`User clicked ${llmModel} but it's still generating (no cached result yet)`);
         } else {
             // No cached results yet, not generating - just update selection
             this.selectedLLM = llmModel;
             this.updateLLMButtonStates();
-            console.log(`Selected ${llmModel} (no results cached yet)`);
         }
     }
     
@@ -416,11 +399,8 @@ class ToolbarManager {
         const result = cachedData.result;
         const spec = result.spec;
         
-        // DEBUG: Log what we're rendering
-        console.log(`Rendering ${llmModel} - spec:`, {
-            nodes: spec?.nodes?.length || 0,
-            firstNodeId: spec?.nodes?.[0]?.id,
-            firstNodeText: spec?.nodes?.[0]?.text?.substring(0, 30)
+        logger.debug('ToolbarManager', `Rendering ${llmModel} result`, {
+            nodes: spec?.nodes?.length || 0
         });
         const diagramType = result.diagram_type;
         
@@ -430,11 +410,8 @@ class ToolbarManager {
             this.editor.diagramType = diagramType;
             this.editor.renderDiagram();
             
-            console.log(`Rendered ${llmModel} cached result`);
-            
             // Reset view to optimal position after rendering completes
             setTimeout(() => {
-                console.log(`Resetting view for ${llmModel} result`);
                 this.editor.fitDiagramToWindow();
             }, 300);
         }
@@ -550,24 +527,20 @@ class ToolbarManager {
      */
     showPropertyPanel() {
         if (this.propertyPanel) {
-            console.log('ToolbarManager: Showing property panel');
+            logger.debug('ToolbarManager', 'Showing property panel');
             this.propertyPanel.style.display = 'block';
-            console.log('ToolbarManager: Property panel display set to:', this.propertyPanel.style.display);
             
             // Only resize if diagram is currently at full width
             // If already sized for panel, just show the panel without resizing
             if (window.currentEditor && !window.currentEditor.isSizedForPanel) {
                 setTimeout(() => {
-                    console.log('ToolbarManager: Diagram at full width, fitting with panel space (animated)');
                     if (typeof window.currentEditor.fitToCanvasWithPanel === 'function') {
                         window.currentEditor.fitToCanvasWithPanel(true); // true = animate
                     }
                 }, 50); // Small delay to ensure panel is visible
-            } else {
-                console.log('ToolbarManager: Diagram already sized for panel, no resize needed');
             }
         } else {
-            console.warn('ToolbarManager: Property panel element not found!');
+            logger.warn('ToolbarManager', 'Property panel element not found');
         }
     }
     
@@ -581,7 +554,6 @@ class ToolbarManager {
             // Always resize to full width when panel is hidden
             // This allows diagram to expand and use all available space
             setTimeout(() => {
-                console.log('ToolbarManager: Fitting diagram to full canvas width (animated)');
                 if (window.currentEditor && typeof window.currentEditor.fitToFullCanvas === 'function') {
                     window.currentEditor.fitToFullCanvas(true); // true = animate
                 }
@@ -620,7 +592,6 @@ class ToolbarManager {
         if (this.propItalic) this.propItalic.classList.remove('active');
         if (this.propUnderline) this.propUnderline.classList.remove('active');
         
-        console.log('Property panel cleared to default values');
     }
     
     /**
@@ -813,13 +784,15 @@ class ToolbarManager {
             return;
         }
         
-        console.log('Applying text to selected nodes:', this.currentSelection);
+        logger.debug('ToolbarManager', 'Applying text to selected nodes', {
+            count: this.currentSelection.length
+        });
         
         this.currentSelection.forEach(nodeId => {
             // Get the shape node
             const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (shapeElement.empty()) {
-                console.warn(`Node ${nodeId} not found`);
+                logger.warn('ToolbarManager', `Node ${nodeId} not found`);
                 return;
             }
             
@@ -849,16 +822,13 @@ class ToolbarManager {
             if (this.editor && typeof this.editor.updateNodeText === 'function') {
                 this.editor.updateNodeText(nodeId, shapeNode, textNode, newText);
             } else {
-                console.error('Editor updateNodeText method not available');
+                logger.error('ToolbarManager', 'Editor updateNodeText method not available');
             }
         });
         
         // Only show notification if not called from applyAllProperties
         if (!silent) {
-            console.log('ToolbarManager: applyText showing notification (silent=false)');
             this.showNotification(this.getNotif('textUpdated'), 'success');
-        } else {
-            console.log('ToolbarManager: applyText notification suppressed (silent=true)');
         }
     }
     
@@ -882,11 +852,8 @@ class ToolbarManager {
             underline: this.propUnderline?.classList.contains('active')
         };
         
-        console.log('ToolbarManager: Applying all properties', {
-            diagramType: this.editor?.diagramType,
-            sessionId: this.editor?.sessionId?.substr(-8),
-            selectedNodes: this.currentSelection,
-            properties
+        logger.debug('ToolbarManager', 'Applying all properties', {
+            count: this.currentSelection.length
         });
         
         // Apply text changes first using the proper method (silently - we'll show one notification at the end)
@@ -957,7 +924,6 @@ class ToolbarManager {
             properties 
         });
         
-        console.log('ToolbarManager: applyAllProperties showing final notification');
         this.showNotification(this.getNotif('propertiesApplied'), 'success');
     }
     
@@ -1128,15 +1094,12 @@ class ToolbarManager {
      * Handle add node
      */
     handleAddNode() {
-        console.log('ToolbarManager: handleAddNode called', {
-            diagramType: this.editor?.diagramType,
-            sessionId: this.editor?.sessionId?.substr(-8),
-            hasSelection: this.editor?.selectedNodes?.size > 0,
-            selectedCount: this.editor?.selectedNodes?.size || 0
+        logger.debug('ToolbarManager', 'handleAddNode called', {
+            diagramType: this.editor?.diagramType
         });
         
         if (!this.editor) {
-            console.error('ToolbarManager: handleAddNode blocked - Editor not initialized');
+            logger.error('ToolbarManager', 'handleAddNode blocked - editor not initialized');
             this.showNotification(this.getNotif('editorNotInit'), 'error');
             return;
         }
@@ -1189,7 +1152,7 @@ class ToolbarManager {
                 // Find the shape element
                 const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
                 if (shapeElement.empty()) {
-                    console.warn(`Shape not found for nodeId: ${nodeId}`);
+                    logger.warn('ToolbarManager', `Shape not found for nodeId: ${nodeId}`);
                     return;
                 }
                 
@@ -1236,19 +1199,19 @@ class ToolbarManager {
      * Handle auto-complete diagram with AI
      */
     async handleAutoComplete() {
-        console.log('ToolbarManager: =============== AUTO-COMPLETE STARTED ===============');
-        console.log('ToolbarManager: Current diagram type:', this.editor?.diagramType);
-        console.log('ToolbarManager: Current spec:', this.editor?.currentSpec);
+        logger.info('ToolbarManager', 'Auto-complete started', {
+            diagramType: this.editor?.diagramType
+        });
         
         // Prevent concurrent auto-complete operations
         if (this.isAutoCompleting) {
-            console.log('ToolbarManager: Auto-complete already in progress, ignoring duplicate request');
+            logger.warn('ToolbarManager', 'Auto-complete already in progress');
             return;
         }
         
         if (!this.editor) {
             this.showNotification(this.getNotif('editorNotInit'), 'error');
-            console.error('ToolbarManager: Auto-complete failed - Editor not initialized');
+            logger.error('ToolbarManager', 'Auto-complete failed - editor not initialized');
             return;
         }
         
@@ -1257,9 +1220,7 @@ class ToolbarManager {
         
         // CRITICAL: Validate session before auto-complete
         if (!this.editor.validateSession('Auto-complete')) {
-            // validateSession already logs the error to console
-            // Don't show notification here as it creates confusion when it still works
-            console.error('ToolbarManager: Session validation failed, aborting auto-complete');
+            logger.error('ToolbarManager', 'Session validation failed, aborting auto-complete');
             this.isAutoCompleting = false; // Clear flag on early return
             return;
         }
@@ -1267,16 +1228,15 @@ class ToolbarManager {
         // CRITICAL: Store the current diagram type and session ID to prevent accidental switching
         const currentDiagramType = this.editor.diagramType;
         const currentSessionId = this.editor.sessionId;
-        console.log('ToolbarManager: Locked diagram type:', currentDiagramType);
-        console.log('ToolbarManager: Locked session ID:', currentSessionId);
         
         // Extract existing nodes from the diagram
         const existingNodes = this.extractExistingNodes();
-        console.log('ToolbarManager: Extracted nodes:', existingNodes.length);
+        logger.debug('ToolbarManager', 'Extracted existing nodes', {
+            count: existingNodes.length
+        });
         
         if (existingNodes.length === 0) {
             this.showNotification(this.getNotif('addNodesFirst'), 'warning');
-            console.log('ToolbarManager: Auto-complete aborted - No nodes found');
             this.isAutoCompleting = false; // Clear flag on early return
             return;
         }
@@ -1284,18 +1244,14 @@ class ToolbarManager {
         // Identify the main/central topic (center-most or largest node)
         const mainTopic = this.identifyMainTopic(existingNodes);
         const diagramType = currentDiagramType; // Use locked type
-        console.log('ToolbarManager: Main topic:', mainTopic);
-        console.log('ToolbarManager: Diagram type:', diagramType);
         
         // Store the original topic to preserve it later
         const originalTopic = this.editor.currentSpec?.topic || mainTopic;
-        console.log('Original topic to preserve:', originalTopic);
         
         // For flow maps, prioritize title for language detection
         let textForLanguageDetection = mainTopic;
         if (diagramType === 'flow_map' && this.editor.currentSpec?.title) {
             textForLanguageDetection = this.editor.currentSpec.title;
-            console.log('Flow map detected - using title for language detection:', textForLanguageDetection);
         }
         
         // For bridge maps, check all existing nodes for Chinese characters (prioritize user content)
@@ -1304,7 +1260,6 @@ class ToolbarManager {
             const hasChineseInNodes = existingNodes.some(node => /[\u4e00-\u9fa5]/.test(node.text));
             if (hasChineseInNodes) {
                 textForLanguageDetection = existingNodes.find(node => /[\u4e00-\u9fa5]/.test(node.text)).text;
-                console.log('Bridge map - Found Chinese text in nodes, using for language detection:', textForLanguageDetection);
             }
         }
         
@@ -1314,14 +1269,12 @@ class ToolbarManager {
             const hasChineseInNodes = existingNodes.some(node => /[\u4e00-\u9fa5]/.test(node.text));
             if (hasChineseInNodes) {
                 textForLanguageDetection = existingNodes.find(node => /[\u4e00-\u9fa5]/.test(node.text)).text;
-                console.log('Brace map - Found Chinese text in nodes, using for language detection:', textForLanguageDetection);
             }
         }
         
         // Detect language from the topic/title text (if contains Chinese characters, use Chinese)
         const hasChinese = /[\u4e00-\u9fa5]/.test(textForLanguageDetection);
         const language = hasChinese ? 'zh' : (window.languageManager?.getCurrentLanguage() || 'en');
-        console.log('Detected language from text:', language, '(hasChinese:', hasChinese, ', text:', textForLanguageDetection, ')');
         
         // Send clean topic to backend - let the agent add the instructions
         // The backend agents already wrap the prompt with proper instructions
@@ -1339,31 +1292,8 @@ class ToolbarManager {
                 // If empty, let LLM auto-select the best dimension for the topic
                 if (rawDimension && rawDimension.trim() !== '') {
                     dimensionPreference = rawDimension.trim();
-                    if (diagramType === 'brace_map') {
-                        console.log('Brace map - User specified decomposition dimension:', dimensionPreference);
-                    } else if (diagramType === 'tree_map') {
-                        console.log('Tree map - User specified classification dimension:', dimensionPreference);
-                    } else if (diagramType === 'bridge_map') {
-                        console.log('Bridge map - User specified analogy relationship pattern:', dimensionPreference);
-                    }
-                } else {
-                    if (diagramType === 'brace_map') {
-                        console.log('Brace map - No dimension specified, LLM will auto-select best dimension');
-                    } else if (diagramType === 'tree_map') {
-                        console.log('Tree map - No dimension specified, LLM will auto-select best dimension');
-                    } else if (diagramType === 'bridge_map') {
-                        console.log('Bridge map - No relationship pattern specified, LLM will auto-select best pattern');
-                    }
                 }
             }
-        }
-        
-        console.log('Auto-complete prompt:', prompt);
-        console.log('Main topic identified:', mainTopic);
-        console.log('Total existing nodes:', existingNodes.length);
-        console.log('Language:', language);
-        if (dimensionPreference) {
-            console.log('Dimension preference:', dimensionPreference);
         }
         
         // Show loading state
@@ -1384,7 +1314,7 @@ class ToolbarManager {
                 baseRequestBody.dimension_preference = dimensionPreference;
             }
             
-            console.log('Auto-complete: Starting progressive LLM generation...');
+            logger.info('ToolbarManager', 'Starting progressive LLM generation');
             this.isGeneratingMulti = true;
             
             // Set all buttons to loading state
@@ -1401,13 +1331,12 @@ class ToolbarManager {
                 // Check if session/diagram changed during generation
                 if (this.editor.diagramType !== currentDiagramType || 
                     this.editor.sessionId !== currentSessionId) {
-                    console.log('Auto-complete: Session/diagram changed, aborting');
+                    logger.warn('ToolbarManager', 'Auto-complete aborted - session changed');
                     throw new Error('Session changed during generation');
                 }
                 
                 try {
                     const requestId = `${currentSessionId}_${model}_${Date.now()}`;
-                    console.log(`Auto-complete: Calling ${model} (request_id: ${requestId})...`);
                     
                     // Call single LLM endpoint with model parameter
                     const modelRequestBody = {
@@ -1443,12 +1372,8 @@ class ToolbarManager {
                         throw new Error(data.error);
                     }
                     
-                    // DEBUG: Log the actual spec received for this model
-                    console.log(`Auto-complete: ${model} received spec:`, {
-                        nodes: data.spec?.nodes?.length || 0,
-                        links: data.spec?.links?.length || 0,
-                        firstNodeId: data.spec?.nodes?.[0]?.id,
-                        firstNodeText: data.spec?.nodes?.[0]?.text?.substring(0, 30)
+                    logger.debug('ToolbarManager', `${model} received spec`, {
+                        nodes: data.spec?.nodes?.length || 0
                     });
                     
                     // Cache this model's result
@@ -1462,8 +1387,6 @@ class ToolbarManager {
                             style_preferences: data.style_preferences || {}
                         }
                     };
-                    
-                    console.log(`Auto-complete: ${model} completed successfully - cached result`);
                     
                     // Update button state for this model immediately
                     this.setLLMButtonState(model, 'ready');
@@ -1484,9 +1407,9 @@ class ToolbarManager {
                     let errorMessage = error.message;
                     if (error.name === 'AbortError') {
                         errorMessage = `Timeout (>${LLM_CONFIG.TIMEOUT_MS/1000}s)`;
-                        console.error(`Auto-complete: ${model} timed out after ${LLM_CONFIG.TIMEOUT_MS}ms`);
+                        logger.warn('ToolbarManager', `${model} timed out`);
                     } else {
-                        console.error(`Auto-complete: ${model} failed:`, error);
+                        logger.error('ToolbarManager', `${model} failed`, error);
                     }
                     
                     // Cache error result with details
@@ -1504,7 +1427,7 @@ class ToolbarManager {
             
             // Count successful results
             const successCount = Object.values(this.llmResults).filter(r => r.success).length;
-            console.log(`Auto-complete: ${successCount}/4 LLMs completed`);
+            logger.info('ToolbarManager', `Auto-complete: ${successCount}/4 LLMs completed`);
             
             // Clear loading states
             this.setAllLLMButtonsLoading(false);
@@ -1525,20 +1448,17 @@ class ToolbarManager {
             
             // Reset view to optimal position after rendering completes
             setTimeout(() => {
-                console.log('ToolbarManager: Resetting view after auto-complete');
                 this.editor.fitDiagramToWindow();
             }, LLM_CONFIG.RENDER_DELAY_MS);
             
         } catch (error) {
-            console.error('ToolbarManager: Auto-complete error:', error);
-            console.error('ToolbarManager: Error stack:', error.stack);
+            logger.error('ToolbarManager', 'Auto-complete error', error);
             this.showNotification(this.getNotif('autoCompleteFailed', error.message), 'error');
             this.setAllLLMButtonsLoading(false);
         } finally {
             this.setAutoButtonLoading(false);
             this.isAutoCompleting = false;
             this.isGeneratingMulti = false;
-            console.log('ToolbarManager: =============== AUTO-COMPLETE ENDED ===============');
         }
     }
     
@@ -1595,13 +1515,11 @@ class ToolbarManager {
             diagramType === 'tree_map' || diagramType === 'brace_map') {
             // First, try to get from spec (source of truth)
             if (spec && spec.topic) {
-                console.log(`${diagramType} main topic (from spec):`, spec.topic);
                 return spec.topic;
             }
             // Fallback: Look for node with data-node-type='topic'
             const topicNode = nodes.find(node => node.nodeType === 'topic');
             if (topicNode && topicNode.text) {
-                console.log(`${diagramType} main topic (from DOM fallback):`, topicNode.text);
                 return topicNode.text;
             }
         }
@@ -1611,10 +1529,9 @@ class ToolbarManager {
         if (diagramType === 'double_bubble_map') {
             if (spec && spec.left && spec.right) {
                 const combinedTopic = `${spec.left} vs ${spec.right}`;
-                console.log('Double bubble map topics (from spec):', combinedTopic);
                 return combinedTopic;
             }
-            console.warn('Double bubble map: No valid left/right topics in spec');
+            logger.warn('ToolbarManager', 'Double bubble map: No valid left/right topics in spec');
         }
         
         // Strategy 1c: For bridge maps, ALWAYS read from currentSpec
@@ -1625,11 +1542,10 @@ class ToolbarManager {
                 const firstPair = spec.analogies[0];
                 if (firstPair.left && firstPair.right) {
                     const mainTopic = `${firstPair.left}/${firstPair.right}`;
-                    console.log('Bridge map main topic (from spec):', mainTopic);
                     return mainTopic;
                 }
             }
-            console.warn('Bridge map: No valid analogies in spec');
+            logger.warn('ToolbarManager', 'Bridge map: No valid analogies in spec');
         }
         
         // Strategy 1d: For MindMap, prioritize spec first
@@ -1637,7 +1553,6 @@ class ToolbarManager {
         if (diagramType === 'mindmap') {
             // First, try to get from spec (source of truth)
             if (spec && spec.topic) {
-                console.log('MindMap main topic (from spec):', spec.topic);
                 return spec.topic;
             }
             
@@ -1667,7 +1582,6 @@ class ToolbarManager {
                 
                 // Return the text from the central node
                 if (centralNode && centralNode.text) {
-                    console.log('MindMap main topic (from geometric center):', centralNode.text);
                     return centralNode.text;
                 }
             }
@@ -1730,7 +1644,6 @@ class ToolbarManager {
             }
             
             if (mainTopic) {
-                console.log('Main topic identified from spec structure:', mainTopic);
                 return mainTopic;
             }
         }
@@ -1759,7 +1672,6 @@ class ToolbarManager {
                 }
             });
             
-            console.log('Main topic identified by position:', closestNode.text, 'at', closestNode.x, closestNode.y);
             return closestNode.text;
         }
         
@@ -1812,7 +1724,6 @@ class ToolbarManager {
             // Check if this is placeholder text
             const isPlaceholder = placeholderPatterns.some(pattern => pattern.test(text));
             if (isPlaceholder) {
-                console.log(`Skipping placeholder text: "${text}"`);
                 return;
             }
             
@@ -1833,7 +1744,7 @@ class ToolbarManager {
             });
         });
         
-        console.log(`Extracted ${nodes.length} real nodes (filtered out placeholders):`, nodes);
+        logger.debug('ToolbarManager', `Extracted ${nodes.length} real nodes`);
         return nodes;
     }
     
@@ -1852,13 +1763,12 @@ class ToolbarManager {
         
         const svg = d3.select('#d3-container svg');
         if (svg.empty()) {
-            console.warn('No SVG found in container');
+            logger.warn('ToolbarManager', 'No SVG found in container');
             return;
         }
         
         if (this.isLineMode) {
             // Apply black and white line mode
-            console.log('Applying line mode: black and white');
             
             // Remove canvas background
             svg.style('background-color', 'transparent');
@@ -1918,7 +1828,6 @@ class ToolbarManager {
             
         } else {
             // Restore original colors
-            console.log('Restoring original colors');
             
             // Restore canvas background (if it had one)
             svg.style('background-color', null);
@@ -1993,7 +1902,6 @@ class ToolbarManager {
      * Handle duplicate node
      */
     handleDuplicateNode() {
-        console.log('Duplicate node clicked');
         this.showNotification(this.getNotif('duplicateComingSoon'));
     }
     
@@ -2026,12 +1934,10 @@ class ToolbarManager {
         const confirmed = confirm(confirmMessage);
         if (!confirmed) return;
         
-        console.log('Resetting canvas to blank template');
-        
         // Get the diagram selector to retrieve blank template
         const diagramSelector = window.diagramSelector;
         if (!diagramSelector) {
-            console.error('Diagram selector not available');
+            logger.error('ToolbarManager', 'Diagram selector not available');
             this.showNotification(this.getNotif('resetFailed'), 'error');
             return;
         }
@@ -2039,7 +1945,7 @@ class ToolbarManager {
         // Get blank template for current diagram type
         const blankTemplate = diagramSelector.getTemplate(this.editor.diagramType);
         if (!blankTemplate) {
-            console.error('Failed to get blank template for:', this.editor.diagramType);
+            logger.error('ToolbarManager', `Failed to get blank template for: ${this.editor.diagramType}`);
             this.showNotification(this.getNotif('templateNotFound'), 'error');
             return;
         }
@@ -2074,7 +1980,6 @@ class ToolbarManager {
         
         // Reset view first for all diagram types to ensure optimal export view
         if (this.editor) {
-            console.log('Resetting view before PNG export');
             this.editor.fitDiagramToWindow();
             
             // Wait for the view reset animation to complete before exporting
@@ -2190,7 +2095,7 @@ class ToolbarManager {
             };
             
             img.onerror = (error) => {
-                console.error('Error loading SVG:', error);
+                logger.error('ToolbarManager', 'Error loading SVG', error);
                 URL.revokeObjectURL(url);
                 this.showNotification(this.getNotif('exportFailed'), 'error');
             };
@@ -2198,7 +2103,7 @@ class ToolbarManager {
             img.src = url;
             
         } catch (error) {
-            console.error('Error exporting diagram:', error);
+            logger.error('ToolbarManager', 'Error exporting diagram', error);
             this.showNotification(this.getNotif('exportFailed'), 'error');
         }
     }
@@ -2235,8 +2140,6 @@ class ToolbarManager {
         if (landing) {
             landing.style.display = 'block';
         }
-        
-        console.log('Returned to gallery - canvas cleaned');
     }
     
     /**
@@ -2248,7 +2151,6 @@ class ToolbarManager {
         if (container) {
             // Remove all SVG elements
             d3.select('#d3-container').selectAll('*').remove();
-            console.log('Canvas cleared');
         }
         
         // Clear any existing editor instance
@@ -2279,11 +2181,10 @@ class ToolbarManager {
      * Show notification using centralized notification manager
      */
     showNotification(message, type = 'info') {
-        console.log(`ToolbarManager: showNotification called - "${message}" [${type}]`);
         if (window.notificationManager) {
             window.notificationManager.show(message, type);
         } else {
-            console.error('NotificationManager not available');
+            logger.error('ToolbarManager', 'NotificationManager not available');
         }
     }
     
@@ -2294,7 +2195,7 @@ class ToolbarManager {
     setupNodeCounterObserver() {
         const container = document.getElementById('d3-container');
         if (!container) {
-            console.warn('ToolbarManager: d3-container not found for node counter observer');
+            logger.warn('ToolbarManager', 'd3-container not found for node counter observer');
             return;
         }
         
@@ -2319,7 +2220,7 @@ class ToolbarManager {
             // No attributes watching - not needed, saves resources
         });
         
-        console.log('ToolbarManager: Node counter observer set up');
+        logger.debug('ToolbarManager', 'Node counter observer set up');
         
         // Initial count and validation with longer delay to ensure SVG is fully rendered
         setTimeout(() => {
@@ -2333,7 +2234,7 @@ class ToolbarManager {
      */
     updateNodeCount() {
         if (!this.nodeCountElement) {
-            console.warn('ToolbarManager: Node count element not found');
+            logger.warn('ToolbarManager', 'Node count element not found');
             return;
         }
         
@@ -2363,9 +2264,6 @@ class ToolbarManager {
         // Update the display
         const label = window.languageManager?.translate('nodeCount') || 'Nodes';
         this.nodeCountElement.textContent = `${label}: ${count}`;
-        
-        // Log details for debugging
-        console.log(`ToolbarManager: Node count = ${count}`, nodeIds.length > 0 ? `[${nodeIds.slice(0, 5).join(', ')}${nodeIds.length > 5 ? '...' : ''}]` : '');
     }
     
     /**
@@ -2374,24 +2272,26 @@ class ToolbarManager {
     validateToolbarSession(operation = 'Operation') {
         // Check if we have a session ID
         if (!this.sessionId) {
-            console.warn(`ToolbarManager: ${operation} - No session ID set`);
+            logger.warn('ToolbarManager', `${operation} - No session ID set`);
             return false;
         }
         
         // Check if the editor's session matches our session
         if (this.editor && this.editor.sessionId !== this.sessionId) {
-            console.warn(`ToolbarManager: ${operation} blocked - Session mismatch`);
-            console.warn('  Toolbar session:', this.sessionId?.substr(-8));
-            console.warn('  Editor session:', this.editor.sessionId?.substr(-8));
+            logger.warn('ToolbarManager', `${operation} blocked - Session mismatch`, {
+                toolbarSession: this.sessionId?.substr(-8),
+                editorSession: this.editor.sessionId?.substr(-8)
+            });
             return false;
         }
         
         // Check with DiagramSelector's session
         if (window.diagramSelector?.currentSession) {
             if (window.diagramSelector.currentSession.id !== this.sessionId) {
-                console.warn(`ToolbarManager: ${operation} blocked - DiagramSelector session mismatch`);
-                console.warn('  Toolbar session:', this.sessionId?.substr(-8));
-                console.warn('  Active session:', window.diagramSelector.currentSession.id?.substr(-8));
+                logger.warn('ToolbarManager', `${operation} blocked - DiagramSelector session mismatch`, {
+                    toolbarSession: this.sessionId?.substr(-8),
+                    activeSession: window.diagramSelector.currentSession.id?.substr(-8)
+                });
                 return false;
             }
         }
@@ -2419,7 +2319,7 @@ class ToolbarManager {
      * 🆕 Handle Learning Mode button click
      */
     async handleLearningMode() {
-        console.log('ToolbarManager: Learning Mode initiated');
+        logger.info('ToolbarManager', 'Learning Mode initiated');
         
         // Validate diagram first
         const validationResult = this.validateLearningMode();
@@ -2431,12 +2331,14 @@ class ToolbarManager {
             const message = this.validator.getValidationMessage(validationResult, currentLang);
             
             this.showNotification(message, 'error');
-            console.warn('ToolbarManager: Learning Mode validation failed:', validationResult.reason);
+            logger.warn('ToolbarManager', 'Learning Mode validation failed', {
+                reason: validationResult.reason
+            });
             return;
         }
         
         // Validation passed - Enter Learning Mode!
-        console.log('ToolbarManager: ✅ Diagram validation passed!', validationResult);
+        logger.info('ToolbarManager', 'Diagram validation passed');
         
         try {
             // Initialize LearningModeManager if not already done
@@ -2447,10 +2349,10 @@ class ToolbarManager {
             // Start Learning Mode
             await this.learningModeManager.startLearningMode(validationResult);
             
-            console.log('ToolbarManager: Learning Mode started successfully');
+            logger.info('ToolbarManager', 'Learning Mode started successfully');
             
         } catch (error) {
-            console.error('ToolbarManager: Failed to start Learning Mode:', error);
+            logger.error('ToolbarManager', 'Failed to start Learning Mode', error);
             this.showNotification(
                 'Failed to start Learning Mode. Please try again.',
                 'error'
@@ -2462,7 +2364,9 @@ class ToolbarManager {
      * Cleanup and remove all event listeners by cloning and replacing elements
      */
     destroy() {
-        console.log('ToolbarManager: Destroying instance for session:', this.sessionId?.substr(-8));
+        logger.debug('ToolbarManager', 'Destroying instance', {
+            session: this.sessionId?.substr(-8)
+        });
         
         // CRITICAL: Cancel all in-progress LLM requests before destroying
         this.cancelAllLLMRequests();
@@ -2488,7 +2392,6 @@ class ToolbarManager {
         if (this.nodeCountObserver) {
             this.nodeCountObserver.disconnect();
             this.nodeCountObserver = null;
-            console.log('ToolbarManager: Node counter observer disconnected');
         }
         
         // Clear node count update timeout
@@ -2500,7 +2403,6 @@ class ToolbarManager {
         // Unregister from global registry
         if (window.toolbarManagerRegistry) {
             window.toolbarManagerRegistry.delete(this.sessionId);
-            console.log('ToolbarManager: Unregistered from registry');
         }
         
         // Clear all references
@@ -2508,8 +2410,6 @@ class ToolbarManager {
         this.currentSelection = [];
         this.sessionId = null;
         this.diagramType = null;
-        
-        console.log('ToolbarManager: Destruction complete');
     }
 }
 

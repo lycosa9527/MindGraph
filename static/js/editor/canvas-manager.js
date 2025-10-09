@@ -23,7 +23,7 @@ class CanvasManager {
         this.container = d3.select(containerId);
         
         if (this.container.empty()) {
-            console.error(`Container ${containerId} not found`);
+            logger.error('CanvasManager', `Container ${containerId} not found`);
             return;
         }
         
@@ -64,7 +64,7 @@ class CanvasManager {
      */
     enablePanZoom(options = {}) {
         if (!this.svg) {
-            console.error('SVG not created yet');
+            logger.error('CanvasManager', 'SVG not created yet');
             return;
         }
         

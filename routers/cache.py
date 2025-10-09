@@ -179,5 +179,8 @@ async def get_modular_cache_status():
         logger.error(f"Modular cache status check: ERROR - {e}")
         return cache_data
 
-logger.info("Cache routes initialized: 3 routes registered")
+# Only log from main worker to avoid duplicate messages
+import os
+if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+    logger.debug("Cache routes initialized: 3 routes registered")
 

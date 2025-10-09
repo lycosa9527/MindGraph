@@ -122,7 +122,7 @@ class DynamicRendererLoader {
                     this.cache.set('shared-utilities', { renderer: true });
                 })
                 .catch(error => {
-                    console.error('Failed to load shared utilities:', error);
+                    logger.error('DynamicRendererLoader', 'Failed to load shared utilities:', error);
                     throw error;
                 });
             this.cache.set('shared-utilities', { promise: sharedPromise });
@@ -140,7 +140,7 @@ class DynamicRendererLoader {
                 return renderer;
             })
             .catch(error => {
-                console.error(`Failed to load renderer module ${config.module}:`, error);
+                logger.error('DynamicRendererLoader', `Failed to load renderer module ${config.module}:`, error);
                 throw error;
             });
         
@@ -164,7 +164,7 @@ class DynamicRendererLoader {
             
             return renderFunction(spec, theme, dimensions);
         } catch (error) {
-            console.error(`Dynamic rendering failed for ${graphType}:`, error);
+            logger.error('DynamicRendererLoader', `Dynamic rendering failed for ${graphType}:`, error);
             
             // Error logged to console only
             
