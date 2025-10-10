@@ -9,6 +9,112 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-10-10 (Middleware Migration Plan v3.0)
+- **Comprehensive Migration Plan**: Updated with both frontend fixes and backend refactoring
+  - **Phase 4 - Frontend Fixes**:
+    - **Issues Identified**: Flow Map and Multi-Flow Map don't use Strategy 1 in `identifyMainTopic()`
+    - **Root Cause**: Same pattern as Circle Map bug - Strategy 1 doesn't check `spec.title` and `spec.event`
+    - **Fix Pattern**: Add Strategy 1 blocks for Flow Map (`spec.title`) and Multi-Flow Map (`spec.event`)
+    - **Step-by-Step Instructions**: Exact file paths, line numbers, code to add, testing procedures
+    - **Reference Pattern**: Based on successful Circle Map fix in `docs/CIRCLE_MAP_SPEC_UPDATE_FIX.md`
+  - **Phase 5 - Backend Refactoring (NEW)**:
+    - **Remove LLMServiceWrapper**: Eliminate unnecessary abstraction layer (100+ lines)
+    - **Direct Middleware Usage**: Agents call `llm_service.chat()` directly instead of through wrapper
+    - **Architecture Simplification**: Agent → llm_service → LLM (was: Agent → Wrapper → llm_service → LLM)
+    - **Benefits**: 50% less code, better performance, clearer intent, easier maintenance
+    - **Impact**: Refactor all 10 agent files to use middleware natively
+    - **Code Reduction**: ~220 lines removed across codebase
+    - **Complete Refactoring Guide**: Before/after examples, migration checklist, risk assessment
+  - **Documentation Features**:
+    - Complete node type inventory for all diagram types
+    - Verification steps for each fix
+    - Testing checklist for all 10 diagram types
+    - Quick reference guide for future development
+    - Debug workflow for auto-complete issues
+    - Detailed wrapper removal instructions
+  - **File**: `docs/MIDDLEWARE_MIGRATION_PLAN.md` v3.0 - Ready for systematic implementation
+
+### Fixed - 2025-10-10 (Circle Map Spec Update Bug)
+- **Critical Bug Fix**: Circle map center topic was not updating in spec when user edited text
+  - **Root Cause**: `updateCircleMapText()` checked for `nodeType === 'topic'`, but circle maps use `nodeType === 'center'`
+  - **Impact**: Auto-complete was sending wrong/stale topic to LLMs (e.g., "背景7" instead of "优衣库")
+  - **Fix**: Updated condition to check for both `'topic'` OR `'center'` in `interactive-editor.js`
+  - **Result**: Spec now properly updates when user edits circle map center, auto-complete uses correct topic
+  - **Files Modified**: 
+    - `static/js/editor/interactive-editor.js` - Fixed spec update logic
+    - `static/js/editor/toolbar-manager.js` - Improved main topic identification
+  - **Documentation**: `docs/CIRCLE_MAP_SPEC_UPDATE_FIX.md` - Complete analysis and fix details
+
+### Added - 2025-10-10 (Parallel Auto-Complete)
+- **Parallel LLM Execution**: Auto-complete now calls 4 LLMs simultaneously instead of sequentially
+  - **Performance Improvement**: ~2x faster (6.5s vs 13.5s for 4 LLMs)
+  - **New Backend Endpoint**: `/api/generate_multi_parallel` for parallel agent workflow
+  - **Architecture**: Each LLM runs full agent workflow (proper system prompts) in parallel using `asyncio.gather()`
+  - **Frontend Integration**: `toolbar-manager.js` updated to call parallel endpoint with fallback
+  - **Results Caching**: All 4 LLM results cached for instant switching between outputs
+  - **User Experience**: Faster response, can compare results from multiple models
+  - **Files Modified**:
+    - `routers/api.py` - Added parallel generation endpoint
+    - `static/js/editor/toolbar-manager.js` - Updated to use parallel endpoint
+    - `models/requests.py` - Added `models` field for parallel requests
+  - **Documentation**: `docs/PARALLEL_AUTO_COMPLETE.md` - Implementation details and performance analysis
+
+### Added - 2025-10-10 (LLM Middleware Integration)
+- **Agent-Middleware Integration**: All agents now use new LLM middleware through wrapper
+  - **LLMServiceWrapper**: Adapter class that makes middleware compatible with existing agent interface
+  - **Benefits**: Error handling, retry logic, performance tracking, rate limiting, circuit breakers
+  - **Backward Compatible**: No changes required to existing agent code
+  - **Central Management**: All LLM calls now go through unified middleware
+  - **Files Modified**:
+    - `agents/core/agent_utils.py` - Added `LLMServiceWrapper` class
+    - Modified `get_llm_client()` to return wrapper instead of legacy clients
+  - **Testing**: Added `tests/test_agent_middleware_integration.py` with 8 integration tests
+  - **Documentation**: `docs/MIDDLEWARE_INTEGRATION_COMPLETE.md` - Integration guide
+
+### Fixed - 2025-10-10 (Project Cleanup)
+- **Repository Organization**: Cleaned up root folder and consolidated test structure
+  - **Deleted Old Code Reviews**: Removed 3 obsolete code review documents
+    - `AUTO_COMPLETE_CODE_REVIEW.md`
+    - `CODE_REVIEW_REPORT.md`
+    - `COMPREHENSIVE_CODE_REVIEW.md`
+  - **Consolidated Test Folders**: Merged `test/` into `tests/` (pytest convention)
+    - Moved `test/test_all_agents.py` → `tests/`
+    - Moved `test/images/` → `tests/images/`
+    - Moved `test_real_llm_manual.py` → `tests/`
+    - Moved `run_all_llm_tests.py` → `tests/`
+    - Deleted old `test/` folder
+  - **Organized Documentation**: Moved 6 recent docs from root to `docs/`
+    - `MIDDLEWARE_INTEGRATION_COMPLETE.md`
+    - `PARALLEL_AUTO_COMPLETE.md`
+    - `REAL_LLM_TESTING_COMPLETE.md`
+    - `CIRCLE_MAP_SPEC_UPDATE_FIX.md`
+    - `AUTO_COMPLETE_OPTIMIZATION_COMPLETE.md`
+    - `AUTO_COMPLETE_TOPIC_BUG_FIX.md`
+  - **Result**: Clean root folder, unified test location, organized documentation
+  - **Documentation**: `docs/CLEANUP_SUMMARY.md` - Complete cleanup details
+
+### Added - 2025-10-10 (ThinkGuide Modular Architecture)
+- **Modular Agent System**: Refactored ThinkGuide to support multiple diagram types
+  - **Base Class** (`base_thinking_agent.py`): Abstract base for all diagram-specific agents
+    - Common workflow (session management, LLM communication, language detection)
+    - Abstract methods force diagram-specific implementation
+    - Shared infrastructure reduces code duplication
+  - **Factory Pattern** (`factory.py`): Instantiates correct agent by diagram type
+    - Singleton pattern (one agent instance per type)
+    - Clear error messages for unsupported types
+    - Easy to extend (just register new agent class)
+  - **Circle Map Agent**: Refactored to work with factory pattern
+    - Fully functional (observations/context focus)
+    - Ready as template for other diagram types
+  - **Architecture Documentation** (`THINKGUIDE_ARCHITECTURE.md`):
+    - Complete guide for adding new diagram types
+    - Explains design decisions and patterns
+    - Step-by-step tutorial with code examples
+  - **Modularization Plan** (`THINKGUIDE_MODULARIZATION_PLAN.md`):
+    - Comparison of different architectural approaches
+    - Detailed implementation roadmap
+    - Diagram-specific behavior specifications
+
 ### Added - 2025-10-10 (Node Animation System)
 - **Complete Visual Feedback System**: Nodes now animate when updated by ThinkGuide
   - **Animation Module** (`static/js/editor/node-indicator.js`): Reusable animation system
