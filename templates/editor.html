@@ -421,6 +421,7 @@
                         </svg>
                         Line
                     </button>
+                    {% if feature_learning_mode %}
                     <button id="learning-btn" class="btn-tool btn-learning" title="Start Interactive Learning Mode" disabled>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
                             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -428,6 +429,17 @@
                         </svg>
                         <span id="learning-btn-text">Learn</span>
                     </button>
+                    {% endif %}
+                    {% if feature_thinkguide %}
+                    <button id="thinking-btn" class="btn-tool btn-thinking" title="Start Socratic Thinking Mode (ThinkGuide)" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
+                            <circle cx="8" cy="10" r="1" fill="currentColor"/>
+                            <circle cx="16" cy="10" r="1" fill="currentColor"/>
+                        </svg>
+                        <span id="thinking-btn-text">Thinking</span>
+                    </button>
+                    {% endif %}
                 </div>
                 
                 <div class="toolbar-group">
@@ -541,6 +553,58 @@
                 </div>
             </div>
             
+            <!-- ThinkGuide Panel (Left-side) -->
+            <div class="thinking-panel collapsed" id="thinking-panel">
+                <div class="thinking-header">
+                    <div class="thinking-header-title">
+                        <div class="thinking-icon-wrapper">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
+                                <circle cx="8" cy="10" r="1" fill="currentColor"/>
+                                <circle cx="16" cy="10" r="1" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <div class="thinking-header-text">
+                            <h3 id="thinking-title-text">ThinkGuide</h3>
+                        </div>
+                    </div>
+                    <button class="thinking-close-btn" id="thinking-close-btn" title="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="thinking-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="thinking-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-label" id="thinking-progress-label">Starting...</div>
+                </div>
+                
+                <div class="thinking-messages" id="thinking-messages">
+                    <!-- Messages will be rendered here -->
+                </div>
+                
+                <div class="thinking-input-area">
+                    <div class="thinking-input-wrapper">
+                        <textarea 
+                            id="thinking-input" 
+                            class="thinking-input" 
+                            placeholder="输入你的回答..."
+                            rows="1"
+                        ></textarea>
+                        <button id="thinking-send-btn" class="thinking-send-btn" title="Send message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- AI Assistant Panel -->
             <div class="ai-assistant-panel collapsed" id="ai-assistant-panel">
                 <div class="ai-assistant-header">
@@ -555,7 +619,6 @@
                         </div>
                         <div class="ai-header-text">
                             <h3>MindMate AI</h3>
-                            <span class="ai-status">Online</span>
                         </div>
                     </div>
                     <button id="toggle-ai-assistant" class="ai-close-btn" title="Close">
@@ -626,6 +689,9 @@
     <script src="/static/js/theme-config.js"></script>
     <script src="/static/js/style-manager.js"></script>
     
+    <!-- Centralized Panel Management System - MUST load before other editors -->
+    <script src="/static/js/editor/panel-manager.js"></script>
+    
     <!-- Editor scripts -->
     <script src="/static/js/editor/notification-manager.js"></script>
     <script src="/static/js/editor/language-manager.js"></script>
@@ -643,12 +709,15 @@
     <script src="/static/js/dynamic-renderer-loader.js"></script>
     <script src="/static/js/renderers/renderer-dispatcher.js"></script>
     
-    <!-- Markdown Libraries for AI Assistant (Local copies) -->
+    <!-- Markdown Libraries for AI Assistant & ThinkGuide (Local copies) -->
     <script src="/static/js/markdown-it.min.js"></script>
     <script src="/static/js/purify.min.js"></script>
     
-    <!-- AI Assistant -->
+    <!-- AI Assistant (MindMate) -->
     <script src="/static/js/editor/ai-assistant-manager.js"></script>
+    
+    <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
+    <script src="/static/js/editor/thinking-mode-manager.js"></script>
 </body>
 </html>
 

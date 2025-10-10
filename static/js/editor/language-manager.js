@@ -69,6 +69,7 @@ class LanguageManager {
                 auto: 'Auto',
                 line: 'Line',
                 learn: 'Learn',
+                thinking: 'ThinkGuide',
                 tools: 'Tools',
                 empty: 'Empty',
                 undo: 'Undo',
@@ -107,6 +108,9 @@ class LanguageManager {
                 autoCompleteTooltip: 'Auto-complete diagram with AI',
                 lineModeTooltip: 'Toggle black & white line mode',
                 learningModeTooltip: 'Start Interactive Learning Mode',
+                thinkingModeTooltip: 'Start Socratic Thinking Mode',
+                thinkingModeTitle: 'ThinkGuide - Thinking Guide',
+                thinkingInputPlaceholder: 'Type your response...',
                 // Learning Mode UI
                 learningModeTitle: 'Learning Mode',
                 learningModeProgress: (current, total) => `Question <strong>${current}</strong> of <strong>${total}</strong>`,
@@ -298,6 +302,7 @@ class LanguageManager {
                 auto: '自动',
                 line: '线稿',
                 learn: '学习',
+                thinking: '思维向导',
                 tools: '工具',
                 empty: '清空',
                 undo: '撤销',
@@ -336,6 +341,9 @@ class LanguageManager {
                 autoCompleteTooltip: '使用AI自动完成图示',
                 lineModeTooltip: '切换黑白线稿模式',
                 learningModeTooltip: '开始交互式学习模式',
+                thinkingModeTooltip: '开始苏格拉底式思维模式',
+                thinkingModeTitle: '思维向导',
+                thinkingInputPlaceholder: '输入你的回答...',
                 // Learning Mode UI | 学习模式界面
                 learningModeTitle: '学习模式',
                 learningModeProgress: (current, total) => `问题 <strong>${current}</strong> / <strong>${total}</strong>`,
@@ -671,6 +679,28 @@ class LanguageManager {
                 learningBtnText.textContent = t.learn;
             }
             learningBtn.title = t.learningModeTooltip;
+        }
+        
+        // Update ThinkGuide button text and title
+        const thinkingBtn = document.getElementById('thinking-btn');
+        if (thinkingBtn) {
+            const thinkingBtnText = document.getElementById('thinking-btn-text');
+            if (thinkingBtnText) {
+                thinkingBtnText.textContent = t.thinking;
+            }
+            thinkingBtn.title = t.thinkingModeTooltip;
+        }
+        
+        // Update ThinkGuide panel title
+        const thinkingTitleText = document.getElementById('thinking-title-text');
+        if (thinkingTitleText) {
+            thinkingTitleText.textContent = t.thinkingModeTitle;
+        }
+        
+        // Update ThinkGuide input placeholder
+        const thinkingInput = document.getElementById('thinking-input');
+        if (thinkingInput) {
+            thinkingInput.placeholder = t.thinkingInputPlaceholder;
         }
         
         if (emptyBtn) {

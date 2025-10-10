@@ -11,6 +11,7 @@ class AIAssistantManager {
         this.conversationId = null;
         this.currentStreamingMessage = null;
         this.messageBuffer = '';
+        this.hasGreeted = false; // Track if we've sent initial greeting
         
         // Initialize Markdown renderer
         this.md = window.markdownit({
@@ -85,12 +86,7 @@ class AIAssistantManager {
             }
         };
         
-        // Add method to manually close the panel
-        window.closeMindMatePanel = () => {
-            if (this.panel && !this.panel.classList.contains('collapsed')) {
-                this.togglePanel();
-            }
-        };
+        // Panel control is now handled by centralized PanelManager (panel-manager.js)
         
         // Send message
         if (this.sendBtn) {
@@ -115,50 +111,91 @@ class AIAssistantManager {
      * Toggle AI assistant panel
      */
     togglePanel() {
-        logger.debug('AIAssistant', 'Toggling panel');
+        logger.info('AIAssistant', '🟢 togglePanel() called - STARTING PANEL TOGGLE');
         
         if (!this.panel) {
-            logger.error('AIAssistant', 'Panel not found');
+            logger.error('AIAssistant', '❌ Panel not found');
             const message = window.languageManager?.getNotification('aiPanelNotFound') 
                 || 'AI Assistant panel not found. Please reload the page.';
             alert(message);
             return;
         }
         
+        // Log current state of BOTH panels
+        const thinkPanel = document.getElementById('thinking-panel');
+        const aiPanel = document.getElementById('ai-assistant-panel');
+        
+        logger.info('AIAssistant', 'Panel state BEFORE toggle:', {
+            aiPanelId: aiPanel?.id || 'NOT_FOUND',
+            aiPanelCollapsed: aiPanel?.classList.contains('collapsed'),
+            thinkPanelId: thinkPanel?.id || 'NOT_FOUND',
+            thinkPanelCollapsed: thinkPanel?.classList.contains('collapsed'),
+            currentPanelManager: window.panelManager?.getCurrentPanel()
+        });
+        
         // Ensure the panel is visible (not display:none)
         if (this.panel.style.display === 'none') {
             this.panel.style.display = 'flex';
         }
         
-        const isCollapsed = this.panel.classList.toggle('collapsed');
-        logger.debug('AIAssistant', 'Panel toggled', {
-            collapsed: isCollapsed
+        // Check current state BEFORE any DOM manipulation
+        const isCurrentlyClosed = this.panel.classList.contains('collapsed');
+        
+        logger.info('AIAssistant', 'Panel state', {
+            isCurrentlyClosed,
+            willOpen: isCurrentlyClosed,
+            willClose: !isCurrentlyClosed
         });
         
-        // If opening AI panel, close property panel to prevent overlap
-        if (!isCollapsed) {
-            const propertyPanel = document.getElementById('property-panel');
-            if (propertyPanel && propertyPanel.style.display !== 'none') {
-                // Access toolbar manager through current editor to properly hide property panel
-                if (window.currentEditor?.toolbarManager && typeof window.currentEditor.toolbarManager.hidePropertyPanel === 'function') {
-                    window.currentEditor.toolbarManager.hidePropertyPanel();
-                } else {
-                    propertyPanel.style.display = 'none';
+        // Use PanelManager with EXPLICIT methods - it will manage all panels
+        if (window.panelManager) {
+            if (isCurrentlyClosed) {
+                // Open this panel (PanelManager will close others)
+                logger.info('AIAssistant', '🎯 Calling panelManager.openMindMatePanel() - EXPLICIT METHOD');
+                const success = window.panelManager.openMindMatePanel();
+                logger.info('AIAssistant', 'openMindMatePanel result:', success);
+                
+                // Send invisible greeting on first open
+                if (!this.hasGreeted) {
+                    this.hasGreeted = true;
+                    logger.debug('AIAssistant', 'Sending initial greeting');
+                    
+                    // Send greeting after a short delay to ensure panel is visible
+                    setTimeout(() => {
+                        this.sendGreeting();
+                    }, 400);
                 }
+            } else {
+                // Close this panel
+                logger.info('AIAssistant', '🎯 Calling panelManager.closeMindMatePanel() - EXPLICIT METHOD');
+                window.panelManager.closeMindMatePanel();
+            }
+        } else {
+            // Fallback if PanelManager not available
+            logger.warn('AIAssistant', '⚠️ PanelManager not available, using fallback');
+            this.panel.classList.toggle('collapsed');
+            if (this.mindmateBtn) {
+                this.mindmateBtn.classList.toggle('active');
             }
         }
         
-        // Update MindMate button state
-        if (this.mindmateBtn) {
-            if (isCollapsed) {
-                this.mindmateBtn.classList.remove('active');
-            } else {
-                this.mindmateBtn.classList.add('active');
-                // Focus input when opening
-                if (this.chatInput) {
-                    setTimeout(() => this.chatInput.focus(), 300);
-                }
-            }
+        // Brief delay to let DOM update
+        setTimeout(() => {
+            logger.info('AIAssistant', 'Panel state AFTER toggle:', {
+                aiPanelId: aiPanel?.id || 'NOT_FOUND',
+                aiPanelCollapsed: aiPanel?.classList.contains('collapsed'),
+                aiPanelClasses: aiPanel?.className || 'N/A',
+                thinkPanelId: thinkPanel?.id || 'NOT_FOUND',
+                thinkPanelCollapsed: thinkPanel?.classList.contains('collapsed'),
+                thinkPanelClasses: thinkPanel?.className || 'N/A',
+                currentPanelManager: window.panelManager?.getCurrentPanel()
+            });
+            logger.info('AIAssistant', '✅ Panel toggle sequence completed');
+        }, 100);
+        
+        // Focus input when opening (delay to let greeting finish)
+        if (isCurrentlyClosed && this.chatInput) {
+            setTimeout(() => this.chatInput.focus(), 800);
         }
         
         // Trigger canvas resize to accommodate AI panel
@@ -180,6 +217,49 @@ class AIAssistantManager {
     }
     
     /**
+     * Send invisible greeting message on first panel open
+     */
+    async sendGreeting() {
+        logger.debug('AIAssistant', 'Sending greeting to Dify');
+        
+        // Remove the static welcome message if it exists
+        const welcomeMessage = this.chatMessages?.querySelector('.ai-welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.remove();
+        }
+        
+        // Send invisible greeting (user doesn't see their "你好" in chat)
+        const greetingMessage = '你好';
+        
+        try {
+            await this.sendMessageToDify(greetingMessage, false); // false = don't show user message
+            logger.info('AIAssistant', 'Greeting sent successfully');
+        } catch (error) {
+            logger.error('AIAssistant', 'Failed to send greeting:', error);
+            // If greeting fails, restore the static welcome message
+            this.restoreWelcomeMessage();
+        }
+    }
+    
+    /**
+     * Restore static welcome message (fallback if greeting fails)
+     */
+    restoreWelcomeMessage() {
+        if (!this.chatMessages) return;
+        
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'ai-welcome-message';
+        welcomeDiv.innerHTML = `
+            <div class="welcome-icon">✨</div>
+            <div class="welcome-text">
+                <h4>Welcome to MindMate AI!</h4>
+                <p>I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.</p>
+            </div>
+        `;
+        this.chatMessages.insertBefore(welcomeDiv, this.chatMessages.firstChild);
+    }
+    
+    /**
      * Send message to AI assistant
      */
     async sendMessage() {
@@ -189,11 +269,23 @@ class AIAssistantManager {
             return;
         }
         
-        // Add user message to chat
-        this.addMessage('user', message);
-        
         // Clear input
         this.chatInput.value = '';
+        
+        // Send to Dify with UI display
+        await this.sendMessageToDify(message, true);
+    }
+    
+    /**
+     * Send message to Dify API
+     * @param {string} message - The message to send
+     * @param {boolean} showUserMessage - Whether to display the user's message in chat
+     */
+    async sendMessageToDify(message, showUserMessage = true) {
+        // Add user message to chat (if not invisible)
+        if (showUserMessage) {
+            this.addMessage('user', message);
+        }
         
         // Disable input during streaming
         this.setInputEnabled(false);

@@ -140,16 +140,8 @@ class DiagramValidator {
                 return;
             }
             
-            // Check for placeholder patterns
-            const isPlaceholder = validator.isPlaceholderText(textContent);
-            if (isPlaceholder) {
-                invalidNodes.push({
-                    id: nodeId,
-                    type: nodeType,
-                    reason: 'placeholder',
-                    text: textContent
-                });
-            }
+            // 🆕 Removed placeholder validation - users can start with template text
+            // ThinkGuide and LLMs can help build diagrams from scratch!
         });
         
         // Generate validation result
@@ -224,19 +216,33 @@ class DiagramValidator {
     validateAndUpdateButton(learningBtn, diagramType) {
         const result = this.validateDiagram(diagramType);
         
-        if (!learningBtn) {
+        // Update Learning button
+        if (learningBtn) {
+            if (result.isValid) {
+                learningBtn.disabled = false;
+                learningBtn.classList.remove('disabled');
+                this.logger.debug('DiagramValidator', '✅ Learning button enabled');
+            } else {
+                learningBtn.disabled = true;
+                learningBtn.classList.add('disabled');
+                this.logger.debug('DiagramValidator', `❌ Learning button disabled: ${result.reason}`);
+            }
+        } else {
             this.logger.warn('DiagramValidator', 'Learning button not found');
-            return result;
         }
         
-        if (result.isValid) {
-            learningBtn.disabled = false;
-            learningBtn.classList.remove('disabled');
-            this.logger.debug('DiagramValidator', '✅ Learning button enabled');
-        } else {
-            learningBtn.disabled = true;
-            learningBtn.classList.add('disabled');
-            this.logger.debug('DiagramValidator', `❌ Learning button disabled: ${result.reason}`);
+        // Update Thinking button (same validation logic)
+        const thinkingBtn = document.getElementById('thinking-btn');
+        if (thinkingBtn) {
+            if (result.isValid) {
+                thinkingBtn.disabled = false;
+                thinkingBtn.classList.remove('disabled');
+                this.logger.debug('DiagramValidator', '✅ Thinking button enabled');
+            } else {
+                thinkingBtn.disabled = true;
+                thinkingBtn.classList.add('disabled');
+                this.logger.debug('DiagramValidator', `❌ Thinking button disabled: ${result.reason}`);
+            }
         }
         
         return result;

@@ -268,6 +268,52 @@
     }
 }
 
+/* ============================================
+   THINKING BUTTON (ThinkGuide)
+   ============================================ */
+
+.btn-thinking {
+    position: relative;
+    background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-thinking svg {
+    margin-right: 6px;
+}
+
+.btn-thinking:not(:disabled):hover {
+    background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.5) !important;
+}
+
+.btn-thinking:not(:disabled):active {
+    transform: translateY(0);
+}
+
+/* Disabled state */
+.btn-thinking:disabled {
+    background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%) !important;
+    color: #757575 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+
+/* Active state when panel is open */
+.btn-thinking.active {
+    background: linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%) !important;
+    box-shadow: 0 2px 8px rgba(106, 27, 154, 0.5) !important;
+}
+
 /* Learning Material Modal Animations */
 @keyframes fadeIn {
     from {

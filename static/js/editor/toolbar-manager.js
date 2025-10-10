@@ -118,6 +118,7 @@ class ToolbarManager {
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.lineModeBtn = document.getElementById('line-mode-btn');
         this.learningBtn = document.getElementById('learning-btn');  // 🆕 Learning Mode button
+        this.thinkingBtn = document.getElementById('thinking-btn');  // 🆕 ThinkGuide button
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.emptyNodeBtn = document.getElementById('empty-node-btn');
         this.undoBtn = document.getElementById('undo-btn');
@@ -199,6 +200,10 @@ class ToolbarManager {
         this.learningBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.handleLearningMode();
+        });
+        this.thinkingBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleThinkingMode();
         });
         this.duplicateNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -471,14 +476,27 @@ class ToolbarManager {
             // Update toolbar button states
             this.updateToolbarState(hasSelection);
             
-            // Show/hide property panel based on selection
+            // Check if ThinkGuide or MindMate AI panels are currently open
+            // If so, don't auto-open the property panel (user is in a different mode)
+            const currentPanel = window.panelManager?.getCurrentPanel();
+            const isInAssistantMode = currentPanel === 'thinkguide' || currentPanel === 'mindmate';
+            
+            // Show/hide property panel based on selection (unless in assistant mode)
             if (hasSelection && this.currentSelection.length > 0) {
-                this.showPropertyPanel();
-                this.loadNodeProperties(this.currentSelection[0]);
+                // Only auto-open property panel if not in ThinkGuide/MindMate mode
+                if (!isInAssistantMode) {
+                    this.showPropertyPanel();
+                    this.loadNodeProperties(this.currentSelection[0]);
+                } else {
+                    // In assistant mode: just load properties without showing panel
+                    this.loadNodeProperties(this.currentSelection[0]);
+                }
             } else {
-                // Hide property panel when no selection
-                this.hidePropertyPanel();
-                this.clearPropertyPanel();
+                // Hide property panel when no selection (only if it's currently open)
+                if (currentPanel === 'property') {
+                    this.hidePropertyPanel();
+                    this.clearPropertyPanel();
+                }
             }
         });
         
@@ -533,7 +551,14 @@ class ToolbarManager {
     showPropertyPanel() {
         if (this.propertyPanel) {
             logger.debug('ToolbarManager', 'Showing property panel');
-            this.propertyPanel.style.display = 'block';
+            
+            // Use centralized panel manager
+            if (window.panelManager) {
+                window.panelManager.openPanel('property');
+            } else {
+                // Fallback
+                this.propertyPanel.style.display = 'block';
+            }
             
             // Only resize if diagram is currently at full width
             // If already sized for panel, just show the panel without resizing
@@ -554,7 +579,13 @@ class ToolbarManager {
      */
     hidePropertyPanel() {
         if (this.propertyPanel) {
-            this.propertyPanel.style.display = 'none';
+            // Use centralized panel manager
+            if (window.panelManager) {
+                window.panelManager.closePanel('property');
+            } else {
+                // Fallback
+                this.propertyPanel.style.display = 'none';
+            }
             
             // Always resize to full width when panel is hidden
             // This allows diagram to expand and use all available space
@@ -2378,6 +2409,71 @@ class ToolbarManager {
             logger.error('ToolbarManager', 'Failed to start Learning Mode', error);
             this.showNotification(
                 'Failed to start Learning Mode. Please try again.',
+                'error'
+            );
+        }
+    }
+    
+    /**
+     * Handle Thinking Mode (ThinkGuide) button click
+     */
+    async handleThinkingMode() {
+        logger.info('ToolbarManager', '🔵 ThinkGuide Mode initiated - BUTTON CLICKED');
+        
+        // Log current panel state at the very start
+        const thinkPanel = document.getElementById('thinking-panel');
+        const aiPanel = document.getElementById('ai-assistant-panel');
+        logger.info('ToolbarManager', 'Initial panel state:', {
+            thinkPanelCollapsed: thinkPanel?.classList.contains('collapsed'),
+            aiPanelCollapsed: aiPanel?.classList.contains('collapsed'),
+            currentPanel: window.panelManager?.getCurrentPanel()
+        });
+        
+        // 🆕 No validation needed - ThinkGuide can help build diagrams from scratch!
+        logger.info('ToolbarManager', 'Starting ThinkGuide (no validation required) ✅');
+        
+        try {
+            // Use global thinkingModeManager instance
+            if (!window.thinkingModeManager) {
+                const errorMsg = 'ThinkGuide not initialized. Please reload the page.';
+                logger.error('ToolbarManager', errorMsg, {
+                    hasMindMate: !!window.aiAssistantManager,
+                    hasMarkdownIt: !!window.markdownit,
+                    hasDOMPurify: !!window.DOMPurify
+                });
+                this.showNotification(errorMsg, 'error');
+                return;
+            }
+            
+            logger.info('ToolbarManager', 'ThinkGuide manager available ✅');
+            
+            // Get current diagram data - normalize it to ThinkGuide format
+            const diagramType = this.editor?.diagramType || 'circle_map';
+            const rawSpec = this.editor?.currentSpec;
+            
+            if (!rawSpec) {
+                throw new Error('No diagram data found');
+            }
+            
+            // Normalize diagram data to standard format
+            const diagramData = window.thinkingModeManager.normalizeDiagramData(rawSpec, diagramType);
+            
+            logger.info('ToolbarManager', 'ThinkGuide starting with data:', {
+                diagramType,
+                center: diagramData.center,
+                childCount: diagramData.children?.length || 0
+            });
+            
+            // Start Thinking Mode (this will call openPanel internally)
+            logger.info('ToolbarManager', '🎯 Calling thinkingModeManager.startThinkingMode()');
+            await window.thinkingModeManager.startThinkingMode(diagramType, diagramData);
+            
+            logger.info('ToolbarManager', '✅ ThinkGuide Mode started successfully');
+            
+        } catch (error) {
+            logger.error('ToolbarManager', '❌ Failed to start ThinkGuide Mode', error);
+            this.showNotification(
+                'Failed to start ThinkGuide Mode. Please try again.',
                 'error'
             );
         }

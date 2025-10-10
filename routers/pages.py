@@ -15,6 +15,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 import logging
 
+from config.settings import config
+
 logger = logging.getLogger(__name__)
 
 # Initialize router
@@ -49,7 +51,14 @@ async def debug(request: Request):
 async def editor(request: Request):
     """Interactive editor - editor.html"""
     try:
-        return templates.TemplateResponse("editor.html", {"request": request})
+        return templates.TemplateResponse(
+            "editor.html", 
+            {
+                "request": request,
+                "feature_learning_mode": config.FEATURE_LEARNING_MODE,
+                "feature_thinkguide": config.FEATURE_THINKGUIDE
+            }
+        )
     except Exception as e:
         logger.error(f"/editor route failed: {e}", exc_info=True)
         raise

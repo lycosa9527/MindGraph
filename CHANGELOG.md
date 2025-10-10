@@ -9,6 +9,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-10-10
+- **ThinkGuide Complete Visual Control System**
+  - **Property Control** - Agent can now modify all visual node properties:
+    - Fill color, text color, stroke color (with natural language color recognition)
+    - Font weight (bold), font style (italic), underline
+    - Font size and font family
+    - Opacity and stroke width
+    - Natural language commands: "make node 2 red and bold", "把第一个改成蓝色"
+  
+  - **Position Control** - Full spatial manipulation for Circle Maps:
+    - Absolute positioning: Set exact angle (0-360°, clockwise from top)
+    - Relative rotation: Rotate nodes by degrees (±)
+    - Position swapping: Exchange positions of two nodes
+    - Smooth 500ms D3.js transitions for professional feel
+    - Natural language: "move node 1 to the right", "rotate 45 degrees", "swap node 2 and 4"
+  
+  - **LLM-Based Intent Detection** (Industry Best Practice):
+    - Replaced brittle regex patterns with **pure LLM intent understanding**
+    - Single LLM call extracts: action type, target node, properties, position data
+    - Supports multilingual natural language (Chinese/English seamlessly)
+    - Context-aware: understands "it", "the first one", directional terms
+    - Actions: `change_center`, `update_node`, `delete_node`, `update_properties`, `update_position`, `add_nodes`, `discuss`
+  
+  - **Enhanced Agent Capabilities**:
+    - Content control: Change topics, update text, add/delete nodes with AI suggestions
+    - Visual properties: 10+ styling properties controllable via natural language
+    - Spatial control: 3 position manipulation modes (absolute, relative, swap)
+    - Two-way mode: Agent aware of diagram state, can modify at any workflow stage
+    - Precise node control: Reference nodes by ordinal, index, or exact text match
+  
+  - **Documentation**:
+    - `docs/THINKGUIDE_PROPERTY_CONTROL.md` - Complete visual control API and examples
+    - `docs/THINKGUIDE_TWO_WAY_MODE.md` - Bidirectional sync implementation guide
+    - `docs/THINKGUIDE_DIAGRAM_UPDATE_API.md` - SSE event format specification
+    - `docs/THINKGUIDE_PRECISE_NODE_CONTROL.md` - Node-level manipulation details
+
+- **Feature Flags for Experimental Features**
+  - Added `FEATURE_LEARNING_MODE` and `FEATURE_THINKGUIDE` environment variables
+  - Learning Mode and ThinkGuide buttons now hidden by default
+  - Enable in `.env` for development/testing: `FEATURE_LEARNING_MODE=True`
+  - Production-safe defaults (both `False` in `env.example`)
+  - Granular control: Enable features independently
+  - Industry-standard feature flag pattern
+
+### Changed - 2025-10-10
+- **ThinkGuide Architecture Improvements**
+  - Removed regex-based node reference detection (brittle patterns)
+  - Removed separate `_generate_precise_node_update()` call (inefficient)
+  - Consolidated intent detection into single LLM call
+  - Simplified from 2-3 LLM calls to 1 efficient call per user message
+  - Better error handling and fallback to discuss mode
+
+- **Frontend Diagram Updates**
+  - Added `updateNodeProperties()` - Apply visual property changes with D3.js
+  - Added `updateNodePosition()` - Angle-based positioning for Circle Maps
+  - Added `swapNodePositions()` - Exchange positions with smooth animations
+  - Extended `applyDiagramUpdate()` - Now handles 7 action types
+
+- **Configuration System**
+  - Added feature flag properties to `config/settings.py`
+  - Updated `routers/pages.py` to pass flags to editor template
+  - Made Learning/ThinkGuide buttons conditional in `templates/editor.html`
+  - Updated `env.example` with feature flag documentation
+
+### Fixed - 2025-10-10
+- **ThinkGuide Text Rendering**
+  - Fixed Chinese character line breaking (was breaking at every character)
+  - Changed `markdownit` config: `breaks: false` for natural text flow
+  - Fixed message "flashing" during streaming by continuously rendering markdown
+  - Removed redundant spacing properties causing doubled line heights
+
+- **ThinkGuide Intent Detection**
+  - Fixed topic change requests being misinterpreted as node additions
+  - Now correctly detects "change topic to X" vs "add nodes"
+  - Better understanding of position commands vs property changes
+  - Proper distinction between discussion and modification intents
+
+### Technical Details - 2025-10-10
+- **Files Modified**:
+  - `agents/thinking_modes/circle_map_agent.py` - Complete LLM-based intent system, position control
+  - `static/js/editor/thinking-mode-manager.js` - Property/position update methods, rendering fixes
+  - `static/css/editor.css` - ThinkGuide styling to match MindMate appearance
+  - `config/settings.py` - Feature flag properties
+  - `routers/pages.py` - Pass feature flags to template
+  - `templates/editor.html` - Conditional button rendering
+  - `env.example` - Feature flag documentation
+
+- **New Capabilities**:
+  - Agent-controlled visual design: No manual property panels needed
+  - Natural language spatial control: "move to the right" → automatic angle calculation
+  - Combined commands: "make node 2 red, bold, and rotate 45 degrees" works in one message
+
+- **Performance**:
+  - Reduced from 2-3 LLM calls to 1 call per user message
+  - Smooth 500ms animations for all position/property changes
+  - Efficient D3.js attribute updates without full re-render
+
+- **Color Recognition System**:
+  - LLM maps natural language to hex codes
+  - Supports: red (#F44336), blue (#2196F3), green (#4CAF50), yellow (#FFEB3B), orange (#FF9800), purple (#9C27B0), pink (#E91E63)
+  - Works in both Chinese and English
+
+---
+
 ### Fixed - 2025-10-09
 - **MindMap Auto-Complete Critical Fixes**
   - **Fixed HTTP 422 validation error** for mindmap diagram type

@@ -430,13 +430,14 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, learning
+from routers import pages, cache, api, learning, thinking
 
 # Register routers
 app.include_router(pages.router)
 app.include_router(cache.router)
 app.include_router(api.router)
 app.include_router(learning.router)  # Learning mode (FastAPI migration complete)
+app.include_router(thinking.router)  # ThinkGuide mode (Socratic guided thinking)
 
 # ============================================================================
 # APPLICATION ENTRY POINT

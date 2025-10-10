@@ -201,3 +201,38 @@ class LearningVerifyUnderstandingRequest(BaseModel):
                 "language": "zh"
             }
         }
+
+
+class ThinkingModeRequest(BaseModel):
+    """Request model for ThinkGuide (Thinking Mode) SSE streaming endpoint"""
+    message: str = Field("", description="User message (empty for initial state)")
+    user_id: str = Field(..., min_length=1, max_length=100, description="User identifier")
+    session_id: str = Field(..., min_length=1, max_length=100, description="Thinking session ID")
+    diagram_type: str = Field(..., description="Diagram type (e.g., 'circle_map')")
+    diagram_data: Dict[str, Any] = Field(..., description="Complete diagram structure")
+    current_state: str = Field(..., description="Current workflow state")
+    selected_node: Optional[Dict[str, Any]] = Field(None, description="Currently selected node (optional)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "5th grade science, understanding photosynthesis",
+                "user_id": "user123",
+                "session_id": "thinking_abc",
+                "diagram_type": "circle_map",
+                "diagram_data": {
+                    "center": {"text": "Photosynthesis"},
+                    "children": [
+                        {"id": "1", "text": "Sunlight"},
+                        {"id": "2", "text": "Water"},
+                        {"id": "3", "text": "Carbon Dioxide"}
+                    ]
+                },
+                "current_state": "CONTEXT_GATHERING",
+                "selected_node": {
+                    "id": "1",
+                    "text": "Sunlight",
+                    "type": "circle"
+                }
+            }
+        }
