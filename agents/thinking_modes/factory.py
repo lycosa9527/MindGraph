@@ -2,82 +2,110 @@
 Thinking Mode Agent Factory
 ============================
 
-Routes diagram types to appropriate ThinkGuide agents.
-ONE ENDPOINT FOR ALL DIAGRAM TYPES!
+Factory to create the correct ThinkGuide agent based on diagram type.
 
 @author lycosa9527
 @made_by MindSpring Team
 """
 
+import logging
+from typing import Optional
+
+from agents.thinking_modes.base_thinking_agent import BaseThinkingAgent
 from agents.thinking_modes.circle_map_agent import CircleMapThinkingAgent
+
+logger = logging.getLogger(__name__)
 
 
 class ThinkingAgentFactory:
     """
-    Factory pattern for creating diagram-specific thinking agents.
+    Factory to create diagram-specific ThinkGuide agents.
     
-    Benefits:
-    - Single endpoint handles all diagram types
-    - Easy to add new diagram types (just add elif!)
-    - Centralized routing logic
-    - All agents share same workflow, different prompts
+    Usage:
+        agent = ThinkingAgentFactory.create_agent('circle_map')
+        agent = ThinkingAgentFactory.create_agent('bubble_map')
     """
     
-    @staticmethod
-    def get_agent(diagram_type: str):
+    # Registry of diagram type -> agent class
+    _agents = {
+        'circle_map': CircleMapThinkingAgent,
+        # Future diagram types will be added here:
+        # 'bubble_map': BubbleMapThinkingAgent,
+        # 'double_bubble_map': BubbleMapThinkingAgent,  # Can reuse
+        # 'mind_map': MindMapThinkingAgent,
+        # 'tree_map': TreeMapThinkingAgent,
+        # 'flow_map': FlowMapThinkingAgent,
+    }
+    
+    # Singleton instances (one agent per diagram type)
+    _instances = {}
+    
+    @classmethod
+    def get_agent(cls, diagram_type: str) -> BaseThinkingAgent:
         """
-        Get the appropriate agent for the diagram type.
+        Get (or create) the appropriate ThinkGuide agent for a diagram type.
+        Uses singleton pattern - one agent instance per diagram type.
         
         Args:
-            diagram_type: One of the thinking map types
+            diagram_type: Type of diagram ('circle_map', 'bubble_map', etc.)
+            
+        Returns:
+            Diagram-specific thinking agent
+            
+        Raises:
+            ValueError: If diagram type is not supported
+        """
+        # Return existing instance if available
+        if diagram_type in cls._instances:
+            return cls._instances[diagram_type]
+        
+        # Create new instance
+        agent_class = cls._agents.get(diagram_type)
+        
+        if not agent_class:
+            logger.error(f"[ThinkingAgentFactory] No agent found for diagram type: {diagram_type}")
+            raise ValueError(
+                f"ThinkGuide not yet available for diagram type: {diagram_type}. "
+                f"Supported types: {', '.join(cls._agents.keys())}"
+            )
+        
+        logger.info(f"[ThinkingAgentFactory] Creating {agent_class.__name__} for {diagram_type}")
+        instance = agent_class()
+        cls._instances[diagram_type] = instance
+        return instance
+    
+    @classmethod
+    def create_agent(cls, diagram_type: str) -> BaseThinkingAgent:
+        """
+        Alias for get_agent() for backward compatibility.
+        
+        Args:
+            diagram_type: Type of diagram ('circle_map', 'bubble_map', etc.)
+            
+        Returns:
+            Diagram-specific thinking agent
+        """
+        return cls.get_agent(diagram_type)
+    
+    @classmethod
+    def is_supported(cls, diagram_type: str) -> bool:
+        """
+        Check if a diagram type is supported by ThinkGuide.
+        
+        Args:
+            diagram_type: Type of diagram to check
+            
+        Returns:
+            True if supported, False otherwise
+        """
+        return diagram_type in cls._agents
+    
+    @classmethod
+    def get_supported_types(cls) -> list:
+        """
+        Get list of all supported diagram types.
         
         Returns:
-            Agent instance for that diagram type
-        
-        Raises:
-            ValueError: If diagram type is unknown
+            List of diagram type strings
         """
-        
-        # Currently supported: Circle Map (more coming soon!)
-        if diagram_type == 'circle_map':
-            return CircleMapThinkingAgent()
-        
-        # TODO: Add remaining 7 thinking maps:
-        # elif diagram_type == 'bubble_map':
-        #     return BubbleMapThinkingAgent()
-        # elif diagram_type == 'double_bubble_map':
-        #     return DoubleBubbleMapThinkingAgent()
-        # elif diagram_type == 'tree_map':
-        #     return TreeMapThinkingAgent()
-        # elif diagram_type == 'brace_map':
-        #     return BraceMapThinkingAgent()
-        # elif diagram_type == 'flow_map':
-        #     return FlowMapThinkingAgent()
-        # elif diagram_type == 'multi_flow_map':
-        #     return MultiFlowMapThinkingAgent()
-        # elif diagram_type == 'bridge_map':
-        #     return BridgeMapThinkingAgent()
-        
-        else:
-            supported = ThinkingAgentFactory.get_supported_types()
-            raise ValueError(
-                f"Unknown diagram type: {diagram_type}. "
-                f"Supported types: {', '.join(supported)}"
-            )
-    
-    @staticmethod
-    def get_supported_types():
-        """Get list of all supported diagram types"""
-        return [
-            'circle_map',  # Brainstorming & Defining
-            # Coming soon:
-            # 'bubble_map',           # Describing with Adjectives
-            # 'double_bubble_map',    # Comparing & Contrasting
-            # 'tree_map',             # Classifying & Categorizing
-            # 'brace_map',            # Whole-to-Part Analysis
-            # 'flow_map',             # Sequencing & Steps
-            # 'multi_flow_map',       # Cause & Effect
-            # 'bridge_map'            # Seeing Analogies
-        ]
-
-
+        return list(cls._agents.keys())

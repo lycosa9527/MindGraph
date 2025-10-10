@@ -1281,6 +1281,12 @@ class ToolbarManager {
         const mainTopic = this.identifyMainTopic(existingNodes);
         const diagramType = currentDiagramType; // Use locked type
         
+        // Log what we identified
+        logger.info('ToolbarManager', `Main topic identified: "${mainTopic}"`, {
+            spec_topic: this.editor.currentSpec?.topic,
+            nodes_count: existingNodes.length
+        });
+        
         // Store the original topic to preserve it later
         const originalTopic = this.editor.currentSpec?.topic || mainTopic;
         
@@ -1314,7 +1320,7 @@ class ToolbarManager {
         
         // Send clean topic to backend - let the agent add the instructions
         // The backend agents already wrap the prompt with proper instructions
-        // (e.g., "请为以下描述创建一个思维导图：{topic}")
+        // (e.g., "请为以下描述创建一个圆圈图：{topic}")
         let prompt = mainTopic;
         
         // For brace maps, tree maps, and bridge maps, check if user has specified a dimension
@@ -1350,7 +1356,7 @@ class ToolbarManager {
                 baseRequestBody.dimension_preference = dimensionPreference;
             }
             
-            logger.info('ToolbarManager', 'Starting progressive LLM generation');
+            logger.info('ToolbarManager', 'Starting PARALLEL LLM generation');
             this.isGeneratingMulti = true;
             
             // Set all buttons to loading state
@@ -1359,11 +1365,95 @@ class ToolbarManager {
             // Clear previous results
             this.llmResults = {};
             
-            // Call each LLM sequentially and update UI as each completes
+            // PARALLEL EXECUTION: Call all LLMs simultaneously using new endpoint!
             const models = LLM_CONFIG.MODELS;
             let firstSuccessfulModel = null;
             
-            for (const model of models) {
+            // Prepare request for parallel generation
+            const parallelRequestBody = {
+                ...baseRequestBody,
+                models: models  // Request all 4 models in parallel
+            };
+            
+            try {
+                logger.info('ToolbarManager', 'Calling parallel generation endpoint');
+                const response = await fetch('/api/generate_multi_parallel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(parallelRequestBody)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                logger.info('ToolbarManager', `Parallel generation completed: ${data.success_count}/${models.length} successful in ${data.total_time.toFixed(2)}s`);
+                
+                // Process results from all models
+                for (const model of models) {
+                    const modelResult = data.results[model];
+                    
+                    if (modelResult && modelResult.success) {
+                        // Normalize diagram type
+                        let responseDiagramType = modelResult.diagram_type || diagramType;
+                        if (responseDiagramType === 'mind_map') {
+                            responseDiagramType = 'mindmap';
+                        }
+                        
+                        // Cache this model's result
+                        this.llmResults[model] = {
+                            model: model,
+                            success: true,
+                            result: {
+                                spec: modelResult.spec,
+                                diagram_type: responseDiagramType,
+                                topics: modelResult.topics || [],
+                                style_preferences: modelResult.style_preferences || {}
+                            }
+                        };
+                        
+                        // Update button state for this model
+                        this.setLLMButtonState(model, 'ready');
+                        
+                        // Render first successful result
+                        if (!firstSuccessfulModel) {
+                            firstSuccessfulModel = model;
+                            this.selectedLLM = model;
+                            this.renderCachedLLMResult(model);
+                            this.updateLLMButtonStates();
+                        }
+                        
+                        logger.debug('ToolbarManager', `${model} result cached (${modelResult.duration.toFixed(2)}s)`);
+                    } else {
+                        // Model failed
+                        const errorMessage = modelResult?.error || 'Unknown error';
+                        this.llmResults[model] = {
+                            model: model,
+                            success: false,
+                            error: errorMessage,
+                            timestamp: Date.now()
+                        };
+                        
+                        // Update button to error state
+                        this.setLLMButtonState(model, 'error');
+                        logger.warn('ToolbarManager', `${model} failed: ${errorMessage}`);
+                    }
+                }
+                
+                // Use first_successful from response
+                if (data.first_successful && !firstSuccessfulModel) {
+                    firstSuccessfulModel = data.first_successful;
+                }
+                
+            } catch (error) {
+                logger.error('ToolbarManager', 'Parallel generation endpoint failed, falling back to sequential', error);
+                
+                // FALLBACK: If parallel endpoint fails, fall back to sequential (original code)
+                for (const model of models) {
                 // Check if diagram type changed during generation (session ID may change when spec updates)
                 // We only check diagram type to allow spec updates from the first successful result
                 if (this.editor.diagramType !== currentDiagramType) {
@@ -1465,7 +1555,8 @@ class ToolbarManager {
                     // Update button to error state
                     this.setLLMButtonState(model, 'error');
                 }
-            }
+                }  // End of fallback sequential loop
+            }  // End of try-catch for parallel vs sequential
             
             // Count successful results
             const successCount = Object.values(this.llmResults).filter(r => r.success).length;
@@ -1551,18 +1642,49 @@ class ToolbarManager {
         const diagramType = this.editor.diagramType;
         const spec = this.editor.currentSpec;
         
-        // Strategy 1: For diagrams with topic field, read from currentSpec first
-        // CONSISTENCY FIX: Prioritize spec over DOM for all diagram types
+        // Strategy 1: For diagrams with topic field, prioritize spec (source of truth)
+        // The spec is updated by updateNodeText when user edits the topic
         if (diagramType === 'bubble_map' || diagramType === 'circle_map' || 
             diagramType === 'tree_map' || diagramType === 'brace_map') {
-            // First, try to get from spec (source of truth), skip placeholders
+            // Check spec first (updated by updateNodeText)
             if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
                 return spec.topic;
             }
-            // Fallback: Look for node with data-node-type='topic', skip placeholders
-            const topicNode = nodes.find(node => node.nodeType === 'topic');
+            // Fallback: Check DOM if spec is not available
+            // CRITICAL: Circle map uses 'center', not 'topic'!
+            const topicNode = nodes.find(node => 
+                node.nodeType === 'topic' || node.nodeType === 'center'
+            );
             if (topicNode && topicNode.text && !this.validator.isPlaceholderText(topicNode.text)) {
                 return topicNode.text;
+            }
+        }
+        
+        // Strategy 1-flow: For Flow Map, check spec.title (NOT spec.topic)
+        // Flow Map uses 'title' field, similar to how Circle Map uses 'center' nodeType
+        if (diagramType === 'flow_map') {
+            // Check spec first (updated by updateFlowMapText)
+            if (spec && spec.title && !this.validator.isPlaceholderText(spec.title)) {
+                return spec.title;
+            }
+            // Fallback: Check DOM if spec is not available
+            const titleNode = nodes.find(node => node.nodeType === 'title');
+            if (titleNode && titleNode.text && !this.validator.isPlaceholderText(titleNode.text)) {
+                return titleNode.text;
+            }
+        }
+        
+        // Strategy 1-multiflow: For Multi-Flow Map, check spec.event (NOT spec.topic)
+        // Multi-Flow Map uses 'event' field for the central event
+        if (diagramType === 'multi_flow_map') {
+            // Check spec first (updated by updateMultiFlowMapText)
+            if (spec && spec.event && !this.validator.isPlaceholderText(spec.event)) {
+                return spec.event;
+            }
+            // Fallback: Check DOM if spec is not available
+            const eventNode = nodes.find(node => node.nodeType === 'event');
+            if (eventNode && eventNode.text && !this.validator.isPlaceholderText(eventNode.text)) {
+                return eventNode.text;
             }
         }
         

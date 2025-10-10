@@ -52,11 +52,12 @@ async def editor(request: Request):
     """Interactive editor - editor.html"""
     try:
         return templates.TemplateResponse(
-            "editor.html", 
+            "editor.html",
             {
                 "request": request,
                 "feature_learning_mode": config.FEATURE_LEARNING_MODE,
-                "feature_thinkguide": config.FEATURE_THINKGUIDE
+                "feature_thinkguide": config.FEATURE_THINKGUIDE,
+                "verbose_logging": config.VERBOSE_LOGGING
             }
         )
     except Exception as e:

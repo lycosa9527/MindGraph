@@ -18,6 +18,9 @@ class Logger {
         // Debug mode enabled if: ?debug=1 in URL or localStorage is 'true'
         this.debugMode = urlDebug === '1' || storedDebug === 'true';
         
+        // Verbose mode enabled from backend (set by template)
+        this.verboseMode = window.VERBOSE_LOGGING || false;
+        
         // Log levels (only show if debug is enabled)
         this.levels = {
             DEBUG: 0,
@@ -27,12 +30,18 @@ class Logger {
         };
         
         // Current minimum level to display
-        this.minLevel = this.debugMode ? this.levels.DEBUG : this.levels.WARN;
+        this.minLevel = (this.debugMode || this.verboseMode) ? this.levels.DEBUG : this.levels.WARN;
         
-        // Show startup message if debug mode enabled
-        if (this.debugMode) {
-            console.log('%c[MindGraph] Debug mode ENABLED', 'color: #4caf50; font-weight: bold;');
-            console.log('[MindGraph] To disable: localStorage.removeItem("mindgraph_debug") and reload');
+        // Show startup message if debug/verbose mode enabled
+        if (this.debugMode || this.verboseMode) {
+            const mode = this.verboseMode ? 'VERBOSE' : 'Debug';
+            console.log(`%c[MindGraph] ${mode} mode ENABLED`, 'color: #4caf50; font-weight: bold;');
+            if (this.verboseMode) {
+                console.log('[MindGraph] Verbose logging: All user interactions will be logged');
+            }
+            if (this.debugMode) {
+                console.log('[MindGraph] To disable: localStorage.removeItem("mindgraph_debug") and reload');
+            }
         }
         
         // Track last log to avoid duplicates
@@ -45,7 +54,7 @@ class Logger {
      */
     setDebugMode(enabled) {
         this.debugMode = enabled;
-        this.minLevel = enabled ? this.levels.DEBUG : this.levels.WARN;
+        this.minLevel = (enabled || this.verboseMode) ? this.levels.DEBUG : this.levels.WARN;
         localStorage.setItem('mindgraph_debug', enabled ? 'true' : 'false');
         
         if (enabled) {
@@ -53,6 +62,13 @@ class Logger {
         } else {
             console.log('%c[MindGraph] Debug mode DISABLED', 'color: #f44336; font-weight: bold;');
         }
+    }
+    
+    /**
+     * Check if verbose logging is enabled
+     */
+    isVerbose() {
+        return this.verboseMode || this.debugMode;
     }
     
     /**
@@ -116,8 +132,8 @@ class Logger {
             console.log(`%c${prefix} | ${msg}`, `color: ${color}`);
         }
         
-        // Send to backend in debug mode
-        if (this.debugMode) {
+        // Send to backend in debug/verbose mode
+        if (this.debugMode || this.verboseMode) {
             this._sendToBackend('DEBUG', component, msg, d);
         }
     }
@@ -136,8 +152,8 @@ class Logger {
             console.log(`%c${prefix} | ${msg}`, `color: ${color}; font-weight: bold;`);
         }
         
-        // Send to backend in debug mode
-        if (this.debugMode) {
+        // Send to backend in debug/verbose mode
+        if (this.debugMode || this.verboseMode) {
             this._sendToBackend('INFO', component, msg, d);
         }
     }

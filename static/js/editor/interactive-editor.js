@@ -36,9 +36,15 @@ class InteractiveEditor {
         // Bind selection change callback
         this.selectionManager.setSelectionChangeCallback((selectedNodes) => {
             this.selectedNodes = new Set(selectedNodes);
-            logger.debug('Editor', 'Selection changed', { 
-                count: selectedNodes.length 
+            
+            // Verbose logging: Log node selection changes
+            logger.debug('InteractiveEditor', '🎯 Node Selection Changed', {
+                count: selectedNodes.length,
+                nodeIds: Array.from(selectedNodes),
+                diagramType: this.diagramType,
+                timestamp: Date.now()
             });
+            
             this.updateToolbarState();
         });
     }
@@ -225,6 +231,15 @@ class InteractiveEditor {
                 const parentNode = this.parentNode;
                 const nodeId = shape.attr('data-node-id');
                 
+                // Verbose logging: Log drag start
+                logger.debug('InteractiveEditor', '🖱️ Drag Start', {
+                    nodeId,
+                    diagramType: self.diagramType,
+                    mouseX: event.x,
+                    mouseY: event.y,
+                    timestamp: Date.now()
+                });
+                
                 // Store starting position
                 if (parentNode && parentNode.tagName === 'g') {
                     // For grouped elements, get the group's transform
@@ -328,10 +343,21 @@ class InteractiveEditor {
                 }
             })
             .on('end', function(event) {
+                const nodeId = d3.select(this).attr('data-node-id');
+                
+                // Verbose logging: Log drag end
+                logger.debug('InteractiveEditor', '🖱️ Drag End', {
+                    nodeId,
+                    finalX: startX,
+                    finalY: startY,
+                    diagramType: self.diagramType,
+                    timestamp: Date.now()
+                });
+                
                 d3.select(this).style('opacity', 1);
                 connectedLines = []; // Clear references
                 self.saveToHistory('move_node', { 
-                    nodeId: d3.select(this).attr('data-node-id'),
+                    nodeId: nodeId,
                     x: startX,
                     y: startY
                 });
@@ -375,7 +401,18 @@ class InteractiveEditor {
             element
                 .on('click', (event) => {
                     event.stopPropagation();
-                    self.log('InteractiveEditor: Node clicked', { nodeId, ctrl: event.ctrlKey || event.metaKey });
+                    
+                    // Verbose logging: Log all mouse clicks
+                    logger.debug('InteractiveEditor', '🖱️ Mouse Click', {
+                        nodeId,
+                        ctrlKey: event.ctrlKey,
+                        metaKey: event.metaKey,
+                        altKey: event.altKey,
+                        shiftKey: event.shiftKey,
+                        clientX: event.clientX,
+                        clientY: event.clientY,
+                        diagramType: self.diagramType
+                    });
                     
                     if (event.ctrlKey || event.metaKey) {
                         self.selectionManager.toggleNodeSelection(nodeId);
@@ -386,7 +423,14 @@ class InteractiveEditor {
                 })
                 .on('dblclick', (event) => {
                     event.stopPropagation();
-                    self.log('InteractiveEditor: Node double-clicked for editing', { nodeId });
+                    
+                    // Verbose logging: Log double-click for editing
+                    logger.debug('InteractiveEditor', '✏️ Double-Click for Edit', {
+                        nodeId,
+                        diagramType: self.diagramType,
+                        timestamp: Date.now()
+                    });
+                    
                     // Find associated text element
                     const textNode = element.node().nextElementSibling;
                     if (textNode && textNode.tagName === 'text') {
@@ -824,25 +868,42 @@ class InteractiveEditor {
         const aiPanel = document.getElementById('ai-assistant-panel');
         const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
         
+        const thinkingPanel = document.getElementById('thinking-panel');
+        const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
+        
         // Update canvas panel classes for dynamic width adjustment
         const canvasPanel = document.querySelector('.canvas-panel');
         if (canvasPanel) {
             canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
             canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
+            canvasPanel.classList.toggle('thinking-panel-visible', isThinkingPanelVisible && !isPropertyPanelVisible);
         }
         
-        // Calculate available canvas width based on reserveForPanel parameter
+        // Calculate available canvas width based on reserveForPanel parameter and active panels
         // CRITICAL: Always use windowWidth as reference, not containerWidth (which may be CSS-constrained)
         const propertyPanelWidth = 320;
-        const availableCanvasWidth = reserveForPanel 
-            ? windowWidth - propertyPanelWidth  // Reserve space for panel
-            : windowWidth;                      // Use full window width
+        const thinkingPanelWidth = 400;  // ThinkGuide panel width
+        const aiPanelWidth = 450;        // AI Assistant panel width
+        
+        let reservedWidth = 0;
+        if (reserveForPanel && isPropertyPanelVisible) {
+            reservedWidth = propertyPanelWidth;
+        } else if (isThinkingPanelVisible) {
+            reservedWidth = thinkingPanelWidth;
+        } else if (isAIPanelVisible) {
+            reservedWidth = aiPanelWidth;
+        }
+        
+        const availableCanvasWidth = windowWidth - reservedWidth;
         
         logger.debug('Editor', 'Canvas fit calculation:', {
-            mode: reserveForPanel ? 'WITH panel space reserved' : 'FULL width',
+            mode: reservedWidth > 0 ? `WITH ${reservedWidth}px panel reserved` : 'FULL width',
             windowWidth,
             containerSize: { width: containerWidth, height: containerHeight },
-            propertyPanelWidth: reserveForPanel ? propertyPanelWidth : 0,
+            isPropertyPanelVisible,
+            isThinkingPanelVisible,
+            isAIPanelVisible,
+            reservedWidth,
             availableCanvasWidth,
             contentBounds,
             animate
@@ -1249,10 +1310,13 @@ class InteractiveEditor {
      * Open node editor
      */
     openNodeEditor(nodeId, shapeNode, textNode, currentText) {
-        this.log('InteractiveEditor: Opening node editor', {
+        // Verbose logging: Log node editor opening
+        logger.debug('InteractiveEditor', '✏️ Node Editor Opened', {
             nodeId,
             currentText: currentText?.substring(0, 50),
-            textLength: currentText?.length || 0
+            textLength: currentText?.length || 0,
+            diagramType: this.diagramType,
+            timestamp: Date.now()
         });
         
         // Check if this is a dimension node
@@ -1380,7 +1444,8 @@ class InteractiveEditor {
         
         const nodeType = shape.attr('data-node-type');
         
-        if (nodeType === 'topic') {
+        // CRITICAL FIX: Circle map uses 'center', not 'topic'!
+        if (nodeType === 'topic' || nodeType === 'center') {
             // Update the central topic
             this.currentSpec.topic = newText;
             logger.debug('Editor', 'Updated Circle Map topic to:', newText);
@@ -1769,6 +1834,15 @@ class InteractiveEditor {
      * Update generic node text (for other diagram types)
      */
     updateGenericNodeText(nodeId, shapeNode, textNode, newText) {
+        // Verbose logging: Log text edit
+        logger.debug('InteractiveEditor', '📝 Text Edit Applied', {
+            nodeId,
+            newText: newText.substring(0, 50) + (newText.length > 50 ? '...' : ''),
+            textLength: newText.length,
+            diagramType: this.diagramType,
+            timestamp: Date.now()
+        });
+        
         // Update the text element
         if (textNode) {
             // Direct text node provided

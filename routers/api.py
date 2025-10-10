@@ -35,6 +35,7 @@ from clients.dify import AsyncDifyClient
 from clients.llm import qwen_client_generation, qwen_client_classification
 from agents import main_agent as agent
 from services.browser import BrowserContextManager
+from services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -278,6 +279,233 @@ async def frontend_log(req: FrontendLogRequest):
     frontend_logger.log(level, req.message)
     
     return {'status': 'logged'}
+
+
+@router.get('/llm/metrics')
+async def get_llm_metrics(model: Optional[str] = None):
+    """
+    Get performance metrics for LLM models.
+    
+    Query Parameters:
+        model (optional): Specific model name to get metrics for
+        
+    Returns:
+        JSON with performance metrics including:
+        - Total requests
+        - Success/failure counts
+        - Response times (avg, min, max)
+        - Circuit breaker state
+        - Recent errors
+        
+    Examples:
+        GET /api/llm/metrics - Get metrics for all models
+        GET /api/llm/metrics?model=qwen - Get metrics for specific model
+    """
+    try:
+        metrics = llm_service.get_performance_metrics(model)
+        
+        return JSONResponse(
+            content={
+                'status': 'success',
+                'metrics': metrics,
+                'timestamp': int(time.time())
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting LLM metrics: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve metrics: {str(e)}"
+        )
+
+
+@router.post('/generate_multi_parallel')
+async def generate_multi_parallel(req: GenerateRequest, x_language: str = None):
+    """
+    Generate diagram using PARALLEL multi-LLM approach.
+    
+    Calls all specified LLMs in parallel and returns results as each completes.
+    This is much faster than sequential calls!
+    
+    Benefits:
+    - All LLMs called simultaneously (not one by one)
+    - Results returned progressively as each LLM completes
+    - Uses middleware for error handling, retries, and metrics
+    - Circuit breaker protection
+    - Performance tracking
+    
+    Request Body:
+        {
+            "prompt": "User's diagram description",
+            "diagram_type": "bubble_map",
+            "language": "zh",
+            "models": ["qwen", "deepseek", "kimi", "hunyuan"],  // optional
+            "dimension_preference": "optional dimension"
+        }
+    
+    Returns:
+        {
+            "results": {
+                "qwen": { "success": true, "spec": {...}, "duration": 1.2 },
+                "deepseek": { "success": true, "spec": {...}, "duration": 1.5 },
+                "kimi": { "success": false, "error": "...", "duration": 2.0 },
+                "hunyuan": { "success": true, "spec": {...}, "duration": 1.8 }
+            },
+            "total_time": 2.1,  // Time for slowest model (parallel execution!)
+            "success_count": 3,
+            "first_successful": "qwen"
+        }
+    """
+    lang = get_request_language(x_language)
+    
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    # Get models to use (default to all 4)
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan']
+    
+    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
+    
+    logger.info(f"[generate_multi_parallel] Starting parallel generation with {len(models)} models")
+    
+    import time
+    import asyncio
+    start_time = time.time()
+    results = {}
+    first_successful = None
+    
+    try:
+        # Create parallel tasks for each model using the AGENT
+        # This ensures proper system prompts from prompts/thinking_maps.py are used
+        async def generate_for_model(model: str):
+            """Generate diagram for a single model using the full agent workflow."""
+            model_start = time.time()
+            try:
+                # Call agent - this uses proper system prompts!
+                spec_result = await agent.agent_graph_workflow_with_styles(
+                    prompt,
+                    language=language,
+                    forced_diagram_type=diagram_type,
+                    dimension_preference=req.dimension_preference if hasattr(req, 'dimension_preference') else None,
+                    model=model
+                )
+                
+                duration = time.time() - model_start
+                
+                # Check if agent actually succeeded (agent might return {"success": false, "error": "..."})
+                if spec_result.get('success') is False or 'error' in spec_result:
+                    error_msg = spec_result.get('error', 'Agent returned no spec')
+                    logger.error(f"[generate_multi_parallel] {model} agent failed: {error_msg}")
+                    return {
+                        'model': model,
+                        'success': False,
+                        'error': error_msg,
+                        'duration': duration
+                    }
+                
+                return {
+                    'model': model,
+                    'success': True,
+                    'spec': spec_result.get('spec'),
+                    'diagram_type': spec_result.get('diagram_type'),
+                    'topics': spec_result.get('topics', []),
+                    'style_preferences': spec_result.get('style_preferences', {}),
+                    'duration': duration,
+                    'llm_model': model
+                }
+                
+            except Exception as e:
+                duration = time.time() - model_start
+                logger.error(f"[generate_multi_parallel] {model} failed: {e}")
+                return {
+                    'model': model,
+                    'success': False,
+                    'error': str(e),
+                    'duration': duration
+                }
+        
+        # Run all models in PARALLEL using asyncio.gather
+        tasks = [generate_for_model(model) for model in models]
+        task_results = await asyncio.gather(*tasks)
+        
+        # Process results
+        for task_result in task_results:
+            model = task_result.pop('model')
+            results[model] = task_result
+            
+            if task_result['success'] and first_successful is None:
+                first_successful = model
+                
+            status = 'completed successfully' if task_result['success'] else 'failed'
+            logger.debug(f"[generate_multi_parallel] {model} {status} in {task_result['duration']:.2f}s")
+        
+        total_time = time.time() - start_time
+        success_count = sum(1 for r in results.values() if r['success'])
+        
+        logger.info(f"[generate_multi_parallel] Completed: {success_count}/{len(models)} successful in {total_time:.2f}s")
+        
+        return {
+            'results': results,
+            'total_time': total_time,
+            'success_count': success_count,
+            'first_successful': first_successful,
+            'models_requested': models
+        }
+        
+    except Exception as e:
+        logger.error(f"[generate_multi_parallel] Error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
+
+
+@router.get('/llm/health')
+async def llm_health_check():
+    """
+    Health check for LLM service.
+    
+    Returns:
+        JSON with service health status including:
+        - Available models
+        - Circuit breaker states
+        - Rate limiter status
+        
+    Example:
+        GET /api/llm/health
+    """
+    try:
+        health_data = await llm_service.health_check()
+        
+        # Add circuit breaker states
+        metrics = llm_service.get_performance_metrics()
+        circuit_states = {
+            model: data.get('circuit_state', 'closed')
+            for model, data in metrics.items()
+        }
+        
+        health_data['circuit_states'] = circuit_states
+        
+        return JSONResponse(
+            content={
+                'status': 'success',
+                'health': health_data,
+                'timestamp': int(time.time())
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"LLM health check error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Health check failed: {str(e)}"
+        )
 
 
 # Only log from main worker to avoid duplicate messages

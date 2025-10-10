@@ -12,19 +12,15 @@ Language-aware: English and Chinese versions.
 # Step 1: Context Gathering
 
 CONTEXT_GATHERING_PROMPT_EN = """
-Hi! I'm here to help you refine your Circle Map on "{center_node}".
+Hi, I'll help you refine your Circle Map on "{center_node}".
 
-To give you the best guidance, tell me a bit about your teaching context: what grade level, what you want students to learn, how you'll use this in class, and what subject area.
-
-Just share naturally and we'll start!
+Please briefly share your teaching context (grade level, subject, learning goals), or tell me how you'd like to adjust the diagram.
 """
 
 CONTEXT_GATHERING_PROMPT_ZH = """
-你好！我来帮你优化关于"{center_node}"的圆圈图。
+你好，我来帮你优化"{center_node}"的圆圈图。
 
-为了更好地指导你，请简单告诉我你的教学情况：给哪个年级用、希望学生学到什么、准备怎么用、是什么学科。
-
-随意说说就好，我们马上开始！
+请简单说说你的教学背景（年级、学科、学习目标），或者直接告诉我你想怎么调整这个图。
 """
 
 # Step 2: Educational Analysis

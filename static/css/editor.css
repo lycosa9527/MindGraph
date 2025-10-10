@@ -1693,6 +1693,33 @@ body {
     opacity: 0.5;
 }
 
+.thinking-stop-btn {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+    flex-shrink: 0;
+    margin-right: 8px;
+}
+
+.thinking-stop-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.5);
+    background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+}
+
+.thinking-stop-btn:active {
+    transform: scale(0.95);
+}
+
 /* ============================================
    AI ASSISTANT PANEL (MindMate)
    ============================================ */

@@ -19,6 +19,7 @@ class GenerateRequest(BaseModel):
     diagram_type: Optional[DiagramType] = Field(None, description="Diagram type (auto-detected if not provided)")
     language: Language = Field(Language.ZH, description="Language for diagram generation")
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
+    models: Optional[List[str]] = Field(None, description="List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'hunyuan'])")
     dimension_preference: Optional[str] = Field(None, description="Optional dimension preference for certain diagrams")
     
     @field_validator('diagram_type', mode='before')

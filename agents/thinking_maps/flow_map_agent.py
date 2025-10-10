@@ -86,12 +86,15 @@ class FlowMapAgent(BaseAgent):
                 
             user_prompt = f"请为以下描述创建一个流程图：{prompt}" if language == "zh" else f"Please create a flow map for the following description: {prompt}"
             
-            # Generate response from LLM using centralized message preparation
-            from config.settings import config
-            messages = config.prepare_llm_messages(system_prompt, user_prompt, model='qwen')
-            response = await self.llm_client.chat_completion(messages)
-            
-            # Response already generated above with centralized prompts
+            # Call middleware directly - clean and efficient!
+            from services.llm_service import llm_service
+            response = await llm_service.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=1000,
+                temperature=1.0
+            )
             
             if not response:
                 logger.error("FlowMapAgent: No response from LLM")

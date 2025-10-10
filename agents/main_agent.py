@@ -114,7 +114,7 @@ async def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh
     This is specialized for double bubble maps that need two separate topics.
     Fully async - no event loop wrappers.
     """
-    from .core.agent_utils import get_llm_client
+    from services.llm_service import llm_service
     
     try:
         if language == 'zh':
@@ -141,8 +141,12 @@ Input: "create a comparison chart about cats and dogs" → Output: "cats and dog
 
 Your output:"""
         
-        llm_client = get_llm_client()
-        result = await llm_client.chat_completion([{"role": "user", "content": prompt}])
+        result = await llm_service.chat(
+            prompt=prompt,
+            model='qwen',
+            max_tokens=100,
+            temperature=0.3
+        )
         
         # Clean up the result - remove any extra whitespace or formatting
         topics = result.strip()
@@ -264,23 +268,26 @@ def get_llm_timing_stats():
 
 
 # ----------------------------------------------------------------------------
-# LLM Client Implementation (REMOVED - Now using async clients from clients/llm.py)
+# LLM Client Implementation (Phase 5 - Using LLM Service Middleware)
 # ----------------------------------------------------------------------------
-# The sync QwenLLM class has been deleted as part of FastAPI async migration.
-# All agents now use get_llm_client() from agents/core/agent_utils.py which
-# returns async clients (QwenClient, DeepSeekClient, etc.) from clients/llm.py
+# All agents now use llm_service directly from services/llm_service.py
+# This provides centralized error handling, retries, rate limiting, and metrics
+# The old LLMServiceWrapper has been removed for cleaner architecture
 
-# Temporary stub for backward compatibility with concept map functions
-# TODO: Refactor concept map generation to use async clients directly
+# Temporary stub for backward compatibility with legacy concept map functions
+# Updated to use LLM Service (Phase 5 migration)
 class _LegacyLLMStub:
-    """Stub for old concept map functions that haven't been migrated yet"""
+    """Stub for old concept map functions - uses LLM Service"""
     def _call(self, prompt):
         import asyncio
-        from .core.agent_utils import get_llm_client
+        from services.llm_service import llm_service
         
         async def _async_call():
-            client = get_llm_client()
-            return await client.chat_completion([{"role": "user", "content": prompt}])
+            return await llm_service.chat(
+                prompt=prompt,
+                model='qwen',
+                timeout=30.0
+            )
         
         try:
             loop = asyncio.get_event_loop()
@@ -290,7 +297,7 @@ class _LegacyLLMStub:
         
         return loop.run_until_complete(_async_call())
 
-# Legacy stubs for old concept map code
+# Legacy stubs for old concept map code - now using LLM Service
 llm_classification = _LegacyLLMStub()
 llm_generation = _LegacyLLMStub()
 llm = _LegacyLLMStub()
@@ -300,7 +307,7 @@ class QwenLLM:
     """
     Backward-compatible sync wrapper for learning agents that haven't been migrated to async yet.
     
-    This provides the same interface as the old QwenLLM class but uses the async client underneath.
+    Now uses LLM Service instead of direct client (Phase 5 migration).
     Used by: LearningAgent, LearningAgentV3, and qwen_langchain.py
     """
     def __init__(self, model_type='generation'):
@@ -308,13 +315,13 @@ class QwenLLM:
         Initialize QwenLLM wrapper.
         
         Args:
-            model_type: 'generation' or 'classification' (both use generation model now)
+            model_type: 'generation' or 'classification' (uses qwen model from LLM Service)
         """
         self.model_type = model_type
     
     def _call(self, prompt: str, stop=None):
         """
-        Synchronous wrapper for async chat_completion.
+        Synchronous wrapper for async LLM Service call.
         
         Args:
             prompt: The prompt to send to the LLM
@@ -324,12 +331,14 @@ class QwenLLM:
             str: The LLM response content
         """
         import asyncio
-        from .core.agent_utils import get_llm_client
+        from services.llm_service import llm_service
         
         async def _async_call():
-            client = get_llm_client()
-            messages = [{"role": "user", "content": prompt}]
-            return await client.chat_completion(messages)
+            return await llm_service.chat(
+                prompt=prompt,
+                model='qwen',
+                timeout=30.0
+            )
         
         try:
             loop = asyncio.get_event_loop()
@@ -728,11 +737,14 @@ async def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> s
         classification_prompt = get_prompt("classification", language, "generation")
         classification_prompt = classification_prompt.format(user_prompt=user_prompt)
         
-        # Use async LLM client
-        from .core.agent_utils import get_llm_client
-        llm_client = get_llm_client()
-        
-        response = await llm_client.chat_completion([{"role": "user", "content": classification_prompt}])
+        # Use middleware directly - clean and efficient!
+        from services.llm_service import llm_service
+        response = await llm_service.chat(
+            prompt=classification_prompt,
+            model='qwen',
+            max_tokens=50,
+            temperature=0.3
+        )
         
         # Extract diagram type from response
         detected_type = response.strip().lower()

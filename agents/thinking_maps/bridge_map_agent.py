@@ -150,12 +150,16 @@ class BridgeMapAgent(BaseAgent):
                 user_prompt = f"请为以下描述创建一个桥形图：{prompt}" if language == "zh" else f"Please create a bridge map for the following description: {prompt}"
             logger.debug(f"User prompt: {user_prompt}")
             
-            # Generate response from LLM using centralized message preparation
-            from config.settings import config
-            messages = config.prepare_llm_messages(system_prompt, user_prompt, model='qwen')
-            
+            # Call middleware directly - clean and efficient!
+            from services.llm_service import llm_service
             logger.debug("Calling LLM for bridge map generation...")
-            response = await self.llm_client.chat_completion(messages)
+            response = await llm_service.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=1000,
+                temperature=1.0
+            )
             
             logger.debug(f"LLM response received: {response[:500] if response else 'None'}...")
             

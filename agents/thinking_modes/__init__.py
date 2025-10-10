@@ -8,4 +8,12 @@ Socratic guided thinking agents for all 8 thinking map types.
 @made_by MindSpring Team
 """
 
+from agents.thinking_modes.base_thinking_agent import BaseThinkingAgent
+from agents.thinking_modes.factory import ThinkingAgentFactory
+from agents.thinking_modes.circle_map_agent import CircleMapThinkingAgent
 
+__all__ = [
+    'BaseThinkingAgent',
+    'ThinkingAgentFactory',
+    'CircleMapThinkingAgent',
+]

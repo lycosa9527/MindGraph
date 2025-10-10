@@ -34,6 +34,9 @@ load_dotenv()
 # Create logs directory
 os.makedirs("logs", exist_ok=True)
 
+# Import config early (needed for logging setup)
+from config.settings import config
+
 # ============================================================================
 # GRACEFUL SHUTDOWN SIGNAL HANDLING
 # ============================================================================
@@ -185,6 +188,14 @@ file_handler = logging.FileHandler(
 )
 file_handler.setFormatter(unified_formatter)
 
+# Determine log level (override with DEBUG if VERBOSE_LOGGING is enabled)
+if config.VERBOSE_LOGGING:
+    log_level = logging.DEBUG
+    print(f"[INIT] VERBOSE_LOGGING enabled - setting log level to DEBUG")
+else:
+    log_level_str = config.LOG_LEVEL
+    log_level = getattr(logging, log_level_str, logging.INFO)
+
 logging.basicConfig(
     level=log_level,
     handlers=[console_handler, file_handler],
@@ -234,8 +245,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from config.settings import config
-
 # ============================================================================
 # LIFESPAN CONTEXT (Startup/Shutdown Events)
 # ============================================================================
@@ -272,6 +281,16 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to initialize JavaScript cache: {e}")
     
+    # Initialize LLM Service
+    try:
+        from services.llm_service import llm_service
+        llm_service.initialize()
+        if worker_id == '0' or not worker_id:
+            logger.info("LLM Service initialized")
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
+            logger.warning(f"Failed to initialize LLM Service: {e}")
+    
     # Yield control to application
     try:
         yield
@@ -281,6 +300,16 @@ async def lifespan(app: FastAPI):
         
         # Give ongoing requests a brief moment to complete
         await asyncio.sleep(0.1)
+        
+        # Cleanup LLM Service
+        try:
+            from services.llm_service import llm_service
+            llm_service.cleanup()
+            if worker_id == '0' or not worker_id:
+                logger.info("LLM Service cleaned up")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to cleanup LLM Service: {e}")
         
         # Don't try to cancel tasks - let uvicorn handle the shutdown
         # This prevents CancelledError exceptions during multiprocess shutdown

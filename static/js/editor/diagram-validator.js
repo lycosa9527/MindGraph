@@ -231,18 +231,13 @@ class DiagramValidator {
             this.logger.warn('DiagramValidator', 'Learning button not found');
         }
         
-        // Update Thinking button (same validation logic)
+        // ThinkGuide is ALWAYS available - no validation needed!
+        // It can help build diagrams from scratch, so don't disable it
         const thinkingBtn = document.getElementById('thinking-btn');
         if (thinkingBtn) {
-            if (result.isValid) {
-                thinkingBtn.disabled = false;
-                thinkingBtn.classList.remove('disabled');
-                this.logger.debug('DiagramValidator', '✅ Thinking button enabled');
-            } else {
-                thinkingBtn.disabled = true;
-                thinkingBtn.classList.add('disabled');
-                this.logger.debug('DiagramValidator', `❌ Thinking button disabled: ${result.reason}`);
-            }
+            thinkingBtn.disabled = false;
+            thinkingBtn.classList.remove('disabled');
+            this.logger.debug('DiagramValidator', '✅ ThinkGuide always enabled (no validation required)');
         }
         
         return result;

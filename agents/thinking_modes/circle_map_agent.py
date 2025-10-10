@@ -13,9 +13,9 @@ import logging
 import json
 from enum import Enum
 from typing import Dict, AsyncGenerator, Optional
-from openai import AsyncOpenAI
 
 from config.settings import config
+from services.llm_service import llm_service
 from prompts.thinking_modes.circle_map import (
     CONTEXT_GATHERING_PROMPT_EN,
     CONTEXT_GATHERING_PROMPT_ZH,
@@ -55,12 +55,9 @@ class CircleMapThinkingAgent:
     """
     
     def __init__(self):
-        """Initialize agent with Qwen-Plus LLM"""
-        # Use OpenAI SDK for Dashscope (OpenAI-compatible)
-        self.client = AsyncOpenAI(
-            api_key=config.QWEN_API_KEY,
-            base_url=config.QWEN_API_URL.replace('/chat/completions', '')
-        )
+        """Initialize agent with LLM Service"""
+        # Use centralized LLM Service
+        self.llm = llm_service
         self.model = 'qwen-plus'  # Better reasoning than qwen-turbo
         
         # Session storage (in-memory for MVP)
@@ -164,17 +161,13 @@ Requirements:
 Generate 5 nodes:"""
         
         try:
-            response = await self.client.chat.completions.create(
+            content = await self.llm.chat(
+                prompt=prompt,
                 model=self.model,
-                messages=[
-                    {'role': 'system', 'content': 'You are a helpful K12 education assistant.'},
-                    {'role': 'user', 'content': prompt}
-                ],
+                system_message='You are a helpful K12 education assistant.',
                 temperature=0.7,
                 max_tokens=200
             )
-            
-            content = response.choices[0].message.content.strip()
             
             # Parse response into node list
             lines = [line.strip() for line in content.split('\n') if line.strip()]
@@ -337,17 +330,14 @@ Outer nodes ({len(children)} total):
 User message: {message}"""
         
         try:
-            # Use Qwen to understand intent
-            response = await self.qwen_client.chat(
-                model='qwen-plus',
-                messages=[
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': user_prompt}
-                ],
-                temperature=0.1  # Low temperature for consistent intent detection
+            # Use LLM Service to understand intent
+            result_text = await self.llm.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                temperature=0.1,  # Low temperature for consistent intent detection
+                max_tokens=500
             )
-            
-            result_text = response.get('output', {}).get('text', '{}').strip()
             
             # Extract JSON (handle markdown code blocks if present)
             if '```json' in result_text:
@@ -398,9 +388,31 @@ User message: {message}"""
                 if new_topic:
                     logger.info(f"[ThinkGuide-{stage}] LLM detected topic change: '{center}' → '{new_topic}'")
                     
-                    # Update session diagram data
+                    # Generate verbal acknowledgment using LLM for natural language
+                    language = session.get('language', 'en')
+                    if language == 'zh':
+                        acknowledgment_prompt = f"""用户想要修改圆圈图。
+
+当前中心主题：{center}
+新主题：{new_topic}
+
+请用1-2句话确认你理解了用户的意图，然后说你会立即更新。要自然、简洁。"""
+                    else:
+                        acknowledgment_prompt = f"""User wants to modify the Circle Map.
+
+Current center topic: {center}
+New topic: {new_topic}
+
+Confirm you understand the user's intent in 1-2 sentences, then say you'll update it. Be natural and concise."""
+                    
+                    # Stream the acknowledgment
+                    async for chunk in self._stream_llm_response(acknowledgment_prompt, session):
+                        yield chunk
+                    
+                    # Now update session diagram data
                     diagram_data['center']['text'] = new_topic
                     
+                    # Send diagram update event
                     yield {
                         'event': 'diagram_update',
                         'action': 'update_center',
@@ -409,7 +421,28 @@ User message: {message}"""
                         }
                     }
                     
-                    logger.info(f"[ThinkGuide-{stage}] Topic updated successfully")
+                    # Provide completion confirmation using LLM
+                    if language == 'zh':
+                        completion_prompt = f"""我刚刚成功更新了圆圈图的中心主题为「{new_topic}」。
+
+请用1-2句话：
+1. 确认更新完成
+2. 鼓励用户继续完善这个新主题的圆圈图
+
+要简洁、积极、有教育意义。"""
+                    else:
+                        completion_prompt = f"""I just successfully updated the Circle Map's center topic to "{new_topic}".
+
+In 1-2 sentences:
+1. Confirm the update is complete
+2. Encourage the user to continue refining this new topic
+
+Be concise, positive, and educational."""
+                    
+                    async for chunk in self._stream_llm_response(completion_prompt, session):
+                        yield chunk
+                    
+                    logger.info(f"[ThinkGuide-{stage}] Topic updated with verbal confirmation")
                     return
             
             elif action in ('update_node', 'delete_node', 'update_properties', 'update_position'):
@@ -422,6 +455,18 @@ User message: {message}"""
                         logger.info(f"[ThinkGuide-{stage}] LLM detected {action} for node {node_index+1}: '{target_node.get('text')}'")
                         
                         if action == 'delete_node':
+                            language = session.get('language', 'en')
+                            old_text = target_node.get('text', '')
+                            
+                            # Verbal acknowledgment using LLM
+                            if language == 'zh':
+                                ack_prompt = f"用户要删除第{node_index+1}个节点「{old_text}」。用1句话确认你理解并会删除它。"
+                            else:
+                                ack_prompt = f"User wants to delete node #{node_index+1}: \"{old_text}\". Confirm in 1 sentence you understand and will remove it."
+                            
+                            async for chunk in self._stream_llm_response(ack_prompt, session):
+                                yield chunk
+                            
                             # Delete the node
                             diagram_data['children'] = [n for n in diagram_data['children'] if n['id'] != target_node['id']]
                             
@@ -433,12 +478,33 @@ User message: {message}"""
                                 }
                             }
                             
-                            logger.info(f"[ThinkGuide-{stage}] Node deleted")
+                            # Completion confirmation using LLM
+                            if language == 'zh':
+                                done_prompt = f"成功删除了节点「{old_text}」，现在图中有{len(diagram_data['children'])}个节点。用1句话简洁确认。"
+                            else:
+                                done_prompt = f"Successfully deleted node \"{old_text}\". Now {len(diagram_data['children'])} nodes remain. Confirm briefly in 1 sentence."
+                            
+                            async for chunk in self._stream_llm_response(done_prompt, session):
+                                yield chunk
+                            
+                            logger.info(f"[ThinkGuide-{stage}] Node deleted with confirmation")
                             return
                         
                         elif action == 'update_node':
                             new_text = intent.get('target', '').strip()
                             if new_text:
+                                language = session.get('language', 'en')
+                                old_text = target_node.get('text', '')
+                                
+                                # Verbal acknowledgment using LLM
+                                if language == 'zh':
+                                    ack_prompt = f"用户要将第{node_index+1}个节点从「{old_text}」改为「{new_text}」。用1句话确认并说会更新。"
+                                else:
+                                    ack_prompt = f"User wants to change node #{node_index+1} from \"{old_text}\" to \"{new_text}\". Confirm in 1 sentence and say you'll update it."
+                                
+                                async for chunk in self._stream_llm_response(ack_prompt, session):
+                                    yield chunk
+                                
                                 # Update the node text
                                 for node in diagram_data['children']:
                                     if node['id'] == target_node['id']:
@@ -454,13 +520,44 @@ User message: {message}"""
                                     }]
                                 }
                                 
-                                logger.info(f"[ThinkGuide-{stage}] Node updated")
+                                # Completion confirmation using LLM
+                                if language == 'zh':
+                                    done_prompt = f"成功更新节点为「{new_text}」。用1句话简洁确认。"
+                                else:
+                                    done_prompt = f"Successfully updated node to \"{new_text}\". Confirm briefly in 1 sentence."
+                                
+                                async for chunk in self._stream_llm_response(done_prompt, session):
+                                    yield chunk
+                                
+                                logger.info(f"[ThinkGuide-{stage}] Node updated with confirmation")
                                 return
                         
                         elif action == 'update_properties':
                             properties = intent.get('properties', {})
                             if properties:
-                                # Update node properties (color, bold, italic, etc.)
+                                language = session.get('language', 'en')
+                                node_text = target_node.get('text', '')
+                                
+                                # Build description of property changes
+                                prop_desc = []
+                                if 'fillColor' in properties:
+                                    prop_desc.append('颜色' if language == 'zh' else 'color')
+                                if 'bold' in properties:
+                                    prop_desc.append('粗体' if language == 'zh' else 'bold')
+                                if 'italic' in properties:
+                                    prop_desc.append('斜体' if language == 'zh' else 'italic')
+                                
+                                props_str = '、'.join(prop_desc) if language == 'zh' else ', '.join(prop_desc)
+                                
+                                # Verbal acknowledgment using LLM
+                                if language == 'zh':
+                                    ack_prompt = f"用户要修改第{node_index+1}个节点「{node_text}」的{props_str}。用1句话确认并说会更新样式。"
+                                else:
+                                    ack_prompt = f"User wants to update {props_str} of node #{node_index+1} \"{node_text}\". Confirm in 1 sentence and say you'll update styles."
+                                
+                                async for chunk in self._stream_llm_response(ack_prompt, session):
+                                    yield chunk
+                                
                                 logger.info(f"[ThinkGuide-{stage}] Updating properties: {properties}")
                                 
                                 yield {
@@ -472,20 +569,39 @@ User message: {message}"""
                                     }]
                                 }
                                 
-                                logger.info(f"[ThinkGuide-{stage}] Properties updated")
+                                # Completion confirmation using LLM
+                                if language == 'zh':
+                                    done_prompt = "成功更新节点样式。用1句话简洁确认。"
+                                else:
+                                    done_prompt = "Successfully updated node styles. Confirm briefly in 1 sentence."
+                                
+                                async for chunk in self._stream_llm_response(done_prompt, session):
+                                    yield chunk
+                                
+                                logger.info(f"[ThinkGuide-{stage}] Properties updated with confirmation")
                                 return
                         
                         elif action == 'update_position':
                             position = intent.get('position', {})
                             if position:
-                                # Update node position (angle, rotation, swap)
-                                logger.info(f"[ThinkGuide-{stage}] Updating position: {position}")
+                                language = session.get('language', 'en')
+                                node_text = target_node.get('text', '')
                                 
                                 # Handle swap operation
                                 if 'swap_with' in position:
                                     swap_index = int(position['swap_with']) - 1  # Convert to 0-based
                                     if 0 <= swap_index < len(diagram_data['children']) and swap_index != node_index:
                                         swap_node = diagram_data['children'][swap_index]
+                                        swap_text = swap_node.get('text', '')
+                                        
+                                        # Verbal acknowledgment using LLM
+                                        if language == 'zh':
+                                            ack_prompt = f"用户要交换第{node_index+1}个节点「{node_text}」和第{swap_index+1}个节点「{swap_text}」的位置。用1句话确认。"
+                                        else:
+                                            ack_prompt = f"User wants to swap positions of node #{node_index+1} \"{node_text}\" and node #{swap_index+1} \"{swap_text}\". Confirm in 1 sentence."
+                                        
+                                        async for chunk in self._stream_llm_response(ack_prompt, session):
+                                            yield chunk
                                         
                                         yield {
                                             'event': 'diagram_update',
@@ -496,10 +612,30 @@ User message: {message}"""
                                             }
                                         }
                                         
-                                        logger.info(f"[ThinkGuide-{stage}] Swapped positions")
+                                        # Completion confirmation using LLM
+                                        if language == 'zh':
+                                            done_prompt = "成功交换两个节点的位置。用1句话确认。"
+                                        else:
+                                            done_prompt = "Successfully swapped node positions. Confirm in 1 sentence."
+                                        
+                                        async for chunk in self._stream_llm_response(done_prompt, session):
+                                            yield chunk
+                                        
+                                        logger.info(f"[ThinkGuide-{stage}] Swapped positions with confirmation")
                                         return
                                 
                                 # Handle angle/rotation operations
+                                logger.info(f"[ThinkGuide-{stage}] Updating position: {position}")
+                                
+                                # Verbal acknowledgment using LLM
+                                if language == 'zh':
+                                    ack_prompt = f"用户要调整第{node_index+1}个节点「{node_text}」的位置。用1句话确认。"
+                                else:
+                                    ack_prompt = f"User wants to adjust position of node #{node_index+1} \"{node_text}\". Confirm in 1 sentence."
+                                
+                                async for chunk in self._stream_llm_response(ack_prompt, session):
+                                    yield chunk
+                                
                                 yield {
                                     'event': 'diagram_update',
                                     'action': 'update_position',
@@ -510,7 +646,16 @@ User message: {message}"""
                                     }]
                                 }
                                 
-                                logger.info(f"[ThinkGuide-{stage}] Position updated")
+                                # Completion confirmation using LLM
+                                if language == 'zh':
+                                    done_prompt = "成功调整节点位置。用1句话确认。"
+                                else:
+                                    done_prompt = "Successfully adjusted node position. Confirm in 1 sentence."
+                                
+                                async for chunk in self._stream_llm_response(done_prompt, session):
+                                    yield chunk
+                                
+                                logger.info(f"[ThinkGuide-{stage}] Position updated with confirmation")
                                 return
             
             elif action == 'discuss':
@@ -522,10 +667,33 @@ User message: {message}"""
         if self._should_suggest_nodes(session, message):
             logger.info(f"[ThinkGuide-{stage}] Triggering node generation (sparse diagram or user request)")
             
+            language = session.get('language', 'en')
+            center = diagram_data.get('center', {}).get('text', '')
+            
+            # Verbal acknowledgment using LLM
+            if language == 'zh':
+                ack_prompt = f"用户希望为主题「{center}」添加节点。用1-2句话说你会思考相关概念并添加。"
+            else:
+                ack_prompt = f"User wants to add nodes for topic \"{center}\". Say in 1-2 sentences you'll think about relevant concepts and add them."
+            
+            async for chunk in self._stream_llm_response(ack_prompt, session):
+                yield chunk
+            
             suggested_nodes = await self._generate_suggested_nodes(session)
             
             if suggested_nodes:
                 logger.info(f"[ThinkGuide-{stage}] Sending {len(suggested_nodes)} node suggestions to frontend")
+                
+                # List the nodes being added
+                node_list = ', '.join([f"「{n['text']}」" for n in suggested_nodes]) if language == 'zh' else ', '.join([f"\"{n['text']}\"" for n in suggested_nodes])
+                
+                if language == 'zh':
+                    adding_prompt = f"我建议添加这{len(suggested_nodes)}个节点：{node_list}。用1句话说明并说会添加到图中。"
+                else:
+                    adding_prompt = f"I suggest these {len(suggested_nodes)} nodes: {node_list}. Say in 1 sentence you'll add them to the diagram."
+                
+                async for chunk in self._stream_llm_response(adding_prompt, session):
+                    yield chunk
                 
                 # Update session diagram data optimistically
                 # (Frontend will send back actual state on next message)
@@ -538,7 +706,16 @@ User message: {message}"""
                     'updates': suggested_nodes
                 }
                 
-                logger.info(f"[ThinkGuide-{stage}] Diagram updated: {current_nodes} → {session['node_count']} nodes")
+                # Completion confirmation using LLM
+                if language == 'zh':
+                    done_prompt = f"成功添加{len(suggested_nodes)}个节点，现在共{session['node_count']}个。用1-2句话确认并鼓励继续完善圆圈图。"
+                else:
+                    done_prompt = f"Successfully added {len(suggested_nodes)} nodes. Now {session['node_count']} total. Confirm in 1-2 sentences and encourage refining the Circle Map."
+                
+                async for chunk in self._stream_llm_response(done_prompt, session):
+                    yield chunk
+                
+                logger.info(f"[ThinkGuide-{stage}] Diagram updated with confirmation: {current_nodes} → {session['node_count']} nodes")
     
     async def process_step(
         self,
@@ -668,9 +845,10 @@ User message: {message}"""
             
             logger.info(f"[ThinkGuide] Stored context: {message[:100]}...")
             
-            # ❌ Don't auto-suggest nodes in CONTEXT_GATHERING
-            # Let the user guide the conversation - they'll ask if they want nodes
-            # The intent detector in _check_and_suggest_nodes will handle explicit requests
+            # 🆕 Check if user wants to modify diagram BEFORE transitioning
+            # This is critical - the message gets lost after state transition!
+            async for chunk in self._check_and_suggest_nodes(session, message, 'CONTEXT_GATHERING'):
+                yield chunk
             
             # Transition to EDUCATIONAL_ANALYSIS
             session['state'] = CircleMapState.EDUCATIONAL_ANALYSIS
@@ -939,37 +1117,96 @@ End with encouragement about their critical thinking journey.
             }
         }
     
+    async def _stream_static_message(
+        self,
+        message: str,
+        session: Dict
+    ) -> AsyncGenerator[Dict, None]:
+        """
+        Stream a static message as chunks (no LLM call).
+        Used for confirmations and system messages.
+        """
+        # Simulate streaming by splitting into words
+        words = message.split(' ')
+        full_content = ""
+        
+        for i, word in enumerate(words):
+            chunk_text = word if i == 0 else f" {word}"
+            full_content += chunk_text
+            
+            yield {
+                'event': 'message_chunk',
+                'content': chunk_text
+            }
+            
+            # Small delay for natural typing effect
+            import asyncio
+            await asyncio.sleep(0.02)
+        
+        # Store in history
+        session['history'].append({
+            'role': 'assistant',
+            'content': full_content,
+            'state': session['state'].value if hasattr(session.get('state'), 'value') else 'UNKNOWN'
+        })
+        
+        yield {
+            'event': 'message_complete',
+            'full_content': full_content
+        }
+    
     async def _stream_llm_response(
         self,
         prompt: str,
         session: Dict
     ) -> AsyncGenerator[Dict, None]:
-        """Helper: Stream LLM response as SSE chunks"""
+        """Helper: Stream LLM response as SSE chunks (for actual prompts)"""
         
         try:
             full_content = ""
             
-            # Stream from Qwen-Plus via OpenAI SDK
-            stream = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{'role': 'user', 'content': prompt}],
-                temperature=0.7,
-                stream=True,
-                extra_body={"enable_thinking": False}
-            )
+            # Prepare messages with system instruction for concise, professional responses
+            language = session.get('language', 'en')
+            if language == 'zh':
+                system_msg = """你是一位专业的思维教学专家（Teaching Thinking Professional）。
+
+你的角色：
+- 帮助教师通过苏格拉底式提问深化思考
+- 引导教师发现概念的本质和优先级
+- 培养批判性思维和教学设计能力
+
+你的风格：
+- 简洁、清晰、专业
+- 不使用表情符号
+- 直接、有针对性
+- 提问而非说教"""
+            else:
+                system_msg = """You are a Teaching Thinking Professional.
+
+Your role:
+- Help teachers deepen thinking through Socratic questioning
+- Guide teachers to discover essence and priorities of concepts
+- Develop critical thinking and instructional design skills
+
+Your style:
+- Concise, clear, professional
+- No emojis
+- Direct and targeted
+- Ask, don't lecture"""
             
-            async for chunk in stream:
-                if chunk.choices and len(chunk.choices) > 0:
-                    delta = chunk.choices[0].delta
-                    content = delta.content if delta.content else ''
-                    
-                    if content:
-                        full_content += content
-                        
-                        yield {
-                            'event': 'message_chunk',
-                            'content': content
-                        }
+            # Stream from LLM Service
+            async for chunk in self.llm.chat_stream(
+                prompt=prompt,
+                model=self.model,
+                system_message=system_msg,
+                temperature=0.7
+            ):
+                full_content += chunk
+                
+                yield {
+                    'event': 'message_chunk',
+                    'content': chunk
+                }
             
             # Store in history
             session['history'].append({

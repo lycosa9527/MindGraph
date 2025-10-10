@@ -152,6 +152,43 @@ class Config:
 
 
 
+    # ============================================================================
+    # DASHSCOPE RATE LIMITING (For multi-LLM parallel calls)
+    # ============================================================================
+
+    @property
+    def DASHSCOPE_QPM_LIMIT(self):
+        """Dashscope Queries Per Minute limit"""
+        try:
+            return int(self._get_cached_value('DASHSCOPE_QPM_LIMIT', '60'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using 60")
+            return 60
+
+    @property
+    def DASHSCOPE_CONCURRENT_LIMIT(self):
+        """Dashscope concurrent request limit"""
+        try:
+            return int(self._get_cached_value('DASHSCOPE_CONCURRENT_LIMIT', '10'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHSCOPE_CONCURRENT_LIMIT, using 10")
+            return 10
+
+    @property
+    def DASHSCOPE_RATE_LIMITING_ENABLED(self):
+        """Enable/disable Dashscope rate limiting"""
+        val = self._get_cached_value('DASHSCOPE_RATE_LIMITING_ENABLED', 'true')
+        return val.lower() == 'true'
+
+    @property
+    def DASHSCOPE_CONNECTION_POOL_SIZE(self):
+        """HTTP connection pool size for Dashscope"""
+        try:
+            return int(self._get_cached_value('DASHSCOPE_CONNECTION_POOL_SIZE', '20'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHSCOPE_CONNECTION_POOL_SIZE, using 20")
+            return 20
+
     @property
     def HOST(self):
         """FastAPI application host address."""
@@ -221,6 +258,11 @@ class Config:
             logger.warning(f"Invalid LOG_LEVEL '{level}', using INFO")
             return 'INFO'
         return level
+    
+    @property
+    def VERBOSE_LOGGING(self):
+        """Enable verbose logging for debugging (logs all user interactions)."""
+        return self._get_cached_value('VERBOSE_LOGGING', 'False').lower() == 'true'
     
     # ============================================================================
     # FEATURE FLAGS (Development/Testing)
