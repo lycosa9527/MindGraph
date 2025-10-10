@@ -9,7 +9,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - 2025-10-10
+### Added - 2025-10-10 (Node Animation System)
+- **Complete Visual Feedback System**: Nodes now animate when updated by ThinkGuide
+  - **Animation Module** (`static/js/editor/node-indicator.js`): Reusable animation system
+    - Supports 5 animation types: glow, pulse, flash, shake, ping
+    - Smart node targeting with fallback strategies
+    - Scopes to active editor (#d3-container) to avoid hidden gallery elements
+  - **ThinkGuide Integration**: Automatic animations for all diagram updates
+    - Node updates (`update_node`): Green pulse animation (2s, scales up/down)
+    - Center updates (`change_center`): Orange flash animation (1.5s, blinks)
+    - Clear visual feedback shows exactly which nodes AI is modifying
+  - **Standardized Node IDs**: Consistent ID scheme across renderer, frontend, backend
+    - Circle Map center: `center_topic` (data-node-type="center")
+    - Circle Map nodes: `context_0`, `context_1`, etc. (data-node-type="context")
+    - Boundary: `outer_boundary` (data-node-type="boundary")
+    - Documented in `docs/NODE_IDS_STANDARD.md`
+  - **Renderer Updates** (`bubble-map-renderer.js`):
+    - All Circle Map nodes now have standardized IDs and types
+    - Added cursor pointers for better UX
+  - **Data Normalization**: Frontend properly maps spec format to node IDs
+    - Handles Circle Map's string array format (`spec.context`)
+    - Extracts index from ID pattern (e.g., `context_0` → array index 0)
+  - **Testing Utilities**: Quick test functions for development
+    - `window.testPulse()` - Test pulse animation
+    - `window.testFlash()` - Test flash animation
+    - `window.nodeIndicator.testAll()` - Test all nodes
+  - **Documentation**:
+    - `docs/ANIMATIONS_COMPLETE.md` - Complete implementation summary
+    - `docs/NODE_IDS_STANDARD.md` - Node ID conventions
+    - `docs/THINKGUIDE_NODE_TEST.md` - Testing guide
+
+### Added - 2025-10-10 (Verbose Logging System)
+- **VERBOSE_LOGGING Feature Flag**: New environment variable to enable detailed debugging logs
+  - Set `VERBOSE_LOGGING=True` in `.env` to enable comprehensive logging
+  - Logs EVERY user interaction: mouse clicks, text edits, node selections, drag events
+  - Automatically enables DEBUG log level when activated
+  - Designed for development/debugging, disabled by default in production
+- **Frontend Event Logging**: Comprehensive browser-side logging
+  - **Mouse Clicks**: Logs all click events with modifiers (Ctrl, Alt, Shift), coordinates, node ID
+  - **Double-Clicks**: Logs all edit mode activations with node context
+  - **Text Edits**: Logs all text changes with node ID, content preview, text length
+  - **Node Selections**: Logs all selection changes with selected node IDs and count
+  - **Drag Events**: Logs drag start, drag end with coordinates and node ID
+  - All frontend events sent to backend terminal in real-time via `/api/frontend_log`
+- **Backend Verbose Logging**: Enhanced agent and service logging
+  - ThinkGuide agent now outputs detailed workflow state transitions
+  - All LLM API calls logged with intent detection and structured output
+  - Diagram update operations logged with action types and targets
+- **Unified Logging Format**: Consistent format for all logs (frontend + backend)
+  - Format: `[HH:MM:SS] LEVEL | SRC  | Message`
+  - Color-coded levels: DEBUG (cyan), INFO (green), WARN (yellow), ERROR (red)
+  - Clean, professional output with aligned columns
+- **Logger Enhancements** (`static/js/logger.js`)
+  - Added `verboseMode` support from backend configuration
+  - Added `isVerbose()` method to check if verbose logging is active
+  - Automatically enables DEBUG level when verbose mode is on
+  - Shows "VERBOSE mode ENABLED" banner on startup
+
+### Added - 2025-10-10 (ThinkGuide Visual Control)
 - **ThinkGuide Complete Visual Control System**
   - **Property Control** - Agent can now modify all visual node properties:
     - Fill color, text color, stroke color (with natural language color recognition)

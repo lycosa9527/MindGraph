@@ -16,7 +16,18 @@
     <!-- D3.js -->
     <script src="/static/js/d3.min.js"></script>
 </head>
-<body>
+<body 
+    data-verbose-logging="{{ verbose_logging | tojson }}"
+    data-feature-learning-mode="{{ feature_learning_mode | tojson }}"
+    data-feature-thinkguide="{{ feature_thinkguide | tojson }}">
+    <!-- Configuration from backend -->
+    <script>
+        // Load configuration from data attributes
+        const bodyElement = document.body;
+        window.VERBOSE_LOGGING = bodyElement.dataset.verboseLogging === 'true';
+        window.FEATURE_LEARNING_MODE = bodyElement.dataset.featureLearningMode === 'true';
+        window.FEATURE_THINKGUIDE = bodyElement.dataset.featureThinkguide === 'true';
+    </script>
     <!-- Landing Page / Gallery -->
     <div class="editor-landing" id="editor-landing">
         <!-- Top Right Buttons -->
@@ -430,8 +441,7 @@
                         <span id="learning-btn-text">Learn</span>
                     </button>
                     {% endif %}
-                    {% if feature_thinkguide %}
-                    <button id="thinking-btn" class="btn-tool btn-thinking" title="Start Socratic Thinking Mode (ThinkGuide)" disabled>
+                    <button id="thinking-btn" class="btn-tool btn-thinking" title="Start Socratic Thinking Mode (ThinkGuide)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
                             <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
                             <circle cx="8" cy="10" r="1" fill="currentColor"/>
@@ -439,7 +449,6 @@
                         </svg>
                         <span id="thinking-btn-text">Thinking</span>
                     </button>
-                    {% endif %}
                 </div>
                 
                 <div class="toolbar-group">
@@ -595,6 +604,11 @@
                             placeholder="输入你的回答..."
                             rows="1"
                         ></textarea>
+                        <button id="thinking-stop-btn" class="thinking-stop-btn" title="Stop generation" style="display: none;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="6" width="12" height="12" rx="2"/>
+                            </svg>
+                        </button>
                         <button id="thinking-send-btn" class="thinking-send-btn" title="Send message">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -691,6 +705,9 @@
     
     <!-- Centralized Panel Management System - MUST load before other editors -->
     <script src="/static/js/editor/panel-manager.js"></script>
+    
+    <!-- Node Indicator System - Visual feedback for node updates -->
+    <script src="/static/js/editor/node-indicator.js"></script>
     
     <!-- Editor scripts -->
     <script src="/static/js/editor/notification-manager.js"></script>

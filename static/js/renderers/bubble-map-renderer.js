@@ -337,7 +337,9 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('r', outerCircleR)
         .attr('fill', THEME.outerCircleFill)
         .attr('stroke', THEME.outerCircleStroke)
-        .attr('stroke-width', THEME.outerCircleStrokeWidth);
+        .attr('stroke-width', THEME.outerCircleStrokeWidth)
+        .attr('data-node-id', 'outer_boundary')
+        .attr('data-node-type', 'boundary');
     
     // Draw context circles around the perimeter
     nodes.forEach(node => {
@@ -350,7 +352,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             .attr('stroke-width', THEME.contextStrokeWidth)
             .attr('data-node-id', `context_${node.id}`)
             .attr('data-node-type', 'context')
-            .attr('data-array-index', node.id);
+            .attr('data-array-index', node.id)
+            .style('cursor', 'pointer');
         
         svg.append('text')
             .attr('x', node.x)
@@ -362,6 +365,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             .attr('data-text-for', `context_${node.id}`)
             .attr('data-node-id', `context_${node.id}`)
             .attr('data-node-type', 'context')
+            .style('cursor', 'pointer')
             .text(node.text);
     });
     
@@ -373,8 +377,9 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicFill)
         .attr('stroke', THEME.topicStroke)
         .attr('stroke-width', THEME.topicStrokeWidth)
-        .attr('data-node-id', 'topic_center')
-        .attr('data-node-type', 'topic');
+        .attr('data-node-id', 'center_topic')
+        .attr('data-node-type', 'center')
+        .style('cursor', 'pointer');
     
     // Draw topic text on top
     svg.append('text')
@@ -385,9 +390,10 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('fill', THEME.topicText)
         .attr('font-size', THEME.fontTopic)
         .attr('font-weight', 'bold')
-        .attr('data-text-for', 'topic_center')
-        .attr('data-node-id', 'topic_center')
-        .attr('data-node-type', 'topic')
+        .attr('data-text-for', 'center_topic')
+        .attr('data-node-id', 'center_topic')
+        .attr('data-node-type', 'center')
+        .style('cursor', 'pointer')
         .text(spec.topic);
     
     // Watermark removed from canvas display - will be added during PNG export only

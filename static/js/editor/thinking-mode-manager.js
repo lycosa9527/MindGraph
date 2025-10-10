@@ -15,6 +15,7 @@ class ThinkingModeManager {
         this.messagesContainer = null;
         this.inputArea = null;
         this.sendBtn = null;
+        this.stopBtn = null;
         this.progressFill = null;
         this.progressLabel = null;
         this.closeBtn = null;
@@ -23,6 +24,7 @@ class ThinkingModeManager {
         this.sessionId = null;
         this.currentState = 'CONTEXT_GATHERING';
         this.isStreaming = false;
+        this.currentAbortController = null; // For stopping SSE streams
         this.diagramType = null;
         this.language = 'en'; // Detected language (en/zh)
         
@@ -75,6 +77,7 @@ class ThinkingModeManager {
         this.messagesContainer = document.getElementById('thinking-messages');
         this.inputArea = document.getElementById('thinking-input');
         this.sendBtn = document.getElementById('thinking-send-btn');
+        this.stopBtn = document.getElementById('thinking-stop-btn');
         this.progressFill = document.getElementById('thinking-progress-fill');
         this.progressLabel = document.getElementById('thinking-progress-label');
         this.closeBtn = document.getElementById('thinking-close-btn');
@@ -86,6 +89,10 @@ class ThinkingModeManager {
         
         // Event listeners
         this.sendBtn.addEventListener('click', () => this.handleSendMessage());
+        this.stopBtn.addEventListener('click', () => {
+            this.logger.info('[ThinkGuide] 🛑 STOP BUTTON CLICKED');
+            this.stopStreaming();
+        });
         this.inputArea.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -187,14 +194,29 @@ class ThinkingModeManager {
         // Show typing indicator
         const typingIndicator = this.showTypingIndicator();
         
+        // Create NEW AbortController for this stream (must be fresh each time)
+        if (this.currentAbortController) {
+            this.logger.warn('[ThinkGuide] Cleaning up old AbortController');
+        }
+        this.currentAbortController = new AbortController();
+        this.logger.info('[ThinkGuide] Created new AbortController');
+        
+        // Show stop button, hide send button
+        this.showStopButton();
+        this.logger.info('[ThinkGuide] Stop button shown');
+        
         try {
+            this.logger.info('[ThinkGuide] Starting fetch with AbortController signal');
             const response = await fetch('/thinking_mode/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestData)
+                body: JSON.stringify(requestData),
+                signal: this.currentAbortController.signal
             });
+            
+            this.logger.info('[ThinkGuide] Fetch response received, status:', response.status);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -225,12 +247,32 @@ class ThinkingModeManager {
                     }
                 }
             }
+            
+            // Stream complete - hide stop button
+            this.hideStopButton();
+            
         } catch (error) {
             // Remove typing indicator on error
             if (typingIndicator && typingIndicator.parentNode) {
                 typingIndicator.parentNode.removeChild(typingIndicator);
             }
+            
+            // Hide stop button
+            this.hideStopButton();
+            
+            // Don't throw if it was intentionally aborted
+            if (error.name === 'AbortError') {
+                const stopMsg = this.language === 'zh' ? '⏹ 已停止生成' : '⏹ Generation stopped';
+                this.addSystemMessage(stopMsg);
+                this.logger.info('[ThinkGuide] Stream stopped by user');
+                return; // Don't re-throw
+            }
+            
             throw error;
+        } finally {
+            this.logger.info('[ThinkGuide] streamResponse finally block - cleaning up AbortController');
+            this.currentAbortController = null;
+            this.logger.info('[ThinkGuide] AbortController set to null');
         }
     }
     
@@ -331,8 +373,8 @@ class ThinkingModeManager {
             case 'circle_map':
                 return {
                     center: { text: spec.topic || spec.center?.text || '' },
-                    children: (spec.items || spec.children || []).map((item, index) => ({
-                        id: item.id || String(index + 1),
+                    children: (spec.context || spec.items || spec.children || []).map((item, index) => ({
+                        id: item.id || `context_${index}`,  // Match renderer's ID format
                         text: item.text || item.content || item
                     }))
                 };
@@ -554,6 +596,10 @@ class ThinkingModeManager {
             });
             
             this.inputArea?.focus();
+            
+            // Adjust diagram to make room for panel
+            this.fitDiagramToCanvas();
+            
             this.logger.info('[ThinkGuide] ✅ Panel open sequence completed');
         }, 100);
     }
@@ -565,14 +611,18 @@ class ThinkingModeManager {
     applyDiagramUpdate(data) {
         const { action, updates } = data;
         
-        this.logger.info('[ThinkGuide] Applying diagram update:', { action, updates });
+        this.logger.info('[ThinkGuide] 🔄 applyDiagramUpdate called!');
+        this.logger.info('[ThinkGuide] Action:', action);
+        this.logger.info('[ThinkGuide] Updates:', updates);
         
         // Get the current editor instance
         const editor = window.currentEditor;
         if (!editor) {
-            this.logger.error('[ThinkGuide] No editor instance found, cannot update diagram');
+            this.logger.error('[ThinkGuide] ❌ No editor instance found, cannot update diagram');
             return;
         }
+        
+        this.logger.info('[ThinkGuide] ✅ Editor instance found');
         
         try {
             switch (action) {
@@ -648,21 +698,62 @@ class ThinkingModeManager {
     updateDiagramNode(nodeId, newText) {
         this.logger.info('[ThinkGuide] Updating node:', { nodeId, newText });
         
-        // Find the text element in SVG
-        const textElement = d3.select(`text[data-node-id="${nodeId}"]`);
-        
-        if (!textElement.empty()) {
-            textElement.text(newText);
+        const editor = window.currentEditor;
+        if (editor && editor.currentSpec) {
+            // Update in data model
+            // Support different spec structures: circle_map uses 'context', bubble_map uses 'adjectives', etc.
+            const children = editor.currentSpec.children || editor.currentSpec.items || editor.currentSpec.adjectives || editor.currentSpec.context || [];
             
-            // Update the underlying data model if editor has updateNode method
-            const editor = window.currentEditor;
-            if (editor && typeof editor.updateNodeText === 'function') {
-                editor.updateNodeText(nodeId, newText);
+            // For circle maps with simple string arrays, extract index from nodeId (e.g., "context_0" -> 0)
+            if (Array.isArray(children) && children.length > 0 && typeof children[0] === 'string') {
+                // Simple array format (e.g., circle map: ["item1", "item2", ...])
+                const match = nodeId.match(/context_(\d+)/);
+                if (match) {
+                    const index = parseInt(match[1]);
+                    if (index >= 0 && index < children.length) {
+                        children[index] = newText;
+                        this.logger.info('[ThinkGuide] ✅ Updated context array at index', index);
+                    }
+                }
+            } else {
+                // Object format with IDs
+                for (let node of children) {
+                    if (node.id === nodeId || String(node.id) === String(nodeId)) {
+                        node.text = newText;
+                        this.logger.info('[ThinkGuide] ✅ Updated node object:', nodeId);
+                        break;
+                    }
+                }
             }
             
-            this.logger.info('[ThinkGuide] ✅ Node updated successfully');
+            // Re-render diagram
+            if (typeof editor.renderDiagram === 'function') {
+                editor.renderDiagram();
+            }
+            
+            // Highlight the updated node
+            setTimeout(() => {
+                this.logger.info('[ThinkGuide] 🎯 Attempting to highlight node:', nodeId);
+                this.logger.info('[ThinkGuide] window.nodeIndicator exists?', !!window.nodeIndicator);
+                
+                if (window.nodeIndicator) {
+                    this.logger.info('[ThinkGuide] ✅ Calling nodeIndicator.highlight for node:', nodeId);
+                    // Use 'pulse' instead of 'glow' - simpler, more visible, no SVG filters
+                    const result = window.nodeIndicator.highlight(nodeId, {
+                        type: 'pulse',
+                        duration: 2000,
+                        intensity: 6,
+                        color: '#4CAF50'  // Green for updates
+                    });
+                    this.logger.info('[ThinkGuide] Highlight result:', result);
+                } else {
+                    this.logger.error('[ThinkGuide] ❌ window.nodeIndicator not available!');
+                }
+            }, 100);
+            
+            this.logger.info('[ThinkGuide] ✅ Node updated and highlighted');
         } else {
-            this.logger.warn('[ThinkGuide] Node not found:', nodeId);
+            this.logger.warn('[ThinkGuide] No editor or spec found');
         }
     }
     
@@ -702,25 +793,44 @@ class ThinkingModeManager {
     updateCenterTopic(newText) {
         this.logger.info('[ThinkGuide] Updating center topic:', newText);
         
-        // Find center text element
-        const centerText = d3.select('text[data-node-type="center"]');
-        
-        if (!centerText.empty()) {
-            centerText.text(newText);
-            
-            // Update data model
-            const editor = window.currentEditor;
-            if (editor && editor.currentSpec) {
-                if (editor.currentSpec.topic !== undefined) {
-                    editor.currentSpec.topic = newText;
-                } else if (editor.currentSpec.center) {
-                    editor.currentSpec.center.text = newText;
-                }
+        // Update data model FIRST
+        const editor = window.currentEditor;
+        if (editor && editor.currentSpec) {
+            if (editor.currentSpec.topic !== undefined) {
+                editor.currentSpec.topic = newText;
+            } else if (editor.currentSpec.center) {
+                editor.currentSpec.center.text = newText;
             }
             
-            this.logger.info('[ThinkGuide] ✅ Center topic updated');
+            // Re-render the entire diagram to reflect changes
+            if (typeof editor.renderDiagram === 'function') {
+                editor.renderDiagram();
+                this.logger.info('[ThinkGuide] Diagram re-rendered');
+            }
+            
+            // After re-render, find and highlight the center element
+            setTimeout(() => {
+                this.logger.info('[ThinkGuide] 🎯 Attempting to highlight center element');
+                this.logger.info('[ThinkGuide] window.nodeIndicator exists?', !!window.nodeIndicator);
+                
+                if (window.nodeIndicator) {
+                    this.logger.info('[ThinkGuide] ✅ Calling nodeIndicator.highlight("center")');
+                    // Use 'flash' for center - very visible, no SVG filters
+                    const result = window.nodeIndicator.highlight('center', {
+                        type: 'flash',
+                        duration: 1500,
+                        intensity: 8,
+                        color: '#FF9800'  // Orange for center changes
+                    });
+                    this.logger.info('[ThinkGuide] Highlight result:', result);
+                } else {
+                    this.logger.error('[ThinkGuide] ❌ window.nodeIndicator not available!');
+                }
+            }, 100); // Small delay to ensure re-render is complete
+            
+            this.logger.info('[ThinkGuide] ✅ Center topic updated and highlighted');
         } else {
-            this.logger.warn('[ThinkGuide] Center topic element not found');
+            this.logger.warn('[ThinkGuide] No editor or spec found');
         }
     }
     
@@ -740,28 +850,39 @@ class ThinkingModeManager {
         }
         
         if (!shapeElement.empty()) {
-            // Apply shape properties
+            // Apply shape properties with smooth transitions
             if (properties.fillColor) {
-                shapeElement.attr('fill', properties.fillColor);
+                shapeElement.transition().duration(400).attr('fill', properties.fillColor);
             }
             if (properties.strokeColor) {
-                shapeElement.attr('stroke', properties.strokeColor);
+                shapeElement.transition().duration(400).attr('stroke', properties.strokeColor);
             }
             if (properties.strokeWidth) {
-                shapeElement.attr('stroke-width', properties.strokeWidth);
+                shapeElement.transition().duration(400).attr('stroke-width', properties.strokeWidth);
             }
             if (properties.opacity !== undefined) {
-                shapeElement.attr('opacity', properties.opacity);
+                shapeElement.transition().duration(400).attr('opacity', properties.opacity);
             }
+            
+            // Highlight the node after property changes
+            setTimeout(() => {
+                if (window.nodeIndicator) {
+                    window.nodeIndicator.highlight(shapeElement.node(), {
+                        type: 'pulse',
+                        duration: 1500,
+                        intensity: 5
+                    });
+                }
+            }, 450);
         }
         
         if (!textElement.empty()) {
             // Apply text properties
             if (properties.textColor) {
-                textElement.attr('fill', properties.textColor);
+                textElement.transition().duration(400).attr('fill', properties.textColor);
             }
             if (properties.fontSize) {
-                textElement.attr('font-size', properties.fontSize);
+                textElement.transition().duration(400).attr('font-size', properties.fontSize);
             }
             if (properties.fontFamily) {
                 textElement.attr('font-family', properties.fontFamily);
@@ -783,7 +904,7 @@ class ThinkingModeManager {
             editor.updateNodeProperties(nodeId, properties);
         }
         
-        this.logger.info('[ThinkGuide] ✅ Properties updated successfully');
+        this.logger.info('[ThinkGuide] ✅ Properties updated with animation');
     }
     
     /**
@@ -846,7 +967,17 @@ class ThinkingModeManager {
                 .transition()
                 .duration(500)
                 .attr('cx', newX)
-                .attr('cy', newY);
+                .attr('cy', newY)
+                .on('end', () => {
+                    // Highlight after movement completes
+                    if (window.nodeIndicator) {
+                        window.nodeIndicator.highlight(shapeElement.node(), {
+                            type: 'ping',
+                            duration: 1500,
+                            intensity: 7
+                        });
+                    }
+                });
         }
         
         if (!textElement.empty()) {
@@ -857,7 +988,7 @@ class ThinkingModeManager {
                 .attr('y', newY);
         }
         
-        this.logger.info('[ThinkGuide] ✅ Position updated successfully');
+        this.logger.info('[ThinkGuide] ✅ Position updated with animation');
     }
     
     /**
@@ -888,8 +1019,28 @@ class ThinkingModeManager {
         const y2 = parseFloat(shape2.attr('cy'));
         
         // Swap with animation
-        shape1.transition().duration(500).attr('cx', x2).attr('cy', y2);
-        shape2.transition().duration(500).attr('cx', x1).attr('cy', y1);
+        shape1.transition().duration(500).attr('cx', x2).attr('cy', y2)
+            .on('end', () => {
+                if (window.nodeIndicator) {
+                    window.nodeIndicator.highlight(shape1.node(), {
+                        type: 'flash',
+                        duration: 1200,
+                        intensity: 6
+                    });
+                }
+            });
+        shape2.transition().duration(500).attr('cx', x1).attr('cy', y1)
+            .on('end', () => {
+                setTimeout(() => {
+                    if (window.nodeIndicator) {
+                        window.nodeIndicator.highlight(shape2.node(), {
+                            type: 'flash',
+                            duration: 1200,
+                            intensity: 6
+                        });
+                    }
+                }, 100); // Slight delay for second highlight
+            });
         
         if (!text1.empty()) {
             text1.transition().duration(500).attr('x', x2).attr('y', y2);
@@ -898,7 +1049,7 @@ class ThinkingModeManager {
             text2.transition().duration(500).attr('x', x1).attr('y', y1);
         }
         
-        this.logger.info('[ThinkGuide] ✅ Positions swapped successfully');
+        this.logger.info('[ThinkGuide] ✅ Positions swapped with animation');
     }
     
     /**
@@ -929,7 +1080,77 @@ class ThinkingModeManager {
                 this.logger.warn('[ThinkGuide] ⚠️ PanelManager not available, using fallback');
                 this.panel.classList.add('collapsed');
             }
+            
+            // Restore diagram to full canvas after panel closes
+            setTimeout(() => {
+                this.fitDiagramToCanvas();
+            }, 400); // Wait for panel close animation
+            
             this.logger.info('[ThinkGuide] Panel closed');
+        }
+    }
+    
+    /**
+     * Fit diagram to canvas, accounting for panel space
+     */
+    fitDiagramToCanvas() {
+        const editor = window.currentEditor;
+        if (!editor) {
+            this.logger.warn('[ThinkGuide] No editor instance for fitToCanvas');
+            return;
+        }
+        
+        // Use the editor's fitToCanvas method which automatically detects panel visibility
+        if (typeof editor.fitToCanvas === 'function') {
+            editor.fitToCanvas(true); // Animated
+            this.logger.info('[ThinkGuide] Diagram fitted to canvas');
+        } else {
+            this.logger.warn('[ThinkGuide] Editor does not support fitToCanvas');
+        }
+    }
+    
+    /**
+     * Stop streaming (abort current request)
+     */
+    stopStreaming() {
+        this.logger.info('[ThinkGuide] stopStreaming called');
+        if (this.currentAbortController) {
+            this.logger.info('[ThinkGuide] Aborting current stream');
+            this.currentAbortController.abort();
+            // Don't call hideStopButton here - let streamResponse handle cleanup
+        } else {
+            this.logger.warn('[ThinkGuide] No active AbortController to stop');
+        }
+    }
+    
+    /**
+     * Show stop button, hide send button
+     */
+    showStopButton() {
+        this.logger.info('[ThinkGuide] showStopButton called');
+        if (this.stopBtn && this.sendBtn) {
+            this.logger.info('[ThinkGuide] Setting stop button display to flex');
+            this.stopBtn.style.display = 'flex';
+            this.sendBtn.style.display = 'none';
+            this.inputArea.disabled = true;
+        } else {
+            this.logger.error('[ThinkGuide] Stop or Send button not found!', {
+                stopBtn: !!this.stopBtn,
+                sendBtn: !!this.sendBtn
+            });
+        }
+    }
+    
+    /**
+     * Hide stop button, show send button
+     */
+    hideStopButton() {
+        this.logger.info('[ThinkGuide] hideStopButton called');
+        if (this.stopBtn && this.sendBtn) {
+            this.logger.info('[ThinkGuide] Setting stop button display to none');
+            this.stopBtn.style.display = 'none';
+            this.sendBtn.style.display = 'flex';
+            this.inputArea.disabled = false;
         }
     }
     
