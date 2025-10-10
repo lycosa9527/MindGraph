@@ -131,6 +131,19 @@ class Config:
         except (ValueError, TypeError):
             logger.warning("Invalid temperature value, using 0.7")
             return 0.7
+    
+    @property
+    def LLM_TEMPERATURE(self):
+        """Unified temperature for all diagram generation agents (structured output)."""
+        try:
+            temp = float(self._get_cached_value('LLM_TEMPERATURE', '0.3'))
+            if not 0.0 <= temp <= 2.0:
+                logger.warning(f"Temperature {temp} out of range [0.0, 2.0], using 0.3")
+                return 0.3
+            return temp
+        except (ValueError, TypeError):
+            logger.warning("Invalid LLM_TEMPERATURE value, using 0.3")
+            return 0.3
     @property
     def QWEN_MAX_TOKENS(self):
         """Unified max tokens setting for all LLM calls."""

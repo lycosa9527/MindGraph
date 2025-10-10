@@ -152,13 +152,15 @@ class BridgeMapAgent(BaseAgent):
             
             # Call middleware directly - clean and efficient!
             from services.llm_service import llm_service
+            from config.settings import config
+            
             logger.debug("Calling LLM for bridge map generation...")
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=1.0
+                temperature=config.LLM_TEMPERATURE
             )
             
             logger.debug(f"LLM response received: {response[:500] if response else 'None'}...")

@@ -85,12 +85,14 @@ class CircleMapAgent(BaseAgent):
             
             # Call middleware directly - clean and efficient!
             from services.llm_service import llm_service
+            from config.settings import config
+            
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=1.0
+                temperature=config.LLM_TEMPERATURE  # From .env (default 0.3 for structured output)
             )
             
             # Extract JSON from response
@@ -105,6 +107,7 @@ class CircleMapAgent(BaseAgent):
             
             if not spec:
                 logger.error("CircleMapAgent: Failed to extract JSON from LLM response")
+                logger.error(f"CircleMapAgent: Raw response from {self.model}: {str(response)[:500]}")
                 return None
                 
             return spec

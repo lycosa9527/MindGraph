@@ -1376,8 +1376,10 @@ class ToolbarManager {
             };
             
             try {
-                logger.info('ToolbarManager', 'Calling parallel generation endpoint');
-                const response = await fetch('/api/generate_multi_parallel', {
+                logger.info('ToolbarManager', 'Calling progressive generation endpoint (SSE)');
+                
+                // Use SSE streaming (same pattern as MindMate ai-assistant-manager.js:333-380)
+                const response = await fetch('/api/generate_multi_progressive', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1389,64 +1391,113 @@ class ToolbarManager {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                const data = await response.json();
+                // Read SSE stream with clean async/await pattern
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let completedCount = 0;
+                const startTime = Date.now();
                 
-                logger.info('ToolbarManager', `Parallel generation completed: ${data.success_count}/${models.length} successful in ${data.total_time.toFixed(2)}s`);
-                
-                // Process results from all models
-                for (const model of models) {
-                    const modelResult = data.results[model];
+                // Modern async/await loop - much cleaner than .then() recursion
+                while (true) {
+                    const { done, value } = await reader.read();
                     
-                    if (modelResult && modelResult.success) {
-                        // Normalize diagram type
-                        let responseDiagramType = modelResult.diagram_type || diagramType;
-                        if (responseDiagramType === 'mind_map') {
-                            responseDiagramType = 'mindmap';
-                        }
-                        
-                        // Cache this model's result
-                        this.llmResults[model] = {
-                            model: model,
-                            success: true,
-                            result: {
-                                spec: modelResult.spec,
-                                diagram_type: responseDiagramType,
-                                topics: modelResult.topics || [],
-                                style_preferences: modelResult.style_preferences || {}
-                            }
-                        };
-                        
-                        // Update button state for this model
-                        this.setLLMButtonState(model, 'ready');
-                        
-                        // Render first successful result
-                        if (!firstSuccessfulModel) {
-                            firstSuccessfulModel = model;
-                            this.selectedLLM = model;
-                            this.renderCachedLLMResult(model);
-                            this.updateLLMButtonStates();
-                        }
-                        
-                        logger.debug('ToolbarManager', `${model} result cached (${modelResult.duration.toFixed(2)}s)`);
-                    } else {
-                        // Model failed
-                        const errorMessage = modelResult?.error || 'Unknown error';
-                        this.llmResults[model] = {
-                            model: model,
-                            success: false,
-                            error: errorMessage,
-                            timestamp: Date.now()
-                        };
-                        
-                        // Update button to error state
-                        this.setLLMButtonState(model, 'error');
-                        logger.warn('ToolbarManager', `${model} failed: ${errorMessage}`);
+                    if (done) {
+                        // Stream ended
+                        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                        logger.info('ToolbarManager', `Progressive generation stream ended after ${elapsed}s`);
+                        break;
                     }
-                }
-                
-                // Use first_successful from response
-                if (data.first_successful && !firstSuccessfulModel) {
-                    firstSuccessfulModel = data.first_successful;
+                    
+                    // Decode chunk
+                    const chunk = decoder.decode(value, { stream: true });
+                    buffer += chunk;
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer (critical!)
+                    
+                    // Process each complete line
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            
+                            // Handle completion event
+                            if (data.event === 'complete') {
+                                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                                logger.info('ToolbarManager', `All models completed in ${elapsed}s`);
+                                continue;
+                            }
+                            
+                            // Handle error event
+                            if (data.event === 'error') {
+                                logger.error('ToolbarManager', `Progressive generation error: ${data.message}`);
+                                continue;
+                            }
+                            
+                            // Handle model result
+                            const model = data.model;
+                            if (!model) continue;
+                            
+                            completedCount++;
+                            const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                            logger.debug('ToolbarManager', `${model} completed (${completedCount}/${models.length}) in ${elapsed}s`);
+                            
+                            if (data.success) {
+                                // Normalize diagram type
+                                let responseDiagramType = data.diagram_type || diagramType;
+                                if (responseDiagramType === 'mind_map') {
+                                    responseDiagramType = 'mindmap';
+                                }
+                                
+                                // Cache this model's result
+                                this.llmResults[model] = {
+                                    model: model,
+                                    success: true,
+                                    result: {
+                                        spec: data.spec,
+                                        diagram_type: responseDiagramType,
+                                        topics: data.topics || [],
+                                        style_preferences: data.style_preferences || {}
+                                    }
+                                };
+                                
+                                // Update button state
+                                this.setLLMButtonState(model, 'ready');
+                                
+                                // Render FIRST successful result IMMEDIATELY
+                                if (!firstSuccessfulModel) {
+                                    firstSuccessfulModel = model;
+                                    this.selectedLLM = model;
+                                    this.renderCachedLLMResult(model);
+                                    this.updateLLMButtonStates();
+                                    
+                                    const modelName = LLM_CONFIG.MODEL_NAMES[model] || model;
+                                    logger.info('ToolbarManager', `✅ First result from ${modelName} rendered at ${elapsed}s`);
+                                    
+                                    // Play success sound notification
+                                    this.playNotificationSound();
+                                }
+                                
+                                logger.debug('ToolbarManager', `${model} result cached (${data.duration.toFixed(2)}s)`);
+                            } else {
+                                // Model failed
+                                const errorMessage = data.error || 'Unknown error';
+                                this.llmResults[model] = {
+                                    model: model,
+                                    success: false,
+                                    error: errorMessage,
+                                    timestamp: Date.now()
+                                };
+                                
+                                this.setLLMButtonState(model, 'error');
+                                logger.warn('ToolbarManager', `${model} failed: ${errorMessage}`);
+                            }
+                            
+                        } catch (e) {
+                            logger.debug('ToolbarManager', 'Skipping malformed SSE line');
+                        }
+                    }
                 }
                 
             } catch (error) {
@@ -2361,6 +2412,40 @@ class ToolbarManager {
             window.notificationManager.show(message, type);
         } else {
             logger.error('ToolbarManager', 'NotificationManager not available');
+        }
+    }
+    
+    /**
+     * Play notification sound when first diagram is rendered
+     */
+    playNotificationSound() {
+        try {
+            // Create audio context for a pleasant "ding" sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Connect nodes
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Configure pleasant notification sound (two-tone ding)
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // First tone (higher)
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1); // Second tone (lower)
+            
+            // Quick fade out for smooth sound
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            // Play
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            logger.debug('ToolbarManager', 'Notification sound played');
+        } catch (error) {
+            // Silently fail if audio is not supported or blocked
+            logger.debug('ToolbarManager', 'Could not play notification sound', error);
         }
     }
     
