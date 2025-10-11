@@ -335,7 +335,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('preserveAspectRatio', 'xMinYMin meet');
     
     // Add background rectangle to cover entire SVG area (consistency with other maps)
-    const backgroundColor = (theme && theme.background) ? theme.background : '#f5f5f5';
+    // Use backgroundColor already declared at line 266
     svg.append('rect')
         .attr('x', minX)
         .attr('y', minY)
