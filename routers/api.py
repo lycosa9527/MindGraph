@@ -723,11 +723,11 @@ async def generate_dingtalk_png(req: GenerateDingTalkRequest, x_language: str = 
         
         logger.debug(f"[generate_dingtalk] Saved to {temp_path}")
         
-        # Step 4: Build plain text response in ![topic](url) format
+        # Step 4: Build plain text response in ![](url) format (empty alt text)
         external_host = os.getenv('EXTERNAL_HOST', 'localhost')
         port = os.getenv('PORT', '9527')
         image_url = f"http://{external_host}:{port}/api/temp_images/{filename}"
-        plain_text = f"![{prompt}]({image_url})"
+        plain_text = f"![]({image_url})"
         
         logger.info(f"[generate_dingtalk] Success: {image_url}")
         

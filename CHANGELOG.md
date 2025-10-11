@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.9] - 2025-01-11 - DingTalk Markdown Format Update
+
+### Changed
+
+- **DingTalk Endpoint Markdown Format**
+  - **Location**: `routers/api.py` line 730
+  - **Change**: Updated markdown image syntax from `![prompt](url)` to `![](url)` (empty alt text)
+  - **Reason**: DingTalk displays the alt text alongside the image, causing duplicate text
+  - **Impact**: Cleaner DingTalk messages without redundant prompt text
+  - **Format**: Plain text response remains unchanged: `Content-Type: text/plain; charset=utf-8`
+
+---
+
 ## [4.6.8] - 2025-01-11 - PNG Export Quality & Watermark Fixes
 
 ### Fixed
