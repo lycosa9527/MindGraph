@@ -90,6 +90,46 @@ class ExportPNGRequest(BaseModel):
         }
 
 
+class GeneratePNGRequest(BaseModel):
+    """Request model for /api/generate_png endpoint - direct PNG from prompt"""
+    prompt: str = Field(..., min_length=1, description="Natural language description of diagram")
+    language: Optional[Language] = Field(Language.EN, description="Language code (en or zh)")
+    llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use for generation")
+    diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
+    dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")
+    width: Optional[int] = Field(1200, ge=400, le=4000, description="PNG width in pixels")
+    height: Optional[int] = Field(800, ge=300, le=3000, description="PNG height in pixels")
+    scale: Optional[int] = Field(2, ge=1, le=4, description="Scale factor for high-DPI")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "prompt": "Create a mind map about machine learning",
+                "language": "en",
+                "llm": "qwen",
+                "width": 1200,
+                "height": 800
+            }
+        }
+
+
+class GenerateDingTalkRequest(BaseModel):
+    """Request model for /api/generate_dingtalk endpoint"""
+    prompt: str = Field(..., min_length=1, description="Natural language description")
+    language: Optional[Language] = Field(Language.ZH, description="Language code (defaults to Chinese)")
+    llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use")
+    diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
+    dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "prompt": "比较猫和狗",
+                "language": "zh"
+            }
+        }
+
+
 class AIAssistantRequest(BaseModel):
     """Request model for /api/ai_assistant/stream endpoint (SSE)"""
     message: str = Field(..., min_length=1, max_length=5000, description="User message to AI assistant")
