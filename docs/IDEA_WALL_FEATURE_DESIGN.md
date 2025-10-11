@@ -1806,52 +1806,81 @@ if user_left_node_palette:
 - SSE streaming with potential disconnections
 - Session state management across multiple batches
 - Frontend/backend coordination with action events
+- **Node selection tracking and user interactions**
 
 **Without proper logging, debugging will be a nightmare!**
 
-### 10.2 Logging Levels and When to Use Them
-
-```python
-import logging
-
-logger = logging.getLogger(__name__)
-
-# DEBUG: Detailed diagnostic info (enabled in dev, disabled in prod)
-logger.debug(f"[NodePalette] Normalized text: '{normalized}' -> similarity: {similarity:.2f}")
-
-# INFO: Key workflow events (always enabled)
-logger.info(f"[NodePalette] Session {session_id}: Starting batch {batch_num} with {llm_name}")
-
-# WARNING: Recoverable issues (always enabled)
-logger.warning(f"[NodePalette] {llm_name} timeout, falling back to next LLM")
-
-# ERROR: Failures that affect functionality (always enabled, triggers alerts)
-logger.error(f"[NodePalette] All LLMs failed for session {session_id}: {e}")
-```
-
-### 10.3 NodePaletteGenerator Logging (Backend)
+### 10.2 Application Logging Format (Match Existing System)
 
 **File:** `agents/thinking_modes/node_palette_generator.py`
 
 ```python
+import logging
+
+# Use standard logger (matches existing system)
+logger = logging.getLogger(__name__)
+
+# Logs will appear in console with UnifiedFormatter:
+# Format: [{timestamp}] {level} | {source} | {message}
+# Example: [14:32:15] INFO  | NPAL | [NodePalette] Session a3f7b2c4: Starting batch 1 with qwen
+```
+
+### 10.3 Logging Levels and When to Use Them
+
+```python
+# DEBUG: Detailed diagnostic info (enabled in dev only)
+logger.debug("[NodePalette] Normalized text: '%s' | Similarity: %.2f", normalized, similarity)
+
+# INFO: Key workflow events (always enabled, appears in console)
+logger.info("[NodePalette] Session %s: Starting batch %d with %s", session_id[:8], batch_num, llm_name)
+
+# WARNING: Recoverable issues (always enabled, appears in console)
+logger.warning("[NodePalette] %s timeout after %.2fs, falling back to next LLM", llm_name, elapsed)
+
+# ERROR: Failures affecting functionality (always enabled, triggers alerts)
+logger.error("[NodePalette] All LLMs failed for session %s: %s", session_id[:8], str(e), exc_info=True)
+```
+
+### 10.4 NodePaletteGenerator Logging (Backend)
+
+**File:** `agents/thinking_modes/node_palette_generator.py`
+
+```python
+import logging
+import time
+import json
+from difflib import SequenceMatcher
+
+logger = logging.getLogger(__name__)
+
 class NodePaletteGenerator:
     def __init__(self):
         self.llm_service = llm_service
         self.llm_rotation = ['qwen', 'deepseek', 'hunyuan', 'kimi']
-        logger.info("[NodePalette] 🎨 Initialized with 4 LLMs: " + ', '.join(self.llm_rotation))
+        self.current_llm_index = {}  # session_id -> int
+        self.generated_nodes = {}  # session_id -> List[Dict]
+        self.seen_texts = {}  # session_id -> Set[str]
+        self.batch_counters = {}  # session_id -> {llm_name -> count}
+        self.session_start_times = {}  # session_id -> timestamp
+        self.llm_metrics = {}  # session_id -> {llm_name -> {calls, successes, failures, total_time}}
+        
+        logger.info("[NodePalette] Initialized with 4 LLMs: %s", ', '.join(self.llm_rotation))
     
     async def generate_next_batch(self, session_id, center_topic, context, batch_size=20):
         """Generate next batch with comprehensive logging"""
+        
+        # Track session start
+        if session_id not in self.session_start_times:
+            self.session_start_times[session_id] = time.time()
+            logger.info("[NodePalette] New session started: %s | Topic: '%s'", session_id[:8], center_topic)
         
         # Log batch start
         llm_name = self._get_next_llm(session_id)
         batch_num = self._get_batch_number(session_id, llm_name)
         total_so_far = len(self.generated_nodes.get(session_id, []))
         
-        logger.info(f"[NodePalette] 📦 Session: {session_id[:8]}...")
-        logger.info(f"[NodePalette]    └─ Batch #{batch_num} ({llm_name})")
-        logger.info(f"[NodePalette]    └─ Total nodes so far: {total_so_far}")
-        logger.info(f"[NodePalette]    └─ Topic: '{center_topic}'")
+        logger.info("[NodePalette] Session %s: Starting batch %d with %s | Total nodes: %d", 
+                   session_id[:8], batch_num, llm_name, total_so_far)
         
         # Yield batch start event
         yield {
@@ -1871,11 +1900,20 @@ class NodePaletteGenerator:
                 batch_num=batch_num
             )
             elapsed = time.time() - start_time
-            logger.info(f"[NodePalette] ✅ {llm_name} responded in {elapsed:.2f}s")
+            logger.info("[NodePalette] %s responded in %.2fs | Session: %s | Batch: %d", 
+                       llm_name, elapsed, session_id[:8], batch_num)
+            
+            # Track metrics
+            self._track_llm_call(session_id, llm_name, success=True, elapsed_time=elapsed)
             
         except Exception as e:
             elapsed = time.time() - start_time
-            logger.error(f"[NodePalette] ❌ {llm_name} failed after {elapsed:.2f}s: {e}")
+            logger.error("[NodePalette] %s failed after %.2fs | Session: %s | Error: %s", 
+                        llm_name, elapsed, session_id[:8], str(e))
+            
+            # Track metrics
+            self._track_llm_call(session_id, llm_name, success=False, elapsed_time=elapsed)
+            
             yield {
                 'event': 'error',
                 'message': f'{llm_name} failed',
@@ -1885,7 +1923,7 @@ class NodePaletteGenerator:
         
         # Parse and deduplicate
         lines = [line.strip() for line in response.split('\n') if line.strip()]
-        logger.debug(f"[NodePalette] 📝 {llm_name} returned {len(lines)} lines")
+        logger.debug("[NodePalette] %s returned %d lines for session %s", llm_name, len(lines), session_id[:8])
         
         unique_count = 0
         duplicate_count = 0
@@ -1894,11 +1932,13 @@ class NodePaletteGenerator:
             node_text = line.lstrip('0123456789.-、）) ')
             
             if not node_text or len(node_text) < 2:
-                logger.debug(f"[NodePalette] ⏭️ Skipped empty/short line: '{line}'")
+                logger.debug("[NodePalette] Skipped empty/short line: '%s'", line)
                 continue
             
             # Deduplicate in real-time
-            if self._deduplicate_node_streaming(node_text, session_id):
+            is_unique, match_type, similarity = self._deduplicate_node_streaming(node_text, session_id)
+            
+            if is_unique:
                 # UNIQUE NODE
                 node = {
                     'id': f"{session_id}_{llm_name}_{batch_num}_{unique_count}",
@@ -1909,7 +1949,12 @@ class NodePaletteGenerator:
                     'selected': False
                 }
                 
-                logger.debug(f"[NodePalette] ✅ Unique #{unique_count+1}: '{node_text}'")
+                logger.debug("[NodePalette] Unique node #%d from %s: '%s'", unique_count+1, llm_name, node_text)
+                
+                # Store node
+                if session_id not in self.generated_nodes:
+                    self.generated_nodes[session_id] = []
+                self.generated_nodes[session_id].append(node)
                 
                 yield {
                     'event': 'node_generated',
@@ -1919,27 +1964,33 @@ class NodePaletteGenerator:
                 unique_count += 1
             else:
                 # DUPLICATE
-                logger.debug(f"[NodePalette] 🔁 Duplicate skipped: '{node_text}'")
+                logger.debug("[NodePalette] Duplicate %s (%.2f): '%s'", match_type, similarity, node_text)
                 duplicate_count += 1
         
-        # Batch complete
+        # Batch complete - comprehensive stats
         total_now = len(self.generated_nodes.get(session_id, []))
-        logger.info(f"[NodePalette] 📊 Batch {batch_num} ({llm_name}) complete:")
-        logger.info(f"[NodePalette]    ├─ Unique: {unique_count}")
-        logger.info(f"[NodePalette]    ├─ Duplicates: {duplicate_count}")
-        logger.info(f"[NodePalette]    ├─ Total nodes now: {total_now}")
-        logger.info(f"[NodePalette]    └─ Dedup rate: {duplicate_count}/{len(lines)} = {duplicate_count/max(len(lines),1)*100:.1f}%")
+        dedup_rate = (duplicate_count / max(len(lines), 1)) * 100
+        
+        logger.info("[NodePalette] Batch %d (%s) complete | Session: %s", batch_num, llm_name, session_id[:8])
+        logger.info("[NodePalette]   Unique: %d | Duplicates: %d | Total nodes: %d | Dedup rate: %.1f%%", 
+                   unique_count, duplicate_count, total_now, dedup_rate)
         
         yield {
             'event': 'batch_complete',
             'llm': llm_name,
+            'batch_number': batch_num,
             'unique_nodes': unique_count,
             'duplicates_filtered': duplicate_count,
-            'total_requested': batch_size
+            'total_requested': batch_size,
+            'total_nodes_now': total_now
         }
     
     def _deduplicate_node_streaming(self, new_text, session_id):
-        """Deduplicate with detailed logging"""
+        """Deduplicate with detailed logging
+        
+        Returns:
+            tuple: (is_unique, match_type, similarity)
+        """
         normalized = self._normalize_text(new_text)
         
         if session_id not in self.seen_texts:
@@ -1949,52 +2000,73 @@ class NodePaletteGenerator:
         
         # Exact match
         if normalized in seen:
-            logger.debug(f"[NodePalette] 🔁 Exact duplicate: '{new_text}'")
-            return False
+            return (False, 'exact', 1.0)
         
         # Fuzzy match
+        max_similarity = 0.0
         for seen_text in seen:
             similarity = self._compute_similarity(normalized, seen_text)
+            max_similarity = max(max_similarity, similarity)
             if similarity > 0.85:
-                logger.debug(f"[NodePalette] 🔁 Fuzzy duplicate ({similarity:.2f}): '{new_text}' ≈ '{seen_text}'")
-                return False
+                return (False, 'fuzzy', similarity)
         
         # Unique!
         seen.add(normalized)
-        logger.debug(f"[NodePalette] ✨ New unique node: '{new_text}' (total unique: {len(seen)})")
-        return True
+        total_unique = len(seen)
+        logger.debug("[NodePalette] New unique node (total unique: %d): '%s'", total_unique, new_text)
+        return (True, 'unique', 0.0)
+    
+    def _normalize_text(self, text):
+        """Normalize text for deduplication"""
+        import re
+        # Lowercase, remove punctuation, normalize whitespace
+        text = text.lower()
+        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+    
+    def _compute_similarity(self, text1, text2):
+        """Compute similarity between two texts using SequenceMatcher"""
+        return SequenceMatcher(None, text1, text2).ratio()
 ```
 
-### 10.4 API Endpoint Logging (Backend)
+### 10.5 API Endpoint Logging (Backend)
 
 **File:** `routers/thinking.py`
 
 ```python
+import logging
+import json
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
+logger = logging.getLogger(__name__)
+
 @router.post('/thinking_mode/node_palette/start')
 async def start_node_palette(req: NodePaletteStartRequest):
     """Start Node Palette with comprehensive logging"""
     
     session_id = req.session_id
-    logger.info(f"[API] 🚀 POST /node_palette/start")
-    logger.info(f"[API]    ├─ Session: {session_id[:8]}...")
-    logger.info(f"[API]    ├─ Diagram: {req.diagram_type}")
-    logger.info(f"[API]    └─ User: {req.user_id or 'anonymous'}")
+    user_id = getattr(req, 'user_id', 'anonymous')
+    
+    logger.info("[NodePalette-API] POST /start | Session: %s | Diagram: %s | User: %s", 
+               session_id[:8], req.diagram_type, user_id)
     
     try:
         center_topic = req.diagram_data.get('center', {}).get('text', '')
         
         if not center_topic:
-            logger.error(f"[API] ❌ No center topic in diagram_data for session {session_id[:8]}")
+            logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
             raise HTTPException(status_code=400, detail="Circle map has no center topic")
         
-        logger.info(f"[API] 📌 Center topic: '{center_topic}'")
+        logger.info("[NodePalette-API] Center topic: '%s'", center_topic)
         
         # Initialize generator
         generator = NodePaletteGenerator()
         
         # Stream first batch
         async def generate():
-            logger.info(f"[API] 📡 Starting SSE stream for session {session_id[:8]}")
+            logger.info("[NodePalette-API] Starting SSE stream | Session: %s", session_id[:8])
             batch_count = 0
             node_count = 0
             
@@ -2012,10 +2084,12 @@ async def start_node_palette(req: NodePaletteStartRequest):
                     
                     yield f"data: {json.dumps(chunk)}\n\n"
                 
-                logger.info(f"[API] ✅ Stream complete: {batch_count} batches, {node_count} nodes")
+                logger.info("[NodePalette-API] Stream complete | Session: %s | Batches: %d | Nodes: %d", 
+                           session_id[:8], batch_count, node_count)
                 
             except Exception as e:
-                logger.error(f"[API] ❌ Stream error for {session_id[:8]}: {e}", exc_info=True)
+                logger.error("[NodePalette-API] Stream error | Session: %s | Error: %s", 
+                            session_id[:8], str(e), exc_info=True)
                 error_event = {
                     'event': 'error',
                     'message': str(e)
@@ -2027,7 +2101,7 @@ async def start_node_palette(req: NodePaletteStartRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[API] ❌ Node Palette start error: {e}", exc_info=True)
+        logger.error("[NodePalette-API] Start error: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2036,38 +2110,89 @@ async def get_next_batch(req: NodePaletteNextRequest):
     """Get next batch with logging"""
     
     session_id = req.session_id
-    logger.info(f"[API] 🔄 POST /node_palette/next_batch")
-    logger.info(f"[API]    └─ Session: {session_id[:8]}...")
+    logger.info("[NodePalette-API] POST /next_batch | Session: %s", session_id[:8])
     
-    # Same pattern as above...
+    # Reuse generator instance (get from global or session store)
+    generator = get_node_palette_generator()  # Get singleton
+    
+    async def generate():
+        try:
+            async for chunk in generator.generate_next_batch(
+                session_id=session_id,
+                center_topic=req.center_topic,
+                educational_context=req.educational_context,
+                batch_size=20
+            ):
+                yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:
+            logger.error("[NodePalette-API] Next batch error | Session: %s | Error: %s", 
+                        session_id[:8], str(e), exc_info=True)
+            yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
+    
+    return StreamingResponse(generate(), media_type='text/event-stream')
+
+
+@router.post('/thinking_mode/node_palette/select_node')
+async def log_node_selection(req: NodeSelectionRequest):
+    """Log node selection/deselection events"""
+    
+    session_id = req.session_id
+    node_id = req.node_id
+    selected = req.selected
+    node_text = req.node_text
+    
+    action = "selected" if selected else "deselected"
+    logger.info("[NodePalette-Selection] User %s node | Session: %s | Node: '%s' | ID: %s", 
+               action, session_id[:8], node_text[:50], node_id)
+    
+    return {"status": "logged"}
+
+
+@router.post('/thinking_mode/node_palette/finish')
+async def log_finish_selection(req: NodePaletteFinishRequest):
+    """Log when user finishes Node Palette"""
+    
+    session_id = req.session_id
+    selected_count = len(req.selected_node_ids)
+    total_generated = req.total_nodes_generated
+    batches_loaded = req.batches_loaded
+    
+    logger.info("[NodePalette-Finish] User completed session | Session: %s", session_id[:8])
+    logger.info("[NodePalette-Finish]   Selected: %d/%d nodes | Batches: %d | Selection rate: %.1f%%", 
+               selected_count, total_generated, batches_loaded, 
+               (selected_count/max(total_generated,1))*100)
+    
+    # End session in generator
+    generator = get_node_palette_generator()
+    generator.end_session(session_id, reason="user_finished")
+    
+    return {"status": "session_ended"}
 ```
 
-### 10.5 Frontend Logging (JavaScript)
+### 10.6 Frontend Logging (Browser Console)
 
 **File:** `static/js/editor/node-palette-manager.js`
 
 ```javascript
 class NodePaletteManager {
     constructor() {
-        this.logger = window.logger || console;  // Use centralized logger
         this.nodes = [];
         this.selectedNodes = new Set();
         this.currentBatch = 0;
+        this.isLoading = false;
         
-        this.logger.info('NodePalette', '🎨 Initialized');
+        console.log('[NodePalette] Initialized');
     }
     
     async start(center_topic, diagram_data) {
-        this.logger.info('NodePalette', '🚀 Starting Node Palette', {
-            topic: center_topic,
-            existingNodes: diagram_data?.children?.length || 0
-        });
+        const existingNodes = diagram_data?.children?.length || 0;
+        console.log(`[NodePalette] Starting | Topic: "${center_topic}" | Existing nodes: ${existingNodes}`);
         
         this.sessionId = `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         this.centerTopic = center_topic;
         
         // Hide Circle Map, show Node Palette
-        this.logger.debug('NodePalette', 'Hiding Circle Map, showing Palette UI');
+        console.log('[NodePalette] Hiding Circle Map, showing Palette UI');
         document.getElementById('d3-container').style.display = 'none';
         document.getElementById('node-palette-panel').style.display = 'flex';
         
@@ -2077,14 +2202,14 @@ class NodePaletteManager {
     
     async loadNextBatch() {
         if (this.isLoading) {
-            this.logger.warn('NodePalette', 'Batch load already in progress, skipping');
+            console.warn('[NodePalette] Batch load already in progress, skipping');
             return;
         }
         
         this.isLoading = true;
         this.currentBatch++;
         
-        this.logger.info('NodePalette', `📦 Loading batch #${this.currentBatch}`);
+        console.log(`[NodePalette] Loading batch #${this.currentBatch}`);
         
         const url = `/thinking_mode/node_palette/next_batch?session_id=${this.sessionId}`;
         const eventSource = new EventSource(url);
@@ -2100,112 +2225,151 @@ class NodePaletteManager {
                 
                 if (data.event === 'batch_start') {
                     currentLLM = data.llm;
-                    this.logger.info('NodePalette', `🤖 Batch ${this.currentBatch}: ${currentLLM} generating...`);
+                    console.log(`[NodePalette] Batch ${this.currentBatch}: ${currentLLM} generating...`);
                     
                 } else if (data.event === 'node_generated') {
                     nodeCount++;
                     this.appendNode(data.node);
-                    this.logger.debug('NodePalette', `✅ Node #${nodeCount}: "${data.node.text}" (${data.node.source_llm})`);
+                    
+                    // Only log every 5th node to avoid console spam
+                    if (nodeCount % 5 === 0 || nodeCount === 1) {
+                        console.log(`[NodePalette] Node #${nodeCount}: "${data.node.text}" (${data.node.source_llm})`);
+                    }
                     
                 } else if (data.event === 'batch_complete') {
                     const elapsed = ((Date.now() - batchStartTime) / 1000).toFixed(2);
                     duplicateCount = data.duplicates_filtered;
                     
-                    this.logger.info('NodePalette', `✅ Batch ${this.currentBatch} complete (${elapsed}s)`, {
-                        llm: currentLLM,
-                        unique: data.unique_nodes,
-                        duplicates: duplicateCount,
-                        totalNodes: this.nodes.length
-                    });
+                    console.log(`[NodePalette] Batch ${this.currentBatch} complete (${elapsed}s) | LLM: ${currentLLM} | Unique: ${data.unique_nodes} | Duplicates: ${duplicateCount} | Total: ${this.nodes.length}`);
                     
                     this.isLoading = false;
                     eventSource.close();
                     
                 } else if (data.event === 'error') {
-                    this.logger.error('NodePalette', `❌ Batch ${this.currentBatch} error`, {
-                        message: data.message,
-                        fallback: data.fallback
-                    });
+                    console.error(`[NodePalette] Batch ${this.currentBatch} error:`, data.message, data.fallback);
                 }
                 
             } catch (e) {
-                this.logger.error('NodePalette', 'Failed to parse SSE event', e);
+                console.error('[NodePalette] Failed to parse SSE event:', e);
             }
         };
         
         eventSource.onerror = (error) => {
-            this.logger.error('NodePalette', `❌ SSE connection error for batch ${this.currentBatch}`, error);
+            console.error(`[NodePalette] SSE connection error for batch ${this.currentBatch}:`, error);
             this.isLoading = false;
             eventSource.close();
         };
     }
     
     toggleNodeSelection(nodeId) {
+        const node = this.nodes.find(n => n.id === nodeId);
         const wasSelected = this.selectedNodes.has(nodeId);
         
         if (wasSelected) {
             this.selectedNodes.delete(nodeId);
-            this.logger.debug('NodePalette', `➖ Deselected node: ${nodeId}`);
+            console.log(`[NodePalette-Selection] Deselected: "${node?.text}" | Total selected: ${this.selectedNodes.size}/${this.nodes.length}`);
         } else {
             this.selectedNodes.add(nodeId);
-            this.logger.debug('NodePalette', `➕ Selected node: ${nodeId}`);
+            console.log(`[NodePalette-Selection] Selected: "${node?.text}" | Total selected: ${this.selectedNodes.size}/${this.nodes.length}`);
         }
         
-        this.logger.info('NodePalette', `📊 Selection: ${this.selectedNodes.size}/${this.nodes.length} nodes`);
         this.updateSelectionCounter();
+        
+        // Log to backend every 5 selections
+        if (this.selectedNodes.size % 5 === 0) {
+            this.logSelection(nodeId, !wasSelected, node?.text);
+        }
+    }
+    
+    async logSelection(nodeId, selected, nodeText) {
+        /**
+         * Send selection event to backend for logging
+         */
+        try {
+            await fetch('/thinking_mode/node_palette/select_node', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: this.sessionId,
+                    node_id: nodeId,
+                    selected: selected,
+                    node_text: nodeText
+                })
+            });
+        } catch (e) {
+            console.error('[NodePalette-Selection] Failed to log selection:', e);
+        }
     }
     
     async finishSelection() {
         const selectedCount = this.selectedNodes.size;
         
-        this.logger.info('NodePalette', '🏁 Finishing selection', {
-            selected: selectedCount,
-            total: this.nodes.length,
-            batches: this.currentBatch
-        });
+        console.log(`[NodePalette-Finish] User finishing | Selected: ${selectedCount}/${this.nodes.length} | Batches: ${this.currentBatch} | Selection rate: ${((selectedCount/this.nodes.length)*100).toFixed(1)}%`);
         
         if (selectedCount === 0) {
-            this.logger.warn('NodePalette', '⚠️ No nodes selected');
+            console.warn('[NodePalette-Finish] No nodes selected');
             alert('Please select at least one node');
             return;
         }
         
         const selectedNodesData = this.nodes.filter(n => this.selectedNodes.has(n.id));
+        console.log('[NodePalette-Finish] Selected nodes:', selectedNodesData.map(n => n.text));
         
-        this.logger.debug('NodePalette', 'Selected nodes:', selectedNodesData.map(n => n.text));
+        // Log finish event to backend
+        try {
+            await fetch('/thinking_mode/node_palette/finish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: this.sessionId,
+                    selected_node_ids: Array.from(this.selectedNodes),
+                    total_nodes_generated: this.nodes.length,
+                    batches_loaded: this.currentBatch
+                })
+            });
+        } catch (e) {
+            console.error('[NodePalette-Finish] Failed to log finish event:', e);
+        }
         
         // Assemble to Circle Map
         await this.assembleNodesToCircleMap(selectedNodesData);
         
-        this.logger.info('NodePalette', '✅ Node Palette complete');
+        console.log('[NodePalette-Finish] Node Palette complete, nodes added to Circle Map');
     }
 }
 ```
 
-### 10.6 Session Lifecycle Tracking
+### 10.7 Session Lifecycle Tracking (Backend)
 
 ```python
-# In NodePaletteGenerator.__init__
-self.session_start_times = {}  # session_id -> timestamp
-
-# When session starts
-def start_session(self, session_id):
-    self.session_start_times[session_id] = time.time()
-    logger.info(f"[NodePalette] 🆕 Session started: {session_id[:8]}")
-
-# When session ends
-def end_session(self, session_id, reason="complete"):
-    if session_id in self.session_start_times:
+class NodePaletteGenerator:
+    def __init__(self):
+        # ...
+        self.session_start_times = {}  # session_id -> timestamp
+        self.llm_metrics = {}  # session_id -> {llm_name -> {calls, successes, failures, total_time}}
+    
+    def end_session(self, session_id, reason="complete"):
+        """End session and log summary metrics"""
+        if session_id not in self.session_start_times:
+            logger.warning("[NodePalette] Attempted to end non-existent session: %s", session_id[:8])
+            return
+        
         elapsed = time.time() - self.session_start_times[session_id]
         total_nodes = len(self.generated_nodes.get(session_id, []))
         batches = sum(self.batch_counters.get(session_id, {}).values())
+        avg_nodes = total_nodes / max(batches, 1)
         
-        logger.info(f"[NodePalette] 🏁 Session ended: {session_id[:8]}")
-        logger.info(f"[NodePalette]    ├─ Reason: {reason}")
-        logger.info(f"[NodePalette]    ├─ Duration: {elapsed:.2f}s")
-        logger.info(f"[NodePalette]    ├─ Total batches: {batches}")
-        logger.info(f"[NodePalette]    ├─ Total nodes: {total_nodes}")
-        logger.info(f"[NodePalette]    └─ Avg nodes/batch: {total_nodes/max(batches,1):.1f}")
+        logger.info("[NodePalette] Session ended: %s | Reason: %s", session_id[:8], reason)
+        logger.info("[NodePalette]   Duration: %.2fs | Batches: %d | Total nodes: %d | Avg nodes/batch: %.1f", 
+                   elapsed, batches, total_nodes, avg_nodes)
+        
+        # Log LLM performance summary
+        if session_id in self.llm_metrics:
+            for llm_name, metrics in self.llm_metrics[session_id].items():
+                success_rate = (metrics['successes'] / max(metrics['calls'], 1)) * 100
+                avg_time = metrics['total_time'] / max(metrics['calls'], 1)
+                logger.info("[NodePalette]   %s: %d/%d calls (%.0f%% success, %.2fs avg)", 
+                           llm_name, metrics['successes'], metrics['calls'], success_rate, avg_time)
         
         # Cleanup
         del self.session_start_times[session_id]
@@ -2213,18 +2377,17 @@ def end_session(self, session_id, reason="complete"):
             del self.generated_nodes[session_id]
         if session_id in self.seen_texts:
             del self.seen_texts[session_id]
-```
-
-### 10.7 Performance Metrics Logging
-
-```python
-# Track LLM performance per session
-class NodePaletteGenerator:
-    def __init__(self):
-        # ...
-        self.llm_metrics = {}  # session_id -> {llm_name: {calls, successes, failures, total_time}}
+        if session_id in self.llm_metrics:
+            del self.llm_metrics[session_id]
+        if session_id in self.batch_counters:
+            del self.batch_counters[session_id]
+        if session_id in self.current_llm_index:
+            del self.current_llm_index[session_id]
+        
+        logger.info("[NodePalette] Session cleanup complete: %s", session_id[:8])
     
     def _track_llm_call(self, session_id, llm_name, success, elapsed_time):
+        """Track LLM performance metrics"""
         if session_id not in self.llm_metrics:
             self.llm_metrics[session_id] = {}
         
@@ -2245,91 +2408,251 @@ class NodePaletteGenerator:
         else:
             metrics['failures'] += 1
         
-        avg_time = metrics['total_time'] / metrics['calls']
-        success_rate = metrics['successes'] / metrics['calls'] * 100
-        
-        logger.debug(f"[NodePalette] 📊 {llm_name} metrics: "
-                    f"{metrics['successes']}/{metrics['calls']} calls "
-                    f"({success_rate:.0f}% success, {avg_time:.2f}s avg)")
+        # Log metrics occasionally
+        if metrics['calls'] % 3 == 0:  # Every 3 calls
+            avg_time = metrics['total_time'] / metrics['calls']
+            success_rate = (metrics['successes'] / metrics['calls']) * 100
+            logger.debug("[NodePalette] %s metrics | Calls: %d | Success: %.0f%% | Avg time: %.2fs", 
+                        llm_name, metrics['calls'], success_rate, avg_time)
 ```
 
-### 10.8 Log Output Examples
+### 10.8 Console Log Output Examples
 
-**Successful Batch:**
+**Server Console (Backend) - Successful Batch:**
 ```
-[INFO] [NodePalette] 📦 Session: a3f7b2c4...
-[INFO] [NodePalette]    └─ Batch #1 (qwen)
-[INFO] [NodePalette]    └─ Total nodes so far: 0
-[INFO] [NodePalette]    └─ Topic: 'Photosynthesis'
-[INFO] [NodePalette] ✅ qwen responded in 2.34s
-[DEBUG] [NodePalette] ✅ Unique #1: 'Sunlight energy'
-[DEBUG] [NodePalette] ✅ Unique #2: 'Water absorption'
-[DEBUG] [NodePalette] 🔁 Duplicate skipped: 'sunlight'
-[INFO] [NodePalette] 📊 Batch 1 (qwen) complete:
-[INFO] [NodePalette]    ├─ Unique: 18
-[INFO] [NodePalette]    ├─ Duplicates: 2
-[INFO] [NodePalette]    ├─ Total nodes now: 18
-[INFO] [NodePalette]    └─ Dedup rate: 2/20 = 10.0%
+[14:32:15] INFO  | NPAL | [NodePalette] New session started: a3f7b2c4 | Topic: 'Photosynthesis'
+[14:32:15] INFO  | NPAL | [NodePalette] Session a3f7b2c4: Starting batch 1 with qwen | Total nodes: 0
+[14:32:17] INFO  | NPAL | [NodePalette] qwen responded in 2.34s | Session: a3f7b2c4 | Batch: 1
+[14:32:17] DEBUG | NPAL | [NodePalette] qwen returned 20 lines for session a3f7b2c4
+[14:32:17] DEBUG | NPAL | [NodePalette] Unique node #1 from qwen: 'Sunlight energy'
+[14:32:17] DEBUG | NPAL | [NodePalette] Unique node #2 from qwen: 'Water absorption'
+[14:32:17] DEBUG | NPAL | [NodePalette] Duplicate exact (1.00): 'sunlight'
+[14:32:17] INFO  | NPAL | [NodePalette] Batch 1 (qwen) complete | Session: a3f7b2c4
+[14:32:17] INFO  | NPAL | [NodePalette]   Unique: 18 | Duplicates: 2 | Total nodes: 18 | Dedup rate: 10.0%
 ```
 
-**LLM Failure:**
+**Server Console - LLM Failure with Fallback:**
 ```
-[WARNING] [NodePalette] ⚠️ deepseek timeout after 15.02s
-[INFO] [NodePalette] 🔄 Retrying with kimi...
-[INFO] [NodePalette] ✅ kimi responded in 3.12s (fallback)
+[14:35:22] INFO  | NPAL | [NodePalette] Session a3f7b2c4: Starting batch 2 with deepseek | Total nodes: 18
+[14:35:37] ERROR | NPAL | [NodePalette] deepseek failed after 15.02s | Session: a3f7b2c4 | Error: Request timeout
+[14:35:37] INFO  | NPAL | [NodePalette] Session a3f7b2c4: Starting batch 3 with hunyuan | Total nodes: 18
+[14:35:40] INFO  | NPAL | [NodePalette] hunyuan responded in 3.12s | Session: a3f7b2c4 | Batch: 3
 ```
 
-### 10.9 Debugging Commands
+**Server Console - Node Selection:**
+```
+[14:38:45] INFO  | NPAL | [NodePalette-Selection] User selected node | Session: a3f7b2c4 | Node: 'Chlorophyll pigments' | ID: a3f7b2c4_qwen_1_5
+[14:39:12] INFO  | NPAL | [NodePalette-Selection] User deselected node | Session: a3f7b2c4 | Node: 'Carbon dioxide intake' | ID: a3f7b2c4_qwen_1_3
+```
+
+**Server Console - Session End:**
+```
+[14:40:15] INFO  | NPAL | [NodePalette-Finish] User completed session | Session: a3f7b2c4
+[14:40:15] INFO  | NPAL | [NodePalette-Finish]   Selected: 12/69 nodes | Batches: 4 | Selection rate: 17.4%
+[14:40:15] INFO  | NPAL | [NodePalette] Session ended: a3f7b2c4 | Reason: user_finished
+[14:40:15] INFO  | NPAL | [NodePalette]   Duration: 305.23s | Batches: 4 | Total nodes: 69 | Avg nodes/batch: 17.2
+[14:40:15] INFO  | NPAL | [NodePalette]   qwen: 2/2 calls (100% success, 2.45s avg)
+[14:40:15] INFO  | NPAL | [NodePalette]   deepseek: 0/1 calls (0% success, 15.02s avg)
+[14:40:15] INFO  | NPAL | [NodePalette]   hunyuan: 1/1 calls (100% success, 3.12s avg)
+[14:40:15] INFO  | NPAL | [NodePalette]   kimi: 1/1 calls (100% success, 2.89s avg)
+[14:40:15] INFO  | NPAL | [NodePalette] Session cleanup complete: a3f7b2c4
+```
+
+**Browser Console (Frontend) - User Flow:**
+```
+[NodePalette] Initialized
+[NodePalette] Starting | Topic: "Photosynthesis" | Existing nodes: 5
+[NodePalette] Hiding Circle Map, showing Palette UI
+[NodePalette] Loading batch #1
+[NodePalette] Batch 1: qwen generating...
+[NodePalette] Node #1: "Sunlight energy" (qwen)
+[NodePalette] Node #5: "Water absorption" (qwen)
+[NodePalette] Node #10: "Glucose production" (qwen)
+[NodePalette] Batch 1 complete (2.34s) | LLM: qwen | Unique: 18 | Duplicates: 2 | Total: 18
+[NodePalette-Selection] Selected: "Chlorophyll pigments" | Total selected: 1/18
+[NodePalette-Selection] Selected: "Light-dependent reactions" | Total selected: 2/18
+[NodePalette-Selection] Deselected: "Light-dependent reactions" | Total selected: 1/18
+[NodePalette-Finish] User finishing | Selected: 12/69 | Batches: 4 | Selection rate: 17.4%
+[NodePalette-Finish] Selected nodes: ["Chlorophyll pigments", "Water absorption", ...]
+[NodePalette-Finish] Node Palette complete, nodes added to Circle Map
+```
+
+### 10.9 Debug Endpoint (Development Only)
+
+**File:** `routers/thinking.py`
 
 ```python
-# Add debug endpoint for development
 @router.get('/thinking_mode/node_palette/debug/{session_id}')
-async def debug_session(session_id: str):
-    """Debug endpoint to inspect session state"""
+async def debug_node_palette_session(session_id: str):
+    """Debug endpoint to inspect session state (DEVELOPMENT ONLY)"""
     
-    generator = NodePaletteGenerator()  # Get singleton instance
+    generator = get_node_palette_generator()  # Get singleton instance
+    
+    # Get session data
+    generated_nodes = generator.generated_nodes.get(session_id, [])
+    seen_texts = list(generator.seen_texts.get(session_id, set()))
+    batch_counters = generator.batch_counters.get(session_id, {})
+    current_llm_index = generator.current_llm_index.get(session_id, 0)
+    llm_metrics = generator.llm_metrics.get(session_id, {})
+    
+    # Calculate stats
+    total_nodes = len(generated_nodes)
+    total_batches = sum(batch_counters.values())
+    nodes_by_llm = {}
+    for node in generated_nodes:
+        llm = node.get('source_llm', 'unknown')
+        nodes_by_llm[llm] = nodes_by_llm.get(llm, 0) + 1
     
     debug_info = {
         'session_id': session_id,
-        'generated_nodes_count': len(generator.generated_nodes.get(session_id, [])),
-        'seen_texts_count': len(generator.seen_texts.get(session_id, set())),
-        'batch_counters': generator.batch_counters.get(session_id, {}),
-        'current_llm_index': generator.current_llm_index.get(session_id, 0),
-        'llm_metrics': generator.llm_metrics.get(session_id, {})
+        'session_exists': session_id in generator.session_start_times,
+        'total_nodes_generated': total_nodes,
+        'unique_texts_count': len(seen_texts),
+        'total_batches': total_batches,
+        'batch_counters': batch_counters,
+        'current_llm_index': current_llm_index,
+        'next_llm': generator.llm_rotation[current_llm_index % len(generator.llm_rotation)],
+        'nodes_by_llm': nodes_by_llm,
+        'llm_metrics': llm_metrics,
+        'sample_nodes': generated_nodes[:5] if generated_nodes else [],
+        'sample_seen_texts': seen_texts[:10] if seen_texts else []
     }
     
-    logger.info(f"[API] 🐛 Debug request for session: {session_id[:8]}")
-    logger.info(f"[API] Debug info: {json.dumps(debug_info, indent=2)}")
+    logger.info("[NodePalette-DEBUG] Debug request | Session: %s | Nodes: %d | Batches: %d", 
+               session_id[:8], total_nodes, total_batches)
     
     return debug_info
+
+
+# Usage: GET /thinking_mode/node_palette/debug/a3f7b2c4
+# Response:
+# {
+#   "session_id": "a3f7b2c4",
+#   "session_exists": true,
+#   "total_nodes_generated": 69,
+#   "unique_texts_count": 69,
+#   "total_batches": 4,
+#   "batch_counters": {"qwen": 2, "deepseek": 0, "hunyuan": 1, "kimi": 1},
+#   "current_llm_index": 4,
+#   "next_llm": "qwen",
+#   "nodes_by_llm": {"qwen": 36, "hunyuan": 17, "kimi": 16},
+#   "llm_metrics": {
+#     "qwen": {"calls": 2, "successes": 2, "failures": 0, "total_time": 4.68},
+#     "deepseek": {"calls": 1, "successes": 0, "failures": 1, "total_time": 15.02},
+#     ...
+#   }
+# }
 ```
 
-### 10.10 Log Aggregation for Production
+### 10.10 Production Logging Configuration
 
 **Recommended Setup:**
-- Use **structured logging** (JSON format)
-- Send logs to **centralized logging service** (ELK, Datadog, CloudWatch)
-- Set up **alerts** for:
-  - All LLMs failing (ERROR level)
-  - High duplicate rate (>50%)
-  - Slow LLM responses (>10s)
-  - Session cleanup failures
 
-**Example structured log:**
-```json
-{
-  "timestamp": "2025-10-11T14:32:15.123Z",
-  "level": "INFO",
-  "component": "NodePalette",
-  "event": "batch_complete",
-  "session_id": "a3f7b2c4",
-  "llm": "qwen",
-  "batch_number": 1,
-  "unique_nodes": 18,
-  "duplicates": 2,
-  "elapsed_ms": 2340
-}
-```
+1. **Use Existing UnifiedFormatter** (Already configured in `uvicorn_log_config.py`):
+   - Format: `[HH:MM:SS] LEVEL | SOURCE | message`
+   - Colors: Cyan (INFO), Yellow (WARNING), Red (ERROR)
+   - Source abbreviation: `NPAL` (NodePalette)
+
+2. **Log Levels in Production:**
+   - **DEBUG**: Disabled in production (too verbose)
+   - **INFO**: Enabled for key events (batch complete, session end, node selection)
+   - **WARNING**: LLM timeouts, recoverable errors
+   - **ERROR**: LLM failures, session errors (triggers alerts)
+
+3. **Set Up Monitoring Alerts** (Recommended tools: Datadog, CloudWatch, ELK):
+   - **Critical**: All 4 LLMs failing for same session (ERROR level)
+   - **Warning**: Single LLM failure rate > 30% (WARNING level)
+   - **Warning**: High duplicate rate > 50% (deduplication ineffective)
+   - **Warning**: Slow batch generation > 20s per batch
+   - **Info**: Selection rate < 10% (users not finding value)
+
+4. **Log Rotation** (Already configured in `main.py`):
+   - Log file: `logs/mindgraph.log`
+   - Rotation: 10MB per file, keep 5 backups
+   - Format: Plain text with timestamps
+
+5. **Key Metrics to Track:**
+   ```python
+   # In production, aggregate these metrics:
+   - Average nodes generated per session
+   - Average selection rate (selected / generated)
+   - LLM success rates by LLM (qwen: 98%, deepseek: 92%, etc.)
+   - Average session duration
+   - Peak concurrent sessions
+   - Deduplication effectiveness (duplicate_rate < 20% is good)
+   ```
+
+6. **Optional: Structured JSON Logging for Analytics:**
+   ```python
+   # Add JSON formatter for analytics pipeline
+   import json
+   import logging
+   
+   class NodePaletteAnalyticsLogger:
+       """Separate analytics logger for Node Palette events"""
+       
+       def __init__(self):
+           self.analytics_logger = logging.getLogger('node_palette.analytics')
+           handler = logging.FileHandler('logs/node_palette_analytics.json')
+           handler.setFormatter(logging.Formatter('%(message)s'))
+           self.analytics_logger.addHandler(handler)
+           self.analytics_logger.setLevel(logging.INFO)
+       
+       def log_session_complete(self, session_data):
+           """Log session completion for analytics"""
+           event = {
+               'timestamp': time.time(),
+               'event_type': 'session_complete',
+               'session_id': session_data['session_id'],
+               'duration_seconds': session_data['duration'],
+               'nodes_generated': session_data['nodes_generated'],
+               'nodes_selected': session_data['nodes_selected'],
+               'selection_rate': session_data['selection_rate'],
+               'batches_loaded': session_data['batches_loaded'],
+               'llm_success_rates': session_data['llm_metrics'],
+               'center_topic': session_data['center_topic']
+           }
+           self.analytics_logger.info(json.dumps(event))
+   ```
+
+7. **Console Output Visibility:**
+   - **Development**: All logs visible in terminal (DEBUG level)
+   - **Production**: INFO+ visible in terminal, DEBUG to file only
+   - **Frontend**: Browser console logs NOT sent to backend (client-side only)
+   - **Backend**: All logs visible in Uvicorn console output
+
+### 10.11 Logging Summary Checklist
+
+✅ **Backend Logging:**
+- [x] Session start/end with metrics
+- [x] Batch start/complete with LLM name and timing
+- [x] Node generation (unique vs duplicate)
+- [x] LLM failures with fallback attempts
+- [x] Node selection events (every 5 selections)
+- [x] User finish event with selection rate
+- [x] Performance metrics per LLM
+- [x] Session cleanup confirmation
+
+✅ **Frontend Logging:**
+- [x] Node Palette initialization
+- [x] Batch loading start/complete
+- [x] Node selection/deselection
+- [x] User finish action
+- [x] SSE connection errors
+- [x] Selection rate calculation
+
+✅ **Debug Tools:**
+- [x] Debug endpoint for session inspection
+- [x] LLM metrics tracking
+- [x] Sample nodes and texts in debug response
+
+✅ **Production Ready:**
+- [x] Matches existing UnifiedFormatter
+- [x] No emojis in logs (clean, professional)
+- [x] Proper log levels (DEBUG/INFO/WARNING/ERROR)
+- [x] Session ID truncation for readability
+- [x] Performance metrics aggregation
+- [x] Optional JSON analytics logging
 
 ---
 
