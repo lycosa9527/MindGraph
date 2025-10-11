@@ -12,6 +12,7 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/static/css/editor.css">
     <link rel="stylesheet" href="/static/css/editor-toolbar.css">
+    <link rel="stylesheet" href="/static/css/node-palette.css">
     
     <!-- D3.js -->
     <script src="/static/js/d3.min.js"></script>
@@ -674,6 +675,36 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Node Palette Panel -->
+            <div class="node-palette-panel" id="node-palette-panel" style="display: none;">
+                <div class="node-palette-header">
+                    <div class="node-palette-title">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <h3>Node Palette</h3>
+                    </div>
+                    <div id="selection-counter" class="selection-counter">
+                        Selected: 0/0
+                    </div>
+                </div>
+                
+                <div class="node-palette-container" id="node-palette-container">
+                    <div class="node-palette-grid" id="node-palette-grid">
+                        <!-- Node cards will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <div class="node-palette-footer">
+                    <button id="finish-selection-btn" class="finish-selection-btn" disabled>
+                        Select nodes to continue
+                    </button>
+                </div>
+            </div>
         </div>
         
         <div class="editor-status-bar">
@@ -737,6 +768,9 @@
     
     <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
     <script src="/static/js/editor/thinking-mode-manager.js"></script>
+    
+    <!-- Node Palette Manager - Must load AFTER other editor scripts -->
+    <script src="/static/js/editor/node-palette-manager.js"></script>
 </body>
 </html>
 

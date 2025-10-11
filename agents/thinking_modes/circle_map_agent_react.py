@@ -90,7 +90,7 @@ class CircleMapThinkingAgent(BaseThinkingAgent):
 
 返回JSON格式：
 {{
-  "action": "change_center" | "update_node" | "delete_node" | "update_properties" | "add_nodes" | "discuss",
+  "action": "change_center" | "update_node" | "delete_node" | "update_properties" | "add_nodes" | "open_node_palette" | "discuss",
   "target": "目标文本",
   "node_index": 节点序号（1-based），
   "properties": {{"fillColor": "#颜色代码", "bold": true/false, "italic": true/false}}
@@ -102,6 +102,7 @@ class CircleMapThinkingAgent(BaseThinkingAgent):
 - delete_node: 删除某个观察节点
 - update_properties: 修改节点样式（颜色、粗体、斜体等）
 - add_nodes: 明确要求添加新的观察节点
+- open_node_palette: 用户想要打开节点选择板，使用多个AI模型头脑风暴更多节点（关键词：节点选择板、节点板、头脑风暴、更多想法、node palette）
 - discuss: 只是讨论，不修改图表
 
 ⚠️ 在CONTEXT_GATHERING阶段，除非用户明确说"添加"、"生成"，否则返回"discuss"
@@ -123,7 +124,7 @@ Current workflow stage: {current_state}
 
 Return JSON format:
 {{
-  "action": "change_center" | "update_node" | "delete_node" | "update_properties" | "add_nodes" | "discuss",
+  "action": "change_center" | "update_node" | "delete_node" | "update_properties" | "add_nodes" | "open_node_palette" | "discuss",
   "target": "target text",
   "node_index": node number (1-based),
   "properties": {{"fillColor": "#color", "bold": true/false, "italic": true/false}}
@@ -135,6 +136,7 @@ Action descriptions:
 - delete_node: Remove an observation node
 - update_properties: Change node styling (color, bold, italic, etc.)
 - add_nodes: Explicitly add new observation nodes
+- open_node_palette: User wants to open Node Palette to brainstorm more nodes with multiple AI models (keywords: node palette, brainstorm, more ideas, generate variety)
 - discuss: Just discussing, no diagram changes
 
 ⚠️ During CONTEXT_GATHERING, unless user explicitly says "add", "generate", return "discuss"
@@ -218,6 +220,10 @@ User message: {message}"""
         
         elif action == 'add_nodes':
             async for event in self.action_handler.handle_add_nodes(session, message):
+                yield event
+        
+        elif action == 'open_node_palette':
+            async for event in self.action_handler.handle_open_node_palette(session):
                 yield event
         
         else:

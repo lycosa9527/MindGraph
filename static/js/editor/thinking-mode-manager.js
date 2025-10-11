@@ -327,6 +327,12 @@ class ThinkingModeManager {
                 this.applyDiagramUpdate(data);
                 break;
             
+            case 'action':
+                // Backend wants to trigger an action (e.g., open Node Palette)
+                this.logger.info('[ThinkGuide] Action triggered:', data.action);
+                this.handleAction(data);
+                break;
+            
             case 'complete':
                 // Workflow complete
                 const lang = this.labels[this.language] || this.labels.en;
@@ -340,6 +346,33 @@ class ThinkingModeManager {
                 this.logger.error('[ThinkGuide] Server error:', message);
                 this.addSystemMessage('Error: ' + message);
                 break;
+        }
+    }
+    
+    /**
+     * Handle action events from backend
+     */
+    handleAction(data) {
+        const { action, data: actionData } = data;
+        
+        switch (action) {
+            case 'open_node_palette':
+                // Open Node Palette for brainstorming more nodes
+                this.logger.info('[ThinkGuide] Opening Node Palette | Topic:', actionData.center_topic);
+                
+                if (window.nodePaletteManager) {
+                    window.nodePaletteManager.start(
+                        actionData.center_topic,
+                        actionData.diagram_data,
+                        actionData.session_id
+                    );
+                } else {
+                    this.logger.error('[ThinkGuide] NodePaletteManager not found');
+                }
+                break;
+            
+            default:
+                this.logger.warn('[ThinkGuide] Unknown action:', action);
         }
     }
     

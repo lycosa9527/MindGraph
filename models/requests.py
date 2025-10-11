@@ -304,3 +304,96 @@ class ThinkingModeRequest(BaseModel):
                 }
             }
         }
+
+
+# ============================================================================
+# NODE PALETTE REQUEST MODELS
+# ============================================================================
+
+class NodePaletteStartRequest(BaseModel):
+    """Request model for /thinking_mode/node_palette/start endpoint"""
+    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    diagram_type: str = Field(..., description="Diagram type (must be 'circle_map')")
+    diagram_data: Dict[str, Any] = Field(..., description="Current Circle Map data")
+    educational_context: Optional[Dict[str, Any]] = Field(None, description="Educational context (grade level, subject, etc.)")
+    user_id: Optional[str] = Field(None, description="User identifier for analytics")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "session_id": "palette_abc123",
+                "diagram_type": "circle_map",
+                "diagram_data": {
+                    "center": {"text": "Photosynthesis"},
+                    "children": [
+                        {"id": "1", "text": "Sunlight"},
+                        {"id": "2", "text": "Water"}
+                    ]
+                },
+                "educational_context": {
+                    "grade_level": "5th grade",
+                    "subject": "Science",
+                    "topic": "Plants"
+                },
+                "user_id": "user123"
+            }
+        }
+
+
+class NodePaletteNextRequest(BaseModel):
+    """Request model for /thinking_mode/node_palette/next_batch endpoint"""
+    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    center_topic: str = Field(..., min_length=1, description="Center topic from Circle Map")
+    educational_context: Optional[Dict[str, Any]] = Field(None, description="Educational context")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "session_id": "palette_abc123",
+                "center_topic": "Photosynthesis",
+                "educational_context": {
+                    "grade_level": "5th grade",
+                    "subject": "Science"
+                }
+            }
+        }
+
+
+class NodeSelectionRequest(BaseModel):
+    """Request model for /thinking_mode/node_palette/select_node endpoint"""
+    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    node_id: str = Field(..., description="ID of the node being selected/deselected")
+    selected: bool = Field(..., description="True if selected, False if deselected")
+    node_text: str = Field(..., max_length=200, description="Text content of the node")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "session_id": "palette_abc123",
+                "node_id": "palette_abc123_qwen_1_5",
+                "selected": True,
+                "node_text": "Chlorophyll pigments"
+            }
+        }
+
+
+class NodePaletteFinishRequest(BaseModel):
+    """Request model for /thinking_mode/node_palette/finish endpoint"""
+    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    selected_node_ids: List[str] = Field(..., min_items=0, description="List of selected node IDs")
+    total_nodes_generated: int = Field(..., ge=0, description="Total number of nodes generated")
+    batches_loaded: int = Field(..., ge=1, description="Number of batches loaded")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "session_id": "palette_abc123",
+                "selected_node_ids": [
+                    "palette_abc123_qwen_1_5",
+                    "palette_abc123_qwen_1_12",
+                    "palette_abc123_hunyuan_2_3"
+                ],
+                "total_nodes_generated": 69,
+                "batches_loaded": 4
+            }
+        }

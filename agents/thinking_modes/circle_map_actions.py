@@ -264,4 +264,52 @@ class CircleMapActionHandler:
             
             async for chunk in self.agent._stream_llm_response(done_prompt, session):
                 yield chunk
+    
+    async def handle_open_node_palette(
+        self,
+        session: Dict
+    ) -> AsyncGenerator[Dict, None]:
+        """
+        Handle opening Node Palette for brainstorming more nodes.
+        
+        This is triggered when user asks:
+        - "Show me node palette"
+        - "给我节点选择板"
+        - "Generate more ideas"
+        - "Brainstorm more observations"
+        """
+        diagram_data = session['diagram_data']
+        language = session.get('language', 'en')
+        center_topic = diagram_data.get('center', {}).get('text', 'Unknown Topic')
+        current_node_count = len(diagram_data.get('children', []))
+        
+        # Acknowledge request
+        if language == 'zh':
+            ack_prompt = f"用户想要打开节点选择板，为「{center_topic}」头脑风暴更多观察点。目前有{current_node_count}个节点。用1-2句话说你将使用多个AI模型生成创意想法。"
+        else:
+            ack_prompt = f"User wants to open Node Palette to brainstorm more observations for \"{center_topic}\". Currently {current_node_count} nodes. Say in 1-2 sentences you'll generate creative ideas using multiple AI models."
+        
+        async for chunk in self.agent._stream_llm_response(ack_prompt, session):
+            yield chunk
+        
+        # Yield action event to trigger Node Palette on frontend
+        yield {
+            'event': 'action',
+            'action': 'open_node_palette',
+            'data': {
+                'center_topic': center_topic,
+                'current_node_count': current_node_count,
+                'diagram_data': diagram_data,
+                'session_id': session['session_id']
+            }
+        }
+        
+        # Final message
+        if language == 'zh':
+            done_prompt = "节点选择板已准备就绪！从多个AI生成的节点中选择您喜欢的，然后点击「完成」按钮添加到圆圈图中。用1-2句话说明。"
+        else:
+            done_prompt = "Node Palette is ready! Select your favorite nodes from multiple AI-generated suggestions, then click \"Finish\" to add them to your Circle Map. Say in 1-2 sentences."
+        
+        async for chunk in self.agent._stream_llm_response(done_prompt, session):
+            yield chunk
 
