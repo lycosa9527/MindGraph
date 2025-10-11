@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.8.0] - 2025-01-11 - Configurable AI Assistant Branding
+
+### Added
+
+- **Configurable AI Assistant Name**
+  - **New Environment Variable**: `AI_ASSISTANT_NAME` - Customize the AI assistant branding
+  - **Location**: `env.example` line 109, `config/settings.py` lines 299-301
+  - **Backend**: Pass assistant name from backend to frontend via Jinja2 template
+    - `routers/pages.py` line 61: Added `ai_assistant_name` to editor context
+  - **Frontend Updates**:
+    - `templates/editor.html`: Dynamic rendering in toolbar button, panel header, welcome message, placeholder
+    - `static/js/editor/language-manager.js`: Use `window.AI_ASSISTANT_NAME` for both EN and ZH translations
+    - `static/js/editor/ai-assistant-manager.js`: Dynamic welcome message generation
+  - **Impact**: 
+    - Toolbar button shows custom name (default: "MindMate AI")
+    - Panel header displays custom name
+    - Welcome message: "Welcome to {CustomName}!"
+    - Input placeholder: "Ask {CustomName} anything..."
+    - Supports both English and Chinese interfaces
+  - **Example**: Set `AI_ASSISTANT_NAME=GraphMaster AI` to rebrand the entire assistant interface
+  - **Default**: Falls back to "MindMate AI" if not configured
+
+---
+
 ## [4.7.0] - 2025-01-11 - Circle Map Background Consistency Fix
 
 ### Fixed

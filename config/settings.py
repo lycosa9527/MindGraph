@@ -292,6 +292,15 @@ class Config:
         return self._get_cached_value('FEATURE_THINKGUIDE', 'False').lower() == 'true'
     
     # ============================================================================
+    # AI ASSISTANT BRANDING
+    # ============================================================================
+    
+    @property
+    def AI_ASSISTANT_NAME(self):
+        """AI Assistant display name (appears in toolbar button and panel header)."""
+        return self._get_cached_value('AI_ASSISTANT_NAME', 'MindMate AI')
+    
+    # ============================================================================
     # GRAPH LANGUAGE AND CONTENT SETTINGS
     # ============================================================================
     

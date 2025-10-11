@@ -249,10 +249,11 @@ class AIAssistantManager {
         
         const welcomeDiv = document.createElement('div');
         welcomeDiv.className = 'ai-welcome-message';
+        const aiName = window.AI_ASSISTANT_NAME || 'MindMate AI';
         welcomeDiv.innerHTML = `
             <div class="welcome-icon">✨</div>
             <div class="welcome-text">
-                <h4>Welcome to MindMate AI!</h4>
+                <h4>Welcome to ${aiName}!</h4>
                 <p>I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.</p>
             </div>
         `;

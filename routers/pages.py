@@ -57,7 +57,8 @@ async def editor(request: Request):
                 "request": request,
                 "feature_learning_mode": config.FEATURE_LEARNING_MODE,
                 "feature_thinkguide": config.FEATURE_THINKGUIDE,
-                "verbose_logging": config.VERBOSE_LOGGING
+                "verbose_logging": config.VERBOSE_LOGGING,
+                "ai_assistant_name": config.AI_ASSISTANT_NAME
             }
         )
     except Exception as e:

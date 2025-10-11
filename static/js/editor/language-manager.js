@@ -172,12 +172,12 @@ class LanguageManager {
                 strokeWidth: 'Stroke Width',
                 opacity: 'Opacity',
                 applyAllChanges: 'Apply All Changes',
-                // MindMate AI Panel
-                mindMateAI: 'MindMate AI',
+                // MindMate AI Panel (uses configurable name from backend)
+                mindMateAI: window.AI_ASSISTANT_NAME || 'MindMate AI',
                 online: 'Online',
-                welcomeTitle: 'Welcome to MindMate AI!',
+                welcomeTitle: `Welcome to ${window.AI_ASSISTANT_NAME || 'MindMate AI'}!`,
                 welcomeMessage: "I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.",
-                askMindMatePlaceholder: 'Ask MindMate anything...',
+                askMindMatePlaceholder: `Ask ${window.AI_ASSISTANT_NAME || 'MindMate'} anything...`,
                 // Notification Messages
                 notif: {
                     textEmpty: 'Text cannot be empty',
@@ -405,12 +405,12 @@ class LanguageManager {
                 strokeWidth: '边框宽度',
                 opacity: '透明度',
                 applyAllChanges: '应用所有更改',
-                // MindMate AI Panel
-                mindMateAI: 'MindMate AI',
+                // MindMate AI Panel (uses configurable name from backend)
+                mindMateAI: window.AI_ASSISTANT_NAME || 'MindMate AI',
                 online: '在线',
-                welcomeTitle: '欢迎使用MindMate AI！',
+                welcomeTitle: `欢迎使用${window.AI_ASSISTANT_NAME || 'MindMate AI'}！`,
                 welcomeMessage: '我在这里帮助您创建图示。随时询问有关创建、编辑或改进您作品的任何问题。',
-                askMindMatePlaceholder: '向MindMate提问任何问题...',
+                askMindMatePlaceholder: `向${window.AI_ASSISTANT_NAME?.split(' ')[0] || 'MindMate'}提问任何问题...`,
                 // Notification Messages
                 notif: {
                     textEmpty: '文本不能为空',
