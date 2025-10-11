@@ -5,7 +5,7 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `http://localhost:9527` (or your deployed server URL)  
-**API Version**: 2.5.3  
+**API Version**: 4.6.9  
 **Architecture**: Multi-agent system with smart LLM classification
 
 **Key Features**:
@@ -124,30 +124,29 @@ Content-Type: application/json
 
 #### Response
 
-Returns JSON with markdown format and image URL:
+Returns **plain text** in markdown image format (not JSON):
 
-```json
-{
-  "success": true,
-  "markdown": "![Compare cats and dogs](http://localhost:9527/api/temp_images/dingtalk_a1b2c3d4_1692812345.png)",
-  "image_url": "http://localhost:9527/api/temp_images/dingtalk_a1b2c3d4_1692812345.png",
-  "filename": "dingtalk_a1b2c3d4_1692812345.png",
-  "prompt": "Compare cats and dogs",
-  "language": "zh",
-  "graph_type": "bubble_map",
-  "timing": {
-    "llm_time": 2.456,
-    "render_time": 1.234,
-    "total_time": 3.690
-  }
-}
+```
+Content-Type: text/plain; charset=utf-8
+
+![](http://localhost:9527/api/temp_images/dingtalk_a1b2c3d4_1692812345.png)
+```
+
+**Response Format**: The endpoint returns raw plain text (not JSON) containing markdown image syntax with an empty alt text field. This format is optimized for direct use in DingTalk messages.
+
+**Example Response**:
+```
+![](http://92.168.8.210:9527/api/temp_images/dingtalk_346703f0_1760217144.png)
 ```
 
 #### Important Notes
 
+- **Plain Text Output**: Returns `Content-Type: text/plain`, not JSON - can be sent directly to DingTalk
+- **Empty Alt Text**: Uses `![]()` format (empty brackets) to prevent duplicate text in DingTalk messages
 - **Temporary Storage**: Images are stored temporarily and automatically cleaned up after 24 hours
 - **Image Access**: Images are served through the `/api/temp_images/<filename>` endpoint
 - **No Persistence**: Images are not permanently stored and will be lost after the cleanup period
+- **Default Dimensions**: PNG exports use 1200x800 base dimensions with scale=2 for high quality
 
 ### 3. Clear Cache
 

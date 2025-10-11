@@ -309,17 +309,13 @@ Content-Type: application/json
 ```
 
 **Response | 响应:**
-```json
-{
-  "success": true,
-  "markdown": "![Software Development Workflow](http://localhost:9527/api/temp_images/dingtalk_abc123_1692812345.png)",
-  "image_url": "http://localhost:9527/api/temp_images/dingtalk_abc123_1692812345.png",
-  "graph_type": "flow_map",
-  "timing": {
-    "total_time": 3.42
-  }
-}
 ```
+Content-Type: text/plain; charset=utf-8
+
+![](http://localhost:9527/api/temp_images/dingtalk_abc123_1692812345.png)
+```
+
+**Note**: Returns plain text markdown (not JSON) optimized for DingTalk integration. The empty `[]` prevents duplicate text display.
 
 ## Integration Examples | 集成示例
 
@@ -351,14 +347,12 @@ def generate_dingtalk_diagram(prompt, language="zh"):
         "http://your-mindgraph-server:9527/api/generate_dingtalk",
         json={"prompt": prompt, "language": language}
     )
-    return response.json()
+    return response.text  # Returns plain text: ![](url)
 
 # Example usage | 使用示例
-result = generate_dingtalk_diagram("Create a flow map about project management")
-if result["success"]:
-    markdown = result["markdown"]
-    image_url = result["image_url"]
-    # Send markdown to DingTalk chat | 发送markdown到钉钉聊天
+markdown_text = generate_dingtalk_diagram("创建项目管理的流程图")
+print(markdown_text)  # Output: ![](http://server:9527/api/temp_images/dingtalk_xxx.png)
+# Send markdown_text directly to DingTalk | 直接发送markdown_text到钉钉
 ```
 
 ## Supported Diagram Types | 支持的图表类型
