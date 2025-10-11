@@ -3,6 +3,7 @@ Thinking Mode Agent Factory
 ============================
 
 Factory to create the correct ThinkGuide agent based on diagram type.
+Uses ReAct pattern for diagram-specific behavior.
 
 @author lycosa9527
 @made_by MindSpring Team
@@ -12,7 +13,7 @@ import logging
 from typing import Optional
 
 from agents.thinking_modes.base_thinking_agent import BaseThinkingAgent
-from agents.thinking_modes.circle_map_agent import CircleMapThinkingAgent
+from agents.thinking_modes.circle_map_agent_react import CircleMapThinkingAgent
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,13 @@ logger = logging.getLogger(__name__)
 class ThinkingAgentFactory:
     """
     Factory to create diagram-specific ThinkGuide agents.
+    
+    Each diagram type has unique ThinkGuide behavior:
+    - Circle Map: Socratic refinement of observations (define topic in context)
+    - Bubble Map: Attribute-focused descriptive thinking (describe with adjectives)
+    - Tree Map: Hierarchical categorization (classify and group)
+    - Mind Map: Branch organization (explore connections)
+    - Flow Map: Sequential reasoning (analyze processes)
     
     Usage:
         agent = ThinkingAgentFactory.create_agent('circle_map')
@@ -29,12 +37,15 @@ class ThinkingAgentFactory:
     # Registry of diagram type -> agent class
     _agents = {
         'circle_map': CircleMapThinkingAgent,
-        # Future diagram types will be added here:
+        # Future diagram types will be added here as we implement them:
         # 'bubble_map': BubbleMapThinkingAgent,
-        # 'double_bubble_map': BubbleMapThinkingAgent,  # Can reuse
+        # 'double_bubble_map': DoubleBubbleMapThinkingAgent,
         # 'mind_map': MindMapThinkingAgent,
         # 'tree_map': TreeMapThinkingAgent,
         # 'flow_map': FlowMapThinkingAgent,
+        # 'bridge_map': BridgeMapThinkingAgent,
+        # 'multi_flow_map': MultiFlowMapThinkingAgent,
+        # 'brace_map': BraceMapThinkingAgent,
     }
     
     # Singleton instances (one agent per diagram type)

@@ -1,9 +1,16 @@
 """
-Base Thinking Mode Agent
-=========================
+Base Thinking Mode Agent (ReAct Pattern)
+==========================================
 
 Abstract base class for all diagram-specific ThinkGuide agents.
-Provides common workflow, session management, and LLM communication.
+Implements the ReAct pattern: Reason → Act → Observe cycle.
+
+Each diagram type extends this base to provide unique behavior:
+- Circle Map: Socratic refinement of observations and context
+- Bubble Map: Attribute-focused descriptive thinking
+- Tree Map: Hierarchical categorization
+- Mind Map: Branch organization and concept relationships
+- Flow Map: Sequential and causal reasoning
 
 @author lycosa9527
 @made_by MindSpring Team
@@ -12,7 +19,8 @@ Provides common workflow, session management, and LLM communication.
 import logging
 import json
 from abc import ABC, abstractmethod
-from typing import Dict, AsyncGenerator, Optional
+from typing import Dict, AsyncGenerator, Optional, List
+from enum import Enum
 
 from config.settings import config
 from services.llm_service import llm_service
@@ -20,20 +28,33 @@ from services.llm_service import llm_service
 logger = logging.getLogger(__name__)
 
 
+class ReActStep(Enum):
+    """ReAct pattern steps"""
+    REASON = "reason"      # Understand user intent and context
+    ACT = "act"            # Execute action (modify diagram or respond)
+    OBSERVE = "observe"    # Observe results and continue dialogue
+
+
 class BaseThinkingAgent(ABC):
     """
     Abstract base class for diagram-specific ThinkGuide agents.
     
+    Implements ReAct Pattern:
+    1. REASON: Use LLM to understand user intent and diagram context
+    2. ACT: Execute diagram modifications or generate responses
+    3. OBSERVE: Provide feedback and continue the dialogue
+    
     Responsibilities:
     - Session management
-    - LLM communication
-    - Common workflow patterns
+    - LLM communication (streaming)
+    - ReAct workflow orchestration
     - Language detection
     
-    Subclasses must implement:
-    - Diagram-specific intent detection
-    - Diagram-specific prompts
-    - Diagram-specific action handlers
+    Subclasses MUST implement:
+    - Diagram-specific intent detection (_detect_user_intent)
+    - Diagram-specific action handlers (_handle_action)
+    - Diagram-specific prompts (_get_system_prompt)
+    - Diagram-specific node generation (_generate_suggested_nodes)
     """
     
     def __init__(self, diagram_type: str):
@@ -60,6 +81,7 @@ class BaseThinkingAgent(ABC):
         self,
         session_id: str,
         diagram_data: Optional[Dict] = None,
+        user_id: str = None,
         initial_state: str = 'CONTEXT_GATHERING'
     ) -> Dict:
         """
@@ -68,23 +90,36 @@ class BaseThinkingAgent(ABC):
         Args:
             session_id: Unique session identifier
             diagram_data: Initial diagram data
+            user_id: User identifier
             initial_state: Starting state for new sessions
             
         Returns:
             Session dictionary
         """
         if session_id not in self.sessions:
+            # Detect language from diagram data
+            language = 'en'
+            if diagram_data:
+                center_text = diagram_data.get('center', {}).get('text', '')
+                language = self._detect_language(center_text)
+            
             self.sessions[session_id] = {
                 'session_id': session_id,
+                'user_id': user_id,
                 'state': initial_state,
                 'diagram_data': diagram_data or {},
                 'context': {},
                 'history': [],
-                'language': 'en'
+                'language': language,
+                'node_count': len(diagram_data.get('children', [])) if diagram_data else 0
             }
-            logger.info(f"[{self.__class__.__name__}] Created new session: {session_id}")
+            logger.info(f"[{self.__class__.__name__}] Created session: {session_id} | Language: {language}")
         
         return self.sessions[session_id]
+    
+    def get_session(self, session_id: str) -> Optional[Dict]:
+        """Get session by ID (for external access)"""
+        return self.sessions.get(session_id)
     
     # ===== LANGUAGE DETECTION =====
     
@@ -103,116 +138,370 @@ class BaseThinkingAgent(ABC):
         chinese_chars = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')
         return 'zh' if chinese_chars > len(text) * 0.3 else 'en'
     
-    # ===== LLM COMMUNICATION =====
+    # ===== REACT PATTERN: MAIN ENTRY POINT =====
     
-    async def _stream_llm_response(
+    async def process_step(
         self,
-        system_prompt: str,
-        user_prompt: str,
-        session: Dict
-    ) -> AsyncGenerator[str, None]:
-        """
-        Stream LLM response with proper SSE formatting.
-        
-        Args:
-            system_prompt: System message for LLM
-            user_prompt: User message for LLM
-            session: Current session data
-            
-        Yields:
-            SSE-formatted text chunks
-        """
-        try:
-            logger.info(f"[{self.__class__.__name__}] Streaming LLM response")
-            
-            # Use centralized LLM service for streaming
-            async for chunk in self.llm.chat_stream(
-                prompt=user_prompt,
-                model=self.model,
-                system_message=system_prompt,
-                temperature=0.7
-            ):
-                # SSE format: data: {json}\n\n
-                yield f"data: {json.dumps({'type': 'text', 'content': chunk})}\n\n"
-            
-            # End marker
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
-            
-        except Exception as e:
-            logger.error(f"[{self.__class__.__name__}] LLM streaming error: {e}")
-            error_msg = "I encountered an error. Please try again."
-            yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
-    
-    # ===== ABSTRACT METHODS (Subclasses MUST implement) =====
-    
-    @abstractmethod
-    async def chat(
-        self,
+        message: str,
         session_id: str,
-        message: str,
-        diagram_data: Optional[Dict] = None
-    ) -> AsyncGenerator[str, None]:
+        diagram_data: Dict,
+        current_state: str,
+        user_id: str = None
+    ) -> AsyncGenerator[Dict, None]:
         """
-        Main chat interface - handle user message and stream response.
+        Main ReAct cycle: Reason → Act → Observe
+        
+        This is the primary entry point called by the API router.
         
         Args:
-            session_id: Unique session identifier
             message: User's message
+            session_id: Unique session identifier
             diagram_data: Current diagram data
+            current_state: Current workflow state
+            user_id: User identifier
             
         Yields:
-            SSE-formatted response chunks
+            SSE events (message_chunk, diagram_update, state_transition, etc.)
         """
-        pass
+        # Get or create session
+        session = self._get_or_create_session(
+            session_id=session_id,
+            diagram_data=diagram_data,
+            user_id=user_id,
+            initial_state=current_state
+        )
+        
+        # Update diagram data if provided
+        if diagram_data:
+            session['diagram_data'] = diagram_data
+            session['node_count'] = len(diagram_data.get('children', []))
+        
+        logger.info(
+            f"[{self.__class__.__name__}] ReAct cycle started | "
+            f"State: {current_state} | Message: {message[:50] if message else 'None'}..."
+        )
+        
+        # ReAct Step 1: REASON - Understand user intent
+        intent = await self._reason(session, message, current_state)
+        
+        logger.info(f"[{self.__class__.__name__}] REASON → Intent: {intent.get('action', 'unknown')}")
+        
+        # ReAct Step 2: ACT - Execute action based on intent
+        async for event in self._act(session, intent, message, current_state):
+            yield event
+        
+        # ReAct Step 3: OBSERVE - Handled within _act through streaming responses
+        # The agent observes results and continues dialogue naturally
     
-    @abstractmethod
-    async def _detect_user_intent(
+    # ===== REACT STEP 1: REASON =====
+    
+    async def _reason(
         self,
+        session: Dict,
         message: str,
-        diagram_data: Dict,
-        session: Dict
+        current_state: str
     ) -> Dict:
         """
-        Detect what the user wants to do with the diagram.
+        ReAct Step 1: REASON
         
+        Use LLM to understand user intent within diagram context.
         This is diagram-specific because different diagrams have different actions.
-        For example:
-        - Circle Map: change_center, add_context, update_context
-        - Mind Map: add_branch, add_subtopic, reorganize
-        - Tree Map: add_category, add_item, move_item
         
         Args:
-            message: User's message
-            diagram_data: Current diagram data
             session: Current session
+            message: User's message
+            current_state: Current workflow state
             
         Returns:
             Intent dictionary with action and parameters
         """
-        pass
+        if not message:
+            # No message = initial greeting or state transition
+            return {'action': 'greet', 'state': current_state}
+        
+        # Delegate to diagram-specific intent detection
+        return await self._detect_user_intent(session, message, current_state)
     
-    @abstractmethod
-    def _get_system_prompt(self, state: str, language: str) -> str:
+    # ===== REACT STEP 2: ACT =====
+    
+    async def _act(
+        self,
+        session: Dict,
+        intent: Dict,
+        message: str,
+        current_state: str
+    ) -> AsyncGenerator[Dict, None]:
         """
-        Get diagram-specific system prompt for current state.
+        ReAct Step 2: ACT
+        
+        Execute action based on detected intent.
+        Delegates to diagram-specific handlers.
         
         Args:
-            state: Current workflow state
+            session: Current session
+            intent: Detected intent from REASON step
+            message: User's original message
+            current_state: Current workflow state
+            
+        Yields:
+            SSE events (message_chunk, diagram_update, etc.)
+        """
+        action = intent.get('action', 'discuss')
+        
+        # Route to appropriate handler
+        if action == 'greet':
+            # Initial greeting for this state
+            async for event in self._handle_greeting(session, current_state):
+                yield event
+        
+        elif action == 'discuss':
+            # Pure discussion, no diagram changes
+            async for event in self._handle_discussion(session, message, current_state):
+                yield event
+        
+        else:
+            # Diagram-specific action (delegated to subclass)
+            async for event in self._handle_action(session, intent, message, current_state):
+                yield event
+    
+    # ===== LLM COMMUNICATION HELPERS =====
+    
+    async def _stream_llm_response(
+        self,
+        prompt: str,
+        session: Dict,
+        temperature: float = 0.7
+    ) -> AsyncGenerator[Dict, None]:
+        """
+        Stream LLM response as SSE chunks.
+        
+        Args:
+            prompt: User prompt for LLM
+            session: Current session
+            temperature: LLM temperature
+            
+        Yields:
+            SSE event dictionaries
+        """
+        try:
+            language = session.get('language', 'en')
+            system_prompt = self._get_base_system_prompt(language)
+            
+            full_content = ""
+            
+            async for chunk in self.llm.chat_stream(
+                prompt=prompt,
+                model=self.model,
+                system_message=system_prompt,
+                temperature=temperature
+            ):
+                full_content += chunk
+                yield {
+                    'event': 'message_chunk',
+                    'content': chunk
+                }
+            
+            # Store in history
+            session['history'].append({
+                'role': 'assistant',
+                'content': full_content,
+                'state': session.get('state', 'UNKNOWN')
+            })
+            
+            yield {
+                'event': 'message_complete',
+                'full_content': full_content
+            }
+        
+        except Exception as e:
+            logger.error(f"[{self.__class__.__name__}] LLM streaming error: {e}", exc_info=True)
+            yield {
+                'event': 'error',
+                'message': str(e)
+            }
+    
+    def _get_base_system_prompt(self, language: str) -> str:
+        """
+        Get base system prompt (applies to all diagram types).
+        
+        Args:
             language: 'zh' or 'en'
             
         Returns:
             System prompt string
         """
+        if language == 'zh':
+            return """你是一位专业的思维教学专家（Teaching Thinking Professional）。
+
+你的角色：
+- 帮助K12教师通过苏格拉底式提问深化思考
+- 引导教师发现概念的本质和优先级
+- 培养批判性思维和教学设计能力
+
+你的风格：
+- 简洁、清晰、专业
+- 不使用表情符号
+- 直接、有针对性
+- 提问而非说教"""
+        else:
+            return """You are a Teaching Thinking Professional.
+
+Your role:
+- Help K12 teachers deepen thinking through Socratic questioning
+- Guide teachers to discover essence and priorities of concepts
+- Develop critical thinking and instructional design skills
+
+Your style:
+- Concise, clear, professional
+- No emojis
+- Direct and targeted
+- Ask, don't lecture"""
+    
+    # ===== DEFAULT ACTION HANDLERS =====
+    
+    async def _handle_greeting(
+        self,
+        session: Dict,
+        current_state: str
+    ) -> AsyncGenerator[Dict, None]:
+        """
+        Handle initial greeting for a state.
+        Delegates to diagram-specific prompt system.
+        """
+        prompt = self._get_state_prompt(session, current_state)
+        async for event in self._stream_llm_response(prompt, session):
+            yield event
+    
+    async def _handle_discussion(
+        self,
+        session: Dict,
+        message: str,
+        current_state: str
+    ) -> AsyncGenerator[Dict, None]:
+        """
+        Handle pure discussion (no diagram modifications).
+        Uses LLM to provide thoughtful response within educational context.
+        """
+        diagram_data = session.get('diagram_data', {})
+        center = diagram_data.get('center', {}).get('text', 'this topic')
+        nodes = diagram_data.get('children', [])
+        context = session.get('context', {})
+        
+        language = session.get('language', 'en')
+        
+        if language == 'zh':
+            discussion_prompt = f"""教师正在讨论关于「{center}」的{self.diagram_type}。
+
+当前状态：{current_state}
+节点数量：{len(nodes)}
+教学背景：{context.get('raw_message', '未指定')}
+
+教师说：{message}
+
+请作为思维教练回应：
+1. 承认他们的想法
+2. 提出1-2个深入的苏格拉底式问题
+3. 鼓励进一步思考
+
+保持简洁、专业、无表情符号。"""
+        else:
+            discussion_prompt = f"""Teacher is discussing a {self.diagram_type} about "{center}".
+
+Current state: {current_state}
+Node count: {len(nodes)}
+Educational context: {context.get('raw_message', 'Not specified')}
+
+Teacher said: {message}
+
+Respond as a thinking coach:
+1. Acknowledge their thoughts
+2. Ask 1-2 deeper Socratic questions
+3. Encourage further thinking
+
+Keep it concise, professional, no emojis."""
+        
+        async for event in self._stream_llm_response(discussion_prompt, session):
+            yield event
+    
+    # ===== ABSTRACT METHODS (Subclasses MUST implement) =====
+    
+    @abstractmethod
+    async def _detect_user_intent(
+        self,
+        session: Dict,
+        message: str,
+        current_state: str
+    ) -> Dict:
+        """
+        Detect what the user wants to do (diagram-specific).
+        
+        This is where diagram types differ significantly:
+        - Circle Map: change_center, add_observations, update_context
+        - Bubble Map: add_attributes, change_subject, update_adjective
+        - Tree Map: add_category, add_item, reorganize
+        - Mind Map: add_branch, add_subtopic, reorganize
+        
+        Args:
+            session: Current session
+            message: User's message
+            current_state: Current workflow state
+            
+        Returns:
+            Intent dictionary with 'action' and relevant parameters
+        """
         pass
     
     @abstractmethod
-    async def _generate_suggested_nodes(self, session: Dict) -> list:
+    async def _handle_action(
+        self,
+        session: Dict,
+        intent: Dict,
+        message: str,
+        current_state: str
+    ) -> AsyncGenerator[Dict, None]:
+        """
+        Handle diagram-specific actions.
+        
+        Args:
+            session: Current session
+            intent: Detected intent
+            message: User's original message
+            current_state: Current workflow state
+            
+        Yields:
+            SSE events (acknowledgment, diagram_update, completion)
+        """
+        pass
+    
+    @abstractmethod
+    def _get_state_prompt(
+        self,
+        session: Dict,
+        state: str
+    ) -> str:
+        """
+        Get diagram-specific prompt for current state.
+        
+        Args:
+            session: Current session
+            state: Current workflow state
+            
+        Returns:
+            Prompt string
+        """
+        pass
+    
+    @abstractmethod
+    async def _generate_suggested_nodes(
+        self,
+        session: Dict
+    ) -> List[Dict]:
         """
         Generate diagram-specific node suggestions.
         
         This is where diagram types differ most:
         - Circle Map: Observation-based suggestions
-        - Bubble Map: Adjective suggestions
+        - Bubble Map: Adjective/attribute suggestions
         - Mind Map: Branch/subtopic suggestions
         - Tree Map: Category/item suggestions
         
@@ -220,24 +509,6 @@ class BaseThinkingAgent(ABC):
             session: Current session with context
             
         Returns:
-            List of suggested node texts
+            List of suggested nodes (format: [{'text': '...', 'position': 'auto'}])
         """
         pass
-    
-    # ===== HELPER METHODS (Optional to override) =====
-    
-    def _validate_diagram_action(self, action: str, diagram_data: Dict) -> bool:
-        """
-        Validate if an action is valid for current diagram state.
-        
-        Subclasses can override for diagram-specific validation.
-        
-        Args:
-            action: Action type (e.g., 'change_center', 'add_nodes')
-            diagram_data: Current diagram data
-            
-        Returns:
-            True if action is valid, False otherwise
-        """
-        return True  # Default: allow all actions
-

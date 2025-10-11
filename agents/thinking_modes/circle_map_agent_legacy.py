@@ -1,9 +1,17 @@
 """
-Circle Map Thinking Mode Agent
-================================
+Circle Map Thinking Mode Agent (LEGACY)
+=========================================
 
-Guides K12 teachers through Socratic refinement of Circle Maps.
-Uses guided thinking workflow to help teachers refine brainstorming maps.
+⚠️ DEPRECATED: This file is kept for reference only.
+Please use the new ReAct-based implementation instead:
+→ agents/thinking_modes/circle_map_agent_react.py
+
+The new implementation:
+- Uses ReAct pattern (Reason → Act → Observe)
+- Inherits from BaseThinkingAgent
+- Split into smaller files (< 500 lines each)
+- Enables diagram-specific behavior
+- See docs/THINKGUIDE_REACT_ARCHITECTURE.md
 
 @author lycosa9527
 @made_by MindSpring Team

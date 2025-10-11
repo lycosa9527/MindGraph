@@ -15,7 +15,6 @@ from fastapi.responses import StreamingResponse
 import json
 
 from agents.thinking_modes.factory import ThinkingAgentFactory
-from agents.thinking_modes.circle_map_agent import CircleMapThinkingAgent
 from models.requests import ThinkingModeRequest
 
 router = APIRouter(tags=["thinking"])
@@ -88,18 +87,18 @@ async def thinking_mode_stream(req: ThinkingModeRequest):
 
 
 @router.get('/thinking_mode/node_learning/{session_id}/{node_id}')
-async def get_node_learning_material(session_id: str, node_id: str):
+async def get_node_learning_material(session_id: str, node_id: str, diagram_type: str = 'circle_map'):
     """
     Get learning material for a specific node (for hover tooltip).
     
     Called when user hovers over a node during Thinking Mode.
-    Works for ALL diagram types (session stores the data).
+    Works for ALL diagram types via factory pattern.
     """
     
     try:
-        # For MVP, get from Circle Map agent instance
-        # In production, use shared Redis/DB session store
-        agent = CircleMapThinkingAgent()
+        # Get agent from factory using diagram type
+        # In production, diagram_type should be stored in session metadata
+        agent = ThinkingAgentFactory.get_agent(diagram_type)
         session = agent.get_session(session_id)
         
         if not session:
