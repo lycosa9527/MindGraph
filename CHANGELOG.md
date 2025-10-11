@@ -7,9 +7,214 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [4.6.0] - 2025-10-11 - Comprehensive Auto-Complete Debug Logging & LLM Inconsistency Detection
 
-### Added - 2025-10-10 (Progressive Rendering & Temperature Configuration)
+### Added
+
+- **Critical: Complete Verbose Logging System for Auto-Complete (18 Logging Points)**
+  - **Root cause**: Insufficient visibility into auto-complete workflow made debugging and tuning difficult
+  - **Previous behavior**: Limited logging, no cross-model comparison, hard to diagnose LLM issues
+  - **Solution**: Added comprehensive logging at every critical step of auto-complete process
+  - **18 logging points cover**:
+    1. Mouse click events on auto-complete button (coordinates, target, state)
+    2. Complete environment snapshot at function start (browser, memory, network, performance)
+    3. Concurrent request prevention (rejection handling with context)
+    4. Node selection via mouse clicks (IDs, text, positions, types)
+    5. Node extraction process (each node logged with position, type, skipped placeholders)
+    6. Main topic identification (strategy selection, spec vs DOM vs geometric)
+    7. LLM request preparation (complete body, prompt analysis, context)
+    8. Request sent to backend (endpoint, headers, payload size, models)
+    9. SSE stream data chunks (raw data, parsed events)
+    10. JSON response from each LLM (full spec, duration, **validation results**)
+    11. LLM failure details (error stack, context, request info)
+    12. Parallel endpoint failure (fallback strategy, full context)
+    13. Nodes generated (complete list with positions from each model)
+    14. Diagram rendering success (confirmation, model used)
+    15. LLM model switching (button clicks, state changes, cache status)
+    16. Fatal error handling (complete context, browser environment)
+    17. **LLM consistency analysis** (cross-model comparison, inconsistency detection)
+    18. Cleanup (final results summary, flags, success/failure counts)
+  - All logs include ISO timestamps for precise debugging
+  - Clean professional formatting (no emojis per user preference)
+  - File: `static/js/editor/toolbar-manager.js` (18 logging points added)
+
+- **Critical: LLM Inconsistency Detection & Validation System**
+  - **Root cause**: Sometimes one LLM (e.g., Kimi) generates invalid specs while others work fine
+  - **Previous behavior**: No validation, no cross-model comparison, hard to identify which model failed
+  - **Solution**: Automatic spec validation + cross-model comparison after all LLMs complete
+  - **Spec validation** (`_validateLLMSpec()` function):
+    - Validates required fields for all 10 diagram types
+    - Detects missing fields (e.g., no `topic` in bubble_map)
+    - Detects empty arrays (e.g., `children: []` when should have items)
+    - Detects invalid data types (e.g., `children` is string instead of array)
+    - Detects malformed structures (e.g., bridge_map analogies missing `left` or `right`)
+    - Returns detailed validation result: `{ isValid, issues, missingFields, invalidFields }`
+  - **Cross-model comparison** (`_logLLMConsistencyAnalysis()` function):
+    - Automatically compares all 4 LLMs (Qwen, DeepSeek, Kimi, HunYuan)
+    - Detects content count variance (flags if difference > 2 items)
+    - Identifies which models have validation failures
+    - Logs structural differences (childrenCount, nodesCount, etc.)
+    - Provides consistency confirmation when all models agree
+  - **Warning logs when issues detected**:
+    - `⚠️ [MODEL] SPEC VALIDATION WARNINGS` - Specific model has issues
+    - `⚠️ LLM INCONSISTENCIES DETECTED` - Cross-model comparison found problems
+    - `✓ All LLM results are consistent` - Everything working correctly
+  - Example detection: Kimi returns 0 nodes while others return 6 → clearly flagged
+  - File: `static/js/editor/toolbar-manager.js` lines 2002-2222
+
+- **Critical: Frontend-to-Backend Log Streaming (No F12 Required!)**
+  - **Root cause**: Developers need to open F12 console to see frontend logs
+  - **Previous behavior**: Logs only visible in browser console, lost on page refresh
+  - **Solution**: Automatic streaming of frontend logs to backend terminal and log file
+  - **Batching system**:
+    - Accumulates 10 logs or waits 2 seconds (whichever comes first)
+    - Sends batch to backend via `/api/frontend_log_batch`
+    - Reduces network requests by 10x compared to individual logging
+    - Fallback to individual logs if batch fails
+  - **Page unload handling**:
+    - Uses `navigator.sendBeacon()` for synchronous unload
+    - Ensures logs sent even when user closes tab/window
+    - No logs lost during navigation
+  - **Efficiency features**:
+    - Object truncation at 2KB to prevent huge payloads
+    - Circular reference protection
+    - Non-blocking async requests with `keepalive: true`
+    - Silently fails without breaking frontend
+  - **Backend endpoints**:
+    - `/api/frontend_log` - Single log entry (fallback)
+    - `/api/frontend_log_batch` - Batched logs (1-50 per batch, efficient)
+  - **Dedicated log file**: `logs/frontend.log` (separate from backend logs)
+  - **Console output**: All frontend logs also appear in backend terminal with `[FRNT]` prefix
+  - Files: 
+    - `static/js/logger.js` (batching system, lines 35-329)
+    - `models/requests.py` (FrontendLogBatchRequest model)
+    - `routers/api.py` (batch endpoint, lines 291-324)
+    - `main.py` (frontend logger config, lines 213-228)
+
+### Changed
+
+- **Enhanced: Auto-Complete Validation Now Per-Model**
+  - Each LLM's response is validated immediately upon receipt
+  - Validation results stored with cached LLM result
+  - Enables quick identification of problematic models
+  - File: `static/js/editor/toolbar-manager.js` line 1684
+
+- **Enhanced: LLM Selection Button Click Logging**
+  - Now logs complete state when switching between LLM models
+  - Includes previous model, new model, cache status, all model statuses
+  - Helps debug model switching issues
+  - File: `static/js/editor/toolbar-manager.js` lines 365-437
+
+- **Enhanced: Error Logging with Full Context**
+  - Fatal errors now include browser environment (viewport, connection, memory)
+  - LLM failures include full request context and raw response
+  - Parallel endpoint failures include fallback strategy info
+  - File: `static/js/editor/toolbar-manager.js` lines 1705-1777, 1912-1943
+
+### Fixed
+
+- **Critical: Node Selection Logging Shows Actual Selected Nodes**
+  - **Root cause**: No visibility into which nodes user selected before auto-complete
+  - **Previous behavior**: Selection events not logged
+  - **Fix**: Added comprehensive node selection logging with all details
+  - File: `static/js/editor/toolbar-manager.js` lines 595-613
+
+- **Critical: Node Extraction Process Now Fully Visible**
+  - **Root cause**: Couldn't see which nodes were extracted vs skipped as placeholders
+  - **Previous behavior**: Only total count logged
+  - **Fix**: Each node now logged individually with position, type, text length
+  - Summary log includes extracted nodes list and skip counts
+  - File: `static/js/editor/toolbar-manager.js` lines 2534-2622
+
+- **Critical: Main Topic Identification Strategy Now Logged**
+  - **Root cause**: Couldn't determine why wrong topic was selected
+  - **Previous behavior**: No logging of strategy selection
+  - **Fix**: Logs which strategy used (spec vs DOM vs geometric) for each diagram type
+  - Shows source of topic (spec.topic, DOM node, geometric center, etc.)
+  - File: `static/js/editor/toolbar-manager.js` lines 2343-2527
+
+### Documentation
+
+- **Added: Complete Auto-Complete Debug System Documentation**
+  - `docs/CODE_REVIEW_AUTO_COMPLETE_DEBUG.md` - Systematic code review with verification
+    - All 18 logging points verified against actual code
+    - Line-by-line verification of documented vs actual implementation
+    - Validation function verification
+    - Backend integration verification
+    - Production readiness sign-off
+  - Documentation includes:
+    - Exact log messages to search for
+    - Example log outputs for each scenario
+    - Grep commands for finding specific issues
+    - Debugging workflows for common problems
+    - Cross-references to actual code line numbers
+
+### Impact
+
+- ✅ **Complete visibility into auto-complete workflow**: Every step logged from button click to cleanup
+- ✅ **LLM inconsistency detection**: Immediately identify when Kimi (or any model) has problems
+- ✅ **No F12 required**: All logs stream to backend terminal automatically
+- ✅ **Efficient**: Batching reduces network load, truncation prevents large payloads
+- ✅ **Production ready**: Clean logs, professional formatting, no performance impact
+- ✅ **Cross-model comparison**: Automatically compare all 4 LLMs and flag variance
+- ✅ **Validation coverage**: All 10 diagram types validated (bubble, circle, mind, tree, brace, bridge, double bubble, flow, multi-flow, concept)
+- ✅ **Permanent record**: Logs saved to `logs/frontend.log` for later analysis
+- ✅ **Comprehensive debugging**: Can now tune auto-complete with complete information
+
+### Technical Details
+
+**Logging Architecture**:
+- Frontend: 18 logging points in auto-complete workflow
+- Batching: 10 logs or 2 seconds (reduces network requests)
+- Transport: HTTP POST with keepalive, sendBeacon on unload
+- Backend: Dedicated logger with separate file handler
+- Format: ISO timestamps, clean professional style (no emojis)
+- Performance: Non-blocking, async, silently fails without breaking UI
+
+**Validation Architecture**:
+- Per-model: Each LLM validated immediately upon response
+- Per-diagram: Different validation rules for each of 10 types
+- Result storage: Validation results cached with LLM results
+- Cross-model: Comparison happens after all models complete
+- Detection: Content variance >2 or any validation failures flagged
+
+**LLM Inconsistency Detection Example**:
+```
+When Kimi fails while others work:
+  Qwen: 6 children, isValid=true ✅
+  DeepSeek: 5 children, isValid=true ✅
+  Kimi: 0 children, isValid=false ❌ ← Flagged!
+  HunYuan: 6 children, isValid=true ✅
+
+Logs show:
+  - ⚠️ KIMI SPEC VALIDATION WARNINGS
+  - Missing fields: ["topic"]
+  - Issues: ["Empty children array"]
+  - ⚠️ LLM INCONSISTENCIES DETECTED
+  - Content count variance: 0 to 6
+```
+
+**Search Commands for Debugging**:
+```bash
+# Find validation failures
+grep "SPEC VALIDATION WARNINGS" logs/frontend.log
+
+# Find inconsistencies
+grep "INCONSISTENCIES DETECTED" logs/frontend.log
+
+# Find Kimi-specific issues
+grep "KIMI" logs/frontend.log | grep -E "FAILURE|WARNING"
+
+# View consistency analysis
+grep "LLM CONSISTENCY ANALYSIS" logs/frontend.log
+```
+
+---
+
+## [4.5.0] - 2025-10-10 - Progressive Rendering & Temperature Configuration
+
+### Added
+
 - **Progressive Rendering Implementation**: 35% faster time-to-first-diagram (8s vs 13s)
   - **Backend**: New `/api/generate_multi_progressive` endpoint using Server-Sent Events (SSE)
   - **Frontend**: Updated `toolbar-manager.js` to use async/await SSE streaming (clean, modern pattern)
@@ -20,7 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `routers/api.py`: New progressive endpoint (120 lines)
     - `static/js/editor/toolbar-manager.js`: SSE streaming with pure async/await (no Promise wrapper)
   - **User Experience**: Audio notification ("ding" sound) when first diagram renders
-  
+
 - **Unified Temperature Configuration**: Better consistency across all LLMs
   - **New Config Property**: `LLM_TEMPERATURE` in `config/settings.py` (default: 0.3)
   - **Environment Variable**: Added `LLM_TEMPERATURE=0.3` to `env.example`
@@ -31,7 +236,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Lower temperature (0.3) ideal for JSON generation vs creative writing (1.0)
   - **Architecture**: All agents now use `config.LLM_TEMPERATURE` instead of hardcoded `1.0`
 
-### Fixed - 2025-10-10
+### Fixed
+
 - **Race Condition Fix**: Eliminated false "All LLMs failed" error in progressive rendering
   - **Root Cause**: Code checked results before SSE stream completed
   - **Solution**: Wrapped SSE reading in proper async/await loop (no Promise wrapper)
@@ -41,7 +247,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Purpose**: Debug why specific models fail to generate valid JSON
   - **Location**: Logs first 500 chars of failed responses for troubleshooting
 
-### Added - 2025-10-10 (Middleware Migration Plan v3.0)
+---
+
+## [4.4.0] - 2025-10-10 - Circle Map Spec Update Bug Fix & Migration Planning
+
+### Added
+
 - **Comprehensive Migration Plan**: Updated with both frontend fixes and backend refactoring
   - **Phase 4 - Frontend Fixes**:
     - **Issues Identified**: Flow Map and Multi-Flow Map don't use Strategy 1 in `identifyMainTopic()`
@@ -66,7 +277,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Detailed wrapper removal instructions
   - **File**: `docs/MIDDLEWARE_MIGRATION_PLAN.md` v3.0 - Ready for systematic implementation
 
-### Fixed - 2025-10-10 (Circle Map Spec Update Bug)
+### Fixed
+
 - **Critical Bug Fix**: Circle map center topic was not updating in spec when user edited text
   - **Root Cause**: `updateCircleMapText()` checked for `nodeType === 'topic'`, but circle maps use `nodeType === 'center'`
   - **Impact**: Auto-complete was sending wrong/stale topic to LLMs (e.g., "背景7" instead of "优衣库")
@@ -77,7 +289,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `static/js/editor/toolbar-manager.js` - Improved main topic identification
   - **Documentation**: `docs/CIRCLE_MAP_SPEC_UPDATE_FIX.md` - Complete analysis and fix details
 
-### Added - 2025-10-10 (Parallel Auto-Complete)
+---
+
+## [4.3.0] - 2025-10-10 - Parallel Auto-Complete
+
+### Added
+
 - **Parallel LLM Execution**: Auto-complete now calls 4 LLMs simultaneously instead of sequentially
   - **Performance Improvement**: ~2x faster (6.5s vs 13.5s for 4 LLMs)
   - **New Backend Endpoint**: `/api/generate_multi_parallel` for parallel agent workflow
@@ -91,7 +308,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `models/requests.py` - Added `models` field for parallel requests
   - **Documentation**: `docs/PARALLEL_AUTO_COMPLETE.md` - Implementation details and performance analysis
 
-### Added - 2025-10-10 (LLM Middleware Integration)
+---
+
+## [4.2.0] - 2025-10-10 - LLM Middleware Integration
+
+### Added
+
 - **Agent-Middleware Integration**: All agents now use new LLM middleware through wrapper
   - **LLMServiceWrapper**: Adapter class that makes middleware compatible with existing agent interface
   - **Benefits**: Error handling, retry logic, performance tracking, rate limiting, circuit breakers
@@ -848,7 +1070,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.4.4] - 2025-10-08 - MindMate AI Panel Initialization Fix
+## [2.4.4] - 2025-10-08 - MindMate AI Panel Initialization Fix
 
 ### Fixed - AI Assistant Panel 🔧
 - **MindMate AI Button**: Fixed panel not appearing when clicking the MindMate AI button
@@ -880,7 +1102,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.4.3] - 2025-10-08 - Fixed Flow Map Sizing
+## [2.4.3] - 2025-10-08 - Fixed Flow Map Sizing
 
 ### Fixed - Flow Map Rendering 🔧
 - **Flow Map**: No longer appears tiny when entering canvas from gallery
@@ -897,7 +1119,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.4.2] - 2025-10-07 - Improved Mouse Controls
+## [2.4.2] - 2025-10-07 - Improved Mouse Controls
 
 ### Changed - Mouse Interaction 🖱️
 - **Left Click + Drag**: Now reserved for node selection/interaction (no panning)
@@ -913,7 +1135,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.4.1] - 2025-10-07 - Critical Fix: Cancel In-Progress LLM Requests
+## [2.4.1] - 2025-10-07 - Critical Fix: Cancel In-Progress LLM Requests
 
 ### Fixed - Session Management 🔧
 - **CRITICAL**: Cancel all in-progress LLM requests when returning to gallery
@@ -932,7 +1154,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.4.0] - 2025-10-07 - Canvas Optimization & Zoom/Pan Controls
+## [2.4.0] - 2025-10-07 - Canvas Optimization & Zoom/Pan Controls
 
 ### Added - Canvas Interaction 🖱️
 - **Mouse Scroll Zoom**: Use mouse wheel to zoom in/out on canvas
@@ -973,7 +1195,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.3.0] - 2025-10-07 - Multi-LLM Auto-Complete System
+## [2.3.0] - 2025-10-07 - Multi-LLM Auto-Complete System
 
 ### Added - Multi-LLM Support 🤖
 - **3-Model Auto-Complete System**
@@ -1069,138 +1291,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.2.4] - Bridge Map Analogy Patterns 🌉
-
-**New Feature**: Bridge maps now display analogy relationship patterns!  
-**Pattern Labels**: Shows the relationship type used (e.g., "[Capital to Country]", "[Author to Work]")  
-**Alternative Patterns**: Displays 4-6 other analogy relationships at the bottom  
-**Enhanced AI**: Comprehensive LLM prompts with 7+ relationship pattern examples  
-**Editable**: Click pattern label to change analogy relationship type  
-**Classroom Ready**: Dark blue labels optimized for classroom projector visibility  
-**Rich Examples**: "Capital to Country", "Function to Object", "Cause to Effect", etc.
-
-**新功能**: 桥形图现在显示类比关系模式！  
-**模式标签**: 显示正在使用的关系类型（例如："[首都到国家]"、"[作者到作品]"）  
-**替代模式**: 在底部显示4-6种其他类比关系  
-**增强AI**: 包含7+关系模式示例的综合LLM提示  
-**可编辑**: 点击模式标签可更改类比关系类型  
-**课堂优化**: 深蓝色标签优化课堂投影仪可见性  
-**丰富示例**: "首都到国家"、"功能到对象"、"因到果"等
-
----
-
-## [3.2.5] - 2025-01-07 - View Optimization Enhancement
-
-### Changed - Export & Auto-Complete Functionality 📸
-- **Auto-Reset View Before Export**
-  - Export button now triggers `fitDiagramToWindow()` for ALL diagram types (previously only brace maps)
-  - Ensures exported PNG always captures the optimal view of the diagram
-  - Users no longer need to manually reset view before exporting
-  - Provides consistent export experience across all diagram types
-
-- **Auto-Reset View After Auto-Complete**
-  - Auto-complete now automatically resets view to optimal position after diagram regeneration
-  - Ensures newly generated content is immediately visible and well-framed
-  - 300ms delay allows diagram to render before view adjustment
-  - Provides seamless user experience without manual view adjustment
-
-- **Export Workflow**
-  1. User clicks Export button
-  2. System automatically resets view to optimal fit
-  3. 800ms wait for smooth animation completion
-  4. High-quality PNG capture (3x scale for DingTalk/Retina displays)
-  5. Watermark applied ("MindGraph" in bottom-right corner)
-  6. File downloaded with timestamp
-
-- **Auto-Complete Workflow**
-  1. User clicks Auto-Complete button (or edits dimension and auto-completes)
-  2. AI generates new diagram content
-  3. Diagram renders with new specification
-  4. System automatically resets view to optimal fit (after 300ms)
-  5. User sees perfectly framed diagram
-
-- **Benefits**
-  - **Classroom Ready**: Teachers can export/regenerate diagrams without worrying about zoom/pan state
-  - **Professional Quality**: Every exported diagram is perfectly framed
-  - **Seamless UX**: Auto-complete shows new content in optimal view automatically
-  - **Time Saving**: Eliminates manual view adjustment steps
-  - **Consistent Results**: Same auto-reset behavior for all 8 thinking map types + concept maps + mind maps
-
-### Fixed - Bridge Map Layout
-- **Alternative Dimensions Separator Width**
-  - Dotted separator line for alternative dimensions now spans full diagram width
-  - Changed from centered 400px width to full-width (`leftPadding` to `width - rightPadding`)
-  - Matches tree map and brace map styling for consistency
-  - Ensures visual harmony across all three dimension-enabled map types
-
-### Technical Details
-- Files Modified:
-  - `static/js/editor/toolbar-manager.js` - Updated `handleExport()` to reset view for all diagram types (not just brace maps)
-  - `static/js/editor/toolbar-manager.js` - Updated `handleAutoComplete()` to reset view after successful diagram regeneration
-  - `static/js/renderers/flow-renderer.js` - Updated alternative dimensions separator line to span full diagram width
-- Previous Behavior (Export): Only brace maps auto-reset before export
-- Previous Behavior (Auto-Complete): No auto-reset after regeneration
-- Previous Behavior (Bridge Map Separator): Centered 400px width
-- New Behavior: All diagram types auto-reset view for both export and auto-complete operations; bridge map separator spans full width
-
----
-
-## [3.2.3] - 2025-01-07 - Tree Map Classification Dimensions Enhancement
-
-### Added - Tree Map Improvements 🌳
-- **Classification Dimension Feature**
-  - Added dimension label below main topic node (similar to brace map's decomposition dimension)
-  - Shows classification standard being used (e.g., "Classification by: Biological Taxonomy")
-  - Editable dimension label with placeholder text when empty
-  - Language-aware labels (English/Chinese) with automatic detection
-  - Always visible (even for old diagrams) - shows placeholder if dimension not set
-
-- **Alternative Dimensions Display**
-  - Shows 4-6 alternative classification dimensions at bottom of tree map
-  - Helps users understand different ways to categorize the same topic
-  - Formatted as chips/badges with separator line above
-  - Example: "Other possible dimensions: Habitat • Diet • Size • Conservation Status"
-
-- **Enhanced LLM Prompts**
-  - Comprehensive classification dimensions documentation with real-world examples
-  - 7+ common classification dimensions for various topics (Biological Taxonomy, Habitat, Diet, Size, etc.)
-  - User-specified dimension priority (respects explicit user requests)
-  - Alternative dimensions must be specific to the topic (not generic)
-  - Detailed validation checklist and format requirements
-
-- **Auto-Completion with Dimension Preference**
-  - When dimension label is changed and auto-complete is triggered, regenerates tree map using new dimension
-  - Preserves main topic while reclassifying with user-specified dimension
-  - Backend support for `dimension_preference` parameter in tree map agent
-  - Frontend sends dimension preference to API during auto-complete
-
-- **Visual Enhancements**
-  - Extended vertical connector line to go beyond dimension label for better visual flow
-  - Connector extends 40px below dimension label before T-junction
-  - Dark blue color (`#1976d2`) for dimension labels - optimized for classroom/projector visibility
-  - Matches primary blue theme while ensuring high contrast
-
-### Changed - Tree Map Agent & Renderer
-- **Agent Validation**: Now validates `dimension` and `alternative_dimensions` fields
-- **Agent Enhancement**: Preserves dimension fields during spec enhancement
-- **Renderer Display**: Added dimension label and alternative dimensions sections
-- **Prompt Quality**: Upgraded prompts from basic to comprehensive with examples
-- **Interactive Editing**: Dimension label is fully editable via properties panel
-- **Color Scheme**: Added `dimensionLabelColor` to theme (dark blue for visibility)
-
-### Technical Details
-- Files Modified:
-  - `prompts/thinking_maps.py` - Added detailed classification dimension prompts (EN & ZH)
-  - `agents/thinking_maps/tree_map_agent.py` - Enhanced validation, spec preservation, dimension preference support
-  - `agents/main_agent.py` - Extended dimension preference to tree maps
-  - `static/js/renderers/tree-renderer.js` - Added dimension label, alternatives display, extended connector lines
-  - `static/js/editor/interactive-editor.js` - Added dimension node type handling in updateTreeMapText
-  - `static/js/editor/toolbar-manager.js` - Extended auto-complete to send dimension preference for tree maps
-  - `static/js/style-manager.js` - Added dimensionLabelColor to both brace_map and tree_map themes
-
----
-
-## [3.2.4] - 2025-01-07 - Bridge Map Analogy Pattern Enhancement
+## [2.2.6] - 2025-01-07 - Bridge Map Analogy Pattern Enhancement
 
 ### Fixed - Layout & Rendering
 - **Brace Map Dimension Label Cutoff**: Increased left margin (`topicX`) from 15px to 50px to prevent centered dimension label text from extending beyond left canvas edge
@@ -1290,7 +1381,138 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.2.2] - 2025-01-07 - Adaptive Sizing & Canvas Improvements
+## [2.2.5] - 2025-01-07 - View Optimization Enhancement
+
+### Changed - Export & Auto-Complete Functionality 📸
+- **Auto-Reset View Before Export**
+  - Export button now triggers `fitDiagramToWindow()` for ALL diagram types (previously only brace maps)
+  - Ensures exported PNG always captures the optimal view of the diagram
+  - Users no longer need to manually reset view before exporting
+  - Provides consistent export experience across all diagram types
+
+- **Auto-Reset View After Auto-Complete**
+  - Auto-complete now automatically resets view to optimal position after diagram regeneration
+  - Ensures newly generated content is immediately visible and well-framed
+  - 300ms delay allows diagram to render before view adjustment
+  - Provides seamless user experience without manual view adjustment
+
+- **Export Workflow**
+  1. User clicks Export button
+  2. System automatically resets view to optimal fit
+  3. 800ms wait for smooth animation completion
+  4. High-quality PNG capture (3x scale for DingTalk/Retina displays)
+  5. Watermark applied ("MindGraph" in bottom-right corner)
+  6. File downloaded with timestamp
+
+- **Auto-Complete Workflow**
+  1. User clicks Auto-Complete button (or edits dimension and auto-completes)
+  2. AI generates new diagram content
+  3. Diagram renders with new specification
+  4. System automatically resets view to optimal fit (after 300ms)
+  5. User sees perfectly framed diagram
+
+- **Benefits**
+  - **Classroom Ready**: Teachers can export/regenerate diagrams without worrying about zoom/pan state
+  - **Professional Quality**: Every exported diagram is perfectly framed
+  - **Seamless UX**: Auto-complete shows new content in optimal view automatically
+  - **Time Saving**: Eliminates manual view adjustment steps
+  - **Consistent Results**: Same auto-reset behavior for all 8 thinking map types + concept maps + mind maps
+
+### Fixed - Bridge Map Layout
+- **Alternative Dimensions Separator Width**
+  - Dotted separator line for alternative dimensions now spans full diagram width
+  - Changed from centered 400px width to full-width (`leftPadding` to `width - rightPadding`)
+  - Matches tree map and brace map styling for consistency
+  - Ensures visual harmony across all three dimension-enabled map types
+
+### Technical Details
+- Files Modified:
+  - `static/js/editor/toolbar-manager.js` - Updated `handleExport()` to reset view for all diagram types (not just brace maps)
+  - `static/js/editor/toolbar-manager.js` - Updated `handleAutoComplete()` to reset view after successful diagram regeneration
+  - `static/js/renderers/flow-renderer.js` - Updated alternative dimensions separator line to span full diagram width
+- Previous Behavior (Export): Only brace maps auto-reset before export
+- Previous Behavior (Auto-Complete): No auto-reset after regeneration
+- Previous Behavior (Bridge Map Separator): Centered 400px width
+- New Behavior: All diagram types auto-reset view for both export and auto-complete operations; bridge map separator spans full width
+
+---
+
+## [2.2.4] - 2025-01-07 - Bridge Map Analogy Patterns 🌉
+
+**New Feature**: Bridge maps now display analogy relationship patterns!  
+**Pattern Labels**: Shows the relationship type used (e.g., "[Capital to Country]", "[Author to Work]")  
+**Alternative Patterns**: Displays 4-6 other analogy relationships at the bottom  
+**Enhanced AI**: Comprehensive LLM prompts with 7+ relationship pattern examples  
+**Editable**: Click pattern label to change analogy relationship type  
+**Classroom Ready**: Dark blue labels optimized for classroom projector visibility  
+**Rich Examples**: "Capital to Country", "Function to Object", "Cause to Effect", etc.
+
+**新功能**: 桥形图现在显示类比关系模式！  
+**模式标签**: 显示正在使用的关系类型（例如："[首都到国家]"、"[作者到作品]"）  
+**替代模式**: 在底部显示4-6种其他类比关系  
+**增强AI**: 包含7+关系模式示例的综合LLM提示  
+**可编辑**: 点击模式标签可更改类比关系类型  
+**课堂优化**: 深蓝色标签优化课堂投影仪可见性  
+**丰富示例**: "首都到国家"、"功能到对象"、"因到果"等
+
+---
+
+## [2.2.3] - 2025-01-07 - Tree Map Classification Dimensions Enhancement
+
+### Added - Tree Map Improvements 🌳
+- **Classification Dimension Feature**
+  - Added dimension label below main topic node (similar to brace map's decomposition dimension)
+  - Shows classification standard being used (e.g., "Classification by: Biological Taxonomy")
+  - Editable dimension label with placeholder text when empty
+  - Language-aware labels (English/Chinese) with automatic detection
+  - Always visible (even for old diagrams) - shows placeholder if dimension not set
+
+- **Alternative Dimensions Display**
+  - Shows 4-6 alternative classification dimensions at bottom of tree map
+  - Helps users understand different ways to categorize the same topic
+  - Formatted as chips/badges with separator line above
+  - Example: "Other possible dimensions: Habitat • Diet • Size • Conservation Status"
+
+- **Enhanced LLM Prompts**
+  - Comprehensive classification dimensions documentation with real-world examples
+  - 7+ common classification dimensions for various topics (Biological Taxonomy, Habitat, Diet, Size, etc.)
+  - User-specified dimension priority (respects explicit user requests)
+  - Alternative dimensions must be specific to the topic (not generic)
+  - Detailed validation checklist and format requirements
+
+- **Auto-Completion with Dimension Preference**
+  - When dimension label is changed and auto-complete is triggered, regenerates tree map using new dimension
+  - Preserves main topic while reclassifying with user-specified dimension
+  - Backend support for `dimension_preference` parameter in tree map agent
+  - Frontend sends dimension preference to API during auto-complete
+
+- **Visual Enhancements**
+  - Extended vertical connector line to go beyond dimension label for better visual flow
+  - Connector extends 40px below dimension label before T-junction
+  - Dark blue color (`#1976d2`) for dimension labels - optimized for classroom/projector visibility
+  - Matches primary blue theme while ensuring high contrast
+
+### Changed - Tree Map Agent & Renderer
+- **Agent Validation**: Now validates `dimension` and `alternative_dimensions` fields
+- **Agent Enhancement**: Preserves dimension fields during spec enhancement
+- **Renderer Display**: Added dimension label and alternative dimensions sections
+- **Prompt Quality**: Upgraded prompts from basic to comprehensive with examples
+- **Interactive Editing**: Dimension label is fully editable via properties panel
+- **Color Scheme**: Added `dimensionLabelColor` to theme (dark blue for visibility)
+
+### Technical Details
+- Files Modified:
+  - `prompts/thinking_maps.py` - Added detailed classification dimension prompts (EN & ZH)
+  - `agents/thinking_maps/tree_map_agent.py` - Enhanced validation, spec preservation, dimension preference support
+  - `agents/main_agent.py` - Extended dimension preference to tree maps
+  - `static/js/renderers/tree-renderer.js` - Added dimension label, alternatives display, extended connector lines
+  - `static/js/editor/interactive-editor.js` - Added dimension node type handling in updateTreeMapText
+  - `static/js/editor/toolbar-manager.js` - Extended auto-complete to send dimension preference for tree maps
+  - `static/js/style-manager.js` - Added dimensionLabelColor to both brace_map and tree_map themes
+
+---
+
+## [2.2.2] - 2025-01-07 - Adaptive Sizing & Canvas Improvements
 
 ### Added
 - **Adaptive Canvas Sizing System**
@@ -1362,7 +1584,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.2.0] - 2025-10-06
+## [2.2.0] - 2025-01-06
 
 ### ✨ **NEW FEATURE - Brace Map Decomposition Dimensions**
 
@@ -1553,7 +1775,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.1.3] - 2025-10-06
+## [2.1.3] - 2025-10-06
 
 ### 🚀 **PERFORMANCE OPTIMIZATION - MAJOR IMPROVEMENTS**
 
@@ -1757,7 +1979,7 @@ Added missing `viewBox` attribute to ensure consistent export across all diagram
 
 ---
 
-## [3.1.2] - Previous Release
+## [2.1.2] - 2025-10-05
 
 ### Version 3.1.2 - Documentation Consolidation 📚
 
@@ -1935,7 +2157,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.16] - 2025-10-05
+## [2.0.16] - 2025-10-05
 
 ### Added
 - **Learning Mode: Phase 4 - Multi-Angle Verification & Escalation System** 🎯
@@ -1991,7 +2213,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.15] - 2025-10-05
+## [2.0.15] - 2025-10-05
 
 ### Added
 - **Learning Mode: Phase 3 - Teaching Material Modal with Node Highlighting** 🎓
@@ -2030,7 +2252,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.14] - 2025-10-05
+## [2.0.14] - 2025-10-05
 
 ### Fixed
 - **Undo/Redo System**: Fixed completely broken undo/redo functionality
@@ -2104,7 +2326,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.13] - 2025-10-05
+## [2.0.13] - 2025-10-05
 
 ### Fixed
 - **Node Transparency Issues**: Fixed nodes showing connection lines through them when hovering
@@ -2142,7 +2364,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.12] - 2025-10-05
+## [2.0.12] - 2025-10-05
 
 ### Fixed
 - **CRITICAL: Z-Order Issues Across All Diagrams**: Connector lines appearing on top of nodes
@@ -2252,7 +2474,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.11] - 2025-10-05
+## [2.0.11] - 2025-10-05
 
 ### Added
 - **Brace Map Visual Enhancements**: Professional math-textbook style braces
@@ -2404,7 +2626,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.10] - 2025-10-05
+## [2.0.10] - 2025-10-05
 
 ### Added
 - **Complete Notification System Translation**: All editor notifications now fully support Chinese/English
@@ -2456,7 +2678,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.9] - 2025-10-04
+## [2.0.9] - 2025-10-04
 
 ### Added
 - **Complete Bilingual Support**: Full Chinese/English language support across entire editor
@@ -2558,7 +2780,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.8] - 2025-10-03
+## [2.0.8] - 2025-10-03
 
 ### Fixed
 - **Mind Map Layout Refresh**: Fixed issue where add/delete operations didn't update the canvas
@@ -2724,7 +2946,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [v3.0.7] - 2025-10-03
+## [2.0.7] - 2025-10-03
 
 ### Added
 - **Scrollable Canvas**: Canvas now supports horizontal and vertical scrolling for large diagrams
@@ -2812,7 +3034,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [3.0.6] - 2025-10-03
+## [2.0.6] - 2025-10-03
 
 ### Added - Centralized Notification System
 
@@ -2896,7 +3118,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
   - Migration guide for future development
   - Testing checklist and future enhancement ideas
 
-## [3.0.5] - 2025-10-03
+## [2.0.5] - 2025-10-03
 
 ### Added - Language Consistency & Editor Enhancements
 
@@ -3052,7 +3274,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
   - BridgeMapAgent: Changed debug to info logging (lines 179-245)
   - BraceMapAgent: Parts/subparts structure logging (lines 1224-1239)
 
-## [3.0.4] - 2025-10-02
+## [2.0.4] - 2025-10-02
 
 ### Added - Advanced Canvas Editing Tools
 
@@ -3125,7 +3347,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
   - Added "Empty" / "清空" translations
   - Maintained consistent bilingual UX
 
-## [3.0.3] - 2025-10-01
+## [2.0.3] - 2025-10-01
 
 ### Added - Loading Spinner for AI Generation
 - **Professional Loading Indicator**: Full-screen loading overlay during AI diagram generation
@@ -3148,7 +3370,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Z-index 10000 to ensure visibility above all elements
 - Backdrop blur for modern aesthetic
 
-## [3.0.2] - 2025-10-01
+## [2.0.2] - 2025-10-01
 
 ### Added - Interactive Editing Tools
 - **Property Panel**: Right-side panel for editing selected nodes
@@ -3188,7 +3410,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Real-time color picker sync with hex inputs
 - Selection-based property loading
 
-## [3.0.1] - 2025-10-01
+## [2.0.1] - 2025-10-01
 
 ### Added - AI Prompt Generation Integration
 - **AI Diagram Generation**: Prompt input now generates actual diagrams using AI and transitions to the editor
@@ -3206,7 +3428,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Proper error handling for both API failures and rendering failures
 - Success notifications show after diagram is successfully rendered
 
-## [3.0.0] - 2025-10-01
+## [2.0.0] - 2025-10-01
 
 ### Added - MindGraph Professional Interactive Editor
 - **New Interactive Editor Interface** at `/editor` endpoint
@@ -3270,7 +3492,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.6.2] - 2025-10-01
+## [1.7.2] - 2025-10-01
 
 ### 🎓 **LEARNING SHEET FUNCTIONALITY**
 
@@ -3319,7 +3541,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.6.1] - 2025-01-30
+## [1.7.1] - 2025-01-30
 
 ### 🎯 **TOPIC EXTRACTION & RENDERING IMPROVEMENTS**
 
@@ -3366,7 +3588,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Minimal - LLM calls are fast and cached
 - Improved user experience with better topic extraction accuracy
 
-## [2.6.0] - 2025-01-30
+## [1.7.0] - 2025-01-30
 
 ### 🔍 **COMPREHENSIVE END-TO-END CODE REVIEW COMPLETE**
 
@@ -3447,7 +3669,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.5.9] - 2025-01-30
+## [1.6.9] - 2025-01-30
 
 ### 🧵 **CRITICAL THREADING & CONCURRENCY FIXES**
 
@@ -3545,7 +3767,7 @@ context = await browser.new_context(...)
 - **Maintainable Architecture**: Clean, well-documented threading implementation
 - **Future-Proof Design**: Solid foundation for further concurrency improvements
 
-## [2.5.8] - 2025-01-30
+## [1.6.8] - 2025-01-30
 
 ### 🎯 **MAJOR ACHIEVEMENTS SUMMARY**
 - **🧹 Production-Ready Debug Cleanup**: Eliminated ALL visual debug text from final PNG/JPG images
@@ -3693,7 +3915,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Performance**: 3.2s faster per request
 - **Code Quality**: Cleaner, more maintainable architecture
 
-## [2.5.6] - 2025-01-30
+## [1.6.6] - 2025-01-30
 
 ### 🎯 **MAJOR ACHIEVEMENTS SUMMARY**
 - **🎨 Theme System Consolidation**: Complete centralized theme control with 30% performance improvement
@@ -3778,7 +4000,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Updated**: Progress tracking to reflect completed optimizations
 - **Streamlined**: Implementation roadmap with realistic priorities
 
-## [2.5.5] - 2025-01-30
+## [1.6.5] - 2025-01-30
 
 ### 🎯 **MAJOR ACHIEVEMENTS SUMMARY**
 - **🚀 Bridge Map System**: Completely optimized with 51.6% prompt reduction and standardized JSON format
@@ -4029,7 +4251,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - ✅ **API Integration**: Full end-to-end functionality with 6.6KB PNG generation
 - ✅ **Educational Value**: Meaningful analogies with clear 1:1 correspondences
 
-## [2.5.3] - 2025-01-29
+## [1.6.3] - 2025-01-29
 
 ### 🧠 **SMART LLM CLASSIFICATION SYSTEM**
 
@@ -4104,7 +4326,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [2.5.2] - 2025-01-27
+## [1.6.2] - 2025-01-27
 
 ### 🎯 **BRIDGE MAP RENDERING COMPLETELY FIXED**
 
@@ -4173,7 +4395,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [2.5.1] - 2025-01-27
+## [1.6.1] - 2025-01-27
 
 ### 🎨 **COLOR SCHEME STANDARDIZATION**
 
@@ -4196,7 +4418,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [2.5.0] - 2025-01-27
+## [1.6.0] - 2025-01-27
 
 ### 🎯 **FLOW MAP RENDERING COMPLETELY FIXED**
 
@@ -4252,7 +4474,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [2.4.0] - 2025-01-27
+## [1.5.0] - 2025-01-27
 
 ### 🎉 Major Milestone: Complete Diagram System
 
@@ -4328,7 +4550,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Professional Quality**: Production-ready system suitable for enterprise use
 5. **No Breaking Changes**: All existing functionality enhanced while maintaining compatibility
 
-## [2.3.9] - 2025-01-27
+## [1.4.9] - 2025-01-27
 
 ### 🚀 Major Flow Map Enhancements
 
@@ -4411,7 +4633,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Canvas Optimization**: Better canvas sizing that perfectly fits content
 5. **No Breaking Changes**: All existing functionality preserved while adding enhancements
 
-## [2.3.8] - 2025-08-10
+## [1.4.8] - 2025-08-10
 
 ### 🎯 Enhanced: Concept Map Spacing and Text Improvements
 
@@ -4427,7 +4649,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Python Cache**: Cleaned up __pycache__ directories across the project structure.
 - **Version Updates**: Updated all inline comments and documentation to version 2.3.8 for consistency.
 
-## [2.3.7] - 2025-08-09
+## [1.4.7] - 2025-08-09
 
 ### 🌳 New: Tree Map Agent and Renderer Enhancements
 
@@ -4445,7 +4667,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 - Bumped to 2.3.7.
 
-## [2.3.6] - 2025-08-09
+## [1.4.6] - 2025-08-09
 
 ### 🎯 Brace Map Finalization and Canvas Tightening
 
@@ -4462,7 +4684,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 - Bumped to 2.3.6.
 
-## [2.3.5] - 2025-01-27
+## [1.4.5] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4530,9 +4752,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Documentation**: Updated all documentation to reflect new layout system
 5. **Testing**: Comprehensive test files for validation
 
-## [2.3.4] - 2025-01-27
-
-## [2.3.4] - 2025-01-27
+## [1.4.4] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4599,7 +4819,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Rendering Optimization**: Error-free rendering with proper text centering
 5. **Canvas Optimization**: Dynamic sizing with watermark space reservation
 
-## [2.3.3] - 2025-01-27
+## [1.4.3] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4674,7 +4894,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Canvas Optimization**: Better canvas utilization with reduced blank space
 5. **Documentation**: Updated architecture documentation with development guidelines
 
-## [2.3.2] - 2025-01-27
+## [1.4.2] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4801,7 +5021,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [2.3.1] - 2025-01-27
+## [1.4.1] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4883,7 +5103,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [2.3.0] - 2025-01-27
+## [1.4.0] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4905,7 +5125,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Bridge Map Guide**: Updated documentation to reflect the enhanced bridge map visualization
 - **Version Update**: Updated project version to 2.3.0 across all documentation files
 
-## [2.2.0] - 2025-01-27
+## [1.3.0] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -4972,7 +5192,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Error Recovery**: Improved error handling and recovery for new diagram types
 - **Validation**: Enhanced validation ensures data integrity for all diagram specifications
 
-## [2.1.0] - 2025-01-27
+## [1.2.0] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -5010,7 +5230,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Error Recovery**: Improved error handling in rendering pipeline
 - **Validation**: Enhanced validation of bubble map specifications
 
-## [2.0.0] - 2025-07-26
+## [1.1.0] - 2025-07-26
 
 ### 🚀 Major Improvements
 
