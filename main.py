@@ -27,6 +27,7 @@ import signal
 import asyncio
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from services.temp_image_cleaner import start_cleanup_scheduler
 
 # Load environment variables
 load_dotenv()
@@ -312,6 +313,16 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to initialize LLM Service: {e}")
     
+    # Start temp image cleanup task
+    cleanup_task = None
+    try:
+        cleanup_task = asyncio.create_task(start_cleanup_scheduler(interval_hours=1))
+        if worker_id == '0' or not worker_id:
+            logger.info("Temp image cleanup scheduler started")
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
+            logger.warning(f"Failed to start cleanup scheduler: {e}")
+    
     # Yield control to application
     try:
         yield
@@ -321,6 +332,16 @@ async def lifespan(app: FastAPI):
         
         # Give ongoing requests a brief moment to complete
         await asyncio.sleep(0.1)
+        
+        # Stop cleanup task
+        if cleanup_task:
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
+            if worker_id == '0' or not worker_id:
+                logger.info("Temp image cleanup scheduler stopped")
         
         # Cleanup LLM Service
         try:

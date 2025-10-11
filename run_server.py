@@ -112,7 +112,9 @@ def run_uvicorn():
         # For async servers: 1-2 workers per CPU core (NOT 2x+1 like sync servers!)
         # Each worker can handle 1000s of concurrent connections via async event loop
         # Allow override via UVICORN_WORKERS env var for fine-tuning
-        workers = int(os.getenv('UVICORN_WORKERS', min(multiprocessing.cpu_count(), 4)))
+        # NOTE: Use single worker on Windows due to Playwright multi-process compatibility issues
+        default_workers = 1 if sys.platform == 'win32' else min(multiprocessing.cpu_count(), 4)
+        workers = int(os.getenv('UVICORN_WORKERS', default_workers))
         
         # Display fancy ASCII art banner
         print()

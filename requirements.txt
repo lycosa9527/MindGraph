@@ -60,6 +60,7 @@ python-dotenv>=1.0.1
 # ASYNC AND CONCURRENCY (Required for Production)
 # ============================================================================
 nest_asyncio>=1.6.0
+aiofiles>=24.1.0    # Async file I/O for temp image storage
 
 # ============================================================================
 # BROWSER AUTOMATION (Required for Production - PNG generation)
