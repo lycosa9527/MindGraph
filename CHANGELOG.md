@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.8.1] - 2025-01-12 - Hotfix: Renderer Loading Bug
+
+### Fixed
+
+- **Critical: Duplicate Variable Declaration Breaking Canvas Display**
+  - **Location**: `static/js/renderers/bubble-map-renderer.js` line 338
+  - **Problem**: `backgroundColor` variable declared twice (lines 266 and 338) causing JavaScript SyntaxError
+  - **Symptom**: Renderers failed to load, canvas remained blank, error: "renderCircleMap function not found"
+  - **Root Cause**: When adding circle map background fix in v4.7.0, accidentally declared `backgroundColor` twice in same scope
+  - **Solution**: Removed duplicate declaration at line 338, reuse existing variable from line 266
+  - **Impact**: All diagram types now load correctly, canvas displays properly
+  - **Affected**: circle_map, bubble_map, double_bubble_map (all using bubble-map-renderer.js)
+
+---
+
 ## [4.8.0] - 2025-01-11 - Configurable AI Assistant Branding
 
 ### Added
