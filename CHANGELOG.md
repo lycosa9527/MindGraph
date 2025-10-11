@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.7.0] - 2025-01-11 - Circle Map Background Consistency Fix
+
+### Fixed
+
+- **Circle Map Missing Background in PNG Exports**
+  - **Location**: `static/js/renderers/bubble-map-renderer.js` lines 265-267, 333-341
+  - **Problem**: Circle maps had white/transparent background in PNG exports while all other diagrams had grey `#f5f5f5` background
+  - **Root Cause**: `renderCircleMap` function was missing:
+    1. Container background style (`d3.select('#d3-container').style('background-color', ...)`)
+    2. SVG background rectangle (`svg.append('rect')` with fill color)
+  - **Solution**: Added both container and SVG background with default `#f5f5f5` grey color
+  - **Impact**: All diagrams now have consistent grey background in PNG exports
+  - **Verified**: bubble_map ✅, double_bubble_map ✅, circle_map ✅, tree_map ✅, mind_map ✅, concept_map ✅
+
+---
+
 ## [4.6.9] - 2025-01-11 - DingTalk Markdown Format Update
 
 ### Changed

@@ -262,6 +262,10 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         padding = 40;
     }
     
+    // Apply background to container for consistency with other maps
+    const backgroundColor = theme?.background || '#f5f5f5';
+    d3.select('#d3-container').style('background-color', backgroundColor);
+    
     const THEME = {
         outerCircleFill: 'none',
         outerCircleStroke: '#666666',
@@ -329,6 +333,16 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('height', height)
         .attr('viewBox', `${minX} ${minY} ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMinYMin meet');
+    
+    // Add background rectangle to cover entire SVG area (consistency with other maps)
+    const backgroundColor = (theme && theme.background) ? theme.background : '#f5f5f5';
+    svg.append('rect')
+        .attr('x', minX)
+        .attr('y', minY)
+        .attr('width', width)
+        .attr('height', height)
+        .attr('fill', backgroundColor)
+        .attr('stroke', 'none');
     
     // Draw outer circle first (background boundary)
     svg.append('circle')
