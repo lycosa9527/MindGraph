@@ -96,8 +96,10 @@ async with BrowserContextManager() as context:
 - [ ] **STEP 3:** Add three new endpoints to `routers/api.py` (with async file I/O)
 - [ ] **STEP 4:** Create temp image cleanup service (with async file I/O)
 - [ ] **STEP 5:** Update lifespan in `main.py` to include cleanup task
-- [ ] **STEP 6:** Test all endpoints
+- [ ] **STEP 6:** Test all endpoints (use `/debug` UI for visual testing)
 - [ ] **STEP 7:** Update documentation
+
+**Testing Note:** The debug interface at `/debug` (served by `routers/pages.py`) is already configured to test `/api/generate_png`. No changes needed to `templates/debug.html`.
 
 ---
 
@@ -848,7 +850,51 @@ curl -X POST http://localhost:9527/api/export_png \
 - Valid PNG file created
 - No errors about unpacking tuple
 
-### Test 6.2: Test `/api/generate_png`
+### Test 6.2: Test `/api/generate_png` via Debug UI (Recommended)
+
+**URL:** Navigate to `http://localhost:9527/debug`
+
+**Purpose:** Test the `/api/generate_png` endpoint using the built-in debug interface
+
+**Steps:**
+1. Open `http://localhost:9527/debug` in your browser
+2. Enter a prompt (e.g., "Create a mind map about machine learning")
+3. Select language (English or Chinese)
+4. Click "Generate Diagram"
+5. Wait for PNG to appear
+6. Use "Download PNG" or "Open in New Tab" buttons to verify
+
+**Expected Result:**
+- PNG image displayed in the page
+- Download and open-in-new-tab buttons work correctly
+- Image is valid PNG (check by opening)
+- Image size > 50KB
+- History panel shows recent prompts
+
+**Debug Console Verification:**
+- Open browser console (F12)
+- Look for "✅ PNG generation successful" messages
+- Look for "✅ Image loaded successfully" messages
+- No error messages
+
+**Files:**
+- `templates/debug.html` - Debug interface (already exists, no changes needed)
+- `routers/pages.py` - Serves debug page via `/debug` route (line 41-48)
+
+**Note:** This is the primary testing interface for `/api/generate_png`. No changes are required to `debug.html` as it's already correctly configured to call the endpoint.
+
+**debug.html Compatibility Verified:**
+- ✅ Sends correct payload: `{ prompt: string, language: "zh"|"en" }`
+- ✅ Language values match Language enum exactly (ZH="zh", EN="en")
+- ✅ Missing optional fields (llm, width, height) use defaults correctly
+- ✅ Response handling correct (expects blob, displays PNG inline)
+- ✅ Error handling production-ready (HTTP status + exception handling)
+- ✅ Download and open-in-new-tab buttons implemented
+- ✅ History panel saves recent prompts
+
+---
+
+### Test 6.2a: Test `/api/generate_png` via curl
 
 **Command:**
 ```bash
