@@ -84,38 +84,48 @@ function addWatermark(svg, theme = null) {
         padding: watermarkConfig.padding || 10
     };
     
-    // Get SVG dimensions from the SVG element itself, not from content bbox
+    // Get SVG dimensions AND viewBox offsets (critical for bubble/circle maps)
     const svgNode = svg.node();
-    const svgWidth = svgNode.getAttribute('width') || svgNode.getAttribute('viewBox')?.split(' ')[2] || 800;
-    const svgHeight = svgNode.getAttribute('height') || svgNode.getAttribute('viewBox')?.split(' ')[3] || 600;
+    let width, height, offsetX = 0, offsetY = 0;
     
-    // Parse dimensions if they're strings
-    const width = parseFloat(svgWidth);
-    const height = parseFloat(svgHeight);
+    // Try to get viewBox first (most reliable and handles offsets)
+    const viewBox = svgNode.getAttribute('viewBox');
+    if (viewBox) {
+        const parts = viewBox.split(' ').map(Number);
+        offsetX = parts[0];  // minX offset (can be negative for bubble/circle maps)
+        offsetY = parts[1];  // minY offset (can be negative for bubble/circle maps)
+        width = parts[2];    // viewBox width
+        height = parts[3];   // viewBox height
+    } else {
+        // Fallback to width/height attributes if no viewBox
+        width = parseFloat(svgNode.getAttribute('width')) || 800;
+        height = parseFloat(svgNode.getAttribute('height')) || 600;
+        // offsetX and offsetY remain 0
+    }
     
-    // Calculate position based on configuration
+    // Calculate position based on configuration, accounting for viewBox offset
     let x, y, textAnchor;
     
     switch (config.position) {
         case 'top-left':
-            x = config.padding;
-            y = config.padding + 12;
+            x = offsetX + config.padding;
+            y = offsetY + config.padding + 12;
             textAnchor = 'start';
             break;
         case 'top-right':
-            x = width - config.padding;
-            y = config.padding + 12;
+            x = offsetX + width - config.padding;
+            y = offsetY + config.padding + 12;
             textAnchor = 'end';
             break;
         case 'bottom-left':
-            x = config.padding;
-            y = height - config.padding;
+            x = offsetX + config.padding;
+            y = offsetY + height - config.padding;
             textAnchor = 'start';
             break;
         case 'bottom-right':
         default:
-            x = width - config.padding;
-            y = height - config.padding;
+            x = offsetX + width - config.padding;
+            y = offsetY + height - config.padding;
             textAnchor = 'end';
             break;
     }

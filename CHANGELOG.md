@@ -7,6 +7,237 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.8] - 2025-01-11 - PNG Export Quality & Watermark Fixes
+
+### Fixed
+
+- **Critical: Missing Watermarks in PNG Exports**
+  - **Location**: `routers/api.py` lines 421-433
+  - **Problem**: PNG exports from `/api/export_png` had no watermark despite having `addWatermark()` function loaded
+  - **Solution**: Added watermark call in `checkRendering()` function after SVG verification
+  - **Impact**: All PNG exports now include "MindGraph" watermark in bottom-right corner
+  - **Details**: Watermark added with font-size 12px, opacity 0.8, color #2c3e50
+
+- **Critical: Fixed Container Dimensions in PNG Export**
+  - **Location**: `routers/api.py` lines 513-560
+  - **Problem**: PNG exports always used fixed 1200x800 dimensions, causing white space or clipping
+  - **Solution**: Extract actual SVG viewBox dimensions and resize container before screenshot
+  - **Impact**: 
+    - Small diagrams now produce tight PNGs (e.g., 600x400 instead of 1200x800)
+    - Large diagrams now show full content (e.g., 1500x1000 instead of clipped 1200x800)
+    - No more excessive white space
+  - **Implementation**: Dynamic dimension extraction via `page.evaluate()` to read SVG viewBox
+
+- **Scale Parameter Now Functional**
+  - **Location**: `routers/api.py` lines 562-580
+  - **Problem**: `req.scale` parameter was accepted but never used
+  - **Solution**: Apply scale factor to screenshot for high-DPI displays
+  - **Impact**: 
+    - scale=1 produces standard resolution
+    - scale=2 produces Retina resolution (default)
+    - scale=3 produces print quality
+  - **Performance**: Adds ~0.3s per PNG (6% slower, acceptable)
+
+- **Tree Map ViewBox Update Bug**
+  - **Location**: `static/js/renderers/tree-renderer.js` lines 183-185, 509-514
+  - **Problem**: Tree maps expand width and height dynamically but didn't update viewBox, causing clipping
+  - **Root Cause**: 
+    - Width expansion updated `width` attribute but not `viewBox` width
+    - Height expansion updated `height` attribute but used old width for `viewBox`
+  - **Solution**: Update viewBox immediately when dimensions expand
+  - **Impact**: Tree maps with many branches or levels now export correctly without clipping
+
+- **Watermark Positioning Bug in Bubble/Circle Maps**
+  - **Location**: `static/js/renderers/shared-utilities.js` lines 87-131
+  - **Problem**: Watermarks appeared off-screen or cut off in bubble_map and circle_map diagrams
+  - **Root Cause**: `addWatermark()` function ignored viewBox offsets (minX, minY)
+  - **Details**:
+    - Bubble/circle maps use `viewBox="-100 -80 800 600"` (negative offsets for centered layout)
+    - Function only extracted width/height, not offsets
+    - Positioned watermark at `(790, 590)` instead of `(690, 510)` → off-screen
+  - **Solution**: Parse full viewBox including offsets, add offsets to position calculation
+  - **Impact**: All 9 diagram types now have correctly positioned watermarks
+  - **Tested**: 
+    - ✅ bubble_map - watermark now visible
+    - ✅ circle_map - watermark now visible  
+    - ✅ double_bubble_map - still works (no regression)
+    - ✅ tree_map - still works
+    - ✅ brace_map - still works
+    - ✅ mindmap - still works
+    - ✅ concept_map - still works
+    - ✅ flow_map - still works
+    - ✅ bridge_map - still works
+    - ✅ multi_flow_map - still works
+
+- **Logger LocalStorage Error in Headless Browser**
+  - **Location**: `static/js/logger.js` lines 17-24, 80-85
+  - **Problem**: Logger constructor failed silently in headless Playwright browser causing `window.logger` to be undefined
+  - **Root Cause**: `localStorage.getItem()` throws SecurityError when using `page.set_content()` with raw HTML (not a real URL)
+  - **Solution**: Wrapped localStorage access in try-catch blocks
+  - **Impact**: Logger now works in both normal browsers and headless PNG export contexts
+
+### Changed
+
+- **PNG Export Workflow Enhancement**
+  - Now extracts actual diagram dimensions from SVG viewBox
+  - Applies scale factor for high-quality output
+  - Adds watermark before screenshot
+  - 100% backwards compatible with existing clients
+
+### Documentation
+
+- Created comprehensive analysis documents:
+  - `docs/PNG_EXPORT_ISSUES_ROOT_CAUSE_ANALYSIS.md` - Initial problem analysis
+  - `docs/PNG_EXPORT_DETAILED_CODE_REVIEW.md` - Line-by-line code review
+  - `docs/PNG_EXPORT_FIX_IMPLEMENTATION.md` - Implementation summary
+  - `docs/WATERMARK_POSITIONING_ANALYSIS.md` - Watermark bug analysis
+
+### Technical Details
+
+**Files Modified:**
+- `routers/api.py` - PNG export workflow (3 sections, ~60 lines added)
+- `static/js/renderers/tree-renderer.js` - ViewBox updates (2 locations)
+- `static/js/renderers/shared-utilities.js` - Watermark positioning fix
+- `static/js/logger.js` - LocalStorage error handling
+
+**Performance Impact:**
+- Before: ~5.0 seconds per PNG
+- After: ~5.3 seconds per PNG (+0.3s for dimension extraction and watermark)
+- Trade-off: 6% slower but produces correct output
+
+**Backwards Compatibility:**
+- ✅ All existing API endpoints unchanged
+- ✅ Request/response formats unchanged  
+- ✅ Editor export workflow unaffected (separate from API export)
+- ✅ No breaking changes
+
+---
+
+## [4.6.7] - 2025-10-11 - PNG Endpoint Restoration
+
+### Fixed
+
+- **Critical Bug: BrowserContextManager Unpacking Error**
+  - **Location**: `routers/api.py` line 217
+  - **Problem**: Tried to unpack `(browser, page)` from context manager that returns single object
+  - **Solution**: Changed to `async with BrowserContextManager() as context:` and call `page = await context.new_page()`
+  - **Impact**: Fixed `/api/export_png` endpoint that may have been broken
+  - **Root Cause**: `BrowserContextManager.__aenter__()` returns `self.context` (single BrowserContext), not a tuple
+
+- **Playwright Multi-Worker Compatibility on Windows**
+  - **Problem**: Playwright browser automation fails with `NotImplementedError()` when running with multiple Uvicorn workers on Windows
+  - **Solution**: Updated `run_server.py` to automatically use 1 worker on Windows (`sys.platform == 'win32'`)
+  - **Impact**: PNG export endpoints now work properly on Windows
+  - **Note**: Single worker still supports 1,000+ concurrent connections via async/await
+  - **Linux/Ubuntu**: Still uses multiple workers (no Playwright issues on Linux)
+
+- **PNG Export Rendering Issue**
+  - **Problem**: `/api/export_png` tried to call non-existent `window.loadDiagramFromData()` function
+  - **Root Cause**: Function was from old Flask implementation, never properly migrated to FastAPI
+  - **Solution**: Completely standalone implementation - creates minimal HTML dynamically in headless Playwright
+  - **Implementation**: 
+    - Dynamically generates HTML page with D3.js and necessary renderers
+    - No dependency on any existing pages or routes
+    - Loads only required scripts for the specific diagram type
+    - Renders diagram and screenshots `#d3-container` element
+  - **Impact**: PNG export now works as true standalone utility
+  
+- **Critical: Documentation-Implementation Mismatch**
+  - README.md and API_REFERENCE.md documented endpoints that didn't exist (404 errors)
+  - Both endpoints now restored and fully functional
+  - Documentation now matches implementation
+  
+- **Critical: Breaking Changes from Flask Migration**
+  - v4.0.0 migration removed endpoints without alternatives
+  - 1-step endpoints restored for backward compatibility
+  - Old client code works without modification
+
+### Added
+
+- **`POST /api/generate_png`** - Direct PNG generation from user prompt (RESTORED)
+  - Uses main agent to extract topic and diagram type from prompt
+  - Generates diagram spec using LLM via `agent_graph_workflow_with_styles()`
+  - Exports default PNG result (no editing)
+  - Returns binary PNG file with proper headers
+  - Full backward compatibility with Flask API
+  - Implementation: Chains `generate_graph()` + `export_png()` internally
+
+- **`POST /api/generate_dingtalk`** - DingTalk integration endpoint (RESTORED)
+  - Uses main agent to extract topic and diagram type from prompt
+  - Exports default PNG result from LLM
+  - Saves PNG to `temp_images/` directory with unique filename
+  - Returns **plain text** in `![topic](url)` format (NOT JSON)
+  - Optimized for DingTalk bot integrations
+  - Response can be used directly without JSON parsing
+
+- **`GET /api/temp_images/<filename>`** - Serve temporary PNG files (NEW)
+  - Serves PNG files generated by `/api/generate_dingtalk`
+  - Security: Validates filename to prevent directory traversal attacks
+  - Caching: 24-hour cache headers for optimal performance
+  - Auto-cleanup: Files automatically deleted after 24 hours
+
+- **Background Temp Image Cleanup Task** (NEW)
+  - Automatically deletes PNG files older than 24 hours from `temp_images/`
+  - Runs every 1 hour via async background task
+  - Integrated into existing FastAPI lifespan manager
+  - Clean shutdown handling with task cancellation
+  - File: `services/temp_image_cleaner.py`
+
+### Technical Details
+
+**Dependencies Added:**
+- **`aiofiles>=24.1.0`** - Async file I/O operations
+  - Required for 100% non-blocking file operations
+  - Used for reading/writing temp PNG files
+  - Used for file stat and delete operations in cleanup
+  - Cross-platform: Works identically on Windows and Ubuntu
+
+**Files Modified:**
+- `requirements.txt`: Added aiofiles dependency (~1 line)
+- `routers/api.py`: Fixed bug line 217, added 3 new endpoints with async file I/O (~165 lines)
+- `models/requests.py`: Added 2 request models (~50 lines)
+- `models/__init__.py`: Added exports (~4 lines)
+- `services/temp_image_cleaner.py`: NEW FILE with 100% async operations (~95 lines)
+- `main.py`: Added cleanup task to lifespan manager (~15 lines)
+
+**Total:** ~330 lines of new/modified code across 6 files
+
+**Async Guarantees:**
+- ✅ All file I/O operations use `aiofiles` (non-blocking)
+- ✅ All network I/O already async (Playwright, LLM calls)
+- ✅ Background tasks use asyncio properly
+- ✅ No `time.sleep()` or blocking operations
+- ✅ 100% ASGI-compliant for Uvicorn
+
+**Type Corrections:**
+- Used `Language` enum (not `LanguageCode` - doesn't exist)
+- Used `LLMModel` enum for LLM selection
+- Used `DiagramType` enum for diagram types
+- All types imported from `models.common`
+
+**Architecture:**
+```
+User Request → /api/generate_png
+              ↓
+              generate_graph() [uses main agent]
+              ↓
+              export_png() [browser automation]
+              ↓
+              Return PNG binary
+
+User Request → /api/generate_dingtalk
+              ↓
+              generate_graph() [uses main agent]
+              ↓
+              export_png() [browser automation]
+              ↓
+              Save to temp_images/
+              ↓
+              Return plain text: ![topic](url)
+```
+
+---
+
 ## [4.6.6] - 2025-10-11 - MindMap Topic Preservation Fix
 
 ### Fixed

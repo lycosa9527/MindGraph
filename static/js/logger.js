@@ -13,7 +13,15 @@ class Logger {
         // Check if debug mode is enabled via URL parameter or localStorage
         const urlParams = new URLSearchParams(window.location.search);
         const urlDebug = urlParams.get('debug');
-        const storedDebug = localStorage.getItem('mindgraph_debug');
+        
+        // Try to access localStorage (may not be available in headless contexts)
+        let storedDebug = null;
+        try {
+            storedDebug = localStorage.getItem('mindgraph_debug');
+        } catch (e) {
+            // localStorage not available (e.g., headless browser with raw HTML)
+            storedDebug = null;
+        }
         
         // Debug mode enabled if: ?debug=1 in URL or localStorage is 'true'
         this.debugMode = urlDebug === '1' || storedDebug === 'true';
@@ -68,7 +76,13 @@ class Logger {
     setDebugMode(enabled) {
         this.debugMode = enabled;
         this.minLevel = (enabled || this.verboseMode) ? this.levels.DEBUG : this.levels.WARN;
-        localStorage.setItem('mindgraph_debug', enabled ? 'true' : 'false');
+        
+        // Try to save to localStorage (may not be available in headless contexts)
+        try {
+            localStorage.setItem('mindgraph_debug', enabled ? 'true' : 'false');
+        } catch (e) {
+            // localStorage not available
+        }
         
         if (enabled) {
             console.log('%c[MindGraph] Debug mode ENABLED', 'color: #4caf50; font-weight: bold;');

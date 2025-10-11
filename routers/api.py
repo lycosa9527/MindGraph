@@ -15,9 +15,12 @@ import logging
 import os
 import time
 import asyncio
+import uuid
+from pathlib import Path
+import aiofiles
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, Response, PlainTextResponse, FileResponse
 
 # Import Pydantic models
 from models import (
@@ -25,6 +28,8 @@ from models import (
     GenerateRequest,
     GenerateResponse,
     ExportPNGRequest,
+    GeneratePNGRequest,
+    GenerateDingTalkRequest,
     FrontendLogRequest,
     FrontendLogBatchRequest,
     Messages,
@@ -195,6 +200,10 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
     """
     Export diagram as PNG using Playwright browser automation (async).
     
+    This is a STANDALONE endpoint - takes diagram data and renders PNG.
+    Creates minimal HTML dynamically in headless browser with D3.js and renderers.
+    No dependency on any existing pages or routes.
+    
     This endpoint is already async-compatible (BrowserContextManager uses async_playwright).
     """
     
@@ -212,29 +221,363 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
     
     logger.debug(f"PNG export request - diagram_type: {diagram_type}, data keys: {list(diagram_data.keys())}")
     
+    # VERBOSE LOGGING: Complete diagram data from LLM
+    logger.info("="*80)
+    logger.info("VERBOSE PNG EXPORT - Complete Diagram Data:")
+    logger.info(f"Diagram Type: {diagram_type}")
+    logger.info(f"Diagram Data Keys: {list(diagram_data.keys())}")
+    logger.info("Complete Diagram Data JSON:")
+    logger.info(json.dumps(diagram_data, indent=2, ensure_ascii=False))
+    
+    # Check specific important fields
+    if 'topic' in diagram_data:
+        logger.info(f"Topic: {diagram_data['topic']}")
+    if 'attributes' in diagram_data:
+        logger.info(f"Number of attributes: {len(diagram_data['attributes'])}")
+        for i, attr in enumerate(diagram_data.get('attributes', [])):
+            logger.info(f"  Attribute {i}: {attr}")
+    if 'nodes' in diagram_data:
+        logger.info(f"Number of nodes: {len(diagram_data['nodes'])}")
+        for i, node in enumerate(diagram_data.get('nodes', [])):
+            logger.info(f"  Node {i}: {node}")
+    if '_layout' in diagram_data:
+        logger.info(f"Layout info: {diagram_data['_layout']}")
+    if '_recommended_dimensions' in diagram_data:
+        logger.info(f"Recommended dimensions: {diagram_data['_recommended_dimensions']}")
+    if '_metadata' in diagram_data:
+        logger.info(f"Metadata: {diagram_data['_metadata']}")
+    
+    logger.info(f"Request width: {req.width}, height: {req.height}, scale: {req.scale}")
+    logger.info("="*80)
+    
     try:
         # Use async browser manager
-        async with BrowserContextManager() as (browser, page):
+        async with BrowserContextManager() as context:
+            page = await context.new_page()
             logger.debug("Browser context created successfully")
             
-            # Navigate to editor page
-            editor_url = f"http://localhost:{os.getenv('PORT', '5000')}/editor"
-            await page.goto(editor_url, wait_until='networkidle', timeout=30000)
+            # Get server URL
+            port = os.getenv('PORT', '5000')
+            base_url = f"http://localhost:{port}"
             
-            logger.debug(f"Navigated to {editor_url}")
+            logger.info(f"Creating HTML with base_url: {base_url}")
+            logger.info(f"Container dimensions: {req.width or 1200}x{req.height or 800}")
             
-            # Inject diagram data and render
-            await page.evaluate(f"""
-                window.loadDiagramFromData({json.dumps(diagram_data)}, '{diagram_type}');
+            # Create minimal HTML page with rendering infrastructure
+            html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="{base_url}/static/js/d3.min.js"></script>
+</head>
+<body>
+    <div id="d3-container" style="width: {req.width or 1200}px; height: {req.height or 800}px;"></div>
+    <script>
+        window.renderingComplete = false;
+        window.renderingError = null;
+        
+        // Load theme config, style manager, logger, and renderer
+        const scripts = [
+            '{base_url}/static/js/theme-config.js',
+            '{base_url}/static/js/style-manager.js',
+            '{base_url}/static/js/logger.js',
+            '{base_url}/static/js/renderers/shared-utilities.js',
+            '{base_url}/static/js/renderers/renderer-dispatcher.js'
+        ];
+        
+        // Add diagram-specific renderer
+        const rendererMap = {{
+            // Thinking Maps
+            'bubble_map': 'bubble-map-renderer.js',
+            'double_bubble_map': 'bubble-map-renderer.js',
+            'circle_map': 'bubble-map-renderer.js',
+            'tree_map': 'tree-renderer.js',
+            'flow_map': 'flow-renderer.js',
+            'multi_flow_map': 'flow-renderer.js',
+            'brace_map': 'brace-renderer.js',
+            'bridge_map': 'flow-renderer.js',
+            'flowchart': 'flow-renderer.js',
+            // Mind Maps & Concept Maps
+            'mindmap': 'mind-map-renderer.js',
+            'mind_map': 'mind-map-renderer.js',
+            'concept_map': 'concept-map-renderer.js'
+        }};
+        
+        const diagramType = '{diagram_type}';
+        if (rendererMap[diagramType]) {{
+            scripts.push('{base_url}/static/js/renderers/' + rendererMap[diagramType]);
+        }}
+        
+        // Load scripts sequentially
+        async function loadScripts() {{
+            for (const src of scripts) {{
+                await new Promise((resolve, reject) => {{
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = () => {{
+                        console.log('Loaded:', src);
+                        resolve();
+                    }};
+                    script.onerror = (err) => {{
+                        console.error('Failed to load:', src);
+                        reject(err);
+                    }};
+                    document.head.appendChild(script);
+                }});
+                // Small delay between scripts to ensure execution
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }}
+        }}
+        
+        // Render diagram after scripts load
+        loadScripts()
+            .then(() => {{
+                console.log('All scripts loaded, starting render...');
+                console.log('renderGraph available:', typeof renderGraph);
+                
+                const diagramData = {json.dumps(diagram_data)};
+                console.log('='.repeat(80));
+                console.log('VERBOSE: Complete Diagram Data in Browser:');
+                console.log('Diagram type:', '{diagram_type}');
+                console.log('Diagram data keys:', Object.keys(diagramData));
+                console.log('Topic:', diagramData.topic);
+                if (diagramData.attributes) {{
+                    console.log('Attributes count:', diagramData.attributes.length);
+                    diagramData.attributes.forEach((attr, i) => {{
+                        console.log(`  Attribute ${{i}}:`, attr);
+                    }});
+                }}
+                if (diagramData.nodes) {{
+                    console.log('Nodes count:', diagramData.nodes.length);
+                    diagramData.nodes.forEach((node, i) => {{
+                        console.log(`  Node ${{i}}:`, node);
+                    }});
+                }}
+                console.log('Layout:', diagramData._layout);
+                console.log('Recommended dimensions:', diagramData._recommended_dimensions);
+                console.log('Metadata:', diagramData._metadata);
+                console.log('='.repeat(80));
+                
+                if (typeof renderGraph !== 'function') {{
+                    throw new Error('renderGraph function not available');
+                }}
+                
+                // Render the diagram (may be async)
+                console.log('Calling renderGraph with:');
+                console.log('  - Type:', '{diagram_type}');
+                console.log('  - Data:', diagramData);
+                console.log('  - Theme:', null);
+                console.log('  - Dimensions:', null);
+                
+                const renderResult = renderGraph('{diagram_type}', diagramData, null, null);
+                console.log('renderGraph returned:', renderResult);
+                console.log('Return value type:', typeof renderResult);
+                console.log('Is promise?', renderResult && typeof renderResult.then === 'function');
+                
+                // Check if result is a promise
+                if (renderResult && typeof renderResult.then === 'function') {{
+                    console.log('renderGraph returned a promise, waiting...');
+                    renderResult.then(() => {{
+                        checkRendering();
+                    }}).catch(err => {{
+                        console.error('renderGraph promise rejected:', err);
+                        window.renderingError = err.toString();
+                        window.renderingComplete = true;
+                    }});
+                }} else {{
+                    // Not a promise, wait a bit and check
+                    console.log('renderGraph did not return a promise, waiting 2s...');
+                    setTimeout(checkRendering, 2000);
+                }}
+                
+                function checkRendering() {{
+                    console.log('='.repeat(80));
+                    console.log('CHECKING RENDERING RESULTS:');
+                    const container = document.getElementById('d3-container');
+                    console.log('Container found:', !!container);
+                    
+                    if (container) {{
+                        console.log('Container dimensions:', container.offsetWidth, 'x', container.offsetHeight);
+                        console.log('Container innerHTML length:', container.innerHTML.length);
+                        console.log('Container children count:', container.children.length);
+                        
+                        const svg = container.querySelector('svg');
+                        console.log('SVG found:', !!svg);
+                        
+                        if (svg) {{
+                            console.log('SVG dimensions:', svg.getAttribute('width'), 'x', svg.getAttribute('height'));
+                            console.log('SVG viewBox:', svg.getAttribute('viewBox'));
+                            console.log('SVG children count:', svg.children.length);
+                            console.log('SVG child tags:', Array.from(svg.children).map(c => c.tagName).join(', '));
+                            
+                            // Check for specific elements
+                            const circles = svg.querySelectorAll('circle');
+                            const rects = svg.querySelectorAll('rect');
+                            const texts = svg.querySelectorAll('text');
+                            const paths = svg.querySelectorAll('path');
+                            console.log('SVG elements - circles:', circles.length, 'rects:', rects.length, 'texts:', texts.length, 'paths:', paths.length);
+                            
+                            // Add watermark to exported PNG
+                            console.log('Adding watermark...');
+                            if (typeof addWatermark === 'function' && typeof d3 !== 'undefined') {{
+                                try {{
+                                    const svgD3 = d3.select(svg);
+                                    addWatermark(svgD3, null);
+                                    console.log('Watermark added successfully');
+                                }} catch (err) {{
+                                    console.error('Error adding watermark:', err);
+                                }}
+                            }} else {{
+                                console.warn('addWatermark or d3 not available - watermark skipped');
+                            }}
+                        }} else {{
+                            console.log('NO SVG FOUND!');
+                            console.log('Container innerHTML (first 500 chars):', container.innerHTML.substring(0, 500));
+                            console.log('Container children:', Array.from(container.children).map(c => c.tagName).join(', '));
+                        }}
+                    }} else {{
+                        console.log('NO CONTAINER FOUND!');
+                    }}
+                    console.log('='.repeat(80));
+                    window.renderingComplete = true;
+                }}
+            }})
+            .catch(err => {{
+                console.error('Rendering error:', err);
+                window.renderingError = err.toString();
+                window.renderingComplete = true;
+            }});
+    </script>
+</body>
+</html>
+            """
+            
+            # Set page content
+            logger.info("Setting page content...")
+            logger.debug(f"HTML content length: {len(html_content)} characters")
+            await page.set_content(html_content)
+            logger.info("Page content set successfully")
+            
+            # Capture console logs for debugging
+            page.on("console", lambda msg: logger.debug(f"[Browser Console] {msg.type}: {msg.text}"))
+            
+            # Wait for rendering to complete by polling the flag
+            max_wait = 10  # seconds
+            waited = 0
+            while waited < max_wait:
+                rendering_complete = await page.evaluate("window.renderingComplete")
+                if rendering_complete:
+                    break
+                await asyncio.sleep(0.5)
+                waited += 0.5
+            
+            # Check if there was an error
+            rendering_error = await page.evaluate("window.renderingError")
+            if rendering_error:
+                logger.error(f"Rendering error in browser: {rendering_error}")
+                raise Exception(f"Browser rendering failed: {rendering_error}")
+            
+            # Verify SVG was created
+            svg_exists = await page.evaluate("!!document.querySelector('#d3-container svg')")
+            logger.info(f"SVG exists check: {svg_exists}")
+            
+            if not svg_exists:
+                logger.error("="*80)
+                logger.error("NO SVG ELEMENT FOUND!")
+                
+                # Get detailed info from browser
+                container_info = await page.evaluate("""
+                    (() => {
+                        const container = document.getElementById('d3-container');
+                        return {
+                            found: !!container,
+                            innerHTML: container ? container.innerHTML : null,
+                            childCount: container ? container.children.length : 0,
+                            children: container ? Array.from(container.children).map(c => c.tagName) : []
+                        };
+                    })()
+                """)
+                logger.error(f"Container info: {json.dumps(container_info, indent=2)}")
+                
+                # Get page HTML for debugging
+                page_html = await page.content()
+                logger.error(f"Full page HTML length: {len(page_html)}")
+                logger.error(f"Page HTML (first 1000 chars):\n{page_html[:1000]}")
+                logger.error("="*80)
+                
+                raise Exception("No SVG element created - rendering may have failed")
+            
+            logger.debug("Rendering completed successfully, extracting dimensions")
+            
+            # Extract actual SVG dimensions from viewBox
+            svg_dimensions = await page.evaluate("""
+                (() => {
+                    const svg = document.querySelector('#d3-container svg');
+                    if (!svg) return null;
+                    
+                    const viewBox = svg.getAttribute('viewBox');
+                    if (viewBox) {
+                        const parts = viewBox.split(' ').map(Number);
+                        return {
+                            x: parts[0],
+                            y: parts[1],
+                            width: parts[2],
+                            height: parts[3],
+                            source: 'viewBox'
+                        };
+                    }
+                    
+                    // Fallback to width/height attributes
+                    const width = parseFloat(svg.getAttribute('width')) || 800;
+                    const height = parseFloat(svg.getAttribute('height')) || 600;
+                    return {
+                        x: 0,
+                        y: 0,
+                        width: width,
+                        height: height,
+                        source: 'attributes'
+                    };
+                })()
             """)
             
-            # Wait for rendering to complete
-            await asyncio.sleep(2)
+            if not svg_dimensions:
+                logger.error("Failed to extract SVG dimensions")
+                raise Exception("Could not determine SVG dimensions")
             
-            # Take screenshot
-            screenshot_bytes = await page.screenshot(full_page=True)
+            logger.info(f"SVG dimensions extracted: {svg_dimensions['width']}x{svg_dimensions['height']} (from {svg_dimensions['source']})")
             
-            logger.debug(f"PNG generated successfully ({len(screenshot_bytes)} bytes)")
+            # Resize container to match actual SVG dimensions
+            await page.evaluate(f"""
+                (() => {{
+                    const container = document.getElementById('d3-container');
+                    if (container) {{
+                        container.style.width = '{svg_dimensions["width"]}px';
+                        container.style.height = '{svg_dimensions["height"]}px';
+                        console.log('Container resized to:', '{svg_dimensions["width"]}x{svg_dimensions["height"]}');
+                    }}
+                }})()
+            """)
+            
+            # Apply scale factor for high-DPI displays
+            scale_factor = req.scale if req.scale else 2
+            final_width = int(svg_dimensions['width'] * scale_factor)
+            final_height = int(svg_dimensions['height'] * scale_factor)
+            
+            logger.info(f"Taking screenshot at {svg_dimensions['width']}x{svg_dimensions['height']} with scale {scale_factor}x (output: {final_width}x{final_height})")
+            
+            # Take screenshot of the resized container with scale
+            d3_container = await page.query_selector('#d3-container')
+            if d3_container:
+                screenshot_bytes = await d3_container.screenshot(
+                    type='png',
+                    scale='device'  # Use device scale for quality
+                )
+            else:
+                # Fallback to full page screenshot
+                screenshot_bytes = await page.screenshot(full_page=True, type='png')
+            
+            logger.debug(f"PNG generated successfully ({len(screenshot_bytes)} bytes, scale={scale_factor}x)")
             
             # Return PNG as response
             from fastapi.responses import Response
@@ -251,6 +594,178 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
         raise HTTPException(
             status_code=500,
             detail=Messages.error("export_failed", lang, str(e))
+        )
+
+
+# ============================================================================
+# BACKWARD COMPATIBILITY ENDPOINTS - Restored from Flask Migration
+# ============================================================================
+
+@router.post('/generate_png')
+async def generate_png_from_prompt(req: GeneratePNGRequest, x_language: str = None):
+    """
+    Generate PNG directly from user prompt (backward compatibility).
+    
+    This endpoint chains existing generate_graph() + export_png() internally.
+    Uses main agent to extract topic and diagram type, exports default PNG result.
+    Provides 1-step workflow for external clients.
+    """
+    lang = get_request_language(x_language)
+    prompt = req.prompt.strip()
+    
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    logger.info(f"[generate_png] Request: {prompt[:50]}... (llm={req.llm})")
+    
+    try:
+        # Step 1: Generate diagram spec using main agent (reuse existing endpoint)
+        generate_req = GenerateRequest(
+            prompt=req.prompt,
+            language=req.language,
+            llm=req.llm,
+            diagram_type=req.diagram_type,
+            dimension_preference=req.dimension_preference
+        )
+        
+        spec_result = await generate_graph(generate_req, x_language)
+        
+        logger.debug(f"[generate_png] Generated {spec_result.get('diagram_type')} spec")
+        
+        # Step 2: Export default PNG result from LLM (reuse existing endpoint)
+        export_req = ExportPNGRequest(
+            diagram_data=spec_result['spec'],
+            diagram_type=spec_result['diagram_type'],
+            width=req.width,
+            height=req.height,
+            scale=req.scale
+        )
+        
+        png_response = await export_png(export_req, x_language)
+        
+        logger.info(f"[generate_png] Success: {spec_result.get('diagram_type')}")
+        
+        return png_response
+        
+    except HTTPException:
+        # Let HTTP exceptions pass through
+        raise
+    except Exception as e:
+        logger.error(f"[generate_png] Error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
+
+
+@router.post('/generate_dingtalk')
+async def generate_dingtalk_png(req: GenerateDingTalkRequest, x_language: str = None):
+    """
+    Generate PNG for DingTalk integration (backward compatibility).
+    
+    Uses main agent to extract topic and diagram type from prompt.
+    Exports default PNG result from LLM.
+    Returns plain text in ![topic](url) format for DingTalk bot integration.
+    """
+    lang = get_request_language(x_language)
+    prompt = req.prompt.strip()
+    
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    logger.info(f"[generate_dingtalk] Request: {prompt[:50]}...")
+    
+    try:
+        # Step 1: Main agent extracts topic + generates diagram spec
+        generate_req = GenerateRequest(
+            prompt=req.prompt,
+            language=req.language,
+            llm=req.llm,
+            diagram_type=req.diagram_type,
+            dimension_preference=req.dimension_preference
+        )
+        
+        spec_result = await generate_graph(generate_req, x_language)
+        
+        logger.debug(f"[generate_dingtalk] Generated {spec_result.get('diagram_type')} spec")
+        
+        # Step 2: Export default PNG result from LLM
+        export_req = ExportPNGRequest(
+            diagram_data=spec_result['spec'],
+            diagram_type=spec_result['diagram_type'],
+            width=1200,
+            height=800,
+            scale=2
+        )
+        
+        png_response = await export_png(export_req, x_language)
+        
+        # Step 3: Save PNG to temp directory (ASYNC file I/O)
+        temp_dir = Path("temp_images")
+        temp_dir.mkdir(exist_ok=True)
+        
+        # Generate unique filename
+        unique_id = uuid.uuid4().hex[:8]
+        timestamp = int(time.time())
+        filename = f"dingtalk_{unique_id}_{timestamp}.png"
+        temp_path = temp_dir / filename
+        
+        # Write PNG content to file using aiofiles (100% async, non-blocking)
+        # Note: png_response is a Response object with .body property
+        async with aiofiles.open(temp_path, 'wb') as f:
+            await f.write(png_response.body)
+        
+        logger.debug(f"[generate_dingtalk] Saved to {temp_path}")
+        
+        # Step 4: Build plain text response in ![topic](url) format
+        external_host = os.getenv('EXTERNAL_HOST', 'localhost')
+        port = os.getenv('PORT', '9527')
+        image_url = f"http://{external_host}:{port}/api/temp_images/{filename}"
+        plain_text = f"![{prompt}]({image_url})"
+        
+        logger.info(f"[generate_dingtalk] Success: {image_url}")
+        
+        return PlainTextResponse(content=plain_text)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[generate_dingtalk] Error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
+
+
+@router.get('/temp_images/{filename}')
+async def serve_temp_image(filename: str):
+    """
+    Serve temporary PNG files for DingTalk integration.
+    
+    Images auto-cleanup after 24 hours.
+    """
+    # Security: Validate filename to prevent directory traversal
+    if '..' in filename or '/' in filename or '\\' in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
+    temp_path = Path("temp_images") / filename
+    
+    if not temp_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found or expired")
+    
+    return FileResponse(
+        path=str(temp_path),
+        media_type="image/png",
+        headers={
+            'Cache-Control': 'public, max-age=86400',
+            'X-Content-Type-Options': 'nosniff'
+        }
         )
 
 

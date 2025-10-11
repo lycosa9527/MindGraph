@@ -181,6 +181,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     } else {
         // Expand SVG canvas to fit content
         d3.select(svg.node()).attr('width', contentWidth);
+        // CRITICAL: Also update viewBox to match the expanded width
+        d3.select(svg.node()).attr('viewBox', `0 0 ${contentWidth} ${height}`);
     }
     branchLayouts.forEach(layout => { layout.branchX += offsetX; });
 
@@ -505,7 +507,11 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     // Expand SVG height if content exceeds current height
     const finalNeededHeight = Math.ceil(requiredBottomY + padding);
     if (finalNeededHeight > height) {
+        // Get current width (may have been expanded earlier)
+        const currentWidth = parseFloat(svg.attr('width')) || width;
         svg.attr('height', finalNeededHeight);
+        // CRITICAL: Also update viewBox to match the expanded dimensions
+        svg.attr('viewBox', `0 0 ${currentWidth} ${finalNeededHeight}`);
     }
     
     // Watermark removed from canvas display - will be added during PNG export only
