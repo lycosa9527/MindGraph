@@ -125,7 +125,6 @@ class ToolbarManager {
         this.redoBtn = document.getElementById('redo-btn');
         this.resetBtn = document.getElementById('reset-btn');
         this.exportBtn = document.getElementById('export-btn');
-        this.backBtn = document.getElementById('back-to-gallery');
         
         // Line mode state
         this.isLineMode = false;
@@ -247,10 +246,8 @@ class ToolbarManager {
             e.stopPropagation();
             this.handleExport();
         });
-        this.backBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.handleBackToGallery();
-        });
+        // Note: Back button handled by DiagramSelector.backToGallery()
+        // which properly calls cancelAllLLMRequests() before cleanup
         
         // Property panel
         this.closePropBtn?.addEventListener('click', (e) => {
@@ -594,16 +591,37 @@ class ToolbarManager {
             if (hasSelection && this.currentSelection.length > 0) {
                 logger.info('ToolbarManager', '=== NODE SELECTED (MOUSE CLICK) ===', {
                     timestamp: new Date().toISOString(),
-                    selectedNodes: this.currentSelection.map(node => ({
-                        id: node.id || 'unknown',
-                        text: node.text || node.textContent || 'no text',
-                        type: node.nodeType || node.getAttribute?.('data-node-type') || 'unknown',
-                        position: {
-                            x: node.x || node.getAttribute?.('x') || 0,
-                            y: node.y || node.getAttribute?.('y') || 0
-                        },
-                        element: node.tagName || 'unknown'
-                    })),
+                    selectedNodes: this.currentSelection.map(nodeId => {
+                        // nodeId is a string, need to get the actual DOM element
+                        const element = document.querySelector(`[data-node-id="${nodeId}"]`);
+                        if (element) {
+                            return {
+                                id: nodeId,
+                                text: element.textContent || element.getAttribute('data-text-for') || 'no text',
+                                type: element.getAttribute('data-node-type') || 'unknown',
+                                tagName: element.tagName,
+                                attributes: {
+                                    partIndex: element.getAttribute('data-part-index'),
+                                    subpartIndex: element.getAttribute('data-subpart-index'),
+                                    categoryIndex: element.getAttribute('data-category-index'),
+                                    leafIndex: element.getAttribute('data-leaf-index')
+                                },
+                                position: {
+                                    x: element.getAttribute('x') || element.getAttribute('cx') || 'N/A',
+                                    y: element.getAttribute('y') || element.getAttribute('cy') || 'N/A'
+                                }
+                            };
+                        } else {
+                            return {
+                                id: nodeId,
+                                text: 'element not found',
+                                type: 'unknown',
+                                tagName: 'N/A',
+                                attributes: {},
+                                position: { x: 'N/A', y: 'N/A' }
+                            };
+                        }
+                    }),
                     totalSelected: this.currentSelection.length,
                     diagramType: this.editor?.diagramType
                 });
@@ -1589,14 +1607,28 @@ class ToolbarManager {
             try {
                 logger.info('ToolbarManager', 'Calling progressive generation endpoint (SSE)');
                 
+                // CRITICAL: Create AbortController for cancellation
+                const abortController = new AbortController();
+                this.activeAbortControllers.set('multi_progressive', abortController);
+                
+                // Set timeout (same as sequential mode)
+                const timeoutId = setTimeout(() => {
+                    logger.warn('ToolbarManager', 'Multi-progressive timeout, aborting');
+                    abortController.abort();
+                }, LLM_CONFIG.TIMEOUT_MS);
+                
                 // Use SSE streaming (same pattern as MindMate ai-assistant-manager.js:333-380)
                 const response = await fetch('/api/generate_multi_progressive', {
                     method: 'POST',
+                    signal: abortController.signal, // Enable cancellation
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(parallelRequestBody)
                 });
+                
+                // Clear timeout on successful connection
+                clearTimeout(timeoutId);
                 
                 // VERBOSE LOG: Response received from server
                 logger.info('ToolbarManager', '=== LLM MIDDLEWARE RESPONSE RECEIVED ===', {
@@ -1789,6 +1821,17 @@ class ToolbarManager {
                 }
                 
             } catch (error) {
+                // Handle abort gracefully (user cancelled or timeout)
+                if (error.name === 'AbortError') {
+                    logger.info('ToolbarManager', 'Multi-progressive request cancelled', {
+                        reason: 'User cancelled or timeout',
+                        activeControllers: this.activeAbortControllers.size
+                    });
+                    this.showNotification(this.getNotif('requestCancelled') || 'Request cancelled', 'info');
+                    this.llmResults = {}; // Clear partial results
+                    return; // Exit cleanly without fallback
+                }
+                
                 // VERBOSE LOG: Parallel endpoint failure details
                 logger.error('ToolbarManager', '=== PARALLEL ENDPOINT FAILED ===', {
                     timestamp: new Date().toISOString(),
@@ -1910,7 +1953,10 @@ class ToolbarManager {
                     this.setLLMButtonState(model, 'error');
                 }
                 }  // End of fallback sequential loop
-            }  // End of try-catch for parallel vs sequential
+            } finally {
+                // CRITICAL: Clean up abort controller
+                this.activeAbortControllers.delete('multi_progressive');
+            }  // End of try-catch-finally for parallel vs sequential
             
             // Count successful results
             const successCount = Object.values(this.llmResults).filter(r => r.success).length;
@@ -2018,10 +2064,10 @@ class ToolbarManager {
         switch (expectedDiagramType) {
             case 'bubble_map':
                 if (!spec.topic) missingFields.push('topic');
-                if (!spec.children || !Array.isArray(spec.children)) {
-                    invalidFields.push('children');
-                } else if (spec.children.length === 0) {
-                    issues.push('Empty children array');
+                if (!spec.attributes || !Array.isArray(spec.attributes)) {
+                    invalidFields.push('attributes');
+                } else if (spec.attributes.length === 0) {
+                    issues.push('Empty attributes array');
                 }
                 break;
                 
@@ -2046,10 +2092,10 @@ class ToolbarManager {
                 
             case 'tree_map':
                 if (!spec.topic) missingFields.push('topic');
-                if (!spec.categories || !Array.isArray(spec.categories)) {
-                    invalidFields.push('categories');
-                } else if (spec.categories.length === 0) {
-                    issues.push('Empty categories array');
+                if (!spec.children || !Array.isArray(spec.children)) {
+                    invalidFields.push('children');
+                } else if (spec.children.length === 0) {
+                    issues.push('Empty children array');
                 }
                 break;
                 
@@ -2992,63 +3038,6 @@ class ToolbarManager {
     }
     
     /**
-     * Handle back to gallery
-     */
-    handleBackToGallery() {
-        // Clean up canvas and editor first
-        this.cleanupCanvas();
-        
-        // Hide and clear property panel
-        this.hidePropertyPanel();
-        this.clearPropertyPanel();
-        
-        // Close AI assistant if open and reset button state
-        const aiPanel = document.getElementById('ai-assistant-panel');
-        if (aiPanel && !aiPanel.classList.contains('collapsed')) {
-            aiPanel.classList.add('collapsed');
-        }
-        const mindmateBtn = document.getElementById('mindmate-ai-btn');
-        if (mindmateBtn) {
-            mindmateBtn.classList.remove('active');
-        }
-        
-        // Hide editor interface
-        const editorInterface = document.getElementById('editor-interface');
-        if (editorInterface) {
-            editorInterface.style.display = 'none';
-        }
-        
-        // Show landing page
-        const landing = document.getElementById('editor-landing');
-        if (landing) {
-            landing.style.display = 'block';
-        }
-    }
-    
-    /**
-     * Clean up canvas and previous editor
-     */
-    cleanupCanvas() {
-        // Clear the D3 container
-        const container = document.getElementById('d3-container');
-        if (container) {
-            // Remove all SVG elements
-            d3.select('#d3-container').selectAll('*').remove();
-        }
-        
-        // Clear any existing editor instance
-        if (window.currentEditor) {
-            window.currentEditor = null;
-        }
-        
-        // Reset selection state
-        this.currentSelection = [];
-        if (this.editor && this.editor.selectedNodes) {
-            this.editor.selectedNodes.clear();
-        }
-    }
-    
-    /**
      * Get translated notification message
      * @param {string} key - Notification key from language-manager
      * @param  {...any} args - Arguments for function-based notifications
@@ -3358,7 +3347,9 @@ class ToolbarManager {
         const buttonsToClean = [
             'add-node-btn', 'delete-node-btn', 'empty-node-btn', 'auto-complete-btn',
             'line-mode-btn', 'undo-btn', 'redo-btn', 'reset-btn', 'export-btn',
-            'back-to-gallery', 'close-properties', 'prop-text-apply', 'prop-bold',
+            // Note: 'back-to-gallery' is NOT included - it's managed by DiagramSelector
+            // and its event listener must persist across diagram switches
+            'close-properties', 'prop-text-apply', 'prop-bold',
             'prop-italic', 'prop-underline', 'reset-styles-btn'
         ];
         

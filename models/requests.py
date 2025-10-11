@@ -173,9 +173,9 @@ class LearningHintRequest(BaseModel):
 class FrontendLogRequest(BaseModel):
     """Request model for /api/frontend_log endpoint"""
     level: str = Field(..., description="Log level (debug, info, warn, error)")
-    message: str = Field(..., max_length=1000, description="Log message")
+    message: str = Field(..., max_length=5000, description="Log message")
     source: Optional[str] = Field(None, description="Source component")
-    timestamp: Optional[float] = Field(None, description="Client timestamp")
+    timestamp: Optional[str] = Field(None, description="Client timestamp (ISO format)")
     
     @field_validator('level')
     @classmethod
@@ -184,6 +184,33 @@ class FrontendLogRequest(BaseModel):
         if v.lower() not in valid_levels:
             raise ValueError(f"Level must be one of {valid_levels}")
         return v.lower()
+
+
+class FrontendLogBatchRequest(BaseModel):
+    """Request model for /api/frontend_log_batch endpoint (batched logs)"""
+    logs: List[FrontendLogRequest] = Field(..., min_items=1, max_items=50, description="Batch of log entries")
+    batch_size: int = Field(..., description="Number of logs in this batch")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "logs": [
+                    {
+                        "level": "info",
+                        "message": "[ToolbarManager] Auto-complete started",
+                        "source": "ToolbarManager",
+                        "timestamp": "2025-10-11T12:34:56.789Z"
+                    },
+                    {
+                        "level": "debug",
+                        "message": "[Editor] Rendering diagram",
+                        "source": "Editor",
+                        "timestamp": "2025-10-11T12:34:57.123Z"
+                    }
+                ],
+                "batch_size": 2
+            }
+        }
 
 
 class LearningVerifyUnderstandingRequest(BaseModel):

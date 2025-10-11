@@ -7,19 +7,268 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.6.1] - 2025-10-11 - Circle Map Validation Fix
+## [4.6.6] - 2025-10-11 - MindMap Topic Preservation Fix
 
 ### Fixed
 
-- **Critical: Circle Map Validation Logic Error**
-  - **Root cause**: `_validateLLMSpec()` was checking for `children` field in Circle Maps, but Circle Maps use `context` instead
-  - **Previous behavior**: All 4 LLMs flagged with false positive validation warnings: `invalidFields: ["children"]`
+- **Critical: LLMs Modifying User's MindMap Topic Input**
+  - **Root cause**: MindMap system prompt did not explicitly instruct LLMs to preserve the user's exact input for the topic field
+  - **Previous behavior**: When user enters "钢琴" (Piano), different LLMs generated different topics:
+    - DeepSeek: "钢琴教学导图" (Piano Teaching Map) ❌
+    - Qwen: "钢琴" ✅ (only this one was correct)
+    - Kimi: "钢琴教学全攻略" (Complete Piano Teaching Guide) ❌
+    - Hunyuan: "钢琴学习与演奏" (Piano Learning and Performance) ❌
+  - **Impact**: User's intended topic was modified, causing inconsistency across 4 LLM results
+  - **Solution**: Added **CRITICAL** instruction to prompt requiring topic field to use user's EXACT input word-for-word
+    - Chinese prompt: "**CRITICAL: \"topic\"字段必须使用用户提供的EXACT原始输入词语，一字不改**"
+    - English prompt: "**CRITICAL: The \"topic\" field MUST use the user's EXACT original input word-for-word**"
+    - Added explicit examples showing correct vs incorrect usage
+  - **Result**: All 4 LLMs now generate topic="钢琴" when user inputs "钢琴"
+  - File: `prompts/mind_maps.py` lines 62-64, 120-122
+
+---
+
+## [4.6.5] - 2025-10-11 - Brace Map Consistency & Debug Logging
+
+### Improved
+
+- **Enhanced Brace Map Error Logging**
+  - **Previous behavior**: When add node failed on subparts, only showed generic error notification with no details
+  - **Enhancement**: Added comprehensive debug logging that shows:
+    - Selected node ID and all attributes
+    - Parsed part index value
+    - Whether parsing succeeded/failed
+    - Array bounds checking details
+    - Specific failure reason (NaN, negative, out of bounds)
+  - **Impact**: Much easier to diagnose add node issues in Brace Maps
+  - **Result**: Clear error messages in console for debugging
+  - File: `static/js/editor/interactive-editor.js` lines 2126-2153
+
+- **Brace Map Node ID Consistency**
+  - **Previous behavior**: Inconsistent node ID patterns
+    - Part rectangles: `part_0` (underscores)
+    - Part text: `brace-part-0` (hyphen prefix)
+    - Subpart rectangles: `subpart_0_0` (underscores)
+    - Subpart text: `brace-subpart-0-0` (hyphen prefix)
+  - **Improvement**: Standardized all node IDs to use consistent hyphen-prefix pattern
+    - Part rectangles: `brace-part-0` ✅
+    - Part text: `brace-part-0` ✅
+    - Subpart rectangles: `brace-subpart-0-0` ✅
+    - Subpart text: `brace-subpart-0-0` ✅
+  - **Impact**: Cleaner code, easier to debug, no functional change
+  - **Note**: Does NOT affect LLM structure, API, or data storage (IDs are DOM-only)
+  - File: `static/js/renderers/brace-renderer.js` lines 349, 392
+
+---
+
+## [4.6.4] - 2025-10-11 - Back to Gallery Button Fix
+
+### Fixed
+
+- **Critical: Back to Gallery Button Stops Working After Diagram Switches**
+  - **Root cause**: ToolbarManager's `destroy()` method was cloning the back button to remove event listeners, which inadvertently removed the DiagramSelector's persistent event listener
+  - **Previous behavior**:
+    - Back button works initially
+    - After switching diagrams 1-2 times, clicking back button does nothing
+    - Event listener lost during ToolbarManager cleanup
+  - **Impact**: Users stuck in editor after switching diagrams, cannot return to gallery
+  - **Solution**: Removed `'back-to-gallery'` from `buttonsToClean` array in ToolbarManager.destroy()
+    - Back button is managed by DiagramSelector, not ToolbarManager
+    - Its event listener should persist across all diagram switches
+    - Only ToolbarManager-specific buttons should be cleaned up
+  - **Result**: Back button works reliably after any number of diagram switches
+  - File: `static/js/editor/toolbar-manager.js` lines 3407-3409
+
+### Improved
+
+- **Code Cleanup: Removed Dead Code from ToolbarManager**
+  - **Removed**:
+    - `this.backBtn` reference (was line 128) - stored but never used
+    - `handleBackToGallery()` method (was lines 3044-3073) - defined but never called
+    - `cleanupCanvas()` method (was lines 3078-3096) - only called by unused handleBackToGallery()
+  - **Reason**: ToolbarManager never manages the back button (DiagramSelector owns it)
+  - **Impact**: Cleaner code, reduced confusion for future developers
+  - **Result**: 60+ lines of dead code removed, no functional changes
+  - File: `static/js/editor/toolbar-manager.js`
+
+### Technical Details
+
+**The Problem:**
+```javascript
+// DiagramSelector constructor (runs ONCE on page load)
+const backBtn = document.getElementById('back-to-gallery');
+backBtn.addEventListener('click', () => this.backToGallery()); // ✅ Set up once
+
+// ToolbarManager.destroy() (runs on EVERY diagram switch)
+const buttonsToClean = [
+    'add-node-btn', 'delete-node-btn', /* ... */
+    'back-to-gallery', // ❌ This clones the button → removes listener!
+];
+buttonsToClean.forEach(btnId => {
+    const btn = document.getElementById(btnId);
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn); // ❌ DiagramSelector's listener gone!
+});
+```
+
+**The Solution:**
+```javascript
+// ToolbarManager.destroy() - AFTER fix
+const buttonsToClean = [
+    'add-node-btn', 'delete-node-btn', /* ... */
+    // Note: 'back-to-gallery' is NOT included - it's managed by DiagramSelector
+    // and its event listener must persist across diagram switches
+    'close-properties', 'prop-text-apply', /* ... */
+];
+// ✅ Back button untouched → DiagramSelector's listener persists
+```
+
+---
+
+## [4.6.3] - 2025-10-11 - Request Cancellation System Fix
+
+### Fixed
+
+- **Critical: LLM Requests Not Being Cancelled Properly**
+  - **Root causes**: 
+    1. Duplicate "back to gallery" event handlers causing race condition
+    2. SSE fetch had no AbortController - requests could not be cancelled
+    3. No timeout for parallel mode requests
+  - **Previous behavior**:
+    - Going to gallery while auto-complete running → requests continued in background
+    - No way to cancel in-flight parallel LLM requests
+    - Network requests wasted API quota and costs
+    - Race condition between DiagramSelector and ToolbarManager event handlers
+  - **Impact**: 
+    - Wasted API calls when users navigated away
+    - Unpredictable cancellation behavior
+    - Potential memory leaks from untracked requests
+  - **Solution**: 
+    1. Removed duplicate event handler in ToolbarManager (line 250-253)
+    2. Added AbortController to SSE fetch (line 1612-1613)
+    3. Added 60-second timeout to parallel mode (line 1616-1619)
+    4. Added proper AbortError handling (line 1826-1834)
+    5. Added cleanup in finally block (line 1957-1960)
+  - **Result**: 
+    - All LLM requests properly cancelled when user navigates away
+    - Clean abort on timeout (60s)
+    - No more race conditions
+    - No wasted API calls
+  - Files: `static/js/editor/toolbar-manager.js` lines 250-251, 1612-1619, 1826-1834, 1957-1960
+
+### Technical Details
+
+**Problem #1: Duplicate Event Handlers**
+```javascript
+// BEFORE: Two handlers for same button
+// DiagramSelector (line 176): ✅ Calls cancelAllLLMRequests()
+// ToolbarManager (line 250): ❌ Calls e.stopPropagation(), blocks DiagramSelector
+
+// AFTER: Single handler
+// DiagramSelector only → Clean cancellation
+```
+
+**Problem #2: No AbortController**
+```javascript
+// BEFORE:
+const response = await fetch('/api/generate_multi_progressive', {
+    method: 'POST',
+    // ❌ No signal parameter
+});
+
+// AFTER:
+const abortController = new AbortController();
+this.activeAbortControllers.set('multi_progressive', abortController);
+
+const timeoutId = setTimeout(() => abortController.abort(), 60000);
+
+const response = await fetch('/api/generate_multi_progressive', {
+    method: 'POST',
+    signal: abortController.signal, // ✅ Enable cancellation
+});
+```
+
+**Problem #3: No AbortError Handling**
+```javascript
+// AFTER: Graceful handling
+if (error.name === 'AbortError') {
+    logger.info('Multi-progressive request cancelled');
+    this.showNotification('Request cancelled', 'info');
+    return; // Clean exit, no fallback
+}
+```
+
+---
+
+## [4.6.2] - 2025-10-11 - Brace Map Add Node Fix & Enhanced Debug Logging
+
+### Fixed
+
+- **Critical: Brace Map "Add Node" Button Not Working**
+  - **Root cause**: Text elements for parts and subparts missing `data-part-index` and `data-subpart-index` attributes
+  - **Error message**: "无效的部分索引：X" (Invalid part index: X) when clicking add node button
+  - **Previous behavior**: 
+    - Clicking "Add Node" while a part/subpart text was selected would show error
+    - Only worked if you clicked exactly on the rectangle background, not the text
+  - **Impact**: Add node functionality appeared broken for most users (who naturally click on text)
+  - **Solution**: Added missing data attributes to text elements in Brace Map renderer
+    - Part text elements: Added `data-part-index` attribute
+    - Subpart text elements: Added `data-part-index` and `data-subpart-index` attributes
+  - **Result**: Add node button now works correctly when clicking on any part of a part/subpart node
+  - File: `static/js/renderers/brace-renderer.js` lines 364, 407-408
+
+### Improved
+
+- **Enhanced Node Selection Debug Logging**
+  - **Previous behavior**: Node selection logs showed "unknown" for all node properties (id, text, type)
+  - **Root cause**: Selection event passes node IDs (strings), but logging was treating them as node objects
+  - **Improvement**: Updated logging to query DOM for actual element and extract all relevant data
+  - **Now logs**:
+    - Node ID and text content
+    - Node type (part, subpart, category, leaf, etc.)
+    - Element tag name (rect, text, circle, etc.)
+    - All data attributes (part-index, subpart-index, category-index, leaf-index)
+    - Position coordinates
+  - **Result**: Full visibility into selected nodes for debugging add/edit/delete operations
+  - File: `static/js/editor/toolbar-manager.js` lines 597-627
+
+- **Cleaner Log Output - Reduced Numeric Precision**
+  - **Previous behavior**: All numeric values logged with full floating-point precision (16+ decimal places)
+    - Example: `"finalScale": 1.2105154639175257` (16 decimals)
+    - Example: `"x": 536.2888870239258` (13 decimals)
+    - Example: `"viewBox": "106.8 18.996125030517575 320.4 785.7038940429687"` (mixed precision in string)
+  - **Improvement**: Automatically round all numbers to 2 decimal places in logs
+    - Example: `"finalScale": 1.21` (2 decimals)
+    - Example: `"x": 536.29` (2 decimals)
+    - Example: `"viewBox": "106.8 19.0 320.4 785.7"` (all rounded in string)
+  - **Why**: 2 decimal places is sufficient precision for debugging while making logs cleaner and more readable
+  - **Implementation**: Added recursive `_roundNumbers()` function to Logger class that processes:
+    - Numbers (direct rounding)
+    - Strings containing numbers (regex-based rounding using `\d+\.\d+` pattern)
+    - Objects and arrays (recursive processing)
+  - **Result**: All logs (positions, scales, dimensions, viewBoxes, etc.) now display with clean, professional precision
+  - File: `static/js/logger.js` lines 92-124, 142
+
+---
+
+## [4.6.1] - 2025-10-11 - Bubble, Circle & Tree Map Validation Fix
+
+### Fixed
+
+- **Critical: Bubble Map, Circle Map & Tree Map Validation Logic Errors**
+  - **Root cause**: `_validateLLMSpec()` was checking for wrong field names in three diagram types
+    - Bubble Maps: Checking for `children` but they use `attributes`
+    - Circle Maps: Checking for `children` but they use `context`
+    - Tree Maps: Checking for `categories` but they use `children`
+  - **Previous behavior**: All 4 LLMs flagged with false positive validation warnings for all three diagram types
   - **Impact**: Incorrectly reported "LLM INCONSISTENCIES DETECTED" even when all specs were valid
-  - **Solution**: Separated `bubble_map` and `circle_map` validation cases
-    - Bubble Maps: Check for `topic` and `children` array (unchanged)
-    - Circle Maps: Check for `topic` and `context` array (corrected)
-  - **Result**: Circle Map validation now correctly recognizes valid specs, no false positive warnings
-  - File: `static/js/editor/toolbar-manager.js` lines 2019-2035
+  - **Solution**: Fixed validation to check correct fields for each diagram type
+    - **Bubble Maps**: Check for `topic` and `attributes` array (corrected)
+    - **Circle Maps**: Check for `topic` and `context` array (corrected)
+    - **Tree Maps**: Check for `topic` and `children` array (corrected - was checking `categories`)
+    - **Mind Maps**: Check for `topic` and `children` array (unchanged)
+  - **Result**: Bubble, Circle, and Tree Map validation now correctly recognizes valid specs, no false positive warnings
+  - File: `static/js/editor/toolbar-manager.js` lines 2019-2054
 
 ### Technical Details
 
@@ -30,13 +279,20 @@ case 'circle_map':  // ❌ Both checking for 'children'
     if (!spec.children || !Array.isArray(spec.children)) {
         invalidFields.push('children');
     }
+    break;
+
+case 'tree_map':  // ❌ Checking for 'categories'
+    if (!spec.categories || !Array.isArray(spec.categories)) {
+        invalidFields.push('categories');
+    }
+    break;
 ```
 
 **After (Correct)**:
 ```javascript
 case 'bubble_map':
-    if (!spec.children || !Array.isArray(spec.children)) {
-        invalidFields.push('children');  // ✓ Bubble maps use 'children'
+    if (!spec.attributes || !Array.isArray(spec.attributes)) {
+        invalidFields.push('attributes');  // ✓ Bubble maps use 'attributes'
     }
     break;
 
@@ -45,6 +301,22 @@ case 'circle_map':
         invalidFields.push('context');  // ✓ Circle maps use 'context'
     }
     break;
+
+case 'tree_map':
+    if (!spec.children || !Array.isArray(spec.children)) {
+        invalidFields.push('children');  // ✓ Tree maps use 'children'
+    }
+    break;
+```
+
+**Example Valid Bubble Map Spec**:
+```json
+{
+  "topic": "路由器",
+  "attributes": ["高速稳定", "智能管理", "广域覆盖", ...],
+  "_layout": {...},
+  "_recommended_dimensions": {...}
+}
 ```
 
 **Example Valid Circle Map Spec**:
@@ -53,6 +325,19 @@ case 'circle_map':
   "topic": "键盘",
   "context": ["输入设备", "QWERTY布局", "机械按键", "无线连接", ...],
   "_layout": {...},
+  "_recommended_dimensions": {...}
+}
+```
+
+**Example Valid Tree Map Spec**:
+```json
+{
+  "topic": "包子",
+  "children": [
+    {"text": "肉馅包子", "children": [{"text": "猪肉大葱包", "children": []}, ...]},
+    {"text": "素馅包子", "children": [{"text": "韭菜鸡蛋包", "children": []}, ...]}
+  ],
+  "dimension": "馅料类型",
   "_recommended_dimensions": {...}
 }
 ```

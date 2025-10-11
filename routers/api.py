@@ -26,6 +26,7 @@ from models import (
     GenerateResponse,
     ExportPNGRequest,
     FrontendLogRequest,
+    FrontendLogBatchRequest,
     Messages,
     get_request_language
 )
@@ -260,7 +261,7 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
 @router.post('/frontend_log')
 async def frontend_log(req: FrontendLogRequest):
     """
-    Log frontend messages to backend console.
+    Log single frontend message to backend console.
     Receives logs from browser and displays them in Python terminal.
     """
     level_map = {
@@ -271,14 +272,56 @@ async def frontend_log(req: FrontendLogRequest):
     }
     level = level_map.get(req.level.lower(), logging.INFO)
     
-    # Create a dedicated frontend logger with custom formatter
+    # Create a dedicated frontend logger
     frontend_logger = logging.getLogger('frontend')
     frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
     
+    # Format message with timestamp if provided
+    if req.timestamp:
+        message = f"[{req.timestamp}] {req.message}"
+    else:
+        message = req.message
+    
     # Log with clean formatting
-    frontend_logger.log(level, req.message)
+    frontend_logger.log(level, message)
     
     return {'status': 'logged'}
+
+
+@router.post('/frontend_log_batch')
+async def frontend_log_batch(req: FrontendLogBatchRequest):
+    """
+    Log batched frontend messages to backend console (efficient bulk logging).
+    Receives multiple logs from browser and displays them in Python terminal.
+    """
+    level_map = {
+        'error': logging.ERROR,
+        'warn': logging.WARNING,
+        'info': logging.INFO,
+        'debug': logging.DEBUG
+    }
+    
+    # Create a dedicated frontend logger
+    frontend_logger = logging.getLogger('frontend')
+    frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
+    
+    # Log batch header
+    frontend_logger.info(f"=== FRONTEND LOG BATCH ({req.batch_size} logs) ===")
+    
+    # Log each message in the batch
+    for log_entry in req.logs:
+        level = level_map.get(log_entry.level.lower(), logging.INFO)
+        
+        # Format message with timestamp
+        if log_entry.timestamp:
+            message = f"[{log_entry.timestamp}] {log_entry.message}"
+        else:
+            message = log_entry.message
+        
+        # Log to backend console
+        frontend_logger.log(level, message)
+    
+    return {'status': 'logged', 'count': req.batch_size}
 
 
 @router.get('/llm/metrics')

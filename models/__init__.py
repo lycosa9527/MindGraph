@@ -18,6 +18,7 @@ from .requests import (
     LearningHintRequest,
     LearningVerifyUnderstandingRequest,
     FrontendLogRequest,
+    FrontendLogBatchRequest,
 )
 
 from .responses import (
@@ -41,6 +42,7 @@ __all__ = [
     "LearningHintRequest",
     "LearningVerifyUnderstandingRequest",
     "FrontendLogRequest",
+    "FrontendLogBatchRequest",
     # Responses
     "GenerateResponse",
     "ErrorResponse",

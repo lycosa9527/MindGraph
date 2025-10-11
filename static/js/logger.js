@@ -32,6 +32,13 @@ class Logger {
         // Current minimum level to display
         this.minLevel = (this.debugMode || this.verboseMode) ? this.levels.DEBUG : this.levels.WARN;
         
+        // Batching system for backend logs
+        this.logBatch = [];
+        this.batchSize = 10; // Send after 10 logs
+        this.batchTimeout = 2000; // Or after 2 seconds
+        this.batchTimer = null;
+        this.isSendingBatch = false;
+        
         // Show startup message if debug/verbose mode enabled
         if (this.debugMode || this.verboseMode) {
             const mode = this.verboseMode ? 'VERBOSE' : 'Debug';
@@ -42,11 +49,17 @@ class Logger {
             if (this.debugMode) {
                 console.log('[MindGraph] To disable: localStorage.removeItem("mindgraph_debug") and reload');
             }
+            console.log('%c[MindGraph] Frontend logs streaming to backend', 'color: #00bcd4; font-weight: bold;');
         }
         
         // Track last log to avoid duplicates
         this.lastLog = null;
         this.lastLogCount = 0;
+        
+        // Flush logs before page unload
+        window.addEventListener('beforeunload', () => {
+            this._flushBatch(true); // Force flush
+        });
     }
     
     /**
@@ -72,6 +85,45 @@ class Logger {
     }
     
     /**
+     * Round numbers to 2 decimal places for cleaner logs
+     * Recursively processes objects and arrays
+     * Also handles strings containing numbers (like viewBox)
+     */
+    _roundNumbers(obj, depth = 0) {
+        // Prevent infinite recursion
+        if (depth > 10) return obj;
+        
+        if (typeof obj === 'number') {
+            // Round to 2 decimal places
+            return Math.round(obj * 100) / 100;
+        }
+        
+        if (typeof obj === 'string') {
+            // Round numbers within strings (e.g., viewBox: "106.80 18.996125030517575 320.40 785.7038940429687")
+            return obj.replace(/\d+\.\d+/g, (match) => {
+                const num = parseFloat(match);
+                return (Math.round(num * 100) / 100).toString();
+            });
+        }
+        
+        if (Array.isArray(obj)) {
+            return obj.map(item => this._roundNumbers(item, depth + 1));
+        }
+        
+        if (obj && typeof obj === 'object') {
+            const rounded = {};
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    rounded[key] = this._roundNumbers(obj[key], depth + 1);
+                }
+            }
+            return rounded;
+        }
+        
+        return obj;
+    }
+    
+    /**
      * Format log message with timestamp and context
      */
     _format(level, component, message, data = null) {
@@ -89,7 +141,10 @@ class Logger {
         const color = colors[levelStr];
         const prefix = `[${timestamp}] ${levelStr.padEnd(5)} | ${component.padEnd(20)}`;
         
-        return { prefix, color, message, data };
+        // Round numbers in data for cleaner logs
+        const cleanData = data ? this._roundNumbers(data) : null;
+        
+        return { prefix, color, message, data: cleanData };
     }
     
     /**
@@ -209,7 +264,7 @@ class Logger {
     }
     
     /**
-     * Send logs to backend Python terminal
+     * Send logs to backend Python terminal with batching
      * - Production mode: Only ERROR and WARN
      * - Debug mode: All levels (DEBUG, INFO, WARN, ERROR)
      */
@@ -221,7 +276,13 @@ class Logger {
                 if (data instanceof Error) {
                     dataStr = data.stack || data.toString();
                 } else if (typeof data === 'object') {
-                    dataStr = JSON.stringify(data);
+                    // Limit object size to prevent huge payloads
+                    try {
+                        const jsonStr = JSON.stringify(data);
+                        dataStr = jsonStr.length > 2000 ? jsonStr.substring(0, 2000) + '...(truncated)' : jsonStr;
+                    } catch (e) {
+                        dataStr = '[Circular reference or non-serializable object]';
+                    }
                 } else {
                     dataStr = data.toString();
                 }
@@ -233,18 +294,80 @@ class Logger {
                 fullMessage += ` | ${dataStr}`;
             }
             
-            fetch('/api/frontend_log', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level: level,
-                    message: fullMessage,
-                    source: component
-                })
-            }).catch(() => {}); // Fail silently - don't break frontend
+            // Add to batch instead of sending immediately
+            this.logBatch.push({
+                level: level,
+                message: fullMessage,
+                source: component,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Send batch if it reaches the size limit
+            if (this.logBatch.length >= this.batchSize) {
+                this._flushBatch();
+            } else {
+                // Set timer to flush after timeout
+                if (this.batchTimer) {
+                    clearTimeout(this.batchTimer);
+                }
+                this.batchTimer = setTimeout(() => this._flushBatch(), this.batchTimeout);
+            }
         } catch (e) {
             // Silently ignore logging errors
         }
+    }
+    
+    /**
+     * Flush accumulated logs to backend
+     */
+    _flushBatch(isSync = false) {
+        if (this.logBatch.length === 0 || this.isSendingBatch) return;
+        
+        this.isSendingBatch = true;
+        const logsToSend = [...this.logBatch];
+        this.logBatch = [];
+        
+        if (this.batchTimer) {
+            clearTimeout(this.batchTimer);
+            this.batchTimer = null;
+        }
+        
+        try {
+            const payload = {
+                logs: logsToSend,
+                batch_size: logsToSend.length
+            };
+            
+            if (isSync) {
+                // Use sendBeacon for synchronous page unload
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                navigator.sendBeacon('/api/frontend_log_batch', blob);
+            } else {
+                // Normal async fetch
+                fetch('/api/frontend_log_batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true // Allow request to continue even if page is closing
+                }).catch(() => {
+                    // If batch fails, try sending individually as fallback
+                    logsToSend.forEach(log => {
+                        fetch('/api/frontend_log', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(log)
+                        }).catch(() => {});
+                    });
+                }).finally(() => {
+                    this.isSendingBatch = false;
+                });
+                return;
+            }
+        } catch (e) {
+            // Silently ignore logging errors
+        }
+        
+        this.isSendingBatch = false;
     }
 }
 

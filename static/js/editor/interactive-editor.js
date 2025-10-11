@@ -2119,9 +2119,33 @@ class InteractiveEditor {
                 
             case 'subpart': {
                 // Get part index from selected subpart
-                const partIndex = parseInt(selectedElement.attr('data-part-index'));
+                const partIndexAttr = selectedElement.attr('data-part-index');
+                const partIndex = parseInt(partIndexAttr);
+                
+                // Enhanced error logging
+                logger.debug('Editor', 'BraceMap subpart add: Parsing part index', {
+                    selectedNodeId: selected[0],
+                    partIndexAttr: partIndexAttr,
+                    partIndexParsed: partIndex,
+                    isNaN: isNaN(partIndex),
+                    partsArrayLength: this.currentSpec.parts.length,
+                    allElementAttributes: {
+                        'data-node-id': selectedElement.attr('data-node-id'),
+                        'data-node-type': selectedElement.attr('data-node-type'),
+                        'data-part-index': selectedElement.attr('data-part-index'),
+                        'data-subpart-index': selectedElement.attr('data-subpart-index')
+                    }
+                });
                 
                 if (isNaN(partIndex) || partIndex < 0 || partIndex >= this.currentSpec.parts.length) {
+                    logger.error('Editor', 'BraceMap subpart add FAILED: Invalid part index', {
+                        partIndexAttr: partIndexAttr,
+                        partIndexParsed: partIndex,
+                        isNaN: isNaN(partIndex),
+                        isNegative: partIndex < 0,
+                        isOutOfBounds: partIndex >= this.currentSpec.parts.length,
+                        partsCount: this.currentSpec.parts.length
+                    });
                     if (this.toolbarManager) {
                         this.toolbarManager.showNotification(this.getNotif('invalidPartIndex'), 'error');
                     }

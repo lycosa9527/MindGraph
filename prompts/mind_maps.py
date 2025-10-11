@@ -59,6 +59,9 @@ Deep Integration of Pedagogy: When constructing mind maps, you should not merely
 
 CRITICAL Requirements:
 - Output ONLY valid JSON - no explanations, no code blocks, no extra text
+- **CRITICAL: The "topic" field MUST use the user's EXACT original input word-for-word, with NO modifications, prefixes, suffixes, or descriptive additions**
+  - Example: If user inputs "Piano", topic MUST be "Piano", NOT "Piano Teaching" or "Piano Learning"
+  - Example: If user inputs "钢琴", topic MUST be "钢琴", NOT "钢琴教学" or "钢琴学习"
 - Central topic should be clear, specific, and have educational value
 - Main branches MUST strictly follow 4, 6, or 8 branches (even number rule)
 - Prioritize using mature educational theory frameworks to organize branch structure
@@ -117,6 +120,9 @@ MIND_MAP_AGENT_GENERATION_ZH = """你是一名专为提升教师思维教学水�
 
 关键要求：
 - 只输出有效的JSON - 不要解释，不要代码块，不要额外文字
+- **CRITICAL: "topic"字段必须使用用户提供的EXACT原始输入词语，一字不改，不要添加任何前缀、后缀或修饰词**
+  - 示例：如果用户输入"钢琴"，topic必须是"钢琴"，不能是"钢琴教学"或"钢琴学习"
+  - 示例：如果用户输入"Python"，topic必须是"Python"，不能是"Python编程"
 - 中心主题应该清晰明确且具有教学价值
 - 主分支必须严格遵循4个、6个或8个（偶数规则）
 - 优先运用成熟的教学理论框架来组织分支结构

@@ -346,7 +346,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('fill', THEME.partFill)
             .attr('stroke', THEME.partStroke)
             .attr('stroke-width', 1)
-            .attr('data-node-id', `part_${partIndex}`)
+            .attr('data-node-id', `brace-part-${partIndex}`)
             .attr('data-node-type', 'part')
             .attr('data-part-index', partIndex);
         
@@ -361,6 +361,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('font-weight', 'bold')
             .attr('data-node-id', `brace-part-${partIndex}`)
             .attr('data-node-type', 'part')
+            .attr('data-part-index', partIndex)
             .attr('data-text-for', `part_${partIndex}`)
             .text(part.name || '');
 
@@ -388,7 +389,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('fill', THEME.subpartFill)
                     .attr('stroke', THEME.subpartStroke)
                     .attr('stroke-width', 1)
-                    .attr('data-node-id', `subpart_${partIndex}_${subpartIndex}`)
+                    .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
                     .attr('data-node-type', 'subpart')
                     .attr('data-part-index', partIndex)
                     .attr('data-subpart-index', subpartIndex);
@@ -404,6 +405,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
                     .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
                     .attr('data-node-type', 'subpart')
+                    .attr('data-part-index', partIndex)
+                    .attr('data-subpart-index', subpartIndex)
                     .text(subpart.name || '');
 
                 currentY += subpartBoxHeight + 10;

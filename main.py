@@ -210,6 +210,26 @@ for uvicorn_logger_name in ['uvicorn', 'uvicorn.error', 'uvicorn.access']:
     uvicorn_logger.addHandler(file_handler)
     uvicorn_logger.propagate = False
 
+# Create main logger early
+logger = logging.getLogger(__name__)
+
+# Configure dedicated frontend logger with separate file
+frontend_file_handler = logging.FileHandler(
+    os.path.join("logs", "frontend.log"),
+    encoding="utf-8"
+)
+frontend_file_handler.setFormatter(unified_formatter)
+
+frontend_logger = logging.getLogger('frontend')
+frontend_logger.setLevel(logging.DEBUG)  # Always accept all frontend logs
+frontend_logger.handlers = []  # Remove default handlers
+frontend_logger.addHandler(console_handler)  # Also show in console
+frontend_logger.addHandler(frontend_file_handler)  # Dedicated frontend log file
+frontend_logger.propagate = False  # Don't propagate to root logger
+
+if os.getenv('UVICORN_WORKER_ID') is None:
+    logger.debug("Frontend logger configured with dedicated log file: logs/frontend.log")
+
 # Suppress asyncio CancelledError during shutdown
 class CancelledErrorFilter(logging.Filter):
     """Filter out CancelledError exceptions during graceful shutdown"""
@@ -228,8 +248,9 @@ class CancelledErrorFilter(logging.Filter):
 asyncio_logger = logging.getLogger('asyncio')
 asyncio_logger.addFilter(CancelledErrorFilter())
 
-logger = logging.getLogger(__name__)
+# Add filter to main logger
 logger.addFilter(CancelledErrorFilter())
+
 # Only log from main process, not each worker
 if os.getenv('UVICORN_WORKER_ID') is None:
     logger.debug(f"Logging initialized: {log_level_str}")
