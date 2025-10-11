@@ -191,6 +191,24 @@ class ToolbarManager {
         this.autoCompleteBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();  // Also prevent default to be extra safe
+            
+            // VERBOSE LOG: Mouse click on auto-complete button
+            logger.info('ToolbarManager', '=== AUTO-COMPLETE BUTTON CLICKED ===', {
+                timestamp: new Date().toISOString(),
+                mouseEvent: {
+                    clientX: e.clientX,
+                    clientY: e.clientY,
+                    target: e.target?.id || 'unknown',
+                    button: e.button
+                },
+                currentState: {
+                    diagramType: this.editor?.diagramType,
+                    sessionId: this.editor?.sessionId,
+                    isAutoCompleting: this.isAutoCompleting,
+                    isGeneratingMulti: this.isGeneratingMulti
+                }
+            });
+            
             this.handleAutoComplete();
         });
         this.lineModeBtn?.addEventListener('click', (e) => {
@@ -343,10 +361,33 @@ class ToolbarManager {
         const llmModel = button.getAttribute('data-llm');
         if (!llmModel) return;
         
+        // VERBOSE LOG: LLM model switched
+        logger.info('ToolbarManager', '=== LLM MODEL BUTTON CLICKED ===', {
+            timestamp: new Date().toISOString(),
+            clickedModel: llmModel,
+            previousModel: this.selectedLLM,
+            modelState: {
+                hasCachedResult: !!this.llmResults[llmModel],
+                isSuccess: this.llmResults[llmModel]?.success || false,
+                hasError: !!(this.llmResults[llmModel]?.error),
+                errorMessage: this.llmResults[llmModel]?.error || null
+            },
+            systemState: {
+                isGeneratingMulti: this.isGeneratingMulti,
+                totalCachedModels: Object.keys(this.llmResults).length
+            },
+            allModelsStatus: Object.keys(this.llmResults).map(model => ({
+                model: model,
+                success: this.llmResults[model].success,
+                error: this.llmResults[model].error || null
+            }))
+        });
+        
         // Check if this LLM has cached results
         if (this.llmResults[llmModel]) {
             // Check if it's a successful result
             if (this.llmResults[llmModel].success) {
+                logger.info('ToolbarManager', `✓ Switching to successful ${llmModel} result`);
                 this.selectedLLM = llmModel;
                 this.updateLLMButtonStates();
                 
@@ -363,6 +404,9 @@ class ToolbarManager {
             } else {
                 // Error result - show notification
                 const error = this.llmResults[llmModel].error || 'Generation failed';
+                logger.warn('ToolbarManager', `User clicked on failed ${llmModel} result`, {
+                    error: error
+                });
                 const lang = window.languageManager?.getCurrentLanguage() || 'en';
                 const message = lang === 'zh' 
                     ? `${llmModel} 生成失败: ${error}` 
@@ -372,6 +416,7 @@ class ToolbarManager {
         } else if (this.isGeneratingMulti) {
             // CRITICAL FIX: User clicked before this LLM finished generating
             // Show notification instead of silently ignoring the click
+            logger.debug('ToolbarManager', `User clicked ${llmModel} while still generating`);
             const lang = window.languageManager?.getCurrentLanguage() || 'en';
             const modelNames = {
                 'qwen': 'Qwen',
@@ -386,6 +431,7 @@ class ToolbarManager {
             this.showNotification(message, 'warning');
         } else {
             // No cached results yet, not generating - just update selection
+            logger.debug('ToolbarManager', `${llmModel} selected (no cached results yet)`);
             this.selectedLLM = llmModel;
             this.updateLLMButtonStates();
         }
@@ -395,14 +441,72 @@ class ToolbarManager {
      * Render cached LLM result
      */
     renderCachedLLMResult(llmModel) {
+        logger.info('ToolbarManager', `=== RENDERING CACHED RESULT FROM ${llmModel.toUpperCase()} ===`, {
+            timestamp: new Date().toISOString(),
+            model: llmModel
+        });
+        
         const cachedData = this.llmResults[llmModel];
         if (!cachedData || !cachedData.success) {
+            logger.error('ToolbarManager', `Cannot render ${llmModel}: No cached data or failed`, {
+                hasCachedData: !!cachedData,
+                success: cachedData?.success
+            });
             this.showNotification(`Error loading ${llmModel} result`, 'error');
             return;
         }
         
         const result = cachedData.result;
         const spec = result.spec;
+        
+        // VERBOSE LOG: Detailed spec analysis
+        logger.info('ToolbarManager', `Analyzing spec from ${llmModel}`, {
+            diagramType: result.diagram_type,
+            specStructure: {
+                hasNodes: !!spec?.nodes,
+                nodeCount: spec?.nodes?.length || 0,
+                hasChildren: !!spec?.children,
+                childrenCount: spec?.children?.length || 0,
+                hasTopic: !!spec?.topic,
+                topic: spec?.topic,
+                hasSteps: !!spec?.steps,
+                stepsCount: spec?.steps?.length || 0,
+                hasAnalogies: !!spec?.analogies,
+                analogiesCount: spec?.analogies?.length || 0,
+                allKeys: spec ? Object.keys(spec) : []
+            }
+        });
+        
+        // VERBOSE LOG: Extract and log all nodes/children with positions
+        let nodesInfo = [];
+        if (spec?.nodes) {
+            nodesInfo = spec.nodes.map((node, i) => ({
+                index: i,
+                id: node.id || 'no-id',
+                text: node.text || node.label || 'no-text',
+                position: { x: node.x || 0, y: node.y || 0 },
+                type: node.type || 'unknown',
+                level: node.level || 'unknown'
+            }));
+        } else if (spec?.children) {
+            nodesInfo = spec.children.map((child, i) => ({
+                index: i,
+                text: child.text || child.label || child,
+                type: 'child'
+            }));
+        } else if (spec?.steps) {
+            nodesInfo = spec.steps.map((step, i) => ({
+                index: i,
+                text: typeof step === 'string' ? step : step.text || step.label,
+                type: 'step'
+            }));
+        }
+        
+        logger.info('ToolbarManager', `=== NODES GENERATED BY ${llmModel.toUpperCase()} ===`, {
+            timestamp: new Date().toISOString(),
+            totalNodes: nodesInfo.length,
+            nodes: nodesInfo
+        });
         
         logger.debug('ToolbarManager', `Rendering ${llmModel} result`, {
             nodes: spec?.nodes?.length || 0
@@ -416,14 +520,27 @@ class ToolbarManager {
         
         // Update editor with cached spec
         if (this.editor) {
+            logger.info('ToolbarManager', 'Updating editor with new spec and rendering', {
+                diagramType: diagramType,
+                sessionId: this.editor.sessionId
+            });
+            
             this.editor.currentSpec = spec;
             this.editor.diagramType = diagramType;
             this.editor.renderDiagram();
             
+            logger.info('ToolbarManager', '✓ Diagram rendered successfully', {
+                model: llmModel,
+                diagramType: diagramType
+            });
+            
             // Reset view to optimal position after rendering completes
             setTimeout(() => {
                 this.editor.fitDiagramToWindow();
+                logger.debug('ToolbarManager', 'View fitted to window');
             }, 300);
+        } else {
+            logger.error('ToolbarManager', 'Cannot render: editor not initialized');
         }
     }
     
@@ -472,6 +589,27 @@ class ToolbarManager {
         window.addEventListener('editor-selection-change', (event) => {
             this.currentSelection = event.detail.selectedNodes;
             const hasSelection = event.detail.hasSelection;
+            
+            // VERBOSE LOG: Node selection via mouse click
+            if (hasSelection && this.currentSelection.length > 0) {
+                logger.info('ToolbarManager', '=== NODE SELECTED (MOUSE CLICK) ===', {
+                    timestamp: new Date().toISOString(),
+                    selectedNodes: this.currentSelection.map(node => ({
+                        id: node.id || 'unknown',
+                        text: node.text || node.textContent || 'no text',
+                        type: node.nodeType || node.getAttribute?.('data-node-type') || 'unknown',
+                        position: {
+                            x: node.x || node.getAttribute?.('x') || 0,
+                            y: node.y || node.getAttribute?.('y') || 0
+                        },
+                        element: node.tagName || 'unknown'
+                    })),
+                    totalSelected: this.currentSelection.length,
+                    diagramType: this.editor?.diagramType
+                });
+            } else {
+                logger.debug('ToolbarManager', 'Node selection cleared');
+            }
             
             // Update toolbar button states
             this.updateToolbarState(hasSelection);
@@ -1235,13 +1373,56 @@ class ToolbarManager {
      * Handle auto-complete diagram with AI
      */
     async handleAutoComplete() {
+        // VERBOSE LOG: Complete environment and state at start
+        logger.info('ToolbarManager', '=== AUTO-COMPLETE FUNCTION STARTED ===', {
+            timestamp: new Date().toISOString(),
+            diagramState: {
+                type: this.editor?.diagramType,
+                sessionId: this.editor?.sessionId,
+                hasSpec: !!this.editor?.currentSpec,
+                specKeys: this.editor?.currentSpec ? Object.keys(this.editor.currentSpec) : []
+            },
+            systemState: {
+                selectedLLM: this.selectedLLM,
+                cachedResultsCount: Object.keys(this.llmResults).length,
+                isAutoCompleting: this.isAutoCompleting,
+                isGeneratingMulti: this.isGeneratingMulti,
+                activeAbortControllers: this.activeAbortControllers.size
+            },
+            environment: {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                onLine: navigator.onLine,
+                cookieEnabled: navigator.cookieEnabled,
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    devicePixelRatio: window.devicePixelRatio
+                },
+                memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'unknown',
+                connectionType: navigator.connection ? navigator.connection.effectiveType : 'unknown'
+            },
+            performance: {
+                loadTime: performance.now() + 'ms since page load',
+                timing: performance.timing ? {
+                    domComplete: performance.timing.domComplete - performance.timing.navigationStart + 'ms',
+                    loadComplete: performance.timing.loadEventEnd - performance.timing.navigationStart + 'ms'
+                } : 'unavailable'
+            }
+        });
+        
         logger.info('ToolbarManager', 'Auto-complete started', {
             diagramType: this.editor?.diagramType
         });
         
         // Prevent concurrent auto-complete operations
         if (this.isAutoCompleting) {
-            logger.warn('ToolbarManager', 'Auto-complete already in progress');
+            logger.warn('ToolbarManager', 'Auto-complete already in progress - rejecting new request', {
+                timestamp: new Date().toISOString(),
+                isGeneratingMulti: this.isGeneratingMulti,
+                cachedResults: Object.keys(this.llmResults)
+            });
             return;
         }
         
@@ -1356,6 +1537,26 @@ class ToolbarManager {
                 baseRequestBody.dimension_preference = dimensionPreference;
             }
             
+            // VERBOSE LOG: Base request body prepared
+            logger.info('ToolbarManager', '=== LLM REQUEST BODY PREPARED ===', {
+                timestamp: new Date().toISOString(),
+                requestBody: {
+                    prompt: prompt,
+                    diagram_type: diagramType,
+                    language: language,
+                    session_id: this.editor.sessionId,
+                    dimension_preference: dimensionPreference || 'not set',
+                    prompt_length: prompt.length,
+                    has_chinese: /[\u4e00-\u9fa5]/.test(prompt)
+                },
+                contextInfo: {
+                    existingNodesCount: existingNodes.length,
+                    mainTopic: mainTopic,
+                    originalTopic: originalTopic,
+                    textForLanguageDetection: textForLanguageDetection
+                }
+            });
+            
             logger.info('ToolbarManager', 'Starting PARALLEL LLM generation');
             this.isGeneratingMulti = true;
             
@@ -1375,6 +1576,16 @@ class ToolbarManager {
                 models: models  // Request all 4 models in parallel
             };
             
+            // VERBOSE LOG: Actual request being sent to backend
+            logger.info('ToolbarManager', '=== SENDING REQUEST TO LLM MIDDLEWARE ===', {
+                timestamp: new Date().toISOString(),
+                endpoint: '/api/generate_multi_progressive',
+                method: 'POST',
+                models: models,
+                fullRequestBody: JSON.parse(JSON.stringify(parallelRequestBody)), // Deep copy for logging
+                requestSize: JSON.stringify(parallelRequestBody).length + ' bytes'
+            });
+            
             try {
                 logger.info('ToolbarManager', 'Calling progressive generation endpoint (SSE)');
                 
@@ -1385,6 +1596,18 @@ class ToolbarManager {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(parallelRequestBody)
+                });
+                
+                // VERBOSE LOG: Response received from server
+                logger.info('ToolbarManager', '=== LLM MIDDLEWARE RESPONSE RECEIVED ===', {
+                    timestamp: new Date().toISOString(),
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: {
+                        contentType: response.headers.get('content-type'),
+                        contentLength: response.headers.get('content-length')
+                    }
                 });
                 
                 if (!response.ok) {
@@ -1422,6 +1645,19 @@ class ToolbarManager {
                         try {
                             const data = JSON.parse(line.slice(6));
                             
+                            // VERBOSE LOG: Raw SSE data received
+                            logger.debug('ToolbarManager', '=== SSE DATA CHUNK RECEIVED ===', {
+                                timestamp: new Date().toISOString(),
+                                rawLine: line.substring(0, 200) + (line.length > 200 ? '...' : ''),
+                                parsedData: {
+                                    event: data.event || 'model_result',
+                                    model: data.model || 'unknown',
+                                    success: data.success,
+                                    hasSpec: !!data.spec,
+                                    hasDuration: !!data.duration
+                                }
+                            });
+                            
                             // Handle completion event
                             if (data.event === 'complete') {
                                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -1444,6 +1680,37 @@ class ToolbarManager {
                             logger.debug('ToolbarManager', `${model} completed (${completedCount}/${models.length}) in ${elapsed}s`);
                             
                             if (data.success) {
+                                // Validate spec before accepting it
+                                const specValidation = this._validateLLMSpec(model, data.spec, diagramType);
+                                
+                                // VERBOSE LOG: Successful LLM response JSON with validation
+                                logger.info('ToolbarManager', `=== JSON RESPONSE FROM ${model.toUpperCase()} ===`, {
+                                    timestamp: new Date().toISOString(),
+                                    model: model,
+                                    duration: data.duration ? data.duration.toFixed(2) + 's' : 'unknown',
+                                    response: {
+                                        diagram_type: data.diagram_type,
+                                        has_spec: !!data.spec,
+                                        spec_keys: data.spec ? Object.keys(data.spec) : [],
+                                        topics: data.topics || [],
+                                        style_preferences: data.style_preferences || {},
+                                        raw_spec: data.spec  // Full spec for debugging
+                                    },
+                                    validation: specValidation,
+                                    elapsed: elapsed + 's'
+                                });
+                                
+                                // Log validation issues if any
+                                if (!specValidation.isValid) {
+                                    logger.warn('ToolbarManager', `⚠️ ${model.toUpperCase()} SPEC VALIDATION WARNINGS`, {
+                                        model: model,
+                                        issues: specValidation.issues,
+                                        missingFields: specValidation.missingFields,
+                                        invalidFields: specValidation.invalidFields,
+                                        spec: data.spec
+                                    });
+                                }
+                                
                                 // Normalize diagram type
                                 let responseDiagramType = data.diagram_type || diagramType;
                                 if (responseDiagramType === 'mind_map') {
@@ -1459,7 +1726,8 @@ class ToolbarManager {
                                         diagram_type: responseDiagramType,
                                         topics: data.topics || [],
                                         style_preferences: data.style_preferences || {}
-                                    }
+                                    },
+                                    validation: specValidation
                                 };
                                 
                                 // Update button state
@@ -1483,6 +1751,26 @@ class ToolbarManager {
                             } else {
                                 // Model failed
                                 const errorMessage = data.error || 'Unknown error';
+                                
+                                // VERBOSE LOG: LLM failure details
+                                logger.error('ToolbarManager', `=== LLM FAILURE: ${model.toUpperCase()} ===`, {
+                                    timestamp: new Date().toISOString(),
+                                    model: model,
+                                    error: errorMessage,
+                                    errorDetails: {
+                                        hasError: !!data.error,
+                                        errorType: data.error_type || 'unknown',
+                                        errorCode: data.error_code || 'unknown',
+                                        rawResponse: data
+                                    },
+                                    requestInfo: {
+                                        prompt: prompt,
+                                        diagram_type: diagramType,
+                                        language: language
+                                    },
+                                    elapsed: elapsed + 's'
+                                });
+                                
                                 this.llmResults[model] = {
                                     model: model,
                                     success: false,
@@ -1501,6 +1789,21 @@ class ToolbarManager {
                 }
                 
             } catch (error) {
+                // VERBOSE LOG: Parallel endpoint failure details
+                logger.error('ToolbarManager', '=== PARALLEL ENDPOINT FAILED ===', {
+                    timestamp: new Date().toISOString(),
+                    error: error.message,
+                    errorStack: error.stack,
+                    endpoint: '/api/generate_multi_progressive',
+                    requestBody: {
+                        prompt: prompt,
+                        diagram_type: diagramType,
+                        models: models,
+                        language: language
+                    },
+                    fallback: 'sequential generation'
+                });
+                
                 logger.error('ToolbarManager', 'Parallel generation endpoint failed, falling back to sequential', error);
                 
                 // FALLBACK: If parallel endpoint fails, fall back to sequential (original code)
@@ -1613,6 +1916,11 @@ class ToolbarManager {
             const successCount = Object.values(this.llmResults).filter(r => r.success).length;
             logger.info('ToolbarManager', `Auto-complete: ${successCount}/4 LLMs completed`);
             
+            // VERBOSE LOG: Compare all LLM results for inconsistencies
+            if (successCount > 1) {
+                this._logLLMConsistencyAnalysis();
+            }
+            
             // Clear loading states
             this.setAllLLMButtonsLoading(false);
             this.updateLLMButtonStates();
@@ -1636,13 +1944,288 @@ class ToolbarManager {
             }, LLM_CONFIG.RENDER_DELAY_MS);
             
         } catch (error) {
+            // VERBOSE LOG: Complete auto-complete failure details
+            logger.error('ToolbarManager', '=== AUTO-COMPLETE FATAL ERROR ===', {
+                timestamp: new Date().toISOString(),
+                error: error.message,
+                errorStack: error.stack,
+                errorName: error.name,
+                context: {
+                    diagramType: diagramType,
+                    sessionId: this.editor?.sessionId,
+                    existingNodesCount: existingNodes?.length || 0,
+                    mainTopic: mainTopic || 'unknown',
+                    language: language,
+                    currentStep: this.isGeneratingMulti ? 'during_generation' : 'before_generation',
+                    llmResultsCount: Object.keys(this.llmResults).length,
+                    isAutoCompleting: this.isAutoCompleting,
+                    isGeneratingMulti: this.isGeneratingMulti
+                },
+                browser: {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    onLine: navigator.onLine,
+                    viewport: {
+                        width: window.innerWidth,
+                        height: window.innerHeight
+                    }
+                }
+            });
+            
             logger.error('ToolbarManager', 'Auto-complete error', error);
             this.showNotification(this.getNotif('autoCompleteFailed', error.message), 'error');
             this.setAllLLMButtonsLoading(false);
         } finally {
+            // VERBOSE LOG: Auto-complete cleanup
+            logger.debug('ToolbarManager', '=== AUTO-COMPLETE CLEANUP ===', {
+                timestamp: new Date().toISOString(),
+                flags: {
+                    wasAutoCompleting: this.isAutoCompleting,
+                    wasGeneratingMulti: this.isGeneratingMulti
+                },
+                results: {
+                    totalCached: Object.keys(this.llmResults).length,
+                    successful: Object.values(this.llmResults).filter(r => r.success).length,
+                    failed: Object.values(this.llmResults).filter(r => !r.success).length
+                }
+            });
+            
             this.setAutoButtonLoading(false);
             this.isAutoCompleting = false;
             this.isGeneratingMulti = false;
+        }
+    }
+    
+    /**
+     * Validate LLM spec structure for inconsistencies
+     */
+    _validateLLMSpec(model, spec, expectedDiagramType) {
+        const issues = [];
+        const missingFields = [];
+        const invalidFields = [];
+        
+        // Basic validation
+        if (!spec || typeof spec !== 'object') {
+            return {
+                isValid: false,
+                issues: ['Spec is not an object'],
+                missingFields: [],
+                invalidFields: ['spec']
+            };
+        }
+        
+        // Diagram-specific validation
+        switch (expectedDiagramType) {
+            case 'bubble_map':
+                if (!spec.topic) missingFields.push('topic');
+                if (!spec.children || !Array.isArray(spec.children)) {
+                    invalidFields.push('children');
+                } else if (spec.children.length === 0) {
+                    issues.push('Empty children array');
+                }
+                break;
+                
+            case 'circle_map':
+                if (!spec.topic) missingFields.push('topic');
+                if (!spec.context || !Array.isArray(spec.context)) {
+                    invalidFields.push('context');
+                } else if (spec.context.length === 0) {
+                    issues.push('Empty context array');
+                }
+                break;
+                
+            case 'mindmap':
+            case 'mind_map':
+                if (!spec.topic) missingFields.push('topic');
+                if (!spec.children || !Array.isArray(spec.children)) {
+                    invalidFields.push('children');
+                } else if (spec.children.length === 0) {
+                    issues.push('Empty children array');
+                }
+                break;
+                
+            case 'tree_map':
+                if (!spec.topic) missingFields.push('topic');
+                if (!spec.categories || !Array.isArray(spec.categories)) {
+                    invalidFields.push('categories');
+                } else if (spec.categories.length === 0) {
+                    issues.push('Empty categories array');
+                }
+                break;
+                
+            case 'brace_map':
+                if (!spec.topic) missingFields.push('topic');
+                if (!spec.parts || !Array.isArray(spec.parts)) {
+                    invalidFields.push('parts');
+                } else if (spec.parts.length === 0) {
+                    issues.push('Empty parts array');
+                }
+                break;
+                
+            case 'bridge_map':
+                if (!spec.analogies || !Array.isArray(spec.analogies)) {
+                    invalidFields.push('analogies');
+                } else if (spec.analogies.length === 0) {
+                    issues.push('Empty analogies array');
+                } else {
+                    // Check each analogy has left and right
+                    spec.analogies.forEach((analogy, i) => {
+                        if (!analogy.left) missingFields.push(`analogies[${i}].left`);
+                        if (!analogy.right) missingFields.push(`analogies[${i}].right`);
+                    });
+                }
+                break;
+                
+            case 'double_bubble_map':
+                if (!spec.left) missingFields.push('left');
+                if (!spec.right) missingFields.push('right');
+                if (!spec.similarities || !Array.isArray(spec.similarities)) {
+                    invalidFields.push('similarities');
+                }
+                if (!spec.left_differences || !Array.isArray(spec.left_differences)) {
+                    invalidFields.push('left_differences');
+                }
+                if (!spec.right_differences || !Array.isArray(spec.right_differences)) {
+                    invalidFields.push('right_differences');
+                }
+                break;
+                
+            case 'flow_map':
+                if (!spec.title) missingFields.push('title');
+                if (!spec.steps || !Array.isArray(spec.steps)) {
+                    invalidFields.push('steps');
+                } else if (spec.steps.length === 0) {
+                    issues.push('Empty steps array');
+                }
+                break;
+                
+            case 'multi_flow_map':
+                if (!spec.event) missingFields.push('event');
+                if (!spec.causes || !Array.isArray(spec.causes)) {
+                    invalidFields.push('causes');
+                }
+                if (!spec.effects || !Array.isArray(spec.effects)) {
+                    invalidFields.push('effects');
+                }
+                break;
+                
+            case 'concept_map':
+                if (!spec.nodes || !Array.isArray(spec.nodes)) {
+                    invalidFields.push('nodes');
+                } else if (spec.nodes.length === 0) {
+                    issues.push('Empty nodes array');
+                }
+                if (!spec.connections || !Array.isArray(spec.connections)) {
+                    invalidFields.push('connections');
+                }
+                break;
+        }
+        
+        const isValid = missingFields.length === 0 && invalidFields.length === 0 && issues.length === 0;
+        
+        return {
+            isValid: isValid,
+            issues: issues,
+            missingFields: missingFields,
+            invalidFields: invalidFields
+        };
+    }
+    
+    /**
+     * Log consistency analysis comparing all LLM results
+     */
+    _logLLMConsistencyAnalysis() {
+        const successful = Object.entries(this.llmResults)
+            .filter(([_, result]) => result.success)
+            .map(([model, result]) => ({ model, ...result }));
+        
+        if (successful.length < 2) return;
+        
+        logger.info('ToolbarManager', '=== LLM CONSISTENCY ANALYSIS ===', {
+            timestamp: new Date().toISOString(),
+            totalModels: successful.length,
+            models: successful.map(r => r.model)
+        });
+        
+        // Compare specs
+        const specComparison = {
+            models: successful.map(r => r.model),
+            specs: {}
+        };
+        
+        successful.forEach(({ model, result, validation }) => {
+            const spec = result.spec;
+            specComparison.specs[model] = {
+                diagram_type: result.diagram_type,
+                spec_keys: spec ? Object.keys(spec) : [],
+                validation: validation,
+                structure: {}
+            };
+            
+            // Extract key structural info
+            if (spec) {
+                if (spec.topic) specComparison.specs[model].structure.topic = spec.topic;
+                if (spec.children) specComparison.specs[model].structure.childrenCount = spec.children.length;
+                if (spec.nodes) specComparison.specs[model].structure.nodesCount = spec.nodes.length;
+                if (spec.categories) specComparison.specs[model].structure.categoriesCount = spec.categories.length;
+                if (spec.parts) specComparison.specs[model].structure.partsCount = spec.parts.length;
+                if (spec.analogies) specComparison.specs[model].structure.analogiesCount = spec.analogies.length;
+                if (spec.steps) specComparison.specs[model].structure.stepsCount = spec.steps.length;
+            }
+        });
+        
+        logger.info('ToolbarManager', 'Spec comparison across models:', specComparison);
+        
+        // Identify inconsistencies
+        const inconsistencies = [];
+        
+        // Check if all have same number of children/nodes
+        const childCounts = successful
+            .map(r => r.result.spec?.children?.length || r.result.spec?.nodes?.length || 0)
+            .filter(c => c > 0);
+        
+        if (childCounts.length > 1) {
+            const min = Math.min(...childCounts);
+            const max = Math.max(...childCounts);
+            if (max - min > 2) {
+                inconsistencies.push({
+                    type: 'content_count_variance',
+                    message: `Large variance in content count: ${min} to ${max}`,
+                    models: successful.map((r, i) => ({
+                        model: r.model,
+                        count: childCounts[i]
+                    }))
+                });
+            }
+        }
+        
+        // Check for validation failures
+        const validationIssues = successful.filter(r => r.validation && !r.validation.isValid);
+        if (validationIssues.length > 0) {
+            inconsistencies.push({
+                type: 'validation_failures',
+                message: `${validationIssues.length} model(s) have validation issues`,
+                models: validationIssues.map(r => ({
+                    model: r.model,
+                    issues: r.validation.issues,
+                    missingFields: r.validation.missingFields,
+                    invalidFields: r.validation.invalidFields
+                }))
+            });
+        }
+        
+        // Log inconsistencies
+        if (inconsistencies.length > 0) {
+            logger.warn('ToolbarManager', '⚠️ LLM INCONSISTENCIES DETECTED', {
+                timestamp: new Date().toISOString(),
+                inconsistencyCount: inconsistencies.length,
+                inconsistencies: inconsistencies
+            });
+        } else {
+            logger.info('ToolbarManager', '✓ All LLM results are consistent', {
+                timestamp: new Date().toISOString(),
+                modelsCompared: successful.length
+            });
         }
     }
     
@@ -1687,8 +2270,22 @@ class ToolbarManager {
      * Uses diagram-specific structure first, then falls back to heuristics
      */
     identifyMainTopic(nodes) {
-        if (nodes.length === 0) return '';
-        if (nodes.length === 1) return nodes[0].text;
+        logger.info('ToolbarManager', '=== IDENTIFYING MAIN TOPIC ===', {
+            timestamp: new Date().toISOString(),
+            nodeCount: nodes.length,
+            diagramType: this.editor?.diagramType,
+            hasSpec: !!this.editor?.currentSpec
+        });
+        
+        if (nodes.length === 0) {
+            logger.warn('ToolbarManager', 'No nodes provided, returning empty string');
+            return '';
+        }
+        
+        if (nodes.length === 1) {
+            logger.info('ToolbarManager', `Single node detected: "${nodes[0].text}"`);
+            return nodes[0].text;
+        }
         
         const diagramType = this.editor.diagramType;
         const spec = this.editor.currentSpec;
@@ -1697,18 +2294,26 @@ class ToolbarManager {
         // The spec is updated by updateNodeText when user edits the topic
         if (diagramType === 'bubble_map' || diagramType === 'circle_map' || 
             diagramType === 'tree_map' || diagramType === 'brace_map') {
+            
+            logger.info('ToolbarManager', `Strategy 1: Diagram type "${diagramType}" - checking spec.topic`);
+            
             // Check spec first (updated by updateNodeText)
             if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
+                logger.info('ToolbarManager', `✓ Main topic from spec.topic: "${spec.topic}"`);
                 return spec.topic;
             }
+            
             // Fallback: Check DOM if spec is not available
             // CRITICAL: Circle map uses 'center', not 'topic'!
             const topicNode = nodes.find(node => 
                 node.nodeType === 'topic' || node.nodeType === 'center'
             );
             if (topicNode && topicNode.text && !this.validator.isPlaceholderText(topicNode.text)) {
+                logger.info('ToolbarManager', `✓ Main topic from DOM node (type: ${topicNode.nodeType}): "${topicNode.text}"`);
                 return topicNode.text;
             }
+            
+            logger.debug('ToolbarManager', 'Strategy 1 failed, continuing to next strategy');
         }
         
         // Strategy 1-flow: For Flow Map, check spec.title (NOT spec.topic)
@@ -1742,8 +2347,14 @@ class ToolbarManager {
         // Strategy 1b: For double bubble maps, ALWAYS read from currentSpec first
         // CONSISTENCY FIX: Like bridge_map, use spec as source of truth
         if (diagramType === 'double_bubble_map') {
+            logger.info('ToolbarManager', 'Strategy 1b: Double bubble map - checking spec.left and spec.right');
+            
             if (spec && spec.left && spec.right) {
                 const combinedTopic = `${spec.left} vs ${spec.right}`;
+                logger.info('ToolbarManager', `✓ Main topic from spec: "${combinedTopic}"`, {
+                    left: spec.left,
+                    right: spec.right
+                });
                 return combinedTopic;
             }
             logger.warn('ToolbarManager', 'Double bubble map: No valid left/right topics in spec');
@@ -1753,10 +2364,17 @@ class ToolbarManager {
         // ROOT CAUSE FIX: DOM node array order ≠ pair index order
         // currentSpec.analogies[0] is the source of truth (updated by updateBridgeMapText)
         if (diagramType === 'bridge_map') {
+            logger.info('ToolbarManager', 'Strategy 1c: Bridge map - checking spec.analogies[0]');
+            
             if (spec && spec.analogies && spec.analogies.length > 0) {
                 const firstPair = spec.analogies[0];
                 if (firstPair.left && firstPair.right) {
                     const mainTopic = `${firstPair.left}/${firstPair.right}`;
+                    logger.info('ToolbarManager', `✓ Main topic from spec.analogies[0]: "${mainTopic}"`, {
+                        left: firstPair.left,
+                        right: firstPair.right,
+                        relatingFactor: spec.relatingFactor || 'not set'
+                    });
                     return mainTopic;
                 }
             }
@@ -1766,10 +2384,15 @@ class ToolbarManager {
         // Strategy 1d: For MindMap, prioritize spec first
         // CONSISTENCY FIX: Read from spec before geometric detection
         if (diagramType === 'mindmap') {
+            logger.info('ToolbarManager', 'Strategy 1d: MindMap - checking spec.topic');
+            
             // First, try to get from spec (source of truth)
             if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
+                logger.info('ToolbarManager', `✓ Main topic from spec.topic: "${spec.topic}"`);
                 return spec.topic;
             }
+            
+            logger.debug('ToolbarManager', 'Spec topic not available, falling back to geometric center detection');
             
             // Fallback: Find the node closest to center by position
             const svg = d3.select('#d3-container svg');
@@ -1917,7 +2540,14 @@ class ToolbarManager {
      * Extract existing nodes from the current diagram
      */
     extractExistingNodes() {
+        logger.info('ToolbarManager', '=== EXTRACTING EXISTING NODES ===', {
+            timestamp: new Date().toISOString(),
+            diagramType: this.editor?.diagramType
+        });
+        
         const nodes = [];
+        let skippedPlaceholders = 0;
+        let skippedEmpty = 0;
         
         // Define placeholder/template text patterns to skip
         const placeholderPatterns = [
@@ -1945,12 +2575,15 @@ class ToolbarManager {
             
             // Skip empty or placeholder text
             if (!text || text.length === 0) {
+                skippedEmpty++;
                 return;
             }
             
             // Check if this is placeholder text
             const isPlaceholder = placeholderPatterns.some(pattern => pattern.test(text));
             if (isPlaceholder) {
+                skippedPlaceholders++;
+                logger.debug('ToolbarManager', `Skipping placeholder node: "${text}"`);
                 return;
             }
             
@@ -1962,16 +2595,39 @@ class ToolbarManager {
             const nodeType = textElement.attr('data-node-type') || '';
             const nodeId = textElement.attr('data-node-id') || '';
             
-            nodes.push({
+            const nodeData = {
                 text: text,
                 x: x,
                 y: y,
                 nodeType: nodeType,
                 nodeId: nodeId
+            };
+            
+            nodes.push(nodeData);
+            
+            // VERBOSE LOG: Each node extracted
+            logger.info('ToolbarManager', `✓ Node extracted: "${text}"`, {
+                index: nodes.length,
+                nodeType: nodeType || 'unknown',
+                nodeId: nodeId || 'unknown',
+                position: { x, y },
+                textLength: text.length
             });
         });
         
-        logger.debug('ToolbarManager', `Extracted ${nodes.length} real nodes`);
+        // VERBOSE LOG: Summary of extraction
+        logger.info('ToolbarManager', '=== NODE EXTRACTION COMPLETE ===', {
+            totalNodesExtracted: nodes.length,
+            skippedEmpty: skippedEmpty,
+            skippedPlaceholders: skippedPlaceholders,
+            extractedNodes: nodes.map((n, i) => ({
+                index: i + 1,
+                text: n.text.substring(0, 50) + (n.text.length > 50 ? '...' : ''),
+                type: n.nodeType || 'unknown',
+                position: { x: Math.round(n.x), y: Math.round(n.y) }
+            }))
+        });
+        
         return nodes;
     }
     

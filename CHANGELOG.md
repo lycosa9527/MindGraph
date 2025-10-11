@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.1] - 2025-10-11 - Circle Map Validation Fix
+
+### Fixed
+
+- **Critical: Circle Map Validation Logic Error**
+  - **Root cause**: `_validateLLMSpec()` was checking for `children` field in Circle Maps, but Circle Maps use `context` instead
+  - **Previous behavior**: All 4 LLMs flagged with false positive validation warnings: `invalidFields: ["children"]`
+  - **Impact**: Incorrectly reported "LLM INCONSISTENCIES DETECTED" even when all specs were valid
+  - **Solution**: Separated `bubble_map` and `circle_map` validation cases
+    - Bubble Maps: Check for `topic` and `children` array (unchanged)
+    - Circle Maps: Check for `topic` and `context` array (corrected)
+  - **Result**: Circle Map validation now correctly recognizes valid specs, no false positive warnings
+  - File: `static/js/editor/toolbar-manager.js` lines 2019-2035
+
+### Technical Details
+
+**Before (Incorrect)**:
+```javascript
+case 'bubble_map':
+case 'circle_map':  // ❌ Both checking for 'children'
+    if (!spec.children || !Array.isArray(spec.children)) {
+        invalidFields.push('children');
+    }
+```
+
+**After (Correct)**:
+```javascript
+case 'bubble_map':
+    if (!spec.children || !Array.isArray(spec.children)) {
+        invalidFields.push('children');  // ✓ Bubble maps use 'children'
+    }
+    break;
+
+case 'circle_map':
+    if (!spec.context || !Array.isArray(spec.context)) {
+        invalidFields.push('context');  // ✓ Circle maps use 'context'
+    }
+    break;
+```
+
+**Example Valid Circle Map Spec**:
+```json
+{
+  "topic": "键盘",
+  "context": ["输入设备", "QWERTY布局", "机械按键", "无线连接", ...],
+  "_layout": {...},
+  "_recommended_dimensions": {...}
+}
+```
+
+---
+
 ## [4.6.0] - 2025-10-11 - Comprehensive Auto-Complete Debug Logging & LLM Inconsistency Detection
 
 ### Added
