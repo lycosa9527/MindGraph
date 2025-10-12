@@ -80,6 +80,30 @@ class NodePaletteManager {
                 palettePanel.style.opacity = '1';
             }, 10);
         }
+        
+        // Attach finish button listener when panel opens
+        this.attachFinishButtonListener();
+    }
+    
+    attachFinishButtonListener() {
+        /**
+         * Attach click listener to Finish button.
+         * Called when panel opens to ensure listener is active.
+         */
+        const finishBtn = document.getElementById('finish-selection-btn');
+        if (finishBtn) {
+            // Remove old listener if exists (prevent duplicates)
+            finishBtn.replaceWith(finishBtn.cloneNode(true));
+            const newBtn = document.getElementById('finish-selection-btn');
+            
+            newBtn.addEventListener('click', () => {
+                console.log('[NodePalette] Finish button clicked!');
+                this.finishSelection();
+            });
+            console.log('[NodePalette] Finish button listener attached');
+        } else {
+            console.error('[NodePalette] Finish button not found in DOM!');
+        }
     }
     
     hidePalettePanel() {
@@ -169,7 +193,7 @@ class NodePaletteManager {
             ? '/thinking_mode/node_palette/start'
             : `/thinking_mode/node_palette/next_batch`;
         
-        const payload = this.currentBatch === 1
+            const payload = this.currentBatch === 1
             ? {
                 session_id: this.sessionId,
                 diagram_type: 'circle_map',
@@ -177,7 +201,8 @@ class NodePaletteManager {
                 educational_context: {
                     grade_level: '5th grade',
                     subject: 'Science'
-                }
+                },
+                batch_size: 50
             }
             : {
                 session_id: this.sessionId,
@@ -185,7 +210,8 @@ class NodePaletteManager {
                 educational_context: {
                     grade_level: '5th grade',
                     subject: 'Science'
-                }
+                },
+                batch_size: 50
             };
         
         try {
@@ -283,11 +309,12 @@ class NodePaletteManager {
          * @returns {HTMLElement} Node card element
          */
         const card = document.createElement('div');
-        card.className = 'node-card';
+        card.className = `node-card llm-${node.source_llm}`;
         card.dataset.nodeId = node.id;
+        card.dataset.llm = node.source_llm;
         
-        // Truncate text if too long (max 30 chars per design doc)
-        const displayText = this.truncateText(node.text, 30);
+        // Truncate text if too long (max 60 chars for 220px circular nodes)
+        const displayText = this.truncateText(node.text, 60);
         
         card.innerHTML = `
             <div class="node-card-content">
@@ -360,10 +387,20 @@ class NodePaletteManager {
         }
         
         if (finishBtn) {
+            const wasDisabled = finishBtn.disabled;
             finishBtn.disabled = this.selectedNodes.size === 0;
             finishBtn.textContent = this.selectedNodes.size > 0 
                 ? `Finish (${this.selectedNodes.size} selected)` 
                 : 'Select nodes to continue';
+            
+            // Log button state change
+            if (wasDisabled && !finishBtn.disabled) {
+                console.log('[NodePalette] Button enabled: "Finish (%d selected)"', this.selectedNodes.size);
+            } else if (!wasDisabled && finishBtn.disabled) {
+                console.log('[NodePalette] Button disabled: "Select nodes to continue"');
+            }
+        } else {
+            console.error('[NodePalette] Finish button not found when updating counter!');
         }
     }
     
@@ -409,20 +446,27 @@ class NodePaletteManager {
          */
         const selectedCount = this.selectedNodes.size;
         
-        console.log(`[NodePalette-Finish] User finishing | Selected: ${selectedCount}/${this.nodes.length} | Batches: ${this.currentBatch} | Selection rate: ${((selectedCount/this.nodes.length)*100).toFixed(1)}%`);
+        console.log('[NodePalette-Finish] ========================================');
+        console.log('[NodePalette-Finish] USER CLICKED FINISH BUTTON');
+        console.log('[NodePalette-Finish] ========================================');
+        console.log(`[NodePalette-Finish] Selected: ${selectedCount}/${this.nodes.length} | Batches: ${this.currentBatch} | Rate: ${((selectedCount/this.nodes.length)*100).toFixed(1)}%`);
+        console.log('[NodePalette-Finish] selectedNodes Set:', Array.from(this.selectedNodes));
         
         if (selectedCount === 0) {
-            console.warn('[NodePalette-Finish] No nodes selected');
+            console.warn('[NodePalette-Finish] ⚠ No nodes selected, showing alert');
             alert('Please select at least one node');
             return;
         }
         
+        // Filter selected nodes
         const selectedNodesData = this.nodes.filter(n => this.selectedNodes.has(n.id));
-        console.log('[NodePalette-Finish] Selected nodes:', selectedNodesData.map(n => n.text));
+        console.log('[NodePalette-Finish] Filtered %d nodes from %d total', selectedNodesData.length, this.nodes.length);
+        console.log('[NodePalette-Finish] Selected node texts:', selectedNodesData.map(n => n.text));
         
         // Log finish event to backend
+        console.log('[NodePalette-Finish] Sending finish event to backend...');
         try {
-            await fetch('/thinking_mode/node_palette/finish', {
+            const response = await fetch('/thinking_mode/node_palette/finish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -432,38 +476,134 @@ class NodePaletteManager {
                     batches_loaded: this.currentBatch
                 })
             });
+            console.log('[NodePalette-Finish] Backend response:', response.status, response.statusText);
         } catch (e) {
             console.error('[NodePalette-Finish] Failed to log finish event:', e);
         }
         
-        // Hide Node Palette
+        // Hide Node Palette BEFORE adding nodes (so user sees the result)
+        console.log('[NodePalette-Finish] Hiding Node Palette panel...');
         this.hidePalettePanel();
         
+        // Wait for panel to hide
+        await new Promise(resolve => setTimeout(resolve, 350));
+        
         // Add selected nodes to Circle Map
+        console.log('[NodePalette-Finish] Starting node assembly...');
         await this.assembleNodesToCircleMap(selectedNodesData);
         
-        console.log('[NodePalette-Finish] Node Palette complete, nodes added to Circle Map');
+        console.log('[NodePalette-Finish] ========================================');
+        console.log('[NodePalette-Finish] ✓ FINISH COMPLETE');
+        console.log('[NodePalette-Finish] ========================================');
     }
     
     async assembleNodesToCircleMap(selectedNodes) {
         /**
          * Add selected nodes to the Circle Map diagram.
+         * Uses InteractiveEditor API for robust integration.
          * 
          * @param {Array} selectedNodes - Array of selected node objects
          */
-        // This will be integrated with the Circle Map renderer
-        // For now, just trigger a diagram update event
+        console.log('[NodePalette] ========================================');
+        console.log('[NodePalette] ASSEMBLING NODES TO CIRCLE MAP');
+        console.log('[NodePalette] ========================================');
+        console.log('[NodePalette] Selected nodes count: %d', selectedNodes.length);
+        console.log('[NodePalette] Selected nodes:', selectedNodes.map(n => n.text));
         
-        const event = new CustomEvent('nodePaletteComplete', {
-            detail: {
-                selectedNodes: selectedNodes,
-                centerTopic: this.centerTopic
+        // Step 1: Verify editor exists
+        const editor = window.currentEditor;
+        console.log('[NodePalette] Editor check: %s', editor ? '✓ Found' : '✗ Not found');
+        
+        if (!editor) {
+            console.error('[NodePalette] ERROR: No active editor found');
+            alert('Error: No active editor found. Please try refreshing the page.');
+            return;
+        }
+        
+        console.log('[NodePalette] Editor type: %s', editor.diagramType);
+        console.log('[NodePalette] Editor has currentSpec: %s', !!editor.currentSpec);
+        console.log('[NodePalette] Editor has render method: %s', typeof editor.render === 'function');
+        
+        // Step 2: Verify spec exists
+        const currentSpec = editor.currentSpec;
+        if (!currentSpec) {
+            console.error('[NodePalette] ERROR: No current spec found');
+            alert('Error: No diagram specification found. Please try refreshing the page.');
+            return;
+        }
+        
+        console.log('[NodePalette] Current spec keys: %s', Object.keys(currentSpec).join(', '));
+        console.log('[NodePalette] Current context nodes: %d', currentSpec.context ? currentSpec.context.length : 0);
+        
+        // Step 3: Initialize context array if needed
+        if (!currentSpec.context) {
+            console.log('[NodePalette] Creating new context array');
+            currentSpec.context = [];
+        }
+        
+        const beforeCount = currentSpec.context.length;
+        
+        // Step 4: Add selected nodes
+        console.log('[NodePalette] Adding nodes to context array...');
+        for (let i = 0; i < selectedNodes.length; i++) {
+            const node = selectedNodes[i];
+            const newNode = {
+                text: node.text,
+                id: `context_${currentSpec.context.length}`
+            };
+            currentSpec.context.push(newNode);
+            console.log('[NodePalette]   [%d/%d] Added: "%s" (id: %s)', 
+                       i+1, selectedNodes.length, node.text, newNode.id);
+        }
+        
+        const afterCount = currentSpec.context.length;
+        console.log('[NodePalette] Context array updated: %d → %d nodes (+%d)', 
+                   beforeCount, afterCount, afterCount - beforeCount);
+        
+        // Step 5: Re-render the diagram
+        console.log('[NodePalette] Calling editor.render()...');
+        try {
+            // Try different render methods based on editor type
+            if (typeof editor.render === 'function') {
+                const renderResult = await editor.render();
+                console.log('[NodePalette] ✓ editor.render() completed:', renderResult);
+            } else if (typeof editor.renderDiagram === 'function') {
+                await editor.renderDiagram(currentSpec);
+                console.log('[NodePalette] ✓ editor.renderDiagram() completed');
+            } else if (typeof editor.update === 'function') {
+                await editor.update();
+                console.log('[NodePalette] ✓ editor.update() completed');
+            } else {
+                console.error('[NodePalette] ERROR: No render method found on editor');
+                console.error('[NodePalette] Available methods:', Object.keys(editor).filter(k => typeof editor[k] === 'function'));
+                alert('Error: Cannot render diagram. Please try refreshing the page.');
+                return;
             }
-        });
-        
-        document.dispatchEvent(event);
-        
-        console.log('[NodePalette] Dispatched nodePaletteComplete event with %d nodes', selectedNodes.length);
+            
+            // Step 6: Save to history
+            console.log('[NodePalette] Checking history save...');
+            if (typeof editor.saveHistoryState === 'function') {
+                editor.saveHistoryState('node_palette_add');
+                console.log('[NodePalette] ✓ History saved');
+            } else if (typeof editor.saveHistory === 'function') {
+                editor.saveHistory('node_palette_add');
+                console.log('[NodePalette] ✓ History saved (alternative method)');
+            } else {
+                console.warn('[NodePalette] ⚠ No history save method found (this is OK)');
+            }
+            
+            console.log('[NodePalette] ========================================');
+            console.log('[NodePalette] ✓ SUCCESS: Nodes added to Circle Map');
+            console.log('[NodePalette] ========================================');
+            
+        } catch (error) {
+            console.error('[NodePalette] ========================================');
+            console.error('[NodePalette] ✗ ERROR: Failed to render Circle Map');
+            console.error('[NodePalette] Error message:', error.message);
+            console.error('[NodePalette] Error stack:', error.stack);
+            console.error('[NodePalette] ========================================');
+            alert(`Error rendering diagram: ${error.message}\n\nPlease check console for details.`);
+        }
     }
 }
 
@@ -475,14 +615,6 @@ if (typeof module !== 'undefined' && module.exports) {
 // Global instance
 window.nodePaletteManager = new NodePaletteManager();
 
-// Initialize Finish button listener when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    const finishBtn = document.getElementById('finish-selection-btn');
-    if (finishBtn) {
-        finishBtn.addEventListener('click', () => {
-            window.nodePaletteManager.finishSelection();
-        });
-        console.log('[NodePalette] Finish button listener attached');
-    }
-});
+// Note: Button listener is now attached when panel opens (see showPalettePanel)
+// This ensures the listener is active even if panel opens after DOMContentLoaded
 

@@ -17,7 +17,7 @@ Usage:
     python setup.py
 
 Author: MindGraph Development Team
-Version: 4.0.0 (FastAPI)
+Version: See VERSION file (centralized version management)
 """
 
 import subprocess
@@ -37,6 +37,7 @@ CORE_DEPENDENCIES = {
     
     # HTTP and networking (async)
     'aiohttp': 'aiohttp',
+    'openai': 'openai',
     'multipart': 'python-multipart',
     
     # AI and language processing
@@ -50,6 +51,7 @@ CORE_DEPENDENCIES = {
     
     # Async and concurrency
     'nest_asyncio': 'nest-asyncio',
+    'aiofiles': 'aiofiles',
     
     # Browser automation and image processing
     'playwright': 'Playwright',
@@ -71,6 +73,7 @@ REQUIRED_LOG_FILES = [
 ]
 
 ESSENTIAL_FILES = [
+    "VERSION",
     "main.py",
     "run_server.py",
     "requirements.txt",

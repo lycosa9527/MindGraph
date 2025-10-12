@@ -59,7 +59,7 @@ class HealthResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "status": "ok",
-                "version": "4.0.0-fastapi"
+                "version": "4.9.0"  # Example only - actual version from config.VERSION
             }
         }
 
@@ -78,7 +78,7 @@ class StatusResponse(BaseModel):
             "example": {
                 "status": "running",
                 "framework": "FastAPI",
-                "version": "4.0.0",
+                "version": "4.9.0",  # Example only - actual version from config.VERSION
                 "uptime_seconds": 3600.0,
                 "memory_percent": 45.2,
                 "timestamp": 1696800000.0

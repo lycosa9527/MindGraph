@@ -508,6 +508,23 @@ body {
     gap: 12px;
 }
 
+.toolbar-left {
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.toolbar-center {
+    flex: 1;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.toolbar-right {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
 .toolbar-group {
     display: flex;
     align-items: center;
@@ -1264,16 +1281,7 @@ body {
         font-size: 12px;
     }
     
-    .editor-toolbar {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .toolbar-section {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+    /* Toolbar mobile styles moved to editor-toolbar.css for better organization */
     
     .property-panel {
         width: 100%;

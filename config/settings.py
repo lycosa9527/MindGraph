@@ -2,8 +2,6 @@
 MindGraph Configuration Module
 ==============================
 
-Version: 4.1.1
-
 This module provides centralized configuration management for the MindGraph application.
 It handles environment variable loading, validation, and provides a clean interface
 for accessing configuration values throughout the application.
@@ -43,6 +41,23 @@ class Config:
         self._cache = {}
         self._cache_timestamp = 0
         self._cache_duration = 30  # Cache for 30 seconds
+        self._version = None  # Cached version from VERSION file
+    
+    @property
+    def VERSION(self) -> str:
+        """
+        Application version - read from VERSION file (single source of truth).
+        Cached after first read for performance.
+        """
+        if self._version is None:
+            try:
+                from pathlib import Path
+                version_file = Path(__file__).parent.parent / 'VERSION'
+                self._version = version_file.read_text().strip()
+            except Exception as e:
+                logger.warning(f"Failed to read VERSION file: {e}")
+                self._version = "0.0.0"  # Fallback
+        return self._version
     def _get_cached_value(self, key: str, default=None):
         import time
         current_time = time.time()

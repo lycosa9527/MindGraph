@@ -413,9 +413,9 @@
                 <button id="reset-btn" class="btn-warning">Reset</button>
             </div>
             
-            <!-- Center Section: Node Management -->
-            <div class="toolbar-section toolbar-center">
-                <div class="toolbar-group">
+            <!-- Nodes Section: Node Management (节点) -->
+            <div class="toolbar-section toolbar-nodes-section">
+                <div class="toolbar-group nodes-toolbar-group">
                     <label>Nodes:</label>
                     <button id="add-node-btn" class="btn-tool" title="Add Node">Add</button>
                     <button id="delete-node-btn" class="btn-tool" title="Delete Selected">Delete</button>
@@ -453,8 +453,11 @@
                         <span id="thinking-btn-text">Thinking</span>
                     </button>
                 </div>
-                
-                <div class="toolbar-group">
+            </div>
+            
+            <!-- Tools Section: Tool Management (工具) -->
+            <div class="toolbar-section toolbar-tools-section">
+                <div class="toolbar-group tools-toolbar-group">
                     <label>Tools:</label>
                     <button id="empty-node-btn" class="btn-tool" title="Empty selected node text">Empty</button>
                     <button id="undo-btn" class="btn-tool" title="Undo">Undo</button>
@@ -752,6 +755,7 @@
     <script src="/static/js/editor/diagram-validator.js"></script>
     <script src="/static/js/editor/learning-mode-manager.js"></script>
     <script src="/static/js/editor/toolbar-manager.js"></script>
+    <script src="/static/js/editor/toolbar-responsive.js"></script>
     <script src="/static/js/editor/interactive-editor.js"></script>
     <script src="/static/js/editor/diagram-selector.js"></script>
     

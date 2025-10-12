@@ -172,7 +172,7 @@ async def start_node_palette(req: NodePaletteStartRequest):
                     session_id=session_id,
                     center_topic=center_topic,
                     educational_context=req.educational_context,
-                    batch_size=20
+                    batch_size=50
                 ):
                     if chunk.get('event') == 'batch_start':
                         batch_count += 1
@@ -232,7 +232,7 @@ async def get_next_batch(req: NodePaletteNextRequest):
                     session_id=session_id,
                     center_topic=req.center_topic,
                     educational_context=req.educational_context,
-                    batch_size=20
+                    batch_size=50
                 ):
                     yield f"data: {json.dumps(chunk)}\n\n"
             except Exception as e:

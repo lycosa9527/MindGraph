@@ -1,132 +1,163 @@
 # MindGraph
 
-**AI-Powered Diagram Generation Platform** | **AI驱动的图表生成平台**
+**Enterprise-Grade AI Diagram Generation Platform** | **企业级AI图表生成平台**
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![Uvicorn](https://img.shields.io/badge/Uvicorn-0.24+-purple.svg)](https://www.uvicorn.org/)
-[![D3.js](https://img.shields.io/badge/D3.js-7.0+-orange.svg)](https://d3js.org/)
 [![License](https://img.shields.io/badge/License-AGPLv3-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.1.1-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.9.0-brightgreen.svg)](CHANGELOG.md)
 [![Async Ready](https://img.shields.io/badge/Async-100%25-success.svg)](CHANGELOG.md)
 [![Multi-LLM](https://img.shields.io/badge/LLMs-4_Models-blue.svg)](CHANGELOG.md)
 [![Bilingual](https://img.shields.io/badge/Languages-EN%20%7C%20中文-orange.svg)](CHANGELOG.md)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
-Transform natural language into professional diagrams. Supports 10 diagram types including Thinking Maps, Mind Maps, and Concept Maps with intelligent LLM classification and D3.js rendering.
+Transform natural language into professional visual diagrams. **API-first platform** for Dify, Coze, and any HTTP POST integration. **Complete interactive suite** for K-12 education with AI-powered learning tools.
 
-将自然语言转换为专业图表。支持10种图表类型，包括八大思维图示、思维导图和概念图，具有智能LLM分类和D3.js渲染功能。
+将自然语言转换为专业可视化图表。面向Dify、Coze和任何HTTP POST集成的**API优先平台**。面向K-12教育的**完整交互套件**，配备AI驱动的学习工具。
 
----
-
-## 🤯 **Built with Zero Programming Knowledge!** | **零编程基础打造！**
-
-**Fun Fact**: This entire application was built using **Cursor AI** by someone with **absolutely zero programming experience**. Every line of code, from the FastAPI backend to the D3.js visualizations, was created through AI pair programming. If you're new to coding, this project proves that with the right AI tools, you can build production-ready applications! 😄
-
-**有趣的事实**: 这整个应用是由一个**完全没有编程经验**的人使用**Cursor AI**构建的。从FastAPI后端到D3.js可视化的每一行代码，都是通过AI结对编程创建的。如果你是编程新手，这个项目证明了有了正确的AI工具，你也可以构建生产级应用！😄
+**⚡ Minimum Python Version: 3.8 | Recommended: 3.13+ for 2x faster async performance**
 
 ---
 
-## 🎯 **v4.1 - Multi-LLM & Visual Enhancements** | **v4.1 - 多LLM与视觉增强**
+## 🎯 Two Integration Modes | 两种集成模式
 
-### 🤖 **4 LLM Models with Smart Switching** | **4种LLM模型智能切换**
-✅ **Qwen (通义千问)** - Fast & reliable, default model | 快速可靠，默认模型  
-✅ **DeepSeek-v3.1** - High quality reasoning | 高质量推理  
-✅ **Tencent Hunyuan (混元)** - Tencent Cloud AI | 腾讯云AI  
-✅ **Kimi (月之暗面)** - Moonshot AI | 月之暗面AI  
+### 🔌 Mode 1: API Integration | 模式1：API集成
 
-### ✨ **Professional Visual Feedback** | **专业视觉反馈**
-✅ **Glowing Button Effects** - Color-coded completion indicators | 色彩编码完成指示器  
-✅ **Pulsing Animations** - Smooth 2s pulse when results ready | 结果就绪时平滑2秒脉动  
-✅ **Unique Colors** - Blue, Purple, Orange, Teal for each LLM | 每个LLM使用独特颜色  
+**Perfect for Dify, Coze, and Custom AI Platforms | 完美适配Dify、Coze和定制AI平台**
 
-### 🌐 **100% Bilingual Support** | **100%双语支持**
-✅ **Complete Translation** - All UI, notifications, and errors | 所有界面、通知和错误  
-✅ **Seamless Switching** - Instant language toggle | 即时语言切换  
-✅ **K-12 Ready** - Designed for classroom use | 专为课堂使用设计  
+One-line integration for your AI workflow:
 
-### 🚀 **v4.0 - Full Async Architecture** | **v4.0 - 完全异步架构**
-✅ **FastAPI + Uvicorn** - Modern async ASGI framework | 现代异步ASGI框架  
-✅ **4,000+ Concurrent SSE Connections** - Non-blocking event loop | 非阻塞事件循环  
-✅ **100% Async HTTP** - Zero blocking I/O with aiohttp | 零阻塞I/O  
-✅ **Auto-Generated API Docs** - Interactive Swagger UI at `/docs` | 交互式Swagger UI  
-✅ **Type-Safe with Pydantic** - Full validation | 完整验证  
-✅ **Cross-Platform** - Windows 11 & Ubuntu | 跨平台
+```http
+POST /api/generate_png
+Content-Type: application/json
 
-## Features | 功能特性
+{
+  "prompt": "Compare online vs offline learning",
+  "language": "en"
+}
 
-### 🎨 Interactive Editor | 交互式编辑器
-Professional web-based diagram editor with comprehensive bilingual support | 专业的网页图表编辑器，全面支持双语
+→ Returns professional PNG diagram instantly
+```
 
-- **Full Bilingual Interface** | **完整双语界面**
-  - Seamless Chinese/English language switching | 中英文无缝切换
-  - All UI elements translated (buttons, tooltips, notifications) | 所有UI元素已翻译（按钮、工具提示、通知）
-  - Dynamic node creation in current language | 当前语言动态节点创建
-  - 60+ notification messages fully localized | 60+条通知消息完全本地化
-  - Interactive Learning Mode fully bilingual | 交互式学习模式完全双语
+**Use Cases | 使用场景:**
+- ✅ **Dify Workflows**: Add visual diagram generation to your AI workflows | **Dify工作流**: 为AI工作流添加可视化图表生成
+- ✅ **Coze Bots**: Return diagrams in chatbot responses | **Coze机器人**: 在聊天机器人响应中返回图表
+- ✅ **DingTalk Integration**: Direct markdown image format support | **钉钉集成**: 直接支持markdown图片格式
+- ✅ **Custom Platforms**: RESTful API for any HTTP POST integration | **定制平台**: 适用于任何HTTP POST集成的RESTful API
 
-- **Rich Editing Tools** | **丰富的编辑工具**
-  - **Add/Delete Nodes**: Context-aware node operations for all diagram types | **添加/删除节点**: 所有图表类型的上下文感知节点操作
-  - **Text Editing**: Double-click inline editing with properties panel | **文本编辑**: 双击内联编辑，带属性面板
-  - **Visual Styling**: Font size, color, style customization | **视觉样式**: 字体大小、颜色、样式自定化
-  - **Line Mode**: Toggle black & white line-art mode for printing | **线稿模式**: 切换黑白线条模式用于打印
-  - **Undo/Redo**: Full history management with state restoration (Ctrl+Z/Ctrl+Y) | **撤销/重做**: 完整历史记录管理与状态恢复（Ctrl+Z/Ctrl+Y）
-  - **Node Counter**: Real-time node count display for all diagram types | **节点计数**: 所有图表类型的实时节点计数显示
+**Why Choose MindGraph API | 为什么选择MindGraph API:**
+- 🚀 **Production Ready**: FastAPI async architecture, 4,000+ concurrent connections | **生产就绪**: FastAPI异步架构，4000+并发连接
+- 🎨 **10 Diagram Types**: Auto-detect or specify (Thinking Maps, Mind Maps, Concept Maps) | **10种图表类型**: 自动检测或指定
+- 🌐 **100% Bilingual**: Perfect Chinese/English support for global audiences | **100%双语**: 完美支持中英文，面向全球受众
+- ⚡ **Fast Response**: Average 8.7s end-to-end (LLM + rendering + export) | **快速响应**: 平均8.7秒端到端
 
-- **AI-Powered Features** | **AI功能**
-  - **Multi-LLM Auto-Complete**: Compare 4 AI models simultaneously with visual feedback | **多LLM自动完成**: 同时比较4个AI模型，视觉反馈
-    - Click one button → Get 4 different AI perspectives | 点击一个按钮 → 获得4个不同AI视角
-    - Each LLM glows with unique color when ready | 每个LLM就绪时发出独特颜色光芒
-    - Switch between results instantly | 即时切换结果
-  - **MindMate AI Assistant**: Integrated Dify-powered AI helper in side panel | **MindMate AI助手**: 集成Dify驱动的AI助手在侧边栏
-  - **Smart Prompt Processing**: Natural language to diagram generation | **智能提示处理**: 自然语言转图表生成
-  - **LLM Selection**: Choose your preferred AI model for generation | **LLM选择**: 选择您喜欢的AI模型进行生成
+[**→ View Complete API Documentation**](docs/API_REFERENCE.md)
 
-- **Export & Share** | **导出与分享**
-  - **PNG Export**: High-quality image export with watermark | **PNG导出**: 高质量图像导出，带水印
-  - **Share URL**: One-click URL sharing with QR code | **分享URL**: 一键URL分享，带二维码
-  - **Canvas Reset**: Quick reset to blank template | **画布重置**: 快速重置为空白模板
+---
 
-- **Professional UI** | **专业界面**
-  - Gallery view with 10 diagram templates | 画廊视图，10种图表模板
-  - AI prompt input with history | AI提示输入，带历史记录
-  - Properties panel for fine-tuned styling | 属性面板用于精细样式调整
-  - Real-time diagram rendering with D3.js | D3.js实时图表渲染
+### 🎨 Mode 2: Complete Interactive Suite | 模式2：完整交互套件
 
-### 🚀 Core Features | 核心功能
+**Professional Web Editor with AI-Powered Tools | 配备AI工具的专业网页编辑器**
 
-- **Smart Classification**: LLM-based diagram type detection | **智能分类**: 基于LLM的图表类型检测
-- **10 Diagram Types**: Complete Thinking Maps coverage plus Mind Maps and Concept Maps | **10种图表类型**: 完整的八大思维图示覆盖，加上思维导图和概念图
-- **Interactive Learning Mode** 🧠: AI-powered interactive learning with real-time validation, multi-angle verification, and intelligent tutoring | **交互式学习模式**: AI驱动的交互式学习，实时验证、多角度验证和智能辅导
-- **Learning Sheets (半成品)**: Educational mode with 20% content hidden for student practice | **学习半成品**: 教育模式，隐藏20%内容供学生练习
-- **API-First**: FastAPI RESTful endpoints with auto-documentation | **API优先**: FastAPI RESTful端点，带自动文档
-- **Fully Async**: 100% async/await for scalable concurrent processing | **完全异步**: 100% async/await，可扩展并发处理
-- **Production Ready**: Async event loop, enterprise-grade architecture | **生产就绪**: 异步事件循环，企业级架构
+Full-featured platform for educators, students, and knowledge workers:
 
-## Quick Start | 快速开始
+#### **🤖 4-LLM Parallel Auto-Complete | 4-LLM并行自动完成**
+Click one button → Get 4 AI perspectives simultaneously | 点击一个按钮 → 同时获得4个AI视角
+
+- **Qwen (通义千问)**: Fast & reliable, default choice | 快速可靠，默认选择
+- **DeepSeek-v3.1**: High-quality reasoning & analysis | 高质量推理与分析  
+- **Kimi (月之暗面)**: Moonshot AI, creative solutions | 月之暗面AI，创意解决方案
+- **Hunyuan (混元)**: Tencent Cloud AI, enterprise-grade | 腾讯云AI，企业级
+
+**Visual Feedback**: Each LLM glows with unique color when ready (Blue, Purple, Orange, Teal) | **视觉反馈**: 每个LLM就绪时发出独特颜色光芒
+
+#### **🧠 Interactive Learning Mode (K-12 Education) | 交互式学习模式（K-12教育）**
+AI-powered tutoring system for classroom learning:
+
+- **20% Intelligent Knockout**: System hides nodes for active recall practice | **20%智能隐藏**: 系统隐藏节点进行主动回忆练习
+- **Real-time Validation**: AI validates answers with semantic understanding | **实时验证**: AI通过语义理解验证答案
+- **Multi-Angle Teaching**: Tests understanding from 4 cognitive perspectives | **多角度教学**: 从4个认知角度测试理解
+- **3-Level Escalation**: Progressive teaching when students struggle | **3级升级**: 学生遇到困难时渐进式教学
+- **Node Highlighting**: Golden pulse animation highlights current question | **节点高亮**: 金色脉动动画高亮当前问题
+
+#### **✨ Professional Editing Tools | 专业编辑工具**
+- **Add/Delete Nodes**: Context-aware operations for all diagram types | **添加/删除节点**: 所有图表类型的上下文感知操作
+- **Visual Styling**: Font size, color, style customization | **视觉样式**: 字体大小、颜色、样式自定义
+- **Undo/Redo**: Full history management (Ctrl+Z/Ctrl+Y) | **撤销/重做**: 完整历史管理
+- **Line Mode**: Toggle black & white for printing | **线稿模式**: 切换黑白用于打印
+- **PNG Export**: High-quality export with watermark | **PNG导出**: 高质量导出带水印
+
+[**→ Launch Interactive Editor**](http://localhost:9527/editor) (after installation)
+
+---
+
+## 🎯 Key Features | 核心功能
+
+### Diagram Types | 图表类型
+**10 Professional Diagram Types | 10种专业图表类型:**
+
+**Thinking Maps (8 Types) | 八大思维图示:**
+1. **Circle Map** - Define topics in context | 定义主题和背景
+2. **Bubble Map** - Describe with attributes | 用属性描述
+3. **Double Bubble Map** - Compare and contrast | 比较和对比
+4. **Tree Map** - Classify hierarchically | 分层分类
+5. **Brace Map** - Analyze whole-part relationships | 分析整体-部分关系
+6. **Flow Map** - Sequence events and processes | 序列化事件和过程
+7. **Multi-Flow Map** - Examine cause and effect | 研究因果关系
+8. **Bridge Map** - Show analogies | 展示类比
+
+**Additional Types | 其他类型:**
+9. **Mind Map** - Radial brainstorming | 放射状头脑风暴
+10. **Concept Map** - Advanced relationship mapping | 高级关系映射
+
+### AI & LLM Features | AI与LLM功能
+- **Smart Classification**: Auto-detect diagram type from natural language | **智能分类**: 从自然语言自动检测图表类型
+- **4-LLM Comparison**: Parallel generation with Qwen, DeepSeek, Kimi, Hunyuan | **4-LLM比较**: 使用Qwen、DeepSeek、Kimi、Hunyuan并行生成
+- **Auto-Complete**: AI expands your diagrams intelligently | **自动完成**: AI智能扩展您的图表
+- **Contextual Questions**: LLM generates questions based on diagram structure | **上下文问题**: LLM根据图表结构生成问题
+
+### Educational Features | 教育功能
+- **Interactive Learning Mode**: AI tutor with real-time validation | **交互式学习模式**: 带实时验证的AI导师
+- **Learning Sheets (半成品)**: 20% content hidden for practice worksheets | **学习半成品**: 隐藏20%内容用于练习工作表
+- **Progress Tracking**: Monitor student performance and misconceptions | **进度追踪**: 监控学生表现和误解
+- **Multi-Angle Verification**: Test understanding from 4 cognitive perspectives | **多角度验证**: 从4个认知角度测试理解
+
+### Technical Excellence | 技术优势
+- **100% Async Architecture**: FastAPI + Uvicorn ASGI | **100%异步架构**
+- **Production Ready**: 4,000+ concurrent SSE connections | **生产就绪**: 4000+并发SSE连接
+- **Type-Safe**: Pydantic models with full validation | **类型安全**: Pydantic模型完整验证
+- **Auto-Generated Docs**: Interactive Swagger UI at `/docs` | **自动生成文档**: 交互式Swagger UI
+- **Cross-Platform**: Windows & Ubuntu tested | **跨平台**: Windows和Ubuntu测试通过
+
+---
+
+## 🚀 Quick Start | 快速开始
 
 ### Prerequisites | 前置要求
-- Python 3.8+
-- Modern web browser | 现代网页浏览器
+
+**Minimum Requirements | 最低要求:**
+- **Python 3.8 or higher** (Tested: 3.8, 3.9, 3.10, 3.11, 3.12, 3.13) | **Python 3.8或更高版本**
+- **Recommended:** Python 3.13+ for best async performance (up to 2x faster) | **推荐**: Python 3.13+以获得最佳异步性能（快达2倍）
 - Internet connection for LLM API access | 用于LLM API访问的互联网连接
+- Modern web browser (Chrome, Firefox, Safari, Edge) | 现代网页浏览器
 
 ### Installation | 安装
 
-1. **Clone and Setup | 克隆和设置**
    ```bash
+# 1. Clone repository
    git clone https://github.com/lycosa9527/MindGraph.git
    cd MindGraph
+
+# 2. Automated setup (installs all dependencies)
    python setup.py
-   ```
 
-2. **Configure Environment | 配置环境**
-   ```bash
+# 3. Configure API key
    cp env.example .env
-   # Edit .env with your QWEN_API_KEY
-   # 编辑.env文件，添加你的QWEN_API_KEY
+# Edit .env and add your QWEN_API_KEY
    ```
 
-3. **Run FastAPI Server | 运行FastAPI服务器**
+### Running the Server | 运行服务器
+
    ```bash
    python run_server.py
    ```
@@ -139,605 +170,353 @@ Professional web-based diagram editor with comprehensive bilingual support | 专
    Port: 9527
    Workers: 4
    Expected Capacity: 4,000+ concurrent SSE connections
+
    ✅ Server ready at: http://localhost:9527
    ✅ Interactive Editor: http://localhost:9527/editor
-   ✅ API Docs: http://localhost:9527/docs
-   ```
-
-4. **Access Application | 访问应用**
-   - **Interactive Editor**: `http://localhost:9527/editor` | **交互式编辑器**
-   - **API Documentation (Swagger UI)**: `http://localhost:9527/docs` | **API文档**
-   - **Health Check**: `http://localhost:9527/health` | **健康检查**
-   - **Landing Page**: `http://localhost:9527/` | **首页**
-
-## 📝 Using the Interactive Editor | 使用交互式编辑器
-
-### Getting Started | 快速入门
-
-1. **Navigate to Editor** | **进入编辑器**
-   ```
-   http://localhost:9527/editor
-   ```
-
-2. **Choose Your Workflow** | **选择工作流程**
-   
-   **Option A: AI-Generated Diagrams | 选项A: AI生成图表**
-   - Enter a natural language prompt in the input box | 在输入框中输入自然语言提示
-   - Examples: "Compare online vs offline learning" | 示例："比较线上与线下学习"
-   - AI generates complete diagram automatically | AI自动生成完整图表
-   
-   **Option B: Manual Creation | 选项B: 手动创建**
-   - Select a diagram type from the gallery (10 types available) | 从画廊选择图表类型（10种可用）
-   - Click to start with a blank template | 点击开始空白模板
-   - Build your diagram node by node | 逐个节点构建图表
-
-3. **Edit Your Diagram** | **编辑图表**
-   - **Double-click** any node to edit text | **双击**任意节点编辑文本
-   - **Click** Add button (or select node + Add) to add nodes | **点击**添加按钮（或选择节点+添加）添加节点
-   - **Select** nodes to delete, style, or modify | **选择**节点以删除、样式化或修改
-   - Use **Properties Panel** for fine-grained styling | 使用**属性面板**进行精细样式调整
-
-4. **AI Enhancement** | **AI增强**
-   - Click **Auto** button to let AI expand your diagram | 点击**自动**按钮让AI扩展你的图表
-   - AI analyzes existing content and adds relevant nodes | AI分析现有内容并添加相关节点
-   - Works with all diagram types | 适用于所有图表类型
-
-5. **Export & Share** | **导出与分享**
-   - Click **Export** to save as PNG image | 点击**导出**保存为PNG图像
-   - Click **Share** to get shareable URL with QR code | 点击**分享**获取可分享URL及二维码
-   - Toggle **Line Mode** for black & white printing | 切换**线稿模式**用于黑白打印
-
-### Language Switching | 语言切换
-
-- Click the language toggle button (EN/中文) in top right | 点击右上角语言切换按钮（EN/中文）
-- **Entire interface switches instantly** | **整个界面立即切换**
-- All buttons, tooltips, and notifications change language | 所有按钮、工具提示和通知都会改变语言
-- New nodes created in selected language | 新节点以选定语言创建
-
-### Keyboard Shortcuts | 键盘快捷键
-
-- `Ctrl/Cmd + Z` - Undo (restores previous state) | 撤销（恢复之前的状态）
-- `Ctrl/Cmd + Y` - Redo (restores undone action) | 重做（恢复撤销的操作）
-- `Delete` - Delete selected node(s) | 删除选定节点
-- `Double-click` - Edit node text | 编辑节点文本
-- `Esc` - Close panels/modals | 关闭面板/模态框
-
-### Editor Features by Diagram Type | 各图表类型编辑功能
-
-Each diagram type has specialized node operations: | 每种图表类型都有专门的节点操作：
-
-- **Circle Map** (圆圈图): Add context nodes around central topic | 在中心主题周围添加背景节点
-- **Bubble Map** (气泡图): Add attribute bubbles to describe subject | 添加属性气泡描述主题
-- **Double Bubble Map** (双气泡图): Add similarities and differences | 添加相似点和差异
-- **Tree Map** (树形图): Add categories and hierarchical items | 添加类别和层次项目
-- **Brace Map** (括号图): Add parts and subparts in whole-part structure | 在整体-部分结构中添加部分和子部分
-- **Flow Map** (流程图): Add sequential steps and substeps | 添加顺序步骤和子步骤
-- **Multi-Flow Map** (复流程图): Add causes and effects to events | 为事件添加原因和结果
-- **Bridge Map** (桥形图): Add analogical pairs | 添加类比对
-- **Mind Map** (思维导图): Add branches and sub-branches | 添加分支和子分支
-- **Concept Map** (概念图): Add concepts and relationships | 添加概念和关系
-
-## Docker Deployment | Docker部署
-
-### Quick Docker Setup | 快速Docker设置
-
-1. **Build Docker Image | 构建Docker镜像**
-   ```bash
-   # From project root | 从项目根目录
-   docker build -f docker/Dockerfile -t mindgraph:latest .
-   ```
-
-2. **Run with Docker Compose | 使用Docker Compose运行**
-   ```bash
-   # Copy environment template | 复制环境模板
-   cp docker/docker.env.example .env
-   
-   # Edit .env with your values | 编辑.env文件
-   # - QWEN_API_KEY=your-api-key
-   # - EXTERNAL_HOST=your-server-ip
-   
-   # Start the application | 启动应用
-   docker-compose -f docker/docker-compose.yml up -d
-   ```
-
-3. **Access the Application | 访问应用**
-   - **Interactive Editor**: `http://localhost:9527/editor` | **交互式编辑器**
-   - Web UI: `http://localhost:9527/debug` | 网页界面
-   - API: `http://localhost:9527/api/generate_png` | API接口
-
-### Docker Features | Docker特性
-
-- **✅ Optimized Image**: 2.93GB multi-stage build with Playwright pre-installed | **优化镜像**: 2.93GB多阶段构建，预装Playwright
-- **✅ Production Ready**: Health checks, non-root user, comprehensive logging | **生产就绪**: 健康检查、非root用户、全面日志
-- **✅ Easy Configuration**: Environment variables with sensible defaults | **简单配置**: 环境变量，合理默认值
-- **✅ Complete Setup**: All dependencies included, no runtime downloads | **完整设置**: 包含所有依赖，无需运行时下载
-
-### Docker Commands | Docker命令
-
-```bash
-# Build image | 构建镜像
-docker build -f docker/Dockerfile -t mindgraph:latest .
-
-# Run container | 运行容器
-docker run -d -p 9527:9527 \
-  -e QWEN_API_KEY=your-api-key \
-  -e EXTERNAL_HOST=localhost \
-  mindgraph:latest
-
-# View logs | 查看日志
-docker logs -f mindgraph-app
-
-# Stop container | 停止容器
-docker stop mindgraph-app
+✅ API Documentation: http://localhost:9527/docs
+✅ Health Check: http://localhost:9527/health
 ```
 
-## API Reference | API参考
+### Access Points | 访问入口
 
-### Core Endpoints | 核心端点
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Interactive Editor** | http://localhost:9527/editor | Full-featured web editor |
+| **API Docs (Swagger)** | http://localhost:9527/docs | Auto-generated API documentation |
+| **Health Check** | http://localhost:9527/health | Server status endpoint |
+| **Landing Page** | http://localhost:9527/ | Welcome page with gallery |
 
-#### Generate PNG Image | 生成PNG图片
-```http
-POST /api/generate_png
-Content-Type: application/json
+---
 
+## 📚 API Integration Examples | API集成示例
+
+### Dify Workflow Integration | Dify工作流集成
+
+**HTTP Request Node Configuration:**
+
+```json
 {
-  "prompt": "Create a mind map about artificial intelligence",
+  "url": "http://your-mindgraph-server:9527/api/generate_png",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "prompt": "{{user_input}}",
   "language": "en"
 }
-```
-
-#### Generate Interactive Diagram | 生成交互式图表
-```http
-POST /api/generate_graph
-Content-Type: application/json
-
-{
-  "prompt": "Compare traditional education vs online learning",
-  "language": "en"
 }
 ```
 
-#### DingTalk Integration | 钉钉集成
-```http
-POST /api/generate_dingtalk
-Content-Type: application/json
+**Response:** Binary PNG image ready for display or download
 
-{
-  "prompt": "Show the workflow of software development",
-  "language": "zh"
-}
-```
+---
 
-**Response | 响应:**
-```
-Content-Type: text/plain; charset=utf-8
+### Coze Bot Integration | Coze机器人集成
 
-![](http://localhost:9527/api/temp_images/dingtalk_abc123_1692812345.png)
-```
-
-**Note**: Returns plain text markdown (not JSON) optimized for DingTalk integration. The empty `[]` prevents duplicate text display.
-
-## Integration Examples | 集成示例
-
-### Python Integration | Python集成
+**Python SDK Example:**
 
 ```python
 import requests
 
-def generate_png(prompt, language="en"):
+def generate_diagram_for_coze(user_message):
     response = requests.post(
-        "http://localhost:9527/api/generate_png",
-        json={"prompt": prompt, "language": language}
+        "http://your-server:9527/api/generate_png",
+        json={
+            "prompt": user_message,
+            "language": "en"  # or "zh" for Chinese
+        }
     )
-    return response.content  # PNG binary data
-
-# Example usage | 使用示例
-png_data = generate_png("Create a mind map about machine learning")
+    
+    # Save PNG or return URL
 with open("diagram.png", "wb") as f:
-    f.write(png_data)
+        f.write(response.content)
+    
+    return "diagram.png"
+
+# In your Coze bot handler:
+user_msg = "Compare online vs offline learning"
+diagram_file = generate_diagram_for_coze(user_msg)
+# Send diagram_file to user
 ```
 
-### DingTalk Bot Integration | 钉钉机器人集成
+---
+
+### DingTalk Integration | 钉钉集成
+
+**Perfect for Classroom Bots | 完美适配课堂机器人:**
 
 ```python
 import requests
 
-def generate_dingtalk_diagram(prompt, language="zh"):
+def send_diagram_to_dingtalk(prompt):
+    # Generate diagram
     response = requests.post(
-        "http://your-mindgraph-server:9527/api/generate_dingtalk",
-        json={"prompt": prompt, "language": language}
+        "http://your-server:9527/api/generate_dingtalk",
+        json={
+            "prompt": prompt,
+            "language": "zh"
+        }
     )
-    return response.text  # Returns plain text: ![](url)
+    
+    # Response is plain text: ![](image_url)
+    markdown_text = response.text
+    
+    # Send directly to DingTalk (already in markdown format)
+    return markdown_text
 
-# Example usage | 使用示例
-markdown_text = generate_dingtalk_diagram("创建项目管理的流程图")
-print(markdown_text)  # Output: ![](http://server:9527/api/temp_images/dingtalk_xxx.png)
-# Send markdown_text directly to DingTalk | 直接发送markdown_text到钉钉
+# Example usage
+result = send_diagram_to_dingtalk("创建鸦片战争的流程图")
+# Returns: ![](http://server:9527/api/temp_images/dingtalk_xxx.png)
 ```
 
-## Supported Diagram Types | 支持的图表类型
+---
 
-### Thinking Maps | 八大思维图示
-1. **Bubble Map** - Define concepts and characteristics | **气泡图** - 定义概念和特征
-2. **Circle Map** - Brainstorming and context definition | **圆圈图** - 头脑风暴和上下文定义
-3. **Double Bubble Map** - Compare and contrast concepts | **双气泡图** - 比较和对比概念
-4. **Brace Map** - Part-whole relationships | **括号图** - 部分-整体关系
-5. **Flow Map** - Processes and sequences | **流程图** - 过程和序列
-6. **Multi-Flow Map** - Complex multi-process flows | **复流程图** - 复杂的多过程流程
-7. **Bridge Map** - Analogies and relationships | **桥形图** - 类比和关系
-8. **Tree Map** - Hierarchical data visualization | **树形图** - 分层数据可视化
+### Custom Platform Integration | 定制平台集成
 
-### Additional Types | 其他类型
-9. **Mind Map** - Clockwise branch positioning | **思维导图** - 顺时针分支定位
-10. **Concept Map** - Advanced relationship mapping | **概念图** - 高级关系映射
+**JavaScript/Node.js Example:**
 
-## 🧠 Interactive Learning Mode | 交互式学习模式
+```javascript
+const axios = require('axios');
+const fs = require('fs');
 
-### AI-Powered Educational Platform for K-12 Teachers | K-12教师AI驱动的教育平台
+async function generateDiagram(prompt, language = 'en') {
+    const response = await axios.post(
+        'http://localhost:9527/api/generate_png',
+        { prompt, language },
+        { responseType: 'arraybuffer' }
+    );
+    
+    fs.writeFileSync('diagram.png', response.data);
+    return 'diagram.png';
+}
 
-MindGraph features an advanced **Interactive Learning Mode** that transforms diagrams into AI-powered learning experiences with real-time interaction, intelligent tutoring, and adaptive feedback.
+// Usage
+generateDiagram('Create a mind map about AI')
+    .then(file => console.log(`Saved: ${file}`))
+    .catch(err => console.error('Error:', err));
+```
 
-MindGraph提供先进的**交互式学习模式**，将图表转换为AI驱动的学习体验，具有实时交互、智能辅导和自适应反馈。
+---
 
-### Key Features | 核心功能
+## 🎓 Educational Features | 教育功能
 
-#### 🎯 Interactive Practice | 交互式练习
-- **20% Random Knockout**: System hides 20% of nodes for active recall practice | **20%随机隐藏**: 系统隐藏20%的节点进行主动回忆练习
-- **Real-time Input**: Students type answers directly into blank nodes on canvas | **实时输入**: 学生直接在画布上的空白节点中输入答案
-- **Instant Validation**: AI validates answers with semantic understanding | **即时验证**: AI通过语义理解验证答案
+### Interactive Learning Mode | 交互式学习模式
 
-#### 🤖 Intelligent Tutoring System | 智能辅导系统
-- **Contextual Questions**: LLM generates questions based on node relationships and diagram structure | **上下文问题**: LLM根据节点关系和图表结构生成问题
-- **Multi-Angle Verification** (Phase 4 🆕): Tests understanding from 4 cognitive perspectives:
-  - Level 0: Structural relationship (how node relates to others) | 结构关系（节点如何与其他节点相关）
-  - Level 1: Functional role (node's purpose in concept) | 功能角色（节点在概念中的目的）
-  - Level 2: Application (real-world examples) | 应用（实际例子）
-  - Level 3: Definition (simplest explanation) | 定义（最简单的解释）
-- **3-Level Escalation System** 🆕: Progressive teaching when students struggle:
-  1. Wrong answer → Teaching material modal with node highlighting
-  2. Click "I Understand" → Verification question from different angle
-  3. Wrong again → Escalate to next level with new teaching strategy (up to 3 times)
-  4. After 3 attempts → "Skip" button appears for moving forward
+**AI-Powered Tutoring for K-12 Classrooms | K-12课堂AI驱动辅导**
 
-#### 📚 Adaptive Teaching Materials | 自适应教学材料
-- **Node Highlighting** (Phase 3): Visual golden pulse animation highlights the node being tested | **节点高亮**: 金色脉动动画高亮显示正在测试的节点
-- **LLM-Generated Explanations**: Personalized teaching content based on misconceptions | **LLM生成解释**: 基于误解的个性化教学内容
-- **Progressive Hints**: 3-level hint system if students need help | **渐进式提示**: 如果学生需要帮助，提供3级提示系统
-- **Misconception Tracking**: System tracks patterns across session for better insights | **误解追踪**: 系统跟踪整个会话的模式以获得更好的洞察
+Transform any diagram into an interactive learning experience:
 
-#### 💻 Professional Learning Interface | 专业学习界面
-- **Full Bilingual Support**: Complete Chinese/English interface switching | **完整双语支持**: 完整的中英文界面切换
-- **Teaching Modal**: Purple gradient modal with smooth animations and modern design | **教学模态框**: 紫色渐变模态框，流畅动画和现代设计
-- **Progress Tracking**: Real-time display of correct answers, attempts, and progress | **进度追踪**: 实时显示正确答案、尝试次数和进度
-- **Session Management**: Backend maintains session state with LangChain agent | **会话管理**: 后端使用LangChain代理维护会话状态
+#### How It Works | 工作原理
 
-### How to Use | 使用方法
-
-1. **Create or Load a Complete Diagram** | **创建或加载完整图表**
-   - Generate with AI or manually create any diagram type
-   - Ensure all nodes have meaningful content (no placeholders)
-   - 使用AI生成或手动创建任何图表类型
-   - 确保所有节点都有有意义的内容（无占位符）
-
-2. **Click "Learning" Button** (学习) | **点击"学习"按钮**
-   - System validates diagram is complete
-   - Automatically selects 20% of nodes to hide
-   - Creates intelligent questions for each hidden node
-   - 系统验证图表是否完整
-   - 自动选择20%的节点进行隐藏
-   - 为每个隐藏节点创建智能问题
-
-3. **Answer Questions Interactively** | **交互式回答问题**
-   - Read the contextual question in the overlay panel
-   - Type your answer into the blank node on canvas
-   - Click "Submit" to validate
-   - 在覆盖面板中阅读上下文问题
-   - 在画布上的空白节点中输入答案
-   - 点击"提交"验证
-
-4. **Receive Intelligent Feedback** | **接收智能反馈**
+1. **Create Complete Diagram** | **创建完整图表**
+   - Generate with AI or manually create
+   - Ensure all nodes have meaningful content
+   
+2. **Click "Learning" Button** | **点击"学习"按钮**
+   - System analyzes diagram structure
+   - Intelligently selects 20% of nodes to hide
+   - Generates contextual questions for each node
+   
+3. **Interactive Q&A** | **交互式问答**
+   - Student reads question in overlay panel
+   - Types answer into blank node on canvas
+   - Clicks "Submit" for instant validation
+   
+4. **AI Tutoring** | **AI辅导**
    - ✅ **Correct**: Progress to next question
-   - ❌ **Wrong**: Teaching material modal appears with:
-     - Node highlighting with golden pulse animation
+   - ❌ **Wrong**: Teaching modal appears with:
+     - Golden pulse animation highlighting the node
      - AI-generated explanation of the concept
      - Correct answer display
    - Click "I Understand" → Verification question from different angle
    - Still wrong? System escalates with new teaching strategy (up to 3 times)
-   - ✅ **正确**: 进入下一个问题
-   - ❌ **错误**: 出现教学材料模态框：
-     - 金色脉动动画高亮节点
-     - AI生成的概念解释
-     - 显示正确答案
-   - 点击"我明白了" → 从不同角度验证问题
-   - 仍然错误？系统升级新的教学策略（最多3次）
 
 5. **Complete Session** | **完成会话**
    - View final score and performance summary
    - All nodes revealed with full content
-   - Exit Learning Mode to continue editing
-   - 查看最终得分和表现摘要
-   - 所有节点显示完整内容
-   - 退出学习模式继续编辑
+   - Progress tracking for teacher review
 
-### API Integration | API集成
+#### Educational Benefits | 教育价值
 
-```python
-import requests
-
-# Start learning session
-response = requests.post(
-    "http://localhost:9527/api/learning/start",
-    json={
-        "knocked_out_node_ids": ["node-1", "node-2", "node-3"],
-        "diagram_spec": {...},  # Current diagram data
-        "language": "en"
-    }
-)
-
-session = response.json()
-session_id = session["session_id"]
-questions = session["questions"]
-
-# Validate answer
-response = requests.post(
-    "http://localhost:9527/api/learning/validate_answer",
-    json={
-        "session_id": session_id,
-        "node_id": "node-1",
-        "user_answer": "Student's answer",
-        "language": "en"
-    }
-)
-
-validation = response.json()
-if validation["correct"]:
-    print("✅ Correct!")
-else:
-    print(f"❌ Wrong. Teaching material: {validation['agent_response']}")
-```
-
-### Educational Benefits | 教育价值
-
-✅ **Active Recall**: Research-proven technique for memory retention | **主动回忆**: 经过研究证明的记忆保持技术  
+✅ **Active Recall**: Research-proven technique for memory retention | **主动回忆**: 经研究证明的记忆保持技术  
 ✅ **Intelligent Tutoring**: AI adapts teaching based on misconceptions | **智能辅导**: AI根据误解调整教学  
 ✅ **Multi-Angle Learning**: Tests understanding from 4 cognitive perspectives | **多角度学习**: 从4个认知角度测试理解  
 ✅ **Immediate Feedback**: Real-time validation with contextual explanations | **即时反馈**: 实时验证和上下文解释  
 ✅ **Visual Learning**: Node highlighting and animations enhance engagement | **视觉学习**: 节点高亮和动画增强参与度  
 ✅ **Progress Tracking**: Monitor student performance and misconception patterns | **进度追踪**: 监控学生表现和误解模式  
-✅ **All Diagram Types**: Works with all 10 diagram types seamlessly | **所有图表类型**: 无缝适用于所有10种图表类型
+
+[**→ Try Interactive Learning Demo**](http://localhost:9527/editor?mode=learning)
 
 ---
 
-## Learning Sheets (半成品功能) | 学习半成品
+### Learning Sheets (半成品) | 学习半成品
 
-### Static Export Feature for K-12 Teachers | K-12教师静态导出功能
+**Static Practice Worksheets for Printing | 用于打印的静态练习工作表**
 
-MindGraph also supports **Learning Sheets (半成品)** - a simpler mode that generates static PNG exports with 20% of content hidden for paper-based practice.
+Generate printable worksheets with 20% content hidden:
 
-MindGraph还支持**学习半成品功能** - 一种更简单的模式，生成隐藏20%内容的静态PNG导出，用于纸质练习。
-
-**Note**: For interactive AI-powered learning, use the **Interactive Learning Mode** described above. For static worksheets, use Learning Sheets (半成品).
-
-**注意**: 对于交互式AI驱动学习，请使用上述**交互式学习模式**。对于静态工作表，请使用学习半成品。
-
-### How It Works | 工作原理
-
-1. **Add "半成品" to Your Prompt** | **在提示中添加"半成品"**
-   ```
-   "生成鸦片战争的半成品流程图"
-   "创建关于光合作用的半成品思维导图"
-   "制作中国历史朝代的半成品树形图"
-   ```
-
-2. **System Generates Complete Content** | **系统生成完整内容**
-   - LLM creates full diagram with all information
-   - LLM创建包含所有信息的完整图表
-
-3. **20% Text Randomly Hidden** | **随机隐藏20%文本**
-   - System randomly removes text from 20% of nodes
-   - Students fill in missing content for practice
-   - 系统随机删除20%节点的文本
-   - 学生填写缺失内容进行练习
-
-### Usage Examples | 使用示例
-
-#### API Request | API请求
-```python
-import requests
-
-# Generate a learning sheet flow map
-response = requests.post(
-    "http://localhost:9527/api/generate_png",
-    json={
+```bash
+# Via API
+POST /api/generate_png
+{
         "prompt": "生成鸦片战争的半成品流程图",
         "language": "zh"
     }
-)
 
-# Returns PNG with 20% of text hidden for student practice
-# 返回隐藏20%文本的PNG供学生练习
+# Returns PNG with 20% text hidden for student practice
 ```
 
-#### DingTalk Integration | 钉钉集成
-```python
-# Generate learning sheet for DingTalk classroom
-result = requests.post(
-    "http://localhost:9527/api/generate_dingtalk",
-    json={
-        "prompt": "创建关于光合作用的半成品思维导图",
-        "language": "zh"
-    }
-).json()
+**Perfect for | 完美适用于:**
+- Paper-based classroom activities | 纸质课堂活动
+- Homework assignments | 家庭作业
+- Quiz preparation | 测验准备
+- Print-friendly worksheets | 打印友好工作表
 
-# Result includes image URL with hidden content
-# 结果包含隐藏内容的图片URL
-print(result["image_url"])
-```
+---
 
-### Educational Benefits | 教育价值
+## 🐳 Docker Deployment | Docker部署
 
-✅ **Active Learning**: Students engage by filling in missing information | **主动学习**: 学生通过填写缺失信息参与学习  
-✅ **Practice Mode**: Teachers create practice materials instantly | **练习模式**: 教师即时创建练习材料  
-✅ **All Diagram Types**: Works with Flow Maps, Mind Maps, Concept Maps, etc. | **所有图表类型**: 适用于流程图、思维导图、概念图等  
-✅ **Automatic**: No manual editing required | **自动化**: 无需手动编辑  
-✅ **Customizable**: 20% default, configurable for different difficulty levels | **可定制**: 默认20%，可配置不同难度级别
+### Quick Docker Setup | 快速Docker设置
 
-### Supported Prompts | 支持的提示词
-
-- "生成[主题]的半成品[图表类型]" - Generate learning sheet for any topic
-- "创建[主题]的半成品图" - Create learning sheet diagram
-- "制作[主题]的半成品导图" - Make learning sheet mind map
-
-### Technical Details | 技术细节
-
-- **Detection**: Automatic keyword detection in prompt | **检测**: 提示中的自动关键词检测
-- **Cleaning**: Removes keywords before LLM processing | **清理**: LLM处理前删除关键词
-- **Rendering**: Random text knockout in final SVG | **渲染**: 最终SVG中随机删除文本
-- **Metadata**: Learning sheet flags preserved throughout pipeline | **元数据**: 学习半成品标志在整个流程中保留
-
-## Testing | 测试
-
-### Comprehensive Test Suite | 全面测试套件
-
-MindGraph includes a comprehensive testing framework that validates all diagram types and simulates production workloads.
-
-MindGraph包含一个全面的测试框架，验证所有图表类型并模拟生产工作负载。
-
-#### Test Modes | 测试模式
-
-**Sequential Testing | 顺序测试**
 ```bash
-python test/test_all_agents.py
-# Tests all 10 diagram types individually
-# 单独测试所有10种图表类型
+# 1. Build image
+docker build -f docker/Dockerfile -t mindgraph:latest .
+
+# 2. Run container
+docker run -d -p 9527:9527 \
+  -e QWEN_API_KEY=your-api-key \
+  -e EXTERNAL_HOST=your-server-ip \
+  --name mindgraph-app \
+  mindgraph:latest
+
+# 3. View logs
+docker logs -f mindgraph-app
 ```
 
-**Concurrent Testing | 并发测试**
+### Docker Compose | Docker Compose部署
+
 ```bash
-python test/test_all_agents.py concurrent
-# Tests 3 rounds × 4 concurrent requests (12 total)
-# 测试3轮 × 4个并发请求（总共12个）
+# 1. Copy environment template
+cp docker/docker.env.example .env
+
+# 2. Edit .env with your configuration
+# - QWEN_API_KEY=your-key
+# - EXTERNAL_HOST=your-server-ip
+
+# 3. Start application
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
-**Production Simulation | 生产模拟**
-```bash
-python test/test_all_agents.py production
-# Tests 5 rounds × 9 diagrams (45 total requests)
-# 测试5轮 × 9种图表（总共45个请求）
-```
+**Docker Features | Docker特性:**
+- ✅ **Optimized**: 2.93GB multi-stage build | **优化镜像**: 2.93GB多阶段构建
+- ✅ **Production Ready**: Health checks, non-root user | **生产就绪**: 健康检查、非root用户
+- ✅ **Complete Setup**: All dependencies included | **完整设置**: 包含所有依赖
 
-#### Test Features | 测试功能
+---
 
-- **Real PNG Generation**: Generates actual PNG images for visual validation | **真实PNG生成**: 生成实际PNG图像进行视觉验证
-- **Threading Analysis**: Validates multi-threading functionality | **线程分析**: 验证多线程功能
-- **Performance Metrics**: Detailed timing breakdowns and statistics | **性能指标**: 详细的时序分解和统计
-- **Diverse Topics**: 50+ diverse topics for realistic testing | **多样化主题**: 50+个多样化主题进行真实测试
-- **Success Rate Tracking**: Monitors success rates and error patterns | **成功率跟踪**: 监控成功率和错误模式
+## 📊 Performance | 性能指标
 
-#### Test Results | 测试结果
+**Benchmark Results (Production Simulation) | 基准测试结果（生产模拟）:**
 
-**Production Simulation Results | 生产模拟结果:**
-- **Success Rate**: 97.8% (44/45 requests successful) | **成功率**: 97.8%（45个请求中44个成功）
-- **Threading**: 45 unique threads used (true multi-threading) | **线程**: 使用45个唯一线程（真正的多线程）
-- **Average Time**: 9.88s per request | **平均时间**: 每个请求9.88秒
-- **Concurrent Users**: 6 simultaneous requests supported | **并发用户**: 支持6个并发请求
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **Average Response Time** | 8.7s | End-to-end (LLM + rendering + export) |
+| **LLM Processing** | 5.94s (69%) | Main bottleneck |
+| **Browser Rendering** | 2.7s (31%) | Playwright PNG export |
+| **Concurrent Users** | 6 simultaneous | Tested with real workloads |
+| **Success Rate** | 97.8% | 44/45 requests successful |
+| **Thread Safety** | ✅ Validated | 45 unique threads, isolated instances |
 
-#### Running Tests | 运行测试
+**Performance Breakdown | 性能分解:**
+- Classification: ~1.5s (qwen-turbo) | 分类
+- Generation: ~3-5s (qwen-plus) | 生成
+- Rendering: ~0.1-0.2s (D3.js) | 渲染
+- PNG Export: ~1-2s (Playwright) | PNG导出
 
-1. **Start the Server | 启动服务器**
+---
+
+## 🧪 Testing | 测试
+
+**Comprehensive Test Suite | 全面测试套件:**
+
    ```bash
+# Start server first
    python run_server.py
-   ```
 
-2. **Run Tests | 运行测试**
-   ```bash
+# Run production simulation
    cd test
    python test_all_agents.py production
    ```
 
-3. **View Results | 查看结果**
-   - Test images saved to `test/images/` | 测试图像保存到`test/images/`
-   - Detailed performance analysis in console | 控制台中的详细性能分析
-   - Threading verification and statistics | 线程验证和统计
+**Test Modes | 测试模式:**
+- **Sequential**: Test all 10 diagram types individually | **顺序**: 单独测试所有10种图表类型
+- **Concurrent**: 3 rounds × 4 concurrent (12 total) | **并发**: 3轮 × 4并发（总共12个）
+- **Production**: 5 rounds × 9 diagrams (45 total) | **生产**: 5轮 × 9图表（总共45个）
 
-## Performance | 性能
+**Test Results | 测试结果:**
+- Real PNG generation for visual validation | 真实PNG生成用于视觉验证
+- Threading analysis and safety validation | 线程分析和安全验证
+- Performance metrics and timing breakdowns | 性能指标和时序分解
+- 50+ diverse topics for realistic testing | 50+个多样化主题进行真实测试
 
-- **Total Request Time**: 8.7s average | **总请求时间**: 平均8.7秒
-- **LLM Processing**: 5.94s (69% of total time) | **LLM处理**: 5.94秒（占总时间的69%）
-- **Browser Rendering**: 2.7s (31% of total time) | **浏览器渲染**: 2.7秒（占总时间的31%）
-- **Concurrent Users**: 6 simultaneous requests | **并发用户**: 6个并发请求
-- **Classification**: ~1.5s (qwen-turbo) | **分类**: ~1.5秒 (qwen-turbo)
-- **Generation**: ~3-5s (qwen-plus) | **生成**: ~3-5秒 (qwen-plus)
-- **Rendering**: ~0.1-0.2s (D3.js) | **渲染**: ~0.1-0.2秒 (D3.js)
-- **PNG Export**: ~1-2s (Playwright) | **PNG导出**: ~1-2秒 (Playwright)
+---
 
-## Deployment | 部署
+## 📖 Documentation | 文档
 
-### Production Server | 生产服务器
-```bash
-python run_server.py  # Uvicorn ASGI server | Uvicorn ASGI服务器
-```
+- [**API Reference**](docs/API_REFERENCE.md) - Complete API documentation with examples | 完整API文档及示例
+- [**Changelog**](CHANGELOG.md) - Version history and updates | 版本历史和更新
+- [**Optimization Guide**](docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md) - Performance improvements | 性能改进指南
+- [**Testing Guide**](test/test_all_agents.py) - Comprehensive testing framework | 全面测试框架
 
-### Environment Variables | 环境变量
-```bash
-QWEN_API_KEY=your_api_key_here  # Required | 必需
-PORT=9527                        # Optional | 可选
-DEBUG=false                      # Optional | 可选
-```
+---
 
-## Troubleshooting | 故障排除
+## 🤝 Contributing | 贡献
 
-### Common Issues | 常见问题
-
-**API Key Configuration | API密钥配置**
-```bash
-# Check .env file | 检查.env文件
-cat .env | grep QWEN_API_KEY
-```
-
-**Font Rendering | 字体渲染**
-- Fonts are embedded as base64 data URIs | 字体以base64数据URI嵌入
-- No additional font installation required | 无需额外安装字体
-
-## Contributing | 贡献
+We welcome contributions! Here's how:
 
 1. Fork the repository | Fork仓库
-2. Create a feature branch | 创建功能分支
-3. Make your changes with tests | 进行更改并添加测试
-4. Submit a pull request | 提交拉取请求
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## License | 许可证
+---
 
-This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) file for details.
+## 📄 License | 许可证
 
-本项目采用AGPLv3许可证 - 详情请参阅[LICENSE](LICENSE)文件。
+This project is licensed under the **AGPLv3 License** - see the [LICENSE](LICENSE) file for details.
 
-## Documentation | 文档
+本项目采用**AGPLv3许可证** - 详情请参阅[LICENSE](LICENSE)文件。
 
-- [API Reference](docs/API_REFERENCE.md) - Complete API documentation | 完整API文档
-- [Changelog](CHANGELOG.md) - Version history and updates | 版本历史和更新
-- [Optimization Checklist](docs/MINDGRAPH_OPTIMIZATION_CHECKLIST.md) - Performance improvements and architecture analysis | 性能改进和架构分析
-- [Console Logging Guide](docs/CONSOLE_LOGGING_GUIDE.md) - Frontend and backend logging system | 前端和后端日志系统
-- [Test Documentation](test/test_all_agents.py) - Comprehensive testing framework | 全面测试框架
+**Key Points | 要点:**
+- ✅ Free for personal and educational use | 免费用于个人和教育用途
+- ✅ Open source contributions welcome | 欢迎开源贡献
+- ⚠️ Commercial use requires compliance with AGPLv3 | 商业用途需遵守AGPLv3
 
-## Code Review & Architecture | 代码审查和架构
+---
 
-### Production Readiness Assessment | 生产就绪评估
+## 💬 Support & Community | 支持与社区
 
-**Overall Rating**: ⭐⭐⭐⭐⭐ **Excellent** | **总体评级**: ⭐⭐⭐⭐⭐ **优秀**
+**Questions? Issues? Feedback?**
 
-| Category | Rating | Status |
-|----------|--------|--------|
-| **Architecture** | ⭐⭐⭐⭐⭐ | Excellent - Well-structured, modular, thread-safe |
-| **Code Quality** | ⭐⭐⭐⭐ | Very Good - Clean, maintainable, professional |
-| **Security** | ⭐⭐⭐⭐ | Good - Comprehensive validation and error handling |
-| **Performance** | ⭐⭐⭐⭐ | Good - Optimized with clear bottleneck identification |
-| **Testing** | ⭐⭐⭐⭐⭐ | Excellent - Comprehensive coverage with production simulation |
+- 📧 **Email**: lycosa9527@example.com
+- 🐛 **Issues**: [GitHub Issues](https://github.com/lycosa9527/MindGraph/issues)
+- 📖 **Wiki**: [Documentation Wiki](https://github.com/lycosa9527/MindGraph/wiki)
 
-### Key Findings | 关键发现
+---
 
-- **Production Ready**: Application validated for production deployment | **生产就绪**: 应用程序已验证可用于生产部署
-- **Thread-Safe**: Proper concurrent request handling with isolated browser instances | **线程安全**: 适当的并发请求处理，浏览器实例隔离
-- **Comprehensive Testing**: 45 diverse test cases with production simulation | **全面测试**: 45个多样化测试用例，包含生产模拟
-- **Performance Optimized**: Clear bottleneck identification (LLM processing: 69% of total time) | **性能优化**: 明确的瓶颈识别（LLM处理：占总时间的69%）
-- **Security Validated**: Comprehensive input validation and XSS protection | **安全验证**: 全面的输入验证和XSS保护
+## 🌟 Star History | 星标历史
+
+If you find MindGraph useful, please consider giving it a ⭐ on GitHub!
+
+如果您觉得MindGraph有用，请考虑在GitHub上给它一个⭐！
+
+---
+
+**Built with ❤️ by lycosa9527 | Made by MindSpring Team**
+
+*AI-Powered Visual Learning for the Next Generation*
+
+*下一代AI驱动的可视化学习*
+

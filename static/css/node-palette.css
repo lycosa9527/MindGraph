@@ -66,9 +66,11 @@
 /* Main Container */
 .node-palette-container {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: auto !important;
+    overflow-x: hidden;
     padding: 24px;
     background: var(--bg-primary, #ffffff);
+    max-height: calc(100vh - 200px);
 }
 
 .node-palette-container::-webkit-scrollbar {
@@ -89,37 +91,55 @@
 }
 
 /* ============================================================================
-   MASONRY GRID LAYOUT (4 columns)
+   STAGGERED GRID LAYOUT (brick pattern with offset columns)
    ============================================================================ */
 
 .node-palette-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 80px; /* Space for Finish button */
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 24px;
+    row-gap: 16px;
+    margin-bottom: 80px;
+    padding: 20px 40px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    justify-items: center;
 }
 
-@media (min-width: 1400px) {
+/* Stagger every other column down by half a circle (110px = 220px / 2) */
+.node-palette-grid .node-card:nth-child(3n+2) {
+    margin-top: 110px;
+}
+
+@media (min-width: 1200px) {
     .node-palette-grid {
         grid-template-columns: repeat(4, 1fr);
     }
-}
-
-@media (max-width: 1000px) {
-    .node-palette-grid {
-        grid-template-columns: repeat(3, 1fr);
+    
+    /* For 4 columns, offset columns 2 and 4 */
+    .node-palette-grid .node-card:nth-child(3n+2) {
+        margin-top: 0;
+    }
+    
+    .node-palette-grid .node-card:nth-child(4n+2),
+    .node-palette-grid .node-card:nth-child(4n+4) {
+        margin-top: 110px;
     }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 800px) {
     .node-palette-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-}
-
-@media (max-width: 400px) {
-    .node-palette-grid {
-        grid-template-columns: 1fr;
+    
+    /* For 2 columns, offset column 2 */
+    .node-palette-grid .node-card:nth-child(3n+2) {
+        margin-top: 0;
+    }
+    
+    .node-palette-grid .node-card:nth-child(2n+2) {
+        margin-top: 110px;
     }
 }
 
@@ -129,24 +149,93 @@
 
 .node-card {
     position: relative;
-    height: 80px; /* Fixed height per design doc */
     background: var(--bg-secondary, #f9f9f9);
-    border: 2px solid var(--border-color, #e0e0e0);
-    border-radius: 8px;
-    padding: 12px;
+    border: 4px solid #4a90e2; /* Default blue */
+    border-radius: 50%;
+    width: 220px;
+    height: 220px;
+    padding: 28px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+/* LLM-specific border colors and glows (matching status bar buttons) */
+.node-card.llm-qwen {
+    border-color: #3498db; /* Qwen - Blue */
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.2),
+                0 0 30px rgba(52, 152, 219, 0.15);
+    animation: qwen-glow-pulse 3s ease-in-out infinite;
+}
+
+.node-card.llm-deepseek {
+    border-color: #9b59b6; /* DeepSeek - Purple */
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.2),
+                0 0 30px rgba(155, 89, 182, 0.15);
+    animation: deepseek-glow-pulse 3s ease-in-out infinite;
+}
+
+.node-card.llm-hunyuan {
+    border-color: #f39c12; /* Hunyuan - Orange/Gold */
+    box-shadow: 0 4px 16px rgba(243, 156, 18, 0.2),
+                0 0 30px rgba(243, 156, 18, 0.15);
+    animation: hunyuan-glow-pulse 3s ease-in-out infinite;
+}
+
+.node-card.llm-kimi {
+    border-color: #1abc9c; /* Kimi - Teal/Green */
+    box-shadow: 0 4px 16px rgba(26, 188, 156, 0.2),
+                0 0 30px rgba(26, 188, 156, 0.15);
+    animation: kimi-glow-pulse 3s ease-in-out infinite;
+}
+
+/* Stagger animation delays for wave effect across columns */
+.node-card:nth-child(3n+1) {
+    animation-delay: 0s;
+}
+
+.node-card:nth-child(3n+2) {
+    animation-delay: 0.4s;
+}
+
+.node-card:nth-child(3n+3) {
+    animation-delay: 0.8s;
 }
 
 .node-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: var(--primary-color, #4a90e2);
+    transform: scale(1.08);
+    border-width: 5px;
+    animation: none; /* Stop pulse on hover for cleaner interaction */
+}
+
+/* LLM-specific hover colors with enhanced glow */
+.node-card.llm-qwen:hover {
+    box-shadow: 0 8px 24px rgba(52, 152, 219, 0.4),
+                0 0 60px rgba(52, 152, 219, 0.3);
+}
+
+.node-card.llm-deepseek:hover {
+    box-shadow: 0 8px 24px rgba(155, 89, 182, 0.4),
+                0 0 60px rgba(155, 89, 182, 0.3);
+}
+
+.node-card.llm-hunyuan:hover {
+    box-shadow: 0 8px 24px rgba(243, 156, 18, 0.4),
+                0 0 60px rgba(243, 156, 18, 0.3);
+}
+
+.node-card.llm-kimi:hover {
+    box-shadow: 0 8px 24px rgba(26, 188, 156, 0.4),
+                0 0 60px rgba(26, 188, 156, 0.3);
 }
 
 /* Node Card Content */
@@ -157,43 +246,69 @@
 }
 
 .node-text {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 17px;
+    font-weight: 600;
     color: var(--text-primary, #333333);
-    line-height: 1.4;
+    line-height: 1.45;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 5;
     -webkit-box-orient: vertical;
+    word-break: break-word;
 }
 
 .node-source {
+    position: absolute;
+    bottom: 14px;
     font-size: 11px;
     color: var(--text-secondary, #999999);
     text-transform: uppercase;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    opacity: 0.7;
 }
 
 /* Checkmark (hidden by default) */
 .node-checkmark {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 24px;
-    height: 24px;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
     background: var(--primary-color, #4a90e2);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 20px;
     font-weight: bold;
     opacity: 0;
     transform: scale(0);
     transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.5);
+}
+
+/* LLM-specific checkmark colors */
+.node-card.llm-qwen .node-checkmark {
+    background: #3498db;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.5);
+}
+
+.node-card.llm-deepseek .node-checkmark {
+    background: #9b59b6;
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.5);
+}
+
+.node-card.llm-hunyuan .node-checkmark {
+    background: #f39c12;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.5);
+}
+
+.node-card.llm-kimi .node-checkmark {
+    background: #1abc9c;
+    box-shadow: 0 2px 8px rgba(26, 188, 156, 0.5);
 }
 
 /* ============================================================================
@@ -201,16 +316,42 @@
    ============================================================================ */
 
 .node-card.selected {
-    border-color: var(--primary-color, #4a90e2);
-    border-width: 3px;
-    background: var(--primary-light, #e8f4f8);
-    transform: scale(1.05);
-    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2),
-                0 8px 16px rgba(0, 0, 0, 0.15);
+    border-width: 6px;
+    transform: scale(1.1);
+    animation: none !important; /* Stop pulse when selected */
 }
 
 .node-card.selected:hover {
-    transform: scale(1.05);
+    transform: scale(1.12);
+}
+
+/* LLM-specific selected state colors with intense glow */
+.node-card.llm-qwen.selected {
+    background: rgba(52, 152, 219, 0.12);
+    box-shadow: 0 0 0 8px rgba(52, 152, 219, 0.4),
+                0 0 40px rgba(52, 152, 219, 0.6),
+                0 16px 32px rgba(52, 152, 219, 0.3);
+}
+
+.node-card.llm-deepseek.selected {
+    background: rgba(155, 89, 182, 0.12);
+    box-shadow: 0 0 0 8px rgba(155, 89, 182, 0.4),
+                0 0 40px rgba(155, 89, 182, 0.6),
+                0 16px 32px rgba(155, 89, 182, 0.3);
+}
+
+.node-card.llm-hunyuan.selected {
+    background: rgba(243, 156, 18, 0.12);
+    box-shadow: 0 0 0 8px rgba(243, 156, 18, 0.4),
+                0 0 40px rgba(243, 156, 18, 0.6),
+                0 16px 32px rgba(243, 156, 18, 0.3);
+}
+
+.node-card.llm-kimi.selected {
+    background: rgba(26, 188, 156, 0.12);
+    box-shadow: 0 0 0 8px rgba(26, 188, 156, 0.4),
+                0 0 40px rgba(26, 188, 156, 0.6),
+                0 16px 32px rgba(26, 188, 156, 0.3);
 }
 
 .node-card.selected .node-checkmark {
@@ -237,19 +378,48 @@
     }
 }
 
-/* Glow animation for selected cards */
-.node-card.selected {
-    animation: glow-pulse 2s ease-in-out infinite;
-}
-
-@keyframes glow-pulse {
+/* LLM-specific gentle glow pulse animations */
+@keyframes qwen-glow-pulse {
     0%, 100% {
-        box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2),
-                    0 8px 16px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 16px rgba(52, 152, 219, 0.2),
+                    0 0 30px rgba(52, 152, 219, 0.15);
     }
     50% {
-        box-shadow: 0 0 0 6px rgba(74, 144, 226, 0.3),
-                    0 8px 20px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3),
+                    0 0 50px rgba(52, 152, 219, 0.25);
+    }
+}
+
+@keyframes deepseek-glow-pulse {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(155, 89, 182, 0.2),
+                    0 0 30px rgba(155, 89, 182, 0.15);
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(155, 89, 182, 0.3),
+                    0 0 50px rgba(155, 89, 182, 0.25);
+    }
+}
+
+@keyframes hunyuan-glow-pulse {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(243, 156, 18, 0.2),
+                    0 0 30px rgba(243, 156, 18, 0.15);
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(243, 156, 18, 0.3),
+                    0 0 50px rgba(243, 156, 18, 0.25);
+    }
+}
+
+@keyframes kimi-glow-pulse {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(26, 188, 156, 0.2),
+                    0 0 30px rgba(26, 188, 156, 0.15);
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(26, 188, 156, 0.3),
+                    0 0 50px rgba(26, 188, 156, 0.25);
     }
 }
 

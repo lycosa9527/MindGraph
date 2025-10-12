@@ -221,26 +221,55 @@ class NodePaletteGenerator:
         Returns:
             str: LLM response with newline-separated observations
         """
+        # Detect language from center_topic (Chinese characters = zh, otherwise en)
+        import re
+        has_chinese = bool(re.search(r'[\u4e00-\u9fff]', center_topic))
+        language = 'zh' if has_chinese else 'en'
+        
         # Build prompt with diversity instructions
         diversity_suffix = f" (Batch {batch_num} - Generate DIVERSE and UNIQUE observations, avoid repetition)" if batch_num > 1 else ""
         
         grade_level = educational_context.get('grade_level', '5th grade') if educational_context else '5th grade'
         subject = educational_context.get('subject', 'Science') if educational_context else 'Science'
         
-        prompt = f"""Generate {batch_size} diverse observations about "{center_topic}" for a Circle Map.
+        if language == 'zh':
+            prompt = f"""为「{center_topic}」的圆圈图生成{batch_size}个不同的观察点。
+
+教育背景：
+- 年级水平：{grade_level}
+- 学科：{subject}
+
+【重要】语言要求：
+- 必须全部使用中文
+- 每个观察点2-6个汉字
+- 不要使用任何英文
+
+内容要求：
+- 关注具体、可观察的方面
+- 适合年龄的语言
+- 多样化视角（避免重复）
+- 纯文本列表格式（每行一个）
+
+现在生成{batch_size}个中文观察点：{diversity_suffix}"""
+        else:
+            prompt = f"""Generate {batch_size} diverse observations about "{center_topic}" for a Circle Map.
 
 Educational Context:
 - Grade Level: {grade_level}
 - Subject: {subject}
 
-Requirements:
+【IMPORTANT】Language Requirements:
+- ALL observations MUST be in English only
 - Each observation should be 2-6 words
+- NO Chinese characters allowed
+
+Content Requirements:
 - Focus on concrete, observable aspects
 - Age-appropriate language
 - DIVERSE perspectives (avoid repetition)
-- Plain text list format
+- Plain text list format (one per line)
 
-Generate {batch_size} observations now:{diversity_suffix}"""
+Generate {batch_size} English observations now:{diversity_suffix}"""
         
         # Call LLM with timeout
         try:

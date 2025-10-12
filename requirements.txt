@@ -1,138 +1,36 @@
-# MindGraph - AI-Powered Graph Generation Application
-# Version: 4.1.1
-# Requirements for Python 3.8+ (Tested with Python 3.13.5)
-# 
-# Core Features:
-# - AI-powered graph generation with 4 LLM models (Qwen, DeepSeek, Kimi, Hunyuan)
-# - Interactive D3.js visualization  
-# - PNG export functionality
-# - Comprehensive dependency validation
-# - Professional startup sequence
-# - Cross-platform compatibility
-# - Clean classification system with no hardcoded fallbacks
-#
-# INSTALLATION INSTRUCTIONS:
-# 1. Install Python packages:
-#    pip install -r requirements.txt
-#
-# 2. Install Playwright browsers with system dependencies:
-#    playwright install chromium --with-deps
-#    
-#    OR use the automated setup script:
-#    python setup.py
+# MindGraph - AI-Powered Diagram Generation Platform
+# Version: 4.9.0 (see VERSION file for current version)
+# Python 3.8+ Required (3.13+ Recommended for Best Async Performance)
 
-# ============================================================================
-# WEB FRAMEWORK (Required for Production)
-# ============================================================================
+# Web Framework
 fastapi>=0.104.0
-
-# ============================================================================
-# ASGI SERVER (Required for Production)
-# ============================================================================
-# Uvicorn with standard extras (uvloop, httptools, websockets)
-# Works on Windows (development) and Ubuntu (production)
 uvicorn[standard]>=0.24.0
 
-# ============================================================================
-# HTTP AND NETWORKING (Required for Production)
-# ============================================================================
-# Async HTTP client for all external API calls
+# HTTP & Networking
 aiohttp>=3.12.0
 openai>=1.0.0
-
-# FastAPI form data and file upload support
 python-multipart>=0.0.6
 
-# ============================================================================
-# AI AND LANGUAGE PROCESSING (Required for Production)
-# ============================================================================
+# AI & Language Processing
 langchain>=0.3.27
 langchain-community>=0.3.27
 langchain-core>=0.3.72
 
-# ============================================================================
-# CONFIGURATION AND ENVIRONMENT (Required for Production)
-# ============================================================================
+# Configuration
 PyYAML>=6.0.1
 python-dotenv>=1.0.1
 
-# ============================================================================
-# ASYNC AND CONCURRENCY (Required for Production)
-# ============================================================================
+# Async Support
 nest_asyncio>=1.6.0
-aiofiles>=24.1.0    # Async file I/O for temp image storage
+aiofiles>=24.1.0
 
-# ============================================================================
-# BROWSER AUTOMATION (Required for Production - PNG generation)
-# ============================================================================
-# Note: After pip install, run: playwright install chromium --with-deps
-# This installs the Chromium browser and required system dependencies
+# Browser Automation & Image Processing
 playwright>=1.54.0
-
-# ============================================================================
-# IMAGE PROCESSING (Required for Production - PNG export)
-# ============================================================================
 Pillow>=11.3.0
 
-# ============================================================================
-# SYSTEM MONITORING (Required for Production - status endpoints)
-# ============================================================================
+# System Monitoring
 psutil>=6.0.0
 
-# ============================================================================
-# TESTING FRAMEWORK (Development only)
-# ============================================================================
+# Testing (Optional)
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
-
-# ============================================================================
-# DEPENDENCY SUMMARY
-# ============================================================================
-# 
-# REQUIRED THIRD-PARTY PACKAGES (13):
-# - fastapi (Modern async web framework)
-# - uvicorn[standard] (ASGI server with performance extras)
-# - aiohttp, python-multipart (Async HTTP client, form uploads)
-# - langchain, langchain-community, langchain-core (AI/LLM)
-# - playwright, Pillow (Browser automation & image processing)
-# - python-dotenv (Environment configuration)
-# - PyYAML (Configuration parsing)
-# - nest_asyncio (Async utilities)
-# - psutil (System monitoring)
-#
-# REMOVED IN v4.0.0 (FastAPI Migration):
-# - Flask, Werkzeug, flask-cors (replaced by FastAPI)
-# - waitress (replaced by Uvicorn)
-# - requests (replaced by aiohttp for 100% async)
-#
-# REMOVED UNUSED PACKAGES (v2.5.4):
-# - pyee, asgiref, typing-extensions (not used in codebase)
-# - pydantic, structlog, cryptography (not used in codebase)
-#
-# PYTHON STANDARD LIBRARY USED:
-# - Core: os, sys, json, re, time, datetime, math, logging, pathlib
-# - Async: asyncio, threading, concurrent.futures
-# - Data: collections, typing, dataclasses, enum
-# - Utils: functools, subprocess, tempfile, base64, colorsys
-# - Others: socket, webbrowser, shutil, atexit
-#
-# ============================================================================
-# INSTALLATION NOTES
-# ============================================================================
-# 
-# QUICK START:
-# 1. pip install -r requirements.txt
-# 2. playwright install chromium --with-deps
-# 3. Copy env.example to .env and configure API keys
-# 4. python run_server.py
-#
-# AUTOMATED SETUP:
-# python setup.py
-# (Handles all dependencies including Playwright browsers)
-#
-# COMPATIBILITY:
-# - Python 3.8+ (Tested with Python 3.13.5)
-# - Node.js 18.19+ for D3.js dependencies
-# - All packages use >= for minimum version compatibility
-#
-# ANALYSIS LAST UPDATED: 2025-10-09 (Version 4.1.1 - Multi-LLM & Visual Enhancements)

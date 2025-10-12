@@ -48,36 +48,452 @@
     animation: pulse 0.2s ease;
 }
 
-/* Toolbar responsiveness */
-@media (max-width: 1200px) {
+/* Toolbar mode classes for JavaScript-driven responsive layout */
+.editor-toolbar,
+.toolbar-section,
+.toolbar-group,
+.toolbar-group label,
+.btn-tool,
+.mindmate-ai-btn {
+    transition: all 0.3s ease;
+}
+
+/* Full mode (default, wide screens) */
+.editor-toolbar.toolbar-full .toolbar-left,
+.editor-toolbar.toolbar-full .toolbar-center,
+.editor-toolbar.toolbar-full .toolbar-right {
+    flex-wrap: nowrap;
+}
+
+/* Large mode */
+.editor-toolbar.toolbar-large .toolbar-group {
+    padding: 6px 10px;
+}
+
+/* Compact mode */
+.editor-toolbar.toolbar-compact .toolbar-group label {
+    display: none;
+}
+
+.editor-toolbar.toolbar-compact .toolbar-group {
+    padding: 6px 8px;
+}
+
+/* Minimal mode */
+.editor-toolbar.toolbar-minimal .toolbar-group label {
+    display: none;
+}
+
+.editor-toolbar.toolbar-minimal .toolbar-center {
+    order: 2;
+    width: 100%;
+}
+
+.editor-toolbar.toolbar-minimal .toolbar-left {
+    order: 1;
+}
+
+.editor-toolbar.toolbar-minimal .toolbar-right {
+    order: 3;
+}
+
+/* Mobile mode */
+.editor-toolbar.toolbar-mobile {
+    flex-direction: column;
+}
+
+.editor-toolbar.toolbar-mobile .toolbar-section {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Toolbar responsiveness with smooth dynamic adjustments */
+
+/* Wide screens - all elements in one line */
+@media (min-width: 1400px) {
     .toolbar-center {
-        min-width: 300px;
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .toolbar-left,
+    .toolbar-right {
+        flex-shrink: 0;
+    }
+}
+
+/* Medium-large screens - start optimizing space */
+@media (max-width: 1399px) and (min-width: 1200px) {
+    .toolbar-center {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .toolbar-group {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+    
+    .toolbar-group label {
+        font-size: 11px;
+    }
+    
+    .btn-tool {
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+    }
+    
+    .mindmate-ai-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+}
+
+/* Medium screens - hide labels to save space */
+@media (max-width: 1199px) and (min-width: 900px) {
+    .toolbar-center {
+        flex: 1;
+        justify-content: center;
     }
     
     .toolbar-group {
         padding: 6px 8px;
+        gap: 6px;
     }
     
     .toolbar-group label {
-        font-size: 10px;
+        display: none; /* Hide "Nodes:" and "Tools:" labels */
+    }
+    
+    .btn-tool {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+    
+    .mindmate-ai-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .mindmate-ai-btn svg {
+        width: 16px;
+        height: 16px;
     }
 }
 
-@media (max-width: 768px) {
+/* Small-medium screens - compact buttons, move right section if needed */
+@media (max-width: 899px) and (min-width: 769px) {
     .editor-toolbar {
-        flex-direction: column;
         gap: 10px;
-        padding: 10px;
     }
     
     .toolbar-section {
+        gap: 8px;
+    }
+    
+    .toolbar-center {
+        order: 2;
         width: 100%;
         justify-content: center;
     }
     
+    .toolbar-left {
+        order: 1;
+    }
+    
+    .toolbar-right {
+        order: 3;
+    }
+    
     .toolbar-group {
+        padding: 6px 8px;
+        gap: 5px;
+    }
+    
+    .toolbar-group label {
+        display: none;
+    }
+    
+    .btn-tool,
+    .btn-secondary,
+    .btn-success,
+    .btn-warning {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+    
+    .mindmate-ai-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Mobile - adaptive width sections */
+@media (max-width: 768px) {
+    .editor-toolbar {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important; /* Allow wrapping between rows */
+        gap: 6px;
+        padding: 8px;
+        justify-content: flex-start;
+        align-items: flex-start;
+        visibility: visible !important;
+    }
+    
+    .toolbar-section {
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Never wrap within a section */
+        gap: 6px;
+        width: auto;
+        max-width: 100%; /* Don't exceed viewport */
+        visibility: visible !important;
+    }
+    
+    /* Left section - file operations (full width row, centered) */
+    .toolbar-left {
+        flex: 0 0 100%;
+        order: 1;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* ===== NODES SECTION (节点) - Individual Container ===== */
+    .toolbar-nodes-section {
+        flex: 0 0 100%; /* Take full width row */
+        order: 2;
+        display: flex !important;
+        justify-content: center; /* Center the Nodes group */
+        gap: 6px;
+        width: 100%;
+    }
+    
+    /* ===== ROW 3: TOOLS SECTION (工具) - Left aligned ===== */
+    .toolbar-tools-section {
+        flex: 0 0 auto !important; /* Fit content, no grow/shrink */
+        order: 3 !important; /* Row 3 */
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Never wrap */
+        justify-content: flex-start !important; /* Left side */
+        align-items: center !important;
+        align-self: center !important; /* Vertical alignment in toolbar */
+        gap: 6px !important;
+        width: auto !important; /* Only take needed space */
+        max-width: 60% !important; /* Leave room for AI button */
+    }
+    
+    /* ===== ROW 3: AI BUTTON SECTION - Right aligned ===== */
+    .toolbar-right {
+        flex: 0 0 auto !important; /* Fit content, no grow/shrink */
+        order: 3 !important; /* Row 3 - SAME as tools! */
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Never wrap */
+        align-items: center !important;
+        align-self: center !important; /* Vertical alignment in toolbar */
+        margin-left: auto !important; /* Push to right side */
+        width: auto !important; /* Only take needed space */
+    }
+    
+    /* Old .toolbar-center kept for backward compatibility (desktop) */
+    .toolbar-center {
+        flex: 1;
+        order: 2;
+        display: flex !important;
         flex-wrap: wrap;
         justify-content: center;
+        gap: 6px;
+    }
+    
+    .toolbar-group {
+        display: flex !important; /* ← Changed from inline-flex */
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 6px 10px;
+        position: relative;
+        transition: all 0.3s ease;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .toolbar-group label {
+        font-size: 11px;
+        margin-right: 6px;
+        white-space: nowrap;
+        display: inline !important;
+        visibility: visible !important;
+    }
+    
+    /* ===== NODES TOOLBAR (节点) - Individual Control ===== */
+    .nodes-toolbar-group {
+        background: rgba(255, 255, 255, 0.1);
+        width: 100% !important; /* Take full width of container */
+        flex: 1 1 100% !important; /* Grow to fill container */
+        flex-wrap: wrap; /* Allow wrapping if needed */
+        justify-content: center !important; /* Center content */
+        margin: 0 !important;
+        gap: 4px !important; /* Tighter gap for better fit */
+    }
+    
+    .nodes-toolbar-group.collapsible-group {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .nodes-toolbar-group.collapsible-group.collapsed {
+        background: rgba(255, 255, 255, 0.08);
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        justify-content: center !important;
+    }
+    
+    .nodes-toolbar-group.collapsible-group.expanded {
+        background: rgba(255, 255, 255, 0.15);
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        justify-content: center !important;
+    }
+    
+    /* ===== TOOLS TOOLBAR (工具) - Individual Control with HIGH SPECIFICITY ===== */
+    .toolbar-tools-section .tools-toolbar-group,
+    .tools-toolbar-group.always-visible,
+    .tools-toolbar-group {
+        background: rgba(255, 255, 255, 0.1) !important;
+        width: fit-content !important; /* Exact fit */
+        max-width: none !important; /* No max width restriction */
+        flex: 0 0 auto !important; /* No grow, no shrink */
+        flex-basis: auto !important;
+        flex-wrap: nowrap !important; /* Never wrap */
+        justify-content: flex-start !important; /* Left align buttons */
+        align-items: center !important; /* Vertical center alignment */
+        margin: 0 !important; /* No margins */
+        padding: 6px 6px !important; /* Reduced padding for tighter fit */
+        min-width: fit-content !important;
+    }
+    
+    /* Old generic classes - kept for backward compatibility */
+    .toolbar-group.collapsible-group {
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-group.always-visible {
+        flex-wrap: nowrap;
+    }
+    
+    /* Toggle button for collapsible sections */
+    .toolbar-group-toggle {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 10px;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        margin-right: 4px;
+        border-radius: 3px;
+        transition: all 0.2s ease;
+    }
+    
+    .toolbar-group-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .toolbar-group-toggle:active {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Buttons in mobile mode - adaptive width for better fit */
+    .btn-tool,
+    .btn-secondary,
+    .btn-success,
+    .btn-warning {
+        padding: 6px 8px !important;
+        font-size: 10px !important;
+        white-space: nowrap;
+        visibility: visible !important;
+        line-height: 1.4 !important;
+        min-width: auto !important;
+    }
+    
+    /* Button SVGs smaller on mobile */
+    .btn-tool svg,
+    .btn-auto svg,
+    .btn-line svg,
+    .btn-learning svg,
+    .btn-thinking svg {
+        width: 14px !important;
+        height: 14px !important;
+        margin-right: 3px !important;
+    }
+    
+    /* MindMate AI button on mobile - match other buttons */
+    .mindmate-ai-btn {
+        padding: 6px 8px !important; /* ← Same as other buttons */
+        font-size: 10px !important; /* ← Same as other buttons */
+        gap: 4px !important;
+        white-space: nowrap;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1.4 !important; /* ← Same as other buttons */
+        height: auto !important; /* Match natural height */
+        visibility: visible !important;
+    }
+    
+    .mindmate-ai-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    /* Show full AI button text on mobile if there's room */
+    #mindmate-btn-text {
+        display: inline !important;
+    }
+    
+    /* Ensure AI button sits right next to tools section with proper spacing */
+    .toolbar-center + .toolbar-right {
+        margin-left: 8px;
+    }
+    
+    /* Make sure toolbar groups are visible */
+    .toolbar-group {
+        display: inline-flex !important;
+    }
+    
+    /* Keep Nodes and Tools sections inline on same row if space allows */
+    .toolbar-center {
+        flex-wrap: wrap;
+    }
+    
+    /* Horizontal layout for buttons within groups */
+    .toolbar-group.expanded,
+    .toolbar-group.always-visible {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+    }
+    
+    .toolbar-group.expanded .btn-tool,
+    .toolbar-group.always-visible .btn-tool {
+        flex-shrink: 0;
+    }
+    
+    /* Auto Complete and special buttons */
+    .btn-auto,
+    .btn-line,
+    .btn-learning,
+    .btn-thinking {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+    }
+    
+    /* Ensure buttons in always-visible groups stay compact */
+    .toolbar-group.always-visible .btn-tool {
+        margin: 0;
     }
 }
 

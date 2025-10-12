@@ -5,7 +5,7 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `http://localhost:9527` (or your deployed server URL)  
-**API Version**: 4.6.9  
+**API Version**: 4.9.0  
 **Architecture**: Multi-agent system with smart LLM classification
 
 **Key Features**:
@@ -148,40 +148,31 @@ Content-Type: text/plain; charset=utf-8
 - **No Persistence**: Images are not permanently stored and will be lost after the cleanup period
 - **Default Dimensions**: PNG exports use 1200x800 base dimensions with scale=2 for high quality
 
-### 3. Clear Cache
+### 3. Cache Status
 
-Clears the modular JavaScript cache for development and debugging purposes.
+Returns JavaScript cache status and performance metrics for development and debugging.
 
 ```http
-POST /api/clear_cache
+GET /cache/status
 ```
 
 **Note**: This endpoint is primarily for development use.
-
-#### Request
-
-**Headers:**
-```
-Content-Type: application/json
-```
-
-**Body:** Empty (no body required)
 
 #### Response
 
 **Success (200):**
 ```json
 {
-  "status": "success",
-  "message": "Cache cleared successfully"
-}
-```
-
-**Error (500):**
-```json
-{
-  "status": "error",
-  "message": "Error description"
+  "status": "initialized",
+  "cache_strategy": "lazy_loading_with_intelligent_caching",
+  "files_loaded": 15,
+  "total_size_kb": 245.6,
+  "memory_usage_mb": 0.24,
+  "cache_hit_rate": 87.5,
+  "total_requests": 120,
+  "cache_hits": 105,
+  "cache_misses": 15,
+  "average_load_time": 0.023
 }
 ```
 
@@ -308,21 +299,29 @@ Content-Type: application/json
 Returns application status and version information.
 
 ```http
+GET /health
 GET /status
 ```
 
 #### Response
 
+**`/health` Response:**
 ```json
 {
-  "status": "healthy",
-  "version": "2.5.3",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "services": {
-    "qwen_api": "connected",
-    "deepseek_api": "not_configured",
-    "playwright": "ready"
-  }
+  "status": "ok",
+  "version": "4.9.0"
+}
+```
+
+**`/status` Response (with metrics):**
+```json
+{
+  "status": "running",
+  "framework": "FastAPI",
+  "version": "4.9.0",
+  "uptime_seconds": 3600.5,
+  "memory_percent": 45.2,
+  "timestamp": 1642012345.678
 }
 ```
 
@@ -588,26 +587,106 @@ The API implements rate limiting to ensure fair usage:
 - Review error messages for specific guidance
 - Check system resources and API service status
 
+### 6. AI Assistant (Streaming)
+
+Interactive AI assistant with streaming responses for guided diagram creation.
+
+```http
+POST /api/ai_assistant/stream
+```
+
+**Note**: This endpoint uses Server-Sent Events (SSE) for real-time streaming.
+
+#### Request
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "prompt": "Help me create a mind map about climate change",
+  "session_id": "uuid-v4-string",
+  "language": "en"
+}
+```
+
+#### Response
+
+Returns a stream of Server-Sent Events (SSE) with AI responses.
+
+### 7. LLM Monitoring
+
+Monitor LLM performance and health status.
+
+```http
+GET /api/llm/metrics
+GET /api/llm/health
+```
+
+#### `/api/llm/metrics` Response
+
+```json
+{
+  "total_requests": 1234,
+  "average_response_time": 2.45,
+  "success_rate": 98.5,
+  "active_connections": 12
+}
+```
+
+#### `/api/llm/health` Response
+
+```json
+{
+  "status": "healthy",
+  "qwen_api": "connected",
+  "response_time_ms": 125
+}
+```
+
+### 8. Frontend Logging
+
+Log frontend events and errors for debugging.
+
+```http
+POST /api/frontend_log
+POST /api/frontend_log_batch
+```
+
+**Note**: These endpoints are for internal frontend telemetry.
+
 ## Changelog
 
-### Version 2.5.3
-- **Agent File Organization**: Organized agents into clean module structure
-- Added `/api/clear_cache` endpoint for development workflow
-- Fixed flow map rendering with professional substep positioning
-- Enhanced modular JavaScript system integration
-- Improved watermark styling consistency across diagram types
+### Version 4.9.0 (Current)
+- **Mobile Toolbar Optimization**: Improved mobile UI with 3-row compact layout
+- Enhanced button sizing and alignment for mobile devices
+- Removed collapsible toggles for cleaner interface
+- All diagram buttons always visible on mobile
 
-### Version 2.4.0
-- Added comprehensive API documentation
-- Enhanced error handling and response formats
-- Improved rate limiting implementation
-- Added style customization options
+### Version 4.8.1
+- **Critical Bug Fix**: Fixed duplicate variable declaration in bubble-map-renderer.js
+- Resolved canvas display issues affecting circle, bubble, and double bubble maps
 
-### Version 2.3.8
-- Added PNG generation endpoint
-- Enhanced D3.js visualization support
-- Improved multi-language support
-- Added health check endpoint
+### Version 4.8.0
+- **Configurable AI Assistant**: Added `AI_ASSISTANT_NAME` environment variable
+- Dynamic branding across toolbar, panel, and welcome messages
+- Support for custom AI assistant naming
+
+### Version 4.7.0
+- **Circle Map Background Fix**: Added consistent grey background to PNG exports
+- All diagram types now have uniform background styling
+
+### Version 4.6.9
+- **DingTalk Integration**: Updated markdown format to `![]()` with empty alt text
+- Cleaner DingTalk messages without duplicate prompt text
+
+### Version 4.6.8
+- **PNG Export Quality**: Fixed missing watermarks and improved dimension handling
+- Dynamic container resizing for accurate exports
+- Functional scale parameter for quality control
 
 ---
 

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.9.0] - 2025-01-12 - Mobile Toolbar UI Optimization
+
+### Improved
+
+- **Mobile Toolbar Layout Optimization**
+  - **Location**: `static/css/editor-toolbar.css`, `static/js/editor/toolbar-responsive.js`, `templates/editor.html`
+  - **Changes**:
+    - **Row Layout**: Optimized mobile toolbar to 3 compact rows:
+      - Row 1: [Back to Gallery][Export][Reset] (centered)
+      - Row 2: [Nodes:][Add][Delete][Style][AutoFit][FitAll][Center] (centered, all 6 buttons visible)
+      - Row 3: [Tools:][Empty][Undo][Redo] ... [MindMate AI] (left/right aligned)
+    - **Removed Collapsible Toggles**: All buttons now always visible with adaptive sizing
+    - **Button Sizing**: Reduced padding `6px 8px`, font-size `10px`, tighter gaps `4px` for better fit
+    - **Row 3 Layout**: Tools section left-aligned, AI button right-aligned on same row
+    - **Vertical Alignment**: Fixed AI button vertical alignment to match Tools buttons perfectly
+  - **Individual Section Control**: 
+    - Added specific classes: `.nodes-toolbar-group` and `.tools-toolbar-group`
+    - Separate styling for each toolbar section
+    - `templates/editor.html`: Added individual classes to toolbar groups for granular CSS control
+  - **CSS Architecture**:
+    - `toolbar-tools-section`: `flex: 0 0 auto`, `order: 3`, `max-width: 60%`, left-aligned
+    - `toolbar-right`: `flex: 0 0 auto`, `order: 3`, `margin-left: auto`, right-aligned
+    - Both sections share `order: 3` to occupy same row with `flex-wrap: nowrap`
+  - **JavaScript**: Disabled collapsible logic (`shouldCollapse = false`) as all buttons fit naturally
+  - **Impact**: 
+    - Cleaner, more professional mobile UI
+    - All 6 Nodes buttons visible on one row without scrolling
+    - Tools and AI button share row 3 efficiently
+    - Consistent button heights and alignment across all sections
+    - No more toggle buttons cluttering the interface
+  - **Browser Compatibility**: Tested on mobile viewport (≤768px width)
+
+---
+
 ## [4.8.1] - 2025-01-12 - Hotfix: Renderer Loading Bug
 
 ### Fixed
