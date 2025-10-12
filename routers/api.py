@@ -64,13 +64,14 @@ async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
     # Get language for error messages
     lang = get_request_language(x_language)
     
-    # Validate message
+    # Get message
     message = req.message.strip()
-    if not message:
-        raise HTTPException(
-            status_code=400,
-            detail=Messages.error("message_required", lang)
-        )
+    
+    # Handle Dify conversation opener trigger
+    # When message is "start" with no conversation_id, this triggers Dify's opener
+    if message.lower() == 'start' and not req.conversation_id:
+        logger.info(f"[MindMate] Conversation opener triggered for user {req.user_id}")
+        logger.debug("[MindMate] Dify will respond with configured opening message")
     
     # Get Dify configuration from environment
     api_key = os.getenv('DIFY_API_KEY')
@@ -791,11 +792,9 @@ async def frontend_log(req: FrontendLogRequest):
     frontend_logger = logging.getLogger('frontend')
     frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
     
-    # Format message with timestamp if provided
-    if req.timestamp:
-        message = f"[{req.timestamp}] {req.message}"
-    else:
-        message = req.message
+    # Log message directly - Python logger will add its own timestamp
+    # Don't include frontend timestamp to avoid duplication
+    message = req.message
     
     # Log with clean formatting
     frontend_logger.log(level, message)
@@ -827,11 +826,9 @@ async def frontend_log_batch(req: FrontendLogBatchRequest):
     for log_entry in req.logs:
         level = level_map.get(log_entry.level.lower(), logging.INFO)
         
-        # Format message with timestamp
-        if log_entry.timestamp:
-            message = f"[{log_entry.timestamp}] {log_entry.message}"
-        else:
-            message = log_entry.message
+        # Log message directly - Python logger will add its own timestamp
+        # Don't include frontend timestamp to avoid duplication
+        message = log_entry.message
         
         # Log to backend console
         frontend_logger.log(level, message)

@@ -19,9 +19,11 @@ class ThinkingModeManager {
         this.progressFill = null;
         this.progressLabel = null;
         this.closeBtn = null;
+        this.nodePaletteBtn = null;
         
         // State management
         this.sessionId = null;
+        this.diagramSessionId = null; // Track which diagram session this conversation belongs to
         this.currentState = 'CONTEXT_GATHERING';
         this.isStreaming = false;
         this.currentAbortController = null; // For stopping SSE streams
@@ -50,7 +52,9 @@ class ThinkingModeManager {
                 refinement1: 'First Refinement...',
                 refinement2: 'Second Refinement...',
                 finalRefinement: 'Final Refinement...',
-                complete: 'Complete!'
+                complete: 'Complete!',
+                nodePalette: 'Node Palette',
+                nodePaletteTooltip: 'Open Node Palette to brainstorm nodes with AI'
             },
             zh: {
                 starting: '启动中...',
@@ -60,7 +64,9 @@ class ThinkingModeManager {
                 refinement1: '第一次优化...',
                 refinement2: '第二次优化...',
                 finalRefinement: '最后优化...',
-                complete: '完成！'
+                complete: '完成！',
+                nodePalette: '瀑布流',
+                nodePaletteTooltip: '打开瀑布流，AI为您头脑风暴更多节点'
             }
         };
         
@@ -81,16 +87,17 @@ class ThinkingModeManager {
         this.progressFill = document.getElementById('thinking-progress-fill');
         this.progressLabel = document.getElementById('thinking-progress-label');
         this.closeBtn = document.getElementById('thinking-close-btn');
+        this.nodePaletteBtn = document.getElementById('thinking-node-palette-btn');
         
         if (!this.panel) {
-            this.logger.warn('[ThinkGuide] Panel not found');
+            this.logger.warn('[ThinkGuide]', 'Panel not found');
             return;
         }
         
         // Event listeners
         this.sendBtn.addEventListener('click', () => this.handleSendMessage());
         this.stopBtn.addEventListener('click', () => {
-            this.logger.info('[ThinkGuide] 🛑 STOP BUTTON CLICKED');
+            this.logger.info('[ThinkGuide]', '🛑 STOP BUTTON CLICKED');
             this.stopStreaming();
         });
         this.inputArea.addEventListener('keypress', (e) => {
@@ -101,43 +108,82 @@ class ThinkingModeManager {
         });
         this.closeBtn.addEventListener('click', () => this.closePanel());
         
-        this.logger.info('[ThinkGuide] Initialized successfully');
+        // Node Palette Button - directly trigger without keyword detection
+        if (this.nodePaletteBtn) {
+            this.nodePaletteBtn.addEventListener('click', () => this.openNodePalette());
+            this.logger.info('[ThinkGuide]', 'Node Palette button listener attached');
+        } else {
+            this.logger.warn('[ThinkGuide]', 'Node Palette button not found');
+        }
+        
+        this.logger.info('[ThinkGuide]', 'Initialized successfully');
     }
     
     /**
      * Start thinking mode for current diagram
      */
     async startThinkingMode(diagramType, diagramData) {
-        this.logger.info(`[ThinkGuide] Starting for diagram: ${diagramType}`);
+        this.logger.info('[ThinkGuide]', `Starting for diagram: ${diagramType}`);
         
         // Detect language from diagram
         this.detectLanguage(diagramData);
         
-        // Reset state
-        this.diagramType = diagramType;
-        this.sessionId = `thinking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        this.currentState = 'CONTEXT_GATHERING';
-        this.isStreaming = false;
+        // Get current diagram session ID
+        const currentDiagramSessionId = window.currentEditor?.sessionId;
         
-        // Clear UI
-        this.messagesContainer.innerHTML = '';
-        this.inputArea.value = '';
-        const lang = this.labels[this.language] || this.labels.en;
-        this.updateProgress(0, lang.starting);
+        // Check if this is a new diagram session or same session being reopened
+        const isNewDiagramSession = !this.diagramSessionId || this.diagramSessionId !== currentDiagramSessionId;
+        
+        let needsGreeting = false;
+        
+        if (isNewDiagramSession) {
+            this.logger.info('[ThinkGuide] New diagram session detected - creating new conversation', {
+                oldSession: this.diagramSessionId,
+                newSession: currentDiagramSessionId
+            });
+            
+            // Reset state for new diagram
+            this.diagramType = diagramType;
+            this.diagramSessionId = currentDiagramSessionId;
+            this.sessionId = `thinking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            this.currentState = 'CONTEXT_GATHERING';
+            this.isStreaming = false;
+            
+            // Clear UI
+            this.messagesContainer.innerHTML = '';
+            this.inputArea.value = '';
+            const lang = this.labels[this.language] || this.labels.en;
+            this.updateProgress(0, lang.starting);
+            
+            // New session needs initial greeting
+            needsGreeting = true;
+        } else {
+            this.logger.info('[ThinkGuide] Resuming existing conversation session', {
+                diagramSession: this.diagramSessionId,
+                thinkingSession: this.sessionId
+            });
+            // Keep existing session - just reopen panel, no greeting needed
+            needsGreeting = false;
+        }
         
         // Open panel
         this.openPanel();
         
-        // Start first message stream (empty message to trigger context gathering)
-        await this.sendMessage('', diagramData);
+        // Only send greeting for new sessions
+        if (needsGreeting) {
+            await this.sendMessage('', diagramData, true); // true = request initial greeting
+        }
     }
     
     /**
      * Send message to backend
+     * @param {string} message - User message
+     * @param {object} diagramData - Current diagram data
+     * @param {boolean} isInitialGreeting - If true, request initial greeting for new session
      */
-    async sendMessage(message, diagramData) {
+    async sendMessage(message, diagramData, isInitialGreeting = false) {
         if (this.isStreaming) {
-            this.logger.warn('[ThinkGuide] Already streaming, ignoring request');
+            this.logger.warn('[ThinkGuide]', 'Already streaming, ignoring request');
             return;
         }
         
@@ -163,7 +209,8 @@ class ThinkingModeManager {
                 diagram_type: this.diagramType,
                 diagram_data: currentDiagramData,
                 current_state: this.currentState,
-                selected_node: null // TODO: Get from selection manager
+                selected_node: null, // TODO: Get from selection manager
+                is_initial_greeting: isInitialGreeting  // Explicit flag for greeting
             };
             
             this.logger.info('[ThinkGuide] 📊 Sending with current diagram:', {
@@ -177,7 +224,7 @@ class ThinkingModeManager {
             await this.streamResponse(requestData);
             
         } catch (error) {
-            this.logger.error('[ThinkGuide] Error sending message:', error);
+            this.logger.error('[ThinkGuide]', 'Error sending message:', error);
             this.addSystemMessage('Error: ' + error.message);
         } finally {
             this.isStreaming = false;
@@ -196,17 +243,17 @@ class ThinkingModeManager {
         
         // Create NEW AbortController for this stream (must be fresh each time)
         if (this.currentAbortController) {
-            this.logger.warn('[ThinkGuide] Cleaning up old AbortController');
+            this.logger.warn('[ThinkGuide]', 'Cleaning up old AbortController');
         }
         this.currentAbortController = new AbortController();
-        this.logger.info('[ThinkGuide] Created new AbortController');
+        this.logger.info('[ThinkGuide]', 'Created new AbortController');
         
         // Show stop button, hide send button
         this.showStopButton();
-        this.logger.info('[ThinkGuide] Stop button shown');
+        this.logger.info('[ThinkGuide]', 'Stop button shown');
         
         try {
-            this.logger.info('[ThinkGuide] Starting fetch with AbortController signal');
+            this.logger.info('[ThinkGuide]', 'Starting fetch with AbortController signal');
             const response = await fetch('/thinking_mode/stream', {
                 method: 'POST',
                 headers: {
@@ -216,7 +263,7 @@ class ThinkingModeManager {
                 signal: this.currentAbortController.signal
             });
             
-            this.logger.info('[ThinkGuide] Fetch response received, status:', response.status);
+            this.logger.info('[ThinkGuide]', 'Fetch response received, status:', response.status);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -264,15 +311,15 @@ class ThinkingModeManager {
             if (error.name === 'AbortError') {
                 const stopMsg = this.language === 'zh' ? '⏹ 已停止生成' : '⏹ Generation stopped';
                 this.addSystemMessage(stopMsg);
-                this.logger.info('[ThinkGuide] Stream stopped by user');
+                this.logger.info('[ThinkGuide]', 'Stream stopped by user');
                 return; // Don't re-throw
             }
             
             throw error;
         } finally {
-            this.logger.info('[ThinkGuide] streamResponse finally block - cleaning up AbortController');
+            this.logger.info('[ThinkGuide]', 'streamResponse finally block - cleaning up AbortController');
             this.currentAbortController = null;
-            this.logger.info('[ThinkGuide] AbortController set to null');
+            this.logger.info('[ThinkGuide]', 'AbortController set to null');
         }
     }
     
@@ -304,7 +351,14 @@ class ThinkingModeManager {
             
             case 'message_complete':
                 // Message finished - clean up
-                this.logger.debug('[ThinkGuide] Message complete');
+                // Check if this is a silent resume (panel reopened, no new message)
+                if (data.silent_resume) {
+                    this.logger.info('[ThinkGuide]', 'Silent resume - conversation continued without greeting');
+                    // No UI updates needed, conversation history is preserved
+                    break;
+                }
+                
+                this.logger.debug('[ThinkGuide]', 'Message complete');
                 if (contentDiv.dataset.rawText) {
                     delete contentDiv.dataset.rawText;
                 }
@@ -323,13 +377,13 @@ class ThinkingModeManager {
             
             case 'diagram_update':
                 // Backend wants to modify the diagram
-                this.logger.info('[ThinkGuide] 🔄 Received diagram update:', data);
+                this.logger.info('[ThinkGuide]', '🔄 Received diagram update:', data);
                 this.applyDiagramUpdate(data);
                 break;
             
             case 'action':
                 // Backend wants to trigger an action (e.g., open Node Palette)
-                this.logger.info('[ThinkGuide] Action triggered:', data.action);
+                this.logger.info('[ThinkGuide]', 'Action triggered:', data.action);
                 this.handleAction(data);
                 break;
             
@@ -343,7 +397,7 @@ class ThinkingModeManager {
             
             case 'error':
                 // Error occurred
-                this.logger.error('[ThinkGuide] Server error:', message);
+                this.logger.error('[ThinkGuide]', 'Server error:', message);
                 this.addSystemMessage('Error: ' + message);
                 break;
         }
@@ -358,7 +412,7 @@ class ThinkingModeManager {
         switch (action) {
             case 'open_node_palette':
                 // Open Node Palette for brainstorming more nodes
-                this.logger.info('[ThinkGuide] Opening Node Palette | Topic:', actionData.center_topic);
+                this.logger.info('[ThinkGuide]', 'Opening Node Palette | Topic:', actionData.center_topic);
                 
                 if (window.nodePaletteManager) {
                     window.nodePaletteManager.start(
@@ -367,12 +421,12 @@ class ThinkingModeManager {
                         actionData.session_id
                     );
                 } else {
-                    this.logger.error('[ThinkGuide] NodePaletteManager not found');
+                    this.logger.error('[ThinkGuide]', 'NodePaletteManager not found');
                 }
                 break;
             
             default:
-                this.logger.warn('[ThinkGuide] Unknown action:', action);
+                this.logger.warn('[ThinkGuide]', 'Unknown action:', action);
         }
     }
     
@@ -383,7 +437,7 @@ class ThinkingModeManager {
         // Get from current editor instance
         const editor = window.currentEditor;
         if (!editor || !editor.currentSpec) {
-            this.logger.info('[ThinkGuide] No diagram data - starting from scratch');
+            this.logger.info('[ThinkGuide]', 'No diagram data - starting from scratch');
             // Return empty structure - ThinkGuide can help build from ground up!
             return { 
                 center: { text: '' }, 
@@ -400,7 +454,7 @@ class ThinkingModeManager {
      * Converts diagram-specific structure to {center: {text: ...}, children: [...]}
      */
     normalizeDiagramData(spec, diagramType) {
-        this.logger.debug('[ThinkGuide] Normalizing diagram data:', { diagramType, spec });
+        this.logger.debug('[ThinkGuide]', 'Normalizing diagram data:', { diagramType, spec });
         
         switch (diagramType) {
             case 'circle_map':
@@ -552,14 +606,36 @@ class ThinkingModeManager {
             const browserLang = navigator.language || navigator.userLanguage || 'en';
             this.language = browserLang.startsWith('zh') ? 'zh' : 'en';
             this.logger.debug(`[ThinkGuide] Empty diagram - using browser language: ${this.language}`);
+            this.updateNodePaletteButtonText();
             return this.language;
         }
         
         const centerText = diagramData.center.text || '';
         const chineseChars = (centerText.match(/[\u4e00-\u9fff]/g) || []).length;
         this.language = chineseChars > centerText.length * 0.3 ? 'zh' : 'en';
-        this.logger.debug(`[ThinkGuide] Detected language from diagram: ${this.language}`);
+        this.logger.debug('[ThinkGuide]', `Detected language from diagram: ${this.language}`);
+        this.updateNodePaletteButtonText();
         return this.language;
+    }
+    
+    /**
+     * Update Node Palette button text based on current language
+     */
+    updateNodePaletteButtonText() {
+        if (!this.nodePaletteBtn) return;
+        
+        const lang = this.labels[this.language] || this.labels.en;
+        const textElement = document.getElementById('node-palette-btn-text');
+        const tooltipElement = document.getElementById('node-palette-tooltip');
+        
+        if (textElement) {
+            textElement.textContent = lang.nodePalette;
+        }
+        
+        // Update tooltip text
+        if (tooltipElement) {
+            tooltipElement.textContent = lang.nodePaletteTooltip;
+        }
     }
     
     /**
@@ -582,13 +658,70 @@ class ThinkingModeManager {
     }
     
     /**
+     * Open Node Palette directly (button-triggered, not keyword detection)
+     */
+    openNodePalette() {
+        this.logger.info('[ThinkGuide]', '🎨 Node Palette button clicked');
+        
+        // Only support Circle Maps for now
+        if (this.diagramType !== 'circle_map') {
+            const msg = this.language === 'zh' ? 
+                '节点选择板目前仅支持圆圈图。' : 
+                'Node Palette is currently only available for Circle Maps.';
+            this.addSystemMessage(msg);
+            this.logger.warn('[ThinkGuide]', 'Node Palette not supported for:', this.diagramType);
+            return;
+        }
+        
+        // Extract current diagram data
+        const diagramData = this.extractDiagramData();
+        const centerTopic = diagramData?.center?.text;
+        
+        if (!centerTopic || centerTopic.trim() === '') {
+            const msg = this.language === 'zh' ? 
+                '请先为圆圈图添加中心主题。' : 
+                'Please add a center topic to your Circle Map first.';
+            this.addSystemMessage(msg);
+            this.logger.warn('[ThinkGuide]', 'Cannot open Node Palette - no center topic');
+            return;
+        }
+        
+        this.logger.info('[ThinkGuide] Opening Node Palette:', {
+            centerTopic,
+            sessionId: this.sessionId,
+            nodeCount: diagramData?.children?.length || 0
+        });
+        
+        // Call Node Palette Manager
+        if (window.nodePaletteManager) {
+            window.nodePaletteManager.start(
+                centerTopic,
+                diagramData,
+                this.sessionId
+            );
+            
+            // Add confirmation message to chat
+            const msg = this.language === 'zh' ? 
+                '正在打开节点选择板，AI将为您头脑风暴更多想法...' : 
+                'Opening Node Palette, AI will brainstorm more ideas for you...';
+            this.addSystemMessage(msg);
+        } else {
+            this.logger.error('[ThinkGuide]', 'NodePaletteManager not found!');
+            const msg = this.language === 'zh' ? 
+                '错误：节点选择板未加载。' : 
+                'Error: Node Palette not loaded.';
+            this.addSystemMessage(msg);
+        }
+    }
+    
+    /**
      * Open thinking panel
      */
     openPanel() {
-        this.logger.info('[ThinkGuide] 🔵 openPanel() called - STARTING PANEL OPEN');
+        this.logger.info('[ThinkGuide]', '🔵 openPanel() called - STARTING PANEL OPEN');
         
         if (!this.panel) {
-            this.logger.error('[ThinkGuide] ❌ Panel element not found!');
+            this.logger.error('[ThinkGuide]', '❌ Panel element not found!');
             return;
         }
         
@@ -606,12 +739,12 @@ class ThinkingModeManager {
         
         // Use centralized panel manager with EXPLICIT method
         if (window.panelManager) {
-            this.logger.info('[ThinkGuide] 🎯 Calling panelManager.openThinkGuidePanel() - EXPLICIT METHOD');
+            this.logger.info('[ThinkGuide]', '🎯 Calling panelManager.openThinkGuidePanel() - EXPLICIT METHOD');
             const success = window.panelManager.openThinkGuidePanel();
-            this.logger.info('[ThinkGuide] openThinkGuidePanel result:', success);
+            this.logger.info('[ThinkGuide]', 'openThinkGuidePanel result:', success);
         } else {
             // Fallback if panel manager not available
-            this.logger.warn('[ThinkGuide] ⚠️ PanelManager not available, using fallback');
+            this.logger.warn('[ThinkGuide]', '⚠️ PanelManager not available, using fallback');
             this.panel.classList.remove('collapsed');
         }
         
@@ -633,7 +766,7 @@ class ThinkingModeManager {
             // Adjust diagram to make room for panel
             this.fitDiagramToCanvas();
             
-            this.logger.info('[ThinkGuide] ✅ Panel open sequence completed');
+            this.logger.info('[ThinkGuide]', '✅ Panel open sequence completed');
         }, 100);
     }
     
@@ -644,18 +777,18 @@ class ThinkingModeManager {
     applyDiagramUpdate(data) {
         const { action, updates } = data;
         
-        this.logger.info('[ThinkGuide] 🔄 applyDiagramUpdate called!');
-        this.logger.info('[ThinkGuide] Action:', action);
-        this.logger.info('[ThinkGuide] Updates:', updates);
+        this.logger.info('[ThinkGuide]', '🔄 applyDiagramUpdate called!');
+        this.logger.info('[ThinkGuide]', 'Action:', action);
+        this.logger.info('[ThinkGuide]', 'Updates:', updates);
         
         // Get the current editor instance
         const editor = window.currentEditor;
         if (!editor) {
-            this.logger.error('[ThinkGuide] ❌ No editor instance found, cannot update diagram');
+            this.logger.error('[ThinkGuide]', '❌ No editor instance found, cannot update diagram');
             return;
         }
         
-        this.logger.info('[ThinkGuide] ✅ Editor instance found');
+        this.logger.info('[ThinkGuide]', '✅ Editor instance found');
         
         try {
             switch (action) {
@@ -708,9 +841,9 @@ class ThinkingModeManager {
                     // Replace entire diagram structure
                     this.replaceDiagram(updates);
                     break;
-                
+                    
                 default:
-                    this.logger.warn('[ThinkGuide] Unknown diagram update action:', action);
+                    this.logger.warn('[ThinkGuide]', 'Unknown diagram update action:', action);
             }
             
             // Show feedback to user
@@ -718,7 +851,7 @@ class ThinkingModeManager {
             this.addSystemMessage(msg);
             
         } catch (error) {
-            this.logger.error('[ThinkGuide] Error applying diagram update:', error);
+            this.logger.error('[ThinkGuide]', 'Error applying diagram update:', error);
             const errorMsg = this.language === 'zh' ? 
                 '❌ 更新图表失败' : '❌ Failed to update diagram';
             this.addSystemMessage(errorMsg);
@@ -729,7 +862,7 @@ class ThinkingModeManager {
      * Update a specific node's text in the diagram
      */
     updateDiagramNode(nodeId, newText) {
-        this.logger.info('[ThinkGuide] Updating node:', { nodeId, newText });
+        this.logger.info('[ThinkGuide]', 'Updating node:', { nodeId, newText });
         
         const editor = window.currentEditor;
         if (editor && editor.currentSpec) {
@@ -753,7 +886,7 @@ class ThinkingModeManager {
                 for (let node of children) {
                     if (node.id === nodeId || String(node.id) === String(nodeId)) {
                         node.text = newText;
-                        this.logger.info('[ThinkGuide] ✅ Updated node object:', nodeId);
+                        this.logger.info('[ThinkGuide]', '✅ Updated node object:', nodeId);
                         break;
                     }
                 }
@@ -766,11 +899,11 @@ class ThinkingModeManager {
             
             // Highlight the updated node
             setTimeout(() => {
-                this.logger.info('[ThinkGuide] 🎯 Attempting to highlight node:', nodeId);
-                this.logger.info('[ThinkGuide] window.nodeIndicator exists?', !!window.nodeIndicator);
+                this.logger.info('[ThinkGuide]', '🎯 Attempting to highlight node:', nodeId);
+                this.logger.info('[ThinkGuide]', 'window.nodeIndicator exists?', !!window.nodeIndicator);
                 
                 if (window.nodeIndicator) {
-                    this.logger.info('[ThinkGuide] ✅ Calling nodeIndicator.highlight for node:', nodeId);
+                    this.logger.info('[ThinkGuide]', '✅ Calling nodeIndicator.highlight for node:', nodeId);
                     // Use 'pulse' instead of 'glow' - simpler, more visible, no SVG filters
                     const result = window.nodeIndicator.highlight(nodeId, {
                         type: 'pulse',
@@ -778,13 +911,13 @@ class ThinkingModeManager {
                         intensity: 6,
                         color: '#4CAF50'  // Green for updates
                     });
-                    this.logger.info('[ThinkGuide] Highlight result:', result);
+                    this.logger.info('[ThinkGuide]', 'Highlight result:', result);
                 } else {
                     this.logger.error('[ThinkGuide] ❌ window.nodeIndicator not available!');
                 }
             }, 100);
             
-            this.logger.info('[ThinkGuide] ✅ Node updated and highlighted');
+            this.logger.info('[ThinkGuide]', '✅ Node updated and highlighted');
         } else {
             this.logger.warn('[ThinkGuide] No editor or spec found');
         }
@@ -794,7 +927,7 @@ class ThinkingModeManager {
      * Add a new node to the diagram
      */
     addDiagramNode(text, position) {
-        this.logger.info('[ThinkGuide] Adding node:', { text, position });
+        this.logger.info('[ThinkGuide]', 'Adding node:', { text, position });
         
         const editor = window.currentEditor;
         if (editor && typeof editor.addNode === 'function') {
@@ -809,7 +942,7 @@ class ThinkingModeManager {
      * Remove a node from the diagram
      */
     removeDiagramNode(nodeId) {
-        this.logger.info('[ThinkGuide] Removing node:', nodeId);
+        this.logger.info('[ThinkGuide]', 'Removing node:', nodeId);
         
         const editor = window.currentEditor;
         if (editor && typeof editor.removeNode === 'function') {
@@ -824,7 +957,7 @@ class ThinkingModeManager {
      * Update center/main topic
      */
     updateCenterTopic(newText) {
-        this.logger.info('[ThinkGuide] Updating center topic:', newText);
+        this.logger.info('[ThinkGuide]', 'Updating center topic:', newText);
         
         // Update data model FIRST
         const editor = window.currentEditor;
@@ -838,16 +971,16 @@ class ThinkingModeManager {
             // Re-render the entire diagram to reflect changes
             if (typeof editor.renderDiagram === 'function') {
                 editor.renderDiagram();
-                this.logger.info('[ThinkGuide] Diagram re-rendered');
+                this.logger.info('[ThinkGuide]', 'Diagram re-rendered');
             }
             
             // After re-render, find and highlight the center element
             setTimeout(() => {
-                this.logger.info('[ThinkGuide] 🎯 Attempting to highlight center element');
-                this.logger.info('[ThinkGuide] window.nodeIndicator exists?', !!window.nodeIndicator);
+                this.logger.info('[ThinkGuide]', '🎯 Attempting to highlight center element');
+                this.logger.info('[ThinkGuide]', 'window.nodeIndicator exists?', !!window.nodeIndicator);
                 
                 if (window.nodeIndicator) {
-                    this.logger.info('[ThinkGuide] ✅ Calling nodeIndicator.highlight("center")');
+                    this.logger.info('[ThinkGuide]', '✅ Calling nodeIndicator.highlight("center")');
                     // Use 'flash' for center - very visible, no SVG filters
                     const result = window.nodeIndicator.highlight('center', {
                         type: 'flash',
@@ -855,7 +988,7 @@ class ThinkingModeManager {
                         intensity: 8,
                         color: '#FF9800'  // Orange for center changes
                     });
-                    this.logger.info('[ThinkGuide] Highlight result:', result);
+                    this.logger.info('[ThinkGuide]', 'Highlight result:', result);
                 } else {
                     this.logger.error('[ThinkGuide] ❌ window.nodeIndicator not available!');
                 }
@@ -871,7 +1004,7 @@ class ThinkingModeManager {
      * Update node visual properties (color, bold, italic, etc.)
      */
     updateNodeProperties(nodeId, properties) {
-        this.logger.info('[ThinkGuide] Updating node properties:', { nodeId, properties });
+        this.logger.info('[ThinkGuide]', 'Updating node properties:', { nodeId, properties });
         
         // Find the shape element (circle, rect, etc.)
         const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
@@ -944,7 +1077,7 @@ class ThinkingModeManager {
      * Update node position (angle-based for Circle Maps)
      */
     updateNodePosition(nodeId, nodeIndex, position) {
-        this.logger.info('[ThinkGuide] Updating node position:', { nodeId, nodeIndex, position });
+        this.logger.info('[ThinkGuide]', 'Updating node position:', { nodeId, nodeIndex, position });
         
         const editor = window.currentEditor;
         if (!editor || !editor.currentSpec) {
@@ -1028,7 +1161,7 @@ class ThinkingModeManager {
      * Swap positions of two nodes
      */
     swapNodePositions(nodeId1, nodeId2) {
-        this.logger.info('[ThinkGuide] Swapping positions:', { nodeId1, nodeId2 });
+        this.logger.info('[ThinkGuide]', 'Swapping positions:', { nodeId1, nodeId2 });
         
         // Find both nodes
         const shape1 = d3.select(`[data-node-id="${nodeId1}"]`);
@@ -1089,14 +1222,14 @@ class ThinkingModeManager {
      * Replace entire diagram with new structure
      */
     replaceDiagram(newDiagramData) {
-        this.logger.info('[ThinkGuide] Replacing entire diagram');
+        this.logger.info('[ThinkGuide]', 'Replacing entire diagram');
         
         const editor = window.currentEditor;
         if (editor && typeof editor.loadDiagram === 'function') {
             editor.loadDiagram(newDiagramData);
-            this.logger.info('[ThinkGuide] ✅ Diagram replaced successfully');
+            this.logger.info('[ThinkGuide]', '✅ Diagram replaced successfully');
         } else {
-            this.logger.warn('[ThinkGuide] Editor does not support loadDiagram');
+            this.logger.warn('[ThinkGuide]', 'Editor does not support loadDiagram');
         }
     }
     
@@ -1106,20 +1239,24 @@ class ThinkingModeManager {
     closePanel() {
         if (this.panel) {
             if (window.panelManager) {
-                this.logger.info('[ThinkGuide] 🎯 Calling panelManager.closeThinkGuidePanel() - EXPLICIT METHOD');
+                this.logger.info('[ThinkGuide]', '🎯 Calling panelManager.closeThinkGuidePanel() - EXPLICIT METHOD');
                 window.panelManager.closeThinkGuidePanel();
             } else {
                 // Fallback
-                this.logger.warn('[ThinkGuide] ⚠️ PanelManager not available, using fallback');
+                this.logger.warn('[ThinkGuide]', '⚠️ PanelManager not available, using fallback');
                 this.panel.classList.add('collapsed');
             }
             
-            // Restore diagram to full canvas after panel closes
+            // Restore diagram to full canvas width after panel closes
             setTimeout(() => {
-                this.fitDiagramToCanvas();
+                const editor = window.currentEditor;
+                if (editor && typeof editor.fitToCanvasFullWidth === 'function') {
+                    editor.fitToCanvasFullWidth(true); // Expand to full width
+                    this.logger.info('[ThinkGuide]', 'Diagram expanded to full canvas width');
+                }
             }, 400); // Wait for panel close animation
             
-            this.logger.info('[ThinkGuide] Panel closed');
+            this.logger.info('[ThinkGuide]', 'Panel closed');
         }
     }
     
@@ -1129,16 +1266,16 @@ class ThinkingModeManager {
     fitDiagramToCanvas() {
         const editor = window.currentEditor;
         if (!editor) {
-            this.logger.warn('[ThinkGuide] No editor instance for fitToCanvas');
+            this.logger.warn('[ThinkGuide]', 'No editor instance for fitToCanvas');
             return;
         }
         
-        // Use the editor's fitToCanvas method which automatically detects panel visibility
-        if (typeof editor.fitToCanvas === 'function') {
-            editor.fitToCanvas(true); // Animated
-            this.logger.info('[ThinkGuide] Diagram fitted to canvas');
+        // Use the editor's fitToCanvasWithPanel method to reserve space for the ThinkGuide panel
+        if (typeof editor.fitToCanvasWithPanel === 'function') {
+            editor.fitToCanvasWithPanel(true); // Animated, reserves space for panel
+            this.logger.info('[ThinkGuide]', 'Diagram fitted to canvas with panel space reserved');
         } else {
-            this.logger.warn('[ThinkGuide] Editor does not support fitToCanvas');
+            this.logger.warn('[ThinkGuide]', 'Editor does not support fitToCanvasWithPanel');
         }
     }
     
@@ -1146,13 +1283,13 @@ class ThinkingModeManager {
      * Stop streaming (abort current request)
      */
     stopStreaming() {
-        this.logger.info('[ThinkGuide] stopStreaming called');
+        this.logger.info('[ThinkGuide]', 'stopStreaming called');
         if (this.currentAbortController) {
-            this.logger.info('[ThinkGuide] Aborting current stream');
+            this.logger.info('[ThinkGuide]', 'Aborting current stream');
             this.currentAbortController.abort();
             // Don't call hideStopButton here - let streamResponse handle cleanup
         } else {
-            this.logger.warn('[ThinkGuide] No active AbortController to stop');
+            this.logger.warn('[ThinkGuide]', 'No active AbortController to stop');
         }
     }
     
@@ -1160,9 +1297,9 @@ class ThinkingModeManager {
      * Show stop button, hide send button
      */
     showStopButton() {
-        this.logger.info('[ThinkGuide] showStopButton called');
+        this.logger.info('[ThinkGuide]', 'showStopButton called');
         if (this.stopBtn && this.sendBtn) {
-            this.logger.info('[ThinkGuide] Setting stop button display to flex');
+            this.logger.info('[ThinkGuide]', 'Setting stop button display to flex');
             this.stopBtn.style.display = 'flex';
             this.sendBtn.style.display = 'none';
             this.inputArea.disabled = true;
@@ -1178,9 +1315,9 @@ class ThinkingModeManager {
      * Hide stop button, show send button
      */
     hideStopButton() {
-        this.logger.info('[ThinkGuide] hideStopButton called');
+        this.logger.info('[ThinkGuide]', 'hideStopButton called');
         if (this.stopBtn && this.sendBtn) {
-            this.logger.info('[ThinkGuide] Setting stop button display to none');
+            this.logger.info('[ThinkGuide]', 'Setting stop button display to none');
             this.stopBtn.style.display = 'none';
             this.sendBtn.style.display = 'flex';
             this.inputArea.disabled = false;

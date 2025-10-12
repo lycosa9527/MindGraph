@@ -7,6 +7,339 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.11.1] - 2025-10-12 - Frontend Logging Improvements
+
+### Fixed
+
+- **Double Timestamp Issue in Frontend Logs**
+  - **Location**: `routers/api.py` (lines 777-838)
+  - **Issue**: Frontend logs displayed duplicate timestamps
+    - Backend was adding frontend timestamp to message before Python logger added its own
+    - Example: `[04:48:44] INFO | FRNT | [2025-10-12T20:48:44.517Z] [ThinkGuide] ...`
+  - **Solution**: Removed frontend timestamp inclusion in log formatting
+    - Modified `/frontend_log` endpoint: Removed timestamp concatenation
+    - Modified `/frontend_log_batch` endpoint: Removed timestamp concatenation
+    - Python's logging system now handles timestamps exclusively
+  - **Result**: Clean, consistent logs with single timestamps
+  - **Impact**: Professional log output adhering to clean logging standards
+
+- **Logger Call Format in ThinkingModeManager**
+  - **Location**: `static/js/editor/thinking-mode-manager.js`
+  - **Issue**: Logger calls passing single parameter instead of component + message
+    - Caused `undefined` to appear at end of log statements
+    - Example: `this.logger.info('[ThinkGuide] Message')` → output included `undefined`
+  - **Solution**: Fixed 100+ logger calls to use correct format
+    - Split component and message: `this.logger.info('[ThinkGuide]', 'Message')`
+    - Applied to all logging levels: `info()`, `debug()`, `warn()`, `error()`
+    - Maintained optional data parameter for structured logging
+  - **Result**: No more `undefined` values in log output
+  - **Impact**: Clean, professional frontend logging throughout ThinkGuide
+
+---
+
+## [4.11.0] - 2025-10-12 - ThinkGuide & MindMate UX Improvements
+
+### Added
+
+- **ThinkGuide Button Toggle Functionality**
+  - **Location**: `static/js/editor/toolbar-manager.js`
+  - **Feature**: ThinkGuide button now toggles panel open/close like MindMate
+  - **Behavior**: 
+    - Click 1: Opens panel
+    - Click 2: Closes panel  
+    - Click 3: Opens panel again (conversation preserved)
+  - **Impact**: Consistent UX across both AI assistants
+
+- **Explicit Welcome Message Architecture**
+  - **Location**: Multiple files (see below)
+  - **ThinkGuide Pattern**: Explicit `is_initial_greeting` boolean flag
+    - `models/requests.py`: Added `is_initial_greeting` field to `ThinkingModeRequest`
+    - `agents/thinking_modes/base_thinking_agent.py`: Added flag handling in `_reason()` method
+    - `routers/thinking.py`: Passes flag to agent `process_step()`
+    - `static/js/editor/thinking-mode-manager.js`: Sends flag only for new sessions
+  - **MindMate Pattern**: Minimal trigger message for Dify API
+    - Sends "start" query to satisfy Dify's non-empty field requirement
+    - Triggers Dify's configured conversation opener
+    - Well-documented API constraint with comprehensive comments
+  - **Documentation**: Created `docs/WELCOME_MESSAGE_ARCHITECTURE.md`
+    - Detailed architectural review comparing both approaches
+    - Design patterns and trade-offs analysis
+    - Best practice recommendations
+    - Test scenarios and scoring comparison
+
+- **Automatic Port Cleanup on Restart**
+  - **Location**: `main.py` (lines 66-205, 674-705)
+  - **Functions Added**:
+    - `_check_port_available()`: Checks if port is in use and identifies PID
+    - `_find_process_on_port()`: Cross-platform PID detection (Windows/Linux/Mac)
+    - `_cleanup_stale_process()`: Graceful termination with force-kill fallback
+  - **Features**:
+    - Pre-flight port availability check before Uvicorn starts
+    - Detects zombie processes from previous runs
+    - Automatic cleanup: 5s graceful termination → force kill if needed
+    - Verifies port release with retry logic
+    - Clear user instructions if manual intervention needed
+  - **Impact**: No more "port already in use" errors when restarting server
+  - **Documentation**: `docs/PORT_BINDING_ISSUE_CODE_REVIEW.md`
+
+- **Enhanced Node Palette Button Visuals**
+  - **Location**: `static/css/editor.css`, `templates/editor.html`
+  - **Features**:
+    - Purple gradient background with multi-layered shadows
+    - Continuous subtle glow animation (5s loop)
+    - Interactive hover effects: shine sweep, radial pulse, lift, icon rotation
+    - Language-aware button text: "Node Palette" (EN) / "瀑布流" (ZH)
+    - Custom tooltip positioned above button (not inside)
+  - **Impact**: Professional, modern appearance matching app theme
+
+- **Session Management Improvements**
+  - **Location**: `static/js/editor/thinking-mode-manager.js`, `static/js/editor/ai-assistant-manager.js`, `static/js/editor/diagram-selector.js`
+  - **Feature**: Conversation sessions tied to diagram sessions
+  - **Behavior**:
+    - Same diagram: Conversation persists across panel toggles
+    - New diagram: Fresh conversation starts automatically
+    - Gallery return: All sessions reset
+  - **Implementation**:
+    - Added `diagramSessionId` tracking to both AI managers
+    - Check `window.currentEditor?.sessionId` to detect diagram changes
+    - Reset sessions in `DiagramSelector.backToGallery()`
+  - **Impact**: Intuitive conversation continuity
+
+### Fixed
+
+- **ThinkGuide Duplicate Greeting Issue**
+  - **Problem**: Greeting displayed twice when reopening panel
+  - **Root Cause**: Backend checked empty message, not session history
+  - **Solution**: 
+    - Check `session.get('history')` length before greeting
+    - Return `'resume'` action for existing sessions
+    - Frontend handles `silent_resume` event gracefully
+  - **Files Modified**: `agents/thinking_modes/base_thinking_agent.py`, `static/js/editor/thinking-mode-manager.js`
+
+- **ThinkGuide LLM Response Formatting**
+  - **Problem**: Excessive newlines between sentences (multiple small paragraphs)
+  - **Solution**: Updated system prompt to use natural paragraph breaks
+  - **Prompt**: "Use natural paragraph breaks: keep related sentences together, only break paragraphs when topics shift"
+  - **Impact**: More readable, naturally flowing responses
+
+- **"Thinking" Button Text in Chinese Mode**
+  - **Problem**: Button showed "Thinking" instead of "思维向导" after restart
+  - **Root Cause**: Jinja2 template caching prevented initial text update
+  - **Solution**: 
+    - Set initial HTML text to "思维向导" in `templates/editor.html`
+    - Enabled Jinja2 auto-reload: `templates.env.auto_reload = True` in `main.py`
+  - **Impact**: Correct Chinese text displayed immediately
+
+- **Unicode Console Logging Error**
+  - **Problem**: `UnicodeEncodeError: 'gbk' codec can't encode character '\u2705'`
+  - **Solution**: Configure console handler to use UTF-8 encoding
+  - **Code**: `io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)`
+  - **Location**: `main.py`
+  - **Impact**: Emoji and Chinese characters display correctly in logs
+
+- **ThinkGuide Panel Canvas Fit Issue**
+  - **Problem**: Diagram didn't adjust when ThinkGuide panel opened
+  - **Warning**: `[ThinkGuide] Editor does not support fitToCanvas`
+  - **Solution**: 
+    - Call `editor.fitToCanvasWithPanel(true)` when opening
+    - Call `editor.fitToCanvasFullWidth(true)` when closing
+  - **Location**: `static/js/editor/thinking-mode-manager.js`
+  - **Impact**: Diagram properly resizes to accommodate panel
+
+- **MindMate Empty Query Error**
+  - **Problem**: Dify API rejected empty `query` field: "query is required"
+  - **Solution**: Send minimal trigger query "start" to satisfy API requirement
+  - **Implementation**: 
+    - Created `DIFY_OPENER_TRIGGER` constant
+    - Added comprehensive documentation explaining API constraint
+    - Backend logs conversation opener triggers
+  - **Impact**: Dify's conversation opener works reliably
+
+### Changed
+
+- **MindMate Welcome Message Approach**
+  - **Before**: Hardcoded Chinese greeting "你好" sent invisibly
+  - **After**: Minimal trigger "start" with comprehensive documentation
+  - **Improvements**:
+    - Language-aware fallback welcome message
+    - Clear documentation of API constraints
+    - Uses `DIFY_OPENER_TRIGGER` constant instead of magic string
+    - Backend validation and logging
+
+- **ThinkGuide Welcome Message Approach**  
+  - **Before**: Empty message used to trigger greeting (unclear intent)
+  - **After**: Explicit `is_initial_greeting` boolean flag
+  - **Benefits**:
+    - Self-documenting code
+    - Type-safe with Pydantic validation
+    - Easy to test and maintain
+    - No hidden behavior
+
+### Technical Details
+
+- **Session Management Flow**:
+  ```javascript
+  // First open (new diagram)
+  isNewDiagramSession = !this.diagramSessionId || 
+                        this.diagramSessionId !== currentEditor.sessionId
+  if (isNewDiagramSession) {
+      // Reset conversation, send greeting
+      needsGreeting = true
+  }
+  
+  // Reopen same diagram
+  else {
+      // Resume conversation, no greeting
+      needsGreeting = false
+  }
+  ```
+
+- **Port Cleanup Flow**:
+  ```python
+  1. Check if port 9527 is available
+  2. If occupied, find PID using netstat/lsof
+  3. Attempt graceful termination (5s timeout)
+  4. If still running, force kill
+  5. Verify port is released (3 retries)
+  6. Start Uvicorn if port is free
+  7. Exit with error if cleanup fails
+  ```
+
+- **Toggle Button Flow**:
+  ```javascript
+  handleThinkingMode() {
+      const isPanelOpen = !thinkPanel.classList.contains('collapsed')
+      
+      if (isPanelOpen) {
+          panelManager.closeThinkGuidePanel()  // Toggle off
+          return
+      }
+      
+      await thinkingModeManager.startThinkingMode()  // Toggle on
+  }
+  ```
+
+### Documentation
+
+- **New Documents**:
+  - `docs/WELCOME_MESSAGE_ARCHITECTURE.md`: Complete architectural review of welcome message implementations
+  - `docs/PORT_BINDING_ISSUE_CODE_REVIEW.md`: Detailed analysis of port binding solution
+
+- **Updated Documents**:
+  - Removed temporary diagnostic documents after fixes completed
+  - Cleaned up streaming implementation guide
+
+### Files Modified
+
+- **Backend**:
+  - `main.py`: Port cleanup, UTF-8 logging, Jinja2 auto-reload
+  - `routers/api.py`: MindMate conversation opener logging
+  - `routers/thinking.py`: ThinkGuide greeting flag handling
+  - `models/requests.py`: Added `is_initial_greeting` field
+  - `agents/thinking_modes/base_thinking_agent.py`: Session history check, resume action
+  - `config/settings.py`: Configuration constants
+
+- **Frontend**:
+  - `static/js/editor/toolbar-manager.js`: Toggle functionality
+  - `static/js/editor/thinking-mode-manager.js`: Session management, greeting flag
+  - `static/js/editor/ai-assistant-manager.js`: Dify opener, session management
+  - `static/js/editor/diagram-selector.js`: Session reset on gallery return
+  - `static/js/editor/language-manager.js`: Language-aware labels
+  - `static/css/editor.css`: Enhanced button visuals
+
+- **Templates**:
+  - `templates/editor.html`: Button text, tooltip structure
+
+---
+
+## [4.10.0] - 2025-01-12 - ThinkGuide Character Streaming & Node Palette Button
+
+### Added
+
+- **Character-by-Character Streaming in ThinkGuide**
+  - **Location**: `clients/llm.py`
+  - **New Methods**: Added `async_stream_chat_completion()` to all 4 LLM clients:
+    - `QwenClient` (lines 98-181): Dashscope SSE streaming with `enable_thinking: False`
+    - `DeepSeekClient` (lines 260-332): Dashscope SSE streaming with proper payload handling
+    - `KimiClient` (lines 397-469): Dashscope SSE streaming with high temperature
+    - `HunyuanClient` (lines 542-582): OpenAI SDK streaming
+  - **Import Update**: Added `AsyncGenerator` to type imports (line 13)
+  - **Key Features**:
+    - Real-time character streaming like ChatGPT/Claude
+    - Proper timeout configuration: `total=None`, `connect=10s`, `sock_read=30-60s`
+    - SSE format handling: `data: {...}` and `[DONE]` signal support
+    - Empty content filtering to avoid blank chunks
+    - Robust error handling with detailed logging
+  - **Critical Implementation Details**:
+    - Qwen: Keeps `extra_body: {"enable_thinking": False}` for API compatibility
+    - DeepSeek/Kimi: Manually adds `payload['stream'] = True` (not in `config.get_llm_data()`)
+    - Hunyuan: Uses native OpenAI SDK streaming with `stream=True` parameter
+  - **Impact**: 
+    - ThinkGuide now streams responses progressively, character-by-character
+    - Significantly improved UX - text appears immediately, lower perceived latency
+    - Consistent with MindMate's streaming experience
+    - Professional feel matching modern AI chat interfaces
+  - **Auto-Complete Unaffected**: Verified safe - auto-complete uses `llm_service.chat()` (non-streaming)
+  - **Files Modified**: Only `clients/llm.py` (1 file, ~190 lines added)
+
+- **Node Palette Button in ThinkGuide Toolbar**
+  - **Location**: `templates/editor.html`, `static/css/editor.css`, `static/js/editor/thinking-mode-manager.js`
+  - **New UI Element**: Added dedicated toolbar above ThinkGuide text input
+  - **Button**: "Node Palette" with grid icon, appears above text input area
+  - **Styling**: 
+    - Modern gradient background with hover effects
+    - Purple theme on hover matching ThinkGuide design
+    - Box shadow and smooth transitions
+    - Responsive and touch-friendly
+  - **Functionality**: 
+    - Replaces keyword detection with explicit button click
+    - Validates Circle Map center topic exists
+    - Shows clear error messages if prerequisites not met
+    - Integrates with existing `NodePaletteManager`
+  - **Impact**: 
+    - Better discoverability - visible button instead of hidden keywords
+    - More intuitive UX - clear action instead of typing special phrases
+    - Professional UI matching modern web app standards
+  - **Files Modified**: 
+    - `templates/editor.html`: Added toolbar HTML structure
+    - `static/css/editor.css`: Added `.thinking-toolbar` and `.thinking-toolbar-btn` styles
+    - `static/js/editor/thinking-mode-manager.js`: Added button listener and `openNodePalette()` method
+
+### Technical Details
+
+- **Streaming Architecture**:
+  ```
+  ThinkGuide → base_thinking_agent._stream_llm_response()
+           → llm_service.chat_stream()
+           → Checks hasattr(client, 'async_stream_chat_completion')
+           → Calls new streaming methods
+           → Yields chunks character-by-character
+  ```
+
+- **API Compatibility**:
+  - Dashscope (Qwen/DeepSeek/Kimi): SSE format with `delta.content`
+  - OpenAI SDK (Hunyuan): Native streaming with `chunk.choices[0].delta.content`
+  - Both formats properly handled with null/empty checks
+
+- **Code Review**: 
+  - 10+ files reviewed, 1000+ lines traced
+  - All code paths verified
+  - Edge cases identified and handled
+  - Critical gotchas documented
+  - See `docs/STREAMING_IMPLEMENTATION_NEEDED.md` for complete analysis
+
+### Documentation
+
+- **New Document**: `docs/STREAMING_IMPLEMENTATION_NEEDED.md`
+  - Complete streaming implementation guide
+  - Step-by-step instructions with code examples
+  - Critical gotchas and common pitfalls
+  - Comprehensive code review with line numbers
+  - API contract verification
+  - Testing checklist
+
+---
+
 ## [4.9.1] - 2025-01-12 - Mobile Label Alignment Fix
 
 ### Fixed
