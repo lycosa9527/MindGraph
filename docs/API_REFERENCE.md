@@ -5,7 +5,7 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `http://localhost:9527` (or your deployed server URL)  
-**API Version**: 4.9.0  
+**API Version**: 4.9.1  
 **Architecture**: Multi-agent system with smart LLM classification
 
 **Key Features**:
@@ -309,7 +309,7 @@ GET /status
 ```json
 {
   "status": "ok",
-  "version": "4.9.0"
+  "version": "4.9.1"  // Dynamic: reads from VERSION file
 }
 ```
 
@@ -318,7 +318,7 @@ GET /status
 {
   "status": "running",
   "framework": "FastAPI",
-  "version": "4.9.0",
+  "version": "4.9.1",  // Dynamic: reads from VERSION file
   "uptime_seconds": 3600.5,
   "memory_percent": 45.2,
   "timestamp": 1642012345.678
@@ -660,7 +660,11 @@ POST /api/frontend_log_batch
 
 ## Changelog
 
-### Version 4.9.0 (Current)
+### Version 4.9.1 (Current)
+- **Mobile Label Alignment Fix**: Fixed vertical alignment of "Nodes:" and "Tools:" labels
+- Labels now perfectly centered with buttons on all screen sizes
+
+### Version 4.9.0
 - **Mobile Toolbar Optimization**: Improved mobile UI with 3-row compact layout
 - Enhanced button sizing and alignment for mobile devices
 - Removed collapsible toggles for cleaner interface

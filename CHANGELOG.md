@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.9.1] - 2025-01-12 - Mobile Label Alignment Fix
+
+### Fixed
+
+- **Mobile Toolbar Label Vertical Alignment**
+  - **Location**: `static/css/editor-toolbar.css`
+  - **Problem**: "Nodes:" and "Tools:" labels were not vertically aligned with buttons on mobile/tablet
+  - **Solution**: 
+    - Changed label `display` from `inline` to `inline-flex` with `align-items: center`
+    - Added `line-height: 1.4` to match button line-height
+    - Added `height: 100%` on mobile for full container height
+  - **Impact**: Labels now perfectly centered with buttons on all screen sizes
+
+---
+
 ## [4.9.0] - 2025-01-12 - Mobile Toolbar UI Optimization
 
 ### Improved

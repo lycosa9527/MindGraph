@@ -136,6 +136,9 @@
     
     .toolbar-group label {
         font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1.4;
     }
     
     .btn-tool {
@@ -320,8 +323,11 @@
         font-size: 11px;
         margin-right: 6px;
         white-space: nowrap;
-        display: inline !important;
+        display: inline-flex !important;
+        align-items: center !important;
         visibility: visible !important;
+        line-height: 1.4 !important;
+        height: 100%;
     }
     
     /* ===== NODES TOOLBAR (节点) - Individual Control ===== */
