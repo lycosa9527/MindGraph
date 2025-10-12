@@ -126,7 +126,7 @@ def run_uvicorn():
         print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
         print("=" * 80)
         print("    AI-Powered Visual Thinking Tools for K12 Education")
-        print("    Made by MindSpring Team | Author: lycosa9527")
+        print(f"    Version {config.VERSION} | Made by MindSpring Team | Author: lycosa9527")
         print("=" * 80)
         print()
         print(f"Environment: {environment} (DEBUG={debug})")
