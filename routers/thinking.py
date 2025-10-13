@@ -302,28 +302,16 @@ async def log_finish_selection(req: NodePaletteFinishRequest):
                (selected_count/max(total_generated,1))*100)
     
     # End session in generator
-    generator = get_node_palette_generator()
+    generator = get_node_palette_generator_v2()
     generator.end_session(session_id, reason="user_finished")
     
     return {"status": "session_ended"}
 
 
-@router.get('/thinking_mode/node_palette/debug/{session_id}')
-async def debug_node_palette_session(session_id: str):
-    """
-    Debug endpoint to inspect session state (DEVELOPMENT ONLY).
-    
-    Returns detailed session metrics, node counts, and LLM performance.
-    Useful for troubleshooting during development.
-    """
-    generator = get_node_palette_generator()
-    debug_info = generator.get_session_debug_info(session_id)
-    
-    total_nodes = debug_info.get('total_nodes_generated', 0)
-    total_batches = debug_info.get('total_batches', 0)
-    
-    logger.info("[NodePalette-DEBUG] Debug request | Session: %s | Nodes: %d | Batches: %d", 
-               session_id[:8], total_nodes, total_batches)
-    
-    return debug_info
+# Debug endpoint removed - V2 generator uses different session tracking
+# Use browser console logs and server logs for debugging instead
+# @router.get('/thinking_mode/node_palette/debug/{session_id}')
+# async def debug_node_palette_session(session_id: str):
+#     """Debug endpoint (deprecated - use logs instead)"""
+#     pass
 
