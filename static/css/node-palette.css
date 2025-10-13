@@ -545,6 +545,111 @@
 }
 
 /* ============================================================================
+   BATCH TRANSITION ANIMATION (Between Batches)
+   ============================================================================ */
+
+.batch-transition {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 32px;
+    margin-top: 24px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Elegant Triple Ring Spinner */
+.transition-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+
+.spinner-ring:nth-child(1) {
+    width: 80px;
+    height: 80px;
+    border-top-color: #3498db;
+    border-right-color: #3498db;
+    animation: spin-ring 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+.spinner-ring:nth-child(2) {
+    width: 60px;
+    height: 60px;
+    border-top-color: #9b59b6;
+    border-right-color: #9b59b6;
+    animation: spin-ring 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite reverse;
+}
+
+.spinner-ring:nth-child(3) {
+    width: 40px;
+    height: 40px;
+    border-top-color: #1abc9c;
+    border-right-color: #1abc9c;
+    animation: spin-ring 0.9s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+@keyframes spin-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Transition Text */
+.transition-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #333333);
+    animation: text-fade 2s ease-in-out infinite;
+}
+
+.transition-subtext {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #999999);
+    animation: text-fade 2s ease-in-out 0.5s infinite;
+}
+
+@keyframes text-fade {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Dark mode support for transition */
+[data-theme="dark"] .transition-text {
+    color: var(--text-primary-dark, #e0e0e0);
+}
+
+[data-theme="dark"] .transition-subtext {
+    color: var(--text-secondary-dark, #999999);
+}
+
+/* ============================================================================
    DARK MODE SUPPORT
    ============================================================================ */
 

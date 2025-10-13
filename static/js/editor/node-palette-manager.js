@@ -197,6 +197,9 @@ class NodePaletteManager {
         this.isLoadingBatch = true;
         this.currentBatch++;
         
+        // Hide transition animation as new batch starts
+        this.hideBatchTransition();
+        
         console.log(`[NodePalette] 🚀 Loading batch #${this.currentBatch} (4 LLMs concurrent)`);
         
         // Determine URL based on batch number
@@ -266,6 +269,9 @@ class NodePaletteManager {
                             console.log(`[NodePalette] Batch ${this.currentBatch} complete (${elapsed}s) | New: ${data.new_unique_nodes} | Total: ${data.total_nodes}`);
                             
                             this.isLoadingBatch = false;
+                            
+                            // Show elegant loading animation for next batch
+                            this.showBatchTransition();
                             
                         } else if (data.event === 'error') {
                             console.error(`[NodePalette] Batch ${this.currentBatch} error:`, data.message);
@@ -429,6 +435,54 @@ class NodePaletteManager {
     }
     
     
+    showBatchTransition() {
+        /**
+         * Show elegant loading animation between batches
+         */
+        const container = document.getElementById('node-palette-grid');
+        if (!container) return;
+        
+        // Check if transition element already exists
+        let transition = document.getElementById('batch-transition');
+        if (!transition) {
+            transition = document.createElement('div');
+            transition.id = 'batch-transition';
+            transition.className = 'batch-transition';
+            transition.innerHTML = `
+                <div class="transition-content">
+                    <div class="transition-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <div class="transition-text">Preparing next batch...</div>
+                    <div class="transition-subtext">Scroll down for more ideas</div>
+                </div>
+            `;
+            container.appendChild(transition);
+        }
+        
+        // Fade in
+        setTimeout(() => {
+            transition.style.opacity = '1';
+            transition.style.transform = 'translateY(0)';
+        }, 10);
+    }
+    
+    hideBatchTransition() {
+        /**
+         * Hide batch transition animation
+         */
+        const transition = document.getElementById('batch-transition');
+        if (transition) {
+            transition.style.opacity = '0';
+            transition.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                transition.remove();
+            }, 400);
+        }
+    }
+    
     async finishSelection() {
         /**
          * Finish Node Palette, add selected nodes to Circle Map.
@@ -472,6 +526,7 @@ class NodePaletteManager {
         
         // Hide Node Palette BEFORE adding nodes (so user sees the result)
         console.log('[NodePalette-Finish] Hiding Node Palette panel...');
+        this.hideBatchTransition(); // Clean up any active transition
         this.hidePalettePanel();
         
         // Wait for panel to hide
