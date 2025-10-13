@@ -1217,6 +1217,93 @@ class InteractiveEditor {
     }
     
     /**
+     * Fit diagram for export - calculates full diagram bounds regardless of visible canvas
+     * This ensures the entire diagram is captured in export, even if parts are off-screen
+     */
+    fitDiagramForExport() {
+        try {
+            logger.debug('Editor', 'Fitting diagram for export - calculating full content bounds');
+            
+            const container = d3.select('#d3-container');
+            const svg = container.select('svg');
+            
+            if (svg.empty()) {
+                logger.warn('Editor', 'No SVG found, cannot fit for export');
+                return;
+            }
+            
+            // Get all visual elements (including images and foreignObjects that might be missed)
+            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline, image, foreignObject');
+            
+            if (allElements.empty()) {
+                logger.warn('Editor', 'No content found in SVG for export');
+                return;
+            }
+            
+            logger.debug('Editor', `Found ${allElements.size()} elements for export bounds calculation`);
+            
+            // Calculate the bounding box of ALL SVG content
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let hasContent = false;
+            
+            allElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox.width > 0 && bbox.height > 0) {
+                        // Account for stroke width (getBBox doesn't include it)
+                        let strokeWidth = 0;
+                        const computedStyle = window.getComputedStyle(this);
+                        const strokeWidthStr = computedStyle.strokeWidth || this.getAttribute('stroke-width') || '0';
+                        strokeWidth = parseFloat(strokeWidthStr) || 0;
+                        
+                        // Add half stroke width on each side
+                        const halfStroke = strokeWidth / 2;
+                        minX = Math.min(minX, bbox.x - halfStroke);
+                        minY = Math.min(minY, bbox.y - halfStroke);
+                        maxX = Math.max(maxX, bbox.x + bbox.width + halfStroke);
+                        maxY = Math.max(maxY, bbox.y + bbox.height + halfStroke);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Some elements might not have getBBox, skip them
+                }
+            });
+            
+            if (!hasContent || minX === Infinity) {
+                logger.warn('Editor', 'No valid content bounds found for export');
+                return;
+            }
+            
+            const contentBounds = {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+            };
+            
+            logger.debug('Editor', 'Export content bounds:', contentBounds);
+            
+            // Calculate optimal viewBox with generous padding for export
+            const padding = Math.min(contentBounds.width, contentBounds.height) * 0.15; // 15% padding for export
+            const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
+            
+            logger.debug('Editor', 'Setting export viewBox:', newViewBox);
+            
+            // Set viewBox immediately without transition (for export)
+            svg.attr('viewBox', newViewBox)
+               .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            this.log('InteractiveEditor: Diagram fitted for export', {
+                bounds: contentBounds,
+                exportViewBox: newViewBox
+            });
+            
+        } catch (error) {
+            logger.error('Editor', 'Error fitting diagram for export:', error);
+        }
+    }
+    
+    /**
      * Setup global event handlers
      */
     setupGlobalEventHandlers() {

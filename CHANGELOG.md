@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.11.2] - 2025-10-13 - Export Diagram Cutoff Fix & Rate Limit Increase
+
+### Fixed
+
+- **Diagram Export Cutoff Issue**
+  - **Location**: `static/js/editor/interactive-editor.js`, `static/js/editor/toolbar-manager.js`
+  - **Issue**: Exported diagrams sometimes cut off content that rendered perfectly in canvas
+    - Export used `fitDiagramToWindow()` which calculates viewBox based on visible canvas area
+    - ViewBox calculation considered panel visibility (property panel, AI panel), reducing available width
+    - Content extending beyond visible area was cut off in export
+    - `getBBox()` didn't account for stroke widths, causing elements with thick strokes to be partially cut
+  - **Solution**: Created dedicated export fitting function
+    - Added `fitDiagramForExport()` method in `interactive-editor.js` (lines 1219-1296)
+    - Calculates full diagram bounds regardless of canvas/panel visibility
+    - Includes all element types (images, foreignObjects) in bounds calculation
+    - Accounts for stroke widths that `getBBox()` doesn't include
+    - Uses 15% padding (vs 10%) for generous export margins
+    - Sets viewBox immediately without transition (no animation needed)
+  - **Updated Export Flow**:
+    - Modified `handleExport()` in `toolbar-manager.js` to use `fitDiagramForExport()`
+    - Reduced export delay from 800ms to 100ms (no transition animation)
+  - **Result**: Complete diagram capture in exports with proper margins
+  - **Impact**: Exported PNGs now include all diagram elements regardless of visible canvas area
+  - **Documentation**: `docs/EXPORT_FIX_DIAGRAM_CUTOFF.md`
+
+### Changed
+
+- **Increased Rate Limiting Defaults**
+  - **Location**: `config/settings.py`, `services/rate_limiter.py`, `env.example`
+  - **Changes**:
+    - `DASHSCOPE_QPM_LIMIT`: Increased from 60 to 200 queries per minute
+    - `DASHSCOPE_CONCURRENT_LIMIT`: Increased from 10 to 50 concurrent requests
+  - **Rationale**: Support higher throughput for multi-LLM parallel calls
+  - **Impact**: Better performance for users with higher-tier Dashscope accounts
+  - **Note**: These are defaults; users can still configure via environment variables
+
+### Removed
+
+- **Removed Unused Connection Pool Configuration**
+  - **Location**: `config/settings.py`, `env.example`
+  - **Removed**: `DASHSCOPE_CONNECTION_POOL_SIZE` setting
+  - **Reason**: Not implemented in HTTP client code; was creating confusion
+  - **Impact**: Cleaner configuration without unused settings
+
+---
+
 ## [4.11.1] - 2025-10-12 - Frontend Logging Improvements
 
 ### Fixed

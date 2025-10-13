@@ -9,6 +9,7 @@ class AIAssistantManager {
     constructor() {
         this.userId = this.generateUserId();
         this.conversationId = null;
+        this.diagramSessionId = null; // Track which diagram session this conversation belongs to
         this.currentStreamingMessage = null;
         this.messageBuffer = '';
         this.hasGreeted = false; // Track if we've sent initial greeting
@@ -152,18 +153,42 @@ class AIAssistantManager {
             if (isCurrentlyClosed) {
                 // Open this panel (PanelManager will close others)
                 logger.info('AIAssistant', '🎯 Calling panelManager.openMindMatePanel() - EXPLICIT METHOD');
+                
+                // Check if we're opening for a new diagram session
+                const currentDiagramSessionId = window.currentEditor?.sessionId;
+                const isNewDiagramSession = !this.diagramSessionId || this.diagramSessionId !== currentDiagramSessionId;
+                
+                if (isNewDiagramSession) {
+                    logger.info('AIAssistant', 'New diagram session detected - starting new conversation', {
+                        oldSession: this.diagramSessionId,
+                        newSession: currentDiagramSessionId
+                    });
+                    
+                    // Reset conversation for new diagram
+                    this.diagramSessionId = currentDiagramSessionId;
+                    this.conversationId = null;
+                    this.hasGreeted = false;
+                    this.chatMessages.innerHTML = ''; // Clear old messages
+                } else {
+                    logger.info('AIAssistant', 'Resuming existing conversation', {
+                        diagramSession: this.diagramSessionId,
+                        conversationId: this.conversationId
+                    });
+                }
+                
                 const success = window.panelManager.openMindMatePanel();
                 logger.info('AIAssistant', 'openMindMatePanel result:', success);
                 
-                // Send invisible greeting on first open
+                // Trigger Dify's conversation opener for new sessions
                 if (!this.hasGreeted) {
                     this.hasGreeted = true;
-                    logger.debug('AIAssistant', 'Sending initial greeting');
+                    logger.debug('AIAssistant', 'Triggering Dify conversation opener');
                     
-                    // Send greeting after a short delay to ensure panel is visible
+                    // Send empty message to trigger Dify's conversation opener
+                    // Dify will respond with its configured opening message
                     setTimeout(() => {
-                        this.sendGreeting();
-                    }, 400);
+                        this.sendConversationOpener();
+                    }, 300);
                 }
             } else {
                 // Close this panel
@@ -217,48 +242,97 @@ class AIAssistantManager {
     }
     
     /**
-     * Send invisible greeting message on first panel open
+     * Trigger Dify's conversation opener for new conversations
+     * 
+     * IMPLEMENTATION NOTE:
+     * Dify API requires a non-empty `query` field per API specification.
+     * We send a minimal trigger message that:
+     * - Satisfies Dify's API requirement (non-empty query)
+     * - Is hidden from user (showUserMessage=false)
+     * - Triggers Dify's configured conversation opener feature
+     * - Dify responds with your custom welcome message configured in admin
+     * 
+     * Why not empty string?
+     * - Dify API rejects empty query: "query is required"
+     * - This is an API constraint, not a design choice
+     * 
+     * @see https://docs.dify.ai/guides/application-publishing/launch-app
      */
-    async sendGreeting() {
-        logger.debug('AIAssistant', 'Sending greeting to Dify');
+    async sendConversationOpener() {
+        if (!this.chatMessages) return;
         
-        // Remove the static welcome message if it exists
-        const welcomeMessage = this.chatMessages?.querySelector('.ai-welcome-message');
-        if (welcomeMessage) {
-            welcomeMessage.remove();
-        }
-        
-        // Send invisible greeting (user doesn't see their "你好" in chat)
-        const greetingMessage = '你好';
+        logger.debug('AIAssistant', 'Triggering Dify conversation opener');
         
         try {
-            await this.sendMessageToDify(greetingMessage, false); // false = don't show user message
-            logger.info('AIAssistant', 'Greeting sent successfully');
+            // Dify API constant - minimal trigger for conversation opener
+            const DIFY_OPENER_TRIGGER = 'start';
+            
+            await this.sendMessageToDify(DIFY_OPENER_TRIGGER, false);
+            logger.info('AIAssistant', 'Dify conversation opener triggered successfully');
         } catch (error) {
-            logger.error('AIAssistant', 'Failed to send greeting:', error);
-            // If greeting fails, restore the static welcome message
-            this.restoreWelcomeMessage();
+            logger.error('AIAssistant', 'Failed to trigger conversation opener:', error);
+            
+            // Fallback: Show static welcome if Dify opener fails
+            this.showFallbackWelcome();
         }
     }
     
     /**
-     * Restore static welcome message (fallback if greeting fails)
+     * Fallback static welcome message if Dify opener fails
      */
-    restoreWelcomeMessage() {
+    showFallbackWelcome() {
         if (!this.chatMessages) return;
+        
+        const language = this.detectLanguage();
+        const aiName = window.AI_ASSISTANT_NAME || 'MindMate AI';
         
         const welcomeDiv = document.createElement('div');
         welcomeDiv.className = 'ai-welcome-message';
-        const aiName = window.AI_ASSISTANT_NAME || 'MindMate AI';
-        welcomeDiv.innerHTML = `
-            <div class="welcome-icon">✨</div>
-            <div class="welcome-text">
-                <h4>Welcome to ${aiName}!</h4>
-                <p>I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.</p>
-            </div>
-        `;
-        this.chatMessages.insertBefore(welcomeDiv, this.chatMessages.firstChild);
+        
+        if (language === 'zh') {
+            welcomeDiv.innerHTML = `
+                <div class="welcome-icon">✨</div>
+                <div class="welcome-text">
+                    <strong>${aiName}</strong> 已就绪<br>
+                    有什么可以帮助您的吗？
+                </div>
+            `;
+        } else {
+            welcomeDiv.innerHTML = `
+                <div class="welcome-icon">✨</div>
+                <div class="welcome-text">
+                    <strong>${aiName}</strong> is ready<br>
+                    How can I help you today?
+                </div>
+            `;
+        }
+        
+        this.chatMessages.appendChild(welcomeDiv);
+        this.scrollToBottom();
+        
+        logger.warn('AIAssistant', 'Showing fallback welcome (Dify opener failed)');
     }
+    
+    /**
+     * Detect language from current diagram
+     */
+    detectLanguage() {
+        const editor = window.currentEditor;
+        if (!editor) return 'zh'; // default to Chinese
+        
+        try {
+            const diagramData = editor.exportToJSON?.();
+            const centerText = diagramData?.center?.text || diagramData?.topic || '';
+            
+            // Simple Chinese character detection
+            const chineseChars = (centerText.match(/[\u4e00-\u9fff]/g) || []).length;
+            return chineseChars > centerText.length * 0.3 ? 'zh' : 'en';
+        } catch (error) {
+            logger.warn('AIAssistant', 'Failed to detect language, defaulting to zh', error);
+            return 'zh';
+        }
+    }
+    
     
     /**
      * Send message to AI assistant

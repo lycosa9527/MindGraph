@@ -37,16 +37,16 @@ class DashscopeRateLimiter:
     
     def __init__(
         self,
-        qpm_limit: int = 60,
-        concurrent_limit: int = 10,
+        qpm_limit: int = 200,
+        concurrent_limit: int = 50,
         enabled: bool = True
     ):
         """
         Initialize rate limiter.
         
         Args:
-            qpm_limit: Maximum queries per minute
-            concurrent_limit: Maximum concurrent requests
+            qpm_limit: Maximum queries per minute (default: 200)
+            concurrent_limit: Maximum concurrent requests (default: 50)
             enabled: Whether rate limiting is enabled
         """
         self.qpm_limit = qpm_limit
@@ -178,16 +178,16 @@ def get_rate_limiter() -> Optional[DashscopeRateLimiter]:
 
 
 def initialize_rate_limiter(
-    qpm_limit: int = 60,
-    concurrent_limit: int = 10,
+    qpm_limit: int = 200,
+    concurrent_limit: int = 50,
     enabled: bool = True
 ) -> DashscopeRateLimiter:
     """
     Initialize the global rate limiter.
     
     Args:
-        qpm_limit: Maximum queries per minute
-        concurrent_limit: Maximum concurrent requests
+        qpm_limit: Maximum queries per minute (default: 200)
+        concurrent_limit: Maximum concurrent requests (default: 50)
         enabled: Whether to enable rate limiting
         
     Returns:

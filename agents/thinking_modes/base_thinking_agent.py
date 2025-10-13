@@ -146,7 +146,8 @@ class BaseThinkingAgent(ABC):
         session_id: str,
         diagram_data: Dict,
         current_state: str,
-        user_id: str = None
+        user_id: str = None,
+        is_initial_greeting: bool = False
     ) -> AsyncGenerator[Dict, None]:
         """
         Main ReAct cycle: Reason → Act → Observe
@@ -182,7 +183,7 @@ class BaseThinkingAgent(ABC):
         )
         
         # ReAct Step 1: REASON - Understand user intent
-        intent = await self._reason(session, message, current_state)
+        intent = await self._reason(session, message, current_state, is_initial_greeting)
         
         logger.info(f"[{self.__class__.__name__}] REASON → Intent: {intent.get('action', 'unknown')}")
         
@@ -199,7 +200,8 @@ class BaseThinkingAgent(ABC):
         self,
         session: Dict,
         message: str,
-        current_state: str
+        current_state: str,
+        is_initial_greeting: bool = False
     ) -> Dict:
         """
         ReAct Step 1: REASON
@@ -211,15 +213,29 @@ class BaseThinkingAgent(ABC):
             session: Current session
             message: User's message
             current_state: Current workflow state
+            is_initial_greeting: If True, this is a new session requesting initial greeting
             
         Returns:
             Intent dictionary with action and parameters
         """
-        if not message:
-            # No message = initial greeting or state transition
-            return {'action': 'greet', 'state': current_state}
+        # Handle explicit greeting request for new sessions
+        if is_initial_greeting:
+            # Check if session has history to avoid duplicate greeting
+            has_history = len(session.get('history', [])) > 0
+            
+            if has_history:
+                # Session already has conversation - resume silently
+                logger.info(f"[{self.__class__.__name__}] Greeting requested but session has history - resuming silently")
+                return {'action': 'resume', 'state': current_state}
+            else:
+                # New session - greet user
+                return {'action': 'greet', 'state': current_state}
         
-        # Delegate to diagram-specific intent detection
+        # No message and no greeting request = just resume
+        if not message:
+            return {'action': 'resume', 'state': current_state}
+        
+        # Delegate to diagram-specific intent detection for actual user messages
         return await self._detect_user_intent(session, message, current_state)
     
     # ===== REACT STEP 2: ACT =====
@@ -253,6 +269,18 @@ class BaseThinkingAgent(ABC):
             # Initial greeting for this state
             async for event in self._handle_greeting(session, current_state):
                 yield event
+        
+        elif action == 'resume':
+            # Panel reopened - resume existing conversation silently (no duplicate greeting)
+            logger.info(f"[{self.__class__.__name__}] Resuming existing conversation | History: {len(session.get('history', []))} messages")
+            # Send a silent completion event to indicate panel is ready
+            yield {
+                'event': 'message_complete',
+                'data': {
+                    'state': current_state,
+                    'silent_resume': True
+                }
+            }
         
         elif action == 'discuss':
             # Pure discussion, no diagram changes
@@ -342,7 +370,8 @@ class BaseThinkingAgent(ABC):
 - 简洁、清晰、专业
 - 不使用表情符号
 - 直接、有针对性
-- 提问而非说教"""
+- 提问而非说教
+- 使用自然的段落划分：相关的句子保持在同一段落中，仅在话题转换时换段"""
         else:
             return """You are a Teaching Thinking Professional.
 
@@ -355,7 +384,8 @@ Your style:
 - Concise, clear, professional
 - No emojis
 - Direct and targeted
-- Ask, don't lecture"""
+- Ask, don't lecture
+- Use natural paragraph breaks: keep related sentences together, only break paragraphs when topics shift"""
     
     # ===== DEFAULT ACTION HANDLERS =====
     

@@ -36,7 +36,7 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
     temp_dir = Path("temp_images")
     
     if not temp_dir.exists():
-        logger.debug("temp_images/ directory does not exist, skipping cleanup")
+        # Silently skip if directory doesn't exist - nothing to clean
         return 0
     
     current_time = time.time()

@@ -21,6 +21,7 @@ Status: Production Ready
 
 import os
 import sys
+import io
 import logging
 import time
 import signal
@@ -61,6 +62,147 @@ def _handle_shutdown_signal(signum, frame):
     event = _get_shutdown_event()
     if event and not event.is_set():
         event.set()
+
+# ============================================================================
+# PORT AVAILABILITY CHECK & CLEANUP
+# ============================================================================
+
+def _check_port_available(host: str, port: int):
+    """
+    Check if a port is available for binding.
+    
+    Args:
+        host: Host address to check
+        port: Port number to check
+        
+    Returns:
+        tuple: (is_available: bool, pid_using_port: Optional[int])
+    """
+    import socket
+    
+    # Try to bind to the port
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind((host, port))
+        sock.close()
+        return (True, None)
+    except OSError as e:
+        # Port is in use - try to find the process
+        if e.errno in (10048, 98):  # Windows: 10048, Linux: 98 (EADDRINUSE)
+            pid = _find_process_on_port(port)
+            return (False, pid)
+        # Other error - re-raise
+        raise
+
+def _find_process_on_port(port: int):
+    """
+    Find the PID of the process using the specified port.
+    Cross-platform implementation.
+    
+    Args:
+        port: Port number to check
+        
+    Returns:
+        Optional[int]: PID of process using the port, or None if not found
+    """
+    import subprocess
+    
+    try:
+        if sys.platform == 'win32':
+            # Windows: use netstat
+            result = subprocess.run(
+                ['netstat', '-ano'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            for line in result.stdout.split('\n'):
+                if f':{port}' in line and 'LISTENING' in line:
+                    parts = line.split()
+                    if len(parts) >= 5:
+                        return int(parts[-1])
+        else:
+            # Linux/Mac: use lsof
+            result = subprocess.run(
+                ['lsof', '-ti', f':{port}'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.stdout.strip():
+                return int(result.stdout.strip())
+    except Exception as e:
+        logger.warning(f"Could not detect process on port {port}: {e}")
+    
+    return None
+
+def _cleanup_stale_process(pid: int, port: int) -> bool:
+    """
+    Attempt to gracefully terminate a stale server process.
+    
+    Args:
+        pid: Process ID to terminate
+        port: Port number (for logging)
+        
+    Returns:
+        bool: True if cleanup successful, False otherwise
+    """
+    import subprocess
+    
+    logger.warning(f"Found process {pid} using port {port}")
+    logger.info(f"Attempting to terminate stale server process...")
+    
+    try:
+        if sys.platform == 'win32':
+            # Windows: taskkill
+            # First try graceful termination
+            subprocess.run(
+                ['taskkill', '/PID', str(pid)],
+                capture_output=True,
+                timeout=3
+            )
+            time.sleep(1)
+            
+            # Check if still running
+            check_result = subprocess.run(
+                ['tasklist', '/FI', f'PID eq {pid}'],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            if str(pid) in check_result.stdout:
+                # Force kill if graceful failed
+                logger.info("Process still running, forcing termination...")
+                subprocess.run(
+                    ['taskkill', '/F', '/PID', str(pid)],
+                    capture_output=True,
+                    timeout=2
+                )
+        else:
+            # Linux/Mac: kill
+            os.kill(pid, signal.SIGTERM)
+            time.sleep(0.5)
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # Process already terminated
+        
+        # Wait for port to be released
+        time.sleep(1)
+        is_available, _ = _check_port_available('0.0.0.0', port)
+        
+        if is_available:
+            logger.info(f"✅ Successfully cleaned up stale process (PID: {pid})")
+            return True
+        else:
+            logger.error(f"❌ Port {port} still in use after cleanup attempt")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup process {pid}: {e}")
+        return False
 
 class ShutdownErrorFilter:
     """Filter stderr to suppress expected shutdown errors"""
@@ -180,7 +322,10 @@ class UnifiedFormatter(logging.Formatter):
 # Configure logging
 unified_formatter = UnifiedFormatter()
 
-console_handler = logging.StreamHandler(sys.stdout)
+# Use UTF-8 encoding for console output to handle emojis and Chinese characters
+console_handler = logging.StreamHandler(
+    io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+)
 console_handler.setFormatter(unified_formatter)
 
 file_handler = logging.FileHandler(
@@ -439,8 +584,9 @@ async def log_requests(request: Request, call_next):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Jinja2 templates
+# Jinja2 templates with auto-reload enabled
 templates = Jinja2Templates(directory="templates")
+templates.env.auto_reload = True  # Enable template auto-reload for development
 
 # ============================================================================
 # GLOBAL EXCEPTION HANDLERS
@@ -524,6 +670,40 @@ if __name__ == "__main__":
     logger.info("Starting FastAPI application with Uvicorn")
     logger.info(f"Server: http://{config.HOST}:{config.PORT}")
     logger.info(f"API Docs: http://{config.HOST}:{config.PORT}/docs")
+    
+    # Pre-flight port availability check
+    logger.info("Checking port availability...")
+    is_available, pid_using_port = _check_port_available(config.HOST, config.PORT)
+    
+    if not is_available:
+        logger.warning(f"⚠️  Port {config.PORT} is already in use")
+        
+        if pid_using_port:
+            logger.warning(f"Process {pid_using_port} is using the port")
+            
+            # Attempt automatic cleanup
+            if _cleanup_stale_process(pid_using_port, config.PORT):
+                logger.info("✅ Port cleanup successful, proceeding with startup...")
+            else:
+                logger.error("=" * 80)
+                logger.error(f"❌ Cannot start server - port {config.PORT} is still in use")
+                logger.error(f"💡 Manual cleanup required:")
+                if sys.platform == 'win32':
+                    logger.error(f"   Windows: taskkill /F /PID {pid_using_port}")
+                else:
+                    logger.error(f"   Linux/Mac: kill -9 {pid_using_port}")
+                logger.error("=" * 80)
+                sys.exit(1)
+        else:
+            logger.error("=" * 80)
+            logger.error(f"❌ Cannot start server - port {config.PORT} is in use")
+            logger.error(f"💡 Could not detect the process using the port")
+            logger.error(f"   Please check manually and free the port")
+            logger.error("=" * 80)
+            sys.exit(1)
+    else:
+        logger.info(f"✅ Port {config.PORT} is available")
+    
     if config.DEBUG:
         logger.warning("⚠️  Reload mode enabled - may cause slow shutdown (use Ctrl+C twice if needed)")
     logger.info("=" * 80)

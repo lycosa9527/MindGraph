@@ -520,7 +520,7 @@ class DiagramSelector {
         // Clean up canvas and editor
         this.cleanupCanvas();
         
-        // Close AI assistant if open and reset button state
+        // Close AI assistant if open and reset button state + conversation session
         const aiPanel = document.getElementById('ai-assistant-panel');
         if (aiPanel && !aiPanel.classList.contains('collapsed')) {
             aiPanel.classList.add('collapsed');
@@ -528,6 +528,30 @@ class DiagramSelector {
         const mindmateBtn = document.getElementById('mindmate-ai-btn');
         if (mindmateBtn) {
             mindmateBtn.classList.remove('active');
+        }
+        // Reset MindMate conversation session
+        if (window.aiAssistantManager) {
+            window.aiAssistantManager.diagramSessionId = null;
+            window.aiAssistantManager.conversationId = null;
+            window.aiAssistantManager.hasGreeted = false;
+            logger.debug('DiagramSelector', 'MindMate conversation session reset');
+        }
+        
+        // Close ThinkGuide panel if open and reset button state + conversation session
+        const thinkPanel = document.getElementById('thinking-panel');
+        if (thinkPanel && !thinkPanel.classList.contains('collapsed')) {
+            thinkPanel.classList.add('collapsed');
+        }
+        const thinkingBtn = document.getElementById('thinking-btn');
+        if (thinkingBtn) {
+            thinkingBtn.classList.remove('active');
+        }
+        // Reset ThinkGuide conversation session
+        if (window.thinkingModeManager) {
+            window.thinkingModeManager.diagramSessionId = null;
+            window.thinkingModeManager.sessionId = null;
+            window.thinkingModeManager.currentState = 'CONTEXT_GATHERING';
+            logger.debug('DiagramSelector', 'ThinkGuide conversation session reset');
         }
         
         // Hide property panel

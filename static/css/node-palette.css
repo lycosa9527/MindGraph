@@ -14,16 +14,22 @@
    ============================================================================ */
 
 .node-palette-panel {
-    position: fixed;
-    top: 60px;
+    position: absolute; /* Position relative to editor-main-content, like ThinkGuide */
+    top: 0; /* Start at editor-main-content top (after toolbar) - automatically adaptive! */
     left: 0;
     right: 0;
-    bottom: 40px;
+    bottom: 0; /* Fill to bottom of editor-main-content */
     background: var(--bg-primary, #ffffff);
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Node Palette respects ThinkGuide panel when it's visible */
+.node-palette-panel.thinkguide-visible {
+    right: 400px; /* Leave space for ThinkGuide panel */
+    border-right: 3px solid rgba(102, 126, 234, 0.15);
 }
 
 /* Header */
@@ -96,51 +102,28 @@
 
 .node-palette-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    column-gap: 24px;
-    row-gap: 16px;
+    /* Truly adaptive: fit as many circles as possible with flexible sizing */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 200px));
+    gap: clamp(16px, 2vw, 24px); /* Adaptive gap: smaller on narrow screens, larger on wide */
     margin-bottom: 80px;
-    padding: 20px 40px;
-    max-width: 900px;
+    padding: 20px clamp(20px, 3vw, 40px);
+    max-width: 100%;
     margin-left: auto;
     margin-right: auto;
     justify-items: center;
+    align-items: start;
+    justify-content: center; /* Center the grid when it doesn't fill the width */
 }
 
-/* Stagger every other column down by half a circle (110px = 220px / 2) */
-.node-palette-grid .node-card:nth-child(3n+2) {
-    margin-top: 110px;
+/* Universal honeycomb pattern that works with ANY column count */
+/* Offset every odd-positioned item (1st, 3rd, 5th, 7th...) */
+.node-palette-grid .node-card:nth-child(odd) {
+    margin-top: 80px; /* Slightly less than half-circle for tighter packing */
 }
 
-@media (min-width: 1200px) {
-    .node-palette-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    /* For 4 columns, offset columns 2 and 4 */
-    .node-palette-grid .node-card:nth-child(3n+2) {
-        margin-top: 0;
-    }
-    
-    .node-palette-grid .node-card:nth-child(4n+2),
-    .node-palette-grid .node-card:nth-child(4n+4) {
-        margin-top: 110px;
-    }
-}
-
-@media (max-width: 800px) {
-    .node-palette-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    /* For 2 columns, offset column 2 */
-    .node-palette-grid .node-card:nth-child(3n+2) {
-        margin-top: 0;
-    }
-    
-    .node-palette-grid .node-card:nth-child(2n+2) {
-        margin-top: 110px;
-    }
+/* Let first item start at top */
+.node-palette-grid .node-card:nth-child(1) {
+    margin-top: 0;
 }
 
 /* ============================================================================
@@ -152,9 +135,9 @@
     background: var(--bg-secondary, #f9f9f9);
     border: 4px solid #4a90e2; /* Default blue */
     border-radius: 50%;
-    width: 220px;
-    height: 220px;
-    padding: 28px;
+    width: 200px; /* Slightly smaller for better packing */
+    height: 200px;
+    padding: 24px;
     cursor: pointer;
     transition: all 0.3s ease;
     opacity: 0;
@@ -167,6 +150,17 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
     animation: gentle-pulse 3s ease-in-out infinite;
+    max-width: 100%; /* Responsive to container */
+    aspect-ratio: 1; /* Maintain perfect circle */
+}
+
+/* Smaller circles on mobile for better fit */
+@media (max-width: 600px) {
+    .node-card {
+        width: 160px;
+        height: 160px;
+        padding: 18px;
+    }
 }
 
 /* LLM-specific border colors and glows (matching status bar buttons) */
@@ -254,6 +248,7 @@
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 5;
+    line-clamp: 5; /* Standard property for compatibility */
     -webkit-box-orient: vertical;
     word-break: break-word;
 }
@@ -454,16 +449,15 @@
    ============================================================================ */
 
 .node-palette-footer {
-    position: fixed;
-    bottom: 40px;
-    left: 0;
-    right: 0;
+    position: sticky; /* Stick to bottom of panel, not viewport */
+    bottom: 0;
     padding: 20px 24px;
     background: var(--bg-secondary, #f5f5f5);
     border-top: 1px solid var(--border-color, #e0e0e0);
     display: flex;
     justify-content: center;
     z-index: 1001;
+    margin-top: auto; /* Push to bottom of flex container */
 }
 
 .finish-selection-btn {

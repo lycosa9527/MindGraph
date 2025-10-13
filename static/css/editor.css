@@ -1625,6 +1625,156 @@ body {
     }
 }
 
+/* ThinkGuide Toolbar - above text input */
+.thinking-toolbar {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-top: 1px solid #e8ecf0;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.thinking-toolbar-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.25),
+                0 2px 4px rgba(156, 39, 176, 0.15);
+    overflow: hidden;
+}
+
+/* Animated gradient overlay */
+.thinking-toolbar-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        transparent 100%);
+    transition: left 0.5s ease;
+    z-index: 0;
+}
+
+.thinking-toolbar-btn:hover::before {
+    left: 100%;
+}
+
+/* Subtle pulse animation */
+.thinking-toolbar-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.thinking-toolbar-btn:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* Tooltip wrapper */
+.tooltip-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Custom tooltip - separate element, doesn't conflict with animations */
+.custom-tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    z-index: 10000;
+}
+
+.tooltip-wrapper:hover .custom-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.thinking-toolbar-btn:hover {
+    background: linear-gradient(135deg, #AB47BC 0%, #8E24AA 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.35),
+                0 3px 8px rgba(156, 39, 176, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.thinking-toolbar-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.25);
+}
+
+/* Icon animation on hover */
+.thinking-toolbar-btn svg {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thinking-toolbar-btn:hover svg {
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* Text styling */
+.thinking-toolbar-btn span {
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Subtle continuous glow animation */
+@keyframes nodePaletteGlow {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(156, 39, 176, 0.25),
+                    0 2px 4px rgba(156, 39, 176, 0.15);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(156, 39, 176, 0.35),
+                    0 2px 6px rgba(156, 39, 176, 0.2),
+                    0 0 20px rgba(156, 39, 176, 0.15);
+    }
+}
+
+.thinking-toolbar-btn {
+    animation: nodePaletteGlow 3s ease-in-out infinite;
+}
+
 .thinking-input-area {
     padding: 24px;
     background: white;

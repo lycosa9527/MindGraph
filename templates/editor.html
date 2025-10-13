@@ -444,13 +444,13 @@
                         <span id="learning-btn-text">Learn</span>
                     </button>
                     {% endif %}
-                    <button id="thinking-btn" class="btn-tool btn-thinking" title="Start Socratic Thinking Mode (ThinkGuide)">
+                    <button id="thinking-btn" class="btn-tool btn-thinking" title="开始苏格拉底式思维模式">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
                             <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
                             <circle cx="8" cy="10" r="1" fill="currentColor"/>
                             <circle cx="16" cy="10" r="1" fill="currentColor"/>
                         </svg>
-                        <span id="thinking-btn-text">Thinking</span>
+                        <span id="thinking-btn-text">思维向导</span>
                     </button>
                 </div>
             </div>
@@ -602,6 +602,22 @@
                     <!-- Messages will be rendered here -->
                 </div>
                 
+                <!-- ThinkGuide Toolbar (above text input) -->
+                <div class="thinking-toolbar" id="thinking-toolbar">
+                    <div class="tooltip-wrapper">
+                        <button id="thinking-node-palette-btn" class="thinking-toolbar-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span id="node-palette-btn-text">Node Palette</span>
+                        </button>
+                        <span class="custom-tooltip" id="node-palette-tooltip">Open Node Palette to brainstorm nodes with AI</span>
+                    </div>
+                </div>
+                
                 <div class="thinking-input-area">
                     <div class="thinking-input-wrapper">
                         <textarea 
@@ -704,7 +720,7 @@
                 
                 <div class="node-palette-footer">
                     <button id="finish-selection-btn" class="finish-selection-btn" disabled>
-                        Select nodes to continue
+                        Next
                     </button>
                 </div>
             </div>

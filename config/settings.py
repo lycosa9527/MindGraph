@@ -188,34 +188,25 @@ class Config:
     def DASHSCOPE_QPM_LIMIT(self):
         """Dashscope Queries Per Minute limit"""
         try:
-            return int(self._get_cached_value('DASHSCOPE_QPM_LIMIT', '60'))
+            return int(self._get_cached_value('DASHSCOPE_QPM_LIMIT', '200'))
         except (ValueError, TypeError):
-            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using 60")
-            return 60
+            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using 200")
+            return 200
 
     @property
     def DASHSCOPE_CONCURRENT_LIMIT(self):
         """Dashscope concurrent request limit"""
         try:
-            return int(self._get_cached_value('DASHSCOPE_CONCURRENT_LIMIT', '10'))
+            return int(self._get_cached_value('DASHSCOPE_CONCURRENT_LIMIT', '50'))
         except (ValueError, TypeError):
-            logger.warning("Invalid DASHSCOPE_CONCURRENT_LIMIT, using 10")
-            return 10
+            logger.warning("Invalid DASHSCOPE_CONCURRENT_LIMIT, using 50")
+            return 50
 
     @property
     def DASHSCOPE_RATE_LIMITING_ENABLED(self):
         """Enable/disable Dashscope rate limiting"""
         val = self._get_cached_value('DASHSCOPE_RATE_LIMITING_ENABLED', 'true')
         return val.lower() == 'true'
-
-    @property
-    def DASHSCOPE_CONNECTION_POOL_SIZE(self):
-        """HTTP connection pool size for Dashscope"""
-        try:
-            return int(self._get_cached_value('DASHSCOPE_CONNECTION_POOL_SIZE', '20'))
-        except (ValueError, TypeError):
-            logger.warning("Invalid DASHSCOPE_CONNECTION_POOL_SIZE, using 20")
-            return 20
 
     @property
     def HOST(self):

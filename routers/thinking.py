@@ -64,7 +64,8 @@ async def thinking_mode_stream(req: ThinkingModeRequest):
                     session_id=req.session_id,
                     diagram_data=req.diagram_data,
                     current_state=req.current_state,
-                    user_id=req.user_id
+                    user_id=req.user_id,
+                    is_initial_greeting=req.is_initial_greeting
                 ):
                     # Format as SSE
                     yield f"data: {json.dumps(chunk)}\n\n"

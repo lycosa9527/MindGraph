@@ -132,9 +132,14 @@ class GenerateDingTalkRequest(BaseModel):
 
 class AIAssistantRequest(BaseModel):
     """Request model for /api/ai_assistant/stream endpoint (SSE)"""
-    message: str = Field(..., min_length=1, max_length=5000, description="User message to AI assistant")
+    message: str = Field(
+        ..., 
+        min_length=1, 
+        max_length=5000, 
+        description="User message to AI assistant (use 'start' to trigger Dify conversation opener)"
+    )
     user_id: str = Field(..., min_length=1, max_length=100, description="Unique user identifier")
-    conversation_id: Optional[str] = Field(None, max_length=100, description="Conversation ID for context")
+    conversation_id: Optional[str] = Field(None, max_length=100, description="Conversation ID for context (null for new conversation)")
     
     class Config:
         json_schema_extra = {
@@ -273,13 +278,14 @@ class LearningVerifyUnderstandingRequest(BaseModel):
 
 class ThinkingModeRequest(BaseModel):
     """Request model for ThinkGuide (Thinking Mode) SSE streaming endpoint"""
-    message: str = Field("", description="User message (empty for initial state)")
+    message: str = Field("", description="User message")
     user_id: str = Field(..., min_length=1, max_length=100, description="User identifier")
     session_id: str = Field(..., min_length=1, max_length=100, description="Thinking session ID")
     diagram_type: str = Field(..., description="Diagram type (e.g., 'circle_map')")
     diagram_data: Dict[str, Any] = Field(..., description="Complete diagram structure")
     current_state: str = Field(..., description="Current workflow state")
     selected_node: Optional[Dict[str, Any]] = Field(None, description="Currently selected node (optional)")
+    is_initial_greeting: bool = Field(False, description="If True, agent should greet user (for new sessions only)")
     
     class Config:
         json_schema_extra = {

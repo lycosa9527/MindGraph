@@ -66,14 +66,27 @@ class NodePaletteManager {
     showPalettePanel() {
         /**
          * Show Node Palette panel and hide Circle Map.
+         * Respects ThinkGuide panel if it's visible (leaves space for it).
          */
         const d3Container = document.getElementById('d3-container');
         const palettePanel = document.getElementById('node-palette-panel');
+        const thinkingPanel = document.getElementById('thinking-panel');
         
         if (d3Container) d3Container.style.display = 'none';
         if (palettePanel) {
             palettePanel.style.display = 'flex';
             palettePanel.style.opacity = '0';
+            
+            // Check if ThinkGuide panel is visible
+            const isThinkGuideVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
+            if (isThinkGuideVisible) {
+                palettePanel.classList.add('thinkguide-visible');
+                console.log('[NodePalette] ThinkGuide is visible, leaving space for it');
+            } else {
+                palettePanel.classList.remove('thinkguide-visible');
+                console.log('[NodePalette] ThinkGuide is hidden, using full width');
+            }
+            
             // Fade in
             setTimeout(() => {
                 palettePanel.style.transition = 'opacity 0.3s';
@@ -117,6 +130,8 @@ class NodePaletteManager {
             palettePanel.style.opacity = '0';
             setTimeout(() => {
                 palettePanel.style.display = 'none';
+                // Clean up ThinkGuide visibility class
+                palettePanel.classList.remove('thinkguide-visible');
             }, 300);
         }
         if (d3Container) {
@@ -390,14 +405,14 @@ class NodePaletteManager {
             const wasDisabled = finishBtn.disabled;
             finishBtn.disabled = this.selectedNodes.size === 0;
             finishBtn.textContent = this.selectedNodes.size > 0 
-                ? `Finish (${this.selectedNodes.size} selected)` 
-                : 'Select nodes to continue';
+                ? `Next (${this.selectedNodes.size} selected)` 
+                : 'Next';
             
             // Log button state change
             if (wasDisabled && !finishBtn.disabled) {
-                console.log('[NodePalette] Button enabled: "Finish (%d selected)"', this.selectedNodes.size);
+                console.log('[NodePalette] Button enabled: "Next (%d selected)"', this.selectedNodes.size);
             } else if (!wasDisabled && finishBtn.disabled) {
-                console.log('[NodePalette] Button disabled: "Select nodes to continue"');
+                console.log('[NodePalette] Button disabled: "Next"');
             }
         } else {
             console.error('[NodePalette] Finish button not found when updating counter!');

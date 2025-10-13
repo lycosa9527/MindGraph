@@ -10,7 +10,7 @@ import aiohttp
 import json
 import logging
 import os
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, AsyncGenerator
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from config.settings import config
@@ -94,6 +94,91 @@ class QwenClient:
         except Exception as e:
             logger.error(f"Qwen API error: {e}")
             raise
+    
+    async def async_stream_chat_completion(
+        self, 
+        messages: List[Dict], 
+        temperature: float = None,
+        max_tokens: int = 1000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat completion from Qwen API (async generator).
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0), None uses default
+            max_tokens: Maximum tokens in response
+            
+        Yields:
+            str: Content chunks as they arrive from Qwen API
+        """
+        try:
+            # Use instance default if not specified
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            # Select appropriate model
+            if self.model_type == 'classification':
+                model_name = config.QWEN_MODEL_CLASSIFICATION
+            else:
+                model_name = config.QWEN_MODEL_GENERATION
+            
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": True,  # Enable streaming
+                "extra_body": {"enable_thinking": False}
+            }
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            # Stream with timeout
+            timeout = aiohttp.ClientTimeout(
+                total=None,  # No total timeout for streaming
+                connect=10,
+                sock_read=self.timeout
+            )
+            
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"Qwen stream error {response.status}: {error_text}")
+                        raise Exception(f"Qwen stream error: {response.status}")
+                    
+                    # Read SSE stream line by line
+                    async for line_bytes in response.content:
+                        line = line_bytes.decode('utf-8').strip()
+                        
+                        if not line or not line.startswith('data: '):
+                            continue
+                        
+                        data_content = line[6:]  # Remove 'data: ' prefix
+                        
+                        # Handle [DONE] signal
+                        if data_content.strip() == '[DONE]':
+                            break
+                        
+                        try:
+                            data = json.loads(data_content)
+                            # Extract content delta from streaming response
+                            delta = data.get('choices', [{}])[0].get('delta', {})
+                            content = delta.get('content', '')
+                            
+                            if content:
+                                yield content
+                        
+                        except json.JSONDecodeError:
+                            continue
+        
+        except Exception as e:
+            logger.error(f"Qwen streaming error: {e}")
+            raise
 
 
 # ============================================================================
@@ -171,6 +256,80 @@ class DeepSeekClient:
                              max_tokens: int = 2000) -> str:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
+    
+    async def async_stream_chat_completion(
+        self, 
+        messages: List[Dict], 
+        temperature: float = None,
+        max_tokens: int = 2000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat completion from DeepSeek R1 (async generator).
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0), None uses default
+            max_tokens: Maximum tokens in response
+            
+        Yields:
+            str: Content chunks as they arrive
+        """
+        try:
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            payload = config.get_llm_data(
+                messages[-1]['content'] if messages else '',
+                self.model_id
+            )
+            payload['messages'] = messages
+            payload['temperature'] = temperature
+            payload['max_tokens'] = max_tokens
+            payload['stream'] = True  # Enable streaming
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            timeout = aiohttp.ClientTimeout(
+                total=None,
+                connect=10,
+                sock_read=self.timeout
+            )
+            
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"DeepSeek stream error {response.status}: {error_text}")
+                        raise Exception(f"DeepSeek stream error: {response.status}")
+                    
+                    async for line_bytes in response.content:
+                        line = line_bytes.decode('utf-8').strip()
+                        
+                        if not line or not line.startswith('data: '):
+                            continue
+                        
+                        data_content = line[6:]
+                        
+                        if data_content.strip() == '[DONE]':
+                            break
+                        
+                        try:
+                            data = json.loads(data_content)
+                            delta = data.get('choices', [{}])[0].get('delta', {})
+                            content = delta.get('content', '')
+                            
+                            if content:
+                                yield content
+                        
+                        except json.JSONDecodeError:
+                            continue
+        
+        except Exception as e:
+            logger.error(f"DeepSeek streaming error: {e}")
+            raise
 
 
 class KimiClient:
@@ -234,6 +393,80 @@ class KimiClient:
                              max_tokens: int = 2000) -> str:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
+    
+    async def async_stream_chat_completion(
+        self, 
+        messages: List[Dict], 
+        temperature: float = None,
+        max_tokens: int = 2000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat completion from Kimi (async generator).
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0), None uses default
+            max_tokens: Maximum tokens in response
+            
+        Yields:
+            str: Content chunks as they arrive
+        """
+        try:
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            payload = config.get_llm_data(
+                messages[-1]['content'] if messages else '',
+                self.model_id
+            )
+            payload['messages'] = messages
+            payload['temperature'] = temperature
+            payload['max_tokens'] = max_tokens
+            payload['stream'] = True  # Enable streaming
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            timeout = aiohttp.ClientTimeout(
+                total=None,
+                connect=10,
+                sock_read=self.timeout
+            )
+            
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(self.api_url, json=payload, headers=headers) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"Kimi stream error {response.status}: {error_text}")
+                        raise Exception(f"Kimi stream error: {response.status}")
+                    
+                    async for line_bytes in response.content:
+                        line = line_bytes.decode('utf-8').strip()
+                        
+                        if not line or not line.startswith('data: '):
+                            continue
+                        
+                        data_content = line[6:]
+                        
+                        if data_content.strip() == '[DONE]':
+                            break
+                        
+                        try:
+                            data = json.loads(data_content)
+                            delta = data.get('choices', [{}])[0].get('delta', {})
+                            content = delta.get('content', '')
+                            
+                            if content:
+                                yield content
+                        
+                        except json.JSONDecodeError:
+                            continue
+        
+        except Exception as e:
+            logger.error(f"Kimi streaming error: {e}")
+            raise
 
 
 class HunyuanClient:
@@ -305,6 +538,48 @@ class HunyuanClient:
                              max_tokens: int = 2000) -> str:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
+    
+    async def async_stream_chat_completion(
+        self, 
+        messages: List[Dict], 
+        temperature: float = None,
+        max_tokens: int = 2000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat completion from Hunyuan using OpenAI-compatible API.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 2.0), None uses default
+            max_tokens: Maximum tokens in response
+            
+        Yields:
+            str: Content chunks as they arrive
+        """
+        try:
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            logger.debug(f"Hunyuan stream API request: {self.model_name} (temp: {temperature})")
+            
+            # Use OpenAI SDK's streaming
+            stream = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True  # Enable streaming
+            )
+            
+            async for chunk in stream:
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        yield delta.content
+        
+        except Exception as e:
+            logger.error(f"Hunyuan streaming error: {e}")
+            raise
 
 # ============================================================================
 # GLOBAL CLIENT INSTANCES

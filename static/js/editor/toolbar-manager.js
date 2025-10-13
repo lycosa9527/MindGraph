@@ -2907,16 +2907,17 @@ class ToolbarManager {
             return;
         }
         
-        // Reset view first for all diagram types to ensure optimal export view
-        if (this.editor) {
-            this.editor.fitDiagramToWindow();
+        // Fit diagram for export (ensures full diagram is captured, not just visible area)
+        if (this.editor && typeof this.editor.fitDiagramForExport === 'function') {
+            this.editor.fitDiagramForExport();
             
-            // Wait for the view reset animation to complete before exporting
+            // Wait briefly for viewBox update (no transition, so shorter delay)
             setTimeout(() => {
                 this.performPNGExport();
-            }, 800); // Slightly longer than the 750ms transition duration
+            }, 100);
         } else {
-            // Fallback if editor not available - export immediately
+            // Fallback if editor not available or method not found - export immediately
+            logger.warn('ToolbarManager', 'fitDiagramForExport not available, exporting with current view');
             this.performPNGExport();
         }
     }
@@ -3272,17 +3273,28 @@ class ToolbarManager {
     async handleThinkingMode() {
         logger.info('ToolbarManager', '🔵 ThinkGuide Mode initiated - BUTTON CLICKED');
         
-        // Log current panel state at the very start
+        // Check if panel is already open - toggle behavior like MindMate
         const thinkPanel = document.getElementById('thinking-panel');
-        const aiPanel = document.getElementById('ai-assistant-panel');
+        const isPanelOpen = thinkPanel && !thinkPanel.classList.contains('collapsed');
+        
         logger.info('ToolbarManager', 'Initial panel state:', {
             thinkPanelCollapsed: thinkPanel?.classList.contains('collapsed'),
-            aiPanelCollapsed: aiPanel?.classList.contains('collapsed'),
+            isPanelOpen: isPanelOpen,
             currentPanel: window.panelManager?.getCurrentPanel()
         });
         
-        // 🆕 No validation needed - ThinkGuide can help build diagrams from scratch!
-        logger.info('ToolbarManager', 'Starting ThinkGuide (no validation required) ✅');
+        // If panel is already open, close it (toggle behavior)
+        if (isPanelOpen) {
+            logger.info('ToolbarManager', '🔄 ThinkGuide panel already open - closing it');
+            if (window.panelManager) {
+                window.panelManager.closeThinkGuidePanel();
+                logger.info('ToolbarManager', '✅ ThinkGuide panel closed');
+            }
+            return;
+        }
+        
+        // Panel is closed, open it
+        logger.info('ToolbarManager', 'Opening ThinkGuide (no validation required) ✅');
         
         try {
             // Use global thinkingModeManager instance
