@@ -403,3 +403,89 @@ class NodePaletteFinishRequest(BaseModel):
                 "batches_loaded": 4
             }
         }
+
+
+# ============================================================================
+# AUTHENTICATION REQUEST MODELS
+# ============================================================================
+
+class RegisterRequest(BaseModel):
+    """Request model for user registration"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    name: str = Field(..., min_length=2, description="Teacher's name (required, min 2 chars, no numbers)")
+    organization_code: str = Field(..., description="School/organization code")
+    invitation_code: str = Field(..., description="Invitation code for registration")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone must contain only digits")
+        if len(v) != 11:
+            raise ValueError("Phone must be exactly 11 digits")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers start with 1")
+        return v
+    
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        """Validate name has no numbers"""
+        if any(char.isdigit() for char in v):
+            raise ValueError("Name cannot contain numbers")
+        if len(v) < 2:
+            raise ValueError("Name must be at least 2 characters")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "password": "Teacher123!",
+                "name": "Zhang Wei",
+                "organization_code": "DEMO-001",
+                "invitation_code": "DEMO2024"
+            }
+        }
+
+
+class LoginRequest(BaseModel):
+    """Request model for user login"""
+    phone: str = Field(..., description="User phone number")
+    password: str = Field(..., description="User password")
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "password": "Teacher123!",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session"
+            }
+        }
+
+
+class DemoPasskeyRequest(BaseModel):
+    """Request model for demo mode passkey verification"""
+    passkey: str = Field(..., min_length=6, max_length=6, description="6-digit demo passkey")
+    
+    @field_validator('passkey')
+    @classmethod
+    def validate_passkey(cls, v):
+        """Validate 6-digit passkey"""
+        if not v.isdigit():
+            raise ValueError("Passkey must contain only digits")
+        if len(v) != 6:
+            raise ValueError("Passkey must be exactly 6 digits")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "passkey": "888888"
+            }
+        }

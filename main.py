@@ -448,6 +448,19 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to initialize JavaScript cache: {e}")
     
+    # Initialize Database
+    try:
+        from config.database import init_db
+        from utils.auth import display_demo_info
+        init_db()
+        if worker_id == '0' or not worker_id:
+            logger.info("Database initialized successfully")
+            # Display demo info if in demo mode
+            display_demo_info()
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
+            logger.error(f"Failed to initialize database: {e}")
+    
     # Initialize LLM Service
     try:
         from services.llm_service import llm_service
@@ -497,6 +510,16 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to cleanup LLM Service: {e}")
+        
+        # Cleanup Database
+        try:
+            from config.database import close_db
+            close_db()
+            if worker_id == '0' or not worker_id:
+                logger.info("Database connections closed")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to close database: {e}")
         
         # Don't try to cancel tasks - let uvicorn handle the shutdown
         # This prevents CancelledError exceptions during multiprocess shutdown
@@ -647,7 +670,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, learning, thinking
+from routers import pages, cache, api, learning, thinking, auth
 
 # Register routers
 app.include_router(pages.router)
@@ -655,6 +678,7 @@ app.include_router(cache.router)
 app.include_router(api.router)
 app.include_router(learning.router)  # Learning mode (FastAPI migration complete)
 app.include_router(thinking.router)  # ThinkGuide mode (Socratic guided thinking)
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
 
 # ============================================================================
 # APPLICATION ENTRY POINT

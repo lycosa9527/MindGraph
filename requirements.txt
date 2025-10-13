@@ -31,6 +31,12 @@ Pillow>=11.3.0
 # System Monitoring
 psutil>=6.0.0
 
+# Database & Authentication
+SQLAlchemy>=2.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+captcha>=0.4
+
 # Testing (Optional)
 pytest>=8.0.0
 pytest-asyncio>=0.23.0

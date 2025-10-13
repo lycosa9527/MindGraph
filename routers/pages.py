@@ -137,8 +137,39 @@ async def timing_stats(request: Request):
         logger.error(f"/timing_stats route failed: {e}", exc_info=True)
         raise
 
+# ============================================================================
+# AUTHENTICATION ROUTES
+# ============================================================================
+
+@router.get("/auth", response_class=HTMLResponse)
+async def auth_page(request: Request):
+    """Authentication page - login/register"""
+    try:
+        return templates.TemplateResponse("auth.html", {"request": request})
+    except Exception as e:
+        logger.error(f"/auth route failed: {e}", exc_info=True)
+        raise
+
+@router.get("/demo", response_class=HTMLResponse)
+async def demo_page(request: Request):
+    """Demo mode passkey page"""
+    try:
+        return templates.TemplateResponse("demo-login.html", {"request": request})
+    except Exception as e:
+        logger.error(f"/demo route failed: {e}", exc_info=True)
+        raise
+
+@router.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    """Admin management panel"""
+    try:
+        return templates.TemplateResponse("admin.html", {"request": request})
+    except Exception as e:
+        logger.error(f"/admin route failed: {e}", exc_info=True)
+        raise
+
 # Only log from main worker to avoid duplicate messages
 import os
 if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
-    logger.debug("Page routes initialized: 11 routes registered")
+    logger.debug("Page routes initialized: 14 routes registered (11 legacy + 3 auth)")
 
