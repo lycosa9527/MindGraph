@@ -1,16 +1,17 @@
 """
-Node Palette Generator V2 (Concurrent Multi-LLM)
-================================================
+Node Palette Generator (Concurrent Multi-LLM)
+==============================================
 
 Infinite concurrent brainstorming using LLM Service middleware.
 Fires all 4 LLMs simultaneously, yields results progressively.
 
 Key Features:
-- Concurrent execution via llm_service.generate_progressive()
+- Concurrent token streaming via llm_service.stream_progressive()
+- Progressive circle rendering as tokens arrive
 - Infinite scroll with 2/3 trigger point
 - Real-time deduplication across all LLMs
 - Rate limiter middleware protection
-- Circuit breaker integration
+- Smart logging (no token spam)
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -28,14 +29,14 @@ from prompts.thinking_modes.circle_map import get_prompt
 logger = logging.getLogger(__name__)
 
 
-class NodePaletteGeneratorV2:
+class NodePaletteGenerator:
     """
     Infinite concurrent node generation for Node Palette.
     
     Architecture:
-    - Uses llm_service.generate_progressive() for concurrent calls
+    - Uses llm_service.stream_progressive() for concurrent token streaming
     - All 4 LLMs (qwen, deepseek, hunyuan, kimi) fire simultaneously
-    - Results yield as each completes (progressive streaming)
+    - Circles render progressively as tokens arrive from any LLM
     - Deduplication across all batches and LLMs
     - No limits - keeps generating on scroll
     """
@@ -51,8 +52,8 @@ class NodePaletteGeneratorV2:
         self.session_start_times = {}  # session_id -> timestamp
         self.batch_counts = {}  # session_id -> int (total batches)
         
-        logger.info("[NodePaletteV2] Initialized with concurrent multi-LLM architecture")
-        logger.info("[NodePaletteV2] LLMs: %s", ', '.join(self.llm_models))
+        logger.info("[NodePalette] Initialized with concurrent multi-LLM architecture")
+        logger.info("[NodePalette] LLMs: %s", ', '.join(self.llm_models))
     
     async def generate_batch(
         self,
@@ -83,13 +84,13 @@ class NodePaletteGeneratorV2:
         if session_id not in self.session_start_times:
             self.session_start_times[session_id] = time.time()
             self.batch_counts[session_id] = 0
-            logger.info("[NodePaletteV2] New session: %s | Topic: '%s'", session_id[:8], center_topic)
+            logger.info("[NodePalette] New session: %s | Topic: '%s'", session_id[:8], center_topic)
         
         batch_num = self.batch_counts[session_id] + 1
         self.batch_counts[session_id] = batch_num
         
         total_before = len(self.generated_nodes.get(session_id, []))
-        logger.info("[NodePaletteV2] Batch %d starting | Session: %s | Topic: '%s'", 
+        logger.info("[NodePalette] Batch %d starting | Session: %s | Topic: '%s'", 
                    batch_num, session_id[:8], center_topic)
         
         # Yield batch start
@@ -116,7 +117,7 @@ class NodePaletteGeneratorV2:
         llm_duplicate_counts = {llm: 0 for llm in self.llm_models}
         
         # 🚀 CONCURRENT TOKEN STREAMING - All 4 LLMs fire simultaneously!
-        logger.info("[NodePaletteV2] Streaming from %d LLMs with progressive rendering...", len(self.llm_models))
+        logger.info("[NodePalette] Streaming from %d LLMs with progressive rendering...", len(self.llm_models))
         
         async for chunk in self.llm_service.stream_progressive(
             prompt=prompt,
@@ -222,14 +223,14 @@ class NodePaletteGeneratorV2:
                 }
                 
                 logger.info(
-                    "[NodePaletteV2] %s batch %d complete | Unique: %d | Duplicates: %d | Time: %.2fs",
+                    "[NodePalette] %s batch %d complete | Unique: %d | Duplicates: %d | Time: %.2fs",
                     llm_name, batch_num, llm_unique_counts[llm_name], 
                     llm_duplicate_counts[llm_name], chunk.get('duration', 0)
                 )
             
             elif event == 'error':
                 # LLM failed
-                logger.error("[NodePaletteV2] %s stream error: %s", llm_name, chunk.get('error'))
+                logger.error("[NodePalette] %s stream error: %s", llm_name, chunk.get('error'))
                 llm_stats[llm_name] = {
                     'unique': llm_unique_counts[llm_name],
                     'duplicates': llm_duplicate_counts[llm_name],
@@ -243,7 +244,7 @@ class NodePaletteGeneratorV2:
         batch_unique = total_after - total_before
         
         logger.info(
-            "[NodePaletteV2] Batch %d complete (%.2fs) | New unique: %d | Total: %d",
+            "[NodePalette] Batch %d complete (%.2fs) | New unique: %d | Total: %d",
             batch_num, batch_duration, batch_unique, total_after
         )
         
@@ -348,8 +349,8 @@ class NodePaletteGeneratorV2:
         total_nodes = len(self.generated_nodes.get(session_id, []))
         batches = self.batch_counts.get(session_id, 0)
         
-        logger.info("[NodePaletteV2] Session ended: %s | Reason: %s", session_id[:8], reason)
-        logger.info("[NodePaletteV2]   Duration: %.2fs | Batches: %d | Total nodes: %d", 
+        logger.info("[NodePalette] Session ended: %s | Reason: %s", session_id[:8], reason)
+        logger.info("[NodePalette]   Duration: %.2fs | Batches: %d | Total nodes: %d", 
                    elapsed, batches, total_nodes)
         
         # Cleanup
@@ -360,12 +361,12 @@ class NodePaletteGeneratorV2:
 
 
 # Global singleton instance
-_node_palette_generator_v2 = None
+_node_palette_generator = None
 
-def get_node_palette_generator_v2() -> NodePaletteGeneratorV2:
-    """Get singleton instance"""
-    global _node_palette_generator_v2
-    if _node_palette_generator_v2 is None:
-        _node_palette_generator_v2 = NodePaletteGeneratorV2()
-    return _node_palette_generator_v2
+def get_node_palette_generator() -> NodePaletteGenerator:
+    """Get singleton instance of concurrent node palette generator"""
+    global _node_palette_generator
+    if _node_palette_generator is None:
+        _node_palette_generator = NodePaletteGenerator()
+    return _node_palette_generator
 

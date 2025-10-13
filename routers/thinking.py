@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 import json
 
 from agents.thinking_modes.factory import ThinkingAgentFactory
-from agents.thinking_modes.node_palette_generator_v2 import get_node_palette_generator_v2
+from agents.thinking_modes.node_palette_generator import get_node_palette_generator
 from models.requests import (
     ThinkingModeRequest,
     NodePaletteStartRequest,
@@ -159,8 +159,8 @@ async def start_node_palette(req: NodePaletteStartRequest):
         
         logger.info("[NodePalette-API] Topic: '%s' | 🚀 Firing 4 LLMs concurrently", center_topic)
         
-        # Get V2 generator
-        generator = get_node_palette_generator_v2()
+        # Get generator
+        generator = get_node_palette_generator()
         
         # Stream with concurrent execution
         async def generate():
@@ -220,8 +220,8 @@ async def get_next_batch(req: NodePaletteNextRequest):
     logger.info("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
     
     try:
-        # Get V2 generator
-        generator = get_node_palette_generator_v2()
+        # Get generator
+        generator = get_node_palette_generator()
         
         logger.info("[NodePalette-API] 🚀 Firing 4 LLMs concurrently for next batch...")
         
