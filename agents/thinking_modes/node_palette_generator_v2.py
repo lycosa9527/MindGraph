@@ -62,7 +62,9 @@ class NodePaletteGeneratorV2:
         nodes_per_llm: int = 15
     ) -> AsyncGenerator[Dict, None]:
         """
-        Generate batch of nodes using ALL 4 LLMs concurrently.
+        Generate batch of nodes using ALL 4 LLMs with concurrent token streaming.
+        
+        Circles render progressively as tokens arrive from any LLM!
         
         Args:
             session_id: Unique session identifier
@@ -73,8 +75,8 @@ class NodePaletteGeneratorV2:
         Yields:
             Dict events:
             - {'event': 'batch_start', 'batch_number': 1, 'llm_count': 4}
-            - {'event': 'llm_complete', 'llm': 'qwen', 'unique_nodes': 12, ...}
             - {'event': 'node_generated', 'node': {...}}
+            - {'event': 'llm_complete', 'llm': 'qwen', 'unique_nodes': 12, ...}
             - {'event': 'batch_complete', 'total_unique': 45, ...}
         """
         # Track session
@@ -87,8 +89,8 @@ class NodePaletteGeneratorV2:
         self.batch_counts[session_id] = batch_num
         
         total_before = len(self.generated_nodes.get(session_id, []))
-        logger.info("[NodePaletteV2] Batch %d starting | Session: %s | Total nodes: %d", 
-                   batch_num, session_id[:8], total_before)
+        logger.info("[NodePaletteV2] Batch %d starting | Session: %s | Topic: '%s'", 
+                   batch_num, session_id[:8], center_topic)
         
         # Yield batch start
         yield {
@@ -108,84 +110,85 @@ class NodePaletteGeneratorV2:
         batch_start_time = time.time()
         llm_stats = {}
         
-        # 🚀 PROGRESSIVE STREAMING - Stream tokens from all 4 LLMs!
+        # Track current lines being built for each LLM
+        current_lines = {llm: "" for llm in self.llm_models}
+        llm_unique_counts = {llm: 0 for llm in self.llm_models}
+        llm_duplicate_counts = {llm: 0 for llm in self.llm_models}
+        
+        # 🚀 CONCURRENT TOKEN STREAMING - All 4 LLMs fire simultaneously!
         logger.info("[NodePaletteV2] Streaming from %d LLMs with progressive rendering...", len(self.llm_models))
         
-        # Fire all LLMs concurrently, stream results as tokens arrive
-        import asyncio
-        
-        async def stream_from_llm(llm_name: str):
-            """Stream tokens from one LLM, yield nodes progressively"""
-            llm_start = time.time()
-            unique_count = 0
-            duplicate_count = 0
-            current_line = ""
+        async for chunk in self.llm_service.stream_progressive(
+            prompt=prompt,
+            models=self.llm_models,
+            temperature=temperature,
+            max_tokens=500,
+            timeout=20.0,
+            system_message=system_message
+        ):
+            event = chunk['event']
+            llm_name = chunk['llm']
             
-            try:
-                # Stream tokens from this LLM
-                async for token in self.llm_service.chat_stream(
-                    prompt=prompt,
-                    model=llm_name,
-                    system_message=system_message,
-                    temperature=temperature,
-                    max_tokens=500
-                ):
-                    current_line += token
-                    
-                    # Check if we have a complete line (ends with \n)
-                    if '\n' in current_line:
-                        lines = current_line.split('\n')
-                        current_line = lines[-1]  # Keep incomplete part
-                        
-                        # Process complete lines
-                        for line in lines[:-1]:
-                            line = line.strip()
-                            if not line:
-                                continue
-                            
-                            # Clean node text
-                            node_text = line.lstrip('0123456789.-、）) ').strip()
-                            
-                            if not node_text or len(node_text) < 2:
-                                continue
-                            
-                            # Deduplicate
-                            is_unique, match_type, similarity = self._deduplicate_node(node_text, session_id)
-                            
-                            if is_unique:
-                                # UNIQUE NODE - yield immediately!
-                                node = {
-                                    'id': f"{session_id}_{llm_name}_{batch_num}_{unique_count}",
-                                    'text': node_text,
-                                    'source_llm': llm_name,
-                                    'batch_number': batch_num,
-                                    'relevance_score': 0.8,
-                                    'selected': False
-                                }
-                                
-                                # Store
-                                if session_id not in self.generated_nodes:
-                                    self.generated_nodes[session_id] = []
-                                self.generated_nodes[session_id].append(node)
-                                
-                                # Yield immediately for progressive rendering
-                                yield {
-                                    'event': 'node_generated',
-                                    'node': node
-                                }
-                                
-                                unique_count += 1
-                            else:
-                                duplicate_count += 1
+            if event == 'token':
+                # Accumulate tokens into lines
+                token = chunk['token']
+                current_lines[llm_name] += token
                 
-                # Process any remaining text
-                if current_line.strip():
-                    node_text = current_line.lstrip('0123456789.-、）) ').strip()
+                # Check if we have complete line(s)
+                if '\n' in current_lines[llm_name]:
+                    lines = current_lines[llm_name].split('\n')
+                    current_lines[llm_name] = lines[-1]  # Keep incomplete part
+                    
+                    # Process each complete line
+                    for line in lines[:-1]:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        
+                        # Clean node text
+                        node_text = line.lstrip('0123456789.-、）) ').strip()
+                        
+                        if not node_text or len(node_text) < 2:
+                            continue
+                        
+                        # Deduplicate
+                        is_unique, match_type, similarity = self._deduplicate_node(node_text, session_id)
+                        
+                        if is_unique:
+                            # UNIQUE NODE - yield immediately for progressive rendering!
+                            node = {
+                                'id': f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
+                                'text': node_text,
+                                'source_llm': llm_name,
+                                'batch_number': batch_num,
+                                'relevance_score': 0.8,
+                                'selected': False
+                            }
+                            
+                            # Store
+                            if session_id not in self.generated_nodes:
+                                self.generated_nodes[session_id] = []
+                            self.generated_nodes[session_id].append(node)
+                            
+                            # Yield immediately - circle appears NOW!
+                            yield {
+                                'event': 'node_generated',
+                                'node': node
+                            }
+                            
+                            llm_unique_counts[llm_name] += 1
+                        else:
+                            llm_duplicate_counts[llm_name] += 1
+            
+            elif event == 'complete':
+                # LLM stream complete - process any remaining text
+                if current_lines[llm_name].strip():
+                    node_text = current_lines[llm_name].lstrip('0123456789.-、）) ').strip()
                     if node_text and len(node_text) >= 2:
                         is_unique, match_type, similarity = self._deduplicate_node(node_text, session_id)
                         if is_unique:
                             node = {
-                                'id': f"{session_id}_{llm_name}_{batch_num}_{unique_count}",
+                                'id': f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
                                 'text': node_text,
                                 'source_llm': llm_name,
                                 'batch_number': batch_num,
@@ -199,55 +202,40 @@ class NodePaletteGeneratorV2:
                                 'event': 'node_generated',
                                 'node': node
                             }
-                            unique_count += 1
+                            llm_unique_counts[llm_name] += 1
                 
-                duration = time.time() - llm_start
+                # Record stats for this LLM
+                llm_stats[llm_name] = {
+                    'unique': llm_unique_counts[llm_name],
+                    'duplicates': llm_duplicate_counts[llm_name],
+                    'duration': chunk.get('duration', 0),
+                    'token_count': chunk.get('token_count', 0)
+                }
                 
-                # LLM complete
+                # Yield llm_complete event
                 yield {
                     'event': 'llm_complete',
                     'llm': llm_name,
-                    'unique_nodes': unique_count,
-                    'duplicates': duplicate_count,
-                    'duration': duration
-                }
-                
-                llm_stats[llm_name] = {
-                    'unique': unique_count,
-                    'duplicates': duplicate_count,
-                    'duration': duration
+                    'unique_nodes': llm_unique_counts[llm_name],
+                    'duplicates': llm_duplicate_counts[llm_name],
+                    'duration': chunk.get('duration', 0)
                 }
                 
                 logger.info(
-                    "[NodePaletteV2] %s stream complete (%.2fs) | Unique: %d | Duplicates: %d",
-                    llm_name, duration, unique_count, duplicate_count
+                    "[NodePaletteV2] %s batch %d complete | Unique: %d | Duplicates: %d | Time: %.2fs",
+                    llm_name, batch_num, llm_unique_counts[llm_name], 
+                    llm_duplicate_counts[llm_name], chunk.get('duration', 0)
                 )
-                
-            except Exception as e:
-                duration = time.time() - llm_start
-                logger.error("[NodePaletteV2] %s stream error: %s", llm_name, str(e))
+            
+            elif event == 'error':
+                # LLM failed
+                logger.error("[NodePaletteV2] %s stream error: %s", llm_name, chunk.get('error'))
                 llm_stats[llm_name] = {
-                    'unique': 0,
-                    'duplicates': 0,
-                    'duration': duration,
-                    'error': str(e)
+                    'unique': llm_unique_counts[llm_name],
+                    'duplicates': llm_duplicate_counts[llm_name],
+                    'duration': chunk.get('duration', 0),
+                    'error': chunk.get('error')
                 }
-                yield {
-                    'event': 'llm_complete',
-                    'llm': llm_name,
-                    'unique_nodes': 0,
-                    'duplicates': 0,
-                    'duration': duration,
-                    'error': str(e)
-                }
-        
-        # Stream from all LLMs concurrently, merge results
-        tasks = [stream_from_llm(llm) for llm in self.llm_models]
-        
-        # Use asyncio.as_completed to yield results as they arrive
-        async for task in asyncio.as_completed(tasks):
-            async for chunk in await task:
-                yield chunk
         
         # Batch complete
         batch_duration = time.time() - batch_start_time

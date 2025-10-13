@@ -618,6 +618,142 @@ class LLMService:
                         'timestamp': time.time()
                     }
     
+    async def stream_progressive(
+        self,
+        prompt: str,
+        models: List[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: int = 2000,
+        timeout: Optional[float] = None,
+        system_message: Optional[str] = None,
+        **kwargs
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Stream from multiple LLMs concurrently, yield tokens as they arrive.
+        
+        This is the STREAMING version of generate_progressive().
+        Fires all LLMs simultaneously and yields tokens progressively.
+        Perfect for real-time rendering from multiple LLMs.
+        
+        Args:
+            prompt: Prompt to send to all LLMs
+            models: List of model names (default: ['qwen', 'deepseek', 'kimi', 'hunyuan'])
+            temperature: Sampling temperature (None uses model default)
+            max_tokens: Maximum tokens to generate
+            timeout: Per-LLM timeout in seconds (None uses default)
+            system_message: Optional system message
+            **kwargs: Additional model-specific parameters
+            
+        Yields:
+            Dict for each token/event:
+            {
+                'event': 'token',        # Event type: 'token', 'complete', or 'error'
+                'llm': 'qwen',           # Which LLM produced this
+                'token': 'Generated',    # The token (if event='token')
+                'duration': 2.3,         # Time taken (if event='complete')
+                'error': 'msg',          # Error message (if event='error')
+                'timestamp': 1234567890  # Unix timestamp
+            }
+            
+        Example:
+            async for chunk in llm_service.stream_progressive(
+                prompt="Generate observations about cars",
+                models=['qwen', 'deepseek', 'hunyuan', 'kimi']
+            ):
+                if chunk['event'] == 'token':
+                    print(f"{chunk['llm']}: {chunk['token']}", end='', flush=True)
+                elif chunk['event'] == 'complete':
+                    print(f"\n{chunk['llm']} done in {chunk['duration']:.2f}s")
+                elif chunk['event'] == 'error':
+                    print(f"\n{chunk['llm']} error: {chunk['error']}")
+        """
+        if models is None:
+            models = ['qwen', 'deepseek', 'kimi', 'hunyuan']
+        
+        logger.info(f"[LLMService] stream_progressive() - streaming from {len(models)} models concurrently")
+        
+        queue = asyncio.Queue()
+        
+        async def stream_single(model: str):
+            """Stream from one LLM, put chunks in queue."""
+            start_time = time.time()
+            token_count = 0
+            
+            try:
+                # Use existing chat_stream (rate limiter & error handling automatic!)
+                async for token in self.chat_stream(
+                    prompt=prompt,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    timeout=timeout,
+                    system_message=system_message,
+                    **kwargs
+                ):
+                    token_count += 1
+                    await queue.put({
+                        'event': 'token',
+                        'llm': model,
+                        'token': token,
+                        'timestamp': time.time()
+                    })
+                
+                # LLM completed successfully
+                duration = time.time() - start_time
+                await queue.put({
+                    'event': 'complete',
+                    'llm': model,
+                    'duration': duration,
+                    'token_count': token_count,
+                    'timestamp': time.time()
+                })
+                
+                # Smart logging: summary only, no token spam
+                logger.info(
+                    f"[LLMService] {model} stream complete - "
+                    f"{token_count} tokens in {duration:.2f}s "
+                    f"({token_count/duration:.1f} tok/s)"
+                )
+                
+            except Exception as e:
+                duration = time.time() - start_time
+                logger.error(f"[LLMService] {model} stream error: {str(e)}")
+                await queue.put({
+                    'event': 'error',
+                    'llm': model,
+                    'error': str(e),
+                    'duration': duration,
+                    'timestamp': time.time()
+                })
+        
+        # Fire all LLM tasks concurrently
+        tasks = [asyncio.create_task(stream_single(model)) for model in models]
+        
+        completed = 0
+        success_count = 0
+        total_start = time.time()
+        
+        # Yield tokens as they arrive from queue
+        while completed < len(models):
+            chunk = await queue.get()
+            
+            if chunk['event'] == 'complete':
+                completed += 1
+                success_count += 1
+            elif chunk['event'] == 'error':
+                completed += 1
+            
+            yield chunk
+        
+        # Wait for all tasks to finish (cleanup)
+        await asyncio.gather(*tasks, return_exceptions=True)
+        
+        total_duration = time.time() - total_start
+        logger.info(
+            f"[LLMService] stream_progressive() complete: "
+            f"{success_count}/{len(models)} succeeded in {total_duration:.2f}s"
+        )
+    
     async def generate_race(
         self,
         prompt: str,
