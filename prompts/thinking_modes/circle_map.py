@@ -263,6 +263,40 @@ EVALUATE_REASONING_PROMPT_ZH = """
 前进："准备好进入下一个级别了吗？让我们继续..."
 """
 
+# Step 8: Node Generation (Based on Auto-Complete Prompt Style)
+# Adapted from CIRCLE_MAP_GENERATION_EN/ZH in thinking_maps.py
+# Same thinking approach, but streamable text output instead of JSON
+
+NODE_GENERATION_PROMPT_EN = """Generate {count} Circle Map observations for: {center_topic}
+
+Educational Context: {educational_context}
+
+You can brainstorm the central topic and associate it with related information or background knowledge.
+Thinking approach: Association, Divergence
+1. Be able to diverge and associate from multiple angles, the wider the angle the better
+2. Feature words should be as concise as possible
+
+Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.
+
+Output only the observation text, one per line, no numbering.
+
+Generate {count} observations:"""
+
+NODE_GENERATION_PROMPT_ZH = """为以下主题生成{count}个圆圈图观察点：{center_topic}
+
+教学背景：{educational_context}
+
+你能对中心词进行头脑风暴，联想出与之相关的信息或背景知识。
+思维方式：关联、发散
+1. 能够从多个角度进行发散、联想，角度越广越好
+2. 特征词要尽可能简洁
+
+要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。
+
+只输出观察点文本，每行一个，不要编号。
+
+生成{count}个观察点："""
+
 # Helper function to get prompt based on language
 def get_prompt(prompt_name, language='en'):
     """

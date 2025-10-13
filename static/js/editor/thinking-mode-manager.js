@@ -413,12 +413,14 @@ class ThinkingModeManager {
             case 'open_node_palette':
                 // Open Node Palette for brainstorming more nodes
                 this.logger.info('[ThinkGuide]', 'Opening Node Palette | Topic:', actionData.center_topic);
+                this.logger.debug('[ThinkGuide]', 'Educational context:', actionData.educational_context);
                 
                 if (window.nodePaletteManager) {
                     window.nodePaletteManager.start(
                         actionData.center_topic,
                         actionData.diagram_data,
-                        actionData.session_id
+                        actionData.session_id,
+                        actionData.educational_context  // Pass ThinkGuide context for focused generation
                     );
                 } else {
                     this.logger.error('[ThinkGuide]', 'NodePaletteManager not found');

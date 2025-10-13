@@ -282,36 +282,15 @@ User message: {message}"""
         context = session.get('context', {})
         language = session.get('language', 'en')
         
-        if language == 'zh':
-            prompt = f"""你是K12教育专家。为圆圈图主题生成5个观察点。
-
-主题：{center_text}
-教学背景：{context.get('raw_message', '通用K12教学')}
-
-圆圈图的目的：定义一个主题——观察到什么？在什么背景下？
-
-要求：
-1. 每项应该是可观察的具体方面（2-6个字）
-2. 适合K12学生理解
-3. 从不同角度观察
-4. 只输出节点文本，每行一个，不要编号
-
-生成5个观察点："""
-        else:
-            prompt = f"""You are a K12 education expert. Generate 5 observation points for a Circle Map topic.
-
-Topic: {center_text}
-Educational Context: {context.get('raw_message', 'General K12 teaching')}
-
-Circle Map Purpose: Define a topic — What do we observe? In what context?
-
-Requirements:
-1. Each should be an observable, concrete aspect (2-6 words)
-2. Appropriate for K12 students
-3. Observe from different angles
-4. Output only node text, one per line, no numbering
-
-Generate 5 observations:"""
+        # Use centralized prompt system
+        context_desc = context.get('raw_message', 'General K12 teaching' if language == 'en' else '通用K12教学')
+        prompt_template = get_prompt('NODE_GENERATION', language)
+        
+        prompt = prompt_template.format(
+            count=5,
+            center_topic=center_text,
+            educational_context=context_desc
+        )
         
         try:
             content = await self.llm.chat(

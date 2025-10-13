@@ -292,6 +292,15 @@ class CircleMapActionHandler:
         async for chunk in self.agent._stream_llm_response(ack_prompt, session):
             yield chunk
         
+        # Extract educational context from ThinkGuide session
+        context = session.get('context', {})
+        educational_context = {
+            'grade_level': context.get('grade_level', '5th grade'),
+            'subject': context.get('subject', 'General'),
+            'objective': context.get('objective', ''),
+            'raw_message': context.get('raw_message', '')  # Original user context for more focused prompts
+        }
+        
         # Yield action event to trigger Node Palette on frontend
         yield {
             'event': 'action',
@@ -300,7 +309,8 @@ class CircleMapActionHandler:
                 'center_topic': center_topic,
                 'current_node_count': current_node_count,
                 'diagram_data': diagram_data,
-                'session_id': session['session_id']
+                'session_id': session['session_id'],
+                'educational_context': educational_context  # Pass ThinkGuide context for focused generation
             }
         }
         

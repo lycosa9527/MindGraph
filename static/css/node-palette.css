@@ -1,9 +1,24 @@
 /**
- * Node Palette Styles
- * ===================
+ * Node Palette Styles (Enhanced Professional Grid)
+ * =================================================
  * 
- * Styles for the Node Palette feature (multi-LLM node brainstorming).
- * Includes 4-column masonry layout, selection animations, and responsive design.
+ * Sophisticated grid layout for multi-LLM node brainstorming with visual complexity.
+ * 
+ * ✨ Visual Enhancements:
+ * - Staggered entrance animations (wave effect)
+ * - Gradient backgrounds with subtle LLM-specific tints
+ * - Multi-layered depth shadows
+ * - Subtle breathing pulse animations
+ * - Enhanced hover micro-interactions with lift effect
+ * - Glowing selection rings with pulsing animation
+ * - Smooth state transitions (400ms cubic-bezier)
+ * 
+ * 🎨 Design Features:
+ * - Clean professional grid (no overlaps)
+ * - Responsive: 2-6 columns based on screen width
+ * - Perfect spacing at all breakpoints
+ * - LLM-specific color themes (Qwen, DeepSeek, Hunyuan, Kimi)
+ * - Accessible and performant animations
  * 
  * @author lycosa9527
  * @made_by MindSpring Team
@@ -97,33 +112,29 @@
 }
 
 /* ============================================================================
-   STAGGERED GRID LAYOUT (brick pattern with offset columns)
+   ENHANCED PROFESSIONAL GRID LAYOUT (Clean with Visual Complexity)
    ============================================================================ */
 
 .node-palette-grid {
     display: grid;
-    /* Truly adaptive: fit as many circles as possible with flexible sizing */
-    grid-template-columns: repeat(auto-fit, minmax(180px, 200px));
-    gap: clamp(16px, 2vw, 24px); /* Adaptive gap: smaller on narrow screens, larger on wide */
+    /* Fluid responsive columns - adapts to container */
+    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+    gap: clamp(20px, 3vw, 36px); /* Fluid gap that scales with viewport */
     margin-bottom: 80px;
-    padding: 20px clamp(20px, 3vw, 40px);
-    max-width: 100%;
+    padding: clamp(20px, 4vw, 48px);
+    max-width: 1400px;
     margin-left: auto;
     margin-right: auto;
     justify-items: center;
     align-items: start;
-    justify-content: center; /* Center the grid when it doesn't fill the width */
+    position: relative;
 }
 
-/* Universal honeycomb pattern that works with ANY column count */
-/* Offset every odd-positioned item (1st, 3rd, 5th, 7th...) */
-.node-palette-grid .node-card:nth-child(odd) {
-    margin-top: 80px; /* Slightly less than half-circle for tighter packing */
-}
-
-/* Let first item start at top */
-.node-palette-grid .node-card:nth-child(1) {
-    margin-top: 0;
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .node-palette-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+    }
 }
 
 /* ============================================================================
@@ -132,104 +143,145 @@
 
 .node-card {
     position: relative;
-    background: var(--bg-secondary, #f9f9f9);
+    background: linear-gradient(135deg, var(--bg-secondary, #fafafa) 0%, var(--bg-primary, #ffffff) 100%);
     border: 4px solid #4a90e2; /* Default blue */
     border-radius: 50%;
-    width: 200px; /* Slightly smaller for better packing */
-    height: 200px;
-    padding: 24px;
+    /* Fluid dimensions - adapts to grid cell */
+    width: min(200px, 100%);
+    max-width: 200px;
+    aspect-ratio: 1 / 1; /* Maintain perfect circle */
+    padding: clamp(16px, 3vw, 24px);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.95);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
-    animation: gentle-pulse 3s ease-in-out infinite;
-    max-width: 100%; /* Responsive to container */
-    aspect-ratio: 1; /* Maintain perfect circle */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06),
+                0 2px 8px rgba(0, 0, 0, 0.04);
+    animation: fadeInScale 0.5s ease-out forwards;
+    will-change: transform, opacity;
+    box-sizing: border-box; /* Include border in dimensions */
 }
 
-/* Smaller circles on mobile for better fit */
-@media (max-width: 600px) {
-    .node-card {
-        width: 160px;
-        height: 160px;
-        padding: 18px;
+/* Staggered entrance animation (wave effect) */
+.node-card:nth-child(1) { animation-delay: 0s; }
+.node-card:nth-child(2) { animation-delay: 0.05s; }
+.node-card:nth-child(3) { animation-delay: 0.1s; }
+.node-card:nth-child(4) { animation-delay: 0.15s; }
+.node-card:nth-child(5) { animation-delay: 0.2s; }
+.node-card:nth-child(6) { animation-delay: 0.25s; }
+.node-card:nth-child(n+7) { animation-delay: 0.3s; }
+
+/* Fade in scale animation */
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }
 
-/* LLM-specific border colors and glows (matching status bar buttons) */
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .node-card {
+        max-width: 160px;
+        border-width: 3px;
+    }
+}
+
+/* LLM-specific border colors and enhanced glows */
 .node-card.llm-qwen {
     border-color: #3498db; /* Qwen - Blue */
-    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.2),
-                0 0 30px rgba(52, 152, 219, 0.15);
-    animation: qwen-glow-pulse 3s ease-in-out infinite;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.05) 0%, #ffffff 100%);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.15),
+                0 2px 8px rgba(52, 152, 219, 0.1),
+                0 0 0 0 rgba(52, 152, 219, 0.4);
+    animation: fadeInScale 0.5s ease-out forwards, subtlePulse 4s ease-in-out 0.5s infinite;
 }
 
 .node-card.llm-deepseek {
     border-color: #9b59b6; /* DeepSeek - Purple */
-    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.2),
-                0 0 30px rgba(155, 89, 182, 0.15);
-    animation: deepseek-glow-pulse 3s ease-in-out infinite;
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.05) 0%, #ffffff 100%);
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.15),
+                0 2px 8px rgba(155, 89, 182, 0.1),
+                0 0 0 0 rgba(155, 89, 182, 0.4);
+    animation: fadeInScale 0.5s ease-out forwards, subtlePulse 4s ease-in-out 0.6s infinite;
 }
 
 .node-card.llm-hunyuan {
     border-color: #f39c12; /* Hunyuan - Orange/Gold */
-    box-shadow: 0 4px 16px rgba(243, 156, 18, 0.2),
-                0 0 30px rgba(243, 156, 18, 0.15);
-    animation: hunyuan-glow-pulse 3s ease-in-out infinite;
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.05) 0%, #ffffff 100%);
+    box-shadow: 0 4px 16px rgba(243, 156, 18, 0.15),
+                0 2px 8px rgba(243, 156, 18, 0.1),
+                0 0 0 0 rgba(243, 156, 18, 0.4);
+    animation: fadeInScale 0.5s ease-out forwards, subtlePulse 4s ease-in-out 0.7s infinite;
 }
 
 .node-card.llm-kimi {
     border-color: #1abc9c; /* Kimi - Teal/Green */
-    box-shadow: 0 4px 16px rgba(26, 188, 156, 0.2),
-                0 0 30px rgba(26, 188, 156, 0.15);
-    animation: kimi-glow-pulse 3s ease-in-out infinite;
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.05) 0%, #ffffff 100%);
+    box-shadow: 0 4px 16px rgba(26, 188, 156, 0.15),
+                0 2px 8px rgba(26, 188, 156, 0.1),
+                0 0 0 0 rgba(26, 188, 156, 0.4);
+    animation: fadeInScale 0.5s ease-out forwards, subtlePulse 4s ease-in-out 0.8s infinite;
 }
 
-/* Stagger animation delays for wave effect across columns */
-.node-card:nth-child(3n+1) {
-    animation-delay: 0s;
-}
-
-.node-card:nth-child(3n+2) {
-    animation-delay: 0.4s;
-}
-
-.node-card:nth-child(3n+3) {
-    animation-delay: 0.8s;
+/* Subtle breathing pulse animation */
+@keyframes subtlePulse {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(var(--glow-rgb), 0.15),
+                    0 2px 8px rgba(var(--glow-rgb), 0.1);
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(var(--glow-rgb), 0.22),
+                    0 3px 12px rgba(var(--glow-rgb), 0.15);
+    }
 }
 
 .node-card:hover {
-    transform: scale(1.08);
+    transform: scale(1.08) translateY(-6px);
     border-width: 5px;
     animation: none; /* Stop pulse on hover for cleaner interaction */
 }
 
-/* LLM-specific hover colors with enhanced glow */
+/* LLM-specific hover states with dramatic glow */
 .node-card.llm-qwen:hover {
-    box-shadow: 0 8px 24px rgba(52, 152, 219, 0.4),
-                0 0 60px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 8px 32px rgba(52, 152, 219, 0.35),
+                0 4px 16px rgba(52, 152, 219, 0.25),
+                0 0 0 8px rgba(52, 152, 219, 0.1),
+                0 0 60px rgba(52, 152, 219, 0.2);
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.12) 0%, #ffffff 100%);
 }
 
 .node-card.llm-deepseek:hover {
-    box-shadow: 0 8px 24px rgba(155, 89, 182, 0.4),
-                0 0 60px rgba(155, 89, 182, 0.3);
+    box-shadow: 0 8px 32px rgba(155, 89, 182, 0.35),
+                0 4px 16px rgba(155, 89, 182, 0.25),
+                0 0 0 8px rgba(155, 89, 182, 0.1),
+                0 0 60px rgba(155, 89, 182, 0.2);
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.12) 0%, #ffffff 100%);
 }
 
 .node-card.llm-hunyuan:hover {
-    box-shadow: 0 8px 24px rgba(243, 156, 18, 0.4),
-                0 0 60px rgba(243, 156, 18, 0.3);
+    box-shadow: 0 8px 32px rgba(243, 156, 18, 0.35),
+                0 4px 16px rgba(243, 156, 18, 0.25),
+                0 0 0 8px rgba(243, 156, 18, 0.1),
+                0 0 60px rgba(243, 156, 18, 0.2);
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.12) 0%, #ffffff 100%);
 }
 
 .node-card.llm-kimi:hover {
-    box-shadow: 0 8px 24px rgba(26, 188, 156, 0.4),
-                0 0 60px rgba(26, 188, 156, 0.3);
+    box-shadow: 0 8px 32px rgba(26, 188, 156, 0.35),
+                0 4px 16px rgba(26, 188, 156, 0.25),
+                0 0 0 8px rgba(26, 188, 156, 0.1),
+                0 0 60px rgba(26, 188, 156, 0.2);
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.12) 0%, #ffffff 100%);
 }
 
 /* Node Card Content */
@@ -313,40 +365,54 @@
 .node-card.selected {
     border-width: 6px;
     transform: scale(1.1);
-    animation: none !important; /* Stop pulse when selected */
+    animation: selectedPulse 2s ease-in-out infinite !important; /* Distinct selected pulse */
 }
 
 .node-card.selected:hover {
-    transform: scale(1.12);
+    transform: scale(1.12) translateY(-8px);
 }
 
-/* LLM-specific selected state colors with intense glow */
+/* Selected pulse animation - more pronounced */
+@keyframes selectedPulse {
+    0%, 100% {
+        transform: scale(1.1);
+    }
+    50% {
+        transform: scale(1.12);
+    }
+}
+
+/* LLM-specific selected state colors with intense glow and ring */
 .node-card.llm-qwen.selected {
-    background: rgba(52, 152, 219, 0.12);
-    box-shadow: 0 0 0 8px rgba(52, 152, 219, 0.4),
-                0 0 40px rgba(52, 152, 219, 0.6),
-                0 16px 32px rgba(52, 152, 219, 0.3);
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, rgba(52, 152, 219, 0.05) 100%);
+    box-shadow: 0 0 0 6px rgba(52, 152, 219, 0.3),
+                0 0 0 10px rgba(52, 152, 219, 0.15),
+                0 12px 40px rgba(52, 152, 219, 0.4),
+                0 0 60px rgba(52, 152, 219, 0.3);
 }
 
 .node-card.llm-deepseek.selected {
-    background: rgba(155, 89, 182, 0.12);
-    box-shadow: 0 0 0 8px rgba(155, 89, 182, 0.4),
-                0 0 40px rgba(155, 89, 182, 0.6),
-                0 16px 32px rgba(155, 89, 182, 0.3);
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.15) 0%, rgba(155, 89, 182, 0.05) 100%);
+    box-shadow: 0 0 0 6px rgba(155, 89, 182, 0.3),
+                0 0 0 10px rgba(155, 89, 182, 0.15),
+                0 12px 40px rgba(155, 89, 182, 0.4),
+                0 0 60px rgba(155, 89, 182, 0.3);
 }
 
 .node-card.llm-hunyuan.selected {
-    background: rgba(243, 156, 18, 0.12);
-    box-shadow: 0 0 0 8px rgba(243, 156, 18, 0.4),
-                0 0 40px rgba(243, 156, 18, 0.6),
-                0 16px 32px rgba(243, 156, 18, 0.3);
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.15) 0%, rgba(243, 156, 18, 0.05) 100%);
+    box-shadow: 0 0 0 6px rgba(243, 156, 18, 0.3),
+                0 0 0 10px rgba(243, 156, 18, 0.15),
+                0 12px 40px rgba(243, 156, 18, 0.4),
+                0 0 60px rgba(243, 156, 18, 0.3);
 }
 
 .node-card.llm-kimi.selected {
-    background: rgba(26, 188, 156, 0.12);
-    box-shadow: 0 0 0 8px rgba(26, 188, 156, 0.4),
-                0 0 40px rgba(26, 188, 156, 0.6),
-                0 16px 32px rgba(26, 188, 156, 0.3);
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.15) 0%, rgba(26, 188, 156, 0.05) 100%);
+    box-shadow: 0 0 0 6px rgba(26, 188, 156, 0.3),
+                0 0 0 10px rgba(26, 188, 156, 0.15),
+                0 12px 40px rgba(26, 188, 156, 0.4),
+                0 0 60px rgba(26, 188, 156, 0.3);
 }
 
 .node-card.selected .node-checkmark {
@@ -373,50 +439,7 @@
     }
 }
 
-/* LLM-specific gentle glow pulse animations */
-@keyframes qwen-glow-pulse {
-    0%, 100% {
-        box-shadow: 0 4px 16px rgba(52, 152, 219, 0.2),
-                    0 0 30px rgba(52, 152, 219, 0.15);
-    }
-    50% {
-        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3),
-                    0 0 50px rgba(52, 152, 219, 0.25);
-    }
-}
-
-@keyframes deepseek-glow-pulse {
-    0%, 100% {
-        box-shadow: 0 4px 16px rgba(155, 89, 182, 0.2),
-                    0 0 30px rgba(155, 89, 182, 0.15);
-    }
-    50% {
-        box-shadow: 0 6px 20px rgba(155, 89, 182, 0.3),
-                    0 0 50px rgba(155, 89, 182, 0.25);
-    }
-}
-
-@keyframes hunyuan-glow-pulse {
-    0%, 100% {
-        box-shadow: 0 4px 16px rgba(243, 156, 18, 0.2),
-                    0 0 30px rgba(243, 156, 18, 0.15);
-    }
-    50% {
-        box-shadow: 0 6px 20px rgba(243, 156, 18, 0.3),
-                    0 0 50px rgba(243, 156, 18, 0.25);
-    }
-}
-
-@keyframes kimi-glow-pulse {
-    0%, 100% {
-        box-shadow: 0 4px 16px rgba(26, 188, 156, 0.2),
-                    0 0 30px rgba(26, 188, 156, 0.15);
-    }
-    50% {
-        box-shadow: 0 6px 20px rgba(26, 188, 156, 0.3),
-                    0 0 50px rgba(26, 188, 156, 0.25);
-    }
-}
+/* Removed old glow pulse animations - replaced with subtlePulse */
 
 /* ============================================================================
    END MESSAGE

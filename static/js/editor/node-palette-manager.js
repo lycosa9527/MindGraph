@@ -25,32 +25,33 @@ class NodePaletteManager {
         this.centerTopic = null;
         this.diagramData = null;
         
-        // Constants from design doc
-        this.MAX_NODES = 200;
-        this.MAX_BATCHES = 12;
-        this.hasReachedLimit = false;
+        // Infinite scroll - no limits!
+        this.isLoadingBatch = false;  // Prevent duplicate requests
         
         console.log('[NodePalette] Initialized');
     }
     
-    async start(centerTopic, diagramData, sessionId) {
+    async start(centerTopic, diagramData, sessionId, educationalContext) {
         /**
          * Initialize Node Palette and load first batch.
          * 
          * @param {string} centerTopic - Center node text from Circle Map
          * @param {Object} diagramData - Current Circle Map data
          * @param {string} sessionId - Session ID from ThinkGuide
+         * @param {Object} educationalContext - Educational context from ThinkGuide (grade, subject, etc.)
          */
         const existingNodes = diagramData?.children?.length || 0;
         console.log(`[NodePalette] Starting | Topic: "${centerTopic}" | Existing nodes: ${existingNodes}`);
+        console.log(`[NodePalette] Educational context:`, educationalContext);
         
         this.sessionId = sessionId || `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         this.centerTopic = centerTopic;
         this.diagramData = diagramData;
+        this.educationalContext = educationalContext || {}; // Store ThinkGuide context
         this.currentBatch = 0;
         this.nodes = [];
         this.selectedNodes.clear();
-        this.hasReachedLimit = false;
+        this.isLoadingBatch = false;
         
         // Show Node Palette panel, hide Circle Map
         console.log('[NodePalette] Hiding Circle Map, showing Palette UI');
@@ -146,7 +147,7 @@ class NodePaletteManager {
     
     setupScrollListener() {
         /**
-         * Setup infinite scroll listener (200px from bottom triggers next batch).
+         * Setup infinite scroll listener - triggers at 2/3 scroll position.
          */
         const container = document.getElementById('node-palette-container');
         if (!container) return;
@@ -157,13 +158,14 @@ class NodePaletteManager {
             if (scrollTimeout) clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => {
                 this.onScroll();
-            }, 100);
+            }, 150);
         });
     }
     
     onScroll() {
         /**
-         * Handle scroll event - load next batch if near bottom.
+         * Handle scroll event - load next batch at 2/3 position.
+         * Infinite scroll - no limits!
          */
         const container = document.getElementById('node-palette-container');
         if (!container) return;
@@ -172,36 +174,30 @@ class NodePaletteManager {
         const scrollTop = container.scrollTop;
         const clientHeight = container.clientHeight;
         
-        // Check if near bottom (200px threshold)
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        // Calculate scroll progress (0 to 1)
+        const scrollProgress = (scrollTop + clientHeight) / scrollHeight;
         
-        if (distanceFromBottom < 200 && !this.isLoading && !this.hasReachedLimit) {
-            console.log('[NodePalette] User scrolled near bottom, loading next batch');
+        // Trigger at 2/3 (0.67) - fire all 4 LLMs concurrently again!
+        if (scrollProgress >= 0.67 && !this.isLoadingBatch) {
+            console.log('[NodePalette] 🚀 2/3 scroll reached! Firing 4 LLMs concurrently...');
             this.loadNextBatch();
         }
     }
     
     async loadNextBatch() {
         /**
-         * Load next batch of nodes from backend SSE stream.
+         * Load next batch - fires 4 LLMs concurrently!
+         * Infinite scroll - no limits.
          */
-        if (this.isLoading) {
+        if (this.isLoadingBatch) {
             console.warn('[NodePalette] Batch load already in progress, skipping');
             return;
         }
         
-        // Check limits
-        if (this.nodes.length >= this.MAX_NODES || this.currentBatch >= this.MAX_BATCHES) {
-            console.log('[NodePalette] Reached limit: nodes=%d, batches=%d', this.nodes.length, this.currentBatch);
-            this.hasReachedLimit = true;
-            this.showEndMessage();
-            return;
-        }
-        
-        this.isLoading = true;
+        this.isLoadingBatch = true;
         this.currentBatch++;
         
-        console.log(`[NodePalette] Loading batch #${this.currentBatch}`);
+        console.log(`[NodePalette] 🚀 Loading batch #${this.currentBatch} (4 LLMs concurrent)`);
         
         // Determine URL based on batch number
         const url = this.currentBatch === 1
@@ -213,20 +209,12 @@ class NodePaletteManager {
                 session_id: this.sessionId,
                 diagram_type: 'circle_map',
                 diagram_data: this.diagramData,
-                educational_context: {
-                    grade_level: '5th grade',
-                    subject: 'Science'
-                },
-                batch_size: 50
+                educational_context: this.educationalContext  // Use ThinkGuide context
             }
             : {
                 session_id: this.sessionId,
                 center_topic: this.centerTopic,
-                educational_context: {
-                    grade_level: '5th grade',
-                    subject: 'Science'
-                },
-                batch_size: 50
+                educational_context: this.educationalContext  // Use ThinkGuide context
             };
         
         try {
@@ -258,29 +246,30 @@ class NodePaletteManager {
                         const data = JSON.parse(line.substring(6));
                         
                         if (data.event === 'batch_start') {
-                            currentLLM = data.llm;
-                            console.log(`[NodePalette] Batch ${this.currentBatch}: ${currentLLM} generating...`);
+                            console.log(`[NodePalette] Batch ${this.currentBatch} starting: ${data.llm_count} LLMs firing concurrently`);
                             
                         } else if (data.event === 'node_generated') {
                             nodeCount++;
                             this.appendNode(data.node);
                             
-                            // Only log every 5th node to avoid console spam
-                            if (nodeCount % 5 === 0 || nodeCount === 1) {
+                            // Log every 10th node
+                            if (nodeCount % 10 === 0 || nodeCount === 1) {
                                 console.log(`[NodePalette] Node #${nodeCount}: "${data.node.text}" (${data.node.source_llm})`);
                             }
                             
+                        } else if (data.event === 'llm_complete') {
+                            console.log(`[NodePalette] ${data.llm} complete: ${data.unique_nodes} unique, ${data.duplicates} duplicates (${data.duration}s)`);
+                            
                         } else if (data.event === 'batch_complete') {
                             const elapsed = ((Date.now() - batchStartTime) / 1000).toFixed(2);
-                            duplicateCount = data.duplicates_filtered;
                             
-                            console.log(`[NodePalette] Batch ${this.currentBatch} complete (${elapsed}s) | LLM: ${currentLLM} | Unique: ${data.unique_nodes} | Duplicates: ${duplicateCount} | Total: ${this.nodes.length}`);
+                            console.log(`[NodePalette] Batch ${this.currentBatch} complete (${elapsed}s) | New: ${data.new_unique_nodes} | Total: ${data.total_nodes}`);
                             
-                            this.isLoading = false;
+                            this.isLoadingBatch = false;
                             
                         } else if (data.event === 'error') {
-                            console.error(`[NodePalette] Batch ${this.currentBatch} error:`, data.message, data.fallback);
-                            this.isLoading = false;
+                            console.error(`[NodePalette] Batch ${this.currentBatch} error:`, data.message);
+                            this.isLoadingBatch = false;
                         }
                     }
                 }
@@ -288,7 +277,7 @@ class NodePaletteManager {
             
         } catch (error) {
             console.error(`[NodePalette] Batch ${this.currentBatch} load error:`, error);
-            this.isLoading = false;
+            this.isLoadingBatch = false;
         }
     }
     
@@ -439,21 +428,6 @@ class NodePaletteManager {
         }
     }
     
-    showEndMessage() {
-        /**
-         * Show message when node generation limits are reached.
-         */
-        const container = document.getElementById('node-palette-grid');
-        if (!container) return;
-        
-        const endMessage = document.createElement('div');
-        endMessage.className = 'end-message';
-        endMessage.innerHTML = `
-            <p>✓ Generated ${this.nodes.length} nodes from ${this.currentBatch} batches</p>
-            <p>Select your favorites and click "Finish"</p>
-        `;
-        container.appendChild(endMessage);
-    }
     
     async finishSelection() {
         /**

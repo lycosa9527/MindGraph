@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 import json
 
 from agents.thinking_modes.factory import ThinkingAgentFactory
-from agents.thinking_modes.node_palette_generator import get_node_palette_generator
+from agents.thinking_modes.node_palette_generator_v2 import get_node_palette_generator_v2
 from models.requests import (
     ThinkingModeRequest,
     NodePaletteStartRequest,
@@ -138,52 +138,49 @@ async def get_node_learning_material(session_id: str, node_id: str, diagram_type
 @router.post('/thinking_mode/node_palette/start')
 async def start_node_palette(req: NodePaletteStartRequest):
     """
-    Initialize Node Palette session and generate first batch of nodes.
+    Initialize Node Palette and fire ALL 4 LLMs concurrently.
     
-    Called when user asks ThinkGuide "show me node palette".
-    Returns SSE stream with initial batch (20 nodes from first LLM).
+    Returns SSE stream with progressive results as each LLM completes.
+    No limits - this is the start of infinite scrolling!
     """
     session_id = req.session_id
     user_id = getattr(req, 'user_id', 'anonymous')
     
-    logger.info("[NodePalette-API] POST /start | Session: %s | Diagram: %s | User: %s", 
-               session_id[:8], req.diagram_type, user_id)
+    logger.info("[NodePalette-API] POST /start (V2 Concurrent) | Session: %s | User: %s", 
+               session_id[:8], user_id)
     
     try:
-        # Extract center topic from diagram data
+        # Extract center topic
         center_topic = req.diagram_data.get('center', {}).get('text', '')
         
         if not center_topic:
             logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
             raise HTTPException(status_code=400, detail="Circle map has no center topic")
         
-        logger.info("[NodePalette-API] Center topic: '%s'", center_topic)
+        logger.info("[NodePalette-API] Topic: '%s' | 🚀 Firing 4 LLMs concurrently", center_topic)
         
-        # Get generator singleton
-        generator = get_node_palette_generator()
+        # Get V2 generator
+        generator = get_node_palette_generator_v2()
         
-        # Stream first batch
+        # Stream with concurrent execution
         async def generate():
-            logger.info("[NodePalette-API] Starting SSE stream | Session: %s", session_id[:8])
-            batch_count = 0
+            logger.info("[NodePalette-API] SSE stream starting | Session: %s", session_id[:8])
             node_count = 0
             
             try:
-                async for chunk in generator.generate_next_batch(
+                async for chunk in generator.generate_batch(
                     session_id=session_id,
                     center_topic=center_topic,
                     educational_context=req.educational_context,
-                    batch_size=50
+                    nodes_per_llm=15  # Each LLM generates 15 nodes = 60 total per batch
                 ):
-                    if chunk.get('event') == 'batch_start':
-                        batch_count += 1
-                    elif chunk.get('event') == 'node_generated':
+                    if chunk.get('event') == 'node_generated':
                         node_count += 1
                     
                     yield f"data: {json.dumps(chunk)}\n\n"
                 
-                logger.info("[NodePalette-API] Stream complete | Session: %s | Batches: %d | Nodes: %d", 
-                           session_id[:8], batch_count, node_count)
+                logger.info("[NodePalette-API] Batch complete | Session: %s | Nodes: %d", 
+                           session_id[:8], node_count)
                 
             except Exception as e:
                 logger.error("[NodePalette-API] Stream error | Session: %s | Error: %s", 
@@ -214,28 +211,38 @@ async def start_node_palette(req: NodePaletteStartRequest):
 @router.post('/thinking_mode/node_palette/next_batch')
 async def get_next_batch(req: NodePaletteNextRequest):
     """
-    Generate next batch of nodes for existing session.
+    Generate next batch - fires ALL 4 LLMs concurrently again!
     
-    Called when user scrolls to bottom of Node Palette.
-    Returns SSE stream with next 20 nodes from next LLM in rotation.
+    Called when user scrolls to 2/3 of content.
+    Infinite scroll - keeps firing 4 concurrent LLMs on each trigger.
     """
     session_id = req.session_id
-    logger.info("[NodePalette-API] POST /next_batch | Session: %s", session_id[:8])
+    logger.info("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
     
     try:
-        # Get generator singleton
-        generator = get_node_palette_generator()
+        # Get V2 generator
+        generator = get_node_palette_generator_v2()
         
-        # Stream next batch
+        logger.info("[NodePalette-API] 🚀 Firing 4 LLMs concurrently for next batch...")
+        
+        # Stream next batch with concurrent execution
         async def generate():
+            node_count = 0
             try:
-                async for chunk in generator.generate_next_batch(
+                async for chunk in generator.generate_batch(
                     session_id=session_id,
                     center_topic=req.center_topic,
                     educational_context=req.educational_context,
-                    batch_size=50
+                    nodes_per_llm=15  # 60 total nodes per scroll trigger
                 ):
+                    if chunk.get('event') == 'node_generated':
+                        node_count += 1
+                    
                     yield f"data: {json.dumps(chunk)}\n\n"
+                
+                logger.info("[NodePalette-API] Next batch complete | Session: %s | Nodes: %d", 
+                           session_id[:8], node_count)
+                
             except Exception as e:
                 logger.error("[NodePalette-API] Next batch error | Session: %s | Error: %s", 
                             session_id[:8], str(e), exc_info=True)

@@ -226,56 +226,55 @@ class NodePaletteGenerator:
         has_chinese = bool(re.search(r'[\u4e00-\u9fff]', center_topic))
         language = 'zh' if has_chinese else 'en'
         
-        # Build prompt with diversity instructions
-        diversity_suffix = f" (Batch {batch_num} - Generate DIVERSE and UNIQUE observations, avoid repetition)" if batch_num > 1 else ""
+        # Build focused prompt (adapted from auto-complete)
+        diversity_suffix = f" (Batch {batch_num} - 生成多样化的新观察点，避免重复)" if batch_num > 1 else ""
+        diversity_suffix_en = f" (Batch {batch_num} - Generate DIVERSE new observations, avoid repetition)" if batch_num > 1 else ""
         
         grade_level = educational_context.get('grade_level', '5th grade') if educational_context else '5th grade'
         subject = educational_context.get('subject', 'Science') if educational_context else 'Science'
+        context_desc = educational_context.get('raw_message', '') if educational_context else ''
         
         if language == 'zh':
-            prompt = f"""为「{center_topic}」的圆圈图生成{batch_size}个不同的观察点。
+            prompt = f"""你是K12教育专家。为圆圈图主题生成{batch_size}个观察点。
 
-教育背景：
-- 年级水平：{grade_level}
-- 学科：{subject}
+主题：{center_topic}
+教学背景：{context_desc if context_desc else f'{grade_level} {subject}教学'}
 
-【重要】语言要求：
-- 必须全部使用中文
-- 每个观察点2-6个汉字
-- 不要使用任何英文
+圆圈图的目的：定义一个主题——观察到什么？在什么背景下？
 
-内容要求：
-- 关注具体、可观察的方面
-- 适合年龄的语言
-- 多样化视角（避免重复）
-- 纯文本列表格式（每行一个）
+要求：
+1. 每项应该是可观察的具体方面（2-6个汉字）
+2. 适合K12学生理解
+3. 从不同角度观察
+4. 多样化、避免重复
+5. 只输出节点文本，每行一个，不要编号
 
-现在生成{batch_size}个中文观察点：{diversity_suffix}"""
+生成{batch_size}个观察点：{diversity_suffix}"""
         else:
-            prompt = f"""Generate {batch_size} diverse observations about "{center_topic}" for a Circle Map.
+            prompt = f"""You are a K12 education expert. Generate {batch_size} observation points for a Circle Map topic.
 
-Educational Context:
-- Grade Level: {grade_level}
-- Subject: {subject}
+Topic: {center_topic}
+Educational Context: {context_desc if context_desc else f'{grade_level} {subject} teaching'}
 
-【IMPORTANT】Language Requirements:
-- ALL observations MUST be in English only
-- Each observation should be 2-6 words
-- NO Chinese characters allowed
+Circle Map Purpose: Define a topic — What do we observe? In what context?
 
-Content Requirements:
-- Focus on concrete, observable aspects
-- Age-appropriate language
-- DIVERSE perspectives (avoid repetition)
-- Plain text list format (one per line)
+Requirements:
+1. Each should be an observable, concrete aspect (2-6 words)
+2. Appropriate for K12 students
+3. Observe from different angles
+4. Diverse perspectives, avoid repetition
+5. Output only node text, one per line, no numbering
 
-Generate {batch_size} English observations now:{diversity_suffix}"""
+Generate {batch_size} observations:{diversity_suffix_en}"""
         
-        # Call LLM with timeout
+        # Call LLM with timeout (use focused system message like auto-complete)
+        system_message = 'You are a helpful K12 education assistant.' if language == 'en' else '你是一个有帮助的K12教育助手。'
+        
         try:
             response = await llm_service.chat(
                 prompt=prompt,
                 model=llm_name,
+                system_message=system_message,
                 temperature=self._get_llm_temperature(llm_name),
                 max_tokens=500,
                 timeout=15
