@@ -2,14 +2,14 @@
  * Node Palette Manager
  * ====================
  * 
- * Manages the Node Palette feature for Circle Maps.
- * Handles multi-LLM node generation, selection, and Circle Map integration.
+ * Manages the Node Palette feature for all diagram types.
+ * Handles multi-LLM node generation, selection, and diagram integration.
  * 
  * Features:
  * - SSE streaming from 4 LLMs (qwen, deepseek, hunyuan, kimi)
  * - Infinite scroll with smart stopping (200 nodes or 12 batches)
  * - Real-time node selection with animations
- * - Integration with Circle Map for selected nodes
+ * - Support for multiple diagram types with appropriate terminology
  * 
  * @author lycosa9527
  * @made_by MindSpring Team
@@ -20,48 +20,215 @@ class NodePaletteManager {
         this.nodes = [];
         this.selectedNodes = new Set();
         this.currentBatch = 0;
-        this.isLoading = false;
         this.sessionId = null;
         this.centerTopic = null;
         this.diagramData = null;
+        this.diagramType = null;  // Track diagram type
+        this.isLoadingBatch = false;  // Prevent duplicate batch requests
         
-        // Infinite scroll - no limits!
-        this.isLoadingBatch = false;  // Prevent duplicate requests
+        // Diagram type metadata - node types and array names
+        this.diagramMetadata = {
+            'circle_map': {
+                arrayName: 'context',
+                nodeName: 'context node',
+                nodeNamePlural: 'context nodes',
+                nodeType: 'context'
+            },
+            'bubble_map': {
+                arrayName: 'adjectives',
+                nodeName: 'adjective',
+                nodeNamePlural: 'adjectives',
+                nodeType: 'adjective'
+            },
+            'double_bubble_map': {
+                arrayName: 'similarities',  // Could also be left_differences or right_differences
+                nodeName: 'similarity',
+                nodeNamePlural: 'similarities',
+                nodeType: 'similarity'
+            },
+            'tree_map': {
+                arrayName: 'items',
+                nodeName: 'item',
+                nodeNamePlural: 'items',
+                nodeType: 'leaf'
+            },
+            'mindmap': {
+                arrayName: 'branches',
+                nodeName: 'branch',
+                nodeNamePlural: 'branches',
+                nodeType: 'branch'
+            },
+            'flow_map': {
+                arrayName: 'steps',
+                nodeName: 'step',
+                nodeNamePlural: 'steps',
+                nodeType: 'step'
+            },
+            'multi_flow_map': {
+                arrayName: 'effects',  // or causes depending on context
+                nodeName: 'effect',
+                nodeNamePlural: 'effects',
+                nodeType: 'effect'
+            },
+            'brace_map': {
+                arrayName: 'parts',
+                nodeName: 'part',
+                nodeNamePlural: 'parts',
+                nodeType: 'part'
+            },
+            'bridge_map': {
+                arrayName: 'analogies',
+                nodeName: 'analogy',
+                nodeNamePlural: 'analogies',
+                nodeType: 'analogy'
+            },
+            'concept_map': {
+                arrayName: 'concepts',
+                nodeName: 'concept',
+                nodeNamePlural: 'concepts',
+                nodeType: 'concept'
+            }
+        };
         
-        console.log('[NodePalette] Initialized');
+        console.log('[NodePalette] Initialized with support for:', Object.keys(this.diagramMetadata).join(', '));
     }
     
-    async start(centerTopic, diagramData, sessionId, educationalContext) {
+    /**
+     * Get diagram-specific metadata (node terminology, array names, etc.)
+     */
+    getMetadata(diagramType = null) {
+        const type = diagramType || this.diagramType || 'circle_map';
+        return this.diagramMetadata[type] || this.diagramMetadata['circle_map'];
+    }
+    
+    /**
+     * Check if a node text is a template placeholder.
+     * Uses centralized DiagramValidator for comprehensive pattern matching.
+     * 
+     * @param {string} text - Node text to check
+     * @returns {boolean} True if text matches placeholder pattern
+     */
+    isPlaceholder(text) {
+        if (!text || typeof text !== 'string') {
+            return false;
+        }
+        
+        // Use DiagramValidator's centralized placeholder detection
+        const validator = window.diagramValidator;
+        if (!validator) {
+            console.warn('[NodePalette] DiagramValidator not found, using fallback placeholder detection');
+            // Fallback: basic pattern matching
+            return /^(Context|背景|New|新)\s*\d*$/i.test(text.trim());
+        }
+        
+        return validator.isPlaceholder(text);
+    }
+    
+    async start(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
         /**
          * Initialize Node Palette and load first batch.
          * 
-         * @param {string} centerTopic - Center node text from Circle Map
-         * @param {Object} diagramData - Current Circle Map data
+         * @param {string} centerTopic - Center node text from diagram
+         * @param {Object} diagramData - Current diagram data
          * @param {string} sessionId - Session ID from ThinkGuide
          * @param {Object} educationalContext - Educational context from ThinkGuide (grade, subject, etc.)
+         * @param {string} diagramType - Type of diagram (circle_map, bubble_map, etc.)
          */
-        const existingNodes = diagramData?.children?.length || 0;
-        console.log(`[NodePalette] Starting | Topic: "${centerTopic}" | Existing nodes: ${existingNodes}`);
-        console.log(`[NodePalette] Educational context:`, educationalContext);
+        this.diagramType = diagramType || window.currentEditor?.diagramType || 'circle_map';
+        
+        // Check if this is the same session (user coming back) or a new session
+        const isSameSession = this.sessionId === sessionId;
+        const previousSessionId = this.sessionId;
         
         this.sessionId = sessionId || `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         this.centerTopic = centerTopic;
         this.diagramData = diagramData;
         this.educationalContext = educationalContext || {}; // Store ThinkGuide context
-        this.currentBatch = 0;
-        this.nodes = [];
-        this.selectedNodes.clear();
-        this.isLoadingBatch = false;
         
-        // Show Node Palette panel, hide Circle Map
-        console.log('[NodePalette] Hiding Circle Map, showing Palette UI');
+        // Only clear state if it's a NEW session (different sessionId)
+        if (!isSameSession) {
+            console.log('[NodePalette] NEW session detected - clearing previous state');
+            console.log(`[NodePalette]   Previous session: ${previousSessionId || 'none'}`);
+            console.log(`[NodePalette]   New session: ${this.sessionId}`);
+            this.resetState();
+        } else {
+            console.log('[NodePalette] SAME session detected - preserving nodes and selections');
+            console.log(`[NodePalette]   Session: ${this.sessionId}`);
+            console.log(`[NodePalette]   Existing nodes: ${this.nodes.length}`);
+            console.log(`[NodePalette]   Selected nodes: ${this.selectedNodes.size}`);
+            // Keep existing nodes, selections, and batch count
+            // This allows user to return and continue selecting
+        }
+        
+        const metadata = this.getMetadata();
+        const existingNodes = diagramData?.children?.length || diagramData?.[metadata.arrayName]?.length || 0;
+        
+        console.log('[NodePalette] ========================================');
+        console.log('[NodePalette] STARTING NODE PALETTE');
+        console.log('[NodePalette] ========================================');
+        console.log(`[NodePalette] Diagram type: ${this.diagramType}`);
+        console.log(`[NodePalette] Node type: ${metadata.nodeNamePlural}`);
+        console.log(`[NodePalette] Target array: spec.${metadata.arrayName}`);
+        console.log(`[NodePalette] Center topic: "${centerTopic}"`);
+        console.log(`[NodePalette] Existing ${metadata.nodeNamePlural}: ${existingNodes}`);
+        console.log(`[NodePalette] Educational context:`, educationalContext);
+        
+        // Show Node Palette panel, hide diagram
+        console.log(`[NodePalette] Hiding ${this.diagramType}, showing Palette UI`);
         this.showPalettePanel();
         
         // Setup scroll listener
         this.setupScrollListener();
         
-        // Load first batch
+        if (isSameSession && this.nodes.length > 0) {
+            // Returning to same session - restore existing nodes in UI
+            this.restoreUI();
+        } else {
+            // New session - load first batch
+            console.log('[NodePalette] Loading first batch for new session...');
         await this.loadNextBatch();
+        }
+    }
+    
+    resetState() {
+        /**
+         * Reset Node Palette batch and node data.
+         * Does NOT reset session properties (sessionId, diagramType, etc.) 
+         * as those are set at the start of each session.
+         */
+        this.nodes = [];
+        this.selectedNodes.clear();
+        this.currentBatch = 0;
+        this.isLoadingBatch = false;
+    }
+    
+    clearAll() {
+        /**
+         * Complete cleanup - reset everything including session properties.
+         * Called when cancelling or completely exiting Node Palette.
+         */
+        this.resetState();
+        this.sessionId = null;
+        this.centerTopic = null;
+        this.diagramData = null;
+        this.diagramType = null;
+    }
+    
+    restoreUI() {
+        /**
+         * Restore Node Palette UI from existing session data.
+         * Re-renders all node cards and updates button state.
+         */
+        console.log(`[NodePalette] Restoring ${this.nodes.length} existing nodes to grid`);
+        
+        const grid = document.getElementById('node-palette-grid');
+        if (grid) {
+            grid.innerHTML = '';
+            this.nodes.forEach(node => this.renderNodeCardOnly(node));
+            console.log(`[NodePalette] ✓ Restored ${this.nodes.length} nodes with ${this.selectedNodes.size} selected`);
+        }
+        
+        this.updateFinishButtonState();
     }
     
     showPalettePanel() {
@@ -95,8 +262,9 @@ class NodePaletteManager {
             }, 10);
         }
         
-        // Attach finish button listener when panel opens
+        // Attach button listeners when panel opens
         this.attachFinishButtonListener();
+        this.attachCancelButtonListener();
     }
     
     attachFinishButtonListener() {
@@ -117,6 +285,27 @@ class NodePaletteManager {
             console.log('[NodePalette] Finish button listener attached');
         } else {
             console.error('[NodePalette] Finish button not found in DOM!');
+        }
+    }
+    
+    attachCancelButtonListener() {
+        /**
+         * Attach click listener to Cancel button.
+         * Called when panel opens to ensure listener is active.
+         */
+        const cancelBtn = document.getElementById('cancel-palette-btn');
+        if (cancelBtn) {
+            // Remove old listener if exists (prevent duplicates)
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            const newBtn = document.getElementById('cancel-palette-btn');
+            
+            newBtn.addEventListener('click', () => {
+                console.log('[NodePalette] Cancel button clicked!');
+                this.cancelPalette();
+            });
+            console.log('[NodePalette] Cancel button listener attached');
+        } else {
+            console.error('[NodePalette] Cancel button not found in DOM!');
         }
     }
     
@@ -143,6 +332,60 @@ class NodePaletteManager {
                 d3Container.style.opacity = '1';
             }, 10);
         }
+    }
+    
+    async cancelPalette() {
+        /**
+         * Cancel Node Palette and return to canvas without adding nodes.
+         * Clears all state and logs the cancellation event.
+         */
+        const metadata = this.getMetadata();
+        
+        console.log('[NodePalette-Cancel] ========================================');
+        console.log('[NodePalette-Cancel] USER CLICKED CANCEL BUTTON');
+        console.log('[NodePalette-Cancel] ========================================');
+        console.log(`[NodePalette-Cancel] Diagram: ${this.diagramType} | Node type: ${metadata.nodeNamePlural}`);
+        console.log(`[NodePalette-Cancel] Selected: ${this.selectedNodes.size}/${this.nodes.length} | Batches: ${this.currentBatch}`);
+        console.log(`[NodePalette-Cancel] Session ID: ${this.sessionId}`);
+        console.log('[NodePalette-Cancel] Action: Returning to canvas WITHOUT adding nodes');
+        
+        // Log cancel event to backend
+        console.log('[NodePalette-Cancel] Sending cancel event to backend...');
+        try {
+            const response = await auth.fetch('/thinking_mode/node_palette/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: this.sessionId,
+                    selected_node_count: this.selectedNodes.size,
+                    total_nodes_generated: this.nodes.length,
+                    batches_loaded: this.currentBatch
+                })
+            });
+            console.log('[NodePalette-Cancel] Backend response:', response.status, response.statusText);
+        } catch (e) {
+            console.error('[NodePalette-Cancel] Failed to log cancel event:', e);
+        }
+        
+        // Hide Node Palette panel
+        console.log('[NodePalette-Cancel] Hiding Node Palette panel...');
+        this.hideBatchTransition(); // Clean up any active transition
+        this.hidePalettePanel();
+        
+        // Clear all state including session properties
+        console.log('[NodePalette-Cancel] Clearing Node Palette state...');
+        this.clearAll();
+        
+        // Clear grid
+        const grid = document.getElementById('node-palette-grid');
+        if (grid) {
+            grid.innerHTML = '';
+            console.log('[NodePalette-Cancel] Cleared node grid');
+        }
+        
+        console.log('[NodePalette-Cancel] ========================================');
+        console.log('[NodePalette-Cancel] ✓ CANCELLED: Returned to canvas');
+        console.log('[NodePalette-Cancel] ========================================');
     }
     
     setupScrollListener() {
@@ -253,12 +496,38 @@ class NodePaletteManager {
                             
                         } else if (data.event === 'node_generated') {
                             nodeCount++;
-                            this.appendNode(data.node);
+                            const metadata = this.getMetadata();
                             
-                            // Log every 10th node
-                            if (nodeCount % 10 === 0 || nodeCount === 1) {
-                                console.log(`[NodePalette] Node #${nodeCount}: "${data.node.text}" (${data.node.source_llm})`);
-                            }
+                            // Verbose logging for streaming nodes - FULL TRACKING
+                            console.log(`[NodePalette-Stream] ${metadata.nodeName.charAt(0).toUpperCase() + metadata.nodeName.slice(1)} #${nodeCount} received:`, {
+                                // Node Identity
+                                id: data.node.id,
+                                text: data.node.text,
+                                
+                                // Node Metadata
+                                source_llm: data.node.source_llm,
+                                batch_number: data.node.batch_number,
+                                relevance_score: data.node.relevance_score,
+                                
+                                // Diagram Context
+                                node_type: metadata.nodeType,
+                                diagram_type: this.diagramType,
+                                target_array: metadata.arrayName,
+                                
+                                // Selection Status - TRACKED
+                                selected: data.node.selected,
+                                added_to_diagram: false,  // Not added yet, just received
+                                
+                                // Object Structure
+                                type: typeof data.node,
+                                keys: Object.keys(data.node),
+                                
+                                // Tracking Info
+                                total_nodes_received: nodeCount,
+                                current_selections: this.selectedNodes.size
+                            });
+                            
+                            this.appendNode(data.node);
                             
                         } else if (data.event === 'llm_complete') {
                             console.log(`[NodePalette] ${data.llm} complete: ${data.unique_nodes} unique, ${data.duplicates} duplicates (${data.duration}s)`);
@@ -293,13 +562,34 @@ class NodePaletteManager {
          * 
          * @param {Object} node - Node data from backend
          */
+        const metadata = this.getMetadata();
+        
+        console.log(`[NodePalette-Append] Appending ${metadata.nodeName} to this.nodes array:`, {
+            diagram_type: this.diagramType,
+            target_array: metadata.arrayName,
+            node_type: metadata.nodeType,
+            objectType: typeof node,
+            nodeKeys: Object.keys(node),
+            id: node.id,
+            text: node.text,
+            llm: node.source_llm,
+            currentArrayLength: this.nodes.length
+        });
+        
         this.nodes.push(node);
         
+        console.log(`[NodePalette-Append] After push: this.nodes.length = ${this.nodes.length} ${metadata.nodeNamePlural}`);
+        
         const container = document.getElementById('node-palette-grid');
-        if (!container) return;
+        if (!container) {
+            console.error('[NodePalette-Append] ERROR: node-palette-grid container not found!');
+            return;
+        }
         
         const card = this.createNodeCard(node);
         container.appendChild(card);
+        
+        console.log(`[NodePalette-Append] Card appended to DOM | Card ID: ${card.dataset.nodeId}`);
         
         // Fade in animation
         setTimeout(() => {
@@ -309,6 +599,29 @@ class NodePaletteManager {
         
         // Update selection counter
         this.updateSelectionCounter();
+    }
+    
+    renderNodeCardOnly(node) {
+        /**
+         * Render a node card to the DOM WITHOUT adding to this.nodes array.
+         * Used when restoring existing nodes from a previous session.
+         * 
+         * @param {Object} node - Node data (already in this.nodes)
+         */
+        const container = document.getElementById('node-palette-grid');
+        if (!container) {
+            console.error('[NodePalette-RenderOnly] ERROR: node-palette-grid container not found!');
+            return;
+        }
+        
+        const card = this.createNodeCard(node);
+        container.appendChild(card);
+        
+        // Fade in animation
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 10);
     }
     
     createNodeCard(node) {
@@ -322,6 +635,13 @@ class NodePaletteManager {
         card.className = `node-card llm-${node.source_llm}`;
         card.dataset.nodeId = node.id;
         card.dataset.llm = node.source_llm;
+        
+        // Check if this node is already selected (important for session restoration)
+        const isSelected = this.selectedNodes.has(node.id);
+        if (isSelected) {
+            card.classList.add('selected');
+            console.log(`[NodePalette-CreateCard] Node already selected, applying 'selected' class:`, node.id);
+        }
         
         // Truncate text if too long (max 60 chars for 220px circular nodes)
         const displayText = this.truncateText(node.text, 60);
@@ -367,14 +687,59 @@ class NodePaletteManager {
         
         const wasSelected = this.selectedNodes.has(nodeId);
         
+        const metadata = this.getMetadata();
+        
         if (wasSelected) {
             this.selectedNodes.delete(nodeId);
             card.classList.remove('selected');
-            console.log(`[NodePalette-Selection] Deselected: "${node.text}" | Total selected: ${this.selectedNodes.size}/${this.nodes.length}`);
+            
+            // Mark node as deselected
+            node.selected = false;
+            
+            console.log(`[NodePalette-Selection] ✗ Deselected ${metadata.nodeName}:`, {
+                id: node.id,
+                text: node.text,
+                source_llm: node.source_llm,
+                
+                // STATUS CHANGE TRACKED
+                selected: false,  // Changed from true → false
+                added_to_diagram: false,
+                
+                totalSelected: this.selectedNodes.size,
+                totalNodes: this.nodes.length
+            });
         } else {
             this.selectedNodes.add(nodeId);
             card.classList.add('selected');
-            console.log(`[NodePalette-Selection] Selected: "${node.text}" | Total selected: ${this.selectedNodes.size}/${this.nodes.length}`);
+            
+            // Mark node as selected - TRACK STATUS CHANGE
+            node.selected = true;
+            
+            console.log(`[NodePalette-Selection] ✓ Selected ${metadata.nodeName}:`, {
+                // Node Identity
+                id: node.id,
+                text: node.text,
+                source_llm: node.source_llm,
+                batch: node.batch_number,
+                
+                // Diagram Context
+                diagram_type: this.diagramType,
+                node_type: metadata.nodeType,
+                target_array: metadata.arrayName,
+                
+                // STATUS TRACKED - Changed from false → true
+                selected: true,  // Just changed!
+                added_to_diagram: false,  // Not added yet
+                
+                // Aggregate Info
+                totalSelected: this.selectedNodes.size,
+                totalNodes: this.nodes.length,
+                selectionRate: `${((this.selectedNodes.size / this.nodes.length) * 100).toFixed(1)}%`,
+                
+                // Object Structure
+                type: typeof node,
+                keys: Object.keys(node)
+            });
         }
         
         this.updateSelectionCounter();
@@ -412,6 +777,14 @@ class NodePaletteManager {
         } else {
             console.error('[NodePalette] Finish button not found when updating counter!');
         }
+    }
+    
+    updateFinishButtonState() {
+        /**
+         * Alias for updateSelectionCounter() - updates the finish button state.
+         * Called when restoring a session to sync button state with selections.
+         */
+        this.updateSelectionCounter();
     }
     
     async logSelection(nodeId, selected, nodeText) {
@@ -489,22 +862,46 @@ class NodePaletteManager {
          */
         const selectedCount = this.selectedNodes.size;
         
+        const metadata = this.getMetadata();
+        
         console.log('[NodePalette-Finish] ========================================');
         console.log('[NodePalette-Finish] USER CLICKED FINISH BUTTON');
         console.log('[NodePalette-Finish] ========================================');
+        console.log(`[NodePalette-Finish] Diagram: ${this.diagramType} | Node type: ${metadata.nodeNamePlural}`);
         console.log(`[NodePalette-Finish] Selected: ${selectedCount}/${this.nodes.length} | Batches: ${this.currentBatch} | Rate: ${((selectedCount/this.nodes.length)*100).toFixed(1)}%`);
-        console.log('[NodePalette-Finish] selectedNodes Set:', Array.from(this.selectedNodes));
+        console.log('[NodePalette-Finish] selectedNodes Set (IDs):', Array.from(this.selectedNodes));
         
         if (selectedCount === 0) {
-            console.warn('[NodePalette-Finish] ⚠ No nodes selected, showing alert');
-            alert('Please select at least one node');
+            console.warn(`[NodePalette-Finish] ⚠ No ${metadata.nodeNamePlural} selected, showing alert`);
+            alert(`Please select at least one ${metadata.nodeName}`);
             return;
         }
         
-        // Filter selected nodes
-        const selectedNodesData = this.nodes.filter(n => this.selectedNodes.has(n.id));
-        console.log('[NodePalette-Finish] Filtered %d nodes from %d total', selectedNodesData.length, this.nodes.length);
-        console.log('[NodePalette-Finish] Selected node texts:', selectedNodesData.map(n => n.text));
+        // Filter selected nodes - ONLY get NEW selections (not already added)
+        const selectedNodesData = this.nodes.filter(n => 
+            this.selectedNodes.has(n.id) && !n.added_to_diagram  // Only nodes that haven't been added yet
+        );
+        
+        const alreadyAddedCount = this.nodes.filter(n => 
+            this.selectedNodes.has(n.id) && n.added_to_diagram  // Count previously added nodes
+        ).length;
+        
+        console.log(`[NodePalette-Finish] Filtered ${selectedNodesData.length} NEW ${metadata.nodeNamePlural} (${alreadyAddedCount} already added, skipping)`);
+        
+        // Check if there are any NEW nodes to add
+        if (selectedNodesData.length === 0) {
+            console.warn(`[NodePalette-Finish] ⚠ All selected ${metadata.nodeNamePlural} were already added. Nothing to do.`);
+            const msg = metadata.language === 'zh' ? 
+                '所有选中的节点都已添加到图中。' : 
+                'All selected nodes have already been added to the diagram.';
+            alert(msg);
+            return;
+        }
+        
+        console.log(`[NodePalette-Finish] Selected ${metadata.nodeName} details (NEW only):`);
+        selectedNodesData.forEach((node, idx) => {
+            console.log(`  [${idx + 1}/${selectedNodesData.length}] ID: ${node.id} | LLM: ${node.source_llm} | Batch: ${node.batch_number} | Text: "${node.text}"`);
+        });
         
         // Log finish event to backend
         console.log('[NodePalette-Finish] Sending finish event to backend...');
@@ -532,8 +929,8 @@ class NodePaletteManager {
         // Wait for panel to hide
         await new Promise(resolve => setTimeout(resolve, 350));
         
-        // Add selected nodes to Circle Map
-        console.log('[NodePalette-Finish] Starting node assembly...');
+        // Add selected nodes to diagram (method name kept for backward compatibility)
+        console.log(`[NodePalette-Finish] Starting ${metadata.nodeName} assembly to ${this.diagramType}...`);
         await this.assembleNodesToCircleMap(selectedNodesData);
         
         console.log('[NodePalette-Finish] ========================================');
@@ -543,109 +940,223 @@ class NodePaletteManager {
     
     async assembleNodesToCircleMap(selectedNodes) {
         /**
-         * Add selected nodes to the Circle Map diagram.
+         * Add selected nodes to the diagram.
          * Uses InteractiveEditor API for robust integration.
+         * Works for Circle Map, Bubble Map, and other diagram types.
          * 
          * @param {Array} selectedNodes - Array of selected node objects
          */
-        console.log('[NodePalette] ========================================');
-        console.log('[NodePalette] ASSEMBLING NODES TO CIRCLE MAP');
-        console.log('[NodePalette] ========================================');
-        console.log('[NodePalette] Selected nodes count: %d', selectedNodes.length);
-        console.log('[NodePalette] Selected nodes:', selectedNodes.map(n => n.text));
+        const metadata = this.getMetadata();
+        
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log(`[NodePalette-Assemble] ASSEMBLING ${metadata.nodeNamePlural.toUpperCase()} TO ${this.diagramType.toUpperCase()}`);
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log(`[NodePalette-Assemble] Diagram: ${this.diagramType}`);
+        console.log(`[NodePalette-Assemble] Target array: spec.${metadata.arrayName}`);
+        console.log(`[NodePalette-Assemble] Node type: ${metadata.nodeType}`);
+        console.log(`[NodePalette-Assemble] Input: Received ${selectedNodes.length} selected ${metadata.nodeNamePlural}`);
+        console.log(`[NodePalette-Assemble] ${metadata.nodeName.charAt(0).toUpperCase() + metadata.nodeName.slice(1)} objects structure:`);
+        selectedNodes.forEach((node, idx) => {
+            console.log(`  [${idx + 1}] Type: ${typeof node} | Keys: ${Object.keys(node).join(', ')}`);
+            console.log(`       ID: ${node.id} | Text: "${node.text}" | LLM: ${node.source_llm}`);
+        });
         
         // Step 1: Verify editor exists
         const editor = window.currentEditor;
-        console.log('[NodePalette] Editor check: %s', editor ? '✓ Found' : '✗ Not found');
+        console.log('[NodePalette-Assemble] Editor: %s', editor ? '✓ Found' : '✗ Not found');
         
         if (!editor) {
-            console.error('[NodePalette] ERROR: No active editor found');
+            console.error('[NodePalette-Assemble] ERROR: No active editor found');
             alert('Error: No active editor found. Please try refreshing the page.');
             return;
         }
         
-        console.log('[NodePalette] Editor type: %s', editor.diagramType);
-        console.log('[NodePalette] Editor has currentSpec: %s', !!editor.currentSpec);
-        console.log('[NodePalette] Editor has render method: %s', typeof editor.render === 'function');
+        console.log('[NodePalette-Assemble] Editor type: %s', editor.diagramType);
+        console.log('[NodePalette-Assemble] Editor currentSpec: %s', !!editor.currentSpec);
         
         // Step 2: Verify spec exists
         const currentSpec = editor.currentSpec;
         if (!currentSpec) {
-            console.error('[NodePalette] ERROR: No current spec found');
+            console.error('[NodePalette-Assemble] ERROR: No current spec found');
             alert('Error: No diagram specification found. Please try refreshing the page.');
             return;
         }
         
-        console.log('[NodePalette] Current spec keys: %s', Object.keys(currentSpec).join(', '));
-        console.log('[NodePalette] Current context nodes: %d', currentSpec.context ? currentSpec.context.length : 0);
+        const arrayName = metadata.arrayName;
         
-        // Step 3: Initialize context array if needed
-        if (!currentSpec.context) {
-            console.log('[NodePalette] Creating new context array');
-            currentSpec.context = [];
+        console.log('[NodePalette-Assemble] Spec keys: %s', Object.keys(currentSpec).join(', '));
+        console.log(`[NodePalette-Assemble] Current spec.${arrayName}: %s`, Array.isArray(currentSpec[arrayName]) ? `Array[${currentSpec[arrayName].length}]` : typeof currentSpec[arrayName]);
+        
+        // Step 3: Initialize array if needed
+        if (!currentSpec[arrayName]) {
+            console.log(`[NodePalette-Assemble] Initializing new spec.${arrayName} array`);
+            currentSpec[arrayName] = [];
         }
         
-        const beforeCount = currentSpec.context.length;
-        
-        // Step 4: Add selected nodes
-        console.log('[NodePalette] Adding nodes to context array...');
-        for (let i = 0; i < selectedNodes.length; i++) {
-            const node = selectedNodes[i];
-            const newNode = {
-                text: node.text,
-                id: `context_${currentSpec.context.length}`
-            };
-            currentSpec.context.push(newNode);
-            console.log('[NodePalette]   [%d/%d] Added: "%s" (id: %s)', 
-                       i+1, selectedNodes.length, node.text, newNode.id);
+        const beforeCount = currentSpec[arrayName].length;
+        console.log(`[NodePalette-Assemble] BEFORE: spec.${arrayName} has ${beforeCount} items`);
+        if (beforeCount > 0) {
+            console.log(`[NodePalette-Assemble] Existing ${metadata.nodeNamePlural}:`);
+            currentSpec[arrayName].forEach((item, idx) => {
+                console.log(`  [${idx}] Type: ${typeof item} | Value: ${typeof item === 'object' ? JSON.stringify(item) : item}`);
+            });
         }
         
-        const afterCount = currentSpec.context.length;
-        console.log('[NodePalette] Context array updated: %d → %d nodes (+%d)', 
-                   beforeCount, afterCount, afterCount - beforeCount);
+        // ========================================
+        // STEP 4: SMART REPLACE LOGIC
+        // ========================================
+        // Analyze existing nodes and choose strategy:
+        // - REPLACE: All placeholders → clear all, add selected
+        // - SMART_REPLACE: Mix of placeholders + user nodes → keep user nodes, add selected
+        // - APPEND: All user nodes → append selected (current behavior)
+        
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log('[NodePalette-Assemble] DETECTION PHASE: Analyzing existing nodes');
+        console.log('[NodePalette-Assemble] ========================================');
+        
+        // Analyze existing nodes
+        const existingNodes = currentSpec[arrayName] || [];
+        const placeholders = [];
+        const userNodes = [];
+        
+        existingNodes.forEach((nodeText, idx) => {
+            const isPlaceholder = this.isPlaceholder(nodeText);
+            if (isPlaceholder) {
+                placeholders.push({ index: idx, text: nodeText });
+            } else {
+                userNodes.push({ index: idx, text: nodeText });
+            }
+            console.log(`  [${idx}] "${nodeText}" → ${isPlaceholder ? '🏷️ PLACEHOLDER' : '✅ USER NODE'}`);
+        });
+        
+        console.log(`[NodePalette-Assemble] Analysis complete:`);
+        console.log(`[NodePalette-Assemble]   Total existing: ${existingNodes.length}`);
+        console.log(`[NodePalette-Assemble]   Placeholders: ${placeholders.length}`);
+        console.log(`[NodePalette-Assemble]   User nodes: ${userNodes.length}`);
+        console.log(`[NodePalette-Assemble]   Selected to add: ${selectedNodes.length}`);
+        
+        // ========================================
+        // UNIFIED EXECUTION - Elegant Approach
+        // ========================================
+        // This single approach handles all cases:
+        // - Empty array: userNodes=[], result=[selected]
+        // - All placeholders: userNodes=[] (filtered out), result=[selected]
+        // - Mix: userNodes=[kept], result=[kept, selected]
+        // - All user nodes: userNodes=[all], result=[all, selected]
+        
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log('[NodePalette-Assemble] EXECUTION: Building new array');
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log(`[NodePalette-Assemble] Keeping ${userNodes.length} user nodes`);
+        console.log(`[NodePalette-Assemble] Adding ${selectedNodes.length} selected ${metadata.nodeNamePlural}`);
+        
+        // Build new array: keep user nodes + add selected nodes
+        const newArray = [];
+        const addedNodeIds = [];
+        
+        // Keep user nodes (placeholders automatically excluded)
+        userNodes.forEach(userNode => {
+            newArray.push(userNode.text);
+            console.log(`  KEEPING user node: "${userNode.text}"`);
+        });
+        
+        // Add selected nodes
+        selectedNodes.forEach((node, idx) => {
+            newArray.push(node.text);
+            node.added_to_diagram = true;
+            addedNodeIds.push(node.id);
+            console.log(`  [${idx + 1}/${selectedNodes.length}] ADDED: "${node.text}" | LLM: ${node.source_llm} | ID: ${node.id}`);
+        });
+        
+        // Update spec
+        currentSpec[arrayName] = newArray;
+        
+        console.log(`[NodePalette-Assemble] ✓ Complete: ${userNodes.length} kept + ${selectedNodes.length} added = ${newArray.length} total`);
+        
+        console.log(`[NodePalette-Assemble] Successfully processed ${addedNodeIds.length} ${metadata.nodeNamePlural}`);
+        console.log(`[NodePalette-Assemble] Added node IDs:`, addedNodeIds);
+        
+        const afterCount = currentSpec[arrayName].length;
+        const diff = afterCount - beforeCount;
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log('[NodePalette-Assemble] BEFORE/AFTER SUMMARY');
+        console.log('[NodePalette-Assemble] ========================================');
+        console.log(`[NodePalette-Assemble] BEFORE: ${beforeCount} ${metadata.nodeNamePlural}`);
+        console.log(`[NodePalette-Assemble]   - Placeholders: ${placeholders.length} (auto-excluded)`);
+        console.log(`[NodePalette-Assemble]   - User nodes: ${userNodes.length} (kept)`);
+        console.log(`[NodePalette-Assemble] AFTER: ${afterCount} ${metadata.nodeNamePlural} (${diff >= 0 ? '+' : ''}${diff})`);
+        console.log(`[NodePalette-Assemble] Final spec.${arrayName} array:`);
+        currentSpec[arrayName].forEach((item, idx) => {
+            console.log(`  [${idx}] Type: ${typeof item} | Value: ${typeof item === 'object' ? JSON.stringify(item) : item}`);
+        });
         
         // Step 5: Re-render the diagram
-        console.log('[NodePalette] Calling editor.render()...');
+        console.log('[NodePalette-Assemble] Rendering diagram...');
         try {
             // Try different render methods based on editor type
             if (typeof editor.render === 'function') {
+                console.log('[NodePalette-Assemble] Calling editor.render()...');
                 const renderResult = await editor.render();
-                console.log('[NodePalette] ✓ editor.render() completed:', renderResult);
+                console.log('[NodePalette-Assemble] ✓ editor.render() completed:', renderResult);
             } else if (typeof editor.renderDiagram === 'function') {
+                console.log('[NodePalette-Assemble] Calling editor.renderDiagram()...');
                 await editor.renderDiagram(currentSpec);
-                console.log('[NodePalette] ✓ editor.renderDiagram() completed');
+                console.log('[NodePalette-Assemble] ✓ editor.renderDiagram() completed');
             } else if (typeof editor.update === 'function') {
+                console.log('[NodePalette-Assemble] Calling editor.update()...');
                 await editor.update();
-                console.log('[NodePalette] ✓ editor.update() completed');
+                console.log('[NodePalette-Assemble] ✓ editor.update() completed');
             } else {
-                console.error('[NodePalette] ERROR: No render method found on editor');
-                console.error('[NodePalette] Available methods:', Object.keys(editor).filter(k => typeof editor[k] === 'function'));
+                console.error('[NodePalette-Assemble] ERROR: No render method found on editor');
+                console.error('[NodePalette-Assemble] Available methods:', Object.keys(editor).filter(k => typeof editor[k] === 'function'));
                 alert('Error: Cannot render diagram. Please try refreshing the page.');
                 return;
             }
             
-            // Step 6: Save to history
-            console.log('[NodePalette] Checking history save...');
+            // Step 6: Verify the rendered nodes
+            console.log('[NodePalette-Assemble] Verifying rendered nodes in DOM...');
+            const nodeElements = document.querySelectorAll(`[data-node-type="${metadata.nodeType}"]`);
+            console.log(`[NodePalette-Assemble] Found ${nodeElements.length} ${metadata.nodeNamePlural} in DOM with [data-node-type="${metadata.nodeType}"]`);
+            nodeElements.forEach((elem, idx) => {
+                const nodeId = elem.getAttribute('data-node-id');
+                const arrayIndex = elem.getAttribute('data-array-index');
+                const textElement = elem.querySelector('text');
+                const textContent = textElement ? textElement.textContent : 'NO TEXT ELEMENT';
+                console.log(`  [${idx}] ID: ${nodeId} | Index: ${arrayIndex} | Type: ${metadata.nodeType} | Text: "${textContent}"`);
+            });
+            
+            // Step 7: Save to history
+            console.log('[NodePalette-Assemble] Saving to history...');
             if (typeof editor.saveHistoryState === 'function') {
                 editor.saveHistoryState('node_palette_add');
-                console.log('[NodePalette] ✓ History saved');
+                console.log('[NodePalette-Assemble] ✓ History saved via saveHistoryState');
             } else if (typeof editor.saveHistory === 'function') {
                 editor.saveHistory('node_palette_add');
-                console.log('[NodePalette] ✓ History saved (alternative method)');
+                console.log('[NodePalette-Assemble] ✓ History saved via saveHistory');
             } else {
-                console.warn('[NodePalette] ⚠ No history save method found (this is OK)');
+                console.warn('[NodePalette-Assemble] ⚠ No history save method found (skipping)');
             }
             
-            console.log('[NodePalette] ========================================');
-            console.log('[NodePalette] ✓ SUCCESS: Nodes added to Circle Map');
-            console.log('[NodePalette] ========================================');
+            console.log('[NodePalette-Assemble] ========================================');
+            console.log(`[NodePalette-Assemble] ✓ SUCCESS: ${selectedNodes.length} ${metadata.nodeNamePlural} added to ${this.diagramType}`);
+            console.log('[NodePalette-Assemble] ========================================');
+            
+            // FINAL STATUS SUMMARY - Complete tracking report
+            console.log(`[NodePalette-Assemble] FINAL STATUS SUMMARY:`);
+            console.log(`[NodePalette-Assemble]   Total nodes generated: ${this.nodes.length}`);
+            console.log(`[NodePalette-Assemble]   Total nodes selected: ${this.selectedNodes.size}`);
+            console.log(`[NodePalette-Assemble]   Total nodes added to ${this.diagramType}: ${selectedNodes.length}`);
+            console.log(`[NodePalette-Assemble]   Selection rate: ${((this.selectedNodes.size / this.nodes.length) * 100).toFixed(1)}%`);
+            console.log(`[NodePalette-Assemble] All added nodes now have: selected=true, added_to_diagram=true`);
             
         } catch (error) {
-            console.error('[NodePalette] ========================================');
-            console.error('[NodePalette] ✗ ERROR: Failed to render Circle Map');
-            console.error('[NodePalette] Error message:', error.message);
-            console.error('[NodePalette] Error stack:', error.stack);
-            console.error('[NodePalette] ========================================');
+            console.error('[NodePalette-Assemble] ========================================');
+            console.error('[NodePalette-Assemble] ✗ ERROR: Failed to render Circle Map');
+            console.error('[NodePalette-Assemble] Error type:', error.constructor.name);
+            console.error('[NodePalette-Assemble] Error message:', error.message);
+            console.error('[NodePalette-Assemble] Error stack:', error.stack);
+            console.error('[NodePalette-Assemble] Current spec at error:', JSON.stringify(currentSpec, null, 2));
+            console.error('[NodePalette-Assemble] ========================================');
             alert(`Error rendering diagram: ${error.message}\n\nPlease check console for details.`);
         }
     }

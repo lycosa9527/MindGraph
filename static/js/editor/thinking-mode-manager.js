@@ -420,7 +420,8 @@ class ThinkingModeManager {
                         actionData.center_topic,
                         actionData.diagram_data,
                         actionData.session_id,
-                        actionData.educational_context  // Pass ThinkGuide context for focused generation
+                        actionData.educational_context,  // Pass ThinkGuide context for focused generation
+                        this.diagramType  // Pass diagram type for proper terminology
                     );
                 } else {
                     this.logger.error('[ThinkGuide]', 'NodePaletteManager not found');
@@ -508,6 +509,38 @@ class ThinkingModeManager {
                     }))
                 };
         }
+    }
+    
+    /**
+     * Extract educational context for Node Palette.
+     * Builds context from current ThinkGuide session state.
+     * 
+     * @returns {Object} Educational context object
+     */
+    extractEducationalContext() {
+        // Build educational context from current session
+        const context = {
+            session_id: this.sessionId,
+            diagram_type: this.diagramType,
+            language: this.language,
+            // Add any user messages from the conversation as context
+            raw_message: 'K12 teaching context from ThinkGuide session'
+        };
+        
+        // If there's conversation history, include the last user message
+        if (this.messagesContainer) {
+            const userMessages = this.messagesContainer.querySelectorAll('.thinking-user-message');
+            if (userMessages.length > 0) {
+                const lastMessage = userMessages[userMessages.length - 1];
+                const messageText = lastMessage.textContent || lastMessage.innerText;
+                if (messageText && messageText.trim()) {
+                    context.raw_message = messageText.trim();
+                }
+            }
+        }
+        
+        this.logger.debug('[ThinkGuide]', 'Extracted educational context:', context);
+        return context;
     }
     
     /**
@@ -699,7 +732,9 @@ class ThinkingModeManager {
             window.nodePaletteManager.start(
                 centerTopic,
                 diagramData,
-                this.sessionId
+                this.sessionId,
+                this.extractEducationalContext(),  // Pass context
+                this.diagramType  // Pass diagram type for proper terminology
             );
             
             // Add confirmation message to chat

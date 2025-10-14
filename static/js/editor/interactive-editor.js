@@ -1283,9 +1283,8 @@ class InteractiveEditor {
             
             logger.debug('Editor', 'Export content bounds:', contentBounds);
             
-            // Calculate optimal viewBox with generous padding for export
-            const padding = Math.min(contentBounds.width, contentBounds.height) * 0.15; // 15% padding for export
-            const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
+            // Use exact content bounds (no padding - stroke widths already accounted for)
+            const newViewBox = `${contentBounds.x} ${contentBounds.y} ${contentBounds.width} ${contentBounds.height}`;
             
             logger.debug('Editor', 'Setting export viewBox:', newViewBox);
             

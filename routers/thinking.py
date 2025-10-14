@@ -19,7 +19,7 @@ from models.auth import User
 from utils.auth import get_current_user
 
 from agents.thinking_modes.factory import ThinkingAgentFactory
-from agents.thinking_modes.node_palette_generator import get_node_palette_generator
+from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
 from models.requests import (
     ThinkingModeRequest,
     NodePaletteStartRequest,
@@ -174,8 +174,8 @@ async def start_node_palette(
         
         logger.info("[NodePalette-API] Topic: '%s' | 🚀 Firing 4 LLMs concurrently", center_topic)
         
-        # Get generator
-        generator = get_node_palette_generator()
+        # Get generator (using modular Circle Map generator)
+        generator = get_circle_map_palette_generator()
         
         # Stream with concurrent execution
         async def generate():
@@ -238,8 +238,8 @@ async def get_next_batch(
     logger.info("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
     
     try:
-        # Get generator
-        generator = get_node_palette_generator()
+        # Get generator (using modular Circle Map generator)
+        generator = get_circle_map_palette_generator()
         
         logger.info("[NodePalette-API] 🚀 Firing 4 LLMs concurrently for next batch...")
         
@@ -326,10 +326,36 @@ async def log_finish_selection(
                (selected_count/max(total_generated,1))*100)
     
     # End session in generator
-    generator = get_node_palette_generator_v2()
+    generator = get_circle_map_palette_generator()
     generator.end_session(session_id, reason="user_finished")
     
     return {"status": "session_ended"}
+
+
+@router.post("/thinking_mode/node_palette/cancel")
+async def node_palette_cancel(
+    request: NodePaletteFinishRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Handle Node Palette cancellation.
+    
+    User clicked Cancel button - log the event and end session without adding nodes.
+    """
+    session_id = request.session_id
+    selected_count = request.selected_node_count if hasattr(request, 'selected_node_count') else 0
+    total_generated = request.total_nodes_generated
+    batches_loaded = request.batches_loaded
+    
+    logger.info("[NodePalette-Cancel] User cancelled session | Session: %s", session_id[:8])
+    logger.info("[NodePalette-Cancel]   Selected: %d/%d nodes (NOT added) | Batches: %d", 
+               selected_count, total_generated, batches_loaded)
+    
+    # End session in generator
+    generator = get_circle_map_palette_generator()
+    generator.end_session(session_id, reason="user_cancelled")
+    
+    return {"status": "session_cancelled"}
 
 
 # Debug endpoint removed - V2 generator uses different session tracking

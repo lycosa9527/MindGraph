@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.13.1] - 2025-10-14 - PNG Export Optimization
+
+### Fixed
+
+- **PNG Export White Padding Issue**
+  - **Location**: `static/js/editor/interactive-editor.js`
+  - **Description**: Removed excessive white padding around diagrams in PNG exports
+  - **Changes**:
+    - Eliminated all padding from export viewBox calculation (was 15%, then 5%, now 0%)
+    - Export now uses exact content bounds with stroke widths already accounted for
+    - Results in pixel-perfect tight crop ideal for K12 classroom materials
+  - **Impact**: Exported PNG images now have zero unnecessary white space around diagrams
+
+---
+
 ## [4.13.0] - 2025-10-14 - Admin Panel Expansion: Settings Management & Debug Logs
 
 ### Added

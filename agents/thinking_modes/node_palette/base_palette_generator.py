@@ -1,17 +1,15 @@
 """
-Node Palette Generator (Concurrent Multi-LLM)
-==============================================
+Base Node Palette Generator
+============================
 
-Infinite concurrent brainstorming using LLM Service middleware.
-Fires all 4 LLMs simultaneously, yields results progressively.
+Shared logic for all diagram-specific palette generators.
 
-Key Features:
-- Concurrent token streaming via llm_service.stream_progressive()
-- Progressive circle rendering as tokens arrive
-- Infinite scroll with 2/3 trigger point
-- Real-time deduplication across all LLMs
-- Rate limiter middleware protection
-- Smart logging (no token spam)
+Features:
+- Concurrent multi-LLM streaming
+- Real-time deduplication
+- Progressive node rendering
+- Session management
+- Temperature-based diversity
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -22,27 +20,27 @@ import time
 import re
 from typing import Dict, List, Set, AsyncGenerator, Tuple, Optional, Any
 from difflib import SequenceMatcher
+from abc import ABC, abstractmethod
 
 from services.llm_service import llm_service
-from prompts.thinking_modes.circle_map import get_prompt
 
 logger = logging.getLogger(__name__)
 
 
-class NodePaletteGenerator:
+class BasePaletteGenerator(ABC):
     """
-    Infinite concurrent node generation for Node Palette.
+    Base class for all diagram-specific node palette generators.
     
     Architecture:
     - Uses llm_service.stream_progressive() for concurrent token streaming
     - All 4 LLMs (qwen, deepseek, hunyuan, kimi) fire simultaneously
-    - Circles render progressively as tokens arrive from any LLM
+    - Nodes render progressively as tokens arrive from any LLM
     - Deduplication across all batches and LLMs
-    - No limits - keeps generating on scroll
+    - Subclasses override _build_prompt() for diagram-specific generation
     """
     
     def __init__(self):
-        """Initialize concurrent node palette generator"""
+        """Initialize base palette generator"""
         self.llm_service = llm_service
         self.llm_models = ['qwen', 'deepseek', 'hunyuan', 'kimi']
         
@@ -52,8 +50,10 @@ class NodePaletteGenerator:
         self.session_start_times = {}  # session_id -> timestamp
         self.batch_counts = {}  # session_id -> int (total batches)
         
-        logger.info("[NodePalette] Initialized with concurrent multi-LLM architecture")
-        logger.info("[NodePalette] LLMs: %s", ', '.join(self.llm_models))
+        logger.info("[NodePalette-%s] Initialized with concurrent multi-LLM architecture", 
+                   self.__class__.__name__)
+        logger.info("[NodePalette-%s] LLMs: %s", 
+                   self.__class__.__name__, ', '.join(self.llm_models))
     
     async def generate_batch(
         self,
@@ -65,11 +65,11 @@ class NodePaletteGenerator:
         """
         Generate batch of nodes using ALL 4 LLMs with concurrent token streaming.
         
-        Circles render progressively as tokens arrive from any LLM!
+        Nodes render progressively as tokens arrive from any LLM!
         
         Args:
             session_id: Unique session identifier
-            center_topic: Center node text from Circle Map
+            center_topic: Center node text from diagram
             educational_context: Educational context (grade, subject, etc.)
             nodes_per_llm: Nodes to request from each LLM (default: 15)
             
@@ -101,7 +101,7 @@ class NodePaletteGenerator:
             'nodes_per_llm': nodes_per_llm
         }
         
-        # Build focused prompt for all LLMs
+        # Build prompt using diagram-specific logic (subclass implements this)
         prompt = self._build_prompt(center_topic, educational_context, nodes_per_llm, batch_num)
         system_message = self._get_system_message(educational_context)
         
@@ -177,7 +177,7 @@ class NodePaletteGenerator:
                                 self.generated_nodes[session_id] = []
                             self.generated_nodes[session_id].append(node)
                             
-                            # Yield immediately - circle appears NOW!
+                            # Yield immediately - node appears NOW!
                             yield {
                                 'event': 'node_generated',
                                 'node': node
@@ -270,6 +270,7 @@ class NodePaletteGenerator:
             'llm_stats': llm_stats
         }
     
+    @abstractmethod
     def _build_prompt(
         self,
         center_topic: str,
@@ -277,43 +278,43 @@ class NodePaletteGenerator:
         count: int,
         batch_num: int
     ) -> str:
-        """Build Circle Map prompt using CENTRALIZED prompt system"""
-        # Detect language
-        has_chinese = bool(re.search(r'[\u4e00-\u9fff]', center_topic))
-        language = 'zh' if has_chinese else 'en'
+        """
+        Build diagram-specific prompt for node generation.
         
-        # Use same context extraction as auto-complete
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
+        Subclasses MUST implement this method with their specific prompt logic.
         
-        # Get prompt from centralized system
-        prompt_template = get_prompt('NODE_GENERATION', language)
-        
-        # Format the template
-        prompt = prompt_template.format(
-            count=count,
-            center_topic=center_topic,
-            educational_context=context_desc
-        )
-        
-        # Add diversity note for later batches (node palette specific)
-        if batch_num > 1:
-            if language == 'zh':
-                prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，避免与之前批次重复。"
-            else:
-                prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity and avoid any repetition from previous batches."
-        
-        return prompt
+        Args:
+            center_topic: Center/main topic from diagram
+            educational_context: Educational context dict
+            count: Number of nodes to request
+            batch_num: Current batch number
+            
+        Returns:
+            Formatted prompt string
+        """
+        pass
     
+    @abstractmethod
     def _get_system_message(self, educational_context: Optional[Dict[str, Any]]) -> str:
-        """Get system message"""
-        has_chinese = False
-        if educational_context and educational_context.get('raw_message'):
-            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']))
+        """
+        Get system message for LLM.
         
-        return '你是一个有帮助的K12教育助手。' if has_chinese else 'You are a helpful K12 education assistant.'
+        Subclasses can override for diagram-specific instructions.
+        
+        Args:
+            educational_context: Educational context dict
+            
+        Returns:
+            System message string
+        """
+        pass
     
     def _get_temperature_for_batch(self, batch_num: int) -> float:
-        """Increase temperature for later batches to maximize diversity"""
+        """
+        Increase temperature for later batches to maximize diversity.
+        
+        Same for all diagrams.
+        """
         base_temp = 0.7
         # Gradually increase temperature for diversity
         return min(base_temp + (batch_num - 1) * 0.1, 1.0)
@@ -321,6 +322,8 @@ class NodePaletteGenerator:
     def _deduplicate_node(self, new_text: str, session_id: str) -> Tuple[bool, str, float]:
         """
         Deduplicate node using exact and fuzzy matching.
+        
+        Same for all diagrams.
         
         Returns:
             (is_unique, match_type, similarity)
@@ -347,14 +350,22 @@ class NodePaletteGenerator:
         return (True, 'unique', 0.0)
     
     def _normalize_text(self, text: str) -> str:
-        """Normalize text for deduplication"""
+        """
+        Normalize text for deduplication.
+        
+        Same for all diagrams.
+        """
         text = text.lower()
         text = re.sub(r'[^\w\s]', '', text)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
     
     def end_session(self, session_id: str, reason: str = "complete"):
-        """End session and cleanup"""
+        """
+        End session and cleanup.
+        
+        Same for all diagrams.
+        """
         if session_id not in self.session_start_times:
             return
         
@@ -371,15 +382,4 @@ class NodePaletteGenerator:
         self.generated_nodes.pop(session_id, None)
         self.seen_texts.pop(session_id, None)
         self.batch_counts.pop(session_id, None)
-
-
-# Global singleton instance
-_node_palette_generator = None
-
-def get_node_palette_generator() -> NodePaletteGenerator:
-    """Get singleton instance of concurrent node palette generator"""
-    global _node_palette_generator
-    if _node_palette_generator is None:
-        _node_palette_generator = NodePaletteGenerator()
-    return _node_palette_generator
 

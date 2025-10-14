@@ -17,9 +17,28 @@ if (typeof window.MindGraphUtils === 'undefined') {
 // Note: getTextRadius and addWatermark are available globally from shared-utilities.js
 
 function renderBubbleMap(spec, theme = null, dimensions = null) {
+    // VERBOSE LOGGING: Template receiving spec
+    logger.info('[BubbleMap-Renderer] ========================================');
+    logger.info('[BubbleMap-Renderer] RECEIVING SPEC FOR RENDERING');
+    logger.info('[BubbleMap-Renderer] ========================================');
+    logger.info('[BubbleMap-Renderer] Spec validation:', {
+        hasSpec: !!spec,
+        hasTopic: !!spec?.topic,
+        hasAttributes: Array.isArray(spec?.attributes),
+        attributeCount: spec?.attributes?.length || 0,
+        attributeType: typeof spec?.attributes
+    });
+    
+    if (spec?.attributes) {
+        logger.info('[BubbleMap-Renderer] Adjective nodes received:');
+        spec.attributes.forEach((item, idx) => {
+            logger.info(`  [${idx}] Type: ${typeof item} | Value: ${typeof item === 'object' ? JSON.stringify(item) : item}`);
+        });
+    }
+    
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.attributes)) {
-        logger.error('BubbleMapRenderer', 'Invalid spec for bubble_map');
+        logger.error('[BubbleMap-Renderer]', 'Invalid spec for bubble_map');
         return;
     }
     
@@ -69,7 +88,9 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     
     // Calculate uniform radius for all attribute nodes
     const attributeRadii = spec.attributes.map(t => getTextRadius(t, THEME.fontAttribute, 10));
-    const uniformAttributeR = Math.max(...attributeRadii, 30); // Use the largest required radius for all
+    const uniformAttributeR = Math.max(...attributeRadii, 30);
+    
+    logger.info(`[BubbleMap-Renderer] Rendering ${spec.attributes.length} adjective nodes with uniform radius: ${uniformAttributeR}px`); // Use the largest required radius for all
     
     // Calculate layout with collision detection
     const centerX = baseWidth / 2;
@@ -233,12 +254,85 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
     }
+    
+    // 🆕 FIX: Recalculate tight viewBox based on actual rendered content
+    // This eliminates excessive white padding especially when nodes are added from Node Palette
+    recalculateTightViewBox(svg, padding);
+    
+    logger.info('[BubbleMap-Renderer] ========================================');
+    logger.info(`[BubbleMap-Renderer] ✓ RENDERING COMPLETE: ${spec.attributes.length} adjective nodes displayed`);
+    logger.info('[BubbleMap-Renderer] ========================================');
+}
+
+/**
+ * Recalculate SVG viewBox to tightly fit actual content bounds.
+ * Eliminates excessive white padding by measuring actual rendered elements.
+ * 
+ * @param {d3.Selection} svg - D3 selection of the SVG element
+ * @param {number} padding - Desired padding around content (default: 40)
+ */
+function recalculateTightViewBox(svg, padding = 40) {
+    try {
+        const svgNode = svg.node();
+        if (!svgNode) {
+            logger.warn('[recalculateTightViewBox] SVG node not found');
+            return;
+        }
+        
+        // Get bounding box of all rendered content
+        const bbox = svgNode.getBBox();
+        
+        logger.debug('[recalculateTightViewBox] Content bounds:', {
+            x: Math.round(bbox.x),
+            y: Math.round(bbox.y),
+            width: Math.round(bbox.width),
+            height: Math.round(bbox.height)
+        });
+        
+        // Calculate new viewBox with padding
+        const newX = bbox.x - padding;
+        const newY = bbox.y - padding;
+        const newWidth = bbox.width + (padding * 2);
+        const newHeight = bbox.height + (padding * 2);
+        
+        // Update viewBox and dimensions
+        svg.attr('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`)
+           .attr('width', newWidth)
+           .attr('height', newHeight);
+        
+        logger.info('[recalculateTightViewBox] ✓ ViewBox recalculated:', {
+            viewBox: `${Math.round(newX)} ${Math.round(newY)} ${Math.round(newWidth)} ${Math.round(newHeight)}`,
+            reduction: `${Math.round((1 - (newWidth * newHeight) / (parseFloat(svgNode.getAttribute('width')) * parseFloat(svgNode.getAttribute('height')))) * 100)}% smaller`
+        });
+        
+    } catch (error) {
+        logger.error('[recalculateTightViewBox] Error:', error);
+    }
 }
 
 function renderCircleMap(spec, theme = null, dimensions = null) {
+    // VERBOSE LOGGING: Template receiving spec
+    logger.info('[CircleMap-Renderer] ========================================');
+    logger.info('[CircleMap-Renderer] RECEIVING SPEC FOR RENDERING');
+    logger.info('[CircleMap-Renderer] ========================================');
+    logger.info('[CircleMap-Renderer] Spec validation:', {
+        hasSpec: !!spec,
+        hasTopic: !!spec?.topic,
+        hasContext: Array.isArray(spec?.context),
+        contextCount: spec?.context?.length || 0,
+        contextType: typeof spec?.context
+    });
+    
+    if (spec?.context) {
+        logger.info('[CircleMap-Renderer] Context nodes received:');
+        spec.context.forEach((item, idx) => {
+            logger.info(`  [${idx}] Type: ${typeof item} | Value: ${typeof item === 'object' ? JSON.stringify(item) : item}`);
+        });
+    }
+    
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.context)) {
-        logger.error('BubbleMapRenderer', 'Invalid spec for circle_map');
+        logger.error('[CircleMap-Renderer] Invalid spec for circle_map');
         return;
     }
     
@@ -287,6 +381,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     const contextRadii = spec.context.map(t => getTextRadius(t, THEME.fontContext, 10));
     const uniformContextR = Math.max(...contextRadii, 30); // Use the largest required radius for all
     
+    logger.info(`[CircleMap-Renderer] Rendering ${spec.context.length} context nodes with uniform radius: ${uniformContextR}px`);
+    
     // Calculate topic circle size (made smaller like original)
     const topicTextRadius = getTextRadius(spec.topic, THEME.fontTopic, 15);
     const topicR = Math.max(topicTextRadius + 15, 45); // Smaller topic circle at center
@@ -318,6 +414,11 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             x: targetX,
             y: targetY
         };
+    });
+    
+    logger.info('[CircleMap-Renderer] Node positioning calculated:');
+    nodes.forEach((node, idx) => {
+        logger.info(`  [${idx}] "${node.text}" at (${Math.round(node.x)}, ${Math.round(node.y)})`);
     });
     
     // Calculate bounds for SVG (outer circle + padding)
@@ -416,6 +517,14 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
     }
+    
+    // 🆕 FIX: Recalculate tight viewBox based on actual rendered content
+    // This eliminates excessive white padding especially when nodes are added from Node Palette
+    recalculateTightViewBox(svg, padding);
+    
+    logger.info('[CircleMap-Renderer] ========================================');
+    logger.info(`[CircleMap-Renderer] ✓ RENDERING COMPLETE: ${spec.context.length} context nodes displayed`);
+    logger.info('[CircleMap-Renderer] ========================================');
 }
 
 function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
@@ -830,6 +939,10 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
     }
+    
+    // 🆕 FIX: Recalculate tight viewBox based on actual rendered content
+    // This eliminates excessive white padding especially when nodes are added from Node Palette
+    recalculateTightViewBox(svg, padding);
 }
 
 // Export functions for module system

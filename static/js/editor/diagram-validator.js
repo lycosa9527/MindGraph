@@ -23,6 +23,7 @@ class DiagramValidator {
             /^步骤\s*\d+$/,           // 步骤1, 步骤2
             /^原因\s*\d+$/,           // 原因1
             /^结果\s*\d+$/,           // 结果1
+            /^背景\s*\d+$/,           // 背景1, 背景2 (Circle Map context nodes)
             /^主题\s*\d+$/,           // 主题1
             /^主题$/,                 // 主题 (Circle Map default)
             /^主题[A-Z]$/,            // 主题A, 主题B (Double Bubble Map)
@@ -56,6 +57,7 @@ class DiagramValidator {
             /^Step\s+\d+$/i,          // Step 1, Step 2
             /^Cause\s+\d+$/i,         // Cause 1
             /^Effect\s+\d+$/i,        // Effect 1
+            /^Context\s+\d+$/i,       // Context 1, Context 2 (Circle Map context nodes)
             /^Topic\s+\d+$/i,         // Topic 1
             /^Topic\s+[A-Z]$/i,       // Topic A, Topic B (Double Bubble Map)
             /^Similarity\s+\d+$/i,    // Similarity 1, 2 (Double Bubble Map)

@@ -479,6 +479,7 @@
     border-top: 1px solid var(--border-color, #e0e0e0);
     display: flex;
     justify-content: center;
+    gap: 12px; /* Space between Cancel and Next buttons */
     z-index: 1001;
     margin-top: auto; /* Push to bottom of flex container */
 }
@@ -512,6 +513,29 @@
     color: var(--text-secondary, #999999);
     cursor: not-allowed;
     box-shadow: none;
+}
+
+/* Cancel Button */
+.cancel-palette-btn {
+    padding: 14px 36px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary, #333333);
+    background: transparent;
+    border: 2px solid var(--border-color, #cccccc);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-palette-btn:hover {
+    background: var(--bg-secondary, #f5f5f5);
+    border-color: var(--text-secondary, #999999);
+    transform: translateY(-2px);
+}
+
+.cancel-palette-btn:active {
+    transform: translateY(0);
 }
 
 /* ============================================================================
