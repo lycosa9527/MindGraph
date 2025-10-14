@@ -34,7 +34,6 @@ psutil>=6.1.0
 # Database & Authentication
 SQLAlchemy>=2.0.36
 python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
 bcrypt>=5.0.0
 captcha>=0.6
 
