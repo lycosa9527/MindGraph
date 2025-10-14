@@ -12,10 +12,11 @@ Made by: MindSpring Team
 
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 import logging
 
 from config.settings import config
+from utils.auth import AUTH_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,16 @@ async def debug(request: Request):
 async def editor(request: Request):
     """Interactive editor - editor.html"""
     try:
+        # Demo mode redirect: if not authenticated, send to /demo
+        if AUTH_MODE == "demo":
+            # Check if user has auth token in cookies or would need to login
+            auth_header = request.headers.get("authorization")
+            auth_cookie = request.cookies.get("access_token")
+            
+            if not auth_header and not auth_cookie:
+                logger.debug("Demo mode: Redirecting unauthenticated /editor access to /demo")
+                return RedirectResponse(url="/demo", status_code=303)
+        
         return templates.TemplateResponse(
             "editor.html",
             {
@@ -145,6 +156,11 @@ async def timing_stats(request: Request):
 async def auth_page(request: Request):
     """Authentication page - login/register"""
     try:
+        # Demo mode redirect: /auth doesn't make sense in demo mode, redirect to /demo
+        if AUTH_MODE == "demo":
+            logger.debug("Demo mode: Redirecting /auth access to /demo")
+            return RedirectResponse(url="/demo", status_code=303)
+        
         return templates.TemplateResponse("auth.html", {"request": request})
     except Exception as e:
         logger.error(f"/auth route failed: {e}", exc_info=True)
