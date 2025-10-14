@@ -3313,6 +3313,16 @@ class ToolbarManager {
             
             // Get current diagram data - normalize it to ThinkGuide format
             const diagramType = this.editor?.diagramType || 'circle_map';
+            
+            // Check if ThinkGuide supports this diagram type
+            const supportedTypes = ['circle_map', 'bubble_map'];  // Diagram types with specialized ThinkGuide agents
+            if (!supportedTypes.includes(diagramType)) {
+                const msg = `ThinkGuide is currently only available for Circle Maps and Bubble Maps. Use Node Palette button for ${diagramType}.`;
+                logger.warn('ToolbarManager', msg);
+                this.showNotification(msg, 'warning');
+                return;
+            }
+            
             const rawSpec = this.editor?.currentSpec;
             
             if (!rawSpec) {

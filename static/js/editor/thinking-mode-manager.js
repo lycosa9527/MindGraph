@@ -472,7 +472,7 @@ class ThinkingModeManager {
             case 'bubble_map':
                 return {
                     center: { text: spec.topic || spec.center?.text || '' },
-                    children: (spec.adjectives || spec.items || spec.children || []).map((item, index) => ({
+                    children: (spec.attributes || spec.adjectives || spec.items || spec.children || []).map((item, index) => ({
                         id: item.id || String(index + 1),
                         text: item.text || item.content || item
                     }))
@@ -698,11 +698,12 @@ class ThinkingModeManager {
     openNodePalette() {
         this.logger.info('[ThinkGuide]', '🎨 Node Palette button clicked');
         
-        // Only support Circle Maps for now
-        if (this.diagramType !== 'circle_map') {
+        // Check if node palette is supported for this diagram type
+        const supportedTypes = ['circle_map', 'bubble_map'];
+        if (!supportedTypes.includes(this.diagramType)) {
             const msg = this.language === 'zh' ? 
-                '节点选择板目前仅支持圆圈图。' : 
-                'Node Palette is currently only available for Circle Maps.';
+                '节点选择板目前仅支持圆圈图和气泡图。' : 
+                'Node Palette is currently only available for Circle Maps and Bubble Maps.';
             this.addSystemMessage(msg);
             this.logger.warn('[ThinkGuide]', 'Node Palette not supported for:', this.diagramType);
             return;
@@ -713,9 +714,12 @@ class ThinkingModeManager {
         const centerTopic = diagramData?.center?.text;
         
         if (!centerTopic || centerTopic.trim() === '') {
+            const diagramName = this.diagramType === 'bubble_map' ? 
+                (this.language === 'zh' ? '气泡图' : 'Bubble Map') :
+                (this.language === 'zh' ? '圆圈图' : 'Circle Map');
             const msg = this.language === 'zh' ? 
-                '请先为圆圈图添加中心主题。' : 
-                'Please add a center topic to your Circle Map first.';
+                `请先为${diagramName}添加中心主题。` : 
+                `Please add a center topic to your ${diagramName} first.`;
             this.addSystemMessage(msg);
             this.logger.warn('[ThinkGuide]', 'Cannot open Node Palette - no center topic');
             return;

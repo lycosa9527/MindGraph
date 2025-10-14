@@ -24,7 +24,8 @@ from typing import Dict, List, Set, AsyncGenerator, Tuple, Optional, Any
 from difflib import SequenceMatcher
 
 from services.llm_service import llm_service
-from prompts.thinking_modes.circle_map import get_prompt
+from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
+from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,24 @@ class NodePaletteGenerator:
     - No limits - keeps generating on scroll
     """
     
-    def __init__(self):
-        """Initialize concurrent node palette generator"""
+    def __init__(self, diagram_type: str = 'circle_map'):
+        """
+        Initialize concurrent node palette generator
+        
+        Args:
+            diagram_type: Type of diagram ('circle_map', 'bubble_map', etc.)
+        """
+        self.diagram_type = diagram_type
         self.llm_service = llm_service
         self.llm_models = ['qwen', 'deepseek', 'hunyuan', 'kimi']
+        
+        # Get appropriate palette generator
+        if diagram_type == 'circle_map':
+            self.palette_generator = get_circle_map_palette_generator()
+        elif diagram_type == 'bubble_map':
+            self.palette_generator = get_bubble_map_palette_generator()
+        else:
+            raise ValueError(f"Unsupported diagram type: {diagram_type}")
         
         # Session storage
         self.generated_nodes = {}  # session_id -> List[Dict]
@@ -52,7 +67,7 @@ class NodePaletteGenerator:
         self.session_start_times = {}  # session_id -> timestamp
         self.batch_counts = {}  # session_id -> int (total batches)
         
-        logger.info("[NodePalette] Initialized with concurrent multi-LLM architecture")
+        logger.info("[NodePalette] Initialized for %s with concurrent multi-LLM architecture", diagram_type)
         logger.info("[NodePalette] LLMs: %s", ', '.join(self.llm_models))
     
     async def generate_batch(
@@ -277,40 +292,14 @@ class NodePaletteGenerator:
         count: int,
         batch_num: int
     ) -> str:
-        """Build Circle Map prompt using CENTRALIZED prompt system"""
-        # Detect language
-        has_chinese = bool(re.search(r'[\u4e00-\u9fff]', center_topic))
-        language = 'zh' if has_chinese else 'en'
-        
-        # Use same context extraction as auto-complete
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
-        
-        # Get prompt from centralized system
-        prompt_template = get_prompt('NODE_GENERATION', language)
-        
-        # Format the template
-        prompt = prompt_template.format(
-            count=count,
-            center_topic=center_topic,
-            educational_context=context_desc
+        """Build prompt using diagram-specific palette generator"""
+        return self.palette_generator._build_prompt(
+            center_topic, educational_context, count, batch_num
         )
-        
-        # Add diversity note for later batches (node palette specific)
-        if batch_num > 1:
-            if language == 'zh':
-                prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，避免与之前批次重复。"
-            else:
-                prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity and avoid any repetition from previous batches."
-        
-        return prompt
     
     def _get_system_message(self, educational_context: Optional[Dict[str, Any]]) -> str:
-        """Get system message"""
-        has_chinese = False
-        if educational_context and educational_context.get('raw_message'):
-            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']))
-        
-        return '你是一个有帮助的K12教育助手。' if has_chinese else 'You are a helpful K12 education assistant.'
+        """Get system message from diagram-specific palette generator"""
+        return self.palette_generator._get_system_message(educational_context)
     
     def _get_temperature_for_batch(self, batch_num: int) -> float:
         """Increase temperature for later batches to maximize diversity"""

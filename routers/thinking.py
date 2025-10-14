@@ -165,17 +165,30 @@ async def start_node_palette(
                session_id[:8], user_id)
     
     try:
-        # Extract center topic
-        center_topic = req.diagram_data.get('center', {}).get('text', '')
+        # Extract center topic based on diagram type
+        if req.diagram_type == 'circle_map':
+            center_topic = req.diagram_data.get('center', {}).get('text', '')
+        elif req.diagram_type == 'bubble_map':
+            center_topic = req.diagram_data.get('center', {}).get('text', '')
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported diagram type: {req.diagram_type}")
         
         if not center_topic:
             logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
-            raise HTTPException(status_code=400, detail="Circle map has no center topic")
+            raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
         
-        logger.info("[NodePalette-API] Topic: '%s' | 🚀 Firing 4 LLMs concurrently", center_topic)
+        logger.info("[NodePalette-API] Type: %s | Topic: '%s' | 🚀 Firing 4 LLMs concurrently", 
+                   req.diagram_type, center_topic)
         
-        # Get generator (using modular Circle Map generator)
-        generator = get_circle_map_palette_generator()
+        # Get appropriate generator based on diagram type
+        if req.diagram_type == 'circle_map':
+            from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
+            generator = get_circle_map_palette_generator()
+        elif req.diagram_type == 'bubble_map':
+            from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
+            generator = get_bubble_map_palette_generator()
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported diagram type: {req.diagram_type}")
         
         # Stream with concurrent execution
         async def generate():
@@ -238,10 +251,17 @@ async def get_next_batch(
     logger.info("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
     
     try:
-        # Get generator (using modular Circle Map generator)
-        generator = get_circle_map_palette_generator()
+        # Get appropriate generator based on diagram type
+        if req.diagram_type == 'circle_map':
+            from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
+            generator = get_circle_map_palette_generator()
+        elif req.diagram_type == 'bubble_map':
+            from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
+            generator = get_bubble_map_palette_generator()
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported diagram type: {req.diagram_type}")
         
-        logger.info("[NodePalette-API] 🚀 Firing 4 LLMs concurrently for next batch...")
+        logger.info("[NodePalette-API] Type: %s | 🚀 Firing 4 LLMs concurrently for next batch...", req.diagram_type)
         
         # Stream next batch with concurrent execution
         async def generate():

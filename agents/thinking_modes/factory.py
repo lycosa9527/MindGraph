@@ -14,6 +14,7 @@ from typing import Optional
 
 from agents.thinking_modes.base_thinking_agent import BaseThinkingAgent
 from agents.thinking_modes.circle_map_agent_react import CircleMapThinkingAgent
+from agents.thinking_modes.bubble_map_agent_react import BubbleMapThinkingAgent
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,8 @@ class ThinkingAgentFactory:
     # Registry of diagram type -> agent class
     _agents = {
         'circle_map': CircleMapThinkingAgent,
+        'bubble_map': BubbleMapThinkingAgent,
         # Future diagram types will be added here as we implement them:
-        # 'bubble_map': BubbleMapThinkingAgent,
         # 'double_bubble_map': DoubleBubbleMapThinkingAgent,
         # 'mind_map': MindMapThinkingAgent,
         # 'tree_map': TreeMapThinkingAgent,

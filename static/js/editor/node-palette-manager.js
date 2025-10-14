@@ -35,10 +35,10 @@ class NodePaletteManager {
                 nodeType: 'context'
             },
             'bubble_map': {
-                arrayName: 'adjectives',
-                nodeName: 'adjective',
-                nodeNamePlural: 'adjectives',
-                nodeType: 'adjective'
+                arrayName: 'attributes',
+                nodeName: 'attribute',
+                nodeNamePlural: 'attributes',
+                nodeType: 'attribute'
             },
             'double_bubble_map': {
                 arrayName: 'similarities',  // Could also be left_differences or right_differences
@@ -114,14 +114,15 @@ class NodePaletteManager {
         }
         
         // Use DiagramValidator's centralized placeholder detection
-        const validator = window.diagramValidator;
+        // Access validator through editor's toolbar manager
+        const validator = window.currentEditor?.toolbarManager?.validator;
         if (!validator) {
             console.warn('[NodePalette] DiagramValidator not found, using fallback placeholder detection');
-            // Fallback: basic pattern matching
-            return /^(Context|背景|New|新)\s*\d*$/i.test(text.trim());
+            // Fallback: basic pattern matching that covers common placeholders
+            return /^(Context|背景|New|新|属性|Attribute)\s*\d*$/i.test(text.trim());
         }
         
-        return validator.isPlaceholder(text);
+        return validator.isPlaceholderText(text);
     }
     
     async start(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
@@ -200,6 +201,13 @@ class NodePaletteManager {
         this.selectedNodes.clear();
         this.currentBatch = 0;
         this.isLoadingBatch = false;
+        
+        // Clear the UI grid to remove old nodes from previous session
+        const grid = document.getElementById('node-palette-grid');
+        if (grid) {
+            grid.innerHTML = '';
+            console.log('[NodePalette] UI grid cleared for new session');
+        }
     }
     
     clearAll() {
@@ -453,12 +461,13 @@ class NodePaletteManager {
             const payload = this.currentBatch === 1
             ? {
                 session_id: this.sessionId,
-                diagram_type: 'circle_map',
+                diagram_type: this.diagramType,  // Use actual diagram type
                 diagram_data: this.diagramData,
                 educational_context: this.educationalContext  // Use ThinkGuide context
             }
             : {
                 session_id: this.sessionId,
+                diagram_type: this.diagramType,  // Include diagram type for next batch
                 center_topic: this.centerTopic,
                 educational_context: this.educationalContext  // Use ThinkGuide context
             };

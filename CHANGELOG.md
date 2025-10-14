@@ -7,6 +7,150 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.14.0] - 2025-10-14 - Bubble Map Full Support: Node Palette & ThinkGuide
+
+### Added
+
+- **Bubble Map Node Palette Support**
+  - **Location**: `agents/thinking_modes/node_palette/bubble_map_palette.py`
+  - **Description**: Complete node palette integration for bubble maps with attribute-focused generation
+  - **Features**:
+    - Generates adjective/attribute nodes for bubble map center topics
+    - Multi-LLM concurrent generation (qwen, deepseek, hunyuan, kimi)
+    - Bilingual support (English & Chinese prompts)
+    - Smart prompt engineering for descriptive thinking (adjectives, multiple dimensions)
+    - Batch diversity enhancement for subsequent batches
+    - Full deduplication across LLMs and batches
+  - **Integration**: Works seamlessly with existing node palette UI
+  - **Lines**: 125 lines
+
+- **BubbleMapThinkingAgent (ThinkGuide)**
+  - **Location**: `agents/thinking_modes/bubble_map_agent_react.py`
+  - **Description**: Specialized ThinkGuide agent for bubble maps with attribute-focused pedagogy
+  - **Features**:
+    - Extends BaseThinkingAgent with ReAct pattern
+    - Bubble map-specific workflow states (Context Gathering → Attribute Analysis → Refinement)
+    - Descriptive thinking prompts (focus on adjectives and characteristics)
+    - Intent detection for bubble map operations (change_center, update_node, delete_node, etc.)
+    - Educational context integration
+    - Suggested node generation for attributes
+    - Bilingual conversational guidance (English & Chinese)
+  - **Pedagogy**: Guides teachers through descriptive thinking: "What attributes best capture the essence?" vs Circle Map's Socratic refinement
+  - **Lines**: 349 lines
+
+- **Factory Registration**
+  - **Location**: `agents/thinking_modes/factory.py`
+  - **Description**: Added bubble_map to ThinkingAgentFactory registry
+  - **Change**: `_agents = {'circle_map': CircleMapThinkingAgent, 'bubble_map': BubbleMapThinkingAgent}`
+  - **Impact**: ThinkGuide now supports both Circle Maps and Bubble Maps
+
+### Fixed
+
+- **Node Palette Session Isolation**
+  - **Location**: `static/js/editor/node-palette-manager.js`
+  - **Issue**: When switching from Circle Map to Bubble Map (or between any diagrams), old nodes from the previous session remained visible in the Node Palette UI until new nodes loaded
+  - **Root Cause**: `resetState()` cleared data arrays but did not clear the UI grid HTML
+  - **Fix**: Added grid.innerHTML clearing in `resetState()` to ensure clean UI when starting a new session
+  - **Impact**: Users now see a clean, empty Node Palette when switching between diagram types
+  - **Lines Modified**: `resetState()` method
+
+- **Smart Placeholder Detection for Bubble Maps**
+  - **Location**: `static/js/editor/node-palette-manager.js`
+  - **Issue**: Bubble map template placeholders (属性1, 属性2, etc.) were not being detected and replaced
+  - **Root Cause**: DiagramValidator was accessed via wrong path (`window.diagramValidator` → doesn't exist)
+  - **Fix**: 
+    - Corrected validator access path: `window.currentEditor?.toolbarManager?.validator`
+    - Fixed method name: `isPlaceholder()` → `isPlaceholderText()`
+    - Updated fallback pattern to include bubble map placeholders: `/^(Context|背景|New|新|属性|Attribute)\s*\d*$/i`
+  - **Impact**: Template placeholders now properly replaced by selected nodes in all diagram types
+
+- **Frontend Metadata Consistency**
+  - **Location**: `static/js/editor/node-palette-manager.js`, `static/js/editor/thinking-mode-manager.js`
+  - **Issue**: Bubble map metadata used inconsistent field names (adjectives vs attributes)
+  - **Fix**: 
+    - Standardized to `attributes` (matching bubble-map-renderer.js spec.attributes)
+    - Updated node terminology: adjective → attribute
+    - Added `spec.attributes` as primary fallback in normalization
+  - **Impact**: Consistent data flow between node palette, renderer, and ThinkGuide
+
+- **ThinkGuide Validation**
+  - **Location**: `static/js/editor/toolbar-manager.js`
+  - **Description**: Added proper diagram type validation for ThinkGuide
+  - **Implementation**: 
+    - Check `supportedTypes = ['circle_map', 'bubble_map']` before opening ThinkGuide
+    - Show helpful message for unsupported types directing to Node Palette
+  - **Impact**: Clean UX - no 500 errors, clear user guidance
+
+### Changed
+
+- **Request Models**
+  - **Location**: `models/requests.py`
+  - **Description**: Extended Node Palette request models to support multiple diagram types
+  - **Changes**:
+    - `NodePaletteStartRequest.diagram_type`: Now accepts 'circle_map' or 'bubble_map'
+    - `NodePaletteNextRequest`: Added diagram_type field
+    - Updated descriptions and examples
+  - **Impact**: Flexible API design for future diagram types
+
+- **Router Logic**
+  - **Location**: `routers/thinking.py`
+  - **Description**: Dynamic generator selection based on diagram type
+  - **Implementation**: 
+    - Detect diagram_type from request
+    - Dispatch to appropriate palette generator (CircleMapPaletteGenerator or BubbleMapPaletteGenerator)
+    - Extract center topic correctly for each diagram type
+  - **Impact**: Single unified endpoint for all diagram types
+
+### Technical Architecture
+
+**Node Palette Architecture** (Extensible Design):
+```
+NodePaletteGenerator (Base)
+├── Concurrent multi-LLM streaming (4 LLMs in parallel)
+├── Progressive node rendering
+├── Cross-LLM deduplication
+└── Delegates prompts to diagram-specific generators:
+    ├── CircleMapPaletteGenerator (context nodes / observations)
+    └── BubbleMapPaletteGenerator (attribute nodes / adjectives)
+```
+
+**ThinkGuide Architecture** (Specialized Agents):
+```
+ThinkingAgentFactory
+├── CircleMapThinkingAgent (Socratic refinement: N → 8 → 6 → 5 observations)
+└── BubbleMapThinkingAgent (Descriptive analysis: N → 8 → 6 → 5 attributes)
+```
+
+**Key Design Principles**:
+- **Node Palette**: Universal tool, works for all diagrams (extensible via palette generators)
+- **ThinkGuide**: Specialized pedagogy per diagram type (unique learning objectives)
+- **Deduplication**: Centralized in base generator, shared across all types
+- **Validation**: Centralized in DiagramValidator, pattern-based placeholder detection
+
+### Developer Notes
+
+**To Add New Diagram Type Support**:
+
+1. **Node Palette** (3 steps):
+   - Create `{diagram}_palette.py` extending `BasePaletteGenerator`
+   - Implement `_build_prompt()` and `_get_system_message()`
+   - Update router to import and dispatch
+
+2. **ThinkGuide** (4 steps):
+   - Create `{diagram}_agent_react.py` extending `BaseThinkingAgent`
+   - Implement abstract methods (intent detection, action handling, prompts, node generation)
+   - Register in `ThinkingAgentFactory._agents`
+   - Add to frontend `supportedTypes` array
+
+3. **Frontend Metadata**:
+   - Add diagram type to `node-palette-manager.js` diagramMetadata
+   - Update `thinking-mode-manager.js` normalizeDiagramData()
+   - Verify DiagramValidator includes placeholder patterns
+
+**Example**: This release added bubble_map support following these exact steps.
+
+---
+
 ## [4.13.1] - 2025-10-14 - PNG Export Optimization
 
 ### Fixed
