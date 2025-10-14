@@ -231,6 +231,44 @@ pwd  # Should be in your MindGraph root directory
 ls -la .env  # Should exist here
 ```
 
+### Issue 4: "password cannot be longer than 72 bytes" error
+
+This error occurs when the database has corrupted demo users from previous installations.
+
+**Error message:**
+```
+ValueError: password cannot be longer than 72 bytes
+(trapped) error reading bcrypt version
+```
+
+**Solution - Delete corrupted demo users:**
+```bash
+# Stop the server
+sudo systemctl stop mindgraph
+
+# Open database
+sqlite3 mindgraph.db
+
+# Delete demo users
+DELETE FROM users WHERE phone = 'demo@system.com';
+DELETE FROM users WHERE phone = 'demo-admin@system.com';
+
+# Exit
+.exit
+
+# Restart server (will recreate demo users)
+sudo systemctl start mindgraph
+```
+
+**Or start completely fresh:**
+```bash
+# Backup old database
+mv mindgraph.db mindgraph.db.backup
+
+# Restart server - creates new database
+sudo systemctl restart mindgraph
+```
+
 ### Advanced Debugging
 
 If you're still having issues, enable verbose logging:

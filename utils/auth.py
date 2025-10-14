@@ -149,10 +149,10 @@ def get_current_user(
         user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
         
         if not user:
-            # Auto-create enterprise user
+            # Auto-create enterprise user (use short password for bcrypt compatibility)
             user = User(
                 phone=ENTERPRISE_DEFAULT_USER_PHONE,
-                password_hash=hash_password("enterprise-mode-no-password"),
+                password_hash=hash_password("ent-no-pwd"),
                 name="Enterprise User",
                 organization_id=org.id,
                 created_at=datetime.utcnow()

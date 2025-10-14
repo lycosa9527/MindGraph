@@ -434,16 +434,25 @@ async def verify_demo(
                 detail="No organizations available for demo"
             )
         
-        demo_user = User(
-            phone=demo_phone,
-            password_hash=hash_password("demo-mode-no-password"),
-            name=demo_name,
-            organization_id=org.id,
-            created_at=datetime.utcnow()
-        )
-        db.add(demo_user)
-        db.commit()
-        db.refresh(demo_user)
+        try:
+            # Use a short, simple password for demo users (bcrypt max is 72 bytes)
+            demo_user = User(
+                phone=demo_phone,
+                password_hash=hash_password("demo-no-pwd"),
+                name=demo_name,
+                organization_id=org.id,
+                created_at=datetime.utcnow()
+            )
+            db.add(demo_user)
+            db.commit()
+            db.refresh(demo_user)
+        except ValueError as e:
+            # If bcrypt fails, the database might have corrupted demo users
+            logger.error(f"Failed to create demo user: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Demo user creation failed. Please delete existing demo users from database: DELETE FROM users WHERE phone LIKE 'demo%@system.com';"
+            )
     
     # Generate JWT token
     token = create_access_token(demo_user)
