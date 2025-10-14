@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.11.3] - 2025-10-14 - Logout Button in Gallery
+
+### Added
+
+- **Logout Button in Gallery View**
+  - **Location**: `templates/editor.html`, `static/js/editor/language-manager.js`
+  - **Description**: Added logout button in the gallery/landing page top-right controls, next to Share button
+  - **Behavior**: 
+    - Only visible in gallery view, not shown in canvas/editor workspace
+    - Clears authentication token from localStorage
+    - Redirects to `/demo` for demo mode users, `/auth` for standard mode users
+  - **Implementation**: Button click handler in `language-manager.js` calls `auth.logout()` from auth-helper
+  - **Lines**: `editor.html:44-46`, `language-manager.js:508-519`
+
+### Removed
+
+- **Removed Duplicate Logout Button from Canvas Toolbar**
+  - **Location**: `templates/editor.html`
+  - **Removed**: Logout button that was previously in the editor-interface toolbar (line 473)
+  - **Rationale**: Logout should only be accessible from gallery, not during active editing
+  - **Impact**: Cleaner canvas toolbar, logout action requires returning to gallery first
+
+---
+
 ## [4.11.2] - 2025-10-13 - Export Diagram Cutoff Fix & Rate Limit Increase
 
 ### Fixed

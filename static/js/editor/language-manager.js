@@ -489,6 +489,7 @@ class LanguageManager {
         // Desktop/main buttons
         const langToggle = document.getElementById('language-toggle');
         const shareBtn = document.getElementById('share-btn');
+        const logoutBtn = document.getElementById('logout-btn');
         
         // Add language toggle listener
         if (langToggle) {
@@ -501,6 +502,19 @@ class LanguageManager {
         if (shareBtn) {
             shareBtn.addEventListener('click', () => {
                 this.shareUrl();
+            });
+        }
+        
+        // Add logout button listener
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (typeof auth !== 'undefined') {
+                    auth.logout();
+                } else {
+                    // Fallback if auth helper not loaded
+                    localStorage.clear();
+                    window.location.href = '/auth';
+                }
             });
         }
     }
