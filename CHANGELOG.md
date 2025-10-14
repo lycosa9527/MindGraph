@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Benefits**: Prevents confusion, ensures demo users follow correct authentication flow
   - **Lines**: `routers/pages.py:56-63,160-162`
 
+- **Demo Admin Access with Security Scoping**
+  - **Location**: `utils/auth.py`
+  - **Description**: Admin passkey now properly grants admin access, but ONLY in demo mode
+  - **Security**: demo-admin@system.com recognized as admin ONLY when AUTH_MODE=demo
+  - **Implementation**: Enhanced `is_admin()` function with dual checks:
+    1. Production: Check ADMIN_PHONES environment variable
+    2. Demo: Check if user is demo-admin@system.com AND server is in demo mode
+  - **Benefits**: 
+    - Admin passkey works for demos/presentations
+    - Prevents accidental admin access outside demo mode
+    - Production admins still use ADMIN_PHONES securely
+    - Clear separation between demo and production admin access
+  - **Lines**: `utils/auth.py:461-480`
+
 ### Changed
 
 - **Removed passlib Dependency - Using bcrypt Directly**
