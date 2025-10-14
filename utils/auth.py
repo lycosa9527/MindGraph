@@ -62,13 +62,52 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
-    return pwd_context.hash(password)
+    """
+    Hash a password using bcrypt
+    
+    Handles bcrypt's 72-byte limit gracefully by truncating if necessary.
+    """
+    try:
+        return pwd_context.hash(password)
+    except ValueError as e:
+        if "password cannot be longer than 72 bytes" in str(e):
+            # Truncate password to 72 bytes for bcrypt compatibility
+            password_bytes = password.encode('utf-8')[:72]
+            password_truncated = password_bytes.decode('utf-8', errors='ignore')
+            logger.warning("Password exceeded 72 bytes, truncated for bcrypt compatibility")
+            return pwd_context.hash(password_truncated)
+        raise
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """
+    Verify a password against a hash
+    
+    Handles errors gracefully, including:
+    - Corrupted password hashes in database
+    - Bcrypt 72-byte limit errors
+    - Invalid hash formats
+    """
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except ValueError as e:
+        # Handle bcrypt 72-byte limit
+        if "password cannot be longer than 72 bytes" in str(e):
+            try:
+                password_bytes = plain_password.encode('utf-8')[:72]
+                password_truncated = password_bytes.decode('utf-8', errors='ignore')
+                logger.warning("Password exceeded 72 bytes during verification, truncated")
+                return pwd_context.verify(password_truncated, hashed_password)
+            except Exception as inner_e:
+                logger.error(f"Password verification failed after truncation: {inner_e}")
+                return False
+        else:
+            logger.error(f"Password verification error: {e}")
+            return False
+    except Exception as e:
+        # Handle corrupted hashes or other bcrypt errors
+        logger.error(f"Password hash verification failed (possibly corrupted hash in database): {e}")
+        return False
 
 
 # ============================================================================
