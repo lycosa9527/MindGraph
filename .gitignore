@@ -48,6 +48,11 @@ logs/*.log
 *.pid
 logs/*.pid
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
 # Node.js
 node_modules/
 npm-debug.log*
