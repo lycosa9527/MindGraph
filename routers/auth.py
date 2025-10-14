@@ -446,13 +446,19 @@ async def verify_demo(
             db.add(demo_user)
             db.commit()
             db.refresh(demo_user)
-        except ValueError as e:
-            # If bcrypt fails, the database might have corrupted demo users
+            logger.info(f"Created new demo user: {demo_phone}")
+        except Exception as e:
+            # If creation fails, try to rollback and check if user was somehow created
+            db.rollback()
             logger.error(f"Failed to create demo user: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Demo user creation failed. Please delete existing demo users from database: DELETE FROM users WHERE phone LIKE 'demo%@system.com';"
-            )
+            
+            # Try to get the user again in case it was created by another request
+            demo_user = db.query(User).filter(User.phone == demo_phone).first()
+            if not demo_user:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Demo user creation failed: {str(e)}. Please contact admin or delete existing demo users: DELETE FROM users WHERE phone LIKE 'demo%@system.com';"
+                )
     
     # Generate JWT token
     token = create_access_token(demo_user)
