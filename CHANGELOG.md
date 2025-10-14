@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.14.0] - 2025-01-14 - Unified API Key Security Documentation
+
+### Added
+
+- **Comprehensive API Key Security Implementation Guide**
+  - **Location**: `docs/API_KEY_SECURITY_IMPLEMENTATION.md`
+  - **Description**: Unified, step-by-step guide for implementing API key authentication
+  - **Contents**:
+    - Complete implementation guide (7 phases)
+    - Verified code snippets from actual codebase
+    - All 7 critical issues identified and fixed
+    - Testing scenarios and troubleshooting
+    - Dify integration guide
+    - Post-implementation monitoring
+  - **Features**:
+    - Two-tier authentication (JWT for teachers, API keys for public API)
+    - Protects 20 endpoints with appropriate auth levels
+    - Quota management and usage tracking
+    - Ready to implement with verified code
+  - **Benefits**:
+    - Single source of truth for API key implementation
+    - All code verified against actual codebase
+    - Step-by-step checklist format
+    - Comprehensive testing guide
+
+### Removed
+
+- **Old Documentation Consolidated**
+  - Removed `docs/SECURITY_CRITICAL_FIXES_REQUIRED.md` (merged)
+  - Removed `docs/CODE_REVIEW_API_KEY_IMPLEMENTATION.md` (merged)
+  - Both documents consolidated into comprehensive `API_KEY_SECURITY_IMPLEMENTATION.md`
+  - Eliminates confusion from duplicate/overlapping documentation
+  - Reduces maintenance burden
+
+---
+
 ## [4.13.0] - 2025-01-14 - Demo Mode Authentication & Redirect Logic Overhaul
 
 ### Added
