@@ -10,13 +10,15 @@ Author: lycosa9527
 Made by: MindSpring Team
 """
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 import logging
 
 from config.settings import config
-from utils.auth import AUTH_MODE
+from config.database import get_db
+from utils.auth import AUTH_MODE, get_user_from_cookie, is_admin
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -49,18 +51,19 @@ async def debug(request: Request):
         raise
 
 @router.get("/editor", response_class=HTMLResponse)
-async def editor(request: Request):
+async def editor(request: Request, db: Session = Depends(get_db)):
     """Interactive editor - editor.html"""
     try:
-        # Demo mode redirect: if not authenticated, send to /demo
+        # Demo mode: verify authentication
         if AUTH_MODE == "demo":
-            # Check if user has auth token in cookies or would need to login
-            auth_header = request.headers.get("authorization")
             auth_cookie = request.cookies.get("access_token")
+            user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
             
-            if not auth_header and not auth_cookie:
+            if not user:
                 logger.debug("Demo mode: Redirecting unauthenticated /editor access to /demo")
                 return RedirectResponse(url="/demo", status_code=303)
+            
+            logger.debug(f"Demo mode: User {user.phone} accessing /editor")
         
         return templates.TemplateResponse(
             "editor.html",
@@ -153,13 +156,21 @@ async def timing_stats(request: Request):
 # ============================================================================
 
 @router.get("/auth", response_class=HTMLResponse)
-async def auth_page(request: Request):
+async def auth_page(request: Request, db: Session = Depends(get_db)):
     """Authentication page - login/register"""
     try:
-        # Demo mode redirect: /auth doesn't make sense in demo mode, redirect to /demo
+        # Demo mode: /auth doesn't make sense, redirect to /demo
         if AUTH_MODE == "demo":
             logger.debug("Demo mode: Redirecting /auth access to /demo")
             return RedirectResponse(url="/demo", status_code=303)
+        
+        # If already authenticated, redirect to editor
+        auth_cookie = request.cookies.get("access_token")
+        if auth_cookie:
+            user = get_user_from_cookie(auth_cookie, db)
+            if user:
+                logger.debug("User already authenticated, redirecting to /editor")
+                return RedirectResponse(url="/editor", status_code=303)
         
         return templates.TemplateResponse("auth.html", {"request": request})
     except Exception as e:
@@ -167,18 +178,48 @@ async def auth_page(request: Request):
         raise
 
 @router.get("/demo", response_class=HTMLResponse)
-async def demo_page(request: Request):
+async def demo_page(request: Request, db: Session = Depends(get_db)):
     """Demo mode passkey page"""
     try:
+        # If user is already authenticated via cookie, redirect based on role
+        if AUTH_MODE == "demo":
+            auth_cookie = request.cookies.get("access_token")
+            if auth_cookie:
+                user = get_user_from_cookie(auth_cookie, db)
+                if user:
+                    # Redirect based on admin status
+                    if is_admin(user):
+                        logger.debug(f"Demo mode: Admin {user.phone} already authenticated, redirecting to /admin")
+                        return RedirectResponse(url="/admin", status_code=303)
+                    else:
+                        logger.debug(f"Demo mode: User {user.phone} already authenticated, redirecting to /editor")
+                        return RedirectResponse(url="/editor", status_code=303)
+        
         return templates.TemplateResponse("demo-login.html", {"request": request})
     except Exception as e:
         logger.error(f"/demo route failed: {e}", exc_info=True)
         raise
 
 @router.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request):
+async def admin_page(request: Request, db: Session = Depends(get_db)):
     """Admin management panel"""
     try:
+        # Demo mode: verify authentication and admin status
+        if AUTH_MODE == "demo":
+            auth_cookie = request.cookies.get("access_token")
+            user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
+            
+            if not user:
+                logger.debug("Demo mode: Redirecting unauthenticated /admin access to /demo")
+                return RedirectResponse(url="/demo", status_code=303)
+            
+            # Check if user is admin
+            if not is_admin(user):
+                logger.warning(f"Demo mode: Non-admin user {user.phone} attempted to access /admin, redirecting to /editor")
+                return RedirectResponse(url="/editor", status_code=303)
+            
+            logger.debug(f"Demo mode: Admin {user.phone} accessing /admin")
+        
         return templates.TemplateResponse("admin.html", {"request": request})
     except Exception as e:
         logger.error(f"/admin route failed: {e}", exc_info=True)

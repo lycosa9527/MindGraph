@@ -7,6 +7,176 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.13.0] - 2025-01-14 - Demo Mode Authentication & Redirect Logic Overhaul
+
+### Added
+
+- **Cookie-Based Authentication System**
+  - **Location**: `routers/auth.py`, `utils/auth.py`
+  - **Description**: Implemented HTTP-only cookie authentication alongside JWT tokens
+  - **Implementation**:
+    - `/api/auth/demo/verify` now sets `access_token` cookie on successful authentication
+    - `/api/auth/login` sets cookie for standard authentication
+    - `/api/auth/register` sets cookie for new user registration
+    - `/api/auth/logout` clears the cookie
+  - **Cookie Settings**:
+    - `httponly=True` - Prevents JavaScript access (XSS protection)
+    - `samesite="lax"` - CSRF protection
+    - `max_age=7 days` - Token expiration
+    - `secure=False` - Set to True in production with HTTPS
+  - **Benefits**:
+    - Eliminates redirect loops between /demo and /editor
+    - Enables proper server-side authentication checks
+    - Maintains security with HTTP-only cookies
+    - Works seamlessly with full page navigation
+  - **Lines**: `routers/auth.py:18,86,161,398,519-527`
+
+- **`get_user_from_cookie()` Helper Function**
+  - **Location**: `utils/auth.py`
+  - **Description**: Validates JWT tokens from cookies for page routes
+  - **Usage**: Used by all page routes to verify authentication without HTTPBearer dependency
+  - **Implementation**:
+    - Extracts token from cookie
+    - Decodes and validates JWT
+    - Returns User object or None if invalid/expired
+    - Graceful error handling (no exceptions)
+  - **Benefits**:
+    - Centralizes cookie authentication logic
+    - Enables server-side authentication checks
+    - Prevents code duplication across routes
+  - **Lines**: `utils/auth.py:268-295`
+
+- **Complete Demo Mode Redirect Logic**
+  - **Location**: `routers/pages.py`
+  - **Description**: Comprehensive redirect system for all page routes in demo mode
+  - **Routes Protected**:
+    - `/auth` - Redirects to /demo in demo mode (auth page doesn't make sense)
+    - `/editor` - Requires authentication, redirects unauthenticated to /demo
+    - `/admin` - Requires authentication + admin role, redirects accordingly
+    - `/demo` - Smart redirect based on user role (admin → /admin, regular → /editor)
+  - **Redirect Matrix**:
+    ```
+    | User Type           | /auth    | /demo      | /editor    | /admin     |
+    |---------------------|----------|------------|------------|------------|
+    | Not Logged In       | → /demo  | ✅ Show    | → /demo    | → /demo    |
+    | Regular Demo User   | → /demo  | → /editor  | ✅ Show    | → /editor  |
+    | Admin Demo User     | → /demo  | → /admin   | ✅ Show    | ✅ Show    |
+    ```
+  - **Security**: All routes validate cookies and check permissions before granting access
+  - **Lines**: `routers/pages.py:13,20-21,54-80,158-201,203-220`
+
+- **Comprehensive Documentation**
+  - **Location**: `docs/DEMO_MODE_REDIRECT_LOGIC.md`
+  - **Description**: Complete guide to demo mode authentication and redirect flows
+  - **Contents**:
+    - Authentication flow diagrams
+    - Redirect matrix for all routes
+    - Implementation details and code examples
+    - Security considerations
+    - Testing scenarios
+    - Troubleshooting guide for common issues
+  - **Benefits**: Developers can understand and maintain redirect logic easily
+
+### Changed
+
+- **Enhanced `/demo` Route Intelligence**
+  - **Location**: `routers/pages.py`
+  - **Previous Behavior**: Always showed passkey page
+  - **New Behavior**: 
+    - Checks if user already authenticated via cookie
+    - Admin users → Redirect to /admin
+    - Regular users → Redirect to /editor
+    - Not authenticated → Show passkey page
+  - **Benefits**: Better UX, prevents unnecessary re-authentication
+  - **Lines**: `routers/pages.py:180-201`
+
+- **Enhanced `/admin` Route Security**
+  - **Location**: `routers/pages.py`
+  - **Previous Behavior**: Client-side authentication check only
+  - **New Behavior**:
+    - Server-side authentication verification
+    - Admin role check using `is_admin(user)`
+    - Non-admin users redirected to /editor
+    - Unauthenticated users redirected to /demo
+  - **Security**: Prevents unauthorized access at server level
+  - **Lines**: `routers/pages.py:203-220`
+
+- **Enhanced `/editor` Route Authentication**
+  - **Location**: `routers/pages.py`
+  - **Previous Behavior**: Basic cookie check without validation
+  - **New Behavior**:
+    - Validates JWT token from cookie
+    - Verifies user exists in database
+    - Handles expired/invalid tokens gracefully
+    - Clear logging for debugging
+  - **Security**: Proper token validation prevents access with invalid/expired tokens
+  - **Lines**: `routers/pages.py:53-80`
+
+- **Enhanced `/auth` Route**
+  - **Location**: `routers/pages.py`
+  - **Previous Behavior**: Only redirected in demo mode
+  - **New Behavior**:
+    - Demo mode → Always redirect to /demo
+    - Standard mode + authenticated → Redirect to /editor
+    - Standard mode + not authenticated → Show auth page
+  - **Benefits**: Prevents showing auth page to already-logged-in users
+  - **Lines**: `routers/pages.py:157-177`
+
+### Fixed
+
+- **Redirect Loop Between /demo and /editor**
+  - **Issue**: Page continuously refreshed, alternating between /demo and /editor
+  - **Root Cause**: 
+    - Backend couldn't validate authentication (token only in localStorage)
+    - Frontend checked auth via API (with headers) but page loads didn't send headers
+    - Created infinite redirect loop
+  - **Solution**:
+    - Backend now sets HTTP-only cookie with token
+    - Page routes validate cookie server-side
+    - Removed client-side redirect check from demo-login.html
+  - **Impact**: Demo mode now works smoothly without any redirect loops
+  - **Lines**: `routers/auth.py:467-475`, `templates/demo-login.html:857-859`
+
+- **Admin Passkey Not Redirecting to /admin**
+  - **Issue**: Admin passkey users redirected to /editor instead of /admin
+  - **Root Cause**: `/demo` route didn't check user role for redirect destination
+  - **Solution**: Enhanced `/demo` route to check `is_admin()` and redirect accordingly
+  - **Impact**: Admin users now properly redirected to admin panel
+  - **Lines**: `routers/pages.py:180-196`
+
+- **Unauthenticated Access to Protected Pages**
+  - **Issue**: Could access /editor without authentication in demo mode
+  - **Root Cause**: Routes only checked cookie existence, not validity
+  - **Solution**: All routes now validate JWT token and verify user in database
+  - **Impact**: Proper authentication enforcement on all protected pages
+  - **Lines**: `routers/pages.py:53-80,203-220`
+
+### Security
+
+- **Enhanced Demo Mode Security**
+  - Cookie-based authentication prevents token theft via XSS
+  - Server-side validation prevents client-side bypass
+  - Admin role verification at server level
+  - HTTP-only cookies prevent JavaScript access
+  - SameSite cookies prevent CSRF attacks
+  - Expired tokens properly rejected
+
+- **Authentication Flow Security**
+  - All authentication endpoints set secure cookies
+  - Logout properly clears cookies
+  - Token validation consistent across all routes
+  - No authentication bypass possible
+
+### Removed
+
+- **Client-side Authentication Check from demo-login.html**
+  - **Location**: `templates/demo-login.html`
+  - **Removed**: `checkExistingAuth()` function that caused redirect loops
+  - **Reason**: Cookie-based authentication now handles this server-side
+  - **Lines**: `templates/demo-login.html:857-859` (replaced with comment)
+
+---
+
 ## [4.12.0] - 2025-01-14 - Password Hashing Modernization
 
 ### Added

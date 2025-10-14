@@ -15,7 +15,7 @@ import string
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from sqlalchemy.orm import Session
 from captcha.image import ImageCaptcha
 
@@ -83,6 +83,7 @@ async def get_auth_mode():
 @router.post("/register")
 async def register(
     request: RegisterRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
     """
@@ -137,6 +138,16 @@ async def register(
     # Generate JWT token
     token = create_access_token(new_user)
     
+    # Set token as HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60  # 7 days
+    )
+    
     logger.info(f"User registered: {new_user.phone} (Org: {org.code})")
     
     return {
@@ -158,6 +169,7 @@ async def register(
 @router.post("/login")
 async def login(
     request: LoginRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
     """
@@ -235,6 +247,16 @@ async def login(
     
     # Generate JWT token
     token = create_access_token(user)
+    
+    # Set token as HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60  # 7 days
+    )
     
     logger.info(f"User logged in: {user.phone}")
     
@@ -395,6 +417,7 @@ async def get_me(
 @router.post("/demo/verify")
 async def verify_demo(
     request: DemoPasskeyRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
     """
@@ -463,6 +486,16 @@ async def verify_demo(
     # Generate JWT token
     token = create_access_token(demo_user)
     
+    # Set token as HTTP-only cookie (prevents redirect loop between /demo and /editor)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60  # 7 days
+    )
+    
     log_msg = "Demo ADMIN access granted" if is_admin_access else "Demo mode access granted"
     logger.info(log_msg)
     
@@ -483,13 +516,16 @@ async def verify_demo(
 # ============================================================================
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
+async def logout(response: Response, current_user: User = Depends(get_current_user)):
     """
     Logout user (client-side token removal)
     
     JWT tokens are stateless, so logout happens on client side
     by removing the token from storage.
     """
+    # Clear the cookie
+    response.delete_cookie(key="access_token")
+    
     logger.info(f"User logged out: {current_user.phone}")
     return {"message": "Logged out successfully"}
 

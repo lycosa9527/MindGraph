@@ -854,29 +854,9 @@
             }
         });
 
-        // Check if already authenticated on page load
-        async function checkExistingAuth() {
-            const isAuth = await auth.isAuthenticated();
-            if (isAuth) {
-                // User is already logged in, redirect appropriately
-                try {
-                    const user = auth.getUser();
-                    // Check if admin by testing admin endpoint
-                    const adminTest = await auth.fetch('/api/auth/admin/stats');
-                    const isAdmin = adminTest.ok;
-                    
-                    // Redirect based on role
-                    const redirectUrl = isAdmin ? '/admin' : '/editor';
-                    window.location.href = redirectUrl;
-                } catch (error) {
-                    // If error checking, just redirect to editor
-                    window.location.href = '/editor';
-                }
-            }
-        }
-
-        // Run on page load
-        checkExistingAuth();
+        // No need to check existing auth on page load
+        // The cookie will handle authentication for subsequent page loads
+        // If already authenticated, the /demo route will handle redirect on backend
     </script>
 </body>
 </html>

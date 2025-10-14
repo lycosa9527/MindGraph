@@ -265,6 +265,36 @@ def get_current_user(
     return user
 
 
+def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
+    """
+    Get user from cookie token without HTTPBearer dependency
+    
+    Used for page routes to verify authentication from cookies.
+    Returns User if valid token, None if invalid/expired.
+    """
+    if not token:
+        return None
+    
+    try:
+        # Decode token
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            return None
+        
+        # Get user from database
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        return user
+        
+    except JWTError:
+        logger.debug("Invalid or expired cookie token")
+        return None
+    except Exception as e:
+        logger.error(f"Error validating cookie token: {e}")
+        return None
+
+
 # ============================================================================
 # Demo Mode Passkey
 # ============================================================================
