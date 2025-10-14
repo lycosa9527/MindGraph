@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.12.0] - 2025-01-14 - Password Hashing Modernization
 
+### Added
+
+- **Demo Mode Smart Redirects**
+  - **Location**: `routers/pages.py`
+  - **Description**: In demo mode, automatically redirect users to /demo passkey page
+  - **Behavior**:
+    - `/auth` → `/demo` (always, since demo uses passkey not credentials)
+    - `/editor` → `/demo` (if not authenticated)
+  - **Implementation**: Check AUTH_MODE and user authentication status (cookie/header)
+  - **Benefits**: Prevents confusion, ensures demo users follow correct authentication flow
+  - **Lines**: `routers/pages.py:56-63,160-162`
+
 ### Changed
 
 - **Removed passlib Dependency - Using bcrypt Directly**
