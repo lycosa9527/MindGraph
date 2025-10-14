@@ -120,7 +120,7 @@ LOGGING_CONFIG = {
         },
         "watchfiles": {
             "handlers": ["default"],
-            "level": "INFO",
+            "level": "WARNING",  # Suppress INFO logs to prevent spam from file changes
             "propagate": False,
         },
     },
