@@ -42,7 +42,9 @@ from utils.auth import (
     captcha_attempts,
     MAX_LOGIN_ATTEMPTS,
     MAX_CAPTCHA_ATTEMPTS,
-    AUTH_MODE
+    AUTH_MODE,
+    DEMO_PASSKEY,
+    ADMIN_DEMO_PASSKEY
 )
 
 import logging
@@ -401,7 +403,13 @@ async def verify_demo(
     Demo mode allows access with a 6-digit passkey.
     Supports both regular demo access and admin demo access.
     """
+    # Enhanced logging for debugging (without revealing actual passkeys)
+    received_length = len(request.passkey) if request.passkey else 0
+    expected_length = len(DEMO_PASSKEY)
+    logger.info(f"Demo passkey verification attempt - Received: {received_length} chars, Expected: {expected_length} chars")
+    
     if not verify_demo_passkey(request.passkey):
+        logger.warning(f"Demo passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid passkey"

@@ -35,15 +35,15 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
 
 # Authentication Mode
-AUTH_MODE = os.getenv("AUTH_MODE", "standard")  # standard, enterprise, demo
+AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()  # standard, enterprise, demo
 
 # Enterprise Mode Configuration
-ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001")
-ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com")
+ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
+ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()
 
 # Demo Mode Configuration
-DEMO_PASSKEY = os.getenv("DEMO_PASSKEY", "888888")
-ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999")
+DEMO_PASSKEY = os.getenv("DEMO_PASSKEY", "888888").strip()
+ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999").strip()
 
 # Admin Configuration
 ADMIN_PHONES = os.getenv("ADMIN_PHONES", "").split(",")
@@ -197,6 +197,7 @@ def display_demo_info():
         logger.info("=" * 60)
         logger.info("DEMO MODE ACTIVE")
         logger.info(f"Passkey: {DEMO_PASSKEY}")
+        logger.info(f"Passkey length: {len(DEMO_PASSKEY)} characters")
         logger.info("Access: /demo")
         logger.info("=" * 60)
 
@@ -206,11 +207,15 @@ def verify_demo_passkey(passkey: str) -> bool:
     Verify demo passkey (regular or admin)
     Returns True if valid, False otherwise
     """
+    # Strip whitespace from input passkey to handle client-side issues
+    passkey = passkey.strip() if passkey else ""
     return passkey in [DEMO_PASSKEY, ADMIN_DEMO_PASSKEY]
 
 
 def is_admin_demo_passkey(passkey: str) -> bool:
     """Check if passkey is for admin demo access"""
+    # Strip whitespace from input passkey to handle client-side issues
+    passkey = passkey.strip() if passkey else ""
     return passkey == ADMIN_DEMO_PASSKEY
 
 
