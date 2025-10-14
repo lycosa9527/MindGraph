@@ -19,7 +19,7 @@ import uuid
 from pathlib import Path
 import aiofiles
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse, JSONResponse, Response, PlainTextResponse, FileResponse
 
 # Import Pydantic models
@@ -43,6 +43,12 @@ from agents import main_agent as agent
 from services.browser import BrowserContextManager
 from services.llm_service import llm_service
 
+# Import authentication
+from models.auth import User
+from utils.auth import get_current_user_or_api_key
+from config.database import get_db
+from sqlalchemy.orm import Session
+
 logger = logging.getLogger(__name__)
 
 # Create router
@@ -53,7 +59,11 @@ router = APIRouter(prefix="/api", tags=["api"])
 # ============================================================================
 
 @router.post('/ai_assistant/stream')
-async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
+async def ai_assistant_stream(
+    req: AIAssistantRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Stream AI assistant responses using Dify API with SSE (async version).
     
@@ -136,7 +146,11 @@ async def ai_assistant_stream(req: AIAssistantRequest, x_language: str = None):
 # ============================================================================
 
 @router.post('/generate_graph', response_model=GenerateResponse)
-async def generate_graph(req: GenerateRequest, x_language: str = None):
+async def generate_graph(
+    req: GenerateRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Generate graph specification from user prompt using selected LLM model (async).
     
@@ -197,7 +211,11 @@ async def generate_graph(req: GenerateRequest, x_language: str = None):
 # ============================================================================
 
 @router.post('/export_png')
-async def export_png(req: ExportPNGRequest, x_language: str = None):
+async def export_png(
+    req: ExportPNGRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Export diagram as PNG using Playwright browser automation (async).
     
@@ -603,7 +621,11 @@ async def export_png(req: ExportPNGRequest, x_language: str = None):
 # ============================================================================
 
 @router.post('/generate_png')
-async def generate_png_from_prompt(req: GeneratePNGRequest, x_language: str = None):
+async def generate_png_from_prompt(
+    req: GeneratePNGRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Generate PNG directly from user prompt (backward compatibility).
     
@@ -663,7 +685,11 @@ async def generate_png_from_prompt(req: GeneratePNGRequest, x_language: str = No
 
 
 @router.post('/generate_dingtalk')
-async def generate_dingtalk_png(req: GenerateDingTalkRequest, x_language: str = None):
+async def generate_dingtalk_png(
+    req: GenerateDingTalkRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Generate PNG for DingTalk integration (backward compatibility).
     
@@ -876,7 +902,11 @@ async def get_llm_metrics(model: Optional[str] = None):
 
 
 @router.post('/generate_multi_parallel')
-async def generate_multi_parallel(req: GenerateRequest, x_language: str = None):
+async def generate_multi_parallel(
+    req: GenerateRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Generate diagram using PARALLEL multi-LLM approach.
     
@@ -1064,7 +1094,11 @@ async def llm_health_check():
 
 
 @router.post('/generate_multi_progressive')
-async def generate_multi_progressive(req: GenerateRequest, x_language: str = None):
+async def generate_multi_progressive(
+    req: GenerateRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
     """
     Progressive parallel generation - send results as each LLM completes.
     

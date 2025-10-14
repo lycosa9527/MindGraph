@@ -122,7 +122,7 @@ class LearningModeManager {
      */
     async initializeBackendSession(knocked_out_node_ids, language) {
         try {
-            const response = await fetch('/api/learning/start_session', {
+            const response = await auth.fetch('/api/learning/start_session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -536,7 +536,7 @@ class LearningModeManager {
      */
     async validateAnswerWithBackend(userAnswer, questionData) {
         try {
-            const response = await fetch('/api/learning/validate_answer', {
+            const response = await auth.fetch('/api/learning/validate_answer', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -625,7 +625,7 @@ class LearningModeManager {
      */
     async getHintFromBackend(questionData, hintLevel) {
         try {
-            const response = await fetch('/api/learning/get_hint', {
+            const response = await auth.fetch('/api/learning/get_hint', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1312,7 +1312,7 @@ class LearningModeManager {
      * Phase 4: Call backend to verify understanding
      */
     async verifyUnderstandingWithBackend(userAnswer, correctAnswer, verificationQuestion) {
-        const response = await fetch('/api/learning/verify_understanding', {
+        const response = await auth.fetch('/api/learning/verify_understanding', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

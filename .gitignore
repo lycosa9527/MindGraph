@@ -67,6 +67,13 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# API Keys and sensitive data
+*API_KEY*.txt
+*API_KEY*.json
+*_key.txt
+api_keys/
+keys/
+
 # Development temporary files
 development_prompts/*.md
 

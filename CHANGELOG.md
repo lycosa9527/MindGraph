@@ -7,6 +7,152 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.12.1] - 2025-01-14 - API Key Management System & Security Enhancements
+
+### Added
+
+- **API Key Management System (Admin Panel)**
+  - **Location**: `templates/admin.html`, `routers/auth.py`
+  - **Description**: Complete CRUD interface for managing API keys
+  - **Features**:
+    - Create new API keys with custom names and descriptions
+    - Set quota limits (requests) and expiration dates
+    - Toggle API keys active/inactive status
+    - Delete API keys
+    - View usage statistics and last used timestamps
+    - One-time display of generated keys with copy-to-clipboard
+  - **UI Components**:
+    - New "🔑 API Keys" tab in admin panel
+    - Create/Edit/Show API key modals
+    - Real-time key listing with status indicators
+  - **Benefits**:
+    - No more storing API keys in text files
+    - Centralized key management
+    - Usage tracking and quota enforcement
+    - Secure key generation (shown only once)
+  - **Lines**: `templates/admin.html:400-650`, `routers/auth.py:550-700`
+
+- **API Key Authentication System**
+  - **Location**: `utils/auth.py`, `models/auth.py`
+  - **Description**: Two-tier authentication (API keys + JWT tokens)
+  - **Implementation**:
+    - `APIKey` database model with quota tracking
+    - `validate_api_key()` - Validates keys and tracks usage
+    - `generate_api_key()` - Generates secure keys with `sk_mindgraph_` prefix
+    - `get_current_user_or_api_key()` - Dual authentication dependency
+    - `api_key_header` - FastAPI APIKeyHeader scheme (`X-API-Key`)
+  - **Protected Endpoints**: 7 public API endpoints now support API key auth
+    - `/api/generate_graph`
+    - `/api/generate_png`
+    - `/api/export_png`
+    - `/api/generate_dingtalk`
+    - `/api/ai_assistant/stream`
+    - `/api/generate_multi_parallel`
+    - `/api/generate_multi_progressive`
+  - **Lines**: `utils/auth.py:159,512-620`, `models/auth.py:63-85`
+
+- **Bilingual API Documentation**
+  - **Location**: `docs/API_REFERENCE.md`
+  - **Description**: Complete rewrite with English/Chinese dual language
+  - **Updates**:
+    - Added comprehensive authentication section (2 methods)
+    - Step-by-step Dify integration guide (bilingual)
+    - Updated all endpoint examples with authentication headers
+    - Added Python and JavaScript code examples (both auth methods)
+    - Documented missing endpoints (multi-model, export)
+  - **Key Clarifications**:
+    - `X-API-Key` for external services → MindGraph
+    - `Authorization: Bearer` for authenticated users
+    - Clear use case matrix and examples
+  - **Lines**: `docs/API_REFERENCE.md:19-700`
+
+### Fixed
+
+- **Critical Security Fixes**
+  - **HTTPBearer Auto-Error Configuration**
+    - **Location**: `utils/auth.py:156`
+    - **Issue**: JWT authentication was blocking API key authentication
+    - **Fix**: Changed `HTTPBearer()` to `HTTPBearer(auto_error=False)`
+    - **Impact**: Allows API key auth to proceed when JWT token is absent
+  
+  - **Null Credentials Check in `get_current_user()`**
+    - **Location**: `utils/auth.py:250-254`
+    - **Issue**: 500 error when no JWT token provided
+    - **Fix**: Added `if not credentials:` check before accessing credentials
+    - **Impact**: Proper 401 error instead of server crash
+  
+  - **Learning Endpoint Language Header Bug**
+    - **Location**: `routers/learning.py:106,178,287,352`
+    - **Issue**: Passing entire `Request` object to `get_request_language()` 
+    - **Fix**: Extract headers correctly: `request.headers.get("X-Language")`
+    - **Impact**: Learning mode now works without errors
+
+- **Frontend Authentication Issues**
+  - **Location**: Multiple editor JavaScript files
+  - **Issue**: Plain `fetch()` calls not sending JWT tokens
+  - **Fix**: Replaced with `auth.fetch()` in all authenticated endpoints
+  - **Files Updated**: 7 files
+    - `static/js/editor/toolbar-manager.js`
+    - `static/js/editor/prompt-manager.js`
+    - `static/js/editor/learning-mode-manager.js`
+    - `static/js/editor/ai-assistant-manager.js`
+    - `static/js/editor/thinking-mode-manager.js`
+    - `static/js/editor/node-palette-manager.js`
+    - `templates/debug.html`
+  - **Impact**: Editor features now work correctly with authentication
+
+### Changed
+
+- **Documentation Cleanup**
+  - **Location**: `docs/API_REFERENCE.md`
+  - **Changes**:
+    - Removed `®` trademark from "Thinking Maps®" → "Thinking Maps"
+    - Updated API version from 4.9.1 to 4.12.0
+    - Removed outdated changelog (linked to CHANGELOG.md instead)
+    - Reorganized endpoints with clear authentication requirements
+    - Professional formatting and consistency
+
+- **Security Documentation Updates**
+  - **Location**: `docs/SECURITY_CRITICAL_FIXES_REQUIRED.md`, `docs/API_KEY_SECURITY_IMPLEMENTATION.md`
+  - **Changes**:
+    - Marked all implementation phases as completed
+    - Updated file counts and change statistics
+    - Added completion timestamps
+    - Updated implementation status to "COMPLETED & TESTED"
+
+### Removed
+
+- **Temporary API Key Storage Files**
+  - Deleted: `DIFY_API_KEY.txt` (replaced with admin panel management)
+  - Added to `.gitignore`: `*API_KEY*.txt`, `*API_KEY*.json`, `*_key.txt`, `api_keys/`, `keys/`
+
+### Security
+
+- **API Key System**
+  - Secure key generation with cryptographic randomness
+  - Keys shown only once on creation
+  - Usage tracking and quota enforcement
+  - Optional expiration dates
+  - Active/inactive status toggle
+
+- **Authentication Hardening**
+  - Dual authentication support (API key + JWT)
+  - Proper error handling (401 vs 403)
+  - HTTP-only cookies for JWT tokens
+  - Frontend token management via `auth.fetch()`
+
+### Testing
+
+- **Automated Test Scripts Created & Executed**
+  - API key authentication flow
+  - Public endpoint access with API keys
+  - Premium endpoint access with JWT tokens
+  - Error handling for invalid/expired keys
+  - Learning mode endpoints
+  - All tests passing ✅
+
+---
+
 ## [4.14.0] - 2025-01-14 - Unified API Key Security Documentation
 
 ### Added

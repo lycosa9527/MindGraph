@@ -5,20 +5,114 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `http://localhost:9527` (or your deployed server URL)  
-**API Version**: 4.9.1  
+**API Version**: 4.12.0  
 **Architecture**: Multi-agent system with smart LLM classification
 
 **Key Features**:
 - **Smart Classification**: LLM-based diagram type detection
-- **10 Diagram Types**: Complete Thinking Maps®, Mind Maps, and Concept Maps coverage
+- **10 Diagram Types**: Complete Thinking Maps, Mind Maps, and Concept Maps coverage
 - **High Performance**: Dual-model LLM system (qwen-turbo + qwen-plus)
 - **Multi-language**: English and Chinese support
+- **Secure Authentication**: API key and JWT token support
 
 **Endpoint Compatibility**: Both `/endpoint` and `/api/endpoint` formats are supported.
 
-## Authentication
+## Authentication | 身份验证
 
-The API uses API key authentication through environment variables:
+MindGraph supports **two authentication methods** depending on your use case:
+
+### Method 1: API Key (Public API Access) | 方法1：API密钥（公共API访问）
+
+**For external services (e.g., Dify, partners) accessing MindGraph API**  
+**适用于外部服务（如Dify、合作伙伴）访问MindGraph API**
+
+```http
+X-API-Key: your_generated_api_key_here
+```
+
+**How to get an API key | 如何获取API密钥:**
+1. Login to admin panel at `/admin` (admin account required)  
+   登录管理面板 `/admin`（需要管理员账户）
+2. Navigate to "🔑 API Keys" tab  
+   进入"🔑 API Keys"标签页
+3. Click "Create New API Key"  
+   点击"创建新API密钥"
+4. Copy the generated key (shown only once!)  
+   复制生成的密钥（仅显示一次！）
+
+**Supported endpoints | 支持的端点:**
+- ✅ `/api/generate_png` - PNG generation
+- ✅ `/api/generate_graph` - Graph generation
+- ✅ `/api/ai_assistant/stream` - AI assistant
+- ✅ `/api/generate_dingtalk` - DingTalk integration
+- ✅ `/api/generate_multi_*` - Multi-generation endpoints
+- ❌ Premium features (learning, thinking modes) - require JWT token
+
+**Example | 示例:**
+```bash
+curl -X POST http://localhost:9527/api/generate_png \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk_mindgraph_abc123xyz456" \
+  -d '{"prompt": "Compare cats and dogs", "language": "en"}'
+```
+
+---
+
+### Method 2: JWT Bearer Token (User Authentication) | 方法2：JWT令牌（用户认证）
+
+**For authenticated users accessing premium features**  
+**适用于已认证用户访问高级功能**
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**How to get a JWT token | 如何获取JWT令牌:**
+1. Login via `/api/auth/login` or demo mode `/api/auth/demo/verify`  
+   通过 `/api/auth/login` 或演示模式 `/api/auth/demo/verify` 登录
+2. Receive `access_token` in response  
+   在响应中获取 `access_token`
+3. Include in `Authorization: Bearer <token>` header  
+   在请求头中包含 `Authorization: Bearer <token>`
+
+**Required for premium endpoints | 高级端点必需:**
+- ✅ `/api/learning/*` - Learning mode features
+- ✅ `/thinking_mode/*` - Thinking mode features
+- ✅ `/api/cache/*` - Cache monitoring (admin only)
+- ✅ `/admin/*` - Admin panel endpoints
+
+**Example | 示例:**
+```bash
+curl -X POST http://localhost:9527/api/learning/start_session \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{"spec": {...}, "knocked_out_nodes": []}'
+```
+
+---
+
+### Summary | 总结
+
+| Use Case | Header | Example Value |
+|----------|--------|---------------|
+| **External services (Dify, etc.)** <br> 外部服务（Dify等） | `X-API-Key` | `sk_mindgraph_abc123xyz` |
+| **Authenticated users** <br> 已认证用户 | `Authorization: Bearer` | `Bearer eyJhbGci...` |
+
+**Important Notes | 重要说明:**
+- API keys have quotas and expiration dates (configurable in admin panel)  
+  API密钥有配额和过期时间（可在管理面板配置）
+- JWT tokens expire after 7 days by default  
+  JWT令牌默认7天后过期
+- Public endpoints work with either authentication method  
+  公共端点支持两种认证方式
+- Premium endpoints **require** JWT tokens (API keys will return 401)  
+  高级端点**必须**使用JWT令牌（API密钥将返回401错误）
+
+---
+
+### LLM Service Configuration | LLM服务配置
+
+The API also requires LLM service API keys configured via environment variables:
 
 - **QWEN_API_KEY**: Required for core functionality
 - **DEEPSEEK_API_KEY**: Optional for enhanced features
@@ -34,6 +128,7 @@ POST /api/generate_png
 POST /generate_png
 ```
 
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）  
 **Note**: Both endpoints are supported for backward compatibility.
 
 #### Request
@@ -41,6 +136,9 @@ POST /generate_png
 **Headers:**
 ```
 Content-Type: application/json
+X-API-Key: your_api_key_here          # Option 1: API Key authentication
+# OR
+Authorization: Bearer your_jwt_token   # Option 2: JWT token authentication
 ```
 
 **Body:**
@@ -98,6 +196,8 @@ POST /api/generate_dingtalk
 POST /generate_dingtalk
 ```
 
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）
+
 **Note**: Both endpoints are supported for backward compatibility.
 
 #### Request
@@ -105,6 +205,9 @@ POST /generate_dingtalk
 **Headers:**
 ```
 Content-Type: application/json
+X-API-Key: your_api_key_here          # Option 1: API Key authentication
+# OR
+Authorization: Bearer your_jwt_token   # Option 2: JWT token authentication
 ```
 
 **Body:**
@@ -156,6 +259,7 @@ Returns JavaScript cache status and performance metrics for development and debu
 GET /cache/status
 ```
 
+**Authentication**: Required (JWT token only - admin/authenticated users) | 必需（仅JWT令牌 - 管理员/已认证用户）  
 **Note**: This endpoint is primarily for development use.
 
 #### Response
@@ -255,6 +359,7 @@ POST /api/generate_graph
 POST /generate_graph
 ```
 
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）  
 **Note**: Both endpoints are supported for backward compatibility.
 
 #### Request
@@ -262,6 +367,9 @@ POST /generate_graph
 **Headers:**
 ```
 Content-Type: application/json
+X-API-Key: your_api_key_here          # Option 1: API Key authentication
+# OR
+Authorization: Bearer your_jwt_token   # Option 2: JWT token authentication
 ```
 
 **Body:**
@@ -294,7 +402,98 @@ Content-Type: application/json
 }
 ```
 
-### 5. Health Check
+### 5. Multi-Model Generation (Parallel)
+
+Generate diagrams using multiple LLM models in parallel for comparison.
+
+```http
+POST /api/generate_multi_parallel
+```
+
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）
+
+#### Request
+
+**Headers:**
+```
+Content-Type: application/json
+X-API-Key: your_api_key_here          # Option 1: API Key authentication
+# OR
+Authorization: Bearer your_jwt_token   # Option 2: JWT token authentication
+```
+
+**Body:**
+```json
+{
+  "prompt": "Compare cats and dogs",
+  "language": "en",
+  "models": ["qwen-turbo", "qwen-plus"]
+}
+```
+
+#### Response
+
+Returns results from all models as they complete:
+
+```json
+{
+  "status": "success",
+  "results": [
+    {
+      "model": "qwen-turbo",
+      "data": {...},
+      "timing": {"total_time": 2.1}
+    },
+    {
+      "model": "qwen-plus",
+      "data": {...},
+      "timing": {"total_time": 3.5}
+    }
+  ]
+}
+```
+
+### 6. Multi-Model Generation (Progressive)
+
+Progressive parallel generation with Server-Sent Events (SSE) streaming.
+
+```http
+POST /api/generate_multi_progressive
+```
+
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）  
+**Note**: Uses SSE for real-time progressive results.
+
+#### Request
+
+Same as parallel generation, but results stream as they complete.
+
+### 7. Export PNG
+
+Export existing graph data to PNG format.
+
+```http
+POST /api/export_png
+```
+
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）
+
+#### Request
+
+**Body:**
+```json
+{
+  "graph_data": {...},
+  "graph_type": "mind_map",
+  "options": {
+    "width": 1200,
+    "height": 800,
+    "scale": 2
+  }
+}
+```
+
+### 8. Health Check
 
 Returns application status and version information.
 
@@ -309,7 +508,7 @@ GET /status
 ```json
 {
   "status": "ok",
-  "version": "4.9.1"  // Dynamic: reads from VERSION file
+  "version": "4.12.0"
 }
 ```
 
@@ -318,7 +517,7 @@ GET /status
 {
   "status": "running",
   "framework": "FastAPI",
-  "version": "4.9.1",  // Dynamic: reads from VERSION file
+  "version": "4.12.0",
   "uptime_seconds": 3600.5,
   "memory_percent": 45.2,
   "timestamp": 1642012345.678
@@ -327,16 +526,48 @@ GET /status
 
 ## Integration Examples
 
-### Dify Integration
+### Dify Integration | Dify集成
 
-MindGraph provides seamless integration with Dify through HTTP POST requests.
+MindGraph provides seamless integration with Dify through HTTP POST requests.  
+MindGraph通过HTTP POST请求提供与Dify的无缝集成。
 
-#### Basic Setup
+#### Step 1: Generate API Key | 步骤1：生成API密钥
+
+**Before integrating with Dify, generate an API key in MindGraph:**  
+**在与Dify集成之前，在MindGraph中生成API密钥：**
+
+1. Login to MindGraph admin panel at `http://your-mindgraph-server:9527/admin`  
+   登录MindGraph管理面板 `http://your-mindgraph-server:9527/admin`
+   
+2. Go to "🔑 API Keys" tab  
+   进入"🔑 API Keys"标签页
+   
+3. Click "Create New API Key"  
+   点击"创建新API密钥"
+   
+4. Fill in the details:  
+   填写详细信息：
+   - **Name**: `Dify Integration` (or any descriptive name)
+   - **Description**: `API key for Dify to access MindGraph`
+   - **Quota Limit**: Leave blank for unlimited, or set a number
+   - **Expires At**: Optional expiration date
+   
+5. Click "Create" and **copy the generated key immediately** (it won't be shown again!)  
+   点击"创建"并**立即复制生成的密钥**（不会再次显示！）
+   
+6. Save the key securely (format: `sk_mindgraph_xxxxx...`)  
+   安全保存密钥（格式：`sk_mindgraph_xxxxx...`）
+
+---
+
+#### Step 2: Configure Dify HTTP Node | 步骤2：配置Dify HTTP节点
 
 **HTTP Request Node Configuration:**
 - **URL**: `http://your-mindgraph-server:9527/api/generate_png`
 - **Method**: `POST`
-- **Headers**: `Content-Type: application/json`
+- **Headers**: 
+  - `Content-Type: application/json`
+  - **`X-API-Key: sk_mindgraph_xxxxx...`** ← **REQUIRED | 必需**
 
 **Request Body:**
 ```json
@@ -345,7 +576,15 @@ MindGraph provides seamless integration with Dify through HTTP POST requests.
 }
 ```
 
-#### Advanced Configuration
+**⚠️ Important | 重要提示:**
+- You **MUST** include the `X-API-Key` header with your generated API key  
+  你**必须**在请求头中包含带有生成的API密钥的`X-API-Key`
+- Do **NOT** use `Authorization: Bearer` for Dify → MindGraph requests  
+  对于Dify → MindGraph请求，**不要**使用`Authorization: Bearer`
+- The API key format is: `X-API-Key: sk_mindgraph_xxxxx...`  
+  API密钥格式为：`X-API-Key: sk_mindgraph_xxxxx...`
+
+#### Step 3: Advanced Configuration (Optional) | 步骤3：高级配置（可选）
 
 **With Language Detection:**
 ```json
@@ -370,6 +609,20 @@ MindGraph provides seamless integration with Dify through HTTP POST requests.
 }
 ```
 
+**Complete Dify HTTP Node Example | 完整的Dify HTTP节点示例:**
+```
+URL: http://your-mindgraph-server:9527/api/generate_png
+Method: POST
+Headers:
+  Content-Type: application/json
+  X-API-Key: sk_mindgraph_abc123xyz456789
+Body:
+  {
+    "prompt": "{{user_input}}",
+    "language": "en"
+  }
+```
+
 #### Response Handling
 
 **For PNG Images**: The response is a binary PNG image that can be directly displayed or saved.
@@ -389,11 +642,17 @@ MindGraph provides seamless integration with Dify through HTTP POST requests.
 
 ### Python Integration
 
+**With API Key Authentication:**
 ```python
 import requests
 
-def generate_png(prompt, language="en", style=None):
+def generate_png(prompt, api_key, language="en", style=None):
     url = "http://localhost:9527/api/generate_png"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-Key": api_key  # API Key authentication
+    }
     
     payload = {
         "prompt": prompt,
@@ -403,7 +662,7 @@ def generate_png(prompt, language="en", style=None):
     if style:
         payload["style"] = style
     
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, headers=headers)
     
     if response.status_code == 200:
         with open("generated_graph.png", "wb") as f:
@@ -414,23 +673,72 @@ def generate_png(prompt, language="en", style=None):
         raise Exception(f"API Error: {error['error']}")
 
 # Usage
-filename = generate_png("Compare cats and dogs", "en", {"theme": "modern"})
+api_key = "sk_mindgraph_abc123xyz456"  # Your generated API key
+filename = generate_png("Compare cats and dogs", api_key, "en", {"theme": "modern"})
+print(f"Graph saved as: {filename}")
+```
+
+**With JWT Token Authentication:**
+```python
+import requests
+
+def generate_png_with_jwt(prompt, jwt_token, language="en", style=None):
+    url = "http://localhost:9527/api/generate_png"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {jwt_token}"  # JWT token authentication
+    }
+    
+    payload = {
+        "prompt": prompt,
+        "language": language
+    }
+    
+    if style:
+        payload["style"] = style
+    
+    response = requests.post(url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        with open("generated_graph.png", "wb") as f:
+            f.write(response.content)
+        return "generated_graph.png"
+    else:
+        error = response.json()
+        raise Exception(f"API Error: {error['error']}")
+
+# First, login to get JWT token
+def login(username, password):
+    response = requests.post("http://localhost:9527/api/auth/login", json={
+        "username": username,
+        "password": password
+    })
+    return response.json()["access_token"]
+
+# Usage
+jwt_token = login("teacher@example.com", "password123")
+filename = generate_png_with_jwt("Compare cats and dogs", jwt_token, "en")
 print(f"Graph saved as: {filename}")
 ```
 
 ### JavaScript/Node.js Integration
 
+**With API Key Authentication:**
 ```javascript
 const axios = require('axios');
 const fs = require('fs');
 
-async function generatePNG(prompt, language = 'en', style = null) {
+async function generatePNG(prompt, apiKey, language = 'en', style = null) {
     const payload = { prompt, language };
     if (style) payload.style = style;
     
     const response = await axios.post('http://localhost:9527/api/generate_png', payload, {
-        responseType: 'arraybuffer',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey  // API Key authentication
+        },
+        responseType: 'arraybuffer'
     });
     
     fs.writeFileSync('generated_graph.png', response.data);
@@ -438,9 +746,48 @@ async function generatePNG(prompt, language = 'en', style = null) {
 }
 
 // Usage
-generatePNG('Compare cats and dogs', 'en', { theme: 'modern' })
+const apiKey = 'sk_mindgraph_abc123xyz456';  // Your generated API key
+generatePNG('Compare cats and dogs', apiKey, 'en', { theme: 'modern' })
     .then(filename => console.log(`Graph saved as: ${filename}`))
     .catch(error => console.error('Error:', error));
+```
+
+**With JWT Token Authentication:**
+```javascript
+const axios = require('axios');
+const fs = require('fs');
+
+// First, login to get JWT token
+async function login(username, password) {
+    const response = await axios.post('http://localhost:9527/api/auth/login', {
+        username,
+        password
+    });
+    return response.data.access_token;
+}
+
+async function generatePNGWithJWT(prompt, jwtToken, language = 'en', style = null) {
+    const payload = { prompt, language };
+    if (style) payload.style = style;
+    
+    const response = await axios.post('http://localhost:9527/api/generate_png', payload, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`  // JWT token authentication
+        },
+        responseType: 'arraybuffer'
+    });
+    
+    fs.writeFileSync('generated_graph.png', response.data);
+    return 'generated_graph.png';
+}
+
+// Usage
+(async () => {
+    const jwtToken = await login('teacher@example.com', 'password123');
+    const filename = await generatePNGWithJWT('Compare cats and dogs', jwtToken, 'en');
+    console.log(`Graph saved as: ${filename}`);
+})();
 ```
 
 ## Supported Visualization Types
@@ -458,7 +805,7 @@ The system correctly distinguishes between what users want to **create** vs what
 | `"create a bubble map about double bubble maps"` | `bubble_map` | double bubble maps | User wants to CREATE a bubble map ABOUT double bubbles |
 | `"compare cats and dogs"` | `double_bubble_map` | cats vs dogs | Comparison intent automatically detected |
 
-### Thinking Maps (Complete Coverage)
+### Thinking Maps
 
 | Type | Description | Best For | Example Prompt |
 |------|-------------|----------|----------------|
@@ -515,7 +862,8 @@ The LLM classification system uses semantic understanding with robust fallback:
 |------|-------------|---------------|
 | **200** | Success | Request processed successfully |
 | **400** | Bad Request | Invalid prompt, missing parameters, or unsupported language |
-| **401** | Unauthorized | Missing or invalid API key |
+| **401** | Unauthorized | Missing or invalid authentication (API key or JWT token) |
+| **403** | Forbidden | Valid authentication but insufficient permissions |
 | **500** | Internal Server Error | Server-side processing error, API service unavailable |
 
 ### Error Response Format
@@ -533,13 +881,14 @@ The LLM classification system uses semantic understanding with robust fallback:
 }
 ```
 
-## Rate Limiting
+## API Quotas
 
-The API implements rate limiting to ensure fair usage:
+API keys support configurable quotas:
 
-- **Default Limit**: 100 requests per minute per IP
-- **Burst Limit**: 10 requests per second
-- **Headers**: Rate limit information is included in response headers
+- **Quota Limit**: Set per API key (configurable in admin panel)
+- **Usage Tracking**: Automatic usage counting per key
+- **Expiration**: Optional expiration dates per key
+- **Note**: Internal rate limiting applies to external LLM services (Dashscope)
 
 ## Best Practices
 
@@ -587,7 +936,11 @@ The API implements rate limiting to ensure fair usage:
 - Review error messages for specific guidance
 - Check system resources and API service status
 
-### 6. AI Assistant (Streaming)
+---
+
+## Premium Features
+
+### 9. AI Assistant (Streaming)
 
 Interactive AI assistant with streaming responses for guided diagram creation.
 
@@ -595,6 +948,7 @@ Interactive AI assistant with streaming responses for guided diagram creation.
 POST /api/ai_assistant/stream
 ```
 
+**Authentication**: Optional (supports both API key and JWT token) | 可选（支持API密钥和JWT令牌）  
 **Note**: This endpoint uses Server-Sent Events (SSE) for real-time streaming.
 
 #### Request
@@ -602,6 +956,9 @@ POST /api/ai_assistant/stream
 **Headers:**
 ```
 Content-Type: application/json
+X-API-Key: your_api_key_here          # Option 1: API Key authentication
+# OR
+Authorization: Bearer your_jwt_token   # Option 2: JWT token authentication
 ```
 
 **Body:**
@@ -617,7 +974,7 @@ Content-Type: application/json
 
 Returns a stream of Server-Sent Events (SSE) with AI responses.
 
-### 7. LLM Monitoring
+### 10. LLM Monitoring
 
 Monitor LLM performance and health status.
 
@@ -647,7 +1004,7 @@ GET /api/llm/health
 }
 ```
 
-### 8. Frontend Logging
+### 11. Frontend Logging
 
 Log frontend events and errors for debugging.
 
@@ -658,40 +1015,8 @@ POST /api/frontend_log_batch
 
 **Note**: These endpoints are for internal frontend telemetry.
 
-## Changelog
+## Additional Information
 
-### Version 4.9.1 (Current)
-- **Mobile Label Alignment Fix**: Fixed vertical alignment of "Nodes:" and "Tools:" labels
-- Labels now perfectly centered with buttons on all screen sizes
-
-### Version 4.9.0
-- **Mobile Toolbar Optimization**: Improved mobile UI with 3-row compact layout
-- Enhanced button sizing and alignment for mobile devices
-- Removed collapsible toggles for cleaner interface
-- All diagram buttons always visible on mobile
-
-### Version 4.8.1
-- **Critical Bug Fix**: Fixed duplicate variable declaration in bubble-map-renderer.js
-- Resolved canvas display issues affecting circle, bubble, and double bubble maps
-
-### Version 4.8.0
-- **Configurable AI Assistant**: Added `AI_ASSISTANT_NAME` environment variable
-- Dynamic branding across toolbar, panel, and welcome messages
-- Support for custom AI assistant naming
-
-### Version 4.7.0
-- **Circle Map Background Fix**: Added consistent grey background to PNG exports
-- All diagram types now have uniform background styling
-
-### Version 4.6.9
-- **DingTalk Integration**: Updated markdown format to `![]()` with empty alt text
-- Cleaner DingTalk messages without duplicate prompt text
-
-### Version 4.6.8
-- **PNG Export Quality**: Fixed missing watermarks and improved dimension handling
-- Dynamic container resizing for accurate exports
-- Functional scale parameter for quality control
-
----
+For detailed changelog and version history, see the [CHANGELOG.md](../CHANGELOG.md).
 
 For more information, see the [main documentation](../README.md).

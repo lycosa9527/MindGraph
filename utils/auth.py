@@ -15,10 +15,10 @@ from collections import defaultdict
 from jose import JWTError, jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from sqlalchemy.orm import Session
 
-from models.auth import User, Organization
+from models.auth import User, Organization, APIKey
 from config.database import get_db
 
 import logging
@@ -153,7 +153,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # JWT Token Management
 # ============================================================================
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
+
+# API Key security scheme for public API
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 def create_access_token(user: User) -> str:
@@ -244,6 +247,12 @@ def get_current_user(
     
     # Standard AND Demo Mode: Validate JWT token
     # Demo mode uses passkey for login, but still requires valid JWT tokens
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="JWT token required for this endpoint"
+        )
+    
     token = credentials.credentials
     payload = decode_access_token(token)
     
@@ -508,4 +517,145 @@ def is_admin(current_user: User) -> bool:
         return True
     
     return False
+
+
+# ============================================================================
+# API Key Management
+# ============================================================================
+
+def validate_api_key(api_key: str, db: Session) -> bool:
+    """
+    Validate API key and check quota
+    
+    Returns True if valid and within quota
+    Raises HTTPException if quota exceeded
+    Returns False if invalid
+    """
+    if not api_key:
+        return False
+    
+    # Query database for key
+    key_record = db.query(APIKey).filter(
+        APIKey.key == api_key,
+        APIKey.is_active == True
+    ).first()
+    
+    if not key_record:
+        logger.warning(f"Invalid API key attempted: {api_key[:12]}...")
+        return False
+    
+    # Check expiration
+    if key_record.expires_at and key_record.expires_at < datetime.utcnow():
+        logger.warning(f"Expired API key used: {key_record.name}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key has expired"
+        )
+    
+    # Check quota
+    if key_record.quota_limit and key_record.usage_count >= key_record.quota_limit:
+        logger.warning(f"API key quota exceeded: {key_record.name}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"API key quota exceeded. Limit: {key_record.quota_limit}"
+        )
+    
+    return True
+
+
+def track_api_key_usage(api_key: str, db: Session):
+    """Increment usage counter for API key"""
+    key_record = db.query(APIKey).filter(APIKey.key == api_key).first()
+    if key_record:
+        key_record.usage_count += 1
+        key_record.last_used_at = datetime.utcnow()
+        db.commit()
+        logger.info(f"API key used: {key_record.name} (usage: {key_record.usage_count}/{key_record.quota_limit or 'unlimited'})")
+
+
+def get_current_user_or_api_key(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    api_key: str = Depends(api_key_header),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    Get current user from JWT token OR validate API key
+    
+    Priority:
+    1. JWT token (authenticated teachers) - Returns User object
+    2. API key (Dify, public API) - Returns None (but validates key)
+    3. No auth - Raises 401 error
+    
+    Returns:
+        User object if JWT valid, None if API key valid
+    
+    Raises:
+        HTTPException(401) if both invalid
+    """
+    # Priority 1: Try JWT token (for authenticated teachers)
+    if credentials:
+        try:
+            token = credentials.credentials
+            payload = decode_access_token(token)
+            user_id = payload.get("sub")
+            
+            if user_id:
+                user = db.query(User).filter(User.id == int(user_id)).first()
+                if user:
+                    logger.info(f"Authenticated teacher: {user.name}")
+                    return user  # Authenticated teacher - full access
+        except HTTPException:
+            # Invalid JWT, try API key instead
+            pass
+    
+    # Priority 2: Try API key (for Dify, public API users)
+    if api_key:
+        if validate_api_key(api_key, db):
+            track_api_key_usage(api_key, db)
+            logger.info(f"Valid API key access")
+            return None  # Valid API key, no user object
+    
+    # No valid authentication
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required: provide JWT token (Authorization: Bearer) or API key (X-API-Key header)"
+    )
+
+
+def generate_api_key(name: str, description: str, quota_limit: int, db: Session) -> str:
+    """
+    Generate a new API key
+    
+    Args:
+        name: Name for the key (e.g., "Dify Integration")
+        description: Description of the key's purpose
+        quota_limit: Maximum number of requests (None = unlimited)
+        db: Database session
+    
+    Returns:
+        Generated API key string (mg_...)
+    """
+    import secrets
+    
+    # Generate secure random key with MindGraph prefix
+    key = f"mg_{secrets.token_urlsafe(32)}"
+    
+    # Create database record
+    api_key_record = APIKey(
+        key=key,
+        name=name,
+        description=description,
+        quota_limit=quota_limit,
+        usage_count=0,
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    
+    db.add(api_key_record)
+    db.commit()
+    db.refresh(api_key_record)
+    
+    logger.info(f"Generated API key: {name} (quota: {quota_limit or 'unlimited'})")
+    
+    return key
 

@@ -254,7 +254,7 @@ class ThinkingModeManager {
         
         try {
             this.logger.info('[ThinkGuide]', 'Starting fetch with AbortController signal');
-            const response = await fetch('/thinking_mode/stream', {
+            const response = await auth.fetch('/thinking_mode/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

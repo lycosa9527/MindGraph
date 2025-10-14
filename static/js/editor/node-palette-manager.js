@@ -221,7 +221,7 @@ class NodePaletteManager {
             };
         
         try {
-            const response = await fetch(url, {
+            const response = await auth.fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -419,7 +419,7 @@ class NodePaletteManager {
          * Send selection event to backend for logging.
          */
         try {
-            await fetch('/thinking_mode/node_palette/select_node', {
+            await auth.fetch('/thinking_mode/node_palette/select_node', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -509,7 +509,7 @@ class NodePaletteManager {
         // Log finish event to backend
         console.log('[NodePalette-Finish] Sending finish event to backend...');
         try {
-            const response = await fetch('/thinking_mode/node_palette/finish', {
+            const response = await auth.fetch('/thinking_mode/node_palette/finish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

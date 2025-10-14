@@ -100,7 +100,7 @@ class PromptManager {
             const language = window.languageManager?.currentLanguage || 'en';
             
             // Send to AI generation endpoint
-            const response = await fetch('/api/generate_graph', {
+            const response = await auth.fetch('/api/generate_graph', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

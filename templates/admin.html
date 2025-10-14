@@ -398,6 +398,7 @@
             <button class="tab active" onclick="switchTab('dashboard')">📊 仪表盘 Dashboard</button>
             <button class="tab" onclick="switchTab('schools')">🏫 学校管理 Schools</button>
             <button class="tab" onclick="switchTab('users')">👥 用户管理 Users</button>
+            <button class="tab" onclick="switchTab('apikeys')">🔑 API Keys</button>
             <button class="tab" onclick="switchTab('settings')">⚙️ 系统设置 Settings</button>
         </div>
 
@@ -474,6 +475,33 @@
                         </tr>
                     </thead>
                     <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- API Keys Tab -->
+        <div id="apikeys-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔑 API Keys Management</h2>
+                    <button class="btn btn-primary" onclick="showCreateAPIKeyModal()">
+                        ➕ Create API Key
+                    </button>
+                </div>
+                <div id="apikeys-loading" class="spinner"></div>
+                <table id="apikeys-table" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>API Key</th>
+                            <th>Usage</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Last Used</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apikeys-tbody"></tbody>
                 </table>
             </div>
         </div>
@@ -584,6 +612,95 @@
         </div>
     </div>
 
+    <!-- Create API Key Modal -->
+    <div id="create-apikey-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔑 Create API Key</h3>
+                <span class="close" onclick="closeModal('create-apikey-modal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name *</label>
+                <input type="text" id="new-apikey-name" class="form-input" 
+                       placeholder="Dify Integration, Mobile App, etc." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="new-apikey-description" class="form-textarea" style="min-height:80px;"
+                          placeholder="Purpose of this API key..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quota Limit (leave empty for unlimited)</label>
+                <input type="number" id="new-apikey-quota" class="form-input" 
+                       placeholder="10000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Expires in (days, optional)</label>
+                <input type="number" id="new-apikey-expires" class="form-input" 
+                       placeholder="365">
+            </div>
+            <button class="btn btn-primary" onclick="createAPIKey()">🔑 Generate API Key</button>
+        </div>
+    </div>
+
+    <!-- Show API Key Modal -->
+    <div id="show-apikey-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✅ API Key Created</h3>
+                <span class="close" onclick="closeModal('show-apikey-modal')">&times;</span>
+            </div>
+            <div class="alert alert-warning show">
+                ⚠️ <strong>Important:</strong> Save this key securely - it won't be shown again!
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="text" id="generated-apikey" class="form-input" readonly 
+                       style="font-family:monospace;font-size:0.875rem;" onclick="this.select()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Usage Instructions</label>
+                <textarea readonly class="form-textarea" style="min-height:100px;">Add this header to your HTTP requests:
+X-API-Key: [your-key-here]
+
+Example (curl):
+curl -X POST http://your-server/api/generate_graph \
+  -H "X-API-Key: [your-key]" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"test","diagram_type":"mind_map"}'</textarea>
+            </div>
+            <button class="btn btn-primary" onclick="copyAPIKey()">📋 Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <!-- Edit API Key Modal -->
+    <div id="edit-apikey-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ Edit API Key</h3>
+                <span class="close" onclick="closeModal('edit-apikey-modal')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-apikey-id">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" id="edit-apikey-name" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="edit-apikey-description" class="form-textarea" style="min-height:80px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quota Limit (empty for unlimited)</label>
+                <input type="number" id="edit-apikey-quota" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Usage Count (reset to 0 if needed)</label>
+                <input type="number" id="edit-apikey-usage" class="form-input">
+            </div>
+            <button class="btn btn-primary" onclick="updateAPIKey()">💾 Save Changes</button>
+        </div>
+    </div>
+
     <!-- Unauthenticated Overlay -->
     <div id="auth-required-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
         <div style="background:white; border-radius:20px; padding:3rem; text-align:center; max-width:500px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
@@ -664,6 +781,7 @@
             if (tab === 'dashboard') loadDashboard();
             if (tab === 'schools') loadSchools();
             if (tab === 'users') loadUsers();
+            if (tab === 'apikeys') loadAPIKeys();
             if (tab === 'settings') loadSettings();
         }
 
@@ -916,6 +1034,192 @@
                 showAlert(result.message + ' ' + result.warning, 'warning');
             } catch (error) {
                 showAlert('保存失败 Save failed: ' + error.message, 'error');
+            }
+        }
+
+        // API Keys
+        let apiKeys = [];
+
+        async function loadAPIKeys() {
+            document.getElementById('apikeys-loading').style.display = 'block';
+            document.getElementById('apikeys-table').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/api_keys');
+                apiKeys = await response.json();
+
+                const tbody = document.getElementById('apikeys-tbody');
+                tbody.innerHTML = apiKeys.map(key => {
+                    const isExpired = key.expires_at && new Date(key.expires_at) < new Date();
+                    const usagePercent = key.usage_percentage || 0;
+                    const quotaText = key.quota_limit ? `${key.usage_count.toLocaleString()} / ${key.quota_limit.toLocaleString()}` : `${key.usage_count.toLocaleString()} / unlimited`;
+                    
+                    return `
+                        <tr>
+                            <td>
+                                <strong>${key.name}</strong>
+                                ${key.description ? `<br><small style="color:#64748b;">${key.description}</small>` : ''}
+                            </td>
+                            <td>
+                                <code style="font-size:0.75rem;background:#f1f5f9;padding:0.25rem 0.5rem;border-radius:4px;" onclick="copyToClipboard('${key.key}', this)">${key.key.substring(0, 20)}...${key.key.substring(key.key.length - 8)}</code>
+                            </td>
+                            <td>
+                                ${quotaText}
+                                ${key.quota_limit ? `<br><div style="background:#e2e8f0;height:6px;border-radius:3px;margin-top:4px;overflow:hidden;"><div style="background:${usagePercent > 90 ? '#ef4444' : '#667eea'};width:${Math.min(usagePercent, 100)}%;height:100%;"></div></div>` : ''}
+                            </td>
+                            <td>
+                                ${key.is_active && !isExpired ? 
+                                    '<span class="badge badge-success">✅ Active</span>' : 
+                                    isExpired ? '<span class="badge badge-danger">⏰ Expired</span>' :
+                                    '<span class="badge badge-danger">❌ Disabled</span>'
+                                }
+                            </td>
+                            <td><small>${new Date(key.created_at).toLocaleDateString()}</small></td>
+                            <td><small>${key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</small></td>
+                            <td>
+                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ Disable' : '▶️ Enable'}</button>
+                                <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})">✏️ Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')">🗑️ Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.getElementById('apikeys-loading').style.display = 'none';
+                document.getElementById('apikeys-table').style.display = 'table';
+            } catch (error) {
+                showAlert('Failed to load API keys: ' + error.message, 'error');
+            }
+        }
+
+        function showCreateAPIKeyModal() {
+            document.getElementById('create-apikey-modal').classList.add('show');
+        }
+
+        async function createAPIKey() {
+            const data = {
+                name: document.getElementById('new-apikey-name').value,
+                description: document.getElementById('new-apikey-description').value,
+                quota_limit: document.getElementById('new-apikey-quota').value ? parseInt(document.getElementById('new-apikey-quota').value) : null,
+                expires_days: document.getElementById('new-apikey-expires').value ? parseInt(document.getElementById('new-apikey-expires').value) : null
+            };
+
+            if (!data.name) {
+                showAlert('Please enter a name for the API key', 'error');
+                return;
+            }
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/api_keys', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                // Show the generated key
+                document.getElementById('generated-apikey').value = result.key;
+                closeModal('create-apikey-modal');
+                document.getElementById('show-apikey-modal').classList.add('show');
+                
+                // Clear form
+                document.getElementById('new-apikey-name').value = '';
+                document.getElementById('new-apikey-description').value = '';
+                document.getElementById('new-apikey-quota').value = '';
+                document.getElementById('new-apikey-expires').value = '';
+                
+                showAlert(result.message, 'success');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to create API key: ' + error.message, 'error');
+            }
+        }
+
+        function copyAPIKey() {
+            const apiKeyInput = document.getElementById('generated-apikey');
+            apiKeyInput.select();
+            navigator.clipboard.writeText(apiKeyInput.value);
+            showAlert('API key copied to clipboard! 📋', 'success');
+        }
+
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text);
+            const originalText = element.innerHTML;
+            element.innerHTML = '✅ Copied!';
+            element.style.background = '#d1fae5';
+            element.style.color = '#065f46';
+            setTimeout(() => {
+                element.innerHTML = originalText;
+                element.style.background = '#f1f5f9';
+                element.style.color = '';
+            }, 2000);
+        }
+
+        function editAPIKey(id) {
+            const key = apiKeys.find(k => k.id === id);
+            if (!key) return;
+
+            document.getElementById('edit-apikey-id').value = key.id;
+            document.getElementById('edit-apikey-name').value = key.name;
+            document.getElementById('edit-apikey-description').value = key.description || '';
+            document.getElementById('edit-apikey-quota').value = key.quota_limit || '';
+            document.getElementById('edit-apikey-usage').value = key.usage_count;
+            
+            document.getElementById('edit-apikey-modal').classList.add('show');
+        }
+
+        async function updateAPIKey() {
+            const id = document.getElementById('edit-apikey-id').value;
+            const data = {
+                name: document.getElementById('edit-apikey-name').value,
+                description: document.getElementById('edit-apikey-description').value,
+                quota_limit: document.getElementById('edit-apikey-quota').value ? parseInt(document.getElementById('edit-apikey-quota').value) : null,
+                usage_count: parseInt(document.getElementById('edit-apikey-usage').value)
+            };
+
+            try {
+                await auth.fetch(`/api/auth/admin/api_keys/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                showAlert('API key updated successfully', 'success');
+                closeModal('edit-apikey-modal');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to update API key: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleAPIKey(id) {
+            try {
+                const response = await auth.fetch(`/api/auth/admin/api_keys/${id}/toggle`, {
+                    method: 'PUT'
+                });
+
+                const result = await response.json();
+                showAlert(result.message, 'success');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to toggle API key: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteAPIKey(id, name) {
+            if (!confirm(`⚠️ Delete API key "${name}"?\n\nThis action cannot be undone and will immediately revoke access.`)) return;
+
+            try {
+                const response = await auth.fetch(`/api/auth/admin/api_keys/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                showAlert(result.message, 'success');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to delete API key: ' + error.message, 'error');
             }
         }
 

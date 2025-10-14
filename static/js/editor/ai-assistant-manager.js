@@ -405,7 +405,7 @@ class AIAssistantManager {
             };
             
             // Use fetch with SSE-like reading
-            fetch('/api/ai_assistant/stream', {
+            auth.fetch('/api/ai_assistant/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

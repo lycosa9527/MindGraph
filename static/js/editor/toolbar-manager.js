@@ -1618,7 +1618,7 @@ class ToolbarManager {
                 }, LLM_CONFIG.TIMEOUT_MS);
                 
                 // Use SSE streaming (same pattern as MindMate ai-assistant-manager.js:333-380)
-                const response = await fetch('/api/generate_multi_progressive', {
+                const response = await auth.fetch('/api/generate_multi_progressive', {
                     method: 'POST',
                     signal: abortController.signal, // Enable cancellation
                     headers: {
@@ -1873,7 +1873,7 @@ class ToolbarManager {
                     this.activeAbortControllers.set(model, abortController); // Track for cancellation
                     const timeoutId = setTimeout(() => abortController.abort(), LLM_CONFIG.TIMEOUT_MS);
                     
-                    const response = await fetch('/api/generate_graph', {
+                    const response = await auth.fetch('/api/generate_graph', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

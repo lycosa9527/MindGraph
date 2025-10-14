@@ -10,9 +10,13 @@ Author: lycosa9527
 Made by: MindSpring Team
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 import logging
 import time
+
+# Import authentication
+from models.auth import User
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +28,7 @@ router = APIRouter(prefix="/cache", tags=["Cache"])
 # ============================================================================
 
 @router.get("/status")
-async def get_cache_status():
+async def get_cache_status(current_user: User = Depends(get_current_user)):
     """
     Lazy loading JavaScript cache status endpoint.
     
@@ -76,7 +80,7 @@ async def get_cache_status():
         return cache_data
 
 @router.get("/performance")
-async def get_cache_performance():
+async def get_cache_performance(current_user: User = Depends(get_current_user)):
     """
     Detailed lazy cache performance endpoint.
     
@@ -130,7 +134,7 @@ async def get_cache_performance():
         return performance_data
 
 @router.get("/modular")
-async def get_modular_cache_status():
+async def get_modular_cache_status(current_user: User = Depends(get_current_user)):
     """
     Modular cache status endpoint for Option 3: Code Splitting.
     

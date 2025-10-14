@@ -14,8 +14,12 @@ import time
 import random
 import json
 from typing import Dict, Any
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
+
+# Import authentication
+from models.auth import User
+from utils.auth import get_current_user
 
 from models import (
     LearningStartSessionRequest,
@@ -90,7 +94,8 @@ def _extract_node_text(node_id: str, spec: Dict, diagram_type: str) -> str:
 @router.post("/start_session")
 async def start_session(
     request: Request,
-    req: LearningStartSessionRequest
+    req: LearningStartSessionRequest,
+    current_user: User = Depends(get_current_user)
 ) -> JSONResponse:
     """
     Initialize a new learning session with intelligent question generation.
@@ -98,7 +103,10 @@ async def start_session(
     POST /api/learning/start_session
     """
     try:
-        language_code = get_request_language(request)
+        language_code = get_request_language(
+            language_header=request.headers.get("X-Language"),
+            accept_language=request.headers.get("Accept-Language")
+        )
         
         diagram_type = req.diagram_type
         spec = req.spec
@@ -158,7 +166,8 @@ async def start_session(
 @router.post("/validate_answer")
 async def validate_answer(
     request: Request,
-    req: LearningValidateAnswerRequest
+    req: LearningValidateAnswerRequest,
+    current_user: User = Depends(get_current_user)
 ) -> JSONResponse:
     """
     Validate user answer with LangChain agent analysis.
@@ -166,7 +175,10 @@ async def validate_answer(
     POST /api/learning/validate_answer
     """
     try:
-        language_code = get_request_language(request)
+        language_code = get_request_language(
+            language_header=request.headers.get("X-Language"),
+            accept_language=request.headers.get("Accept-Language")
+        )
         
         session_id = req.session_id
         node_id = req.node_id
@@ -266,7 +278,8 @@ async def validate_answer(
 @router.post("/get_hint")
 async def get_hint(
     request: Request,
-    req: LearningHintRequest
+    req: LearningHintRequest,
+    current_user: User = Depends(get_current_user)
 ) -> JSONResponse:
     """
     Generate intelligent hint for a question.
@@ -274,7 +287,10 @@ async def get_hint(
     POST /api/learning/get_hint
     """
     try:
-        language_code = get_request_language(request)
+        language_code = get_request_language(
+            language_header=request.headers.get("X-Language"),
+            accept_language=request.headers.get("Accept-Language")
+        )
         
         session_id = req.session_id
         node_id = req.node_id
@@ -330,7 +346,8 @@ async def get_hint(
 @router.post("/verify_understanding")
 async def verify_understanding(
     request: Request,
-    req: LearningVerifyUnderstandingRequest
+    req: LearningVerifyUnderstandingRequest,
+    current_user: User = Depends(get_current_user)
 ) -> JSONResponse:
     """
     Verify user's understanding with deep explanation analysis.
@@ -338,7 +355,10 @@ async def verify_understanding(
     POST /api/learning/verify_understanding
     """
     try:
-        language_code = get_request_language(request)
+        language_code = get_request_language(
+            language_header=request.headers.get("X-Language"),
+            accept_language=request.headers.get("Accept-Language")
+        )
         
         session_id = req.session_id
         node_id = req.node_id

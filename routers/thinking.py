@@ -10,9 +10,13 @@ Provides SSE streaming for Socratic guided thinking workflow.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import json
+
+# Import authentication
+from models.auth import User
+from utils.auth import get_current_user
 
 from agents.thinking_modes.factory import ThinkingAgentFactory
 from agents.thinking_modes.node_palette_generator import get_node_palette_generator
@@ -29,7 +33,10 @@ logger = logging.getLogger(__name__)
 
 
 @router.post('/thinking_mode/stream')
-async def thinking_mode_stream(req: ThinkingModeRequest):
+async def thinking_mode_stream(
+    req: ThinkingModeRequest,
+    current_user: User = Depends(get_current_user)
+):
     """
     Universal SSE streaming endpoint for ALL diagram types.
     Uses factory pattern to route to correct agent.
@@ -95,7 +102,12 @@ async def thinking_mode_stream(req: ThinkingModeRequest):
 
 
 @router.get('/thinking_mode/node_learning/{session_id}/{node_id}')
-async def get_node_learning_material(session_id: str, node_id: str, diagram_type: str = 'circle_map'):
+async def get_node_learning_material(
+    session_id: str,
+    node_id: str,
+    diagram_type: str = 'circle_map',
+    current_user: User = Depends(get_current_user)
+):
     """
     Get learning material for a specific node (for hover tooltip).
     
@@ -136,7 +148,10 @@ async def get_node_learning_material(session_id: str, node_id: str, diagram_type
 # ============================================================================
 
 @router.post('/thinking_mode/node_palette/start')
-async def start_node_palette(req: NodePaletteStartRequest):
+async def start_node_palette(
+    req: NodePaletteStartRequest,
+    current_user: User = Depends(get_current_user)
+):
     """
     Initialize Node Palette and fire ALL 4 LLMs concurrently.
     
@@ -209,7 +224,10 @@ async def start_node_palette(req: NodePaletteStartRequest):
 
 
 @router.post('/thinking_mode/node_palette/next_batch')
-async def get_next_batch(req: NodePaletteNextRequest):
+async def get_next_batch(
+    req: NodePaletteNextRequest,
+    current_user: User = Depends(get_current_user)
+):
     """
     Generate next batch - fires ALL 4 LLMs concurrently again!
     
@@ -264,7 +282,10 @@ async def get_next_batch(req: NodePaletteNextRequest):
 
 
 @router.post('/thinking_mode/node_palette/select_node')
-async def log_node_selection(req: NodeSelectionRequest):
+async def log_node_selection(
+    req: NodeSelectionRequest,
+    current_user: User = Depends(get_current_user)
+):
     """
     Log node selection/deselection event for analytics.
     
@@ -284,7 +305,10 @@ async def log_node_selection(req: NodeSelectionRequest):
 
 
 @router.post('/thinking_mode/node_palette/finish')
-async def log_finish_selection(req: NodePaletteFinishRequest):
+async def log_finish_selection(
+    req: NodePaletteFinishRequest,
+    current_user: User = Depends(get_current_user)
+):
     """
     Log when user finishes Node Palette and return to Circle Map.
     

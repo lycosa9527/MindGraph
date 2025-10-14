@@ -408,6 +408,9 @@
 
 
     
+    <!-- Auth Helper for API authentication -->
+    <script src="/static/js/auth-helper.js"></script>
+    
     <!-- UNIFIED RENDERING PIPELINE SYSTEM -->
     <script>
         // Module mapping for different graph types
@@ -1374,7 +1377,7 @@
             console.log('🔍 Debug: Calling /api/generate_png endpoint with prompt:', promptBox.value, 'language:', languageSelect.value);
             console.log('🔍 Debug: Starting PNG generation...');
             console.log('🔍 Debug: Request payload:', { prompt: promptBox.value, language: languageSelect.value });
-            const pngResp = await fetch('/api/generate_png', {
+            const pngResp = await auth.fetch('/api/generate_png', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })

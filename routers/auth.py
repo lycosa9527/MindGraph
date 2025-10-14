@@ -823,3 +823,171 @@ async def get_stats_admin(
         "recent_registrations": recent_registrations
     }
 
+
+# ============================================================================
+# API Key Management Endpoints (ADMIN ONLY)
+# ============================================================================
+
+@router.get("/admin/api_keys", dependencies=[Depends(get_current_user)])
+async def list_api_keys_admin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all API keys with usage stats (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    from models.auth import APIKey
+    
+    keys = db.query(APIKey).order_by(APIKey.created_at.desc()).all()
+    
+    return [{
+        "id": key.id,
+        "key": key.key,
+        "name": key.name,
+        "description": key.description,
+        "quota_limit": key.quota_limit,
+        "usage_count": key.usage_count,
+        "is_active": key.is_active,
+        "created_at": key.created_at.isoformat() if key.created_at else None,
+        "last_used_at": key.last_used_at.isoformat() if key.last_used_at else None,
+        "expires_at": key.expires_at.isoformat() if key.expires_at else None,
+        "usage_percentage": round((key.usage_count / key.quota_limit * 100), 1) if key.quota_limit else 0
+    } for key in keys]
+
+
+@router.post("/admin/api_keys", dependencies=[Depends(get_current_user)])
+async def create_api_key_admin(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create new API key (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    from utils.auth import generate_api_key
+    from datetime import datetime as dt, timedelta
+    
+    name = request.get("name")
+    description = request.get("description", "")
+    quota_limit = request.get("quota_limit")
+    expires_days = request.get("expires_days")  # Optional: days until expiration
+    
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    
+    # Generate the API key
+    key = generate_api_key(name, description, quota_limit, db)
+    
+    # Update expiration if specified
+    if expires_days:
+        from models.auth import APIKey
+        key_record = db.query(APIKey).filter(APIKey.key == key).first()
+        if key_record:
+            key_record.expires_at = dt.utcnow() + timedelta(days=expires_days)
+            db.commit()
+    
+    return {
+        "message": "API key created successfully",
+        "key": key,
+        "name": name,
+        "quota_limit": quota_limit or "unlimited",
+        "warning": "⚠️ Save this key securely - it won't be shown again!"
+    }
+
+
+@router.put("/admin/api_keys/{key_id}", dependencies=[Depends(get_current_user)])
+async def update_api_key_admin(
+    key_id: int,
+    request: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update API key settings (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    from models.auth import APIKey
+    
+    key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
+    if not key_record:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    # Update fields if provided
+    if "name" in request:
+        key_record.name = request["name"]
+    if "description" in request:
+        key_record.description = request["description"]
+    if "quota_limit" in request:
+        key_record.quota_limit = request["quota_limit"]
+    if "is_active" in request:
+        key_record.is_active = request["is_active"]
+    if "usage_count" in request:  # Allow resetting usage
+        key_record.usage_count = request["usage_count"]
+    
+    db.commit()
+    
+    return {
+        "message": "API key updated successfully",
+        "key": {
+            "id": key_record.id,
+            "name": key_record.name,
+            "quota_limit": key_record.quota_limit,
+            "usage_count": key_record.usage_count,
+            "is_active": key_record.is_active
+        }
+    }
+
+
+@router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(get_current_user)])
+async def delete_api_key_admin(
+    key_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete/revoke API key (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    from models.auth import APIKey
+    
+    key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
+    if not key_record:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    key_name = key_record.name
+    db.delete(key_record)
+    db.commit()
+    
+    return {
+        "message": f"API key '{key_name}' deleted successfully"
+    }
+
+
+@router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(get_current_user)])
+async def toggle_api_key_admin(
+    key_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Toggle API key active status (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    from models.auth import APIKey
+    
+    key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
+    if not key_record:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    key_record.is_active = not key_record.is_active
+    db.commit()
+    
+    status_text = "activated" if key_record.is_active else "deactivated"
+    
+    return {
+        "message": f"API key '{key_record.name}' {status_text}",
+        "is_active": key_record.is_active
+    }
+
