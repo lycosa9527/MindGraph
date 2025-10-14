@@ -459,7 +459,23 @@ def increment_failed_attempts(user: User, db: Session):
 # ============================================================================
 
 def is_admin(current_user: User) -> bool:
-    """Check if user is admin based on phone number"""
+    """
+    Check if user is admin
+    
+    Admin access granted if:
+    1. User phone in ADMIN_PHONES env variable (production admins)
+    2. User is demo-admin@system.com AND server is in demo mode (demo admin)
+    
+    This ensures demo admin passkey only works in demo mode for security.
+    """
+    # Check ADMIN_PHONES list (production admins)
     admin_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
-    return current_user.phone in admin_phones
+    if current_user.phone in admin_phones:
+        return True
+    
+    # Check demo admin (only in demo mode for security)
+    if AUTH_MODE == "demo" and current_user.phone == "demo-admin@system.com":
+        return True
+    
+    return False
 
