@@ -7,6 +7,176 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.13.0] - 2025-10-14 - Admin Panel Expansion: Settings Management & Debug Logs
+
+### Added
+
+- **Environment Settings Management System**
+  - **Location**: `routers/admin_env.py`, `services/env_manager.py`, `models/env_settings.py`
+  - **Description**: Complete web-based .env configuration management with backup/restore
+  - **Features**:
+    - Two-way .env read/write with comment preservation
+    - Automatic timestamped backups before every save (`.env.backup.YYYY-MM-DD_HH-MM-SS`)
+    - Pydantic validation for all settings before writing
+    - Backup management (keeps last 30, auto-deletes old ones)
+    - Restore from backup with safety backup creation
+    - Sensitive data masking (API keys show `***...last4`)
+    - Path traversal prevention
+    - Atomic file writes (temp file → rename)
+    - Cross-platform compatible (Windows + Linux)
+  - **API Endpoints** (6 new):
+    - `GET /api/auth/admin/env/settings` - Get all settings with schema metadata
+    - `PUT /api/auth/admin/env/settings` - Update settings with auto-backup
+    - `POST /api/auth/admin/env/validate` - Validate settings without saving
+    - `GET /api/auth/admin/env/backups` - List all backup files
+    - `POST /api/auth/admin/env/restore` - Restore from backup
+    - `GET /api/auth/admin/env/schema` - Get settings schema
+  - **UI Components**:
+    - Expanded Settings tab in admin panel
+    - 4 collapsible categories: Application Server, Qwen API, Logging & Features, Authentication
+    - Action bar: Refresh, Backups, Validate, Save All, Reset
+    - Backup list modal with restore functionality
+    - Inline validation feedback and descriptions
+  - **Security**:
+    - JWT authentication + admin role check on all endpoints
+    - Cannot modify JWT_SECRET_KEY or DATABASE_URL via web (security)
+    - Audit logging of all changes with admin user ID
+  - **Lines**: `routers/admin_env.py:357`, `services/env_manager.py:493`, `models/env_settings.py:343`
+
+- **Debug Log Viewer System**
+  - **Location**: `routers/admin_logs.py`, `services/log_streamer.py`, `static/js/admin-logs.js`
+  - **Description**: Real-time log streaming and viewing for debugging
+  - **Features**:
+    - Real-time log streaming via Server-Sent Events (SSE)
+    - Async log file tailing with follow mode
+    - Log line parsing with regex (supports Uvicorn and Python logging formats)
+    - Rate limiting (100 lines/second) to prevent overwhelming clients
+    - Buffer management (max 1000 lines in memory)
+    - Log rotation detection and handling
+    - Multiple log source support (app, uvicorn, error)
+    - Cross-platform compatible (aiofiles with sync fallback)
+  - **API Endpoints** (5 new):
+    - `GET /api/auth/admin/logs/files` - List available log files
+    - `GET /api/auth/admin/logs/read` - Read log range
+    - `GET /api/auth/admin/logs/stream` - Real-time SSE streaming
+    - `GET /api/auth/admin/logs/tail` - Get last N lines (like `tail -n`)
+    - `GET /api/auth/admin/logs/search` - Search logs
+  - **UI Components**:
+    - New "📋 Debug Logs" tab in admin panel
+    - Log source selector (Application, Uvicorn, Errors)
+    - Log level filter (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    - Stream controls: Start/Pause, Auto-scroll toggle, Clear, Download
+    - Search functionality with result count
+    - Terminal-style dark theme viewer
+    - Color-coded log levels (blue INFO, orange WARNING, red ERROR, etc.)
+  - **Frontend**:
+    - AdminLogViewer class with EventSource integration
+    - Auto-scroll with pause/resume
+    - Download logs as .log file (last 500 lines)
+    - Live search with case-insensitive substring match
+  - **Lines**: `routers/admin_logs.py:269`, `services/log_streamer.py:348`, `static/js/admin-logs.js:377`
+
+- **Settings Validation Models**
+  - **Location**: `models/env_settings.py`
+  - **Description**: Pydantic models for structured validation of all environment settings
+  - **Categories** (10 model classes):
+    - `AppSettings` - HOST, PORT, DEBUG, EXTERNAL_HOST
+    - `QwenAPISettings` - API key, models, temperature, timeout
+    - `HunyuanAPISettings` - With temperature ≤2.0 validation
+    - `DashscopeRateLimitSettings` - QPM, concurrent limits
+    - `GraphSettings` - Language, font sizes, watermark
+    - `LoggingSettings` - Log level, verbose logging
+    - `FeatureFlagSettings` - Learning mode, ThinkGuide
+    - `DifySettings` - API key, URL, timeout, assistant name
+    - `DatabaseSettings` - Database URL
+    - `AuthSettings` - JWT, auth mode, passkeys, invitation codes
+  - **Validation Rules**:
+    - Type checking, range validation, enum validation
+    - PORT: 1-65535
+    - Temperature: 0.0-2.0 (Hunyuan ≤2.0)
+    - Passkeys: 6 digits
+    - Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    - JWT secret strength warnings
+  - **Master Schema**: `EnvSettingsSchema` class for unified validation
+
+### Changed
+
+- **Admin Panel UI Enhancement**
+  - **Location**: `templates/admin.html`
+  - **Updates**:
+    - Settings tab expanded from 4 basic fields to 20+ categorized settings
+    - Added collapsible category sections with ▼/▶ indicators
+    - Grid layout for better space utilization
+    - Added backup management modal
+    - Added Debug Logs tab with terminal-style viewer
+    - Enhanced JavaScript for settings and log management
+  - **CSS Additions**:
+    - Category collapsible sections styling
+    - Log viewer dark theme with monospace font
+    - Color-coded log level badges
+    - Responsive grid layouts
+  - **Total Lines**: 1670 (updated from 1236)
+
+- **Router Registration**
+  - **Location**: `main.py`
+  - **Updates**:
+    - Registered `admin_env` router (line 682)
+    - Registered `admin_logs` router (line 683)
+    - Added imports for new routers (line 673)
+
+### Documentation
+
+- **Consolidated Admin Documentation**
+  - **Action**: Merged 3 redundant docs into 1 comprehensive reference
+  - **Deleted**:
+    - `docs/ADMIN_ENV_CONFIG_IMPLEMENTATION.md` (1253 lines, outdated planning)
+    - `docs/ADMIN_IMPLEMENTATION_PROGRESS.md` (269 lines, progress tracking)
+    - `docs/ADMIN_FEATURES_SUMMARY.md` (298 lines, redundant summary)
+  - **Created**:
+    - `docs/ADMIN_PANEL.md` (317 lines, complete reference)
+  - **Contents**:
+    - Feature overview and capabilities
+    - API endpoint documentation
+    - Step-by-step usage guides
+    - Security features and restrictions
+    - Technical implementation details
+    - Configuration categories reference
+    - Troubleshooting guide
+    - Quick start checklist
+
+### Security
+
+- **Enhanced Admin Security**
+  - All 11 new endpoints require JWT authentication + admin role check
+  - Sensitive data masking in API responses (`***...last4` for API keys)
+  - JWT_SECRET_KEY and DATABASE_URL completely hidden from web UI
+  - Path traversal prevention in backup restore functionality
+  - Read-only log access (no deletion or modification via API)
+  - Audit logging for all .env changes with admin user identification
+  - Secure file permissions (600) on .env and backups
+
+### Technical Details
+
+- **File Size Compliance**: All new modules under 500 lines
+  - `services/env_manager.py`: 493 lines
+  - `services/log_streamer.py`: 348 lines
+  - `routers/admin_env.py`: 357 lines
+  - `routers/admin_logs.py`: 269 lines
+  - `models/env_settings.py`: 343 lines
+  - `static/js/admin-logs.js`: 377 lines
+
+- **Dependencies**: No new dependencies required
+  - Uses existing `aiofiles` (already in requirements.txt)
+  - Uses existing `python-dotenv`
+  - Uses existing `pydantic`
+
+- **Cross-Platform Compatibility**:
+  - Conditional `fcntl` import for Unix file locking
+  - Graceful fallback on Windows
+  - aiofiles with sync fallback for log streaming
+
+---
+
 ## [4.12.1] - 2025-01-14 - API Key Management System & Security Enhancements
 
 ### Added

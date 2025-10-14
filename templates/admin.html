@@ -366,6 +366,62 @@
             gap: 1rem;
         }
 
+        /* Category Collapsible Sections */
+        .category-content {
+            padding: 1.5rem;
+            display: block;
+        }
+        
+        .category-content.collapsed {
+            display: none;
+        }
+
+        /* Log Viewer */
+        .log-viewer {
+            height: 600px;
+            overflow-y: auto;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            padding: 1rem;
+        }
+        
+        .log-line {
+            margin-bottom: 0.25rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .log-timestamp {
+            color: #94a3b8;
+            margin-right: 0.5rem;
+        }
+        
+        .log-level {
+            font-weight: 600;
+            margin-right: 0.5rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+        
+        .log-level-debug { background: #64748b; color: white; }
+        .log-level-info { background: #0ea5e9; color: white; }
+        .log-level-warning { background: #f59e0b; color: white; }
+        .log-level-error { background: #ef4444; color: white; }
+        .log-level-critical { background: #dc2626; color: white; }
+        
+        .log-module {
+            color: #a78bfa;
+            margin-right: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .log-message {
+            color: #e2e8f0;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .grid-2 {
@@ -400,6 +456,7 @@
             <button class="tab" onclick="switchTab('users')">👥 用户管理 Users</button>
             <button class="tab" onclick="switchTab('apikeys')">🔑 API Keys</button>
             <button class="tab" onclick="switchTab('settings')">⚙️ 系统设置 Settings</button>
+            <button class="tab" onclick="switchTab('logs')">📋 调试日志 Debug Logs</button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -508,56 +565,271 @@
 
         <!-- Settings Tab -->
         <div id="settings-tab" class="tab-content">
-            <div class="card">
+            <!-- Action Bar -->
+            <div class="card" style="margin-bottom:1rem;">
                 <div class="card-header">
                     <h2 class="card-title">系统配置 System Settings</h2>
-                    <button class="btn btn-primary" onclick="loadSettings()">
-                        🔄 刷新 Refresh
-                    </button>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button class="btn btn-secondary btn-sm" onclick="loadEnvSettings()">🔄 Refresh</button>
+                        <button class="btn btn-primary btn-sm" onclick="showBackupListModal()">📦 Backups</button>
+                        <button class="btn btn-success btn-sm" onclick="validateEnvSettings()">✓ Validate</button>
+                        <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All</button>
+                    </div>
                 </div>
-                <div id="settings-loading" class="spinner"></div>
-                <div id="settings-form" style="display:none;">
-                    <div class="form-group">
-                        <label class="form-label">认证模式 AUTH_MODE</label>
-                        <select id="setting-auth-mode" class="form-select">
-                            <option value="standard">Standard (标准)</option>
-                            <option value="enterprise">Enterprise (企业)</option>
-                            <option value="demo">Demo (演示)</option>
+            </div>
+
+            <div id="settings-loading" class="spinner"></div>
+            
+            <div id="settings-form" style="display:none;">
+                <!-- Category 1: Application Server -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('app-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">🖥️ Application Server</h3>
+                        <span id="app-settings-icon">▼</span>
+                    </div>
+                    <div id="app-settings-content" class="category-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">HOST <span style="color:#94a3b8;font-size:0.85rem;">(Server host address)</span></label>
+                                <input type="text" id="env-HOST" class="form-input" placeholder="0.0.0.0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">PORT <span style="color:#94a3b8;font-size:0.85rem;">(1-65535)</span></label>
+                                <input type="number" id="env-PORT" class="form-input" min="1" max="65535" placeholder="9527">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">DEBUG <span style="color:#94a3b8;font-size:0.85rem;">(Enable debug mode)</span></label>
+                                <select id="env-DEBUG" class="form-select">
+                                    <option value="False">False</option>
+                                    <option value="True">True</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">EXTERNAL_HOST <span style="color:#94a3b8;font-size:0.85rem;">(Public IP, optional)</span></label>
+                                <input type="text" id="env-EXTERNAL_HOST" class="form-input" placeholder="Leave empty for auto-detect">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 2: Qwen API -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('qwen-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">🤖 Qwen API Configuration</h3>
+                        <span id="qwen-settings-icon">▼</span>
+                    </div>
+                    <div id="qwen-settings-content" class="category-content">
+                        <div class="form-group">
+                            <label class="form-label">QWEN_API_KEY <span style="color:#ef4444;">*Required</span></label>
+                            <input type="password" id="env-QWEN_API_KEY" class="form-input" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">QWEN_API_URL</label>
+                            <input type="text" id="env-QWEN_API_URL" class="form-input" placeholder="https://dashscope.aliyuncs.com/...">
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">QWEN_MODEL_CLASSIFICATION <span style="color:#94a3b8;font-size:0.85rem;">(Fast/cheap)</span></label>
+                                <input type="text" id="env-QWEN_MODEL_CLASSIFICATION" class="form-input" placeholder="qwen-turbo">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">QWEN_MODEL_GENERATION <span style="color:#94a3b8;font-size:0.85rem;">(High quality)</span></label>
+                                <input type="text" id="env-QWEN_MODEL_GENERATION" class="form-input" placeholder="qwen-plus">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">QWEN_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(0.0-2.0)</span></label>
+                                <input type="number" id="env-QWEN_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.7">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">LLM_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(Diagram gen, 0.0-2.0)</span></label>
+                                <input type="number" id="env-LLM_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.3">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">QWEN_MAX_TOKENS</label>
+                                <input type="number" id="env-QWEN_MAX_TOKENS" class="form-input" min="1" placeholder="1000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">QWEN_TIMEOUT <span style="color:#94a3b8;font-size:0.85rem;">(seconds, 5-120)</span></label>
+                                <input type="number" id="env-QWEN_TIMEOUT" class="form-input" min="5" max="120" placeholder="40">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 3: Logging & Features -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('misc-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">⚙️ Logging & Feature Flags</h3>
+                        <span id="misc-settings-icon">▼</span>
+                    </div>
+                    <div id="misc-settings-content" class="category-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">LOG_LEVEL</label>
+                                <select id="env-LOG_LEVEL" class="form-select">
+                                    <option value="DEBUG">DEBUG</option>
+                                    <option value="INFO">INFO</option>
+                                    <option value="WARNING">WARNING</option>
+                                    <option value="ERROR">ERROR</option>
+                                    <option value="CRITICAL">CRITICAL</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">VERBOSE_LOGGING</label>
+                                <select id="env-VERBOSE_LOGGING" class="form-select">
+                                    <option value="False">False</option>
+                                    <option value="True">True</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">FEATURE_LEARNING_MODE</label>
+                                <select id="env-FEATURE_LEARNING_MODE" class="form-select">
+                                    <option value="False">Disabled</option>
+                                    <option value="True">Enabled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">FEATURE_THINKGUIDE</label>
+                                <select id="env-FEATURE_THINKGUIDE" class="form-select">
+                                    <option value="False">Disabled</option>
+                                    <option value="True">Enabled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 4: Authentication -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('auth-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">🔐 Authentication & Security</h3>
+                        <span id="auth-settings-icon">▼</span>
+                    </div>
+                    <div id="auth-settings-content" class="category-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">AUTH_MODE</label>
+                                <select id="env-AUTH_MODE" class="form-select">
+                                    <option value="standard">Standard</option>
+                                    <option value="enterprise">Enterprise</option>
+                                    <option value="demo">Demo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">JWT_EXPIRY_HOURS <span style="color:#94a3b8;font-size:0.85rem;">(hours)</span></label>
+                                <input type="number" id="env-JWT_EXPIRY_HOURS" class="form-input" min="1" max="168" placeholder="24">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">ADMIN_PHONES <span style="color:#94a3b8;font-size:0.85rem;">(Comma-separated)</span></label>
+                            <input type="text" id="env-ADMIN_PHONES" class="form-input" placeholder="13800000000,13900000000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">INVITATION_CODES <span style="color:#94a3b8;font-size:0.85rem;">(ORG:CODE:DATE,ORG2:CODE2:DATE2)</span></label>
+                            <textarea id="env-INVITATION_CODES" class="form-textarea" rows="3" placeholder="DEMO-001:DEMO2024:2025-12-31"></textarea>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
+                                <input type="text" id="env-DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="888888">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ADMIN_DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
+                                <input type="text" id="env-ADMIN_DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="999999">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warnings & Actions -->
+                <div class="alert alert-warning show">
+                    ⚠️ <strong>Important:</strong> Server restart required for changes to take effect!<br>
+                    修改配置后需要重启服务器才能生效！
+                </div>
+
+                <div style="display:flex;gap:1rem;">
+                    <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All Settings</button>
+                    <button class="btn btn-secondary" onclick="loadEnvSettings()">↻ Reset to Current</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <div class="card" style="margin-bottom:1rem;">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Debug Logs</h2>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <select id="log-source-select" class="form-select" style="width:auto;" onchange="logViewer.setSource(this.value)">
+                            <option value="app">Application</option>
+                            <option value="uvicorn">Uvicorn</option>
+                            <option value="error">Errors</option>
                         </select>
+                        <select id="log-level-filter" class="form-select" style="width:auto;" onchange="logViewer.setFilterLevel(this.value)">
+                            <option value="ALL">All Levels</option>
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                        <button id="stream-toggle-btn" class="btn btn-success btn-sm" onclick="toggleLogStream()">▶ Start Stream</button>
+                        <button id="autoscroll-toggle-btn" class="btn btn-secondary btn-sm" onclick="logViewer.toggleAutoScroll()">📜 Auto-scroll: ON</button>
+                        <button class="btn btn-secondary btn-sm" onclick="logViewer.clearLogs()">🗑️ Clear</button>
+                        <button class="btn btn-primary btn-sm" onclick="logViewer.downloadLogs()">💾 Download</button>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">管理员手机号 ADMIN_PHONES (逗号分隔)</label>
-                        <input type="text" id="setting-admin-phones" class="form-input" 
-                               placeholder="13800000000,13900000000">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">
-                            邀请码配置 INVITATION_CODES
-                            <small style="color:#64748b;display:block;margin-top:0.25rem;">
-                                格式: 学校代码:邀请码:过期日期 (多个用逗号分隔)<br>
-                                示例: DEMO-001:DEMO2024:2025-12-31,SCHOOL-02:CODE2024:never
-                            </small>
-                        </label>
-                        <textarea id="setting-invitation-codes" class="form-textarea" 
-                                  placeholder="DEMO-001:DEMO2024:2025-12-31"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">JWT 过期时间 JWT_EXPIRY_HOURS (小时)</label>
-                        <input type="number" id="setting-jwt-expiry" class="form-input" value="24">
-                    </div>
-
-                    <div class="alert alert-warning show">
-                        ⚠️ <strong>重要提示:</strong> 修改配置后需要重启服务器才能生效！<br>
-                        Changes require server restart to take effect!
-                    </div>
-
-                    <button class="btn btn-primary" onclick="saveSettings()">
-                        💾 保存配置 Save Settings
-                    </button>
                 </div>
+            </div>
+
+            <div class="card">
+                <div style="padding:1rem;border-bottom:1px solid #e2e8f0;">
+                    <div style="display:flex;gap:0.5rem;">
+                        <input type="text" id="log-search-input" class="form-input" 
+                               placeholder="Search logs (press Enter)..." 
+                               onkeypress="if(event.key==='Enter') performLogSearch()"
+                               style="flex:1;">
+                        <button class="btn btn-primary" onclick="performLogSearch()">🔍 Search</button>
+                        <button class="btn btn-secondary" onclick="clearLogSearch()">✕ Clear</button>
+                    </div>
+                    <div id="search-results-count" style="display:none;margin-top:0.5rem;color:#64748b;font-size:0.9rem;"></div>
+                </div>
+                
+                <div id="log-viewer-content" class="log-viewer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup List Modal -->
+    <div id="backup-list-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📦 .env Backup Files</h3>
+                <span class="close" onclick="closeModal('backup-list-modal')">&times;</span>
+            </div>
+            <div id="backup-list-loading" class="spinner"></div>
+            <div id="backup-list-content" style="display:none;">
+                <table style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Backup File</th>
+                            <th>Created</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backup-list-tbody"></tbody>
+                </table>
+                <p id="no-backups-message" style="display:none;color:#64748b;text-align:center;padding:2rem;">
+                    No backup files found. Backups are created automatically when you save settings.
+                </p>
             </div>
         </div>
     </div>
@@ -782,7 +1054,8 @@ curl -X POST http://your-server/api/generate_graph \
             if (tab === 'schools') loadSchools();
             if (tab === 'users') loadUsers();
             if (tab === 'apikeys') loadAPIKeys();
-            if (tab === 'settings') loadSettings();
+            if (tab === 'settings') loadEnvSettings();
+            if (tab === 'logs') initLogViewer();
         }
 
         // Show alert
@@ -994,46 +1267,174 @@ curl -X POST http://your-server/api/generate_graph \
             }
         }
 
-        // Settings
-        async function loadSettings() {
+        // Enhanced Settings Management
+        async function loadEnvSettings() {
             document.getElementById('settings-loading').style.display = 'block';
             document.getElementById('settings-form').style.display = 'none';
 
             try {
-                const response = await auth.fetch('/api/auth/admin/settings');
-                const settings = await response.json();
+                const response = await auth.fetch('/api/auth/admin/env/settings');
+                const data = await response.json();
+                const settings = data.settings;
 
-                document.getElementById('setting-auth-mode').value = settings.AUTH_MODE || 'standard';
-                document.getElementById('setting-admin-phones').value = settings.ADMIN_PHONES || '';
-                document.getElementById('setting-invitation-codes').value = settings.INVITATION_CODES || '';
-                document.getElementById('setting-jwt-expiry').value = settings.JWT_EXPIRY_HOURS || '24';
+                // Populate all form fields dynamically
+                for (const key in settings) {
+                    const element = document.getElementById(`env-${key}`);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = settings[key] === 'True' || settings[key] === 'true';
+                        } else {
+                            element.value = settings[key] || '';
+                        }
+                    }
+                }
 
                 document.getElementById('settings-loading').style.display = 'none';
                 document.getElementById('settings-form').style.display = 'block';
             } catch (error) {
-                showAlert('加载设置失败 Failed to load settings', 'error');
+                console.error('Failed to load settings:', error);
+                showAlert('Failed to load settings: ' + error.message, 'error');
             }
         }
 
-        async function saveSettings() {
-            const data = {
-                AUTH_MODE: document.getElementById('setting-auth-mode').value,
-                ADMIN_PHONES: document.getElementById('setting-admin-phones').value,
-                INVITATION_CODES: document.getElementById('setting-invitation-codes').value,
-                JWT_EXPIRY_HOURS: document.getElementById('setting-jwt-expiry').value
-            };
+        async function saveEnvSettings() {
+            // Collect all settings from form
+            const data = {};
+            const inputs = document.querySelectorAll('[id^="env-"]');
+            
+            inputs.forEach(input => {
+                const key = input.id.replace('env-', '');
+                if (input.type === 'checkbox') {
+                    data[key] = input.checked ? 'True' : 'False';
+                } else {
+                    data[key] = input.value;
+                }
+            });
 
             try {
-                const response = await auth.fetch('/api/auth/admin/settings', {
+                const response = await auth.fetch('/api/auth/admin/env/settings', {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
-                showAlert(result.message + ' ' + result.warning, 'warning');
+                showAlert(`${result.message} - ${result.warning}`, 'warning');
+                
+                // Reload settings to show updated values
+                setTimeout(() => loadEnvSettings(), 1000);
             } catch (error) {
-                showAlert('保存失败 Save failed: ' + error.message, 'error');
+                console.error('Failed to save settings:', error);
+                showAlert('Save failed: ' + error.message, 'error');
+            }
+        }
+
+        async function validateEnvSettings() {
+            // Collect all settings from form
+            const data = {};
+            const inputs = document.querySelectorAll('[id^="env-"]');
+            
+            inputs.forEach(input => {
+                const key = input.id.replace('env-', '');
+                if (input.type === 'checkbox') {
+                    data[key] = input.checked ? 'True' : 'False';
+                } else {
+                    data[key] = input.value;
+                }
+            });
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/env/validate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.is_valid) {
+                    showAlert('Validation passed! All settings are valid.', 'success');
+                } else {
+                    showAlert(`Validation errors: ${result.errors.join(', ')}`, 'error');
+                }
+            } catch (error) {
+                console.error('Validation failed:', error);
+                showAlert('Validation failed: ' + error.message, 'error');
+            }
+        }
+
+        async function showBackupListModal() {
+            document.getElementById('backup-list-modal').classList.add('show');
+            document.getElementById('backup-list-loading').style.display = 'block';
+            document.getElementById('backup-list-content').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/env/backups');
+                const backups = await response.json();
+
+                const tbody = document.getElementById('backup-list-tbody');
+                const noBackupsMsg = document.getElementById('no-backups-message');
+
+                if (backups.length === 0) {
+                    tbody.innerHTML = '';
+                    noBackupsMsg.style.display = 'block';
+                } else {
+                    noBackupsMsg.style.display = 'none';
+                    tbody.innerHTML = backups.map(backup => `
+                        <tr>
+                            <td><code style="font-size:0.85rem;">${backup.filename}</code></td>
+                            <td>${backup.timestamp}</td>
+                            <td>${(backup.size_bytes / 1024).toFixed(1)} KB</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="restoreEnvBackup('${backup.filename}')">
+                                    Restore
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                document.getElementById('backup-list-loading').style.display = 'none';
+                document.getElementById('backup-list-content').style.display = 'block';
+            } catch (error) {
+                console.error('Failed to load backups:', error);
+                showAlert('Failed to load backups: ' + error.message, 'error');
+                closeModal('backup-list-modal');
+            }
+        }
+
+        async function restoreEnvBackup(filename) {
+            if (!confirm(`Restore .env from backup: ${filename}?\n\nCurrent .env will be backed up before restoration.`)) {
+                return;
+            }
+
+            try {
+                const response = await auth.fetch(`/api/auth/admin/env/restore?backup_filename=${encodeURIComponent(filename)}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                showAlert(`${result.message} - ${result.warning}`, 'success');
+                
+                // Close modal and reload settings
+                closeModal('backup-list-modal');
+                setTimeout(() => loadEnvSettings(), 1000);
+            } catch (error) {
+                console.error('Failed to restore backup:', error);
+                showAlert('Restore failed: ' + error.message, 'error');
+            }
+        }
+
+        function toggleCategory(categoryId) {
+            const content = document.getElementById(`${categoryId}-content`);
+            const icon = document.getElementById(`${categoryId}-icon`);
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                icon.textContent = '▼';
+            } else {
+                content.classList.add('collapsed');
+                icon.textContent = '▶';
             }
         }
 
@@ -1229,9 +1630,42 @@ curl -X POST http://your-server/api/generate_graph \
             }
         }
 
+        // Log Viewer Integration Functions
+        function initLogViewer() {
+            logViewer.init();
+        }
+        
+        function toggleLogStream() {
+            if (logViewer.eventSource) {
+                logViewer.stopStreaming();
+            } else {
+                logViewer.startStreaming();
+            }
+        }
+        
+        function performLogSearch() {
+            const query = document.getElementById('log-search-input').value;
+            if (query && query.trim() !== '') {
+                logViewer.searchLogs(query.trim());
+            }
+        }
+        
+        function clearLogSearch() {
+            document.getElementById('log-search-input').value = '';
+            const countEl = document.getElementById('search-results-count');
+            if (countEl) {
+                countEl.style.display = 'none';
+            }
+            logViewer.setSearchQuery('');
+            logViewer.loadInitialLogs();
+        }
+
         // Initialize
         loadDashboard();
     </script>
+    
+    <!-- Admin Log Viewer Script -->
+    <script src="/static/js/admin-logs.js"></script>
 </body>
 </html>
 

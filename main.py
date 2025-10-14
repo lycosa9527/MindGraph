@@ -670,7 +670,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, learning, thinking, auth
+from routers import pages, cache, api, learning, thinking, auth, admin_env, admin_logs
 
 # Register routers
 app.include_router(pages.router)
@@ -679,6 +679,8 @@ app.include_router(api.router)
 app.include_router(learning.router)  # Learning mode (FastAPI migration complete)
 app.include_router(thinking.router)  # ThinkGuide mode (Socratic guided thinking)
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
+app.include_router(admin_env.router)  # Admin environment settings management
+app.include_router(admin_logs.router)  # Admin log streaming
 
 # ============================================================================
 # APPLICATION ENTRY POINT
