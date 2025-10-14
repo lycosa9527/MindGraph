@@ -63,83 +63,65 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     """
-    Hash a password using bcrypt
+    Hash a password using bcrypt 5.0+
     
-    Handles bcrypt's 72-byte limit gracefully by truncating if necessary.
-    Compatible with bcrypt 4.x and 5.x
+    Handles bcrypt's 72-byte limit by truncating if necessary.
+    Requires bcrypt>=5.0.0 for strict validation and better security.
     """
-    # Ensure password is a string (bcrypt 5.0 is stricter)
+    # Ensure password is a string (bcrypt 5.0+ strict type checking)
     if not isinstance(password, str):
         password = str(password)
     
-    # Pre-emptively truncate password to ensure it's under 72 bytes
-    # bcrypt 5.0 enforces this limit strictly, so we must truncate BEFORE hashing
+    # Truncate password to bcrypt's 72-byte limit
     password_bytes = password.encode('utf-8')
     
     if len(password_bytes) > 72:
-        # Truncate to 71 bytes for safety (handles multi-byte chars)
+        # Truncate to 71 bytes for multi-byte character safety
         password_bytes = password_bytes[:71]
-        password_truncated = password_bytes.decode('utf-8', errors='ignore')
+        password = password_bytes.decode('utf-8', errors='ignore')
         
-        # Ensure the result is actually under 72 bytes after re-encoding
-        while len(password_truncated.encode('utf-8')) > 72:
-            password_truncated = password_truncated[:-1]
+        # Validate result is under 72 bytes
+        while len(password.encode('utf-8')) > 72:
+            password = password[:-1]
         
-        logger.warning(f"Password exceeded 72 bytes ({len(password.encode('utf-8'))} bytes), truncated to {len(password_truncated.encode('utf-8'))} bytes")
-        password = password_truncated
-    
-    # Final safety check for bcrypt 5.0 compatibility
-    final_bytes = password.encode('utf-8')
-    if len(final_bytes) > 72:
-        # Emergency truncation (should never happen, but bcrypt 5.0 is strict)
-        password = password[:50]  # Conservative character-based truncation
-        logger.error(f"Emergency password truncation applied for bcrypt 5.0 compatibility")
+        logger.warning(f"Password truncated from {len(password_bytes)} to {len(password.encode('utf-8'))} bytes for bcrypt compatibility")
     
     try:
         return pwd_context.hash(password)
     except Exception as e:
         logger.error(f"Password hashing failed: {e}")
-        # Log the actual password length for debugging
         logger.error(f"Password length: {len(password)} chars, {len(password.encode('utf-8'))} bytes")
         raise
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a password against a hash
+    Verify a password against a hash (bcrypt 5.0+)
     
-    Handles errors gracefully, including:
+    Handles errors gracefully:
     - Corrupted password hashes in database
-    - Bcrypt 72-byte limit errors (especially bcrypt 5.0)
+    - Bcrypt 72-byte limit
     - Invalid hash formats
     """
-    # Ensure password is a string (bcrypt 5.0 is stricter)
+    # Ensure password is a string (bcrypt 5.0+ strict type checking)
     if not isinstance(plain_password, str):
         plain_password = str(plain_password)
     
-    # Pre-emptively truncate password to match hash_password logic
-    # MUST use same truncation for verification to work
+    # Apply same truncation logic as hash_password
     password_bytes = plain_password.encode('utf-8')
     
     if len(password_bytes) > 72:
         password_bytes = password_bytes[:71]
-        password_truncated = password_bytes.decode('utf-8', errors='ignore')
+        plain_password = password_bytes.decode('utf-8', errors='ignore')
         
-        while len(password_truncated.encode('utf-8')) > 72:
-            password_truncated = password_truncated[:-1]
+        while len(plain_password.encode('utf-8')) > 72:
+            plain_password = plain_password[:-1]
         
-        logger.warning(f"Password exceeded 72 bytes during verification, truncated")
-        plain_password = password_truncated
-    
-    # Final safety check for bcrypt 5.0
-    final_bytes = plain_password.encode('utf-8')
-    if len(final_bytes) > 72:
-        plain_password = plain_password[:50]
+        logger.warning(f"Password truncated during verification")
     
     try:
         return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
-        # Handle corrupted hashes or other bcrypt errors
         logger.error(f"Password verification failed: {e}")
         logger.error(f"Password length: {len(plain_password)} chars, {len(plain_password.encode('utf-8'))} bytes")
         return False

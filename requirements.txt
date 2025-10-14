@@ -3,13 +3,13 @@
 # Python 3.8+ Required (3.13+ Recommended for Best Async Performance)
 
 # Web Framework
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
 
 # HTTP & Networking
 aiohttp>=3.12.0
-openai>=1.0.0
-python-multipart>=0.0.6
+openai>=1.58.0
+python-multipart>=0.0.20
 
 # AI & Language Processing
 langchain>=0.3.27
@@ -17,7 +17,7 @@ langchain-community>=0.3.27
 langchain-core>=0.3.72
 
 # Configuration
-PyYAML>=6.0.1
+PyYAML>=6.0.2
 python-dotenv>=1.0.1
 
 # Async Support
@@ -29,15 +29,15 @@ playwright>=1.54.0
 Pillow>=11.3.0
 
 # System Monitoring
-psutil>=6.0.0
+psutil>=6.1.0
 
 # Database & Authentication
-SQLAlchemy>=2.0.0
+SQLAlchemy>=2.0.36
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.0
-captcha>=0.4
+bcrypt>=5.0.0
+captcha>=0.6
 
 # Testing (Optional)
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
+pytest>=8.3.0
+pytest-asyncio>=0.25.0
