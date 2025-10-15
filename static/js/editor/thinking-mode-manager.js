@@ -478,6 +478,15 @@ class ThinkingModeManager {
                     }))
                 };
             
+            case 'double_bubble_map':
+                return {
+                    left: spec.left || '',
+                    right: spec.right || '',
+                    similarities: spec.similarities || [],
+                    left_differences: spec.left_differences || [],
+                    right_differences: spec.right_differences || []
+                };
+            
             case 'tree_map':
                 // Tree map has categories with items
                 const treeChildren = [];
@@ -698,31 +707,38 @@ class ThinkingModeManager {
     openNodePalette() {
         this.logger.info('[ThinkGuide]', '🎨 Node Palette button clicked');
         
-        // Check if node palette is supported for this diagram type
-        const supportedTypes = ['circle_map', 'bubble_map'];
-        if (!supportedTypes.includes(this.diagramType)) {
-            const msg = this.language === 'zh' ? 
-                '节点选择板目前仅支持圆圈图和气泡图。' : 
-                'Node Palette is currently only available for Circle Maps and Bubble Maps.';
-            this.addSystemMessage(msg);
-            this.logger.warn('[ThinkGuide]', 'Node Palette not supported for:', this.diagramType);
-            return;
-        }
-        
         // Extract current diagram data
         const diagramData = this.extractDiagramData();
-        const centerTopic = diagramData?.center?.text;
         
-        if (!centerTopic || centerTopic.trim() === '') {
-            const diagramName = this.diagramType === 'bubble_map' ? 
-                (this.language === 'zh' ? '气泡图' : 'Bubble Map') :
-                (this.language === 'zh' ? '圆圈图' : 'Circle Map');
-            const msg = this.language === 'zh' ? 
-                `请先为${diagramName}添加中心主题。` : 
-                `Please add a center topic to your ${diagramName} first.`;
-            this.addSystemMessage(msg);
-            this.logger.warn('[ThinkGuide]', 'Cannot open Node Palette - no center topic');
-            return;
+        // Validate diagram has required data and extract topic
+        let centerTopic;
+        
+        if (this.diagramType === 'double_bubble_map') {
+            // Double bubble map uses left and right topics
+            const leftTopic = diagramData?.left;
+            const rightTopic = diagramData?.right;
+            
+            if (!leftTopic || !rightTopic || leftTopic.trim() === '' || rightTopic.trim() === '') {
+                const msg = this.language === 'zh' ? 
+                    '请先为双气泡图添加左右两个主题。' : 
+                    'Please add both left and right topics to your Double Bubble Map first.';
+                this.addSystemMessage(msg);
+                this.logger.warn('[ThinkGuide]', 'Cannot open Node Palette - missing topics');
+                return;
+            }
+            centerTopic = `${leftTopic} vs ${rightTopic}`;
+        } else {
+            // Most diagrams use center/topic field
+            centerTopic = diagramData?.center?.text || diagramData?.topic || diagramData?.title;
+            
+            if (!centerTopic || centerTopic.trim() === '') {
+                const msg = this.language === 'zh' ? 
+                    '请先为图表添加主题。' : 
+                    'Please add a topic to your diagram first.';
+                this.addSystemMessage(msg);
+                this.logger.warn('[ThinkGuide]', 'Cannot open Node Palette - no topic');
+                return;
+            }
         }
         
         this.logger.info('[ThinkGuide] Opening Node Palette:', {

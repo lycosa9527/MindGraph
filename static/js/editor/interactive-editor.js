@@ -27,6 +27,13 @@ class InteractiveEditor {
         this.toolbarManager = null; // Will be initialized after render
         this.renderer = null;
         
+        // Store event handler references for cleanup
+        this.eventHandlers = {
+            orientationChange: null,
+            windowResize: null,
+            resetViewClick: null
+        };
+        
         // Log editor initialization
         logger.debug('Editor', 'Editor created', { 
             diagramType, 
@@ -38,7 +45,7 @@ class InteractiveEditor {
             this.selectedNodes = new Set(selectedNodes);
             
             // Verbose logging: Log node selection changes
-            logger.debug('InteractiveEditor', '🎯 Node Selection Changed', {
+            logger.debug('InteractiveEditor', 'Node Selection Changed', {
                 count: selectedNodes.length,
                 nodeIds: Array.from(selectedNodes),
                 diagramType: this.diagramType,
@@ -425,7 +432,7 @@ class InteractiveEditor {
                     event.stopPropagation();
                     
                     // Verbose logging: Log double-click for editing
-                    logger.debug('InteractiveEditor', '✏️ Double-Click for Edit', {
+                    logger.debug('InteractiveEditor', 'Double-Click for Edit', {
                         nodeId,
                         diagramType: self.diagramType,
                         timestamp: Date.now()
@@ -1319,23 +1326,25 @@ class InteractiveEditor {
         // Reset view button
         const resetViewBtn = document.getElementById('reset-view-btn');
         if (resetViewBtn) {
-            resetViewBtn.addEventListener('click', () => {
+            this.eventHandlers.resetViewClick = () => {
                 this.fitDiagramToWindow();
-            });
+            };
+            resetViewBtn.addEventListener('click', this.eventHandlers.resetViewClick);
         }
         
         // Mobile: Auto-fit on orientation change
         if (this.isMobileDevice()) {
-            window.addEventListener('orientationchange', () => {
+            this.eventHandlers.orientationChange = () => {
                 logger.debug('Editor', 'Orientation changed - re-fitting diagram to screen');
                 setTimeout(() => {
                     this.fitDiagramToWindow();
                 }, 300); // Wait for orientation animation to complete
-            });
+            };
+            window.addEventListener('orientationchange', this.eventHandlers.orientationChange);
             
             // Also handle window resize for responsive mobile browsers
             let resizeTimeout;
-            window.addEventListener('resize', () => {
+            this.eventHandlers.windowResize = () => {
                 if (this.isMobileDevice()) {
                     clearTimeout(resizeTimeout);
                     resizeTimeout = setTimeout(() => {
@@ -1343,7 +1352,8 @@ class InteractiveEditor {
                         this.fitDiagramToWindow();
                     }, 300);
                 }
-            });
+            };
+            window.addEventListener('resize', this.eventHandlers.windowResize);
         }
     }
     
@@ -1397,7 +1407,7 @@ class InteractiveEditor {
      */
     openNodeEditor(nodeId, shapeNode, textNode, currentText) {
         // Verbose logging: Log node editor opening
-        logger.debug('InteractiveEditor', '✏️ Node Editor Opened', {
+        logger.debug('InteractiveEditor', 'Node Editor Opened', {
             nodeId,
             currentText: currentText?.substring(0, 50),
             textLength: currentText?.length || 0,
@@ -1921,7 +1931,7 @@ class InteractiveEditor {
      */
     updateGenericNodeText(nodeId, shapeNode, textNode, newText) {
         // Verbose logging: Log text edit
-        logger.debug('InteractiveEditor', '📝 Text Edit Applied', {
+        logger.debug('InteractiveEditor', 'Text Edit Applied', {
             nodeId,
             newText: newText.substring(0, 50) + (newText.length > 50 ? '...' : ''),
             textLength: newText.length,
@@ -3968,6 +3978,81 @@ class InteractiveEditor {
                 hasSelection: hasSelection
             }
         }));
+    }
+    
+    /**
+     * Destroy the editor and clean up all resources
+     * Called by DiagramSelector when transitioning back to gallery
+     */
+    destroy() {
+        logger.debug('Editor', 'Destroying InteractiveEditor instance', { diagramType: this.diagramType });
+        
+        // ========================================
+        // 1. REMOVE ALL EVENT LISTENERS
+        // ========================================
+        
+        // Remove D3 event handlers
+        d3.select('#d3-container').on('click', null);
+        d3.select('body').on('keydown', null);
+        
+        // Remove DOM event listeners
+        const resetViewBtn = document.getElementById('reset-view-btn');
+        if (resetViewBtn && this.eventHandlers.resetViewClick) {
+            resetViewBtn.removeEventListener('click', this.eventHandlers.resetViewClick);
+        }
+        
+        if (this.eventHandlers.orientationChange) {
+            window.removeEventListener('orientationchange', this.eventHandlers.orientationChange);
+        }
+        
+        if (this.eventHandlers.windowResize) {
+            window.removeEventListener('resize', this.eventHandlers.windowResize);
+        }
+        
+        // ========================================
+        // 2. DESTROY ALL MANAGERS
+        // ========================================
+        
+        // Destroy ToolbarManager
+        if (this.toolbarManager) {
+            this.toolbarManager.destroy();
+            this.toolbarManager = null;
+        }
+        
+        // Clear SelectionManager
+        if (this.selectionManager) {
+            this.selectionManager.clearSelection();
+            this.selectionManager.setSelectionChangeCallback(null);
+            this.selectionManager = null;
+        }
+        
+        // Clear CanvasManager
+        if (this.canvasManager) {
+            this.canvasManager.clear();
+            this.canvasManager = null;
+        }
+        
+        // ========================================
+        // 3. CLEAR ALL DATA STRUCTURES
+        // ========================================
+        
+        this.selectedNodes.clear();
+        this.history = [];
+        this.historyIndex = -1;
+        this.eventHandlers = {};
+        
+        // ========================================
+        // 4. NULLIFY ALL REFERENCES
+        // ========================================
+        
+        this.currentSpec = null;
+        this.renderer = null;
+        this.sessionId = null;
+        this.sessionDiagramType = null;
+        this.zoomBehavior = null;
+        this.zoomTransform = null;
+        
+        logger.debug('Editor', 'InteractiveEditor destroyed successfully');
     }
     
     /**

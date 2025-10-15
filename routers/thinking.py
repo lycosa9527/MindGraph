@@ -20,6 +20,7 @@ from utils.auth import get_current_user
 
 from agents.thinking_modes.factory import ThinkingAgentFactory
 from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
+from agents.thinking_modes.node_palette.double_bubble_palette import get_double_bubble_palette_generator
 from models.requests import (
     ThinkingModeRequest,
     NodePaletteStartRequest,
@@ -166,29 +167,41 @@ async def start_node_palette(
     
     try:
         # Extract center topic based on diagram type
-        if req.diagram_type == 'circle_map':
-            center_topic = req.diagram_data.get('center', {}).get('text', '')
-        elif req.diagram_type == 'bubble_map':
-            center_topic = req.diagram_data.get('center', {}).get('text', '')
+        if req.diagram_type == 'double_bubble_map':
+            # Double bubble map uses left and right topics
+            left_topic = req.diagram_data.get('left', '')
+            right_topic = req.diagram_data.get('right', '')
+            center_topic = f"{left_topic} vs {right_topic}"
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported diagram type: {req.diagram_type}")
+            # Most diagrams use center/topic field - try multiple fallbacks
+            center_topic = (
+                req.diagram_data.get('center', {}).get('text', '') or
+                req.diagram_data.get('topic', '') or
+                req.diagram_data.get('title', '') or
+                req.diagram_data.get('main_topic', '')
+            )
         
-        if not center_topic:
+        if not center_topic or not center_topic.strip():
             logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
             raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
         
         logger.info("[NodePalette-API] Type: %s | Topic: '%s' | 🚀 Firing 4 LLMs concurrently", 
                    req.diagram_type, center_topic)
         
-        # Get appropriate generator based on diagram type
+        # Get appropriate generator based on diagram type (with fallback)
         if req.diagram_type == 'circle_map':
             from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
             generator = get_circle_map_palette_generator()
         elif req.diagram_type == 'bubble_map':
             from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
             generator = get_bubble_map_palette_generator()
+        elif req.diagram_type == 'double_bubble_map':
+            generator = get_double_bubble_palette_generator()
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported diagram type: {req.diagram_type}")
+            # Fallback to circle map generator for unsupported types
+            logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
+            from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
+            generator = get_circle_map_palette_generator()
         
         # Stream with concurrent execution
         async def generate():
@@ -196,16 +209,34 @@ async def start_node_palette(
             node_count = 0
             
             try:
-                async for chunk in generator.generate_batch(
-                    session_id=session_id,
-                    center_topic=center_topic,
-                    educational_context=req.educational_context,
-                    nodes_per_llm=15  # Each LLM generates 15 nodes = 60 total per batch
-                ):
-                    if chunk.get('event') == 'node_generated':
-                        node_count += 1
-                    
-                    yield f"data: {json.dumps(chunk)}\n\n"
+                # Get mode from request (default to 'similarities' for double bubble)
+                mode = getattr(req, 'mode', 'similarities')
+                
+                # Call generate_batch with mode parameter for double bubble
+                if req.diagram_type == 'double_bubble_map':
+                    async for chunk in generator.generate_batch(
+                        session_id=session_id,
+                        center_topic=center_topic,
+                        educational_context=req.educational_context,
+                        nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
+                        mode=mode  # Pass mode for double bubble
+                    ):
+                        if chunk.get('event') == 'node_generated':
+                            node_count += 1
+                        
+                        yield f"data: {json.dumps(chunk)}\n\n"
+                else:
+                    # Existing code for other diagram types
+                    async for chunk in generator.generate_batch(
+                        session_id=session_id,
+                        center_topic=center_topic,
+                        educational_context=req.educational_context,
+                        nodes_per_llm=15  # Each LLM generates 15 nodes = 60 total per batch
+                    ):
+                        if chunk.get('event') == 'node_generated':
+                            node_count += 1
+                        
+                        yield f"data: {json.dumps(chunk)}\n\n"
                 
                 logger.info("[NodePalette-API] Batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
@@ -251,15 +282,20 @@ async def get_next_batch(
     logger.info("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
     
     try:
-        # Get appropriate generator based on diagram type
+        # Get appropriate generator based on diagram type (with fallback)
         if req.diagram_type == 'circle_map':
             from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
             generator = get_circle_map_palette_generator()
         elif req.diagram_type == 'bubble_map':
             from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
             generator = get_bubble_map_palette_generator()
+        elif req.diagram_type == 'double_bubble_map':
+            generator = get_double_bubble_palette_generator()
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported diagram type: {req.diagram_type}")
+            # Fallback to circle map generator for unsupported types
+            logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
+            from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
+            generator = get_circle_map_palette_generator()
         
         logger.info("[NodePalette-API] Type: %s | 🚀 Firing 4 LLMs concurrently for next batch...", req.diagram_type)
         
@@ -267,16 +303,33 @@ async def get_next_batch(
         async def generate():
             node_count = 0
             try:
-                async for chunk in generator.generate_batch(
-                    session_id=session_id,
-                    center_topic=req.center_topic,
-                    educational_context=req.educational_context,
-                    nodes_per_llm=15  # 60 total nodes per scroll trigger
-                ):
-                    if chunk.get('event') == 'node_generated':
-                        node_count += 1
-                    
-                    yield f"data: {json.dumps(chunk)}\n\n"
+                # Get mode from request (default to 'similarities' for double bubble)
+                mode = getattr(req, 'mode', 'similarities')
+                
+                if req.diagram_type == 'double_bubble_map':
+                    async for chunk in generator.generate_batch(
+                        session_id=session_id,
+                        center_topic=req.center_topic,
+                        educational_context=req.educational_context,
+                        nodes_per_llm=15,  # 60 total nodes per scroll trigger
+                        mode=mode  # Pass mode for double bubble
+                    ):
+                        if chunk.get('event') == 'node_generated':
+                            node_count += 1
+                        
+                        yield f"data: {json.dumps(chunk)}\n\n"
+                else:
+                    # Existing code for other diagram types
+                    async for chunk in generator.generate_batch(
+                        session_id=session_id,
+                        center_topic=req.center_topic,
+                        educational_context=req.educational_context,
+                        nodes_per_llm=15  # 60 total nodes per scroll trigger
+                    ):
+                        if chunk.get('event') == 'node_generated':
+                            node_count += 1
+                        
+                        yield f"data: {json.dumps(chunk)}\n\n"
                 
                 logger.info("[NodePalette-API] Next batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
@@ -345,8 +398,18 @@ async def log_finish_selection(
                selected_count, total_generated, batches_loaded, 
                (selected_count/max(total_generated,1))*100)
     
-    # End session in generator
-    generator = get_circle_map_palette_generator()
+    # End session in appropriate generator
+    if hasattr(req, 'diagram_type'):
+        if req.diagram_type == 'double_bubble_map':
+            generator = get_double_bubble_palette_generator()
+        elif req.diagram_type == 'bubble_map':
+            from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
+            generator = get_bubble_map_palette_generator()
+        else:
+            generator = get_circle_map_palette_generator()
+    else:
+        generator = get_circle_map_palette_generator()
+    
     generator.end_session(session_id, reason="user_finished")
     
     return {"status": "session_ended"}
@@ -371,8 +434,18 @@ async def node_palette_cancel(
     logger.info("[NodePalette-Cancel]   Selected: %d/%d nodes (NOT added) | Batches: %d", 
                selected_count, total_generated, batches_loaded)
     
-    # End session in generator
-    generator = get_circle_map_palette_generator()
+    # End session in appropriate generator
+    if hasattr(request, 'diagram_type'):
+        if request.diagram_type == 'double_bubble_map':
+            generator = get_double_bubble_palette_generator()
+        elif request.diagram_type == 'bubble_map':
+            from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
+            generator = get_bubble_map_palette_generator()
+        else:
+            generator = get_circle_map_palette_generator()
+    else:
+        generator = get_circle_map_palette_generator()
+    
     generator.end_session(session_id, reason="user_cancelled")
     
     return {"status": "session_cancelled"}

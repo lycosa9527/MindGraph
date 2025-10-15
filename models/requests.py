@@ -319,10 +319,11 @@ class ThinkingModeRequest(BaseModel):
 class NodePaletteStartRequest(BaseModel):
     """Request model for /thinking_mode/node_palette/start endpoint"""
     session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
-    diagram_type: str = Field(..., description="Diagram type ('circle_map' or 'bubble_map')")
-    diagram_data: Dict[str, Any] = Field(..., description="Current diagram data (Circle Map or Bubble Map)")
+    diagram_type: str = Field(..., description="Diagram type ('circle_map', 'bubble_map', or 'double_bubble_map')")
+    diagram_data: Dict[str, Any] = Field(..., description="Current diagram data (Circle Map, Bubble Map, or Double Bubble Map)")
     educational_context: Optional[Dict[str, Any]] = Field(None, description="Educational context (grade level, subject, etc.)")
     user_id: Optional[str] = Field(None, description="User identifier for analytics")
+    mode: Optional[str] = Field('similarities', description="Mode for double bubble map: 'similarities' or 'differences'")
     
     class Config:
         json_schema_extra = {
@@ -349,9 +350,10 @@ class NodePaletteStartRequest(BaseModel):
 class NodePaletteNextRequest(BaseModel):
     """Request model for /thinking_mode/node_palette/next_batch endpoint"""
     session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
-    diagram_type: str = Field(..., description="Diagram type ('circle_map' or 'bubble_map')")
+    diagram_type: str = Field(..., description="Diagram type ('circle_map', 'bubble_map', or 'double_bubble_map')")
     center_topic: str = Field(..., min_length=1, description="Center topic from diagram")
     educational_context: Optional[Dict[str, Any]] = Field(None, description="Educational context")
+    mode: Optional[str] = Field('similarities', description="Mode for double bubble map: 'similarities' or 'differences'")
     
     class Config:
         json_schema_extra = {
@@ -390,6 +392,7 @@ class NodePaletteFinishRequest(BaseModel):
     selected_node_ids: List[str] = Field(..., min_items=0, description="List of selected node IDs")
     total_nodes_generated: int = Field(..., ge=0, description="Total number of nodes generated")
     batches_loaded: int = Field(..., ge=1, description="Number of batches loaded")
+    diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
     
     class Config:
         json_schema_extra = {

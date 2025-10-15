@@ -1773,7 +1773,7 @@ class ToolbarManager {
                                     this.updateLLMButtonStates();
                                     
                                     const modelName = LLM_CONFIG.MODEL_NAMES[model] || model;
-                                    logger.info('ToolbarManager', `✅ First result from ${modelName} rendered at ${elapsed}s`);
+                                    logger.info('ToolbarManager', `First result from ${modelName} rendered at ${elapsed}s`);
                                     
                                     // Play success sound notification
                                     this.playNotificationSound();
@@ -3271,7 +3271,7 @@ class ToolbarManager {
      * Handle Thinking Mode (ThinkGuide) button click
      */
     async handleThinkingMode() {
-        logger.info('ToolbarManager', '🔵 ThinkGuide Mode initiated - BUTTON CLICKED');
+        logger.info('ToolbarManager', 'ThinkGuide Mode initiated - BUTTON CLICKED');
         
         // Check if panel is already open - toggle behavior like MindMate
         const thinkPanel = document.getElementById('thinking-panel');
@@ -3285,49 +3285,63 @@ class ToolbarManager {
         
         // If panel is already open, close it (toggle behavior)
         if (isPanelOpen) {
-            logger.info('ToolbarManager', '🔄 ThinkGuide panel already open - closing it');
+            logger.info('ToolbarManager', 'ThinkGuide panel already open - closing it');
             if (window.panelManager) {
                 window.panelManager.closeThinkGuidePanel();
-                logger.info('ToolbarManager', '✅ ThinkGuide panel closed');
+                logger.info('ToolbarManager', 'ThinkGuide panel closed');
             }
             return;
         }
         
         // Panel is closed, open it
-        logger.info('ToolbarManager', 'Opening ThinkGuide (no validation required) ✅');
+        logger.info('ToolbarManager', 'Opening ThinkGuide (no validation required)');
         
         try {
+            // DIAGNOSTIC: Log everything about the editor state
+            logger.info('ToolbarManager', 'ThinkGuide clicked - Diagnostic Info:', {
+                hasThisEditor: !!this.editor,
+                hasWindowEditor: !!window.currentEditor,
+                editorsMatch: this.editor === window.currentEditor,
+                thisEditorType: this.editor?.diagramType,
+                thisEditorSpec: !!this.editor?.currentSpec,
+                thisEditorSpecKeys: this.editor?.currentSpec ? Object.keys(this.editor.currentSpec) : [],
+                windowEditorType: window.currentEditor?.diagramType,
+                windowEditorSpec: !!window.currentEditor?.currentSpec,
+                sessionId: this.sessionId?.substr(-8)
+            });
+            
             // Use global thinkingModeManager instance
             if (!window.thinkingModeManager) {
                 const errorMsg = 'ThinkGuide not initialized. Please reload the page.';
-                logger.error('ToolbarManager', errorMsg, {
-                    hasMindMate: !!window.aiAssistantManager,
-                    hasMarkdownIt: !!window.markdownit,
-                    hasDOMPurify: !!window.DOMPurify
-                });
+                logger.error('ToolbarManager', errorMsg);
                 this.showNotification(errorMsg, 'error');
                 return;
             }
             
-            logger.info('ToolbarManager', 'ThinkGuide manager available ✅');
+            // Check if we have a valid editor with data
+            if (!this.editor) {
+                logger.error('ToolbarManager', 'CRITICAL: this.editor is null!', {
+                    sessionId: this.sessionId,
+                    windowEditor: !!window.currentEditor,
+                    registrySize: window.toolbarManagerRegistry?.size,
+                    registryKeys: Array.from(window.toolbarManagerRegistry?.keys() || [])
+                });
+                throw new Error('ToolbarManager has no editor reference');
+            }
+            
+            if (!this.editor.currentSpec) {
+                logger.error('ToolbarManager', 'this.editor.currentSpec is undefined!', {
+                    editorType: this.editor.diagramType,
+                    editorKeys: Object.keys(this.editor),
+                    hasHistory: !!this.editor.history,
+                    historyLength: this.editor.history?.length
+                });
+                throw new Error('No diagram data found in editor.currentSpec');
+            }
             
             // Get current diagram data - normalize it to ThinkGuide format
-            const diagramType = this.editor?.diagramType || 'circle_map';
-            
-            // Check if ThinkGuide supports this diagram type
-            const supportedTypes = ['circle_map', 'bubble_map'];  // Diagram types with specialized ThinkGuide agents
-            if (!supportedTypes.includes(diagramType)) {
-                const msg = `ThinkGuide is currently only available for Circle Maps and Bubble Maps. Use Node Palette button for ${diagramType}.`;
-                logger.warn('ToolbarManager', msg);
-                this.showNotification(msg, 'warning');
-                return;
-            }
-            
-            const rawSpec = this.editor?.currentSpec;
-            
-            if (!rawSpec) {
-                throw new Error('No diagram data found');
-            }
+            const diagramType = this.editor.diagramType || 'circle_map';
+            const rawSpec = this.editor.currentSpec;
             
             // Normalize diagram data to standard format
             const diagramData = window.thinkingModeManager.normalizeDiagramData(rawSpec, diagramType);
@@ -3339,15 +3353,19 @@ class ToolbarManager {
             });
             
             // Start Thinking Mode (this will call openPanel internally)
-            logger.info('ToolbarManager', '🎯 Calling thinkingModeManager.startThinkingMode()');
+            logger.info('ToolbarManager', 'Calling thinkingModeManager.startThinkingMode()');
             await window.thinkingModeManager.startThinkingMode(diagramType, diagramData);
             
-            logger.info('ToolbarManager', '✅ ThinkGuide Mode started successfully');
+            logger.info('ToolbarManager', 'ThinkGuide Mode started successfully');
             
         } catch (error) {
-            logger.error('ToolbarManager', '❌ Failed to start ThinkGuide Mode', error);
+            logger.error('ToolbarManager', 'Failed to start ThinkGuide Mode', {
+                error: error,
+                message: error.message,
+                stack: error.stack
+            });
             this.showNotification(
-                'Failed to start ThinkGuide Mode. Please try again.',
+                `Failed to start ThinkGuide Mode: ${error.message}`,
                 'error'
             );
         }
@@ -3367,21 +3385,36 @@ class ToolbarManager {
         // Clone and replace buttons to remove all event listeners
         // This is the most reliable way to remove event listeners added with arrow functions
         const buttonsToClean = [
-            'add-node-btn', 'delete-node-btn', 'empty-node-btn', 'auto-complete-btn',
-            'line-mode-btn', 'undo-btn', 'redo-btn', 'reset-btn', 'export-btn',
+            'add-node-btn', 'delete-node-btn', 'duplicate-node-btn', 'empty-node-btn', 'auto-complete-btn',
+            'line-mode-btn', 'learning-btn', 'thinking-btn', 'undo-btn', 'redo-btn', 'reset-btn', 
+            'export-btn', 'export-image-btn', 'zoom-in-btn', 'zoom-out-btn', 'fit-diagram-btn', 'mindmate-ai-btn',
             // Note: 'back-to-gallery' is NOT included - it's managed by DiagramSelector
             // and its event listener must persist across diagram switches
             'close-properties', 'prop-text-apply', 'prop-bold',
             'prop-italic', 'prop-underline', 'reset-styles-btn'
         ];
         
+        let cleanedCount = 0;
         buttonsToClean.forEach(btnId => {
             const btn = document.getElementById(btnId);
             if (btn && btn.parentNode) {
                 const clone = btn.cloneNode(true);
                 btn.parentNode.replaceChild(clone, btn);
+                cleanedCount++;
             }
         });
+        
+        // Also clean up LLM selector buttons
+        const llmButtons = document.querySelectorAll('.llm-btn');
+        llmButtons.forEach(btn => {
+            if (btn.parentNode) {
+                const clone = btn.cloneNode(true);
+                btn.parentNode.replaceChild(clone, btn);
+                cleanedCount++;
+            }
+        });
+        
+        logger.debug('ToolbarManager', `Event listeners cleaned from ${cleanedCount} buttons`);
         
         // Disconnect node counter observer
         if (this.nodeCountObserver) {

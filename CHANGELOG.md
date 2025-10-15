@@ -7,6 +7,219 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.15.0] - 2025-10-15 - Double Bubble Map Node Palette + Universal AI Support + Session Lifecycle Fix
+
+### Added
+
+- **Double Bubble Map Node Palette Support**
+  - **Location**: `agents/thinking_modes/node_palette/double_bubble_palette.py`
+  - **Description**: Complete node palette integration for double bubble maps with similarities/differences generation
+  - **Features**:
+    - Dual-mode generation: similarities (shared attributes) and differences (paired contrasts)
+    - Multi-LLM concurrent generation for both modes (qwen, deepseek, hunyuan, kimi)
+    - JSON parsing for difference pairs with left/right attributes
+    - Bilingual support (English & Chinese prompts)
+    - Smart prompt engineering for comparative thinking
+    - Full deduplication across LLMs and batches
+  - **Integration**: Works seamlessly with tab-based Node Palette UI
+  - **Lines**: 180 lines
+
+- **DoubleBubbleMapThinkingAgent (ThinkGuide)**
+  - **Location**: `agents/thinking_modes/double_bubble_map_agent_react.py`
+  - **Description**: Specialized ThinkGuide agent for double bubble maps with comparative pedagogy
+  - **Features**:
+    - Extends BaseThinkingAgent with ReAct pattern
+    - Double bubble-specific workflow states (Context Gathering → Comparison Analysis)
+    - Comparative thinking prompts (focus on similarities and differences)
+    - Intent detection for double bubble operations (change_topics, add_similarity, add_difference, etc.)
+    - Node Palette integration via `open_node_palette` action
+    - Suggested node generation for both similarities and difference pairs
+    - Bilingual conversational guidance (English & Chinese)
+  - **Pedagogy**: Guides teachers through comparative thinking: "How are these topics alike? How do they differ?"
+  - **Lines**: 285 lines
+
+- **Node Palette Tab System (Catapult Architecture)**
+  - **Location**: `static/js/editor/node-palette-manager.js`, `static/css/node-palette.css`, `templates/editor.html`
+  - **Description**: Advanced dual-tab UI for managing similarities and differences in double bubble maps
+  - **Features**:
+    - Dynamic tab switching with active state indicator
+    - Sliding tab indicator with smooth CSS animations
+    - Separate storage and rendering for each tab (`tabNodes`, `tabSelectedNodes`)
+    - Pair cards for differences (circular nodes with connecting lines)
+    - Single cards for similarities
+    - Live node counters in tab badges
+    - Tab-specific batch loading
+    - **Catapult Function**: Fires all 4 LLMs concurrently via SSE streaming
+      - Parallel initial load of both tabs (similarities + differences)
+      - Live loading animation with progress tracking
+      - Real-time node streaming and rendering
+      - Per-LLM completion tracking
+  - **UX**: Users see both tabs populate simultaneously on first load, then switch freely
+  - **Lines**: 450+ lines across files
+
+- **Universal AI Support (No Diagram Restrictions)**
+  - **ThinkGuide**: Removed all diagram type restrictions
+    - **Location**: `static/js/editor/toolbar-manager.js`, `agents/thinking_modes/factory.py`
+    - **Implementation**: Fallback to CircleMapThinkingAgent for unsupported diagram types
+    - **Impact**: ThinkGuide button works for all diagrams, provides general guidance
+  - **Node Palette**: Removed all diagram type restrictions
+    - **Location**: `static/js/editor/thinking-mode-manager.js`, `routers/thinking.py`
+    - **Implementation**: Fallback to CircleMapPaletteGenerator for unsupported diagram types
+    - **Impact**: Node Palette works universally, generates context-appropriate suggestions
+
+### Fixed
+
+- **CRITICAL: Session Lifecycle Memory Leaks**
+  - **Location**: `static/js/editor/interactive-editor.js`, `static/js/editor/diagram-selector.js`
+  - **Root Cause**: Event listeners and manager references were NEVER cleaned up when navigating back to gallery
+  - **Symptoms**:
+    - "ToolbarManager has no editor reference" error when opening ThinkGuide after gallery return
+    - Orphaned event listeners accumulating (body keydown, window resize, orientation change)
+    - SelectionManager callbacks never cleared
+    - CanvasManager state never reset
+    - Memory leaks on every gallery → editor → gallery cycle
+  - **Fix**:
+    - **Added `InteractiveEditor.destroy()` method** (75 lines)
+      - Phase 1: Remove ALL event listeners (D3 handlers, DOM listeners, window listeners)
+      - Phase 2: Destroy ALL managers (ToolbarManager, SelectionManager, CanvasManager)
+      - Phase 3: Clear ALL data structures (history, selectedNodes, eventHandlers)
+      - Phase 4: Nullify ALL references (spec, renderer, session, zoomBehavior)
+    - **Added event handler tracking**
+      - Store handler references in `this.eventHandlers` object
+      - Use named functions instead of anonymous for proper removal
+    - **Updated DiagramSelector.cleanupCanvas()**
+      - Now calls `window.currentEditor.destroy()` for comprehensive cleanup
+      - Simplified from manual cleanup to single method call
+  - **Impact**: 
+    - Zero memory leaks
+    - Complete session isolation
+    - Clean editor state on every gallery return
+    - No more orphaned listeners or stale references
+    - ThinkGuide and Node Palette work reliably after multiple session switches
+
+- **Node Palette Session Cleanup**
+  - **Location**: `static/js/editor/node-palette-manager.js`, `static/js/editor/diagram-selector.js`
+  - **Issue**: Node Palette session data persisted when navigating to gallery without selecting nodes
+  - **Fix**:
+    - Added `diagram_type` to cancel request payload
+    - Enhanced `resetState()` to clear tab data (`currentTab`, `tabNodes`, `tabSelectedNodes`)
+    - Added explicit Node Palette cleanup in `backToGallery()` and `cleanupCanvas()`
+    - Hide all loading animations (catapult loader, batch transition)
+  - **Impact**: Node Palette fully resets between diagram sessions
+
+- **Tab Slider Position Glitch**
+  - **Location**: `static/js/editor/node-palette-manager.js`, `static/css/node-palette.css`
+  - **Issue**: Tab indicator position was hardcoded and didn't adapt to tab content width
+  - **Fix**: 
+    - Dynamic calculation of tab button widths using `getBoundingClientRect()`
+    - Set CSS variables `--tab-indicator-width` and `--tab-indicator-offset`
+    - Tab indicator uses CSS variables for `width` and `transform: translateX()`
+  - **Impact**: Perfect tab indicator alignment regardless of content or language
+
+- **Differences Tab Not Loading**
+  - **Location**: `static/js/editor/node-palette-manager.js`, `agents/thinking_modes/node_palette/double_bubble_palette.py`
+  - **Issue**: Switching to differences tab showed empty content
+  - **Fix**:
+    - Auto-trigger `catapult()` when switching to empty tab
+    - Added JSON parsing in backend for difference pairs (`{"left": "...", "right": "..."}`)
+    - Extract left/right attributes from LLM JSON output
+  - **Impact**: Both tabs load content automatically and render correctly
+
+### Changed
+
+- **Request Models**
+  - **Location**: `models/requests.py`
+  - **Changes**:
+    - `NodePaletteStartRequest`: Added `mode` parameter ('similarities' or 'differences')
+    - `NodePaletteNextRequest`: Added `mode` parameter
+    - `NodePaletteFinishRequest`: Added `diagram_type` parameter
+    - Updated descriptions to include `double_bubble_map`
+  - **Impact**: API supports multi-mode node generation for comparative diagrams
+
+- **Router Logic**
+  - **Location**: `routers/thinking.py`
+  - **Changes**:
+    - Added `DoubleBubblePaletteGenerator` import and dispatch
+    - Extract center topics as "Left vs Right" for double bubble maps
+    - Pass `mode` parameter to `generate_batch()`
+    - Added diagram_type to finish/cancel endpoints for proper generator cleanup
+    - Fallback to `CircleMapPaletteGenerator` for unsupported diagram types (with warning log)
+  - **Impact**: Single unified API supports circle, bubble, and double bubble diagrams
+
+- **Logging Style**
+  - **Location**: `static/js/editor/*.js`
+  - **Change**: Removed all emojis from logging statements and comments
+  - **Files**: `node-palette-manager.js`, `thinking-mode-manager.js`, `toolbar-manager.js`, `interactive-editor.js`, `diagram-selector.js`, `node-palette.css`
+  - **Impact**: Professional, consistent logging across the application
+
+- **Catapult Function Refactoring**
+  - **Location**: `static/js/editor/node-palette-manager.js`
+  - **Description**: Extracted core SSE streaming logic into reusable `catapult()` function
+  - **Features**:
+    - Detailed inline comments explaining the "launch 4 LLMs concurrently" metaphor
+    - Live loading animation with progress bar
+    - Per-LLM completion tracking
+    - Real-time node count updates
+    - Target mode support for tab-specific loading
+  - **Impact**: Clean, maintainable code with clear intent
+
+### Technical Architecture
+
+**Double Bubble Node Palette Architecture**:
+```
+DoubleBubblePaletteGenerator
+├── Mode: 'similarities'
+│   ├── Prompt: "Generate shared attributes between Topic1 and Topic2"
+│   └── Output: Single text nodes
+└── Mode: 'differences'
+    ├── Prompt: "Generate contrasting pairs in JSON format"
+    └── Output: JSON {"left": "...", "right": "..."} → Parsed into pair objects
+```
+
+**Catapult System (Concurrent LLM Streaming)**:
+```
+catapult(url, payload, targetMode)
+├── Launch 4 LLMs simultaneously via SSE
+├── Stream nodes in real-time (event: 'node_generated')
+├── Track per-LLM completion (event: 'llm_complete')
+├── Update live loading animation
+├── Route nodes to appropriate tab (similarities/differences)
+└── Return total node count
+```
+
+**Session Lifecycle (Complete Control)**:
+```
+DiagramSelector.backToGallery()
+├── Phase 1: Cancel all LLM requests
+├── Phase 2: End session & clean canvas
+│   └── InteractiveEditor.destroy()
+│       ├── Remove ALL event listeners
+│       ├── Destroy ALL managers
+│       ├── Clear ALL data structures
+│       └── Nullify ALL references
+├── Phase 3: Reset all panels & managers
+├── Phase 4: Reset toolbar buttons
+├── Phase 5: Clear all animations
+└── Phase 6: Restore gallery view
+```
+
+### Developer Notes
+
+**Session Lifecycle Best Practices**:
+- Always store event handler references for cleanup
+- Use named functions instead of anonymous for `addEventListener`
+- Call `destroy()` on all managers before nullifying references
+- Clear D3 event handlers with `.on('event', null)`
+- Reset global state in session manager, not individual components
+
+**Double Bubble Node Palette Integration**:
+- Use `mode` parameter to switch between similarities/differences
+- Parse JSON for differences mode: `{"left": "...", "right": "..."}`
+- Tab UI automatically handles rendering based on node structure
+- Catapult function handles concurrent loading for both tabs
+
+---
+
 ## [4.14.0] - 2025-10-14 - Bubble Map Full Support: Node Palette & ThinkGuide
 
 ### Added

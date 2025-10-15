@@ -15,6 +15,7 @@ from typing import Optional
 from agents.thinking_modes.base_thinking_agent import BaseThinkingAgent
 from agents.thinking_modes.circle_map_agent_react import CircleMapThinkingAgent
 from agents.thinking_modes.bubble_map_agent_react import BubbleMapThinkingAgent
+from agents.thinking_modes.double_bubble_map_agent_react import DoubleBubbleMapThinkingAgent
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,8 @@ class ThinkingAgentFactory:
     _agents = {
         'circle_map': CircleMapThinkingAgent,
         'bubble_map': BubbleMapThinkingAgent,
+        'double_bubble_map': DoubleBubbleMapThinkingAgent,
         # Future diagram types will be added here as we implement them:
-        # 'double_bubble_map': DoubleBubbleMapThinkingAgent,
         # 'mind_map': MindMapThinkingAgent,
         # 'tree_map': TreeMapThinkingAgent,
         # 'flow_map': FlowMapThinkingAgent,
@@ -75,11 +76,9 @@ class ThinkingAgentFactory:
         agent_class = cls._agents.get(diagram_type)
         
         if not agent_class:
-            logger.error(f"[ThinkingAgentFactory] No agent found for diagram type: {diagram_type}")
-            raise ValueError(
-                f"ThinkGuide not yet available for diagram type: {diagram_type}. "
-                f"Supported types: {', '.join(cls._agents.keys())}"
-            )
+            # Use CircleMapThinkingAgent as fallback for unsupported diagram types
+            logger.warning(f"[ThinkingAgentFactory] No specialized agent for {diagram_type}, using CircleMapThinkingAgent as fallback")
+            agent_class = CircleMapThinkingAgent
         
         logger.info(f"[ThinkingAgentFactory] Creating {agent_class.__name__} for {diagram_type}")
         instance = agent_class()

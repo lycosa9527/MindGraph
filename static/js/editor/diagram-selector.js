@@ -469,109 +469,215 @@ class DiagramSelector {
     
     /**
      * Clean up canvas and previous editor
+     * Called during session transitions (gallery <-> editor)
      */
     cleanupCanvas() {
-        logger.debug('DiagramSelector', 'Cleaning up canvas and editor');
+        logger.debug('DiagramSelector', 'SESSION MANAGER: Canvas cleanup initiated');
         
-        // Clear the D3 container
+        // ========================================
+        // 1. CLEAR D3 CANVAS
+        // ========================================
         const container = document.getElementById('d3-container');
         if (container) {
-            // Remove all SVG elements
             d3.select('#d3-container').selectAll('*').remove();
+            container.style.display = 'block'; // Ensure visible (Node Palette might have hidden it)
+            logger.debug('DiagramSelector', 'D3 canvas cleared');
         }
         
-        // Clear any existing editor
-        // Note: ToolbarManager cleanup is handled automatically via the session registry
-        // When a new ToolbarManager is created, it will destroy old instances from different sessions
-        if (window.currentEditor) {
-            // Clear the toolbar manager's property panel if method exists
-            if (window.currentEditor.toolbarManager && 
-                typeof window.currentEditor.toolbarManager.clearPropertyPanel === 'function') {
-                window.currentEditor.toolbarManager.clearPropertyPanel();
-            }
-            
-            window.currentEditor = null;
+        // ========================================
+        // 2. CLEAN UP ALL PANELS
+        // ========================================
+        
+        // Node Palette
+        const nodePalettePanel = document.getElementById('node-palette-panel');
+        if (nodePalettePanel) {
+            nodePalettePanel.style.display = 'none';
+            nodePalettePanel.classList.remove('thinkguide-visible');
+        }
+        if (window.nodePaletteManager) {
+            window.nodePaletteManager.clearAll();
         }
         
-        // Hide property panel when cleaning up
+        // Property Panel
         const propertyPanel = document.getElementById('property-panel');
         if (propertyPanel) {
             propertyPanel.style.display = 'none';
         }
+        
+        // ========================================
+        // 3. DESTROY CURRENT EDITOR & MANAGERS
+        // ========================================
+        if (window.currentEditor) {
+            // Call comprehensive destroy() method
+            // This removes ALL event listeners, destroys ALL managers, and clears ALL data
+            window.currentEditor.destroy();
+            
+            // Nullify global reference
+            window.currentEditor = null;
+            logger.debug('DiagramSelector', 'Editor instance destroyed');
+        }
+        
+        // ========================================
+        // 4. CLEAR ALL LOADING STATES
+        // ========================================
+        
+        // Remove catapult loader
+        const catapultLoader = document.getElementById('catapult-loader');
+        if (catapultLoader) {
+            catapultLoader.remove();
+        }
+        
+        // Remove batch transition
+        const batchTransition = document.getElementById('batch-transition');
+        if (batchTransition) {
+            batchTransition.remove();
+        }
+        
+        logger.debug('DiagramSelector', 'SESSION MANAGER: Canvas cleanup complete');
     }
     
     /**
      * Return to gallery
      */
     backToGallery() {
+        logger.info('DiagramSelector', '========================================');
+        logger.info('DiagramSelector', 'SESSION MANAGER: TOTAL RESET INITIATED');
+        logger.info('DiagramSelector', '========================================');
         logger.info('DiagramSelector', 'Returning to gallery', {
             hasSession: !!this.currentSession,
             editorActive: this.editorActive
         });
         
-        // CRITICAL: Cancel all in-progress LLM requests before leaving canvas
-        if (window.currentEditor && window.currentEditor.toolbarManager) {
+        // ========================================
+        // PHASE 1: CANCEL ALL ACTIVE OPERATIONS
+        // ========================================
+        
+        // Cancel all in-progress LLM requests
+        if (window.currentEditor?.toolbarManager) {
             window.currentEditor.toolbarManager.cancelAllLLMRequests();
+            logger.debug('DiagramSelector', 'All LLM requests cancelled');
         }
         
-        // End the current session FIRST (critical!)
-        this.endSession();
+        // ========================================
+        // PHASE 2: END SESSION & CLEAN CANVAS
+        // ========================================
         
-        // Clean up canvas and editor
+        this.endSession();
         this.cleanupCanvas();
         
-        // Close AI assistant if open and reset button state + conversation session
+        // ========================================
+        // PHASE 3: RESET ALL PANELS & MANAGERS
+        // ========================================
+        
+        // 1. MindMate AI Assistant
         const aiPanel = document.getElementById('ai-assistant-panel');
-        if (aiPanel && !aiPanel.classList.contains('collapsed')) {
+        if (aiPanel) {
             aiPanel.classList.add('collapsed');
         }
         const mindmateBtn = document.getElementById('mindmate-ai-btn');
         if (mindmateBtn) {
             mindmateBtn.classList.remove('active');
         }
-        // Reset MindMate conversation session
         if (window.aiAssistantManager) {
             window.aiAssistantManager.diagramSessionId = null;
             window.aiAssistantManager.conversationId = null;
             window.aiAssistantManager.hasGreeted = false;
-            logger.debug('DiagramSelector', 'MindMate conversation session reset');
+            logger.debug('DiagramSelector', 'MindMate reset complete');
         }
         
-        // Close ThinkGuide panel if open and reset button state + conversation session
+        // 2. ThinkGuide Panel
         const thinkPanel = document.getElementById('thinking-panel');
-        if (thinkPanel && !thinkPanel.classList.contains('collapsed')) {
+        if (thinkPanel) {
             thinkPanel.classList.add('collapsed');
         }
         const thinkingBtn = document.getElementById('thinking-btn');
         if (thinkingBtn) {
             thinkingBtn.classList.remove('active');
         }
-        // Reset ThinkGuide conversation session
         if (window.thinkingModeManager) {
             window.thinkingModeManager.diagramSessionId = null;
             window.thinkingModeManager.sessionId = null;
             window.thinkingModeManager.currentState = 'CONTEXT_GATHERING';
-            logger.debug('DiagramSelector', 'ThinkGuide conversation session reset');
+            logger.debug('DiagramSelector', 'ThinkGuide reset complete');
         }
         
-        // Hide property panel
+        // 3. Node Palette (CATAPULT System)
+        const nodePalettePanel = document.getElementById('node-palette-panel');
+        if (nodePalettePanel) {
+            nodePalettePanel.style.display = 'none';
+            nodePalettePanel.classList.remove('thinkguide-visible');
+        }
+        if (window.nodePaletteManager) {
+            // Clear all state: nodes, selections, tabs, sessions, animations
+            window.nodePaletteManager.clearAll();
+            logger.debug('DiagramSelector', 'Node Palette reset complete');
+        }
+        
+        // 4. Property Panel
         const propertyPanel = document.getElementById('property-panel');
         if (propertyPanel) {
             propertyPanel.style.display = 'none';
         }
         
-        // Show landing page (use requestAnimationFrame for reliable DOM update)
+        // 5. Panel Manager (global panel state)
+        if (window.panelManager) {
+            window.panelManager.closeAll();
+            logger.debug('DiagramSelector', 'Panel Manager reset complete');
+        }
+        
+        // 6. Learning Mode Manager (if active)
+        if (window.currentEditor?.toolbarManager?.learningModeManager) {
+            const learningManager = window.currentEditor.toolbarManager.learningModeManager;
+            if (learningManager.isActive) {
+                learningManager.exitLearningMode();
+                logger.debug('DiagramSelector', 'Learning Mode reset complete');
+            }
+        }
+        
+        // ========================================
+        // PHASE 4: RESET ALL TOOLBAR BUTTONS
+        // ========================================
+        
+        // Remove active state from all toolbar buttons
+        const toolbarButtons = document.querySelectorAll('.toolbar-btn.active');
+        toolbarButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // ========================================
+        // PHASE 5: CLEAR ALL ANIMATIONS & LOADERS
+        // ========================================
+        
+        // Remove any catapult loaders
+        const catapultLoader = document.getElementById('catapult-loader');
+        if (catapultLoader) {
+            catapultLoader.remove();
+        }
+        
+        // Remove any batch transition elements
+        const batchTransition = document.getElementById('batch-transition');
+        if (batchTransition) {
+            batchTransition.remove();
+        }
+        
+        // ========================================
+        // PHASE 6: RESTORE GALLERY VIEW
+        // ========================================
+        
         requestAnimationFrame(() => {
             const landing = document.getElementById('editor-landing');
             if (landing) {
                 landing.style.display = 'block';
             }
             
-            // Hide editor interface
             const editorInterface = document.getElementById('editor-interface');
             if (editorInterface) {
                 editorInterface.style.display = 'none';
             }
+            
+            logger.info('DiagramSelector', '========================================');
+            logger.info('DiagramSelector', 'SESSION MANAGER: TOTAL RESET COMPLETE');
+            logger.info('DiagramSelector', '========================================');
         });
     }
     

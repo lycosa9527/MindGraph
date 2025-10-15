@@ -26,6 +26,17 @@ class NodePaletteManager {
         this.diagramType = null;  // Track diagram type
         this.isLoadingBatch = false;  // Prevent duplicate batch requests
         
+        // Tab management for double bubble map
+        this.currentTab = 'similarities';  // 'similarities' | 'differences'
+        this.tabNodes = {
+            'similarities': [],
+            'differences': []
+        };
+        this.tabSelectedNodes = {
+            'similarities': new Set(),
+            'differences': new Set()
+        };
+        
         // Diagram type metadata - node types and array names
         this.diagramMetadata = {
             'circle_map': {
@@ -41,10 +52,30 @@ class NodePaletteManager {
                 nodeType: 'attribute'
             },
             'double_bubble_map': {
-                arrayName: 'similarities',  // Could also be left_differences or right_differences
+                // Multi-array support with tabs
+                arrays: {
+                    'similarities': {
+                        nodeName: 'similarity',
+                        nodeNamePlural: 'similarities',
+                        nodeType: 'similarity'
+                    },
+                    'left_differences': {
+                        nodeName: 'left difference',
+                        nodeNamePlural: 'left differences',
+                        nodeType: 'left_difference'
+                    },
+                    'right_differences': {
+                        nodeName: 'right difference',
+                        nodeNamePlural: 'right differences',
+                        nodeType: 'right_difference'
+                    }
+                },
+                // Default array for backward compatibility
+                arrayName: 'similarities',
                 nodeName: 'similarity',
                 nodeNamePlural: 'similarities',
-                nodeType: 'similarity'
+                nodeType: 'similarity',
+                useTabs: true  // Enable tab UI
             },
             'tree_map': {
                 arrayName: 'items',
@@ -125,6 +156,213 @@ class NodePaletteManager {
         return validator.isPlaceholderText(text);
     }
     
+    /**
+     * Check if current diagram uses tabs (double bubble map)
+     */
+    usesTabs() {
+        const metadata = this.getMetadata();
+        return metadata.useTabs === true;
+    }
+    
+    /**
+     * Switch between tabs with elegant transition (double bubble only)
+     */
+    switchTab(tabName) {
+        if (!this.usesTabs()) return;
+        
+        // Don't switch if already on this tab
+        if (this.currentTab === tabName) {
+            console.log(`[NodePalette] Already on ${tabName} tab, ignoring`);
+            return;
+        }
+        
+        console.log('[NodePalette] ========================================');
+        console.log(`[NodePalette] TAB SWITCH: ${this.currentTab} → ${tabName}`);
+        console.log('[NodePalette] ========================================');
+        
+        // Save current tab state (preserve user progress)
+        console.log(`[NodePalette] Saving ${this.currentTab} state:`);
+        console.log(`  - Nodes: ${this.nodes.length}`);
+        console.log(`  - Selected: ${this.selectedNodes.size}`);
+        
+        this.tabNodes[this.currentTab] = [...this.nodes];
+        this.tabSelectedNodes[this.currentTab] = new Set(this.selectedNodes);
+        
+        // Fade out current grid
+        const grid = document.getElementById('node-palette-grid');
+        if (grid) {
+            grid.style.opacity = '0';
+            grid.style.transform = 'translateY(10px)';
+        }
+        
+        // Wait for fade out, then switch
+        setTimeout(() => {
+            // Switch to new tab
+            this.currentTab = tabName;
+            
+            // Restore new tab state
+            this.nodes = [...(this.tabNodes[tabName] || [])];
+            this.selectedNodes = new Set(this.tabSelectedNodes[tabName] || new Set());
+            
+            console.log(`[NodePalette] Restored ${tabName} state:`);
+            console.log(`  - Nodes: ${this.nodes.length}`);
+            console.log(`  - Selected: ${this.selectedNodes.size}`);
+            
+            // Update UI
+            this.renderTabNodes();
+            this.updateTabButtons();
+            this.updateSelectionCounter();
+            
+            // If the new tab has no nodes yet, CATAPULT!
+            if (this.nodes.length === 0) {
+                console.log(`[NodePalette] New tab empty, CATAPULT for ${tabName}...`);
+                this.currentBatch = 0; // Reset batch counter for this tab
+                this.loadNextBatch();
+            }
+            
+            // Fade in new grid
+            if (grid) {
+                setTimeout(() => {
+                    grid.style.transition = 'opacity 0.3s, transform 0.3s';
+                    grid.style.opacity = '1';
+                    grid.style.transform = 'translateY(0)';
+                }, 10);
+            }
+            
+            console.log(`[NodePalette] ✓ Tab switch complete: ${tabName}`);
+        }, 300);
+    }
+    
+    /**
+     * Render nodes for current tab
+     */
+    renderTabNodes() {
+        const grid = document.getElementById('node-palette-grid');
+        if (!grid) return;
+        
+        // Clear grid
+        grid.innerHTML = '';
+        
+        // Render nodes based on current tab
+        if (this.currentTab === 'similarities') {
+            // Render as single nodes
+            this.nodes.forEach(node => this.renderNodeCardOnly(node));
+        } else {
+            // Render as paired nodes
+            this.nodes.forEach(pairNode => this.renderPairCardOnly(pairNode));
+        }
+    }
+    
+    /**
+     * Update tab button states with elegant animations
+     */
+    updateTabButtons() {
+        const similaritiesBtn = document.getElementById('tab-similarities');
+        const differencesBtn = document.getElementById('tab-differences');
+        const tabsContainer = document.querySelector('.palette-tabs');
+        
+        // Update active state
+        if (similaritiesBtn) {
+            if (this.currentTab === 'similarities') {
+                similaritiesBtn.classList.add('active');
+            } else {
+                similaritiesBtn.classList.remove('active');
+            }
+        }
+        
+        if (differencesBtn) {
+            if (this.currentTab === 'differences') {
+                differencesBtn.classList.add('active');
+            } else {
+                differencesBtn.classList.remove('active');
+            }
+        }
+        
+        // Update sliding indicator via data attribute
+        if (tabsContainer) {
+            tabsContainer.setAttribute('data-active', this.currentTab);
+            
+            // Dynamically calculate indicator width and position
+            if (similaritiesBtn && differencesBtn) {
+                const simWidth = similaritiesBtn.offsetWidth;
+                const diffWidth = differencesBtn.offsetWidth;
+                const gap = 8; // Must match CSS gap
+                
+                // Set CSS variables for dynamic positioning
+                if (this.currentTab === 'similarities') {
+                    tabsContainer.style.setProperty('--tab-indicator-width', `${simWidth}px`);
+                } else {
+                    tabsContainer.style.setProperty('--tab-indicator-width', `${diffWidth}px`);
+                    tabsContainer.style.setProperty('--tab-indicator-offset', `${simWidth + gap}px`);
+                }
+            }
+        }
+        
+        // Update tab counters
+        this.updateTabCounters();
+    }
+    
+    /**
+     * Update node counters in tab badges
+     */
+    updateTabCounters() {
+        const simCount = document.getElementById('count-similarities');
+        const diffCount = document.getElementById('count-differences');
+        
+        if (simCount) {
+            const count = this.tabNodes['similarities']?.length || 0;
+            simCount.textContent = count > 0 ? count : '0';
+        }
+        
+        if (diffCount) {
+            const count = this.tabNodes['differences']?.length || 0;
+            diffCount.textContent = count > 0 ? `${count} pairs` : '0 pairs';
+        }
+    }
+    
+    /**
+     * Attach tab button click listeners
+     */
+    attachTabButtonListeners() {
+        const similaritiesBtn = document.getElementById('tab-similarities');
+        const differencesBtn = document.getElementById('tab-differences');
+        
+        if (similaritiesBtn) {
+            similaritiesBtn.addEventListener('click', () => {
+                console.log('[NodePalette] User clicked Similarities tab');
+                this.switchTab('similarities');
+            });
+        }
+        
+        if (differencesBtn) {
+            differencesBtn.addEventListener('click', () => {
+                console.log('[NodePalette] User clicked Differences tab');
+                this.switchTab('differences');
+            });
+        }
+    }
+    
+    /**
+     * Show tabs UI (for double bubble map only)
+     */
+    showTabsUI() {
+        const tabsContainer = document.getElementById('node-palette-tabs');
+        if (tabsContainer) {
+            tabsContainer.style.display = 'flex';
+            console.log('[NodePalette] Tab switcher UI shown');
+        }
+    }
+    
+    /**
+     * Hide tabs UI (for other diagram types)
+     */
+    hideTabsUI() {
+        const tabsContainer = document.getElementById('node-palette-tabs');
+        if (tabsContainer) {
+            tabsContainer.style.display = 'none';
+        }
+    }
+    
     async start(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
         /**
          * Initialize Node Palette and load first batch.
@@ -181,13 +419,44 @@ class NodePaletteManager {
         // Setup scroll listener
         this.setupScrollListener();
         
+        // Initialize tabs for double bubble map
+        if (this.usesTabs()) {
+            this.currentTab = 'similarities';
+            this.tabNodes = {
+                'similarities': [],
+                'differences': []
+            };
+            this.tabSelectedNodes = {
+                'similarities': new Set(),
+                'differences': new Set()
+            };
+            
+            // Show tabs UI
+            this.showTabsUI();
+            
+            // Attach tab button listeners
+            this.attachTabButtonListeners();
+            
+            console.log('[NodePalette] Tabs initialized for double bubble map');
+        } else {
+            // Hide tabs for other diagram types
+            this.hideTabsUI();
+        }
+        
         if (isSameSession && this.nodes.length > 0) {
             // Returning to same session - restore existing nodes in UI
             this.restoreUI();
         } else {
             // New session - load first batch
-            console.log('[NodePalette] Loading first batch for new session...');
-        await this.loadNextBatch();
+            if (this.usesTabs()) {
+                // For double bubble map: load BOTH similarities and differences
+                console.log('[NodePalette] Loading first batch for BOTH tabs (similarities + differences)...');
+                await this.loadBothTabsInitial();
+            } else {
+                // For other diagrams: load single batch
+                console.log('[NodePalette] Loading first batch for new session...');
+                await this.loadNextBatch();
+            }
         }
     }
     
@@ -202,12 +471,26 @@ class NodePaletteManager {
         this.currentBatch = 0;
         this.isLoadingBatch = false;
         
+        // Clear tab data for double bubble maps (CRITICAL for proper cleanup)
+        this.currentTab = null;
+        this.tabNodes = null;
+        this.tabSelectedNodes = null;
+        
         // Clear the UI grid to remove old nodes from previous session
         const grid = document.getElementById('node-palette-grid');
         if (grid) {
             grid.innerHTML = '';
             console.log('[NodePalette] UI grid cleared for new session');
         }
+        
+        // Hide tab UI (will be re-shown if needed in start())
+        this.hideTabsUI();
+        
+        // Clear any active loading animations
+        this.hideBatchTransition();
+        this.hideCatapultLoading();
+        
+        console.log('[NodePalette] State reset complete (nodes, selections, tabs, animations cleared)');
     }
     
     clearAll() {
@@ -365,6 +648,7 @@ class NodePaletteManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_id: this.sessionId,
+                    diagram_type: this.diagramType,  // CRITICAL: Backend needs this to clean up generator
                     selected_node_count: this.selectedNodes.size,
                     total_nodes_generated: this.nodes.length,
                     batches_loaded: this.currentBatch
@@ -415,8 +699,12 @@ class NodePaletteManager {
     
     onScroll() {
         /**
-         * Handle scroll event - load next batch at 2/3 position.
-         * Infinite scroll - no limits!
+         * INFINITE SCROLL - Keep CATAPULT firing forever!
+         * 
+         * Every time user scrolls to 2/3 down the page, we CATAPULT again.
+         * This fires 4 LLMs concurrently for batch 2, 3, 4, 5... no limits!
+         * 
+         * Each scroll trigger = 1 CATAPULT = 4 LLMs = ~60 new nodes
          */
         const container = document.getElementById('node-palette-container');
         if (!container) return;
@@ -428,17 +716,178 @@ class NodePaletteManager {
         // Calculate scroll progress (0 to 1)
         const scrollProgress = (scrollTop + clientHeight) / scrollHeight;
         
-        // Trigger at 2/3 (0.67) - fire all 4 LLMs concurrently again!
+        // Trigger at 2/3 (0.67) - CATAPULT again! Infinite batches!
         if (scrollProgress >= 0.67 && !this.isLoadingBatch) {
-            console.log('[NodePalette] 🚀 2/3 scroll reached! Firing 4 LLMs concurrently...');
-            this.loadNextBatch();
+            console.log('[NodePalette] 2/3 scroll reached! CATAPULT batch #' + (this.currentBatch + 1) + ' launching...');
+            this.loadNextBatch();  // This calls catapult() -> 4 LLMs fire -> ~60 new nodes
         }
+    }
+    
+    async loadBothTabsInitial() {
+        /**
+         * Load BOTH similarities and differences tabs simultaneously (double bubble map only)
+         * Each tab fires 4 LLMs concurrently = 8 LLMs total!
+         */
+        console.log('[NodePalette] Loading BOTH tabs in parallel (8 LLMs total)');
+        
+        this.isLoadingBatch = true;
+        this.currentBatch = 1;
+        
+        try {
+            // CATAPULT! Fire 8 LLMs total (4 per tab) - both tabs load in parallel
+            await Promise.all([
+                this.loadTabBatch('similarities'),
+                this.loadTabBatch('differences')
+            ]);
+            
+            console.log('[NodePalette] Both tabs loaded successfully');
+            console.log(`  - Similarities: ${this.tabNodes['similarities'].length} nodes`);
+            console.log(`  - Differences: ${this.tabNodes['differences'].length} nodes`);
+            
+            // Update tab counters
+            this.updateTabCounters();
+            
+        } catch (error) {
+            console.error('[NodePalette] Error loading both tabs:', error);
+        } finally {
+            this.isLoadingBatch = false;
+        }
+    }
+    
+    async loadTabBatch(mode) {
+        /**
+         * Load a single tab's batch (used by loadBothTabsInitial)
+         * @param {string} mode - 'similarities' or 'differences'
+         */
+        console.log(`[NodePalette] CATAPULT for ${mode} tab (4 LLMs launching)...`);
+        
+        const url = '/thinking_mode/node_palette/start';
+        const payload = {
+            session_id: this.sessionId,
+            diagram_type: this.diagramType,
+            diagram_data: this.diagramData,
+            educational_context: this.educationalContext,
+            mode: mode  // Specify which mode to generate
+        };
+        
+        try {
+            // CATAPULT! Fire 4 LLMs concurrently for this tab
+            const nodeCount = await this.catapult(url, payload, mode);
+            
+            console.log(`[NodePalette] ${mode} tab loaded: ${nodeCount} nodes`);
+            
+        } catch (error) {
+            console.error(`[NodePalette] Error loading ${mode} tab:`, error);
+        }
+    }
+    
+    async catapult(url, payload, targetMode = null) {
+        /**
+         * CATAPULT - Fire all 4 LLMs concurrently!
+         * 
+         * This is the core function that launches 4 LLM requests simultaneously
+         * via Server-Sent Events (SSE) and streams nodes back in real-time.
+         * 
+         * Think of it as a catapult launching 4 projectiles at once - each LLM
+         * generates nodes in parallel, and we catch them as they stream in.
+         * 
+         * @param {string} url - API endpoint (/start or /next_batch)
+         * @param {Object} payload - Request payload with session_id, diagram_data, etc.
+         * @param {string|null} targetMode - For double bubble: 'similarities' or 'differences'
+         * @returns {Promise<number>} - Number of nodes generated
+         */
+        // Show loading animation while catapult is firing
+        this.showCatapultLoading();
+        
+        const response = await auth.fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        let nodeCount = 0;
+        let llmsComplete = 0;
+        const batchStartTime = Date.now();
+        
+        // STREAMING LOOP - Catch nodes as they fly in from all 4 LLMs
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.substring(6));
+                    
+                    if (data.event === 'batch_start') {
+                        // CATAPULT LAUNCHED! All 4 LLMs are now firing
+                        console.log(`[NodePalette] CATAPULT LAUNCHED: ${data.llm_count} LLMs firing concurrently`);
+                        this.updateCatapultLoading(`Launching ${data.llm_count} LLMs...`, 0, data.llm_count);
+                        
+                    } else if (data.event === 'node_generated') {
+                        nodeCount++;
+                        const node = data.node;
+                        
+                        // Update loading animation with live count
+                        this.updateCatapultLoading(`Generating ideas... ${nodeCount} nodes received`, llmsComplete, 4);
+                        
+                        // Add node to appropriate target (tab-specific or main array)
+                        if (targetMode && this.tabNodes) {
+                            // For double bubble: add to specific tab's storage
+                            this.tabNodes[targetMode].push(node);
+                            
+                            // If this is the CURRENT tab, also render it
+                            if (targetMode === this.currentTab) {
+                                this.nodes.push(node);
+                                this.renderNodeCard(node);
+                            }
+                        } else {
+                            // For other diagrams: add directly and render
+                            this.appendNode(node);
+                        }
+                        
+                    } else if (data.event === 'llm_complete') {
+                        // One of the 4 LLMs has finished
+                        llmsComplete++;
+                        console.log(`[NodePalette] ${data.llm} complete: ${data.unique_nodes} unique, ${data.duplicates} duplicates (${data.duration}s)`);
+                        this.updateCatapultLoading(`${data.llm} complete (${llmsComplete}/4)`, llmsComplete, 4);
+                        
+                    } else if (data.event === 'batch_complete') {
+                        // All 4 LLMs have completed - catapult mission success!
+                        const elapsed = ((Date.now() - batchStartTime) / 1000).toFixed(2);
+                        console.log(`[NodePalette] CATAPULT COMPLETE (${elapsed}s) | New: ${data.new_unique_nodes} | Total: ${data.total_nodes}`);
+                        this.updateCatapultLoading(`Complete! ${data.new_unique_nodes} new ideas`, 4, 4);
+                        
+                        // Hide catapult loading animation after brief delay
+                        setTimeout(() => this.hideCatapultLoading(), 800);
+                        
+                    } else if (data.event === 'error') {
+                        console.error(`[NodePalette] CATAPULT ERROR:`, data.message);
+                        this.hideCatapultLoading();
+                    }
+                }
+            }
+        }
+        
+        return nodeCount;
     }
     
     async loadNextBatch() {
         /**
-         * Load next batch - fires 4 LLMs concurrently!
-         * Infinite scroll - no limits.
+         * CATAPULT - Fire 4 LLMs concurrently for next batch!
+         * 
+         * INFINITE SCROLL: This gets called repeatedly as user scrolls down.
+         * - Batch 1: Initial load
+         * - Batch 2, 3, 4, 5...: Triggered at 2/3 scroll position, NO LIMIT!
+         * 
+         * Each batch = 1 CATAPULT = 4 LLMs fire concurrently = ~60 new nodes
          */
         if (this.isLoadingBatch) {
             console.warn('[NodePalette] Batch load already in progress, skipping');
@@ -451,117 +900,42 @@ class NodePaletteManager {
         // Hide transition animation as new batch starts
         this.hideBatchTransition();
         
-        console.log(`[NodePalette] 🚀 Loading batch #${this.currentBatch} (4 LLMs concurrent)`);
+        console.log(`[NodePalette] CATAPULT batch #${this.currentBatch} (4 LLMs launching)...`);
         
         // Determine URL based on batch number
         const url = this.currentBatch === 1
             ? '/thinking_mode/node_palette/start'
             : `/thinking_mode/node_palette/next_batch`;
         
-            const payload = this.currentBatch === 1
+        const payload = this.currentBatch === 1
             ? {
                 session_id: this.sessionId,
                 diagram_type: this.diagramType,  // Use actual diagram type
                 diagram_data: this.diagramData,
-                educational_context: this.educationalContext  // Use ThinkGuide context
+                educational_context: this.educationalContext,  // Use ThinkGuide context
+                mode: this.currentTab  // Pass current tab as mode for double bubble
             }
             : {
                 session_id: this.sessionId,
                 diagram_type: this.diagramType,  // Include diagram type for next batch
                 center_topic: this.centerTopic,
-                educational_context: this.educationalContext  // Use ThinkGuide context
+                educational_context: this.educationalContext,  // Use ThinkGuide context
+                mode: this.currentTab  // Pass current tab as mode for double bubble
             };
         
         try {
-            const response = await auth.fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            // CATAPULT! Fire 4 LLMs concurrently (works for infinite batches)
+            // For double bubble: targetMode determines which tab's nodes to update
+            const targetMode = this.usesTabs() ? this.currentTab : null;
+            await this.catapult(url, payload, targetMode);
             
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            
-            let nodeCount = 0;
-            let duplicateCount = 0;
-            let currentLLM = null;
-            const batchStartTime = Date.now();
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = JSON.parse(line.substring(6));
-                        
-                        if (data.event === 'batch_start') {
-                            console.log(`[NodePalette] Batch ${this.currentBatch} starting: ${data.llm_count} LLMs firing concurrently`);
-                            
-                        } else if (data.event === 'node_generated') {
-                            nodeCount++;
-                            const metadata = this.getMetadata();
-                            
-                            // Verbose logging for streaming nodes - FULL TRACKING
-                            console.log(`[NodePalette-Stream] ${metadata.nodeName.charAt(0).toUpperCase() + metadata.nodeName.slice(1)} #${nodeCount} received:`, {
-                                // Node Identity
-                                id: data.node.id,
-                                text: data.node.text,
-                                
-                                // Node Metadata
-                                source_llm: data.node.source_llm,
-                                batch_number: data.node.batch_number,
-                                relevance_score: data.node.relevance_score,
-                                
-                                // Diagram Context
-                                node_type: metadata.nodeType,
-                                diagram_type: this.diagramType,
-                                target_array: metadata.arrayName,
-                                
-                                // Selection Status - TRACKED
-                                selected: data.node.selected,
-                                added_to_diagram: false,  // Not added yet, just received
-                                
-                                // Object Structure
-                                type: typeof data.node,
-                                keys: Object.keys(data.node),
-                                
-                                // Tracking Info
-                                total_nodes_received: nodeCount,
-                                current_selections: this.selectedNodes.size
-                            });
-                            
-                            this.appendNode(data.node);
-                            
-                        } else if (data.event === 'llm_complete') {
-                            console.log(`[NodePalette] ${data.llm} complete: ${data.unique_nodes} unique, ${data.duplicates} duplicates (${data.duration}s)`);
-                            
-                        } else if (data.event === 'batch_complete') {
-                            const elapsed = ((Date.now() - batchStartTime) / 1000).toFixed(2);
-                            
-                            console.log(`[NodePalette] Batch ${this.currentBatch} complete (${elapsed}s) | New: ${data.new_unique_nodes} | Total: ${data.total_nodes}`);
-                            
-                            this.isLoadingBatch = false;
-                            
-                            // Show elegant loading animation for next batch
-                            this.showBatchTransition();
-                            
-                        } else if (data.event === 'error') {
-                            console.error(`[NodePalette] Batch ${this.currentBatch} error:`, data.message);
-                            this.isLoadingBatch = false;
-                        }
-                    }
-                }
-            }
+            // Show elegant loading animation - ready for next batch when user scrolls!
+            this.showBatchTransition();
             
         } catch (error) {
-            console.error(`[NodePalette] Batch ${this.currentBatch} load error:`, error);
-            this.isLoadingBatch = false;
+            console.error(`[NodePalette] CATAPULT batch ${this.currentBatch} error:`, error);
+        } finally {
+            this.isLoadingBatch = false;  // Allow next CATAPULT when user scrolls more
         }
     }
     
@@ -671,6 +1045,85 @@ class NodePaletteManager {
         return card;
     }
     
+    /**
+     * Create a pair card for differences tab (using circular nodes with connection)
+     */
+    createPairCard(pairNode) {
+        const card = document.createElement('div');
+        card.className = `node-pair-container llm-${pairNode.source_llm}`;
+        card.dataset.nodeId = pairNode.id;
+        card.dataset.llm = pairNode.source_llm;
+        
+        // Check if pair is selected
+        const isSelected = this.selectedNodes.has(pairNode.id);
+        if (isSelected) {
+            card.classList.add('selected');
+        }
+        
+        // Get topics
+        const leftTopic = this.diagramData?.left || 'Left';
+        const rightTopic = this.diagramData?.right || 'Right';
+        
+        // Truncate text for circular nodes
+        const leftText = this.truncateText(pairNode.left, 50);
+        const rightText = this.truncateText(pairNode.right, 50);
+        
+        card.innerHTML = `
+            <!-- Left circular node -->
+            <div class="pair-node pair-node-left">
+                <div class="pair-node-content">
+                    <div class="pair-node-label">${leftTopic}</div>
+                    <div class="pair-node-text">${leftText}</div>
+                </div>
+            </div>
+            
+            <!-- Animated connection line -->
+            <div class="pair-connection">
+                <div class="connection-line"></div>
+                <div class="connection-icon">⚖️</div>
+            </div>
+            
+            <!-- Right circular node -->
+            <div class="pair-node pair-node-right">
+                <div class="pair-node-content">
+                    <div class="pair-node-label">${rightTopic}</div>
+                    <div class="pair-node-text">${rightText}</div>
+                </div>
+            </div>
+            
+            <!-- Source badge & checkmark -->
+            <div class="pair-source">${pairNode.source_llm}</div>
+            <div class="pair-checkmark">✓</div>
+        `;
+        
+        // Click handler - select/deselect entire pair
+        card.addEventListener('click', () => {
+            this.toggleNodeSelection(pairNode.id);
+        });
+        
+        return card;
+    }
+    
+    /**
+     * Render a pair card to DOM (without adding to this.nodes)
+     */
+    renderPairCardOnly(pairNode) {
+        const container = document.getElementById('node-palette-grid');
+        if (!container) {
+            console.error('[NodePalette-RenderPair] ERROR: node-palette-grid not found!');
+            return;
+        }
+        
+        const card = this.createPairCard(pairNode);
+        container.appendChild(card);
+        
+        // Fade in animation
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 10);
+    }
+    
     truncateText(text, maxLength) {
         /**
          * Truncate text to max length with ellipsis.
@@ -690,7 +1143,9 @@ class NodePaletteManager {
          * @param {string} nodeId - Node ID to toggle
          */
         const node = this.nodes.find(n => n.id === nodeId);
-        const card = document.querySelector(`.node-card[data-node-id="${nodeId}"]`);
+        // Handle both regular cards and pair containers
+        const card = document.querySelector(`.node-card[data-node-id="${nodeId}"]`) || 
+                     document.querySelector(`.node-pair-container[data-node-id="${nodeId}"]`);
         
         if (!node || !card) return;
         
@@ -865,6 +1320,75 @@ class NodePaletteManager {
         }
     }
     
+    showCatapultLoading() {
+        /**
+         * Show CATAPULT loading animation - live updates while LLMs fire!
+         */
+        const header = document.getElementById('node-palette-header');
+        if (!header) return;
+        
+        // Check if catapult loader already exists
+        let loader = document.getElementById('catapult-loader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'catapult-loader';
+            loader.className = 'catapult-loader';
+            loader.innerHTML = `
+                <div class="catapult-spinner">
+                    <div class="spinner-circle"></div>
+                    <div class="spinner-circle"></div>
+                    <div class="spinner-circle"></div>
+                    <div class="spinner-circle"></div>
+                </div>
+                <div class="catapult-status">Launching CATAPULT...</div>
+                <div class="catapult-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            `;
+            header.appendChild(loader);
+        }
+        
+        // Fade in
+        setTimeout(() => {
+            loader.style.opacity = '1';
+        }, 10);
+    }
+    
+    updateCatapultLoading(status, completedLLMs, totalLLMs) {
+        /**
+         * Update CATAPULT loading animation with live progress
+         */
+        const loader = document.getElementById('catapult-loader');
+        if (!loader) return;
+        
+        const statusEl = loader.querySelector('.catapult-status');
+        const progressFill = loader.querySelector('.progress-fill');
+        
+        if (statusEl) {
+            statusEl.textContent = status;
+        }
+        
+        if (progressFill) {
+            const percentage = (completedLLMs / totalLLMs) * 100;
+            progressFill.style.width = `${percentage}%`;
+        }
+    }
+    
+    hideCatapultLoading() {
+        /**
+         * Hide CATAPULT loading animation
+         */
+        const loader = document.getElementById('catapult-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.remove();
+            }, 300);
+        }
+    }
+    
     async finishSelection() {
         /**
          * Finish Node Palette, add selected nodes to Circle Map.
@@ -922,7 +1446,8 @@ class NodePaletteManager {
                     session_id: this.sessionId,
                     selected_node_ids: Array.from(this.selectedNodes),
                     total_nodes_generated: this.nodes.length,
-                    batches_loaded: this.currentBatch
+                    batches_loaded: this.currentBatch,
+                    diagram_type: this.diagramType  // Add diagram type for cleanup
                 })
             });
             console.log('[NodePalette-Finish] Backend response:', response.status, response.statusText);
@@ -1035,7 +1560,7 @@ class NodePaletteManager {
             } else {
                 userNodes.push({ index: idx, text: nodeText });
             }
-            console.log(`  [${idx}] "${nodeText}" → ${isPlaceholder ? '🏷️ PLACEHOLDER' : '✅ USER NODE'}`);
+            console.log(`  [${idx}] "${nodeText}" -> ${isPlaceholder ? 'PLACEHOLDER' : 'USER NODE'}`);
         });
         
         console.log(`[NodePalette-Assemble] Analysis complete:`);
