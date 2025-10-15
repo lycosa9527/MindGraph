@@ -317,6 +317,154 @@
     opacity: 0.7;
 }
 
+/* For difference nodes (rectangles), position source in lower left */
+.node-card.difference-pair .node-source {
+    left: 14px;
+    bottom: 12px;
+}
+
+/* Difference Node Styles (Two-line comparison) */
+.node-card-difference {
+    gap: 8px;
+    width: 100%;
+}
+
+/* Override circle shape for difference nodes - use rounded rectangles instead */
+.node-card.difference-pair {
+    border-radius: 16px !important;
+    aspect-ratio: auto !important; /* Allow natural height based on content */
+    min-height: 160px; /* Ensure adequate height */
+    max-width: 280px; /* Wider for comparison text */
+    padding: 20px 24px; /* More padding for breathing room */
+}
+
+/* Enhanced hover for difference nodes */
+.node-card.difference-pair:hover {
+    transform: scale(1.05) translateY(-4px) !important; /* Slightly less dramatic than circles */
+    border-width: 5px;
+}
+
+/* Mobile adjustments for difference nodes */
+@media (max-width: 768px) {
+    .node-card.difference-pair {
+        max-width: 240px;
+        min-height: 140px;
+        padding: 16px 20px;
+        border-width: 3px;
+    }
+    
+    .node-text-line {
+        font-size: 14px;
+        padding: 6px 10px;
+    }
+    
+    .node-dimension {
+        font-size: 10px;
+        padding: 6px 10px 4px 10px;
+    }
+}
+
+.node-subtitle {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-secondary, #999999);
+    opacity: 0.6;
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: 0.2px;
+    font-style: italic;
+}
+
+.node-text-split {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.node-text-line {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #333333);
+    line-height: 1.5;
+    word-break: break-word;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.node-text-line:first-child {
+    border-left: 3px solid rgba(74, 144, 226, 0.4); /* Subtle accent */
+}
+
+.node-text-line:last-child {
+    border-left: 3px solid rgba(46, 204, 113, 0.4); /* Different color for contrast */
+}
+
+.node-card.difference-pair:hover .node-text-line {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.node-text-divider {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary, #999999);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    opacity: 0.5;
+    margin: 0;
+    position: relative;
+}
+
+.node-text-divider::before,
+.node-text-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+}
+
+.node-text-divider::before {
+    left: 5%;
+}
+
+.node-text-divider::after {
+    right: 5%;
+}
+
+.node-comparison-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary, #777777);
+    text-align: center;
+    opacity: 0.7;
+    margin-top: 4px;
+    padding: 3px 8px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+}
+
+.node-dimension {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary, #888888);
+    text-align: center;
+    opacity: 0.7;
+    padding: 8px 12px 6px 12px;
+    margin-top: 4px;
+    font-style: italic;
+    letter-spacing: 0.4px;
+    background: rgba(74, 144, 226, 0.05);
+    border-radius: 6px;
+    border: 1px dashed rgba(74, 144, 226, 0.2);
+}
+
 /* Checkmark (hidden by default) */
 .node-checkmark {
     position: absolute;
@@ -716,6 +864,19 @@
 
 [data-theme="dark"] .node-text {
     color: var(--text-primary-dark, #e0e0e0);
+}
+
+[data-theme="dark"] .node-text-line {
+    color: var(--text-primary-dark, #e0e0e0);
+}
+
+[data-theme="dark"] .node-text-divider {
+    color: var(--text-secondary-dark, #888888);
+}
+
+[data-theme="dark"] .node-comparison-label {
+    color: var(--text-secondary-dark, #999999);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="dark"] .end-message {
@@ -1135,5 +1296,95 @@
 
 [data-theme="dark"] .progress-bar {
     background: rgba(59, 130, 246, 0.3);
+}
+
+/* ============================================
+   TAB LOADING OVERLAY (For Double Bubble Tabs)
+   ============================================ */
+
+.tab-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 12px;
+}
+
+.tab-loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.tab-loading-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.tab-loading-spinner .spinner-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 4px solid transparent;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: tab-spinner-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+.tab-loading-spinner .spinner-ring:nth-child(2) {
+    border-top-color: #9333ea;
+    animation-delay: 0.2s;
+    width: 90%;
+    height: 90%;
+    top: 5%;
+    left: 5%;
+}
+
+.tab-loading-spinner .spinner-ring:nth-child(3) {
+    border-top-color: #06b6d4;
+    animation-delay: 0.4s;
+    width: 80%;
+    height: 80%;
+    top: 10%;
+    left: 10%;
+}
+
+@keyframes tab-spinner-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.tab-loading-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.6;
+    letter-spacing: 0.3px;
+}
+
+/* Dark mode */
+[data-theme="dark"] .tab-loading-overlay {
+    background: rgba(15, 23, 42, 0.95);
+}
+
+[data-theme="dark"] .tab-loading-text {
+    color: #f1f5f9;
 }
 

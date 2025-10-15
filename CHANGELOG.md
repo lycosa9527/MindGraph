@@ -125,6 +125,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Extract left/right attributes from LLM JSON output
   - **Impact**: Both tabs load content automatically and render correctly
 
+- **Double Bubble Map Tab Synchronization Bug**
+  - **Location**: `static/js/editor/node-palette-manager.js`
+  - **Issue**: After adding nodes and returning to palette, clicking on similarities tab had no effect
+  - **Symptoms**:
+    - Console showed "Already on similarities tab, ignoring" repeatedly
+    - UI was actually displaying differences tab (desync between internal state and DOM)
+    - Tab buttons showed incorrect active state
+  - **Root Cause**: Internal state variable `this.currentTab` and DOM state (active class on tab buttons) were out of sync
+  - **Fix** (5 changes):
+    - Added tab button sync in `restoreUI()` - syncs when reopening palette
+    - Added tab button sync after initialization with setTimeout (ensures DOM is ready)
+    - Added desync detection in `switchTab()` - detects and allows switch to fix desync
+    - Clear stale active classes in `showTabsUI()` - prevents carryover from previous sessions
+    - Enhanced logging to show selected IDs when switching tabs
+  - **Impact**: Tab switching now works reliably, no more state desyncs, correct visual feedback
+
+- **Double Bubble Map Selection Tracking Bug**
+  - **Location**: `static/js/editor/node-palette-manager.js`
+  - **Issue**: When selecting nodes from both similarities AND differences tabs, only differences nodes were added to diagram
+  - **Symptoms**:
+    - Similarities selections were "lost" after switching tabs
+    - Only the current tab's selections were processed on finish
+    - Selection counter only showed current tab's count
+  - **Root Cause**: Dual tracking system (`this.selectedNodes` and `this.tabSelectedNodes`) wasn't synchronized
+    - `toggleNodeSelection()` only updated `this.selectedNodes` (global)
+    - `finishSelection()` only gathered from `this.nodes` (current tab)
+    - Tab-specific Sets (`this.tabSelectedNodes`) were never updated on selection
+  - **Fix** (3 changes):
+    - **`toggleNodeSelection()`**: Now updates both global and tab-specific Sets
+      - On select: Add to both `this.selectedNodes` and `this.tabSelectedNodes[currentTab]`
+      - On deselect: Remove from both Sets
+    - **`finishSelection()`**: Now merges selections from both tabs
+      - Gather from `this.tabSelectedNodes['similarities']` and `this.tabSelectedNodes['differences']`
+      - Merge into single Set and gather node objects from both `this.tabNodes`
+      - Pass complete merged list to assembly function
+    - **`updateSelectionCounter()`**: Shows cross-tab totals
+      - Format: "Selected: 5/100 (Sim: 3, Diff: 2)"
+      - Enable finish button if any tab has selections
+  - **Impact**: Selections from both tabs are now properly tracked, persisted, and added to diagram
+
 ### Changed
 
 - **Request Models**

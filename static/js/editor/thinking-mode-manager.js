@@ -172,6 +172,9 @@ class ThinkingModeManager {
         // Only send greeting for new sessions
         if (needsGreeting) {
             await this.sendMessage('', diagramData, true); // true = request initial greeting
+            
+            // PRELOAD Node Palette data in background (saves 2-5 seconds when user clicks!)
+            this.preloadNodePalette(diagramData);
         }
     }
     
@@ -210,14 +213,16 @@ class ThinkingModeManager {
                 diagram_data: currentDiagramData,
                 current_state: this.currentState,
                 selected_node: null, // TODO: Get from selection manager
-                is_initial_greeting: isInitialGreeting  // Explicit flag for greeting
+                is_initial_greeting: isInitialGreeting,  // Explicit flag for greeting
+                language: this.language  // Add detected language (zh/en)
             };
             
             this.logger.info('[ThinkGuide] 📊 Sending with current diagram:', {
                 message: message.substring(0, 50) + '...',
                 center: currentDiagramData.center?.text || 'empty',
                 nodeCount: currentDiagramData.children?.length || 0,
-                diagramType: this.diagramType
+                diagramType: this.diagramType,
+                language: this.language  // Log detected language
             });
             
             // Stream response
@@ -645,8 +650,23 @@ class ThinkingModeManager {
      * Detect language from diagram data
      */
     detectLanguage(diagramData) {
+        // Collect text for language detection based on diagram type
+        let textToAnalyze = '';
+        
+        if (this.diagramType === 'double_bubble_map') {
+            // Double bubble map has left_topic and right_topic
+            const leftTopic = diagramData?.left_topic || diagramData?.left || '';
+            const rightTopic = diagramData?.right_topic || diagramData?.right || '';
+            textToAnalyze = leftTopic + ' ' + rightTopic;
+            this.logger.debug('[ThinkGuide]', `Double bubble map topics: left="${leftTopic}", right="${rightTopic}"`);
+        } else {
+            // Other diagrams have center.text or similar
+            textToAnalyze = diagramData?.center?.text || diagramData?.topic || diagramData?.title || '';
+            this.logger.debug('[ThinkGuide]', `Other diagram text: "${textToAnalyze}"`);
+        }
+        
         // For empty diagrams, check browser language or default to 'en'
-        if (diagramData?.isEmpty || !diagramData?.center?.text) {
+        if (diagramData?.isEmpty || !textToAnalyze || textToAnalyze.trim() === '') {
             const browserLang = navigator.language || navigator.userLanguage || 'en';
             this.language = browserLang.startsWith('zh') ? 'zh' : 'en';
             this.logger.debug(`[ThinkGuide] Empty diagram - using browser language: ${this.language}`);
@@ -654,10 +674,16 @@ class ThinkingModeManager {
             return this.language;
         }
         
-        const centerText = diagramData.center.text || '';
-        const chineseChars = (centerText.match(/[\u4e00-\u9fff]/g) || []).length;
-        this.language = chineseChars > centerText.length * 0.3 ? 'zh' : 'en';
-        this.logger.debug('[ThinkGuide]', `Detected language from diagram: ${this.language}`);
+        // Detect Chinese characters in the text
+        const chineseChars = (textToAnalyze.match(/[\u4e00-\u9fff]/g) || []).length;
+        const totalChars = textToAnalyze.length;
+        const chineseRatio = totalChars > 0 ? (chineseChars / totalChars) : 0;
+        this.language = chineseRatio > 0.3 ? 'zh' : 'en';
+        
+        this.logger.info('[ThinkGuide]', `✓ Language detected: ${this.language} (${this.diagramType})`);
+        this.logger.info('[ThinkGuide]', `  Chinese chars: ${chineseChars}/${totalChars} (${(chineseRatio * 100).toFixed(1)}%)`);
+        this.logger.info('[ThinkGuide]', `  Text analyzed: "${textToAnalyze.substring(0, 50)}${textToAnalyze.length > 50 ? '...' : ''}"`);
+        
         this.updateNodePaletteButtonText();
         return this.language;
     }
@@ -704,8 +730,49 @@ class ThinkingModeManager {
     /**
      * Open Node Palette directly (button-triggered, not keyword detection)
      */
+    /**
+     * Preload Node Palette data in background (called when ThinkGuide opens)
+     * This fires the catapult silently so data is ready when user clicks!
+     */
+    async preloadNodePalette(diagramData) {
+        this.logger.info('[ThinkGuide]', 'Preloading Node Palette data in background...');
+        
+        // Use same validation logic as openNodePalette
+        let centerTopic;
+        
+        if (this.diagramType === 'double_bubble_map') {
+            const leftTopic = diagramData?.left;
+            const rightTopic = diagramData?.right;
+            if (!leftTopic || !rightTopic || leftTopic.trim() === '' || rightTopic.trim() === '') {
+                this.logger.info('[ThinkGuide]', 'Skipping preload - missing topics');
+                return;
+            }
+            centerTopic = `${leftTopic} vs ${rightTopic}`;
+        } else {
+            centerTopic = diagramData?.center?.text || diagramData?.topic || diagramData?.title;
+            if (!centerTopic || centerTopic.trim() === '') {
+                this.logger.info('[ThinkGuide]', 'Skipping preload - no topic');
+                return;
+            }
+        }
+        
+        this.logger.info('[ThinkGuide]', `Preloading for topic: "${centerTopic}"`);
+        
+        // Trigger Node Palette Manager to preload (but don't show panel)
+        if (window.nodePaletteManager) {
+            await window.nodePaletteManager.preload(
+                centerTopic,
+                diagramData,
+                this.sessionId,
+                this.extractEducationalContext(),
+                this.diagramType
+            );
+            this.logger.info('[ThinkGuide]', 'Preload complete! Data cached and ready.');
+        }
+    }
+    
     openNodePalette() {
-        this.logger.info('[ThinkGuide]', '🎨 Node Palette button clicked');
+        this.logger.info('[ThinkGuide]', 'Node Palette button clicked');
         
         // Extract current diagram data
         const diagramData = this.extractDiagramData();

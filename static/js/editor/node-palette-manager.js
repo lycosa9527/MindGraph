@@ -36,6 +36,10 @@ class NodePaletteManager {
             'similarities': new Set(),
             'differences': new Set()
         };
+        this.tabScrollPositions = {
+            'similarities': 0,
+            'differences': 0
+        };
         
         // Diagram type metadata - node types and array names
         this.diagramMetadata = {
@@ -170,8 +174,28 @@ class NodePaletteManager {
     switchTab(tabName) {
         if (!this.usesTabs()) return;
         
-        // Don't switch if already on this tab
-        if (this.currentTab === tabName) {
+        // Verify DOM state matches internal state (defensive check for desync)
+        const similaritiesBtn = document.getElementById('tab-similarities');
+        const differencesBtn = document.getElementById('tab-differences');
+        
+        const isDomSimilaritiesActive = similaritiesBtn?.classList.contains('active');
+        const isDomDifferencesActive = differencesBtn?.classList.contains('active');
+        
+        // Check if internal state matches DOM state
+        const expectedDomState = this.currentTab === 'similarities' ? isDomSimilaritiesActive : isDomDifferencesActive;
+        const isDesync = !expectedDomState;
+        
+        if (isDesync) {
+            console.warn(`[NodePalette] STATE DESYNC DETECTED!`);
+            console.warn(`  Internal state: currentTab="${this.currentTab}"`);
+            console.warn(`  DOM state: similarities=${isDomSimilaritiesActive}, differences=${isDomDifferencesActive}`);
+            console.warn(`  User clicked: ${tabName}`);
+            console.warn(`  Allowing switch to proceed to fix desync...`);
+        }
+        
+        // Don't switch if already on this tab AND DOM is synced
+        // But DO switch if there's a desync (to fix it)
+        if (this.currentTab === tabName && !isDesync) {
             console.log(`[NodePalette] Already on ${tabName} tab, ignoring`);
             return;
         }
@@ -181,12 +205,17 @@ class NodePaletteManager {
         console.log('[NodePalette] ========================================');
         
         // Save current tab state (preserve user progress)
+        const container = document.getElementById('node-palette-container');
+        const currentScrollPos = container ? container.scrollTop : 0;
+        
         console.log(`[NodePalette] Saving ${this.currentTab} state:`);
         console.log(`  - Nodes: ${this.nodes.length}`);
         console.log(`  - Selected: ${this.selectedNodes.size}`);
+        console.log(`  - Scroll position: ${currentScrollPos}px`);
         
         this.tabNodes[this.currentTab] = [...this.nodes];
         this.tabSelectedNodes[this.currentTab] = new Set(this.selectedNodes);
+        this.tabScrollPositions[this.currentTab] = currentScrollPos;
         
         // Fade out current grid
         const grid = document.getElementById('node-palette-grid');
@@ -202,16 +231,27 @@ class NodePaletteManager {
             
             // Restore new tab state
             this.nodes = [...(this.tabNodes[tabName] || [])];
+            
+            // CRITICAL: Restore tab-specific selections to global selectedNodes
+            // This ensures the UI shows correct selection state
             this.selectedNodes = new Set(this.tabSelectedNodes[tabName] || new Set());
+            const savedScrollPos = this.tabScrollPositions[tabName] || 0;
             
             console.log(`[NodePalette] Restored ${tabName} state:`);
             console.log(`  - Nodes: ${this.nodes.length}`);
             console.log(`  - Selected: ${this.selectedNodes.size}`);
+            console.log(`  - Selected IDs: ${Array.from(this.selectedNodes).join(', ') || 'none'}`);
+            console.log(`  - Scroll position: ${savedScrollPos}px`);
             
             // Update UI
             this.renderTabNodes();
             this.updateTabButtons();
             this.updateSelectionCounter();
+            
+            // Restore scroll position for this tab
+            if (container) {
+                container.scrollTop = savedScrollPos;
+            }
             
             // If the new tab has no nodes yet, CATAPULT!
             if (this.nodes.length === 0) {
@@ -243,14 +283,18 @@ class NodePaletteManager {
         // Clear grid
         grid.innerHTML = '';
         
-        // Render nodes based on current tab
-        if (this.currentTab === 'similarities') {
-            // Render as single nodes
-            this.nodes.forEach(node => this.renderNodeCardOnly(node));
-        } else {
-            // Render as paired nodes
-            this.nodes.forEach(pairNode => this.renderPairCardOnly(pairNode));
-        }
+        // Render nodes with explicit mode filtering
+        this.nodes.forEach(node => {
+            // For double bubble: verify node mode matches current tab
+            if (this.diagramType === 'double_bubble_map' && node.mode) {
+                if (node.mode !== this.currentTab) {
+                    console.warn(`[NodePalette] Skipping node with wrong mode - tab: ${this.currentTab}, node: ${node.mode}, id: ${node.id}`);
+                    return; // Skip
+                }
+            }
+            
+            this.renderNodeCardOnly(node);
+        });
     }
     
     /**
@@ -349,7 +393,14 @@ class NodePaletteManager {
         const tabsContainer = document.getElementById('node-palette-tabs');
         if (tabsContainer) {
             tabsContainer.style.display = 'flex';
-            console.log('[NodePalette] Tab switcher UI shown');
+            
+            // Clear any stale 'active' classes from previous sessions
+            const similaritiesBtn = document.getElementById('tab-similarities');
+            const differencesBtn = document.getElementById('tab-differences');
+            if (similaritiesBtn) similaritiesBtn.classList.remove('active');
+            if (differencesBtn) differencesBtn.classList.remove('active');
+            
+            console.log('[NodePalette] Tab switcher UI shown (stale states cleared)');
         }
     }
     
@@ -361,6 +412,51 @@ class NodePaletteManager {
         if (tabsContainer) {
             tabsContainer.style.display = 'none';
         }
+    }
+    
+    /**
+     * Preload Node Palette data in background WITHOUT showing panel
+     * Called by ThinkGuide when it opens to save time later
+     */
+    async preload(centerTopic, diagramData, sessionId, educationalContext, diagramType) {
+        console.log('[NodePalette] ===== PRELOAD INITIATED =====');
+        console.log(`[NodePalette] Topic: "${centerTopic}"`);
+        console.log(`[NodePalette] Type: ${diagramType}`);
+        
+        // Store session info (same as start, but use provided sessionId)
+        this.centerTopic = centerTopic;
+        this.diagramData = diagramData;
+        this.thinkingSessionId = sessionId;
+        this.educationalContext = educationalContext;
+        this.diagramType = diagramType;
+        this.sessionId = sessionId;  // Use ThinkGuide's session ID for continuity
+        
+        // Initialize tabs for double bubble map
+        if (this.usesTabs()) {
+            this.currentTab = 'similarities';
+            this.tabNodes = {
+                'similarities': [],
+                'differences': []
+            };
+            this.tabSelectedNodes = {
+                'similarities': new Set(),
+                'differences': new Set()
+            };
+        }
+        
+        // Fire the catapult in background!
+        console.log('[NodePalette] Firing catapult in background (no UI shown)...');
+        
+        if (this.usesTabs()) {
+            // Double bubble: load both tabs
+            await this.loadBothTabsInitial();
+        } else {
+            // Other diagrams: load single batch
+            await this.loadNextBatch();
+        }
+        
+        console.log('[NodePalette] ===== PRELOAD COMPLETE =====');
+        console.log(`[NodePalette] ${this.nodes.length} nodes cached and ready!`);
     }
     
     async start(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
@@ -416,6 +512,12 @@ class NodePaletteManager {
         console.log(`[NodePalette] Hiding ${this.diagramType}, showing Palette UI`);
         this.showPalettePanel();
         
+        // Ensure scroll is at top when showing panel
+        const container = document.getElementById('node-palette-container');
+        if (container) {
+            container.scrollTop = 0;
+        }
+        
         // Setup scroll listener
         this.setupScrollListener();
         
@@ -430,6 +532,10 @@ class NodePaletteManager {
                 'similarities': new Set(),
                 'differences': new Set()
             };
+            this.tabScrollPositions = {
+                'similarities': 0,
+                'differences': 0
+            };
             
             // Show tabs UI
             this.showTabsUI();
@@ -437,13 +543,34 @@ class NodePaletteManager {
             // Attach tab button listeners
             this.attachTabButtonListeners();
             
+            // Synchronize tab button states with currentTab
+            // Use setTimeout to ensure DOM is ready after showTabsUI
+            setTimeout(() => {
+                this.updateTabButtons();
+                console.log('[NodePalette] Tab buttons synchronized after initialization');
+            }, 50);
+            
             console.log('[NodePalette] Tabs initialized for double bubble map');
         } else {
             // Hide tabs for other diagram types
             this.hideTabsUI();
         }
         
-        if (isSameSession && this.nodes.length > 0) {
+        // Check if data was preloaded (nodes already exist)
+        const hasPreloadedData = this.nodes.length > 0 || 
+                                 (this.tabNodes && (this.tabNodes.similarities?.length > 0 || this.tabNodes.differences?.length > 0));
+        
+        if (hasPreloadedData) {
+            // Data was preloaded! Just render it (instant display!)
+            console.log('[NodePalette] ===== PRELOADED DATA DETECTED =====');
+            console.log(`[NodePalette] Nodes ready: ${this.nodes.length}`);
+            if (this.tabNodes) {
+                console.log(`[NodePalette] Similarities: ${this.tabNodes.similarities?.length || 0}`);
+                console.log(`[NodePalette] Differences: ${this.tabNodes.differences?.length || 0}`);
+            }
+            console.log('[NodePalette] Skipping catapult, rendering immediately!');
+            this.restoreUI();
+        } else if (isSameSession && this.nodes.length > 0) {
             // Returning to same session - restore existing nodes in UI
             this.restoreUI();
         } else {
@@ -475,12 +602,20 @@ class NodePaletteManager {
         this.currentTab = null;
         this.tabNodes = null;
         this.tabSelectedNodes = null;
+        this.tabScrollPositions = null;
         
         // Clear the UI grid to remove old nodes from previous session
         const grid = document.getElementById('node-palette-grid');
         if (grid) {
             grid.innerHTML = '';
             console.log('[NodePalette] UI grid cleared for new session');
+        }
+        
+        // Reset scroll position to top (fixes scroll state persistence bug)
+        const container = document.getElementById('node-palette-container');
+        if (container) {
+            container.scrollTop = 0;
+            console.log('[NodePalette] Scroll position reset to top');
         }
         
         // Hide tab UI (will be re-shown if needed in start())
@@ -490,7 +625,7 @@ class NodePaletteManager {
         this.hideBatchTransition();
         this.hideCatapultLoading();
         
-        console.log('[NodePalette] State reset complete (nodes, selections, tabs, animations cleared)');
+        console.log('[NodePalette] State reset complete (nodes, selections, tabs, animations, scroll cleared)');
     }
     
     clearAll() {
@@ -517,6 +652,12 @@ class NodePaletteManager {
             grid.innerHTML = '';
             this.nodes.forEach(node => this.renderNodeCardOnly(node));
             console.log(`[NodePalette] ✓ Restored ${this.nodes.length} nodes with ${this.selectedNodes.size} selected`);
+        }
+        
+        // Sync tab button states for double bubble map
+        if (this.usesTabs()) {
+            this.updateTabButtons();
+            console.log(`[NodePalette] ✓ Tab buttons synchronized to current tab: ${this.currentTab}`);
         }
         
         this.updateFinishButtonState();
@@ -733,9 +874,17 @@ class NodePaletteManager {
         this.isLoadingBatch = true;
         this.currentBatch = 1;
         
+        // Show standard catapult loading
+        this.showCatapultLoading();
+        
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        const loadingMsg = lang === 'zh' ? '正在加载两个标签 (8个AI模型)...' : 'Loading both tabs (8 AI models)...';
+        this.updateCatapultLoading(loadingMsg, 0, 8);
+        
         try {
             // CATAPULT! Fire 8 LLMs total (4 per tab) - both tabs load in parallel
-            await Promise.all([
+            // Each catapult call will update the progress
+            const results = await Promise.all([
                 this.loadTabBatch('similarities'),
                 this.loadTabBatch('differences')
             ]);
@@ -747,8 +896,14 @@ class NodePaletteManager {
             // Update tab counters
             this.updateTabCounters();
             
+            // Show completion
+            const completeMsg = lang === 'zh' ? '两个标签已加载完成！' : 'Both tabs loaded!';
+            this.updateCatapultLoading(completeMsg, 8, 8);
+            setTimeout(() => this.hideCatapultLoading(), 800);
+            
         } catch (error) {
             console.error('[NodePalette] Error loading both tabs:', error);
+            this.hideCatapultLoading();
         } finally {
             this.isLoadingBatch = false;
         }
@@ -772,7 +927,8 @@ class NodePaletteManager {
         
         try {
             // CATAPULT! Fire 4 LLMs concurrently for this tab
-            const nodeCount = await this.catapult(url, payload, mode);
+            // Don't show individual loading animation (parent shows overall)
+            const nodeCount = await this.catapult(url, payload, mode, false);
             
             console.log(`[NodePalette] ${mode} tab loaded: ${nodeCount} nodes`);
             
@@ -781,7 +937,7 @@ class NodePaletteManager {
         }
     }
     
-    async catapult(url, payload, targetMode = null) {
+    async catapult(url, payload, targetMode = null, showLoading = true) {
         /**
          * CATAPULT - Fire all 4 LLMs concurrently!
          * 
@@ -794,10 +950,13 @@ class NodePaletteManager {
          * @param {string} url - API endpoint (/start or /next_batch)
          * @param {Object} payload - Request payload with session_id, diagram_data, etc.
          * @param {string|null} targetMode - For double bubble: 'similarities' or 'differences'
+         * @param {boolean} showLoading - Whether to show loading animation (default: true)
          * @returns {Promise<number>} - Number of nodes generated
          */
-        // Show loading animation while catapult is firing
-        this.showCatapultLoading();
+        // Show loading animation while catapult is firing (if requested)
+        if (showLoading) {
+            this.showCatapultLoading();
+        }
         
         const response = await auth.fetch(url, {
             method: 'POST',
@@ -840,14 +999,29 @@ class NodePaletteManager {
                         
                         // Add node to appropriate target (tab-specific or main array)
                         if (targetMode && this.tabNodes) {
-                            // For double bubble: add to specific tab's storage
+                            // For double bubble: validate node matches target mode using explicit mode field
+                            const nodeMode = node.mode || null;
+                            
+                            console.log(`[NodePalette] Received node - Target: ${targetMode}, Node mode: ${nodeMode}, Has left/right: ${!!(node.left && node.right)}, ID: ${node.id}`);
+                            
+                            // Strict validation: node must have the correct mode tag
+                            if (nodeMode !== targetMode) {
+                                console.warn(`[NodePalette] ⚠️ Node mode mismatch - expected '${targetMode}', got '${nodeMode}': ${node.id}`);
+                                nodeCount--; // Don't count this node
+                                continue;
+                            }
+                            
+                            // Add to specific tab's storage
                             this.tabNodes[targetMode].push(node);
                             
                             // If this is the CURRENT tab, also render it
                             if (targetMode === this.currentTab) {
                                 this.nodes.push(node);
-                                this.renderNodeCard(node);
+                                this.renderNodeCardOnly(node);
                             }
+                            
+                            // Update tab counters in real-time as nodes arrive
+                            this.updateTabCounters();
                         } else {
                             // For other diagrams: add directly and render
                             this.appendNode(node);
@@ -857,20 +1031,29 @@ class NodePaletteManager {
                         // One of the 4 LLMs has finished
                         llmsComplete++;
                         console.log(`[NodePalette] ${data.llm} complete: ${data.unique_nodes} unique, ${data.duplicates} duplicates (${data.duration}s)`);
-                        this.updateCatapultLoading(`${data.llm} complete (${llmsComplete}/4)`, llmsComplete, 4);
+                        
+                        // Only update loading animation if we're showing it
+                        if (showLoading) {
+                            this.updateCatapultLoading(`${data.llm} complete (${llmsComplete}/4)`, llmsComplete, 4);
+                        }
                         
                     } else if (data.event === 'batch_complete') {
                         // All 4 LLMs have completed - catapult mission success!
                         const elapsed = ((Date.now() - batchStartTime) / 1000).toFixed(2);
                         console.log(`[NodePalette] CATAPULT COMPLETE (${elapsed}s) | New: ${data.new_unique_nodes} | Total: ${data.total_nodes}`);
-                        this.updateCatapultLoading(`Complete! ${data.new_unique_nodes} new ideas`, 4, 4);
                         
-                        // Hide catapult loading animation after brief delay
-                        setTimeout(() => this.hideCatapultLoading(), 800);
+                        // Only update/hide loading animation if we're showing it
+                        if (showLoading) {
+                            this.updateCatapultLoading(`Complete! ${data.new_unique_nodes} new ideas`, 4, 4);
+                            // Hide catapult loading animation after brief delay
+                            setTimeout(() => this.hideCatapultLoading(), 800);
+                        }
                         
                     } else if (data.event === 'error') {
                         console.error(`[NodePalette] CATAPULT ERROR:`, data.message);
-                        this.hideCatapultLoading();
+                        if (showLoading) {
+                            this.hideCatapultLoading();
+                        }
                     }
                 }
             }
@@ -1019,6 +1202,14 @@ class NodePaletteManager {
         card.dataset.nodeId = node.id;
         card.dataset.llm = node.source_llm;
         
+        // Check if this is a difference pair (has left/right fields)
+        const isDifferencePair = node.left && node.right;
+        
+        // Add difference-pair class for styling
+        if (isDifferencePair) {
+            card.classList.add('difference-pair');
+        }
+        
         // Check if this node is already selected (important for session restoration)
         const isSelected = this.selectedNodes.has(node.id);
         if (isSelected) {
@@ -1026,16 +1217,44 @@ class NodePaletteManager {
             console.log(`[NodePalette-CreateCard] Node already selected, applying 'selected' class:`, node.id);
         }
         
-        // Truncate text if too long (max 60 chars for 220px circular nodes)
-        const displayText = this.truncateText(node.text, 60);
+        let contentHTML;
+        if (isDifferencePair) {
+            // Difference node: Show on two lines showing the comparison relationship
+            const leftText = this.truncateText(node.left, 40);
+            const rightText = this.truncateText(node.right, 40);
+            const dimension = node.dimension ? this.truncateText(node.dimension, 30) : null;
+            
+            // Build dimension HTML if present
+            const dimensionHTML = dimension 
+                ? `<div class="node-dimension">${dimension}</div>` 
+                : '';
+            
+            contentHTML = `
+                <div class="node-card-content node-card-difference">
+                    <div class="node-text-split">
+                        <div class="node-text-line">${leftText}</div>
+                        <div class="node-text-divider">vs</div>
+                        <div class="node-text-line">${rightText}</div>
+                    </div>
+                    ${dimensionHTML}
+                    <div class="node-source">${node.source_llm}</div>
+                </div>
+                <div class="node-checkmark">✓</div>
+            `;
+        } else {
+            // Similarity node: Show as single text
+            const displayText = this.truncateText(node.text, 60);
+            
+            contentHTML = `
+                <div class="node-card-content">
+                    <div class="node-text">${displayText}</div>
+                    <div class="node-source">${node.source_llm}</div>
+                </div>
+                <div class="node-checkmark">✓</div>
+            `;
+        }
         
-        card.innerHTML = `
-            <div class="node-card-content">
-                <div class="node-text">${displayText}</div>
-                <div class="node-source">${node.source_llm}</div>
-            </div>
-            <div class="node-checkmark">✓</div>
-        `;
+        card.innerHTML = contentHTML;
         
         // Click handler for selection
         card.addEventListener('click', () => {
@@ -1064,7 +1283,7 @@ class NodePaletteManager {
         const leftTopic = this.diagramData?.left || 'Left';
         const rightTopic = this.diagramData?.right || 'Right';
         
-        // Truncate text for circular nodes
+        // Truncate text for circular nodes (truncateText handles undefined/null)
         const leftText = this.truncateText(pairNode.left, 50);
         const rightText = this.truncateText(pairNode.right, 50);
         
@@ -1132,13 +1351,18 @@ class NodePaletteManager {
          * @param {number} maxLength - Maximum length
          * @returns {string} Truncated text
          */
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + '...';
+        // Handle undefined/null text
+        if (!text) return '';
+        
+        const str = String(text); // Convert to string just in case
+        if (str.length <= maxLength) return str;
+        return str.substring(0, maxLength - 3) + '...';
     }
     
     toggleNodeSelection(nodeId) {
         /**
          * Toggle selection state of a node.
+         * For double bubble map: updates both global and tab-specific selections.
          * 
          * @param {string} nodeId - Node ID to toggle
          */
@@ -1154,8 +1378,15 @@ class NodePaletteManager {
         const metadata = this.getMetadata();
         
         if (wasSelected) {
+            // Deselect: remove from both global and tab-specific Sets
             this.selectedNodes.delete(nodeId);
             card.classList.remove('selected');
+            
+            // For double bubble map: also remove from tab-specific Set
+            if (this.usesTabs() && this.tabSelectedNodes && this.currentTab) {
+                this.tabSelectedNodes[this.currentTab]?.delete(nodeId);
+                console.log(`[NodePalette-Selection] Removed from ${this.currentTab} tab selections`);
+            }
             
             // Mark node as deselected
             node.selected = false;
@@ -1164,6 +1395,7 @@ class NodePaletteManager {
                 id: node.id,
                 text: node.text,
                 source_llm: node.source_llm,
+                mode: node.mode,
                 
                 // STATUS CHANGE TRACKED
                 selected: false,  // Changed from true → false
@@ -1173,8 +1405,18 @@ class NodePaletteManager {
                 totalNodes: this.nodes.length
             });
         } else {
+            // Select: add to both global and tab-specific Sets
             this.selectedNodes.add(nodeId);
             card.classList.add('selected');
+            
+            // For double bubble map: also add to tab-specific Set
+            if (this.usesTabs() && this.tabSelectedNodes && this.currentTab) {
+                if (!this.tabSelectedNodes[this.currentTab]) {
+                    this.tabSelectedNodes[this.currentTab] = new Set();
+                }
+                this.tabSelectedNodes[this.currentTab].add(nodeId);
+                console.log(`[NodePalette-Selection] Added to ${this.currentTab} tab selections`);
+            }
             
             // Mark node as selected - TRACK STATUS CHANGE
             node.selected = true;
@@ -1185,6 +1427,7 @@ class NodePaletteManager {
                 text: node.text,
                 source_llm: node.source_llm,
                 batch: node.batch_number,
+                mode: node.mode,
                 
                 // Diagram Context
                 diagram_type: this.diagramType,
@@ -1217,24 +1460,49 @@ class NodePaletteManager {
     updateSelectionCounter() {
         /**
          * Update the selection counter display.
+         * For double bubble map: shows total selected across both tabs.
          */
         const counter = document.getElementById('selection-counter');
         const finishBtn = document.getElementById('finish-selection-btn');
         
-        if (counter) {
-            counter.textContent = `Selected: ${this.selectedNodes.size}/${this.nodes.length}`;
+        // Calculate totals (different for tabs vs single)
+        let totalSelected = 0;
+        let totalNodes = 0;
+        
+        if (this.usesTabs()) {
+            // Double bubble: count across both tabs
+            const simSelected = this.tabSelectedNodes['similarities']?.size || 0;
+            const diffSelected = this.tabSelectedNodes['differences']?.size || 0;
+            totalSelected = simSelected + diffSelected;
+            
+            const simNodes = this.tabNodes['similarities']?.length || 0;
+            const diffNodes = this.tabNodes['differences']?.length || 0;
+            totalNodes = simNodes + diffNodes;
+            
+            if (counter) {
+                counter.textContent = `Selected: ${totalSelected}/${totalNodes} (Sim: ${simSelected}, Diff: ${diffSelected})`;
+            }
+        } else {
+            // Single-tab diagram
+            totalSelected = this.selectedNodes.size;
+            totalNodes = this.nodes.length;
+            
+            if (counter) {
+                counter.textContent = `Selected: ${totalSelected}/${totalNodes}`;
+            }
         }
         
+        // Update finish button
         if (finishBtn) {
             const wasDisabled = finishBtn.disabled;
-            finishBtn.disabled = this.selectedNodes.size === 0;
-            finishBtn.textContent = this.selectedNodes.size > 0 
-                ? `Next (${this.selectedNodes.size} selected)` 
+            finishBtn.disabled = totalSelected === 0;
+            finishBtn.textContent = totalSelected > 0 
+                ? `Next (${totalSelected} selected)` 
                 : 'Next';
             
             // Log button state change
             if (wasDisabled && !finishBtn.disabled) {
-                console.log('[NodePalette] Button enabled: "Next (%d selected)"', this.selectedNodes.size);
+                console.log('[NodePalette] Button enabled: "Next (%d selected)"', totalSelected);
             } else if (!wasDisabled && finishBtn.disabled) {
                 console.log('[NodePalette] Button disabled: "Next"');
             }
@@ -1320,6 +1588,56 @@ class NodePaletteManager {
         }
     }
     
+    showTabLoading(message = 'Loading nodes...') {
+        /**
+         * Show loading overlay in the current tab's grid
+         * (Better for tabs - more visible than header loading)
+         */
+        const grid = document.getElementById('node-palette-grid');
+        if (!grid) return;
+        
+        // Check if loading overlay already exists
+        let overlay = document.getElementById('tab-loading-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'tab-loading-overlay';
+            overlay.className = 'tab-loading-overlay';
+            overlay.innerHTML = `
+                <div class="tab-loading-content">
+                    <div class="tab-loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <div class="tab-loading-text">${message}</div>
+                </div>
+            `;
+            grid.appendChild(overlay);
+        } else {
+            // Update message if overlay exists
+            const textEl = overlay.querySelector('.tab-loading-text');
+            if (textEl) textEl.textContent = message;
+        }
+        
+        // Fade in
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 10);
+    }
+    
+    hideTabLoading() {
+        /**
+         * Hide tab loading overlay
+         */
+        const overlay = document.getElementById('tab-loading-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.remove();
+            }, 300);
+        }
+    }
+    
     showCatapultLoading() {
         /**
          * Show CATAPULT loading animation - live updates while LLMs fire!
@@ -1391,38 +1709,82 @@ class NodePaletteManager {
     
     async finishSelection() {
         /**
-         * Finish Node Palette, add selected nodes to Circle Map.
+         * Finish Node Palette, add selected nodes to diagram.
+         * For double bubble map: gather selections from BOTH tabs.
          */
-        const selectedCount = this.selectedNodes.size;
-        
         const metadata = this.getMetadata();
         
         console.log('[NodePalette-Finish] ========================================');
         console.log('[NodePalette-Finish] USER CLICKED FINISH BUTTON');
         console.log('[NodePalette-Finish] ========================================');
         console.log(`[NodePalette-Finish] Diagram: ${this.diagramType} | Node type: ${metadata.nodeNamePlural}`);
-        console.log(`[NodePalette-Finish] Selected: ${selectedCount}/${this.nodes.length} | Batches: ${this.currentBatch} | Rate: ${((selectedCount/this.nodes.length)*100).toFixed(1)}%`);
-        console.log('[NodePalette-Finish] selectedNodes Set (IDs):', Array.from(this.selectedNodes));
         
-        if (selectedCount === 0) {
+        // For double bubble map: gather ALL selected nodes from BOTH tabs
+        let allSelectedNodes = [];
+        let totalSelectedCount = 0;
+        let totalNodesCount = 0;
+        
+        if (this.usesTabs()) {
+            console.log('[NodePalette-Finish] Double bubble map detected - gathering from BOTH tabs');
+            
+            // Merge selections from both tabs
+            const simSelected = this.tabSelectedNodes['similarities'] || new Set();
+            const diffSelected = this.tabSelectedNodes['differences'] || new Set();
+            const mergedSelectedIds = new Set([...simSelected, ...diffSelected]);
+            
+            totalSelectedCount = mergedSelectedIds.size;
+            
+            console.log(`[NodePalette-Finish] Similarities tab: ${simSelected.size} selected`);
+            console.log(`[NodePalette-Finish] Differences tab: ${diffSelected.size} selected`);
+            console.log(`[NodePalette-Finish] Total selected across both tabs: ${totalSelectedCount}`);
+            
+            // Gather nodes from BOTH tabs
+            const simNodes = this.tabNodes['similarities'] || [];
+            const diffNodes = this.tabNodes['differences'] || [];
+            const allNodes = [...simNodes, ...diffNodes];
+            totalNodesCount = allNodes.length;
+            
+            console.log(`[NodePalette-Finish] Total nodes generated: sim=${simNodes.length}, diff=${diffNodes.length}, total=${totalNodesCount}`);
+            
+            // Filter for selected & new nodes
+            allSelectedNodes = allNodes.filter(n => 
+                mergedSelectedIds.has(n.id) && !n.added_to_diagram
+            );
+            
+            const alreadyAddedCount = allNodes.filter(n => 
+                mergedSelectedIds.has(n.id) && n.added_to_diagram
+            ).length;
+            
+            console.log(`[NodePalette-Finish] Filtered ${allSelectedNodes.length} NEW nodes (${alreadyAddedCount} already added)`);
+            
+        } else {
+            // Single-tab diagrams: use existing logic
+            totalSelectedCount = this.selectedNodes.size;
+            totalNodesCount = this.nodes.length;
+            
+            console.log(`[NodePalette-Finish] Single-tab diagram: ${totalSelectedCount}/${totalNodesCount} selected`);
+            console.log('[NodePalette-Finish] selectedNodes Set (IDs):', Array.from(this.selectedNodes));
+            
+            allSelectedNodes = this.nodes.filter(n => 
+                this.selectedNodes.has(n.id) && !n.added_to_diagram
+            );
+            
+            const alreadyAddedCount = this.nodes.filter(n => 
+                this.selectedNodes.has(n.id) && n.added_to_diagram
+            ).length;
+            
+            console.log(`[NodePalette-Finish] Filtered ${allSelectedNodes.length} NEW ${metadata.nodeNamePlural} (${alreadyAddedCount} already added)`);
+        }
+        
+        // Check if any nodes selected
+        if (totalSelectedCount === 0) {
             console.warn(`[NodePalette-Finish] ⚠ No ${metadata.nodeNamePlural} selected, showing alert`);
             alert(`Please select at least one ${metadata.nodeName}`);
             return;
         }
         
-        // Filter selected nodes - ONLY get NEW selections (not already added)
-        const selectedNodesData = this.nodes.filter(n => 
-            this.selectedNodes.has(n.id) && !n.added_to_diagram  // Only nodes that haven't been added yet
-        );
-        
-        const alreadyAddedCount = this.nodes.filter(n => 
-            this.selectedNodes.has(n.id) && n.added_to_diagram  // Count previously added nodes
-        ).length;
-        
-        console.log(`[NodePalette-Finish] Filtered ${selectedNodesData.length} NEW ${metadata.nodeNamePlural} (${alreadyAddedCount} already added, skipping)`);
-        
         // Check if there are any NEW nodes to add
-        if (selectedNodesData.length === 0) {
+        if (allSelectedNodes.length === 0) {
             console.warn(`[NodePalette-Finish] ⚠ All selected ${metadata.nodeNamePlural} were already added. Nothing to do.`);
             const msg = metadata.language === 'zh' ? 
                 '所有选中的节点都已添加到图中。' : 
@@ -1432,20 +1794,26 @@ class NodePaletteManager {
         }
         
         console.log(`[NodePalette-Finish] Selected ${metadata.nodeName} details (NEW only):`);
-        selectedNodesData.forEach((node, idx) => {
-            console.log(`  [${idx + 1}/${selectedNodesData.length}] ID: ${node.id} | LLM: ${node.source_llm} | Batch: ${node.batch_number} | Text: "${node.text}"`);
+        allSelectedNodes.forEach((node, idx) => {
+            const modeInfo = node.mode ? ` | Mode: ${node.mode}` : '';
+            console.log(`  [${idx + 1}/${allSelectedNodes.length}] ID: ${node.id}${modeInfo} | LLM: ${node.source_llm} | Text: "${node.text || node.left + ' vs ' + node.right}"`);
         });
         
         // Log finish event to backend
         console.log('[NodePalette-Finish] Sending finish event to backend...');
         try {
+            // Gather all selected IDs (merge from tabs if needed)
+            const allSelectedIds = this.usesTabs() 
+                ? [...(this.tabSelectedNodes['similarities'] || new Set()), ...(this.tabSelectedNodes['differences'] || new Set())]
+                : Array.from(this.selectedNodes);
+            
             const response = await auth.fetch('/thinking_mode/node_palette/finish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_id: this.sessionId,
-                    selected_node_ids: Array.from(this.selectedNodes),
-                    total_nodes_generated: this.nodes.length,
+                    selected_node_ids: allSelectedIds,
+                    total_nodes_generated: totalNodesCount,
                     batches_loaded: this.currentBatch,
                     diagram_type: this.diagramType  // Add diagram type for cleanup
                 })
@@ -1465,7 +1833,7 @@ class NodePaletteManager {
         
         // Add selected nodes to diagram (method name kept for backward compatibility)
         console.log(`[NodePalette-Finish] Starting ${metadata.nodeName} assembly to ${this.diagramType}...`);
-        await this.assembleNodesToCircleMap(selectedNodesData);
+        await this.assembleNodesToCircleMap(allSelectedNodes);
         
         console.log('[NodePalette-Finish] ========================================');
         console.log('[NodePalette-Finish] ✓ FINISH COMPLETE');
@@ -1478,8 +1846,20 @@ class NodePaletteManager {
          * Uses InteractiveEditor API for robust integration.
          * Works for Circle Map, Bubble Map, and other diagram types.
          * 
+         * Special handling for Double Bubble Map with mode-aware assembly.
+         * 
          * @param {Array} selectedNodes - Array of selected node objects
          */
+        
+        // Special handling for double bubble map (has both similarities and differences)
+        console.log(`[NodePalette-Assemble] Router check: diagramType="${this.diagramType}"`);
+        if (this.diagramType === 'double_bubble_map') {
+            console.log('[NodePalette-Assemble] ✓ Routing to assembleNodesToDoubleBubbleMap()');
+            return await this.assembleNodesToDoubleBubbleMap(selectedNodes);
+        }
+        
+        // Generic handling for all other diagram types
+        console.log('[NodePalette-Assemble] Using generic assembly logic');
         const metadata = this.getMetadata();
         
         console.log('[NodePalette-Assemble] ========================================');
@@ -1691,6 +2071,253 @@ class NodePaletteManager {
             console.error('[NodePalette-Assemble] Error stack:', error.stack);
             console.error('[NodePalette-Assemble] Current spec at error:', JSON.stringify(currentSpec, null, 2));
             console.error('[NodePalette-Assemble] ========================================');
+            alert(`Error rendering diagram: ${error.message}\n\nPlease check console for details.`);
+        }
+    }
+    
+    async assembleNodesToDoubleBubbleMap(selectedNodes) {
+        /**
+         * Specialized assembly for Double Bubble Map.
+         * Handles two node types with different data structures:
+         * - Similarities: simple text → spec.similarities[]
+         * - Differences: paired text → spec.left_differences[] + spec.right_differences[]
+         * 
+         * @param {Array} selectedNodes - Array of selected node objects
+         */
+        
+        console.log('[DoubleBubble-Assemble] ========================================');
+        console.log('[DoubleBubble-Assemble] ASSEMBLING NODES TO DOUBLE BUBBLE MAP');
+        console.log('[DoubleBubble-Assemble] ========================================');
+        console.log(`[DoubleBubble-Assemble] Total selected nodes: ${selectedNodes.length}`);
+        
+        // Verify editor
+        const editor = window.currentEditor;
+        if (!editor) {
+            console.error('[DoubleBubble-Assemble] ERROR: No active editor found');
+            alert('Error: No active editor found. Please try refreshing the page.');
+            return;
+        }
+        
+        const currentSpec = editor.currentSpec;
+        if (!currentSpec) {
+            console.error('[DoubleBubble-Assemble] ERROR: No current spec found');
+            alert('Error: No diagram specification found. Please try refreshing the page.');
+            return;
+        }
+        
+        // DEBUG: Log all selected nodes with their mode
+        console.log('[DoubleBubble-Assemble] Selected nodes details:');
+        selectedNodes.forEach((node, idx) => {
+            console.log(`  [${idx + 1}/${selectedNodes.length}] mode="${node.mode}" | left="${node.left||'N/A'}" | right="${node.right||'N/A'}" | text="${node.text}" | ID: ${node.id}`);
+        });
+        
+        // Group nodes by mode
+        const similaritiesNodes = selectedNodes.filter(n => n.mode === 'similarities');
+        const differencesNodes = selectedNodes.filter(n => n.mode === 'differences');
+        
+        console.log('[DoubleBubble-Assemble] Node distribution after filtering:');
+        console.log(`  Similarities: ${similaritiesNodes.length} nodes`);
+        console.log(`  Differences: ${differencesNodes.length} nodes`);
+        
+        // DEBUG: Log detailed breakdown
+        if (similaritiesNodes.length > 0) {
+            console.log('[DoubleBubble-Assemble] Similarities node IDs:', similaritiesNodes.map(n => n.id));
+        }
+        if (differencesNodes.length > 0) {
+            console.log('[DoubleBubble-Assemble] Differences node IDs:', differencesNodes.map(n => n.id));
+        }
+        
+        // Initialize arrays if needed
+        if (!Array.isArray(currentSpec.similarities)) {
+            currentSpec.similarities = [];
+        }
+        if (!Array.isArray(currentSpec.left_differences)) {
+            currentSpec.left_differences = [];
+        }
+        if (!Array.isArray(currentSpec.right_differences)) {
+            currentSpec.right_differences = [];
+        }
+        
+        const beforeSimilarities = currentSpec.similarities.length;
+        const beforeLeftDiff = currentSpec.left_differences.length;
+        const beforeRightDiff = currentSpec.right_differences.length;
+        
+        // ========================================
+        // SMART PLACEHOLDER REPLACEMENT
+        // ========================================
+        console.log('[DoubleBubble-Assemble] ========================================');
+        console.log('[DoubleBubble-Assemble] ANALYZING EXISTING NODES FOR PLACEHOLDERS');
+        console.log('[DoubleBubble-Assemble] ========================================');
+        
+        // Analyze similarities array
+        const simPlaceholders = [];
+        const simUserNodes = [];
+        currentSpec.similarities.forEach((text, idx) => {
+            const isPlaceholder = this.isPlaceholder(text);
+            if (isPlaceholder) {
+                simPlaceholders.push({ index: idx, text: text });
+            } else {
+                simUserNodes.push({ index: idx, text: text });
+            }
+        });
+        
+        // Analyze differences arrays (they're paired, so analyze together)
+        const diffPlaceholders = [];
+        const diffUserNodes = [];
+        for (let i = 0; i < Math.max(currentSpec.left_differences.length, currentSpec.right_differences.length); i++) {
+            const leftText = currentSpec.left_differences[i] || '';
+            const rightText = currentSpec.right_differences[i] || '';
+            const isPlaceholder = this.isPlaceholder(leftText) || this.isPlaceholder(rightText);
+            
+            if (isPlaceholder) {
+                diffPlaceholders.push({ index: i, left: leftText, right: rightText });
+            } else {
+                diffUserNodes.push({ index: i, left: leftText, right: rightText });
+            }
+        }
+        
+        console.log('[DoubleBubble-Assemble] Similarities:');
+        console.log(`  Total: ${currentSpec.similarities.length}`);
+        console.log(`  Placeholders: ${simPlaceholders.length}`);
+        console.log(`  User nodes: ${simUserNodes.length}`);
+        
+        console.log('[DoubleBubble-Assemble] Differences:');
+        console.log(`  Total pairs: ${Math.max(currentSpec.left_differences.length, currentSpec.right_differences.length)}`);
+        console.log(`  Placeholder pairs: ${diffPlaceholders.length}`);
+        console.log(`  User pairs: ${diffUserNodes.length}`);
+        
+        // Track added nodes
+        const addedNodeIds = [];
+        
+        // Process similarities - SMART REPLACE
+        if (similaritiesNodes.length > 0) {
+            console.log('[DoubleBubble-Assemble] ========================================');
+            console.log('[DoubleBubble-Assemble] PROCESSING SIMILARITIES (SMART REPLACE)');
+            console.log('[DoubleBubble-Assemble] ========================================');
+            
+            // Build new array: keep user nodes + add selected nodes
+            const newSimilarities = [];
+            
+            // Keep user nodes (filter out placeholders)
+            simUserNodes.forEach(userNode => {
+                newSimilarities.push(userNode.text);
+                console.log(`  KEEPING user node: "${userNode.text}"`);
+            });
+            
+            // Add selected nodes
+            similaritiesNodes.forEach((node, idx) => {
+                newSimilarities.push(node.text);
+                node.added_to_diagram = true;
+                addedNodeIds.push(node.id);
+                console.log(`  [${idx + 1}/${similaritiesNodes.length}] ADDED: "${node.text}" | LLM: ${node.source_llm} | ID: ${node.id}`);
+            });
+            
+            // Replace array
+            currentSpec.similarities = newSimilarities;
+            console.log(`[DoubleBubble-Assemble] ✓ Similarities: ${simUserNodes.length} kept + ${similaritiesNodes.length} added = ${newSimilarities.length} total`);
+        }
+        
+        // Process differences - SMART REPLACE (paired arrays)
+        if (differencesNodes.length > 0) {
+            console.log('[DoubleBubble-Assemble] ========================================');
+            console.log('[DoubleBubble-Assemble] PROCESSING DIFFERENCES (SMART REPLACE)');
+            console.log('[DoubleBubble-Assemble] ========================================');
+            
+            // Build new arrays: keep user pairs + add selected pairs
+            const newLeftDiff = [];
+            const newRightDiff = [];
+            
+            // Keep user pairs (filter out placeholder pairs)
+            diffUserNodes.forEach(userPair => {
+                newLeftDiff.push(userPair.left);
+                newRightDiff.push(userPair.right);
+                console.log(`  KEEPING user pair: "${userPair.left}" | "${userPair.right}"`);
+            });
+            
+            // Add selected pairs
+            differencesNodes.forEach((node, idx) => {
+                // Verify node has required structure
+                if (!node.left || !node.right) {
+                    console.warn(`[DoubleBubble-Assemble] ⚠️ Skipping malformed difference node (missing left/right): ${node.id}`);
+                    console.warn(`  Node keys: ${Object.keys(node).join(', ')}`);
+                    console.warn(`  Text: "${node.text}"`);
+                    return;
+                }
+                
+                newLeftDiff.push(node.left);
+                newRightDiff.push(node.right);
+                node.added_to_diagram = true;
+                addedNodeIds.push(node.id);
+                
+                const dimensionInfo = node.dimension ? ` | Dimension: "${node.dimension}"` : '';
+                console.log(`  [${idx + 1}/${differencesNodes.length}] ADDED: "${node.left}" | "${node.right}"${dimensionInfo} | LLM: ${node.source_llm} | ID: ${node.id}`);
+            });
+            
+            // Replace arrays
+            currentSpec.left_differences = newLeftDiff;
+            currentSpec.right_differences = newRightDiff;
+            console.log(`[DoubleBubble-Assemble] ✓ Differences: ${diffUserNodes.length} kept + ${differencesNodes.length} added = ${newLeftDiff.length} total pairs`);
+        }
+        
+        // Summary
+        const afterSimilarities = currentSpec.similarities.length;
+        const afterLeftDiff = currentSpec.left_differences.length;
+        const afterRightDiff = currentSpec.right_differences.length;
+        
+        console.log('[DoubleBubble-Assemble] ========================================');
+        console.log('[DoubleBubble-Assemble] BEFORE/AFTER SUMMARY');
+        console.log('[DoubleBubble-Assemble] ========================================');
+        console.log(`[DoubleBubble-Assemble] Similarities: ${beforeSimilarities} → ${afterSimilarities} (+${afterSimilarities - beforeSimilarities})`);
+        console.log(`[DoubleBubble-Assemble] Left Differences: ${beforeLeftDiff} → ${afterLeftDiff} (+${afterLeftDiff - beforeLeftDiff})`);
+        console.log(`[DoubleBubble-Assemble] Right Differences: ${beforeRightDiff} → ${afterRightDiff} (+${afterRightDiff - beforeRightDiff})`);
+        
+        // DEBUG: Show what's actually in the arrays now
+        console.log('[DoubleBubble-Assemble] Current spec.similarities:', currentSpec.similarities);
+        console.log('[DoubleBubble-Assemble] Current spec.left_differences:', currentSpec.left_differences);
+        console.log('[DoubleBubble-Assemble] Current spec.right_differences:', currentSpec.right_differences);
+        
+        // Verify paired arrays are synchronized
+        if (currentSpec.left_differences.length !== currentSpec.right_differences.length) {
+            console.error('[DoubleBubble-Assemble] ⚠️ WARNING: left_differences and right_differences arrays are out of sync!');
+            console.error(`  Left: ${currentSpec.left_differences.length}, Right: ${currentSpec.right_differences.length}`);
+        }
+        
+        // Re-render the diagram
+        console.log('[DoubleBubble-Assemble] Rendering diagram...');
+        try {
+            if (typeof editor.renderDiagram === 'function') {
+                await editor.renderDiagram(currentSpec);
+                console.log('[DoubleBubble-Assemble] ✓ Diagram rendered successfully');
+            } else if (typeof editor.render === 'function') {
+                await editor.render();
+                console.log('[DoubleBubble-Assemble] ✓ Diagram rendered successfully');
+            } else {
+                console.error('[DoubleBubble-Assemble] ERROR: No render method found');
+                alert('Error: Cannot render diagram. Please try refreshing the page.');
+                return;
+            }
+            
+            // Save to history
+            if (typeof editor.saveHistoryState === 'function') {
+                editor.saveHistoryState('node_palette_add');
+                console.log('[DoubleBubble-Assemble] ✓ History saved');
+            } else if (typeof editor.saveHistory === 'function') {
+                editor.saveHistory('node_palette_add');
+                console.log('[DoubleBubble-Assemble] ✓ History saved');
+            }
+            
+            console.log('[DoubleBubble-Assemble] ========================================');
+            console.log('[DoubleBubble-Assemble] ✓ SUCCESS: Double Bubble Map updated');
+            console.log('[DoubleBubble-Assemble] ========================================');
+            console.log(`[DoubleBubble-Assemble] Added ${addedNodeIds.length} nodes total`);
+            console.log(`[DoubleBubble-Assemble] Node IDs:`, addedNodeIds);
+            
+        } catch (error) {
+            console.error('[DoubleBubble-Assemble] ========================================');
+            console.error('[DoubleBubble-Assemble] ✗ ERROR: Failed to render diagram');
+            console.error('[DoubleBubble-Assemble] Error:', error.message);
+            console.error('[DoubleBubble-Assemble] Stack:', error.stack);
+            console.error('[DoubleBubble-Assemble] ========================================');
             alert(`Error rendering diagram: ${error.message}\n\nPlease check console for details.`);
         }
     }
