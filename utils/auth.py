@@ -659,3 +659,62 @@ def generate_api_key(name: str, description: str, quota_limit: int, db: Session)
     
     return key
 
+
+# ============================================================================
+# WebSocket Authentication
+# ============================================================================
+
+async def get_current_user_ws(
+    websocket,  # WebSocket type imported later to avoid circular imports
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    Get current user from WebSocket connection.
+    Extracts JWT from query params or cookies.
+    
+    Args:
+        websocket: WebSocket connection
+        db: Database session
+    
+    Returns:
+        User object if authenticated
+    
+    Raises:
+        WebSocketDisconnect if authentication fails
+    """
+    from fastapi import WebSocket
+    from fastapi.exceptions import WebSocketDisconnect
+    
+    # Try query params first
+    token = websocket.query_params.get('token')
+    
+    # Try cookies if no token in query
+    if not token:
+        token = websocket.cookies.get('access_token')
+    
+    if not token:
+        await websocket.close(code=4001, reason="Authentication required")
+        raise WebSocketDisconnect(code=4001, reason="No token provided")
+    
+    try:
+        # Decode and validate token
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            await websocket.close(code=4001, reason="Invalid token")
+            raise WebSocketDisconnect(code=4001, reason="Invalid token")
+        
+        # Get user from database
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        
+        if not user:
+            await websocket.close(code=4001, reason="User not found")
+            raise WebSocketDisconnect(code=4001, reason="User not found")
+        
+        return user
+        
+    except HTTPException as e:
+        await websocket.close(code=4001, reason="Invalid token")
+        raise WebSocketDisconnect(code=4001, reason=str(e.detail))
+
