@@ -485,6 +485,8 @@
         <div class="editor-main-content">
             <div class="canvas-panel">
                 <div id="d3-container"></div>
+                <!-- Black Cat VoiceAgent Mount Point -->
+                <div id="black-cat-mount"></div>
             </div>
             
             <!-- Property Panel (shown when nodes are selected) -->
@@ -808,6 +810,8 @@
     
     <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
     <script src="/static/js/editor/thinking-mode-manager.js"></script>
+    <script src="/static/js/editor/black-cat.js"></script>
+    <script src="/static/js/editor/voice-agent.js"></script>
     
     <!-- Node Palette Manager - Must load AFTER other editor scripts -->
     <script src="/static/js/editor/node-palette-manager.js"></script>
@@ -817,6 +821,35 @@
     <script>
         // Check authentication on page load
         auth.requireAuth();
+    </script>
+    
+    <!-- Black Cat VoiceAgent Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Black Cat
+            const blackCat = new BlackCat();
+            const mountPoint = document.getElementById('black-cat-mount');
+            if (mountPoint) {
+                blackCat.init(mountPoint);
+            }
+            window.blackCat = blackCat;
+            
+            // Initialize VoiceAgent
+            const voiceAgent = new VoiceAgent();
+            voiceAgent.init();
+            window.voiceAgent = voiceAgent;
+            
+            // Connect black cat click to voice agent
+            blackCat.onClick = async () => {
+                if (!voiceAgent.isActive) {
+                    await voiceAgent.startConversation();
+                } else {
+                    await voiceAgent.stopConversation();
+                }
+            };
+            
+            window.logger.info('App', 'VoiceAgent and BlackCat initialized');
+        });
     </script>
 </body>
 </html>
