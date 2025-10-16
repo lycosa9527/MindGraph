@@ -27,6 +27,7 @@ from clients.llm import (
     KimiClient,
     HunyuanClient
 )
+from clients.omni_client import OmniClient
 from config.settings import config
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,10 @@ class ClientManager:
                 self._clients['deepseek'] = DeepSeekClient()
                 self._clients['kimi'] = KimiClient()
                 self._clients['hunyuan'] = HunyuanClient()
+                
+                # Initialize Qwen Omni client (for VoiceAgent)
+                self._clients['omni'] = OmniClient()
+                logger.info("[ClientManager] Omni client initialized")
                 
                 # Optional: ChatGLM (if configured)
                 # NOTE: CHATGLM_API_KEY is NOT currently in config/settings.py
@@ -135,6 +140,11 @@ class ClientManager:
             self._clients.clear()
             self._initialized = False
         logger.info("[ClientManager] Cleanup complete")
+    
+    @property
+    def omni_client(self):
+        """Get Omni client for VoiceAgent"""
+        return self.get_client('omni')
 
 
 # Singleton instance
