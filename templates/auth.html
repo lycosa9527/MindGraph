@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph - 用户登录/注册</title>
+    <link rel="stylesheet" href="/static/fonts/inter.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Gaussian Blur Background */
+        .blur-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(100px);
+            z-index: 0;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            color: #64748b;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: #f1f5f9;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+            border-bottom-color: #667eea;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .captcha-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .captcha-input {
+            flex: 1;
+        }
+
+        .captcha-image {
+            cursor: pointer;
+            border-radius: 8px;
+            height: 50px;
+            width: 140px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .captcha-image:hover {
+            border-color: rgba(102, 126, 234, 0.6);
+            transform: scale(1.02);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .auth-container {
+                border-radius: 0;
+            }
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blur-overlay"></div>
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>🎓 MindGraph</h1>
+            <p>K12 教师思维导图平台</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">登录 Login</div>
+            <div class="tab" onclick="switchTab('register')">注册 Register</div>
+        </div>
+
+        <div class="form-container">
+            <div id="alert" class="alert"></div>
+
+            <!-- Login Form -->
+            <form id="login-form" style="display: block;">
+                <div class="form-group">
+                    <label class="form-label">手机号 Phone Number</label>
+                    <input type="tel" class="form-input" name="phone" 
+                           placeholder="11位手机号" maxlength="11" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">密码 Password</label>
+                    <input type="password" class="form-input" name="password" 
+                           placeholder="输入密码" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">验证码 Verification Code</label>
+                    <div class="captcha-group">
+                        <input type="text" class="form-input captcha-input" name="captcha" 
+                               placeholder="输入验证码" maxlength="4" required>
+                        <img id="captchaImage" class="captcha-image" src="" alt="验证码" 
+                             onclick="refreshCaptcha()" title="点击刷新">
+                    </div>
+                    <small class="hint-text">点击图片刷新验证码</small>
+                    <input type="hidden" name="captcha_id" id="captchaId">
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="login-btn">登录 Login</button>
+                <div class="spinner" id="login-spinner"></div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">手机号 Phone Number *</label>
+                    <input type="tel" class="form-input" name="phone" 
+                           placeholder="11位手机号 (1开头)" maxlength="11" required>
+                    <small class="hint-text">11位中国手机号</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">密码 Password *</label>
+                    <input type="password" class="form-input" name="password" 
+                           placeholder="至少8位字符" minlength="8" required>
+                    <small class="hint-text">最少8个字符</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">姓名 Name *</label>
+                    <input type="text" class="form-input" name="name" 
+                           placeholder="您的姓名" required>
+                    <small class="hint-text">至少2个字符，不能包含数字</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">学校代码 School Code *</label>
+                    <select class="form-select" name="organization_code" required>
+                        <option value="">选择学校</option>
+                        <option value="DEMO-001">DEMO-001 - Demo School for Testing</option>
+                        <option value="SPRING-EDU">SPRING-EDU - Springfield Elementary</option>
+                        <option value="BJ-001">BJ-001 - Beijing First High School</option>
+                        <option value="SH-042">SH-042 - Shanghai International School</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">邀请码 Invitation Code *</label>
+                    <input type="text" class="form-input" name="invitation_code" 
+                           placeholder="学校提供的邀请码" required>
+                    <small class="hint-text">请向学校管理员获取</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="register-btn">注册 Register</button>
+                <div class="spinner" id="register-spinner"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/auth-helper.js"></script>
+    <script>
+        let currentTab = 'login';
+
+        // Switch between login and register
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab styling
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide forms
+            document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+            
+            // Clear alert
+            hideAlert();
+            
+            // Load captcha for login
+            if (tab === 'login') {
+                refreshCaptcha();
+            }
+        }
+
+        // Check if already authenticated and load captcha on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is already logged in
+            const isAuth = await auth.isAuthenticated();
+            if (isAuth) {
+                // User is already logged in, redirect appropriately
+                try {
+                    // Check if admin by testing admin endpoint
+                    const adminTest = await auth.fetch('/api/auth/admin/stats');
+                    const isAdmin = adminTest.ok;
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let redirectUrl = urlParams.get('redirect');
+                    
+                    if (!redirectUrl) {
+                        redirectUrl = isAdmin ? '/admin' : '/editor';
+                    }
+                    
+                    window.location.href = redirectUrl;
+                    return; // Don't load captcha if redirecting
+                } catch (error) {
+                    // If error, just redirect to editor
+                    window.location.href = '/editor';
+                    return;
+                }
+            }
+            
+            // Not authenticated, load captcha
+            refreshCaptcha();
+        });
+
+        // Refresh captcha
+        async function refreshCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                document.getElementById('captchaImage').src = data.captcha_image;
+                document.getElementById('captchaId').value = data.captcha_id;
+            } catch (error) {
+                showAlert('验证码加载失败 Failed to load captcha', 'error');
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type = 'error') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+        }
+
+        // Hide alert
+        function hideAlert() {
+            document.getElementById('alert').classList.remove('show');
+        }
+
+        // Login form submit
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                phone: formData.get('phone'),
+                password: formData.get('password'),
+                captcha: formData.get('captcha'),
+                captcha_id: formData.get('captcha_id')
+            };
+
+            // Show loading
+            document.getElementById('login-btn').disabled = true;
+            document.getElementById('login-spinner').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store token and user, set mode to standard
+                    auth.setToken(result.access_token);
+                    auth.setUser(result.user);
+                    auth.setMode('standard');
+                    
+                    showAlert('登录成功！Redirecting...', 'success');
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect') || '/editor';
+                    setTimeout(() => window.location.href = redirectUrl, 1000);
+                } else {
+                    showAlert(result.detail || '登录失败 Login failed', 'error');
+                    refreshCaptcha(); // Refresh captcha on error
+                }
+            } catch (error) {
+                showAlert('网络错误 Network error: ' + error.message, 'error');
+                refreshCaptcha();
+            } finally {
+                document.getElementById('login-btn').disabled = false;
+                document.getElementById('login-spinner').style.display = 'none';
+            }
+        });
+
+        // Register form submit
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                phone: formData.get('phone'),
+                password: formData.get('password'),
+                name: formData.get('name'),
+                organization_code: formData.get('organization_code'),
+                invitation_code: formData.get('invitation_code')
+            };
+
+            // Validate phone
+            if (!/^1\d{10}$/.test(data.phone)) {
+                showAlert('手机号格式错误！必须是11位数字，1开头', 'error');
+                return;
+            }
+
+            // Validate name
+            if (/\d/.test(data.name)) {
+                showAlert('姓名不能包含数字！', 'error');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('register-btn').disabled = true;
+            document.getElementById('register-spinner').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store token and user, set mode to standard
+                    auth.setToken(result.access_token);
+                    auth.setUser(result.user);
+                    auth.setMode('standard');
+                    
+                    showAlert('注册成功！Redirecting...', 'success');
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect') || '/editor';
+                    setTimeout(() => window.location.href = redirectUrl, 1000);
+                } else {
+                    showAlert(result.detail || '注册失败 Registration failed', 'error');
+                }
+            } catch (error) {
+                showAlert('网络错误 Network error: ' + error.message, 'error');
+            } finally {
+                document.getElementById('register-btn').disabled = false;
+                document.getElementById('register-spinner').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
+

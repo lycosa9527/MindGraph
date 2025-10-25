@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph 管理后台 | Admin Panel</title>
+    <link rel="stylesheet" href="/static/fonts/inter.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .tab:hover {
+            background: #f1f5f9;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card h3 {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Grid Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        /* Category Collapsible Sections */
+        .category-content {
+            padding: 1.5rem;
+            display: block;
+        }
+        
+        .category-content.collapsed {
+            display: none;
+        }
+
+        /* Log Viewer */
+        .log-viewer {
+            height: 600px;
+            overflow-y: auto;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            padding: 1rem;
+        }
+        
+        .log-line {
+            margin-bottom: 0.25rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .log-timestamp {
+            color: #94a3b8;
+            margin-right: 0.5rem;
+        }
+        
+        .log-level {
+            font-weight: 600;
+            margin-right: 0.5rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+        
+        .log-level-debug { background: #64748b; color: white; }
+        .log-level-info { background: #0ea5e9; color: white; }
+        .log-level-warning { background: #f59e0b; color: white; }
+        .log-level-error { background: #ef4444; color: white; }
+        .log-level-critical { background: #dc2626; color: white; }
+        
+        .log-module {
+            color: #a78bfa;
+            margin-right: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .log-message {
+            color: #e2e8f0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🎓 MindGraph 管理后台</h1>
+        <div class="user-info">
+            <span id="adminName">Admin</span>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">登出 Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Alert -->
+        <div id="alert" class="alert"></div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">📊 仪表盘 Dashboard</button>
+            <button class="tab" onclick="switchTab('schools')">🏫 学校管理 Schools</button>
+            <button class="tab" onclick="switchTab('users')">👥 用户管理 Users</button>
+            <button class="tab" onclick="switchTab('apikeys')">🔑 API Keys</button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ 系统设置 Settings</button>
+            <button class="tab" onclick="switchTab('logs')">📋 调试日志 Debug Logs</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>总用户数 Total Users</h3>
+                    <div class="value" id="stat-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>学校数量 Organizations</h3>
+                    <div class="value" id="stat-orgs">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>锁定账户 Locked Accounts</h3>
+                    <div class="value" id="stat-locked">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>本周注册 This Week</h3>
+                    <div class="value" id="stat-recent">-</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">各学校用户分布 Users by Organization</h2>
+                </div>
+                <div id="org-distribution"></div>
+            </div>
+        </div>
+
+        <!-- Schools Tab -->
+        <div id="schools-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">学校列表 School List</h2>
+                    <button class="btn btn-primary" onclick="showCreateSchoolModal()">
+                        ➕ 创建学校 Create School
+                    </button>
+                </div>
+                <div id="schools-loading" class="spinner"></div>
+                <table id="schools-table" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>学校代码 Code</th>
+                            <th>学校名称 Name</th>
+                            <th>邀请码 Invitation Code</th>
+                            <th>用户数 Users</th>
+                            <th>操作 Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schools-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">用户列表 User List</h2>
+                </div>
+                <div id="users-loading" class="spinner"></div>
+                <table id="users-table" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>手机号 Phone</th>
+                            <th>姓名 Name</th>
+                            <th>学校 Organization</th>
+                            <th>失败次数 Failed Attempts</th>
+                            <th>状态 Status</th>
+                            <th>操作 Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- API Keys Tab -->
+        <div id="apikeys-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔑 API Keys Management</h2>
+                    <button class="btn btn-primary" onclick="showCreateAPIKeyModal()">
+                        ➕ Create API Key
+                    </button>
+                </div>
+                <div id="apikeys-loading" class="spinner"></div>
+                <table id="apikeys-table" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>API Key</th>
+                            <th>Usage</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Last Used</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apikeys-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <!-- Action Bar -->
+            <div class="card" style="margin-bottom:1rem;">
+                <div class="card-header">
+                    <h2 class="card-title">系统配置 System Settings</h2>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button class="btn btn-secondary btn-sm" onclick="loadEnvSettings()">🔄 Refresh</button>
+                        <button class="btn btn-primary btn-sm" onclick="showBackupListModal()">📦 Backups</button>
+                        <button class="btn btn-success btn-sm" onclick="validateEnvSettings()">✓ Validate</button>
+                        <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-loading" class="spinner"></div>
+            
+            <div id="settings-form" style="display:none;">
+                <!-- Category 1: Application Server -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('app-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">🖥️ Application Server</h3>
+                        <span id="app-settings-icon">▼</span>
+                    </div>
+                    <div id="app-settings-content" class="category-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">HOST <span style="color:#94a3b8;font-size:0.85rem;">(Server host address)</span></label>
+                                <input type="text" id="env-HOST" class="form-input" placeholder="0.0.0.0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">PORT <span style="color:#94a3b8;font-size:0.85rem;">(1-65535)</span></label>
+                                <input type="number" id="env-PORT" class="form-input" min="1" max="65535" placeholder="9527">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">DEBUG <span style="color:#94a3b8;font-size:0.85rem;">(Enable debug mode)</span></label>
+                                <select id="env-DEBUG" class="form-select">
+                                    <option value="False">False</option>
+                                    <option value="True">True</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">EXTERNAL_HOST <span style="color:#94a3b8;font-size:0.85rem;">(Public IP, optional)</span></label>
+                                <input type="text" id="env-EXTERNAL_HOST" class="form-input" placeholder="Leave empty for auto-detect">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 2: Qwen API -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('qwen-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">🤖 Qwen API Configuration</h3>
+                        <span id="qwen-settings-icon">▼</span>
+                    </div>
+                    <div id="qwen-settings-content" class="category-content">
+                        <div class="form-group">
+                            <label class="form-label">QWEN_API_KEY <span style="color:#ef4444;">*Required</span></label>
+                            <input type="password" id="env-QWEN_API_KEY" class="form-input" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">QWEN_API_URL</label>
+                            <input type="text" id="env-QWEN_API_URL" class="form-input" placeholder="https://dashscope.aliyuncs.com/...">
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">QWEN_MODEL_CLASSIFICATION <span style="color:#94a3b8;font-size:0.85rem;">(Fast/cheap)</span></label>
+                                <input type="text" id="env-QWEN_MODEL_CLASSIFICATION" class="form-input" placeholder="qwen-turbo">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">QWEN_MODEL_GENERATION <span style="color:#94a3b8;font-size:0.85rem;">(High quality)</span></label>
+                                <input type="text" id="env-QWEN_MODEL_GENERATION" class="form-input" placeholder="qwen-plus">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">QWEN_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(0.0-2.0)</span></label>
+                                <input type="number" id="env-QWEN_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.7">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">LLM_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(Diagram gen, 0.0-2.0)</span></label>
+                                <input type="number" id="env-LLM_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.3">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">QWEN_MAX_TOKENS</label>
+                                <input type="number" id="env-QWEN_MAX_TOKENS" class="form-input" min="1" placeholder="1000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">QWEN_TIMEOUT <span style="color:#94a3b8;font-size:0.85rem;">(seconds, 5-120)</span></label>
+                                <input type="number" id="env-QWEN_TIMEOUT" class="form-input" min="5" max="120" placeholder="40">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 3: Logging & Features -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('misc-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">⚙️ Logging & Feature Flags</h3>
+                        <span id="misc-settings-icon">▼</span>
+                    </div>
+                    <div id="misc-settings-content" class="category-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">LOG_LEVEL</label>
+                                <select id="env-LOG_LEVEL" class="form-select">
+                                    <option value="DEBUG">DEBUG</option>
+                                    <option value="INFO">INFO</option>
+                                    <option value="WARNING">WARNING</option>
+                                    <option value="ERROR">ERROR</option>
+                                    <option value="CRITICAL">CRITICAL</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">VERBOSE_LOGGING</label>
+                                <select id="env-VERBOSE_LOGGING" class="form-select">
+                                    <option value="False">False</option>
+                                    <option value="True">True</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">FEATURE_LEARNING_MODE</label>
+                                <select id="env-FEATURE_LEARNING_MODE" class="form-select">
+                                    <option value="False">Disabled</option>
+                                    <option value="True">Enabled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">FEATURE_THINKGUIDE</label>
+                                <select id="env-FEATURE_THINKGUIDE" class="form-select">
+                                    <option value="False">Disabled</option>
+                                    <option value="True">Enabled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">FEATURE_MINDMATE</label>
+                                <select id="env-FEATURE_MINDMATE" class="form-select">
+                                    <option value="False">Disabled</option>
+                                    <option value="True">Enabled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">FEATURE_VOICE_AGENT</label>
+                                <select id="env-FEATURE_VOICE_AGENT" class="form-select">
+                                    <option value="False">Disabled</option>
+                                    <option value="True">Enabled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 4: Authentication -->
+                <div class="card">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('auth-settings')">
+                        <h3 class="card-title" style="font-size:1.1rem;">🔐 Authentication & Security</h3>
+                        <span id="auth-settings-icon">▼</span>
+                    </div>
+                    <div id="auth-settings-content" class="category-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">AUTH_MODE</label>
+                                <select id="env-AUTH_MODE" class="form-select">
+                                    <option value="standard">Standard</option>
+                                    <option value="enterprise">Enterprise</option>
+                                    <option value="demo">Demo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">JWT_EXPIRY_HOURS <span style="color:#94a3b8;font-size:0.85rem;">(hours)</span></label>
+                                <input type="number" id="env-JWT_EXPIRY_HOURS" class="form-input" min="1" max="168" placeholder="24">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">ADMIN_PHONES <span style="color:#94a3b8;font-size:0.85rem;">(Comma-separated)</span></label>
+                            <input type="text" id="env-ADMIN_PHONES" class="form-input" placeholder="13800000000,13900000000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">INVITATION_CODES <span style="color:#94a3b8;font-size:0.85rem;">(ORG:CODE:DATE,ORG2:CODE2:DATE2)</span></label>
+                            <textarea id="env-INVITATION_CODES" class="form-textarea" rows="3" placeholder="DEMO-001:DEMO2024:2025-12-31"></textarea>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
+                                <input type="text" id="env-DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="888888">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ADMIN_DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
+                                <input type="text" id="env-ADMIN_DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="999999">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warnings & Actions -->
+                <div class="alert alert-warning show">
+                    ⚠️ <strong>Important:</strong> Server restart required for changes to take effect!<br>
+                    修改配置后需要重启服务器才能生效！
+                </div>
+
+                <div style="display:flex;gap:1rem;">
+                    <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All Settings</button>
+                    <button class="btn btn-secondary" onclick="loadEnvSettings()">↻ Reset to Current</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <div class="card" style="margin-bottom:1rem;">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Debug Logs</h2>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <select id="log-source-select" class="form-select" style="width:auto;" onchange="logViewer.setSource(this.value)">
+                            <option value="app">Application</option>
+                            <option value="uvicorn">Uvicorn</option>
+                            <option value="error">Errors</option>
+                        </select>
+                        <select id="log-level-filter" class="form-select" style="width:auto;" onchange="logViewer.setFilterLevel(this.value)">
+                            <option value="ALL">All Levels</option>
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                        <button id="stream-toggle-btn" class="btn btn-success btn-sm" onclick="toggleLogStream()">▶ Start Stream</button>
+                        <button id="autoscroll-toggle-btn" class="btn btn-secondary btn-sm" onclick="logViewer.toggleAutoScroll()">📜 Auto-scroll: ON</button>
+                        <button class="btn btn-secondary btn-sm" onclick="logViewer.clearLogs()">🗑️ Clear</button>
+                        <button class="btn btn-primary btn-sm" onclick="logViewer.downloadLogs()">💾 Download</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="padding:1rem;border-bottom:1px solid #e2e8f0;">
+                    <div style="display:flex;gap:0.5rem;">
+                        <input type="text" id="log-search-input" class="form-input" 
+                               placeholder="Search logs (press Enter)..." 
+                               onkeypress="if(event.key==='Enter') performLogSearch()"
+                               style="flex:1;">
+                        <button class="btn btn-primary" onclick="performLogSearch()">🔍 Search</button>
+                        <button class="btn btn-secondary" onclick="clearLogSearch()">✕ Clear</button>
+                    </div>
+                    <div id="search-results-count" style="display:none;margin-top:0.5rem;color:#64748b;font-size:0.9rem;"></div>
+                </div>
+                
+                <div id="log-viewer-content" class="log-viewer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup List Modal -->
+    <div id="backup-list-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📦 .env Backup Files</h3>
+                <span class="close" onclick="closeModal('backup-list-modal')">&times;</span>
+            </div>
+            <div id="backup-list-loading" class="spinner"></div>
+            <div id="backup-list-content" style="display:none;">
+                <table style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Backup File</th>
+                            <th>Created</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backup-list-tbody"></tbody>
+                </table>
+                <p id="no-backups-message" style="display:none;color:#64748b;text-align:center;padding:2rem;">
+                    No backup files found. Backups are created automatically when you save settings.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create School Modal -->
+    <div id="create-school-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">创建学校 Create School</h3>
+                <span class="close" onclick="closeModal('create-school-modal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">学校代码 School Code *</label>
+                <input type="text" id="new-school-code" class="form-input" 
+                       placeholder="BJ-HIGH-001" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">学校名称 School Name *</label>
+                <input type="text" id="new-school-name" class="form-input" 
+                       placeholder="北京高中 Beijing High School" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">邀请码 Invitation Code *</label>
+                <input type="text" id="new-school-invite" class="form-input" 
+                       placeholder="BJHS2024" required>
+            </div>
+            <button class="btn btn-primary" onclick="createSchool()">创建 Create</button>
+        </div>
+    </div>
+
+    <!-- Edit School Modal -->
+    <div id="edit-school-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑学校 Edit School</h3>
+                <span class="close" onclick="closeModal('edit-school-modal')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-school-id">
+            <div class="form-group">
+                <label class="form-label">学校代码 School Code (不可修改)</label>
+                <input type="text" id="edit-school-code" class="form-input" disabled>
+            </div>
+            <div class="form-group">
+                <label class="form-label">学校名称 School Name</label>
+                <input type="text" id="edit-school-name" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">邀请码 Invitation Code</label>
+                <input type="text" id="edit-school-invite" class="form-input">
+            </div>
+            <button class="btn btn-primary" onclick="updateSchool()">保存 Save</button>
+        </div>
+    </div>
+
+    <!-- Create API Key Modal -->
+    <div id="create-apikey-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔑 Create API Key</h3>
+                <span class="close" onclick="closeModal('create-apikey-modal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name *</label>
+                <input type="text" id="new-apikey-name" class="form-input" 
+                       placeholder="Dify Integration, Mobile App, etc." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="new-apikey-description" class="form-textarea" style="min-height:80px;"
+                          placeholder="Purpose of this API key..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quota Limit (leave empty for unlimited)</label>
+                <input type="number" id="new-apikey-quota" class="form-input" 
+                       placeholder="10000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Expires in (days, optional)</label>
+                <input type="number" id="new-apikey-expires" class="form-input" 
+                       placeholder="365">
+            </div>
+            <button class="btn btn-primary" onclick="createAPIKey()">🔑 Generate API Key</button>
+        </div>
+    </div>
+
+    <!-- Show API Key Modal -->
+    <div id="show-apikey-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✅ API Key Created</h3>
+                <span class="close" onclick="closeModal('show-apikey-modal')">&times;</span>
+            </div>
+            <div class="alert alert-warning show">
+                ⚠️ <strong>Important:</strong> Save this key securely - it won't be shown again!
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="text" id="generated-apikey" class="form-input" readonly 
+                       style="font-family:monospace;font-size:0.875rem;" onclick="this.select()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Usage Instructions</label>
+                <textarea readonly class="form-textarea" style="min-height:100px;">Add this header to your HTTP requests:
+X-API-Key: [your-key-here]
+
+Example (curl):
+curl -X POST http://your-server/api/generate_graph \
+  -H "X-API-Key: [your-key]" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"test","diagram_type":"mind_map"}'</textarea>
+            </div>
+            <button class="btn btn-primary" onclick="copyAPIKey()">📋 Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <!-- Edit API Key Modal -->
+    <div id="edit-apikey-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ Edit API Key</h3>
+                <span class="close" onclick="closeModal('edit-apikey-modal')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-apikey-id">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" id="edit-apikey-name" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="edit-apikey-description" class="form-textarea" style="min-height:80px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quota Limit (empty for unlimited)</label>
+                <input type="number" id="edit-apikey-quota" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Usage Count (reset to 0 if needed)</label>
+                <input type="number" id="edit-apikey-usage" class="form-input">
+            </div>
+            <button class="btn btn-primary" onclick="updateAPIKey()">💾 Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Unauthenticated Overlay -->
+    <div id="auth-required-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; border-radius:20px; padding:3rem; text-align:center; max-width:500px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="font-size:4rem; margin-bottom:1rem;">🔒</div>
+            <h2 style="font-size:1.75rem; margin-bottom:1rem; color:#1e293b;">Admin Authentication Required</h2>
+            <p style="color:#64748b; margin-bottom:2rem;">Please authenticate to access the admin panel</p>
+            
+            <div style="display:grid; gap:1rem;">
+                <a href="/auth?redirect=/admin" class="btn btn-primary" style="display:block; text-decoration:none; padding:1rem;">
+                    🔐 Standard Login / 标准登录
+                </a>
+                <a href="/demo?redirect=/admin" class="btn btn-secondary" style="display:block; text-decoration:none; padding:1rem;">
+                    🎯 Demo Mode / 演示模式
+                </a>
+            </div>
+            
+            <p style="color:#94a3b8; font-size:0.875rem; margin-top:1.5rem;">
+                Admins can access this panel from any authentication mode
+            </p>
+        </div>
+    </div>
+
+    <script src="/static/js/auth-helper.js"></script>
+    <script>
+        // Check admin access without automatic redirect
+        async function checkAdminAuth() {
+            const authenticated = await auth.isAuthenticated();
+            if (!authenticated) {
+                // Show overlay instead of redirecting
+                document.getElementById('auth-required-overlay').style.display = 'flex';
+                return false;
+            }
+            
+            // Verify user is admin
+            try {
+                const response = await auth.fetch('/api/auth/me');
+                const user = await response.json();
+                
+                // Check if user is admin by making a test admin API call
+                const adminCheck = await auth.fetch('/api/auth/admin/stats');
+                if (!adminCheck.ok) {
+                    // User is authenticated but not admin
+                    alert('⚠️ Admin access denied.\n\n您不是管理员，无法访问此页面。\nYou are not an administrator and cannot access this page.');
+                    window.location.href = '/editor';
+                    return false;
+                }
+                
+                // Update admin name in header
+                document.getElementById('adminName').textContent = user.name || 'Admin';
+                
+                return true;
+            } catch (error) {
+                console.error('Admin check failed:', error);
+                document.getElementById('auth-required-overlay').style.display = 'flex';
+                return false;
+            }
+        }
+        
+        // Check on page load
+        checkAdminAuth();
+
+        // Global state
+        let currentTab = 'dashboard';
+        let schools = [];
+        let users = [];
+
+        // Tab switching
+        function switchTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+            currentTab = tab;
+
+            // Load data
+            if (tab === 'dashboard') loadDashboard();
+            if (tab === 'schools') loadSchools();
+            if (tab === 'users') loadUsers();
+            if (tab === 'apikeys') loadAPIKeys();
+            if (tab === 'settings') loadEnvSettings();
+            if (tab === 'logs') initLogViewer();
+        }
+
+        // Show alert
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        // Modal functions
+        function showCreateSchoolModal() {
+            document.getElementById('create-school-modal').classList.add('show');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                const response = await auth.fetch('/api/auth/admin/stats');
+                const stats = await response.json();
+
+                document.getElementById('stat-users').textContent = stats.total_users;
+                document.getElementById('stat-orgs').textContent = stats.total_organizations;
+                document.getElementById('stat-locked').textContent = stats.locked_users;
+                document.getElementById('stat-recent').textContent = stats.recent_registrations;
+
+                // Organization distribution
+                const dist = document.getElementById('org-distribution');
+                dist.innerHTML = Object.entries(stats.users_by_org)
+                    .map(([org, count]) => `
+                        <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #e2e8f0;">
+                            <span>${org}</span>
+                            <span style="font-weight:600;color:#667eea;">${count} 用户</span>
+                        </div>
+                    `).join('');
+            } catch (error) {
+                showAlert('加载统计数据失败 Failed to load stats', 'error');
+            }
+        }
+
+        // Schools
+        async function loadSchools() {
+            document.getElementById('schools-loading').style.display = 'block';
+            document.getElementById('schools-table').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/organizations');
+                schools = await response.json();
+
+                const tbody = document.getElementById('schools-tbody');
+                tbody.innerHTML = schools.map(school => `
+                    <tr>
+                        <td><strong>${school.code}</strong></td>
+                        <td>${school.name}</td>
+                        <td><span class="badge badge-success">${school.invitation_code}</span></td>
+                        <td>${school.user_count} 用户</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" onclick="editSchool(${school.id})">编辑</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSchool(${school.id}, '${school.code}')">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('schools-loading').style.display = 'none';
+                document.getElementById('schools-table').style.display = 'table';
+            } catch (error) {
+                showAlert('加载学校列表失败 Failed to load schools', 'error');
+            }
+        }
+
+        async function createSchool() {
+            const data = {
+                code: document.getElementById('new-school-code').value,
+                name: document.getElementById('new-school-name').value,
+                invitation_code: document.getElementById('new-school-invite').value
+            };
+
+            if (!data.code || !data.name || !data.invitation_code) {
+                showAlert('请填写所有字段 Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                await auth.fetch('/api/auth/admin/organizations', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                showAlert('学校创建成功 School created successfully', 'success');
+                closeModal('create-school-modal');
+                loadSchools();
+                
+                // Clear form
+                document.getElementById('new-school-code').value = '';
+                document.getElementById('new-school-name').value = '';
+                document.getElementById('new-school-invite').value = '';
+            } catch (error) {
+                showAlert('创建失败 Creation failed: ' + error.message, 'error');
+            }
+        }
+
+        function editSchool(id) {
+            const school = schools.find(s => s.id === id);
+            if (!school) return;
+
+            document.getElementById('edit-school-id').value = school.id;
+            document.getElementById('edit-school-code').value = school.code;
+            document.getElementById('edit-school-name').value = school.name;
+            document.getElementById('edit-school-invite').value = school.invitation_code;
+            
+            document.getElementById('edit-school-modal').classList.add('show');
+        }
+
+        async function updateSchool() {
+            const id = document.getElementById('edit-school-id').value;
+            const data = {
+                name: document.getElementById('edit-school-name').value,
+                invitation_code: document.getElementById('edit-school-invite').value
+            };
+
+            try {
+                await auth.fetch(`/api/auth/admin/organizations/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                showAlert('学校更新成功 School updated successfully', 'success');
+                closeModal('edit-school-modal');
+                loadSchools();
+            } catch (error) {
+                showAlert('更新失败 Update failed: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteSchool(id, code) {
+            if (!confirm(`确定删除学校 ${code}？\nAre you sure to delete school ${code}?`)) return;
+
+            try {
+                await auth.fetch(`/api/auth/admin/organizations/${id}`, {
+                    method: 'DELETE'
+                });
+
+                showAlert('学校删除成功 School deleted successfully', 'success');
+                loadSchools();
+            } catch (error) {
+                showAlert('删除失败 Delete failed: ' + error.message, 'error');
+            }
+        }
+
+        // Users
+        async function loadUsers() {
+            document.getElementById('users-loading').style.display = 'block';
+            document.getElementById('users-table').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/users');
+                users = await response.json();
+
+                const tbody = document.getElementById('users-tbody');
+                tbody.innerHTML = users.map(user => {
+                    const isLocked = user.locked_until && new Date(user.locked_until) > new Date();
+                    return `
+                        <tr>
+                            <td>${user.phone}</td>
+                            <td>${user.name || '-'}</td>
+                            <td>${user.organization_name || '-'} (${user.organization_code || '-'})</td>
+                            <td>${user.failed_login_attempts}</td>
+                            <td>
+                                ${isLocked ? 
+                                    '<span class="badge badge-danger">🔒 锁定 Locked</span>' : 
+                                    '<span class="badge badge-success">✅ 正常 Active</span>'
+                                }
+                            </td>
+                            <td>
+                                ${isLocked ? 
+                                    `<button class="btn btn-success btn-sm" onclick="unlockUser(${user.id}, '${user.phone}')">解锁 Unlock</button>` : 
+                                    '-'
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.getElementById('users-loading').style.display = 'none';
+                document.getElementById('users-table').style.display = 'table';
+            } catch (error) {
+                showAlert('加载用户列表失败 Failed to load users', 'error');
+            }
+        }
+
+        async function unlockUser(id, phone) {
+            if (!confirm(`确定解锁用户 ${phone}？\nUnlock user ${phone}?`)) return;
+
+            try {
+                await auth.fetch(`/api/auth/admin/users/${id}/unlock`, {
+                    method: 'PUT'
+                });
+
+                showAlert('用户解锁成功 User unlocked successfully', 'success');
+                loadUsers();
+            } catch (error) {
+                showAlert('解锁失败 Unlock failed: ' + error.message, 'error');
+            }
+        }
+
+        // Enhanced Settings Management
+        async function loadEnvSettings() {
+            document.getElementById('settings-loading').style.display = 'block';
+            document.getElementById('settings-form').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/env/settings');
+                const data = await response.json();
+                const settings = data.settings;
+
+                // Populate all form fields dynamically
+                for (const key in settings) {
+                    const element = document.getElementById(`env-${key}`);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = settings[key] === 'True' || settings[key] === 'true';
+                        } else {
+                            element.value = settings[key] || '';
+                        }
+                    }
+                }
+
+                document.getElementById('settings-loading').style.display = 'none';
+                document.getElementById('settings-form').style.display = 'block';
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+                showAlert('Failed to load settings: ' + error.message, 'error');
+            }
+        }
+
+        async function saveEnvSettings() {
+            // Collect all settings from form
+            const data = {};
+            const inputs = document.querySelectorAll('[id^="env-"]');
+            
+            inputs.forEach(input => {
+                const key = input.id.replace('env-', '');
+                if (input.type === 'checkbox') {
+                    data[key] = input.checked ? 'True' : 'False';
+                } else {
+                    data[key] = input.value;
+                }
+            });
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/env/settings', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                showAlert(`${result.message} - ${result.warning}`, 'warning');
+                
+                // Reload settings to show updated values
+                setTimeout(() => loadEnvSettings(), 1000);
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                showAlert('Save failed: ' + error.message, 'error');
+            }
+        }
+
+        async function validateEnvSettings() {
+            // Collect all settings from form
+            const data = {};
+            const inputs = document.querySelectorAll('[id^="env-"]');
+            
+            inputs.forEach(input => {
+                const key = input.id.replace('env-', '');
+                if (input.type === 'checkbox') {
+                    data[key] = input.checked ? 'True' : 'False';
+                } else {
+                    data[key] = input.value;
+                }
+            });
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/env/validate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.is_valid) {
+                    showAlert('Validation passed! All settings are valid.', 'success');
+                } else {
+                    showAlert(`Validation errors: ${result.errors.join(', ')}`, 'error');
+                }
+            } catch (error) {
+                console.error('Validation failed:', error);
+                showAlert('Validation failed: ' + error.message, 'error');
+            }
+        }
+
+        async function showBackupListModal() {
+            document.getElementById('backup-list-modal').classList.add('show');
+            document.getElementById('backup-list-loading').style.display = 'block';
+            document.getElementById('backup-list-content').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/env/backups');
+                const backups = await response.json();
+
+                const tbody = document.getElementById('backup-list-tbody');
+                const noBackupsMsg = document.getElementById('no-backups-message');
+
+                if (backups.length === 0) {
+                    tbody.innerHTML = '';
+                    noBackupsMsg.style.display = 'block';
+                } else {
+                    noBackupsMsg.style.display = 'none';
+                    tbody.innerHTML = backups.map(backup => `
+                        <tr>
+                            <td><code style="font-size:0.85rem;">${backup.filename}</code></td>
+                            <td>${backup.timestamp}</td>
+                            <td>${(backup.size_bytes / 1024).toFixed(1)} KB</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="restoreEnvBackup('${backup.filename}')">
+                                    Restore
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                document.getElementById('backup-list-loading').style.display = 'none';
+                document.getElementById('backup-list-content').style.display = 'block';
+            } catch (error) {
+                console.error('Failed to load backups:', error);
+                showAlert('Failed to load backups: ' + error.message, 'error');
+                closeModal('backup-list-modal');
+            }
+        }
+
+        async function restoreEnvBackup(filename) {
+            if (!confirm(`Restore .env from backup: ${filename}?\n\nCurrent .env will be backed up before restoration.`)) {
+                return;
+            }
+
+            try {
+                const response = await auth.fetch(`/api/auth/admin/env/restore?backup_filename=${encodeURIComponent(filename)}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                showAlert(`${result.message} - ${result.warning}`, 'success');
+                
+                // Close modal and reload settings
+                closeModal('backup-list-modal');
+                setTimeout(() => loadEnvSettings(), 1000);
+            } catch (error) {
+                console.error('Failed to restore backup:', error);
+                showAlert('Restore failed: ' + error.message, 'error');
+            }
+        }
+
+        function toggleCategory(categoryId) {
+            const content = document.getElementById(`${categoryId}-content`);
+            const icon = document.getElementById(`${categoryId}-icon`);
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                icon.textContent = '▼';
+            } else {
+                content.classList.add('collapsed');
+                icon.textContent = '▶';
+            }
+        }
+
+        // API Keys
+        let apiKeys = [];
+
+        async function loadAPIKeys() {
+            document.getElementById('apikeys-loading').style.display = 'block';
+            document.getElementById('apikeys-table').style.display = 'none';
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/api_keys');
+                apiKeys = await response.json();
+
+                const tbody = document.getElementById('apikeys-tbody');
+                tbody.innerHTML = apiKeys.map(key => {
+                    const isExpired = key.expires_at && new Date(key.expires_at) < new Date();
+                    const usagePercent = key.usage_percentage || 0;
+                    const quotaText = key.quota_limit ? `${key.usage_count.toLocaleString()} / ${key.quota_limit.toLocaleString()}` : `${key.usage_count.toLocaleString()} / unlimited`;
+                    
+                    return `
+                        <tr>
+                            <td>
+                                <strong>${key.name}</strong>
+                                ${key.description ? `<br><small style="color:#64748b;">${key.description}</small>` : ''}
+                            </td>
+                            <td>
+                                <code style="font-size:0.75rem;background:#f1f5f9;padding:0.25rem 0.5rem;border-radius:4px;" onclick="copyToClipboard('${key.key}', this)">${key.key.substring(0, 20)}...${key.key.substring(key.key.length - 8)}</code>
+                            </td>
+                            <td>
+                                ${quotaText}
+                                ${key.quota_limit ? `<br><div style="background:#e2e8f0;height:6px;border-radius:3px;margin-top:4px;overflow:hidden;"><div style="background:${usagePercent > 90 ? '#ef4444' : '#667eea'};width:${Math.min(usagePercent, 100)}%;height:100%;"></div></div>` : ''}
+                            </td>
+                            <td>
+                                ${key.is_active && !isExpired ? 
+                                    '<span class="badge badge-success">✅ Active</span>' : 
+                                    isExpired ? '<span class="badge badge-danger">⏰ Expired</span>' :
+                                    '<span class="badge badge-danger">❌ Disabled</span>'
+                                }
+                            </td>
+                            <td><small>${new Date(key.created_at).toLocaleDateString()}</small></td>
+                            <td><small>${key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</small></td>
+                            <td>
+                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ Disable' : '▶️ Enable'}</button>
+                                <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})">✏️ Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')">🗑️ Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.getElementById('apikeys-loading').style.display = 'none';
+                document.getElementById('apikeys-table').style.display = 'table';
+            } catch (error) {
+                showAlert('Failed to load API keys: ' + error.message, 'error');
+            }
+        }
+
+        function showCreateAPIKeyModal() {
+            document.getElementById('create-apikey-modal').classList.add('show');
+        }
+
+        async function createAPIKey() {
+            const data = {
+                name: document.getElementById('new-apikey-name').value,
+                description: document.getElementById('new-apikey-description').value,
+                quota_limit: document.getElementById('new-apikey-quota').value ? parseInt(document.getElementById('new-apikey-quota').value) : null,
+                expires_days: document.getElementById('new-apikey-expires').value ? parseInt(document.getElementById('new-apikey-expires').value) : null
+            };
+
+            if (!data.name) {
+                showAlert('Please enter a name for the API key', 'error');
+                return;
+            }
+
+            try {
+                const response = await auth.fetch('/api/auth/admin/api_keys', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                // Show the generated key
+                document.getElementById('generated-apikey').value = result.key;
+                closeModal('create-apikey-modal');
+                document.getElementById('show-apikey-modal').classList.add('show');
+                
+                // Clear form
+                document.getElementById('new-apikey-name').value = '';
+                document.getElementById('new-apikey-description').value = '';
+                document.getElementById('new-apikey-quota').value = '';
+                document.getElementById('new-apikey-expires').value = '';
+                
+                showAlert(result.message, 'success');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to create API key: ' + error.message, 'error');
+            }
+        }
+
+        function copyAPIKey() {
+            const apiKeyInput = document.getElementById('generated-apikey');
+            apiKeyInput.select();
+            navigator.clipboard.writeText(apiKeyInput.value);
+            showAlert('API key copied to clipboard! 📋', 'success');
+        }
+
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text);
+            const originalText = element.innerHTML;
+            element.innerHTML = '✅ Copied!';
+            element.style.background = '#d1fae5';
+            element.style.color = '#065f46';
+            setTimeout(() => {
+                element.innerHTML = originalText;
+                element.style.background = '#f1f5f9';
+                element.style.color = '';
+            }, 2000);
+        }
+
+        function editAPIKey(id) {
+            const key = apiKeys.find(k => k.id === id);
+            if (!key) return;
+
+            document.getElementById('edit-apikey-id').value = key.id;
+            document.getElementById('edit-apikey-name').value = key.name;
+            document.getElementById('edit-apikey-description').value = key.description || '';
+            document.getElementById('edit-apikey-quota').value = key.quota_limit || '';
+            document.getElementById('edit-apikey-usage').value = key.usage_count;
+            
+            document.getElementById('edit-apikey-modal').classList.add('show');
+        }
+
+        async function updateAPIKey() {
+            const id = document.getElementById('edit-apikey-id').value;
+            const data = {
+                name: document.getElementById('edit-apikey-name').value,
+                description: document.getElementById('edit-apikey-description').value,
+                quota_limit: document.getElementById('edit-apikey-quota').value ? parseInt(document.getElementById('edit-apikey-quota').value) : null,
+                usage_count: parseInt(document.getElementById('edit-apikey-usage').value)
+            };
+
+            try {
+                await auth.fetch(`/api/auth/admin/api_keys/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                showAlert('API key updated successfully', 'success');
+                closeModal('edit-apikey-modal');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to update API key: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleAPIKey(id) {
+            try {
+                const response = await auth.fetch(`/api/auth/admin/api_keys/${id}/toggle`, {
+                    method: 'PUT'
+                });
+
+                const result = await response.json();
+                showAlert(result.message, 'success');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to toggle API key: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteAPIKey(id, name) {
+            if (!confirm(`⚠️ Delete API key "${name}"?\n\nThis action cannot be undone and will immediately revoke access.`)) return;
+
+            try {
+                const response = await auth.fetch(`/api/auth/admin/api_keys/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                showAlert(result.message, 'success');
+                loadAPIKeys();
+            } catch (error) {
+                showAlert('Failed to delete API key: ' + error.message, 'error');
+            }
+        }
+
+        function logout() {
+            if (confirm('确定登出？\nAre you sure to logout?')) {
+                auth.logout();
+            }
+        }
+
+        // Log Viewer Integration Functions
+        function initLogViewer() {
+            logViewer.init();
+        }
+        
+        function toggleLogStream() {
+            if (logViewer.eventSource) {
+                logViewer.stopStreaming();
+            } else {
+                logViewer.startStreaming();
+            }
+        }
+        
+        function performLogSearch() {
+            const query = document.getElementById('log-search-input').value;
+            if (query && query.trim() !== '') {
+                logViewer.searchLogs(query.trim());
+            }
+        }
+        
+        function clearLogSearch() {
+            document.getElementById('log-search-input').value = '';
+            const countEl = document.getElementById('search-results-count');
+            if (countEl) {
+                countEl.style.display = 'none';
+            }
+            logViewer.setSearchQuery('');
+            logViewer.loadInitialLogs();
+        }
+
+        // Initialize
+        loadDashboard();
+    </script>
+    
+    <!-- Admin Log Viewer Script -->
+    <script src="/static/js/admin-logs.js"></script>
+</body>
+</html>
+

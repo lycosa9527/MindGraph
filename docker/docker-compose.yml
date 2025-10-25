@@ -1,0 +1,85 @@
+# MindGraph Docker Compose Configuration
+# For local development and testing
+#
+# Setup Instructions:
+# 1. Ensure your existing .env file has QWEN_API_KEY and EXTERNAL_HOST set
+# 2. For Docker deployment, make sure EXTERNAL_HOST is your server's public IP
+# 3. Run from project root: docker-compose -f docker/docker-compose.yml up -d
+#
+# Note: If you need to add missing variables, see docker/docker.env.example for reference
+
+version: '3.8'
+
+services:
+  mindgraph:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: mindgraph-app
+    ports:
+      - "9527:9527"
+    environment:
+      # Required: Set your Qwen API key
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      
+      # External Access Configuration
+      - EXTERNAL_HOST=${EXTERNAL_HOST:-}
+      
+      # Qwen API Configuration
+      - QWEN_API_URL=${QWEN_API_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
+      - QWEN_MODEL_CLASSIFICATION=${QWEN_MODEL_CLASSIFICATION:-qwen-turbo}
+      - QWEN_MODEL_GENERATION=${QWEN_MODEL_GENERATION:-qwen-plus}
+      - QWEN_TEMPERATURE=${QWEN_TEMPERATURE:-0.7}
+      - QWEN_MAX_TOKENS=${QWEN_MAX_TOKENS:-3000}
+      - QWEN_TIMEOUT=${QWEN_TIMEOUT:-40}
+      
+      # Application Configuration
+      - HOST=0.0.0.0
+      - PORT=9527
+      - DEBUG=${DEBUG:-False}
+      - MINDGRAPH_ENV=production
+      
+      # Graph Configuration
+      - GRAPH_LANGUAGE=${GRAPH_LANGUAGE:-zh}
+      - WATERMARK_TEXT=${WATERMARK_TEXT:-MindGraph}
+      - TOPIC_FONT_SIZE=${TOPIC_FONT_SIZE:-18}
+      - CHAR_FONT_SIZE=${CHAR_FONT_SIZE:-14}
+      
+      # Logging Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount logs directory for persistence
+      - ./logs:/app/logs
+      # Mount static images for persistence
+      - ./static/images:/app/static/images
+      # Mount test images for development
+      - ./test/images:/app/test/images
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9527/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mindgraph-network
+
+  # Optional: Redis for caching (if you want to add caching later)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: mindgraph-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - mindgraph-network
+
+networks:
+  mindgraph-network:
+    driver: bridge
+
+# volumes:
+#   redis_data:

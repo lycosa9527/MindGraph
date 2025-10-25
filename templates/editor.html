@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph Pro</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="/static/fonts/inter.css">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/editor.css">
+    <link rel="stylesheet" href="/static/css/editor-toolbar.css">
+    <link rel="stylesheet" href="/static/css/node-palette.css">
+    <link rel="stylesheet" href="/static/css/comic-bubble.css">
+    
+    <!-- D3.js -->
+    <script src="/static/js/d3.min.js"></script>
+</head>
+<body 
+    data-verbose-logging="{{ verbose_logging | tojson }}"
+    data-feature-learning-mode="{{ feature_learning_mode | tojson }}"
+    data-feature-thinkguide="{{ feature_thinkguide | tojson }}"
+    data-feature-voice-agent="{{ feature_voice_agent | tojson }}"
+    data-ai-assistant-name="{{ ai_assistant_name }}">
+    <!-- Configuration from backend -->
+    <script>
+        // Load configuration from data attributes
+        const bodyElement = document.body;
+        window.VERBOSE_LOGGING = bodyElement.dataset.verboseLogging === 'true';
+        window.FEATURE_LEARNING_MODE = bodyElement.dataset.featureLearningMode === 'true';
+        window.FEATURE_THINKGUIDE = bodyElement.dataset.featureThinkguide === 'true';
+        window.FEATURE_VOICE_AGENT = bodyElement.dataset.featureVoiceAgent === 'true';
+        window.AI_ASSISTANT_NAME = bodyElement.dataset.aiAssistantName || 'MindMate AI';
+    </script>
+    <!-- Landing Page / Gallery -->
+    <div class="editor-landing" id="editor-landing">
+        <!-- Top Right Buttons -->
+        <div class="top-right-controls">
+            <button id="language-toggle" class="control-btn" title="Switch Language">
+                <span class="lang-text">EN</span>
+            </button>
+            <button id="share-btn" class="control-btn" title="Share">
+                <span>Share</span>
+            </button>
+            <button id="logout-btn" class="control-btn" title="Logout">
+                <span>Logout</span>
+            </button>
+        </div>
+        
+        <header class="editor-header">
+            <h1 id="main-title">MindGraph Professional</h1>
+            <p id="main-subtitle">Choose a diagram type to start creating</p>
+        </header>
+        
+        <!-- AI Prompt Input Section -->
+        <div class="prompt-section">
+            <div class="prompt-container">
+                <div class="prompt-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="prompt-input" 
+                        class="prompt-input" 
+                        placeholder="Describe your diagram or choose from templates below..."
+                        autocomplete="off"
+                    />
+                    <button id="prompt-send-btn" class="prompt-send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Recent Prompts Dropdown -->
+                <div class="prompt-history-toggle" id="history-toggle">
+                    <span id="history-toggle-text">Recent Prompts</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                
+                <div class="prompt-history-dropdown" id="prompt-history" style="display: none;">
+                    <div class="prompt-history-header">
+                        <span id="history-header-text">Recent Prompts</span>
+                        <button id="clear-history-btn" class="clear-history-btn">Clear</button>
+                    </div>
+                    <div class="prompt-history-list" id="prompt-history-list">
+                        <div class="prompt-history-empty" id="history-empty">
+                            <span id="empty-history-text">No recent prompts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="diagram-gallery">
+            <!-- Thinking Maps Category -->
+            <div class="diagram-category">
+                <h2>Thinking Maps</h2>
+                <div class="diagram-grid">
+                    <div class="diagram-card" data-type="circle_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#e91e63"/>
+                                <circle cx="100" cy="75" r="45" fill="none" stroke="#f48fb1" stroke-width="2"/>
+                                <text x="100" y="80" text-anchor="middle" fill="white" font-size="12">Topic</text>
+                            </svg>
+                        </div>
+                        <h3>Circle Map</h3>
+                        <p>Defining in context</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="bubble_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="30" fill="#4caf50"/>
+                                <circle cx="40" cy="40" r="12" fill="#81c784"/>
+                                <circle cx="160" cy="40" r="12" fill="#81c784"/>
+                                <circle cx="40" cy="110" r="12" fill="#81c784"/>
+                                <circle cx="160" cy="110" r="12" fill="#81c784"/>
+                            </svg>
+                        </div>
+                        <h3>Bubble Map</h3>
+                        <p>Describing with adjectives</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="double_bubble_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="60" cy="75" r="25" fill="#2196f3"/>
+                                <circle cx="140" cy="75" r="25" fill="#2196f3"/>
+                                <circle cx="100" cy="55" r="10" fill="#64b5f6"/>
+                                <circle cx="100" cy="75" r="10" fill="#64b5f6"/>
+                                <circle cx="100" cy="95" r="10" fill="#64b5f6"/>
+                            </svg>
+                        </div>
+                        <h3>Double Bubble Map</h3>
+                        <p>Comparing and contrasting</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="tree_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="30" r="15" fill="#9c27b0"/>
+                                <circle cx="60" cy="80" r="12" fill="#ba68c8"/>
+                                <circle cx="100" cy="80" r="12" fill="#ba68c8"/>
+                                <circle cx="140" cy="80" r="12" fill="#ba68c8"/>
+                                <line x1="100" y1="30" x2="60" y2="80" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="30" x2="100" y2="80" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="30" x2="140" y2="80" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Tree Map</h3>
+                        <p>Classifying and grouping</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="brace_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="20" y="60" width="60" height="30" rx="5" fill="#00bcd4"/>
+                                <rect x="120" y="30" width="60" height="20" rx="3" fill="#4dd0e1"/>
+                                <rect x="120" y="60" width="60" height="20" rx="3" fill="#4dd0e1"/>
+                                <rect x="120" y="90" width="60" height="20" rx="3" fill="#4dd0e1"/>
+                                <path d="M 80 75 Q 100 45, 120 40" stroke="#666" stroke-width="2" fill="none"/>
+                                <path d="M 80 75 Q 100 75, 120 70" stroke="#666" stroke-width="2" fill="none"/>
+                                <path d="M 80 75 Q 100 105, 120 100" stroke="#666" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <h3>Brace Map</h3>
+                        <p>Whole to parts</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="flow_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="20" y="60" width="40" height="30" rx="5" fill="#ff9800"/>
+                                <rect x="80" y="60" width="40" height="30" rx="5" fill="#ff9800"/>
+                                <rect x="140" y="60" width="40" height="30" rx="5" fill="#ff9800"/>
+                                <path d="M 60 75 L 80 75" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <path d="M 120 75 L 140 75" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                        <h3>Flow Map</h3>
+                        <p>Sequencing and ordering</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="multi_flow_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="70" y="60" width="60" height="30" rx="5" fill="#ff5722"/>
+                                <rect x="10" y="35" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <rect x="10" y="80" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <rect x="155" y="35" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <rect x="155" y="80" width="35" height="15" rx="3" fill="#ff8a65"/>
+                                <path d="M 45 42 L 70 70" stroke="#666" stroke-width="2"/>
+                                <path d="M 45 88 L 70 80" stroke="#666" stroke-width="2"/>
+                                <path d="M 130 70 L 155 42" stroke="#666" stroke-width="2"/>
+                                <path d="M 130 80 L 155 88" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Multi-Flow Map</h3>
+                        <p>Cause and effect</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="bridge_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="20" y="40" width="60" height="20" rx="3" fill="#795548"/>
+                                <rect x="20" y="90" width="60" height="20" rx="3" fill="#795548"/>
+                                <rect x="120" y="40" width="60" height="20" rx="3" fill="#a1887f"/>
+                                <rect x="120" y="90" width="60" height="20" rx="3" fill="#a1887f"/>
+                                <line x1="100" y1="50" x2="100" y2="100" stroke="#666" stroke-width="3"/>
+                                <path d="M 80 50 L 120 50" stroke="#666" stroke-width="2"/>
+                                <path d="M 80 100 L 120 100" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Bridge Map</h3>
+                        <p>Seeing analogies</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Diagrams Category -->
+            <div class="diagram-category">
+                <h2>Advanced Diagrams</h2>
+                <div class="diagram-grid">
+                    <div class="diagram-card" data-type="mindmap">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#1976d2"/>
+                                <circle cx="50" cy="40" r="15" fill="#42a5f5"/>
+                                <circle cx="50" cy="110" r="15" fill="#42a5f5"/>
+                                <circle cx="150" cy="40" r="15" fill="#42a5f5"/>
+                                <circle cx="150" cy="110" r="15" fill="#42a5f5"/>
+                                <line x1="100" y1="75" x2="50" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="50" y2="110" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="110" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Mind Map</h3>
+                        <p>Creative brainstorming</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="concept_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <ellipse cx="100" cy="40" rx="35" ry="20" fill="#f44336"/>
+                                <ellipse cx="50" cy="100" rx="30" ry="18" fill="#ef5350"/>
+                                <ellipse cx="150" cy="100" rx="30" ry="18" fill="#ef5350"/>
+                                <line x1="100" y1="60" x2="50" y2="82" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="60" x2="150" y2="82" stroke="#666" stroke-width="2"/>
+                                <line x1="80" y1="100" x2="120" y2="100" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+                            </svg>
+                        </div>
+                        <h3>Concept Map</h3>
+                        <p>Complex relationships</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Thinking Tools Category (Under Development) -->
+            <div class="diagram-category">
+                <h2 class="category-collapsible" data-category="thinking-tools">
+                    Thinking Tools
+                    <span class="coming-soon-badge">Coming Soon</span>
+                </h2>
+                <div class="diagram-grid" id="thinking-tools-grid" style="display: none;">
+                    <div class="diagram-card" data-type="factor_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#673ab7"/>
+                                <circle cx="50" cy="40" r="15" fill="#9575cd"/>
+                                <circle cx="150" cy="40" r="15" fill="#9575cd"/>
+                                <circle cx="50" cy="110" r="15" fill="#9575cd"/>
+                                <circle cx="150" cy="110" r="15" fill="#9575cd"/>
+                                <line x1="100" y1="75" x2="50" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="50" y2="110" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="110" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Factor Analysis</h3>
+                        <p>Analyzing key factors</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="three_position_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="40" r="20" fill="#009688"/>
+                                <circle cx="60" cy="100" r="20" fill="#26a69a"/>
+                                <circle cx="140" cy="100" r="20" fill="#26a69a"/>
+                                <line x1="100" y1="60" x2="60" y2="80" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="60" x2="140" y2="80" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Three-Position Analysis</h3>
+                        <p>Three perspectives</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="perspective_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="80" y="60" width="40" height="30" rx="5" fill="#607d8b"/>
+                                <circle cx="40" cy="75" r="12" fill="#90a4ae"/>
+                                <circle cx="160" cy="75" r="12" fill="#90a4ae"/>
+                                <path d="M 52 75 L 80 75" stroke="#666" stroke-width="2" marker-end="url(#arrow1)"/>
+                                <path d="M 120 75 L 148 75" stroke="#666" stroke-width="2" marker-end="url(#arrow1)"/>
+                            </svg>
+                        </div>
+                        <h3>Perspective Analysis</h3>
+                        <p>Understanding viewpoints</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="goal_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="30" fill="#ffc107"/>
+                                <circle cx="100" cy="75" r="20" fill="#ffb300"/>
+                                <circle cx="100" cy="75" r="10" fill="#ffa000"/>
+                                <text x="100" y="80" text-anchor="middle" fill="white" font-size="10">Goal</text>
+                            </svg>
+                        </div>
+                        <h3>Goal Analysis</h3>
+                        <p>Breaking down goals</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="possibility_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#8bc34a"/>
+                                <path d="M 100 50 L 130 65 L 120 95 L 80 95 L 70 65 Z" fill="#aed581" opacity="0.5"/>
+                            </svg>
+                        </div>
+                        <h3>Possibility Analysis</h3>
+                        <p>Exploring options</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="result_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="30" y="65" width="40" height="20" rx="3" fill="#ff5722"/>
+                                <rect x="130" y="65" width="40" height="20" rx="3" fill="#ff7043"/>
+                                <path d="M 70 75 L 130 75" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+                            </svg>
+                        </div>
+                        <h3>Result Analysis</h3>
+                        <p>Analyzing outcomes</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="five_w_one_h">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="20" fill="#3f51b5"/>
+                                <circle cx="50" cy="40" r="12" fill="#5c6bc0"/>
+                                <circle cx="150" cy="40" r="12" fill="#5c6bc0"/>
+                                <circle cx="50" cy="110" r="12" fill="#5c6bc0"/>
+                                <circle cx="150" cy="110" r="12" fill="#5c6bc0"/>
+                                <circle cx="100" cy="30" r="12" fill="#5c6bc0"/>
+                                <circle cx="100" cy="120" r="12" fill="#5c6bc0"/>
+                                <line x1="100" y1="75" x2="50" y2="40" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="150" y2="40" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="50" y2="110" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="150" y2="110" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="100" y2="30" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="100" y2="120" stroke="#666" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <h3>5W1H Analysis</h3>
+                        <p>Systematic analysis</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="whwm_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="50" y="60" width="30" height="30" rx="3" fill="#e91e63"/>
+                                <rect x="90" y="60" width="30" height="30" rx="3" fill="#ec407a"/>
+                                <rect x="130" y="60" width="30" height="30" rx="3" fill="#f06292"/>
+                                <rect x="170" y="60" width="30" height="30" rx="3" fill="#f48fb1"/>
+                            </svg>
+                        </div>
+                        <h3>WHWM Analysis</h3>
+                        <p>Project planning</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="four_quadrant">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="50" y="40" width="60" height="40" rx="3" fill="#00bcd4" opacity="0.8"/>
+                                <rect x="120" y="40" width="60" height="40" rx="3" fill="#0097a7" opacity="0.8"/>
+                                <rect x="50" y="90" width="60" height="40" rx="3" fill="#26c6da" opacity="0.8"/>
+                                <rect x="120" y="90" width="60" height="40" rx="3" fill="#00acc1" opacity="0.8"/>
+                                <line x1="110" y1="40" x2="110" y2="130" stroke="#333" stroke-width="2"/>
+                                <line x1="50" y1="85" x2="180" y2="85" stroke="#333" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Four Quadrant Analysis</h3>
+                        <p>Categorizing items</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Editor Interface (hidden initially) -->
+    <div class="editor-interface" id="editor-interface" style="display: none;">
+        <div class="editor-toolbar">
+            <!-- Left Section: Navigation & File Operations -->
+            <div class="toolbar-section toolbar-left">
+                <button id="back-to-gallery" class="btn-secondary">Back to Gallery</button>
+                <button id="export-btn" class="btn-success">Export</button>
+                <button id="reset-btn" class="btn-warning">Reset</button>
+            </div>
+            
+            <!-- Nodes Section: Node Management (节点) -->
+            <div class="toolbar-section toolbar-nodes-section">
+                <div class="toolbar-group nodes-toolbar-group">
+                    <label>Nodes:</label>
+                    <button id="add-node-btn" class="btn-tool" title="Add Node">Add</button>
+                    <button id="delete-node-btn" class="btn-tool" title="Delete Selected">Delete</button>
+                    <button id="auto-complete-btn" class="btn-tool btn-auto" title="Auto-complete diagram with AI">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        Auto
+                    </button>
+                    <button id="line-mode-btn" class="btn-tool btn-line" title="Toggle black & white line mode">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        Line
+                    </button>
+                    {% if feature_learning_mode %}
+                    <button id="learning-btn" class="btn-tool btn-learning" title="Start Interactive Learning Mode" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                        <span id="learning-btn-text">Learn</span>
+                    </button>
+                    {% endif %}
+                    {% if feature_thinkguide %}
+                    <button id="thinking-btn" class="btn-tool btn-thinking" title="开始苏格拉底式思维模式">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
+                            <circle cx="8" cy="10" r="1" fill="currentColor"/>
+                            <circle cx="16" cy="10" r="1" fill="currentColor"/>
+                        </svg>
+                        <span id="thinking-btn-text">思维向导</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Tools Section: Tool Management (工具) -->
+            <div class="toolbar-section toolbar-tools-section">
+                <div class="toolbar-group tools-toolbar-group">
+                    <label>Tools:</label>
+                    <button id="empty-node-btn" class="btn-tool" title="Empty selected node text">Empty</button>
+                    <button id="undo-btn" class="btn-tool" title="Undo">Undo</button>
+                    <button id="redo-btn" class="btn-tool" title="Redo">Redo</button>
+                </div>
+            </div>
+            
+            <!-- Right Section: AI Assistant Button (configurable name) -->
+            <div class="toolbar-section toolbar-right">
+                {% if feature_mindmate %}
+                <button id="mindmate-ai-btn" class="mindmate-ai-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+                        <circle cx="8" cy="12" r="1" fill="currentColor"></circle>
+                        <circle cx="16" cy="12" r="1" fill="currentColor"></circle>
+                    </svg>
+                    <span id="mindmate-btn-text">{{ ai_assistant_name }}</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="editor-main-content">
+            <div class="canvas-panel">
+                <div id="d3-container"></div>
+                <!-- Black Cat VoiceAgent Mount Point -->
+                <div id="black-cat-mount"></div>
+            </div>
+            
+            <!-- Property Panel (shown when nodes are selected) -->
+            <div class="property-panel" id="property-panel" style="display: none;">
+                <div class="property-header">
+                    <h3>Properties</h3>
+                    <button id="close-properties" class="btn-close">×</button>
+                </div>
+                
+                <div class="property-content">
+                    <!-- Text Properties -->
+                    <div class="property-group">
+                        <label>Text</label>
+                        <input type="text" id="prop-text" class="prop-input" placeholder="Node text">
+                        <button id="prop-text-apply" class="prop-btn">Apply</button>
+                    </div>
+                    
+                    <!-- Font Properties -->
+                    <div class="property-group">
+                        <label>Font Size</label>
+                        <input type="number" id="prop-font-size" class="prop-input" min="8" max="72" value="14">
+                        <select id="prop-font-family" class="prop-select">
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="Courier New, monospace">Courier</option>
+                            <option value="Comic Sans MS, cursive">Comic Sans</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Font Style -->
+                    <div class="property-group">
+                        <label>Text Style</label>
+                        <div class="btn-group">
+                            <button id="prop-bold" class="prop-toggle-btn" title="Bold"><strong>B</strong></button>
+                            <button id="prop-italic" class="prop-toggle-btn" title="Italic"><em>I</em></button>
+                            <button id="prop-underline" class="prop-toggle-btn" title="Underline"><u>U</u></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Color Properties -->
+                    <div class="property-group">
+                        <label>Text Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="prop-text-color" value="#000000">
+                            <input type="text" id="prop-text-color-hex" class="color-hex-input" value="#000000">
+                        </div>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label>Fill Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="prop-fill-color" value="#2196f3">
+                            <input type="text" id="prop-fill-color-hex" class="color-hex-input" value="#2196f3">
+                        </div>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label>Stroke Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="prop-stroke-color" value="#1976d2">
+                            <input type="text" id="prop-stroke-color-hex" class="color-hex-input" value="#1976d2">
+                        </div>
+                    </div>
+                    
+                    <!-- Stroke Width -->
+                    <div class="property-group">
+                        <label>Stroke Width</label>
+                        <input type="range" id="prop-stroke-width" class="prop-slider" min="0" max="10" step="0.5" value="2">
+                        <span id="stroke-width-value">2px</span>
+                    </div>
+                    
+                    <!-- Opacity -->
+                    <div class="property-group">
+                        <label>Opacity</label>
+                        <input type="range" id="prop-opacity" class="prop-slider" min="0" max="1" step="0.1" value="1">
+                        <span id="opacity-value">100%</span>
+                    </div>
+                    
+                    <!-- Reset Styles Button -->
+                    <div class="property-actions">
+                        <button id="reset-styles-btn" class="btn-reset btn-block" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Reset Styles</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ThinkGuide Panel (Left-side) -->
+            <div class="thinking-panel collapsed" id="thinking-panel">
+                <div class="thinking-header">
+                    <div class="thinking-header-title">
+                        <div class="thinking-icon-wrapper">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z"/>
+                                <circle cx="8" cy="10" r="1" fill="currentColor"/>
+                                <circle cx="16" cy="10" r="1" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <div class="thinking-header-text">
+                            <h3 id="thinking-title-text">ThinkGuide</h3>
+                        </div>
+                    </div>
+                    <button class="thinking-close-btn" id="thinking-close-btn" title="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="thinking-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="thinking-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-label" id="thinking-progress-label">Starting...</div>
+                </div>
+                
+                <div class="thinking-messages" id="thinking-messages">
+                    <!-- Messages will be rendered here -->
+                </div>
+                
+                <!-- ThinkGuide Toolbar (above text input) -->
+                <div class="thinking-toolbar" id="thinking-toolbar">
+                    <div class="tooltip-wrapper">
+                        <button id="thinking-node-palette-btn" class="thinking-toolbar-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span id="node-palette-btn-text">Node Palette</span>
+                        </button>
+                        <span class="custom-tooltip" id="node-palette-tooltip">Open Node Palette to brainstorm nodes with AI</span>
+                    </div>
+                </div>
+                
+                <div class="thinking-input-area">
+                    <div class="thinking-input-wrapper">
+                        <textarea 
+                            id="thinking-input" 
+                            class="thinking-input" 
+                            placeholder="输入你的回答..."
+                            rows="1"
+                        ></textarea>
+                        <button id="thinking-stop-btn" class="thinking-stop-btn" title="Stop generation" style="display: none;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="6" width="12" height="12" rx="2"/>
+                            </svg>
+                        </button>
+                        <button id="thinking-send-btn" class="thinking-send-btn" title="Send message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Assistant Panel -->
+            <div class="ai-assistant-panel collapsed" id="ai-assistant-panel">
+                <div class="ai-assistant-header">
+                    <div class="ai-assistant-header-title">
+                        <div class="ai-icon-wrapper">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="11" r="1" fill="currentColor"></circle>
+                                <circle cx="8" cy="11" r="1" fill="currentColor"></circle>
+                                <circle cx="16" cy="11" r="1" fill="currentColor"></circle>
+                            </svg>
+                        </div>
+                        <div class="ai-header-text">
+                            <h3 id="ai-panel-title">{{ ai_assistant_name }}</h3>
+                        </div>
+                    </div>
+                    <button id="toggle-ai-assistant" class="ai-close-btn" title="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="ai-assistant-content">
+                    <div class="ai-chat-messages" id="ai-chat-messages">
+                        <div class="ai-welcome-message">
+                            <div class="welcome-icon">✨</div>
+                            <div class="welcome-text">
+                                <h4 id="ai-welcome-title">Welcome to {{ ai_assistant_name }}!</h4>
+                                <p>I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-chat-input-container">
+                        <div class="ai-input-wrapper">
+                            <textarea 
+                                id="ai-chat-input" 
+                                class="ai-chat-input" 
+                                placeholder="Ask {{ ai_assistant_name.split(' ')[0] if ai_assistant_name else 'MindMate' }} anything..."
+                                rows="1"
+                            ></textarea>
+                            <button id="ai-chat-send" class="ai-chat-send-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Node Palette Panel -->
+            <div class="node-palette-panel" id="node-palette-panel" style="display: none;">
+                <div class="node-palette-header">
+                    <div class="node-palette-title">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <h3>Node Palette</h3>
+                    </div>
+                    <div id="selection-counter" class="selection-counter">
+                        Selected: 0/0
+                    </div>
+                </div>
+                
+                <!-- Tab Switcher (Double Bubble Map / Multi Flow Map) -->
+                <div id="node-palette-tabs" style="display: none;">
+                    <div class="palette-tabs" data-active="">
+                        <!-- Tabs will be dynamically generated based on diagram type -->
+                    </div>
+                </div>
+                
+                <div class="node-palette-container" id="node-palette-container">
+                    <div class="node-palette-grid" id="node-palette-grid">
+                        <!-- Node cards will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <div class="node-palette-footer">
+                    <button id="cancel-palette-btn" class="cancel-palette-btn">
+                        Cancel
+                    </button>
+                    <button id="finish-selection-btn" class="finish-selection-btn" disabled>
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="editor-status-bar">
+            <div class="status-left">
+                <span id="node-count">Nodes: 0</span>
+                <span id="edit-mode">Edit Mode: Active</span>
+            </div>
+            <div class="status-center">
+                <span class="llm-label">AI Model:</span>
+                <div class="llm-selector">
+                    <button class="llm-btn active" data-llm="qwen" title="Qwen (Fast & Reliable)">Qwen</button>
+                    <button class="llm-btn" data-llm="deepseek" title="DeepSeek-v3.1 (High Quality)">DeepSeek</button>
+                    <button class="llm-btn" data-llm="hunyuan" title="Hunyuan/混元 (Tencent Cloud)">Hunyuan</button>
+                    <button class="llm-btn" data-llm="kimi" title="Kimi (Moonshot AI)">Kimi</button>
+                </div>
+            </div>
+            <div class="status-right">
+                <button id="reset-view-btn" class="reset-view-btn" title="Fit diagram to window">
+                    <span class="reset-view-icon">⛶</span> Reset View
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load all required scripts -->
+    <!-- Logger must load FIRST -->
+    <script src="/static/js/logger.js"></script>
+    
+    <script src="/static/js/theme-config.js"></script>
+    <script src="/static/js/style-manager.js"></script>
+    
+    <!-- Centralized Panel Management System - MUST load before other editors -->
+    <script src="/static/js/editor/panel-manager.js"></script>
+    
+    <!-- Node Indicator System - Visual feedback for node updates -->
+    <script src="/static/js/editor/node-indicator.js"></script>
+    
+    <!-- Editor scripts -->
+    <script src="/static/js/editor/notification-manager.js"></script>
+    <script src="/static/js/editor/language-manager.js"></script>
+    <script src="/static/js/editor/prompt-manager.js"></script>
+    <script src="/static/js/editor/selection-manager.js"></script>
+    <script src="/static/js/editor/canvas-manager.js"></script>
+    <script src="/static/js/editor/node-editor.js"></script>
+    <script src="/static/js/editor/diagram-validator.js"></script>
+    <script src="/static/js/editor/learning-mode-manager.js"></script>
+    <script src="/static/js/editor/toolbar-manager.js"></script>
+    <script src="/static/js/editor/toolbar-responsive.js"></script>
+    <script src="/static/js/editor/interactive-editor.js"></script>
+    <script src="/static/js/editor/diagram-selector.js"></script>
+    
+    <!-- Renderer system (Dynamic loading) -->
+    <script src="/static/js/dynamic-renderer-loader.js"></script>
+    <script src="/static/js/renderers/renderer-dispatcher.js"></script>
+    
+    <!-- Markdown Libraries for AI Assistant & ThinkGuide (Local copies) -->
+    <script src="/static/js/markdown-it.min.js"></script>
+    <script src="/static/js/purify.min.js"></script>
+    
+    <!-- AI Assistant (MindMate) -->
+    <script src="/static/js/editor/ai-assistant-manager.js"></script>
+    
+    <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
+    <script src="/static/js/editor/thinking-mode-manager.js"></script>
+    <script src="/static/js/editor/black-cat.js"></script>
+    <script src="/static/js/editor/comic-bubble.js"></script>
+    <script src="/static/js/editor/voice-agent.js"></script>
+    
+    <!-- Node Palette Manager - Must load AFTER other editor scripts -->
+    <script src="/static/js/editor/node-palette-manager.js"></script>
+    
+    <!-- Authentication Helper -->
+    <script src="/static/js/auth-helper.js"></script>
+    <script>
+        // Check authentication on page load
+        auth.requireAuth();
+    </script>
+    
+    <!-- Black Cat VoiceAgent Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Only initialize VoiceAgent if feature is enabled
+            if (window.FEATURE_VOICE_AGENT) {
+                // Initialize Black Cat
+                const blackCat = new BlackCat();
+                const mountPoint = document.getElementById('black-cat-mount');
+                if (mountPoint) {
+                    blackCat.init(mountPoint);
+                }
+                window.blackCat = blackCat;
+                
+                // Initialize VoiceAgent
+                const voiceAgent = new VoiceAgent();
+                voiceAgent.init();
+                window.voiceAgent = voiceAgent;
+                
+                // Connect black cat click to voice agent
+                blackCat.onClick = async () => {
+                    if (!voiceAgent.isActive) {
+                        await voiceAgent.startConversation();
+                    } else {
+                        await voiceAgent.stopConversation();
+                    }
+                };
+                
+                window.logger.info('App', 'VoiceAgent and BlackCat initialized');
+            } else {
+                window.logger.info('App', 'VoiceAgent feature disabled');
+            }
+        });
+    </script>
+</body>
+</html>
+
