@@ -38,11 +38,9 @@ class AIAssistantManager {
         this.chatInput = document.getElementById('ai-chat-input');
         this.sendBtn = document.getElementById('ai-chat-send');
         
-        // Error checking
-        if (!this.panel) {
-            logger.error('AIAssistant', 'Panel element not found in DOM');
-        }
-        if (!this.mindmateBtn) {
+        // Only log errors if panel exists (indicating feature is enabled)
+        // If panel doesn't exist, MindMate feature is disabled - no errors needed
+        if (this.panel && !this.mindmateBtn) {
             logger.error('AIAssistant', 'MindMate button not found in DOM');
         }
     }
@@ -67,7 +65,8 @@ class AIAssistantManager {
                 e.stopPropagation();
                 this.togglePanel();
             });
-        } else {
+        } else if (this.panel) {
+            // Only warn if panel exists (feature is enabled) but button is missing
             logger.warn('AIAssistant', 'MindMate button not found during initialization');
         }
         
@@ -605,17 +604,25 @@ class AIAssistantManager {
 
 // Initialize AI Assistant when DOM is ready
 if (typeof window !== 'undefined') {
+    // Function to check if MindMate feature is enabled
+    const initializeIfEnabled = () => {
+        // Check if MindMate button exists (indicates feature is enabled)
+        const mindmateBtn = document.getElementById('mindmate-ai-btn');
+        if (mindmateBtn) {
+            logger.debug('AIAssistant', 'MindMate feature is enabled, initializing');
+            window.aiAssistant = new AIAssistantManager();
+        } else {
+            logger.debug('AIAssistant', 'MindMate feature is disabled, skipping initialization');
+        }
+    };
+    
     // Check if DOM is already loaded
     if (document.readyState === 'loading') {
         // DOM is still loading, wait for DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', () => {
-            logger.debug('AIAssistant', 'Initializing via DOMContentLoaded');
-            window.aiAssistant = new AIAssistantManager();
-        });
+        document.addEventListener('DOMContentLoaded', initializeIfEnabled);
     } else {
         // DOM is already loaded, initialize immediately
-        logger.debug('AIAssistant', 'Initializing (DOM already loaded)');
-        window.aiAssistant = new AIAssistantManager();
+        initializeIfEnabled();
     }
 }
 

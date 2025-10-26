@@ -566,6 +566,65 @@ app.add_middleware(
 # GZip Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """
+    Add security headers to all HTTP responses.
+    
+    Protects against:
+    - Clickjacking (X-Frame-Options)
+    - MIME sniffing attacks (X-Content-Type-Options)
+    - XSS attacks (X-XSS-Protection, Content-Security-Policy)
+    - Information leakage (Referrer-Policy)
+    
+    CSP Policy Notes:
+    - 'unsafe-inline' scripts: Required for config bootstrap and admin onclick handlers
+    - 'unsafe-eval': Required for D3.js library (data transformations)
+    - ws:/wss:: Required for VoiceAgent WebSocket connections
+    - data: URIs: Required for canvas-to-image conversions
+    
+    Reviewed: 2025-10-26 - All directives verified against actual codebase
+    """
+    response = await call_next(request)
+    
+    # Prevent clickjacking (stops site being embedded in iframes)
+    response.headers["X-Frame-Options"] = "DENY"
+    
+    # Prevent MIME sniffing (stops browser from guessing content types)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    
+    # XSS Protection (blocks reflected XSS attacks)
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    # Content Security Policy (controls what resources can load)
+    # Tailored specifically for MindGraph's architecture
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https: blob:; "
+        "font-src 'self' data:; "
+        "connect-src 'self' ws: wss: blob:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
+    
+    # Referrer Policy (controls info sent in Referer header)
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Permissions Policy (restrict access to browser features)
+    # Only allow microphone (for VoiceAgent), disable everything else
+    response.headers["Permissions-Policy"] = (
+        "microphone=(self), "
+        "camera=(), "
+        "geolocation=(), "
+        "payment=()"
+    )
+    
+    return response
+
 # Custom Request/Response Logging Middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
