@@ -1,25 +1,35 @@
 /**
  * Panel Manager
- * =============
+ * ==============
  * 
- * Centralized panel management system to ensure only one panel is open at a time.
- * Handles: Properties Panel, ThinkGuide Panel, MindMate AI Panel, and future panels.
+ * Centralized panel management system integrated with Event Bus.
+ * Ensures only one panel is open at a time.
+ * Manages: Properties Panel, ThinkGuide Panel, MindMate AI Panel, Node Palette, and future panels.
  * 
  * @author lycosa9527
  * @made_by MindSpring Team
  */
 
 class PanelManager {
-    constructor() {
+    constructor(eventBus, stateManager, logger) {
+        this.eventBus = eventBus;
+        this.stateManager = stateManager;
+        this.logger = logger;
+        
         this.panels = {};
         this.currentPanel = null;
-        this.logger = window.logger || console;
         
         this.init();
+        this.subscribeToEvents();
+        
+        this.logger.info('PanelManager', 'Initialized with Event Bus');
     }
     
+    /**
+     * Initialize and register all panels
+     */
     init() {
-        // Register all panels in the system
+        // Get DOM elements
         const propertyPanel = document.getElementById('property-panel');
         const thinkingPanel = document.getElementById('thinking-panel');
         const aiPanel = document.getElementById('ai-assistant-panel');
@@ -34,17 +44,19 @@ class PanelManager {
             hasMindmateBtn: !!mindmateBtn
         });
         
+        // Register Property Panel
         this.registerPanel('property', {
             element: propertyPanel,
             type: 'style', // Uses style.display
             closeCallback: () => {
-                // Also clear property panel content
+                // Clear property panel content
                 if (window.currentEditor?.toolbarManager) {
                     window.currentEditor.toolbarManager.clearPropertyPanel();
                 }
             }
         });
         
+        // Register ThinkGuide Panel
         this.registerPanel('thinkguide', {
             element: thinkingPanel,
             type: 'class', // Uses collapsed class
@@ -58,6 +70,7 @@ class PanelManager {
             }
         });
         
+        // Register MindMate Panel
         this.registerPanel('mindmate', {
             element: aiPanel,
             type: 'class', // Uses collapsed class
@@ -71,7 +84,61 @@ class PanelManager {
             }
         });
         
-        this.logger.info('PanelManager', 'Initialized successfully with panels:', Object.keys(this.panels));
+        // Register Node Palette Panel
+        const nodePalettePanel = document.getElementById('node-palette-panel');
+        this.registerPanel('nodePalette', {
+            element: nodePalettePanel,
+            type: 'style', // Uses style.display
+            manager: () => window.nodePaletteManager,
+            closeCallback: () => {
+                // Hide panel and clean up
+                if (nodePalettePanel) {
+                    nodePalettePanel.style.display = 'none';
+                    nodePalettePanel.classList.remove('thinkguide-visible');
+                }
+            },
+            openCallback: () => {
+                // Show panel using NodePaletteManager's method
+                if (window.nodePaletteManager) {
+                    window.nodePaletteManager.showPalettePanel();
+                }
+            }
+        });
+        
+        this.logger.info('PanelManager', 'Initialized with panels:', Object.keys(this.panels));
+    }
+    
+    /**
+     * Subscribe to Event Bus events
+     */
+    subscribeToEvents() {
+        // Listen for panel open requests
+        this.eventBus.on('panel:open_requested', (data) => {
+            if (data.panel) {
+                this.openPanel(data.panel, data.options);
+            }
+        });
+        
+        // Listen for panel close requests
+        this.eventBus.on('panel:close_requested', (data) => {
+            if (data.panel) {
+                this.closePanel(data.panel);
+            }
+        });
+        
+        // Listen for panel toggle requests
+        this.eventBus.on('panel:toggle_requested', (data) => {
+            if (data.panel) {
+                this.togglePanel(data.panel);
+            }
+        });
+        
+        // Listen for close all requests
+        this.eventBus.on('panel:close_all_requested', () => {
+            this.closeAll();
+        });
+        
+        this.logger.debug('PanelManagerV2', 'Subscribed to events');
     }
     
     /**
@@ -88,7 +155,7 @@ class PanelManager {
             openCallback: config.openCallback
         };
         
-        this.logger.debug('PanelManager', `Registered panel: ${name}`, {
+        this.logger.debug('PanelManagerV2', `Registered panel: ${name}`, {
             hasElement: !!config.element,
             hasButton: !!config.button,
             hasOpenCallback: !!config.openCallback,
@@ -118,61 +185,57 @@ class PanelManager {
         const panel = this.panels[name];
         if (!panel) {
             this.logger.warn('PanelManager', `Panel "${name}" not found`);
+            this.eventBus.emit('panel:error', { 
+                panel: name, 
+                error: 'Panel not found' 
+            });
             return false;
         }
         
         if (!panel.element) {
             this.logger.warn('PanelManager', `Panel "${name}" element not found in DOM`);
+            this.eventBus.emit('panel:error', { 
+                panel: name, 
+                error: 'Panel element not found' 
+            });
             return false;
         }
         
-        // Verify we're targeting the right element
         const elementId = panel.element.id;
         this.logger.info('PanelManager', `Opening panel: ${name} (element: ${elementId})`);
-        
-        // Log current state before changes
-        this.logger.debug('PanelManager', `Panel state before open:`, {
-            requestedPanel: name,
-            currentPanel: this.currentPanel,
-            allPanels: Object.keys(this.panels).map(n => ({
-                name: n,
-                elementId: this.panels[n].element?.id || 'N/A',
-                isOpen: this.isPanelOpen(n)
-            }))
-        });
         
         // Close all other panels first
         this.closeAllExcept(name);
         
         // Open the requested panel
         if (panel.type === 'class') {
-            const hadCollapsed = panel.element.classList.contains('collapsed');
             panel.element.classList.remove('collapsed');
-            const nowOpen = !panel.element.classList.contains('collapsed');
-            this.logger.debug('PanelManager', `Removed 'collapsed' from ${name}`, {
-                elementId,
-                hadCollapsed,
-                nowOpen
-            });
         } else if (panel.type === 'style') {
             panel.element.style.display = 'block';
         }
         
         this.currentPanel = name;
         
+        // Update State Manager
+        this.stateManager.openPanel(name, options);
+        
         // Run open callback if defined
         if (panel.openCallback) {
             try {
-                this.logger.debug('PanelManager', `Running openCallback for ${name}`);
+                this.logger.debug('PanelManagerV2', `Running openCallback for ${name}`);
                 panel.openCallback();
             } catch (error) {
                 this.logger.error('PanelManager', `Error in open callback for ${name}:`, error);
             }
-        } else {
-            this.logger.warn('PanelManager', `No openCallback defined for ${name}`);
         }
         
-        // Final verification
+        // Emit event
+        this.eventBus.emit('panel:opened', {
+            panel: name,
+            isOpen: true,
+            options
+        });
+        
         this.logger.info('PanelManager', `✅ Panel opened: ${name}`, {
             elementId,
             isActuallyOpen: this.isPanelOpen(name),
@@ -192,34 +255,23 @@ class PanelManager {
             return false;
         }
         
-        // Log state BEFORE closing
-        const wasClosed = panel.type === 'class' 
-            ? panel.element.classList.contains('collapsed')
-            : panel.element.style.display === 'none';
-        
         const elementId = panel.element.id;
-        this.logger.debug('PanelManager', `Closing panel: ${name} (element: ${elementId})`, {
-            wasClosed,
-            willClose: !wasClosed
-        });
+        this.logger.debug('PanelManagerV2', `Closing panel: ${name} (element: ${elementId})`);
         
+        // Close the panel
         if (panel.type === 'class') {
             panel.element.classList.add('collapsed');
-            // Verify it was added
-            const nowClosed = panel.element.classList.contains('collapsed');
-            this.logger.debug('PanelManager', `Panel ${name} collapsed class added:`, {
-                elementId,
-                nowClosed,
-                success: nowClosed
-            });
         } else if (panel.type === 'style') {
             panel.element.style.display = 'none';
         }
         
+        // Update State Manager
+        this.stateManager.closePanel(name);
+        
         // Run close callback if defined
         if (panel.closeCallback) {
             try {
-                this.logger.debug('PanelManager', `Running closeCallback for ${name}`);
+                this.logger.debug('PanelManagerV2', `Running closeCallback for ${name}`);
                 panel.closeCallback();
             } catch (error) {
                 this.logger.error('PanelManager', `Error in close callback for ${name}:`, error);
@@ -230,10 +282,17 @@ class PanelManager {
             this.currentPanel = null;
         }
         
-        this.logger.debug('PanelManager', `✅ Panel closed: ${name}`, {
+        // Emit event
+        this.eventBus.emit('panel:closed', {
+            panel: name,
+            isOpen: false
+        });
+        
+        this.logger.debug('PanelManagerV2', `✅ Panel closed: ${name}`, {
             elementId,
             isActuallyClosed: !this.isPanelOpen(name)
         });
+        
         return true;
     }
     
@@ -245,7 +304,9 @@ class PanelManager {
             this.closePanel(name);
         });
         this.currentPanel = null;
-        this.logger.debug('PanelManager', 'Closed all panels');
+        this.logger.debug('PanelManagerV2', 'Closed all panels');
+        
+        this.eventBus.emit('panel:all_closed', {});
     }
     
     /**
@@ -253,7 +314,7 @@ class PanelManager {
      */
     closeAllExcept(exceptName) {
         const toClose = Object.keys(this.panels).filter(name => name !== exceptName);
-        this.logger.debug('PanelManager', `Closing all panels except: ${exceptName}`, {
+        this.logger.debug('PanelManagerV2', `Closing all panels except: ${exceptName}`, {
             closingPanels: toClose
         });
         
@@ -376,12 +437,46 @@ class PanelManager {
     isPropertyPanelOpen() {
         return this.isPanelOpen('property');
     }
+    
+    /**
+     * Convenience method: Open Node Palette panel
+     */
+    openNodePalettePanel() {
+        this.logger.info('PanelManager', '🎨 openNodePalettePanel() called - EXPLICIT');
+        return this.openPanel('nodePalette');
+    }
+    
+    /**
+     * Convenience method: Close Node Palette panel
+     */
+    closeNodePalettePanel() {
+        this.logger.info('PanelManager', '🎨 closeNodePalettePanel() called - EXPLICIT');
+        return this.closePanel('nodePalette');
+    }
 }
 
-// Create global instance
-window.panelManager = new PanelManager();
-
-// Expose helper functions for backward compatibility
-window.closePanels = () => window.panelManager.closeAll();
-window.closeOtherPanels = (exceptName) => window.panelManager.closeAllExcept(exceptName);
+// Initialize when dependencies are ready
+if (typeof window !== 'undefined') {
+    const initPanelManager = () => {
+        if (window.eventBus && window.stateManager && window.logger) {
+            window.panelManager = new PanelManager(
+                window.eventBus,
+                window.stateManager,
+                window.logger
+            );
+            
+            // Expose helper functions for backward compatibility
+            window.closePanels = () => window.panelManager.closeAll();
+            window.closeOtherPanels = (exceptName) => window.panelManager.closeAllExcept(exceptName);
+            
+            if (window.logger.debugMode) {
+                console.log('%c[PanelManager] Initialized with Event Bus', 'color: #00bcd4; font-weight: bold;');
+            }
+        } else {
+            setTimeout(initPanelManager, 50);
+        }
+    };
+    
+    initPanelManager();
+}
 

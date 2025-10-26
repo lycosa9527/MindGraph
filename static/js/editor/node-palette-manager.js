@@ -450,7 +450,7 @@ class NodePaletteManager {
             this.updateStageProgressButton();
             
             // Fire N catapults simultaneously (one per category)
-            console.log(`[NodePalette-TreeMap] 🚀 Firing ${selectedCategories.length} catapults simultaneously!`);
+            console.log(`[NodePalette-TreeMap] Firing ${selectedCategories.length} catapults simultaneously`);
             await this.loadAllCategoryTabsInitial(selectedCategories);
             
         } else if (this.currentStage === 'children') {
@@ -609,7 +609,7 @@ class NodePaletteManager {
             this.updateStageProgressButton();
             
             // Fire N catapults simultaneously (one per part)
-            console.log(`[NodePalette-BraceMap] 🚀 Firing ${selectedParts.length} catapults simultaneously!`);
+            console.log(`[NodePalette-BraceMap] Firing ${selectedParts.length} catapults simultaneously`);
             await this.loadAllCategoryTabsInitial(selectedParts);
             
         } else if (this.currentStage === 'subparts') {
@@ -868,7 +868,7 @@ class NodePaletteManager {
             this.updateStageProgressButton();
             
             // Fire N catapults simultaneously (one per step)
-            console.log(`[NodePalette-FlowMap] 🚀 Firing ${selectedSteps.length} catapults simultaneously!`);
+            console.log(`[NodePalette-FlowMap] Firing ${selectedSteps.length} catapults simultaneously`);
             await this.loadAllCategoryTabsInitial(selectedSteps);
             
         } else if (this.currentStage === 'substeps') {
@@ -1444,6 +1444,74 @@ class NodePaletteManager {
             });
         }
         console.log(`[NodePalette] Total: ${this.nodes.length} nodes cached and ready!`);
+    }
+    
+    async preload(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
+        /**
+         * 🚀 CATAPULT PRE-LOADING: Load Node Palette data in background without showing UI.
+         * This is called when ThinkGuide opens, so nodes are ready when user clicks the button.
+         * 
+         * @param {string} centerTopic - Center node text from diagram
+         * @param {Object} diagramData - Current diagram data
+         * @param {string} sessionId - Session ID from ThinkGuide
+         * @param {Object} educationalContext - Educational context from ThinkGuide
+         * @param {string} diagramType - Type of diagram
+         */
+        
+        // Store session data (needed for later when panel actually opens)
+        this.diagramType = diagramType || window.currentEditor?.diagramType || 'circle_map';
+        this.sessionId = sessionId || `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        this.centerTopic = centerTopic;
+        this.diagramData = diagramData;
+        this.educationalContext = educationalContext || {};
+        
+        // Check if we already have nodes cached for this session
+        if (this.nodes.length > 0) {
+            console.log(`[NodePalette-Preload] Already cached: ${this.nodes.length} nodes for session ${sessionId}`);
+            return;
+        }
+        
+        console.log('[NodePalette-Preload] CATAPULT PRE-LOADING (background)...');
+        console.log(`[NodePalette-Preload]   Diagram type: ${this.diagramType}`);
+        console.log(`[NodePalette-Preload]   Center topic: "${centerTopic}"`);
+        console.log(`[NodePalette-Preload]   Session: ${this.sessionId}`);
+        
+        try {
+            // Initialize batch counter
+            this.currentBatch = 0;
+            
+            // Use the same loading logic as start() to ensure consistency
+            if (this.usesTabs() && ['double_bubble_map', 'multi_flow_map'].includes(this.diagramType)) {
+                // Double bubble / multi flow: load BOTH tabs (8 LLMs total!)
+                console.log(`[NodePalette-Preload] Tab-based diagram detected - firing BOTH catapults (8 LLMs)!`);
+                await this.loadBothTabsInitial();
+            } else if (this.diagramType === 'tree_map') {
+                // Tree map: Don't pre-load - it has complex 3-stage workflow
+                // Pre-loading stage 1 could be confusing since user needs to see stage progression
+                console.log('[NodePalette-Preload] Skipping tree_map pre-load (uses multi-stage workflow)');
+                return;
+            } else {
+                // Other diagrams: load single batch (4 LLMs)
+                console.log('[NodePalette-Preload] Standard diagram - firing catapult (4 LLMs)');
+                await this.loadNextBatch();
+            }
+            
+            console.log(`[NodePalette-Preload] Pre-loaded ${this.nodes.length} nodes in background`);
+            console.log(`[NodePalette-Preload] Nodes are now cached and ready for instant display`);
+            
+            // Debug: show breakdown for tab-based diagrams
+            if (this.tabNodes) {
+                const tabNames = Object.keys(this.tabNodes);
+                tabNames.forEach(tabName => {
+                    const count = this.tabNodes[tabName]?.length || 0;
+                    console.log(`[NodePalette-Preload]   ${tabName} tab: ${count} nodes`);
+                });
+            }
+            
+        } catch (error) {
+            console.error('[NodePalette-Preload] Pre-load failed:', error);
+            // Don't throw - this is background operation, failure is non-critical
+        }
     }
     
     async start(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
@@ -2604,13 +2672,13 @@ class NodePaletteManager {
         try {
             // CATAPULT! Fire 8 LLMs total (4 per tab) - both tabs load in parallel
             // Each catapult call will update the progress
-            console.log(`[NodePalette] 🚀 Firing 2 parallel catapults: ${firstTab} + ${secondTab}`);
+            console.log(`[NodePalette] Firing 2 parallel catapults: ${firstTab} + ${secondTab}`);
             const results = await Promise.all([
                 this.loadTabBatch(firstTab),
                 this.loadTabBatch(secondTab)
             ]);
             
-            console.log('[NodePalette] ✅ Both tabs loaded successfully');
+            console.log('[NodePalette] Both tabs loaded successfully');
             console.log(`  - ${firstTab}: ${this.tabNodes[firstTab]?.length || 0} nodes`);
             console.log(`  - ${secondTab}: ${this.tabNodes[secondTab]?.length || 0} nodes`);
             console.log(`  - Total: ${(this.tabNodes[firstTab]?.length || 0) + (this.tabNodes[secondTab]?.length || 0)} nodes across both tabs`);
@@ -2662,7 +2730,7 @@ class NodePaletteManager {
         
         try {
             // CATAPULT! Fire N*4 LLMs total - all categories/parts load in parallel
-            console.log(`[NodePalette-${logPrefix}] 🚀 Firing ${numCategories} parallel catapults for ${itemTypePlural}:`, selectedCategories);
+            console.log(`[NodePalette-${logPrefix}] Firing ${numCategories} parallel catapults for ${itemTypePlural}:`, selectedCategories);
             
             // Create parallel catapult promises for each category/part
             const catapultPromises = selectedCategories.map(categoryName => 
@@ -2672,7 +2740,7 @@ class NodePaletteManager {
             // Fire all catapults simultaneously!
             const results = await Promise.all(catapultPromises);
             
-            console.log(`[NodePalette-${logPrefix}] ✅ All ${numCategories} ${itemType} tabs loaded successfully`);
+            console.log(`[NodePalette-${logPrefix}] All ${numCategories} ${itemType} tabs loaded successfully`);
             selectedCategories.forEach(categoryName => {
                 const count = this.tabNodes[categoryName]?.length || 0;
                 console.log(`  - ${categoryName}: ${count} nodes`);
@@ -2732,7 +2800,7 @@ class NodePaletteManager {
         
         try {
             // CATAPULT! Fire N*4 LLMs total - all branches load in parallel
-            console.log(`[NodePalette-Mindmap] 🚀 Firing ${numBranches} parallel catapults for ${branchesWord}:`, selectedBranches);
+            console.log(`[NodePalette-Mindmap] Firing ${numBranches} parallel catapults for ${branchesWord}:`, selectedBranches);
             
             // Create parallel catapult promises for each branch
             const catapultPromises = selectedBranches.map(branchName => 
@@ -2742,7 +2810,7 @@ class NodePaletteManager {
             // Fire all catapults simultaneously!
             const results = await Promise.all(catapultPromises);
             
-            console.log(`[NodePalette-Mindmap] ✅ All ${numBranches} branch tabs loaded successfully`);
+            console.log(`[NodePalette-Mindmap] All ${numBranches} branch tabs loaded successfully`);
             selectedBranches.forEach(branchName => {
                 const count = this.tabNodes[branchName]?.length || 0;
                 console.log(`  - ${branchName}: ${count} nodes`);
@@ -3383,7 +3451,7 @@ class NodePaletteManager {
          */
         // Check if current tab is locked (read-only mode)
         if (this.lockedTabs.has(this.currentTab)) {
-            console.log(`[NodePalette-Selection] ⚠️ Tab "${this.currentTab}" is locked (read-only). Cannot modify selections.`);
+            console.log(`[NodePalette-Selection] WARNING: Tab "${this.currentTab}" is locked (read-only). Cannot modify selections.`);
             // Show visual feedback that tab is locked
             const tabBtn = document.getElementById(`tab-${this.currentTab}`);
             if (tabBtn) {

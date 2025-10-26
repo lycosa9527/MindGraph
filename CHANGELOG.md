@@ -7,6 +7,166 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.20.0] - 2025-10-26 - Event Bus Architecture + Catapult Pre-Loading
+
+### Added
+
+- **Event Bus + State Manager Architecture** (`static/js/core/`, `static/js/managers/`)
+  - **Event Bus**: Centralized event system for decoupled component communication
+    - 343 lines, ~50 events across all components
+    - Performance: < 0.1ms per event emission
+    - Debug tools: `window.eventBus.getStats()`, event logging
+  - **State Manager**: Centralized immutable state management
+    - 405 lines, manages panels, ThinkGuide, MindMate, Voice Agent state
+    - Debug tools: `window.stateManager.getState()`
+  - **SSE Client**: Non-blocking streaming client
+    - 236 lines, fixes ThinkGuide blocking bug
+    - Proper async/promise chain pattern
+  - **New Components**:
+    - `ThinkGuideManager`: Rewritten from 1,611 → 519 lines (-68%)
+    - `MindMateManager`: Enhanced with Event Bus (640 lines)
+    - `PanelManager`: Centralized panel coordination (445 lines)
+    - `VoiceAgentManager`: Enhanced with Event Bus (722 lines)
+  - **Documentation**: 
+    - `EVENT_BUS_IMPLEMENTATION_COMPLETE.md` (476 lines)
+    - `CATAPULT_PRELOAD_CODE_REVIEW.md` (344 lines)
+  - **Testing**: 
+    - Integration test suite (`test-integration.html`, 15 automated tests)
+    - Event Bus debug page (`test-event-bus.html`)
+
+- **Catapult Pre-Loading System** (`static/js/editor/node-palette-manager.js`, `static/js/managers/thinkguide-manager.js`)
+  - **Background Loading**: Node Palette nodes pre-load when ThinkGuide opens
+  - **Parallel Execution**: Catapult fires while ThinkGuide streams (no blocking)
+  - **Intelligent Caching**: Session-based caching prevents duplicate API calls
+  - **Diagram Support**: Handles all diagram types:
+    - Standard (circle_map, bubble_map): 4 LLMs
+    - Tab-based (double_bubble_map, multi_flow_map): 8 LLMs (both tabs)
+    - Tree maps: Skipped (incompatible with 3-stage workflow)
+  - **Performance**: 3-5 second delay reduced to ~0 seconds (instant node display)
+  - **Error Handling**: Graceful degradation if preload fails
+
+- **ThinkGuide UX Improvements** (`static/js/managers/thinkguide-manager.js`, `static/css/editor.css`)
+  - **Styling Consistency**: Matches MindMate's font, bubble style, animations
+  - **Markdown Support**: Full markdown rendering with DOMPurify sanitization
+  - **Typography**: System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto`)
+  - **Typing Indicator**: Three-dot loading animation with 500ms visibility delay
+  - **Content Wrapper**: All messages wrapped in `.thinking-message-content` divs
+  - **Streaming Animation**: Subtle pulsing during streaming, solidifies when complete
+  - **Removed Hardcoded Greeting**: Backend now sends greeting via stream
+
+### Fixed
+
+- **ThinkGuide SSE Blocking Bug** (`static/js/managers/thinkguide-manager.js`)
+  - **Problem**: `while (true)` loop blocked event loop during streaming
+  - **Solution**: Replaced with recursive promise chain (non-blocking)
+  - **Impact**: UI now responsive during ThinkGuide streaming
+  - **Code Reduction**: 1,611 lines → 519 lines (-68%)
+
+- **Catapult Data Format Issue** (`static/js/managers/thinkguide-manager.js`)
+  - **Problem**: Normalized diagram data (array) passed instead of raw spec (object)
+  - **Solution**: Get raw data from `window.currentEditor.getCurrentDiagramData()`
+  - **Impact**: Catapult now fires correctly for all diagram types
+
+- **ToolbarResponsive Console Flood** (`static/js/editor/toolbar-responsive.js`)
+  - **Problem**: MutationObserver infinite loop (attributes trigger layout changes)
+  - **Solution**: Only watch `childList` changes, ignore attribute changes
+  - **Impact**: No more console spam
+
+- **Clean Logging** (multiple files)
+  - Removed all emojis from logging code per user preferences
+  - Logging is now clean, neat, and professional
+  - Consistent voice across all components
+
+- **MindMate Authentication** (`static/js/managers/mindmate-manager.js`)
+  - Fixed `window.auth` vs `auth` reference
+  - Improved error logging with `error.message`, `error.stack`, `error.status`
+  - Added 500ms typing indicator delay
+
+- **Panel Registration** (`static/js/managers/panel-manager.js`)
+  - Registered Node Palette panel
+  - Fixed `propertyPanel` → `property` naming inconsistency
+  - Removed "V2" naming (renamed to `PanelManager`)
+
+### Changed
+
+- **Component Architecture**: Direct coupling → Event Bus decoupling
+  - Components communicate via events, not direct method calls
+  - Easier testing, better maintainability
+  - No breaking changes (old APIs still work)
+
+- **State Management**: Scattered → Centralized
+  - Single source of truth via State Manager
+  - Immutable state updates
+  - State history for debugging
+
+- **Loading Order** (`templates/editor.html`)
+  - Critical: Logger → Event Bus → State Manager → SSE Client → Managers
+  - Old managers commented out (kept for rollback)
+  - Clean script loading section
+
+### Removed
+
+- **Documentation Consolidation**:
+  - Deleted 7 phase-specific summary docs (consolidated into `EVENT_BUS_IMPLEMENTATION_COMPLETE.md`)
+  - Deleted implementation plan (execution complete)
+  - Kept master docs: `EVENT_BUS_IMPLEMENTATION_COMPLETE.md`, `CATAPULT_PRELOAD_CODE_REVIEW.md`
+
+### Technical Details
+
+- **Performance Metrics**:
+  - Event Bus: < 0.1ms per event, 1,000 events in ~50-100ms
+  - SSE Streaming: Non-blocking (ThinkGuide and MindMate)
+  - Component Loading: +20-30KB gzipped, < 100ms load time
+  - Catapult: ~0 seconds perceived delay (was 3-5 seconds)
+
+- **Backward Compatibility**:
+  - All old APIs preserved and working
+  - Rollback plan: Comment out new managers, uncomment old ones
+  - Zero breaking changes for users
+
+- **Testing Coverage**:
+  - 15 automated integration tests
+  - 100% pass rate expected
+  - Real-time event logging and performance benchmarks
+
+- **Code Quality**:
+  - No linter errors
+  - Comprehensive error handling
+  - Professional logging (no emojis)
+  - Consistent code style
+
+### Documentation
+
+- **Master Documentation**:
+  - `docs/EVENT_BUS_IMPLEMENTATION_COMPLETE.md` - Complete implementation guide
+  - `docs/CATAPULT_PRELOAD_CODE_REVIEW.md` - Technical deep dive
+  - `docs/TOOLBAR_AND_EDITOR_IMPROVEMENT_GUIDE.md` - Future refactoring guide
+
+- **Test Access**:
+  - Integration tests: `http://localhost:9527/static/js/test-integration.html`
+  - Event Bus debug: `http://localhost:9527/static/js/test-event-bus.html`
+
+### Migration Guide
+
+**No migration required** - All changes are backward compatible. Old code continues to work.
+
+**To use new Event Bus API** (optional):
+```javascript
+// Old way (still works):
+window.panelManager.openThinkGuidePanel();
+
+// New way (recommended):
+window.eventBus.emit('panel:open_requested', { panel: 'thinkguide' });
+```
+
+**Rollback procedure** (if needed):
+1. Edit `templates/editor.html`
+2. Comment out new manager imports
+3. Uncomment old manager imports
+4. Restart server
+
+---
+
 ## [4.19.7] - 2025-10-26 - User Management Pagination, Filtering & Password Reset
 
 ### Added

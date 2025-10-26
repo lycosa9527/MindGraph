@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph - Event Bus Integration Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .test-header {
+            background: #f5f5f5;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .test-header:hover {
+            background: #eeeeee;
+        }
+        
+        .test-header h2 {
+            font-size: 20px;
+            color: #333;
+        }
+        
+        .test-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-pending { background: #9e9e9e; }
+        .status-running { background: #2196f3; animation: pulse 1s infinite; }
+        .status-success { background: #4caf50; }
+        .status-failed { background: #f44336; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .test-body {
+            padding: 20px;
+            display: none;
+            background: #fafafa;
+        }
+        
+        .test-body.active {
+            display: block;
+        }
+        
+        .test-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        
+        .test-item.running {
+            border-left-color: #2196f3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+        }
+        
+        .test-item.success {
+            border-left-color: #4caf50;
+            background: #f1f8f4;
+        }
+        
+        .test-item.failed {
+            border-left-color: #f44336;
+            background: #fef1f1;
+        }
+        
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .test-result {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .summary {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .summary-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .event-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .event-log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .event-type {
+            color: #4ec9b0;
+            font-weight: 600;
+        }
+        
+        .event-data {
+            color: #ce9178;
+        }
+        
+        .event-timestamp {
+            color: #858585;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Event Bus Integration Test Suite</h1>
+            <p>Comprehensive testing for Event Bus + State Manager Architecture</p>
+            <p style="margin-top: 10px; font-size: 14px;">MindGraph v4.19.0 | Phase 6: Integration Testing</p>
+        </div>
+        
+        <div class="content">
+            <!-- Summary -->
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalTests">0</div>
+                    <div class="summary-label">Total Tests</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="passedTests" style="color: #4caf50;">0</div>
+                    <div class="summary-label">Passed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="failedTests" style="color: #f44336;">0</div>
+                    <div class="summary-label">Failed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="duration">0ms</div>
+                    <div class="summary-label">Duration</div>
+                </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="button-group">
+                <button class="btn-primary" onclick="runAllTests()">▶️ Run All Tests</button>
+                <button class="btn-secondary" onclick="clearResults()">🔄 Clear Results</button>
+                <button class="btn-secondary" onclick="toggleEventLog()">📋 Toggle Event Log</button>
+                <button class="btn-danger" onclick="window.location.reload()">🔃 Reload Page</button>
+            </div>
+            
+            <!-- Event Log -->
+            <div id="eventLogContainer" style="display: none; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px;">📋 Event Log</h3>
+                <div id="eventLog" class="event-log">
+                    <div style="color: #858585;">Event log will appear here...</div>
+                </div>
+            </div>
+            
+            <!-- Test Sections -->
+            <div id="testSections"></div>
+        </div>
+    </div>
+    
+    <!-- Load dependencies -->
+    <script src="/static/js/logger.js"></script>
+    <script src="/static/js/core/event-bus.js"></script>
+    <script src="/static/js/core/state-manager.js"></script>
+    <script src="/static/js/utils/sse-client.js"></script>
+    
+    <script>
+        // Test suite configuration
+        const testSuite = {
+            'Phase 1: Core Framework': [
+                {
+                    name: 'EventBus initialization',
+                    test: async () => {
+                        if (!window.eventBus) throw new Error('EventBus not found');
+                        if (!window.eventBus.emit) throw new Error('emit method missing');
+                        if (!window.eventBus.on) throw new Error('on method missing');
+                        return 'EventBus initialized with all required methods';
+                    }
+                },
+                {
+                    name: 'StateManager initialization',
+                    test: async () => {
+                        if (!window.stateManager) throw new Error('StateManager not found');
+                        if (!window.stateManager.getState) throw new Error('getState method missing');
+                        if (!window.stateManager.updateState) throw new Error('updateState method missing');
+                        return 'StateManager initialized with all required methods';
+                    }
+                },
+                {
+                    name: 'SSEClient initialization',
+                    test: async () => {
+                        if (!window.sseClient) throw new Error('SSEClient not found');
+                        if (!window.sseClient.start) throw new Error('start method missing');
+                        if (!window.sseClient.cancelStream) throw new Error('cancelStream method missing');
+                        return 'SSEClient initialized with all required methods';
+                    }
+                },
+                {
+                    name: 'Event emission and subscription',
+                    test: async () => {
+                        return new Promise((resolve) => {
+                            const testData = { value: Math.random() };
+                            window.eventBus.on('test:event', (data) => {
+                                if (data.value === testData.value) {
+                                    resolve('Event successfully emitted and received');
+                                } else {
+                                    throw new Error('Event data mismatch');
+                                }
+                            });
+                            window.eventBus.emit('test:event', testData);
+                        });
+                    }
+                },
+                {
+                    name: 'State updates and retrieval',
+                    test: async () => {
+                        const testValue = Math.random();
+                        window.stateManager.updateState(['test', 'value'], testValue);
+                        const state = window.stateManager.getState();
+                        if (state.test.value === testValue) {
+                            return `State updated and retrieved: ${testValue}`;
+                        } else {
+                            throw new Error('State update failed');
+                        }
+                    }
+                },
+                {
+                    name: 'State immutability check',
+                    test: async () => {
+                        const state = window.stateManager.getState();
+                        try {
+                            state.test = { forbidden: true };
+                            throw new Error('State mutation should have been blocked');
+                        } catch (e) {
+                            if (e.message.includes('read only')) {
+                                return 'State is properly immutable (read-only proxy working)';
+                            }
+                            throw e;
+                        }
+                    }
+                }
+            ],
+            'Phase 2-5: Component Integration': [
+                {
+                    name: 'Panel state synchronization',
+                    test: async () => {
+                        const panelName = 'testPanel';
+                        window.stateManager.openPanel(panelName, { test: true });
+                        const state = window.stateManager.getPanelState(panelName);
+                        if (state.isOpen && state.test === true) {
+                            return `Panel state synchronized: ${JSON.stringify(state)}`;
+                        } else {
+                            throw new Error('Panel state not synchronized');
+                        }
+                    }
+                },
+                {
+                    name: 'Event Bus statistics',
+                    test: async () => {
+                        const stats = window.eventBus.getStats();
+                        if (stats && typeof stats === 'object') {
+                            return `Event Bus stats collected: ${Object.keys(stats).length} event types tracked`;
+                        } else {
+                            throw new Error('Stats not available');
+                        }
+                    }
+                },
+                {
+                    name: 'Global event listener (onAny)',
+                    test: async () => {
+                        return new Promise((resolve) => {
+                            const testEvent = `test:onany_${Date.now()}`;
+                            const cleanup = window.eventBus.onAny((event, data) => {
+                                if (event === testEvent) {
+                                    cleanup(); // Remove listener
+                                    resolve('Global listener (onAny) working correctly');
+                                }
+                            });
+                            window.eventBus.emit(testEvent, { test: true });
+                        });
+                    }
+                },
+                {
+                    name: 'One-time event listener (once)',
+                    test: async () => {
+                        return new Promise((resolve) => {
+                            let callCount = 0;
+                            const testEvent = `test:once_${Date.now()}`;
+                            window.eventBus.once(testEvent, () => {
+                                callCount++;
+                            });
+                            window.eventBus.emit(testEvent, {});
+                            window.eventBus.emit(testEvent, {});
+                            setTimeout(() => {
+                                if (callCount === 1) {
+                                    resolve('Once listener called exactly once');
+                                } else {
+                                    throw new Error(`Once listener called ${callCount} times (expected 1)`);
+                                }
+                            }, 100);
+                        });
+                    }
+                }
+            ],
+            'Phase 6: End-to-End Workflows': [
+                {
+                    name: 'Panel open workflow',
+                    test: async () => {
+                        return new Promise((resolve) => {
+                            window.eventBus.once('panel:opened', (data) => {
+                                resolve(`Panel workflow: ${data.panel} opened successfully`);
+                            });
+                            window.eventBus.emit('panel:open_requested', { panel: 'thinkguide' });
+                            setTimeout(() => {
+                                throw new Error('Panel open event not received');
+                            }, 2000);
+                        });
+                    }
+                },
+                {
+                    name: 'Multiple component communication',
+                    test: async () => {
+                        const results = [];
+                        window.eventBus.once('test:component1', () => results.push('C1'));
+                        window.eventBus.once('test:component2', () => results.push('C2'));
+                        window.eventBus.once('test:component3', () => results.push('C3'));
+                        
+                        window.eventBus.emit('test:component1', {});
+                        window.eventBus.emit('test:component2', {});
+                        window.eventBus.emit('test:component3', {});
+                        
+                        return new Promise((resolve) => {
+                            setTimeout(() => {
+                                if (results.length === 3 && results.includes('C1') && results.includes('C2') && results.includes('C3')) {
+                                    resolve('Multiple components communicating successfully');
+                                } else {
+                                    throw new Error(`Only ${results.length}/3 components responded`);
+                                }
+                            }, 100);
+                        });
+                    }
+                },
+                {
+                    name: 'Performance: 1000 events',
+                    test: async () => {
+                        const start = performance.now();
+                        for (let i = 0; i < 1000; i++) {
+                            window.eventBus.emit('test:performance', { index: i });
+                        }
+                        const duration = performance.now() - start;
+                        return `Emitted 1000 events in ${duration.toFixed(2)}ms (${(duration / 1000).toFixed(3)}ms/event)`;
+                    }
+                },
+                {
+                    name: 'Memory: Event cleanup',
+                    test: async () => {
+                        const listeners = [];
+                        // Add 100 listeners
+                        for (let i = 0; i < 100; i++) {
+                            const cleanup = window.eventBus.on(`test:cleanup_${i}`, () => {});
+                            listeners.push(cleanup);
+                        }
+                        // Remove all listeners
+                        listeners.forEach(cleanup => cleanup());
+                        return 'Added and removed 100 event listeners successfully';
+                    }
+                }
+            ],
+            'Security & Validation': [
+                {
+                    name: 'Event pattern validation',
+                    test: async () => {
+                        try {
+                            window.eventBus.emit('invalid-event-pattern', {});
+                            throw new Error('Invalid event pattern should have been rejected');
+                        } catch (e) {
+                            if (e.message.includes('not allowed')) {
+                                return 'Event pattern validation working correctly';
+                            }
+                            throw e;
+                        }
+                    }
+                },
+                {
+                    name: 'Data sanitization',
+                    test: async () => {
+                        if (!window.eventBus.sanitizer) {
+                            return 'DOMPurify not available (expected in test environment)';
+                        }
+                        const malicious = '<script>alert(\'XSS\')<\/script>';
+                        const sanitized = window.eventBus.sanitizeEventData({ html: malicious });
+                        if (sanitized.html.includes('<script>')) {
+                            throw new Error('XSS not properly sanitized');
+                        }
+                        return 'Data sanitization working correctly';
+                    }
+                }
+            ]
+        };
+        
+        // Test runner
+        let totalTests = 0;
+        let passedTests = 0;
+        let failedTests = 0;
+        let startTime = 0;
+        
+        function initTestSuite() {
+            const container = document.getElementById('testSections');
+            container.innerHTML = '';
+            
+            for (const [section, tests] of Object.entries(testSuite)) {
+                totalTests += tests.length;
+                
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'test-section';
+                sectionEl.innerHTML = `
+                    <div class="test-header" onclick="toggleSection(this)">
+                        <h2>${section} (${tests.length} tests)</h2>
+                        <span class="test-status status-pending" data-section="${section}"></span>
+                    </div>
+                    <div class="test-body">
+                        ${tests.map((test, idx) => `
+                            <div class="test-item" data-section="${section}" data-index="${idx}">
+                                <div class="test-name">${test.name}</div>
+                                <div class="test-result" style="display: none;"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(sectionEl);
+            }
+            
+            document.getElementById('totalTests').textContent = totalTests;
+        }
+        
+        function toggleSection(header) {
+            const body = header.nextElementSibling;
+            body.classList.toggle('active');
+        }
+        
+        async function runAllTests() {
+            passedTests = 0;
+            failedTests = 0;
+            startTime = Date.now();
+            
+            // Enable event logging
+            enableEventLogging();
+            
+            for (const [section, tests] of Object.entries(testSuite)) {
+                const statusEl = document.querySelector(`[data-section="${section}"]`);
+                statusEl.className = 'test-status status-running';
+                
+                for (let idx = 0; idx < tests.length; idx++) {
+                    const test = tests[idx];
+                    const testEl = document.querySelector(`.test-item[data-section="${section}"][data-index="${idx}"]`);
+                    const resultEl = testEl.querySelector('.test-result');
+                    
+                    testEl.className = 'test-item running';
+                    resultEl.style.display = 'none';
+                    
+                    try {
+                        const result = await test.test();
+                        testEl.className = 'test-item success';
+                        resultEl.textContent = `✅ ${result}`;
+                        resultEl.style.display = 'block';
+                        passedTests++;
+                    } catch (error) {
+                        testEl.className = 'test-item failed';
+                        resultEl.textContent = `❌ ${error.message}`;
+                        resultEl.style.display = 'block';
+                        failedTests++;
+                    }
+                    
+                    updateSummary();
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                const sectionPassed = failedTests === 0;
+                statusEl.className = `test-status ${sectionPassed ? 'status-success' : 'status-failed'}`;
+            }
+            
+            const duration = Date.now() - startTime;
+            document.getElementById('duration').textContent = `${duration}ms`;
+            
+            // Show summary alert
+            alert(`Tests completed!\n\n✅ Passed: ${passedTests}/${totalTests}\n❌ Failed: ${failedTests}/${totalTests}\n⏱ Duration: ${duration}ms`);
+        }
+        
+        function updateSummary() {
+            document.getElementById('passedTests').textContent = passedTests;
+            document.getElementById('failedTests').textContent = failedTests;
+        }
+        
+        function clearResults() {
+            const testItems = document.querySelectorAll('.test-item');
+            testItems.forEach(item => {
+                item.className = 'test-item';
+                const resultEl = item.querySelector('.test-result');
+                resultEl.style.display = 'none';
+                resultEl.textContent = '';
+            });
+            
+            const statusEls = document.querySelectorAll('.test-status');
+            statusEls.forEach(el => {
+                el.className = 'test-status status-pending';
+            });
+            
+            passedTests = 0;
+            failedTests = 0;
+            updateSummary();
+            document.getElementById('duration').textContent = '0ms';
+            
+            // Clear event log
+            document.getElementById('eventLog').innerHTML = '<div style="color: #858585;">Event log cleared...</div>';
+        }
+        
+        function toggleEventLog() {
+            const container = document.getElementById('eventLogContainer');
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function enableEventLogging() {
+            const logEl = document.getElementById('eventLog');
+            logEl.innerHTML = '<div style="color: #858585;">Logging events...</div>';
+            
+            window.eventBus.onAny((event, data) => {
+                const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+                const entry = document.createElement('div');
+                entry.className = 'event-log-entry';
+                entry.innerHTML = `
+                    <span class="event-timestamp">[${timestamp}]</span>
+                    <span class="event-type">${event}</span>
+                    <span class="event-data">${JSON.stringify(data).substring(0, 100)}</span>
+                `;
+                logEl.appendChild(entry);
+                logEl.scrollTop = logEl.scrollHeight;
+            });
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                initTestSuite();
+                console.log('%c[Integration Test] Ready!', 'color: #667eea; font-weight: bold; font-size: 16px;');
+                console.log('Run tests by clicking "▶️ Run All Tests" button');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
+

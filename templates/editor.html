@@ -774,11 +774,16 @@
     <!-- Logger must load FIRST -->
     <script src="/static/js/logger.js"></script>
     
+    <!-- Event Bus Architecture (Core) - Load SECOND (after logger) -->
+    <script src="/static/js/core/event-bus.js"></script>
+    <script src="/static/js/core/state-manager.js"></script>
+    <script src="/static/js/utils/sse-client.js"></script>
+    
     <script src="/static/js/theme-config.js"></script>
     <script src="/static/js/style-manager.js"></script>
     
-    <!-- Centralized Panel Management System - MUST load before other editors -->
-    <script src="/static/js/editor/panel-manager.js"></script>
+    <!-- Panel Manager - MUST load before other editors -->
+    <script src="/static/js/managers/panel-manager.js"></script>
     
     <!-- Node Indicator System - Visual feedback for node updates -->
     <script src="/static/js/editor/node-indicator.js"></script>
@@ -806,13 +811,14 @@
     <script src="/static/js/purify.min.js"></script>
     
     <!-- AI Assistant (MindMate) -->
-    <script src="/static/js/editor/ai-assistant-manager.js"></script>
+    <script src="/static/js/managers/mindmate-manager.js"></script>
     
     <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
-    <script src="/static/js/editor/thinking-mode-manager.js"></script>
+    <script src="/static/js/managers/thinkguide-manager.js"></script>
     <script src="/static/js/editor/black-cat.js"></script>
     <script src="/static/js/editor/comic-bubble.js"></script>
-    <script src="/static/js/editor/voice-agent.js"></script>
+    <!-- Voice Agent -->
+    <script src="/static/js/managers/voice-agent-manager.js"></script>
     
     <!-- Node Palette Manager - Must load AFTER other editor scripts -->
     <script src="/static/js/editor/node-palette-manager.js"></script>

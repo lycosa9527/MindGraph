@@ -174,8 +174,9 @@ class AuthHelper {
     }
 }
 
-// Global instance
+// Global instance (available both as 'auth' and 'window.auth')
 const auth = new AuthHelper();
+window.auth = auth;
 
 // Auto-redirect to appropriate auth page on 401
 window.addEventListener('unhandledrejection', event => {

@@ -71,21 +71,25 @@ class ToolbarResponsiveManager {
     setupMutationObserver() {
         /**
          * Watch for DOM changes in toolbar (buttons added/removed).
+         * Only watch for childList changes to avoid infinite loops from our own class/style modifications.
          */
         if (!this.toolbar) return;
         
-        const observer = new MutationObserver(() => {
+        this.mutationObserver = new MutationObserver((mutations) => {
+            // Only react to childList changes (buttons added/removed), not attribute changes
+            const hasChildListChange = mutations.some(mutation => mutation.type === 'childList');
+            if (!hasChildListChange) return;
+            
             clearTimeout(this.resizeTimeout);
             this.resizeTimeout = setTimeout(() => {
                 this.checkAndAdjust();
             }, 150);
         });
         
-        observer.observe(this.toolbar, {
+        this.mutationObserver.observe(this.toolbar, {
             childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['style', 'class']
+            subtree: true
+            // Removed: attributes, attributeFilter - these cause infinite loops
         });
     }
     
@@ -313,16 +317,12 @@ class ToolbarResponsiveManager {
         // Select both old .toolbar-group and new specific classes
         const toolbarGroups = this.toolbar.querySelectorAll('.toolbar-group, .nodes-toolbar-group, .tools-toolbar-group');
         
-        console.log('[ToolbarResponsive] Found toolbar groups:', toolbarGroups.length);
-        
         toolbarGroups.forEach((group) => {
             const toggle = group.querySelector('.toolbar-group-toggle');
             const label = group.querySelector('label');
             const buttons = Array.from(group.children).filter(
                 child => child.tagName === 'BUTTON' && !child.classList.contains('toolbar-group-toggle')
             );
-            
-            console.log('[ToolbarResponsive] Group has', buttons.length, 'buttons, label:', label?.textContent);
             
             // Disable collapsible on mobile - all buttons fit on one row now
             // with adaptive button sizing (padding: 6px 8px, gap: 4px)

@@ -1,0 +1,309 @@
+/**
+ * Event Bus - Universal event system for MindGraph
+ * 
+ * Provides pub/sub pattern for decoupled communication between modules.
+ * All modules communicate via events instead of direct calls.
+ * 
+ * @author lycosa9527
+ * @made_by MindSpring Team
+ */
+
+class EventBus {
+    constructor(logger) {
+        this.logger = logger || console;
+        this.listeners = {}; // { eventName: [callback1, callback2, ...] }
+        this.onceListeners = {}; // { eventName: [callback1, callback2, ...] }
+        this.anyListeners = []; // Listeners for all events
+        this.debugMode = window.VERBOSE_LOGGING || false;
+        this.eventStats = new Map(); // Track event frequency for monitoring
+        
+        // Performance monitoring
+        this.performanceThreshold = 100; // Warn if event takes > 100ms
+        
+        this.logger.info('EventBus', 'Event Bus initialized', {
+            debugMode: this.debugMode
+        });
+    }
+    
+    /**
+     * Subscribe to an event
+     * @param {string} event - Event name (e.g., 'panel:opened')
+     * @param {Function} callback - Function to call when event is emitted
+     * @returns {Function} Unsubscribe function
+     */
+    on(event, callback) {
+        if (!this.listeners[event]) {
+            this.listeners[event] = [];
+        }
+        
+        this.listeners[event].push(callback);
+        
+        if (this.debugMode) {
+            this.logger.debug('EventBus', `Listener added for: ${event}`, {
+                listenerCount: this.listeners[event].length
+            });
+        }
+        
+        // Return unsubscribe function
+        return () => this.off(event, callback);
+    }
+    
+    /**
+     * Subscribe to an event once (auto-removes after first trigger)
+     * @param {string} event - Event name
+     * @param {Function} callback - Function to call once
+     * @returns {Function} Unsubscribe function
+     */
+    once(event, callback) {
+        if (!this.onceListeners[event]) {
+            this.onceListeners[event] = [];
+        }
+        
+        this.onceListeners[event].push(callback);
+        
+        if (this.debugMode) {
+            this.logger.debug('EventBus', `Once listener added for: ${event}`);
+        }
+        
+        // Return unsubscribe function
+        return () => this.offOnce(event, callback);
+    }
+    
+    /**
+     * Subscribe to all events (useful for Voice Agent context awareness)
+     * @param {Function} callback - Function to call for any event
+     * @returns {Function} Unsubscribe function
+     */
+    onAny(callback) {
+        this.anyListeners.push(callback);
+        
+        if (this.debugMode) {
+            this.logger.debug('EventBus', 'Global listener added', {
+                totalGlobalListeners: this.anyListeners.length
+            });
+        }
+        
+        // Return unsubscribe function
+        return () => this.offAny(callback);
+    }
+    
+    /**
+     * Unsubscribe from an event
+     * @param {string} event - Event name
+     * @param {Function} callback - Callback to remove
+     */
+    off(event, callback) {
+        if (!this.listeners[event]) return;
+        
+        const index = this.listeners[event].indexOf(callback);
+        if (index > -1) {
+            this.listeners[event].splice(index, 1);
+            
+            if (this.debugMode) {
+                this.logger.debug('EventBus', `Listener removed for: ${event}`, {
+                    remainingListeners: this.listeners[event].length
+                });
+            }
+        }
+    }
+    
+    /**
+     * Remove once listener
+     */
+    offOnce(event, callback) {
+        if (!this.onceListeners[event]) return;
+        
+        const index = this.onceListeners[event].indexOf(callback);
+        if (index > -1) {
+            this.onceListeners[event].splice(index, 1);
+        }
+    }
+    
+    /**
+     * Remove global listener
+     */
+    offAny(callback) {
+        const index = this.anyListeners.indexOf(callback);
+        if (index > -1) {
+            this.anyListeners.splice(index, 1);
+        }
+    }
+    
+    /**
+     * Emit an event with data
+     * @param {string} event - Event name
+     * @param {*} data - Data to pass to listeners
+     */
+    emit(event, data = null) {
+        const startTime = performance.now();
+        
+        // Track event frequency
+        this.eventStats.set(event, (this.eventStats.get(event) || 0) + 1);
+        
+        if (this.debugMode) {
+            this.logger.debug('EventBus', `Event emitted: ${event}`, {
+                data: this._sanitizeLogData(data),
+                listenerCount: (this.listeners[event] || []).length,
+                onceListenerCount: (this.onceListeners[event] || []).length,
+                globalListenerCount: this.anyListeners.length
+            });
+        }
+        
+        // Call regular listeners
+        if (this.listeners[event]) {
+            const listeners = [...this.listeners[event]]; // Copy to avoid modification during iteration
+            listeners.forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    this.logger.error('EventBus', `Listener error for ${event}`, {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                }
+            });
+        }
+        
+        // Call once listeners and remove them
+        if (this.onceListeners[event]) {
+            const onceListeners = [...this.onceListeners[event]];
+            this.onceListeners[event] = []; // Clear all once listeners
+            
+            onceListeners.forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    this.logger.error('EventBus', `Once listener error for ${event}`, {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                }
+            });
+        }
+        
+        // Call global listeners
+        this.anyListeners.forEach(callback => {
+            try {
+                callback(event, data);
+            } catch (error) {
+                this.logger.error('EventBus', `Global listener error for ${event}`, {
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
+        });
+        
+        // Performance warning
+        const duration = performance.now() - startTime;
+        if (duration > this.performanceThreshold) {
+            this.logger.warn('EventBus', `Slow event: ${event}`, {
+                duration: `${duration.toFixed(2)}ms`,
+                threshold: `${this.performanceThreshold}ms`,
+                listenerCount: (this.listeners[event] || []).length
+            });
+        }
+    }
+    
+    /**
+     * Remove all listeners for an event
+     * @param {string} event - Event name (optional, if not provided removes ALL listeners)
+     */
+    removeAllListeners(event = null) {
+        if (event) {
+            delete this.listeners[event];
+            delete this.onceListeners[event];
+            this.logger.debug('EventBus', `All listeners removed for: ${event}`);
+        } else {
+            this.listeners = {};
+            this.onceListeners = {};
+            this.anyListeners = [];
+            this.logger.debug('EventBus', 'All listeners removed');
+        }
+    }
+    
+    /**
+     * Get event statistics (for debugging and monitoring)
+     */
+    getStats() {
+        const totalEvents = Array.from(this.eventStats.values()).reduce((a, b) => a + b, 0);
+        const uniqueEvents = this.eventStats.size;
+        const topEvents = Array.from(this.eventStats.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([event, count]) => ({ event, count }));
+        
+        return {
+            totalEvents,
+            uniqueEvents,
+            topEvents,
+            totalListeners: Object.values(this.listeners).reduce((sum, arr) => sum + arr.length, 0),
+            totalOnceListeners: Object.values(this.onceListeners).reduce((sum, arr) => sum + arr.length, 0),
+            globalListeners: this.anyListeners.length
+        };
+    }
+    
+    /**
+     * Get all registered event names
+     */
+    getEventNames() {
+        const regularEvents = Object.keys(this.listeners);
+        const onceEvents = Object.keys(this.onceListeners);
+        return [...new Set([...regularEvents, ...onceEvents])].sort();
+    }
+    
+    /**
+     * Check if event has listeners
+     */
+    hasListeners(event) {
+        return (this.listeners[event] && this.listeners[event].length > 0) ||
+               (this.onceListeners[event] && this.onceListeners[event].length > 0) ||
+               this.anyListeners.length > 0;
+    }
+    
+    /**
+     * Enable/disable debug mode
+     */
+    setDebugMode(enabled) {
+        this.debugMode = enabled;
+        this.logger.info('EventBus', `Debug mode ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * Sanitize data for logging (avoid circular references, limit size)
+     */
+    _sanitizeLogData(data) {
+        if (data === null || data === undefined) return data;
+        
+        try {
+            const jsonStr = JSON.stringify(data);
+            if (jsonStr.length > 500) {
+                return jsonStr.substring(0, 500) + '...(truncated)';
+            }
+            return JSON.parse(jsonStr); // Return clean copy
+        } catch (e) {
+            return '[Circular reference or non-serializable object]';
+        }
+    }
+}
+
+// Create global instance
+if (typeof window !== 'undefined') {
+    window.eventBus = new EventBus(window.logger);
+    
+    // Expose debug tools
+    window.debugEventBus = {
+        stats: () => window.eventBus.getStats(),
+        events: () => window.eventBus.getEventNames(),
+        clear: (event) => window.eventBus.removeAllListeners(event),
+        debug: (enabled) => window.eventBus.setDebugMode(enabled)
+    };
+    
+    if (window.logger?.debugMode) {
+        console.log('%c[EventBus] Debug tools available:', 'color: #4caf50; font-weight: bold;');
+        console.log('  window.debugEventBus.stats()  - View event statistics');
+        console.log('  window.debugEventBus.events() - List all event names');
+        console.log('  window.debugEventBus.clear()  - Remove all listeners');
+        console.log('  window.debugEventBus.debug(true/false) - Toggle debug mode');
+    }
+}
+

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Bus Test</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        .success {
+            background: #4caf50;
+        }
+        .warning {
+            background: #ff9800;
+        }
+        .error {
+            background: #f44336;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .log {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Event Bus + State Manager Test Page</h1>
+    
+    <div class="card">
+        <h2>✅ Phase 1: Core Framework</h2>
+        <p>This page tests the Event Bus, State Manager, and SSE Client implementations.</p>
+    </div>
+    
+    <div class="card">
+        <h2>Event Bus Tests</h2>
+        <button onclick="testEventBus()">Test Event Bus</button>
+        <button onclick="testOnce()">Test Once Listener</button>
+        <button onclick="testAny()">Test Any Listener</button>
+        <button onclick="testStats()">View Stats</button>
+        <pre id="eventbus-result"></pre>
+    </div>
+    
+    <div class="card">
+        <h2>State Manager Tests</h2>
+        <button onclick="testStateManager()">Test State Manager</button>
+        <button onclick="testPanelState()">Test Panel State</button>
+        <button onclick="testReadOnly()">Test Read-Only Protection</button>
+        <button onclick="viewState()">View Current State</button>
+        <pre id="state-result"></pre>
+    </div>
+    
+    <div class="card">
+        <h2>Integration Test</h2>
+        <button onclick="testIntegration()">Run Full Integration Test</button>
+        <pre id="integration-result"></pre>
+    </div>
+    
+    <div class="card">
+        <h2>Event Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <button class="warning" onclick="window.eventBus.setDebugMode(true)">Enable Debug</button>
+        <button class="error" onclick="window.eventBus.setDebugMode(false)">Disable Debug</button>
+        <div class="log" id="event-log"></div>
+    </div>
+    
+    <script src="logger.js"></script>
+    <script src="core/event-bus.js"></script>
+    <script src="core/state-manager.js"></script>
+    <script src="utils/sse-client.js"></script>
+    
+    <script>
+        const log = [];
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toTimeString().split(' ')[0];
+            log.push(`[${timestamp}] ${message}`);
+            updateLog();
+        }
+        
+        function updateLog() {
+            const logEl = document.getElementById('event-log');
+            logEl.innerHTML = log.slice(-50).map(l => `<div class="log-entry">${l}</div>`).join('');
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.length = 0;
+            updateLog();
+        }
+        
+        // Listen to all events for logging
+        if (window.eventBus) {
+            window.eventBus.onAny((event, data) => {
+                addLog(`Event: ${event} | Data: ${JSON.stringify(data || {}).substring(0, 100)}`);
+            });
+        }
+        
+        function testEventBus() {
+            const result = document.getElementById('eventbus-result');
+            result.textContent = 'Running Event Bus tests...\n\n';
+            
+            try {
+                // Test 1: Basic emit/on
+                let received = null;
+                const unsubscribe = window.eventBus.on('test:event', (data) => {
+                    received = data;
+                });
+                
+                window.eventBus.emit('test:event', { message: 'Hello EventBus!' });
+                
+                if (received && received.message === 'Hello EventBus!') {
+                    result.textContent += '✅ Test 1: Basic emit/on - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 1: Basic emit/on - FAILED\n';
+                }
+                
+                // Test 2: Unsubscribe
+                unsubscribe();
+                received = null;
+                window.eventBus.emit('test:event', { message: 'Should not receive' });
+                
+                if (received === null) {
+                    result.textContent += '✅ Test 2: Unsubscribe - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 2: Unsubscribe - FAILED\n';
+                }
+                
+                // Test 3: Multiple listeners
+                let count = 0;
+                window.eventBus.on('test:multi', () => count++);
+                window.eventBus.on('test:multi', () => count++);
+                window.eventBus.on('test:multi', () => count++);
+                window.eventBus.emit('test:multi');
+                
+                if (count === 3) {
+                    result.textContent += '✅ Test 3: Multiple listeners - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 3: Multiple listeners - FAILED\n';
+                }
+                
+                result.textContent += '\n✅ All Event Bus tests completed!';
+                
+            } catch (error) {
+                result.textContent += '\n❌ Error: ' + error.message;
+            }
+        }
+        
+        function testOnce() {
+            const result = document.getElementById('eventbus-result');
+            result.textContent = 'Running Once Listener test...\n\n';
+            
+            try {
+                let count = 0;
+                window.eventBus.once('test:once', () => count++);
+                
+                window.eventBus.emit('test:once');
+                window.eventBus.emit('test:once');
+                window.eventBus.emit('test:once');
+                
+                if (count === 1) {
+                    result.textContent += '✅ Once listener triggered only once - PASSED\n';
+                } else {
+                    result.textContent += `❌ Once listener triggered ${count} times - FAILED\n`;
+                }
+                
+            } catch (error) {
+                result.textContent += '❌ Error: ' + error.message;
+            }
+        }
+        
+        function testAny() {
+            const result = document.getElementById('eventbus-result');
+            result.textContent = 'Running Any Listener test...\n\n';
+            
+            try {
+                const received = [];
+                const unsubscribe = window.eventBus.onAny((event, data) => {
+                    received.push(event);
+                });
+                
+                window.eventBus.emit('test:event1');
+                window.eventBus.emit('test:event2');
+                window.eventBus.emit('test:event3');
+                
+                unsubscribe();
+                
+                if (received.length === 3 && received.includes('test:event1') && 
+                    received.includes('test:event2') && received.includes('test:event3')) {
+                    result.textContent += '✅ Any listener received all events - PASSED\n';
+                } else {
+                    result.textContent += '❌ Any listener failed - FAILED\n';
+                }
+                
+            } catch (error) {
+                result.textContent += '❌ Error: ' + error.message;
+            }
+        }
+        
+        function testStats() {
+            const result = document.getElementById('eventbus-result');
+            const stats = window.eventBus.getStats();
+            result.textContent = 'Event Bus Statistics:\n\n' + JSON.stringify(stats, null, 2);
+        }
+        
+        function testStateManager() {
+            const result = document.getElementById('state-result');
+            result.textContent = 'Running State Manager tests...\n\n';
+            
+            try {
+                // Test 1: Get state
+                const state = window.stateManager.getState();
+                if (state && state.panels && state.diagram) {
+                    result.textContent += '✅ Test 1: Get state - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 1: Get state - FAILED\n';
+                }
+                
+                // Test 2: Open panel
+                window.stateManager.openPanel('thinkguide', { sessionId: 'test123' });
+                const panelState = window.stateManager.getPanelState('thinkguide');
+                
+                if (panelState.open && panelState.sessionId === 'test123') {
+                    result.textContent += '✅ Test 2: Open panel - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 2: Open panel - FAILED\n';
+                }
+                
+                // Test 3: Update panel
+                window.stateManager.updatePanelState('thinkguide', { isStreaming: true });
+                const updatedState = window.stateManager.getPanelState('thinkguide');
+                
+                if (updatedState.isStreaming === true) {
+                    result.textContent += '✅ Test 3: Update panel - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 3: Update panel - FAILED\n';
+                }
+                
+                // Test 4: Close panel
+                window.stateManager.closePanel('thinkguide');
+                const closedState = window.stateManager.getPanelState('thinkguide');
+                
+                if (closedState.open === false) {
+                    result.textContent += '✅ Test 4: Close panel - PASSED\n';
+                } else {
+                    result.textContent += '❌ Test 4: Close panel - FAILED\n';
+                }
+                
+                result.textContent += '\n✅ All State Manager tests completed!';
+                
+            } catch (error) {
+                result.textContent += '\n❌ Error: ' + error.message;
+            }
+        }
+        
+        function testPanelState() {
+            const result = document.getElementById('state-result');
+            window.stateManager.openPanel('mindmate', { conversationId: 'conv_456' });
+            const state = window.stateManager.getPanelState('mindmate');
+            result.textContent = 'MindMate Panel State:\n\n' + JSON.stringify(state, null, 2);
+        }
+        
+        function testReadOnly() {
+            const result = document.getElementById('state-result');
+            result.textContent = 'Testing read-only protection...\n\n';
+            
+            try {
+                const state = window.stateManager.getState();
+                
+                // Try to modify (should fail)
+                try {
+                    state.panels.thinkguide.open = true;
+                    result.textContent += '❌ Read-only protection - FAILED (modification allowed)\n';
+                } catch (e) {
+                    result.textContent += '✅ Read-only protection - PASSED (modification blocked)\n';
+                }
+                
+                // Verify original state unchanged
+                const cleanState = window.stateManager._getStateSnapshot();
+                result.textContent += '\nState remains unchanged:\n' + JSON.stringify(cleanState.panels.thinkguide, null, 2);
+                
+            } catch (error) {
+                result.textContent += '❌ Error: ' + error.message;
+            }
+        }
+        
+        function viewState() {
+            const result = document.getElementById('state-result');
+            const state = window.debugState.get();
+            result.textContent = 'Current State:\n\n' + JSON.stringify(state, null, 2);
+        }
+        
+        function testIntegration() {
+            const result = document.getElementById('integration-result');
+            result.textContent = 'Running full integration test...\n\n';
+            
+            try {
+                let eventCount = 0;
+                
+                // Listen to state change events
+                window.eventBus.on('state:panel_opened', () => eventCount++);
+                window.eventBus.on('state:panel_updated', () => eventCount++);
+                window.eventBus.on('state:panel_closed', () => eventCount++);
+                
+                // Perform operations
+                window.stateManager.openPanel('thinkguide', { sessionId: 'integration_test' });
+                window.stateManager.updatePanelState('thinkguide', { isStreaming: true });
+                window.stateManager.closePanel('thinkguide');
+                
+                if (eventCount === 3) {
+                    result.textContent += '✅ Event Bus + State Manager integration - PASSED\n';
+                    result.textContent += `   Events emitted: ${eventCount}/3\n`;
+                } else {
+                    result.textContent += `❌ Integration test - FAILED (${eventCount}/3 events)\n`;
+                }
+                
+                // Test selection
+                window.stateManager.selectNodes(['node1', 'node2', 'node3']);
+                const selection = window.stateManager.getDiagramState().selectedNodes;
+                
+                if (selection.length === 3) {
+                    result.textContent += '✅ Selection management - PASSED\n';
+                } else {
+                    result.textContent += '❌ Selection management - FAILED\n';
+                }
+                
+                result.textContent += '\n✅ All integration tests completed!';
+                
+            } catch (error) {
+                result.textContent += '\n❌ Error: ' + error.message;
+            }
+        }
+        
+        // Auto-run basic test on load
+        setTimeout(() => {
+            addLog('=== Event Bus Test Page Loaded ===');
+            addLog('Event Bus initialized: ' + (!!window.eventBus));
+            addLog('State Manager initialized: ' + (!!window.stateManager));
+            addLog('SSE Client initialized: ' + (!!window.sseClient));
+            addLog('Ready for testing!');
+        }, 500);
+    </script>
+</body>
+</html>
+
