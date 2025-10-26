@@ -7,6 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.19.2] - 2025-10-26 - Capacity Analysis: 100 Concurrent Teachers Support
+
+### Analysis
+
+- **Capacity Assessment for 100 Concurrent Teachers**
+  - **Use Case**: Node Palette feature fires 4 LLMs simultaneously (qwen, deepseek, hunyuan, kimi)
+  - **Concurrent Requests**: 
+    - Worst case: 100 teachers × 4 LLMs = 400 concurrent requests
+    - Realistic: 150-200 concurrent requests at peak (staggered usage)
+  - **QPM Requirements**: 
+    - Active scenario: 100 teachers × 4 LLMs/min = 400 QPM needed
+    - With retries/overlaps: 500 QPM recommended
+
+### Findings
+
+- **FastAPI Server Capacity**: ✅ **READY**
+  - Current configuration: `limit_concurrency=1000` per worker
+  - Multi-worker architecture: 4 workers × 1,000 = 4,000 total concurrent connections
+  - **Conclusion**: 10x headroom for 100 teachers (400 requests vs 4,000 capacity)
+
+- **Dashscope API Limits**: ❌ **BOTTLENECK**
+  - Current settings: `DASHSCOPE_QPM_LIMIT=200`, `DASHSCOPE_CONCURRENT_LIMIT=50`
+  - Required for 100 teachers: `QPM=500`, `CONCURRENT=250`
+  - **Gap**: Current limits support ~50 teachers, not 100
+
+### Recommended Configuration
+
+For supporting **100 concurrent teachers**, update `.env`:
+
+```env
+# Recommended for 100 concurrent teachers
+DASHSCOPE_QPM_LIMIT=500        # Was: 200 (2.5x increase with 25% buffer)
+DASHSCOPE_CONCURRENT_LIMIT=250 # Was: 50 (5x increase with buffer)
+```
+
+**Rationale**:
+- QPM=500: Covers 400 QPM baseline + 100 buffer for retries/overlaps
+- CONCURRENT=250: Handles 400 worst-case + 150 buffer for comfort
+
+### Requirements
+
+- **Dashscope Account Tier**: Enterprise tier required
+  - Free tier: 60 QPM, 10 concurrent (supports ~15 teachers)
+  - Standard tier: 300 QPM, 50+ concurrent (supports ~75 teachers)
+  - Enterprise tier: Custom limits (can support 100+ teachers)
+
+### Scaling Strategy
+
+**Phase 1 - Standard Tier** (if Enterprise not immediately available):
+```env
+DASHSCOPE_QPM_LIMIT=300
+DASHSCOPE_CONCURRENT_LIMIT=100
+```
+- Supports: ~75 concurrent teachers comfortably
+- Rate limiter queues excess requests automatically
+
+**Phase 2 - Enterprise Tier** (production target):
+```env
+DASHSCOPE_QPM_LIMIT=500
+DASHSCOPE_CONCURRENT_LIMIT=250
+```
+- Supports: 100+ concurrent teachers with buffer
+
+### Monitoring
+
+- Use `/status` endpoint to track rate limiter statistics
+- Monitor QPM usage and concurrent requests in production
+- Adjust limits based on actual usage patterns
+
+### Architecture Notes
+
+- **4,000 SSE Capacity Calculation**:
+  - Formula: `workers × limit_concurrency`
+  - Production (4-core): 4 workers × 1,000 = 4,000 concurrent connections
+  - Windows dev: 1 worker × 1,000 = 1,000 concurrent connections
+  - Each async worker handles 1,000+ concurrent connections via event loop
+
+- **Bottleneck Hierarchy**:
+  1. ❌ Dashscope API limits (current bottleneck)
+  2. ✅ FastAPI async architecture (10x headroom)
+  3. ✅ Uvicorn workers (4,000 connection capacity)
+
+## [4.19.1] - 2025-10-26 - Admin Schools: Editable Code & Invite Automation
+
+### Added
+
+- Invitation Code Generator
+  - File: `utils/invitations.py`
+  - Pattern: `AAAA-XXXXX` (4 letters from school name/code + '-' + 5 uppercase letters/digits)
+  - Uniqueness: retries up to 5 times on collision
+
+### Changed
+
+- Admin UI (`templates/admin.html`)
+  - Edit School: `School Code` is now editable
+  - Create School: invitation code is auto-generated (manual input removed)
+  - Edit dialog: added "Regenerate" button to produce a compliant invitation code
+
+- Backend (`routers/auth.py`)
+  - POST `/api/auth/admin/organizations`: auto-generates invitation code if missing/invalid; returns generated value
+  - PUT `/api/auth/admin/organizations/{org_id}`:
+    - Accepts `code` updates (non-empty, max 50 chars, unique)
+    - Enforces invitation code pattern; normalizes or regenerates and ensures uniqueness
+
+### Notes
+
+- Registration invite validation still reads from `.env` `INVITATION_CODES`. If you change a school's `code` or invitation code, update `.env` accordingly to keep new registrations working.
+
 ## [4.19.0] - 2025-10-26 - Security Headers and Production Readiness
 
 ### Added

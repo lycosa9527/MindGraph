@@ -427,6 +427,8 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=2, description="Teacher's name (required, min 2 chars, no numbers)")
     organization_code: str = Field(..., description="School/organization code")
     invitation_code: str = Field(..., description="Invitation code for registration")
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
     
     @field_validator('phone')
     @classmethod
@@ -457,7 +459,9 @@ class RegisterRequest(BaseModel):
                 "password": "Teacher123!",
                 "name": "Zhang Wei",
                 "organization_code": "DEMO-001",
-                "invitation_code": "DEMO2024"
+                "invitation_code": "DEMO2024",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session"
             }
         }
 

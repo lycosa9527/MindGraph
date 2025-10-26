@@ -300,13 +300,10 @@
 
                 <div class="form-group">
                     <label class="form-label">学校代码 School Code *</label>
-                    <select class="form-select" name="organization_code" required>
-                        <option value="">选择学校</option>
-                        <option value="DEMO-001">DEMO-001 - Demo School for Testing</option>
-                        <option value="SPRING-EDU">SPRING-EDU - Springfield Elementary</option>
-                        <option value="BJ-001">BJ-001 - Beijing First High School</option>
-                        <option value="SH-042">SH-042 - Shanghai International School</option>
+                    <select class="form-select" name="organization_code" id="organization-select" required>
+                        <option value="">加载中... Loading...</option>
                     </select>
+                    <small class="hint-text">如果看不到您的学校，请联系管理员</small>
                 </div>
 
                 <div class="form-group">
@@ -314,6 +311,18 @@
                     <input type="text" class="form-input" name="invitation_code" 
                            placeholder="学校提供的邀请码" required>
                     <small class="hint-text">请向学校管理员获取</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">验证码 Verification Code *</label>
+                    <div class="captcha-group">
+                        <input type="text" class="form-input captcha-input" name="captcha" 
+                               placeholder="输入验证码" maxlength="4" required>
+                        <img id="registerCaptchaImage" class="captcha-image" src="" alt="验证码" 
+                             onclick="refreshRegisterCaptcha()" title="点击刷新">
+                    </div>
+                    <small class="hint-text">点击图片刷新验证码</small>
+                    <input type="hidden" name="captcha_id" id="registerCaptchaId">
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="register-btn">注册 Register</button>
@@ -325,6 +334,34 @@
     <script src="/static/js/auth-helper.js"></script>
     <script>
         let currentTab = 'login';
+
+        // Load organizations for registration
+        async function loadOrganizations() {
+            const select = document.getElementById('organization-select');
+            
+            try {
+                const response = await fetch('/api/auth/organizations');
+                const organizations = await response.json();
+                
+                // Clear existing options
+                select.innerHTML = '<option value="">选择学校 Select School</option>';
+                
+                // Add organizations
+                organizations.forEach(org => {
+                    const option = document.createElement('option');
+                    option.value = org.code;
+                    option.textContent = `${org.code} - ${org.name}`;
+                    select.appendChild(option);
+                });
+                
+                if (organizations.length === 0) {
+                    select.innerHTML = '<option value="">暂无学校 No schools available</option>';
+                }
+            } catch (error) {
+                console.error('Failed to load organizations:', error);
+                select.innerHTML = '<option value="">加载失败 Loading failed</option>';
+            }
+        }
 
         // Switch between login and register
         function switchTab(tab) {
@@ -344,6 +381,12 @@
             // Load captcha for login
             if (tab === 'login') {
                 refreshCaptcha();
+            }
+            
+            // Load organizations and captcha for register
+            if (tab === 'register') {
+                loadOrganizations();
+                refreshRegisterCaptcha();
             }
         }
 
@@ -375,11 +418,13 @@
                 }
             }
             
-            // Not authenticated, load captcha
+            // Not authenticated, load captcha and organizations
             refreshCaptcha();
+            refreshRegisterCaptcha(); // Preload register captcha
+            loadOrganizations(); // Preload organizations for faster registration
         });
 
-        // Refresh captcha
+        // Refresh captcha (login)
         async function refreshCaptcha() {
             try {
                 const response = await fetch('/api/auth/captcha/generate');
@@ -387,6 +432,19 @@
                 
                 document.getElementById('captchaImage').src = data.captcha_image;
                 document.getElementById('captchaId').value = data.captcha_id;
+            } catch (error) {
+                showAlert('验证码加载失败 Failed to load captcha', 'error');
+            }
+        }
+
+        // Refresh captcha (register)
+        async function refreshRegisterCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                document.getElementById('registerCaptchaImage').src = data.captcha_image;
+                document.getElementById('registerCaptchaId').value = data.captcha_id;
             } catch (error) {
                 showAlert('验证码加载失败 Failed to load captcha', 'error');
             }
@@ -466,7 +524,9 @@
                 password: formData.get('password'),
                 name: formData.get('name'),
                 organization_code: formData.get('organization_code'),
-                invitation_code: formData.get('invitation_code')
+                invitation_code: formData.get('invitation_code'),
+                captcha: formData.get('captcha'),
+                captcha_id: formData.get('captcha_id')
             };
 
             // Validate phone
@@ -478,6 +538,12 @@
             // Validate name
             if (/\d/.test(data.name)) {
                 showAlert('姓名不能包含数字！', 'error');
+                return;
+            }
+
+            // Validate captcha
+            if (!data.captcha || data.captcha.length !== 4) {
+                showAlert('请输入4位验证码！', 'error');
                 return;
             }
 
@@ -508,9 +574,11 @@
                     setTimeout(() => window.location.href = redirectUrl, 1000);
                 } else {
                     showAlert(result.detail || '注册失败 Registration failed', 'error');
+                    refreshRegisterCaptcha(); // Refresh captcha on error
                 }
             } catch (error) {
                 showAlert('网络错误 Network error: ' + error.message, 'error');
+                refreshRegisterCaptcha(); // Refresh captcha on error
             } finally {
                 document.getElementById('register-btn').disabled = false;
                 document.getElementById('register-spinner').style.display = 'none';

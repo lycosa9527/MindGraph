@@ -203,6 +203,10 @@
             color: white;
         }
 
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
         .btn-sm {
             padding: 0.375rem 0.75rem;
             font-size: 0.8125rem;
@@ -858,19 +862,28 @@
                 <span class="close" onclick="closeModal('create-school-modal')">&times;</span>
             </div>
             <div class="form-group">
-                <label class="form-label">学校代码 School Code *</label>
-                <input type="text" id="new-school-code" class="form-input" 
-                       placeholder="BJ-HIGH-001" required>
-            </div>
-            <div class="form-group">
                 <label class="form-label">学校名称 School Name *</label>
                 <input type="text" id="new-school-name" class="form-input" 
-                       placeholder="北京高中 Beijing High School" required>
+                       placeholder="Beijing High School 北京高中" 
+                       oninput="autoGenerateSchoolCode()" required>
+                <small style="color:#64748b;">Enter the school name first, code will be generated automatically</small>
             </div>
             <div class="form-group">
-                <label class="form-label">邀请码 Invitation Code *</label>
-                <input type="text" id="new-school-invite" class="form-input" 
-                       placeholder="BJHS2024" required>
+                <label class="form-label">学校代码 School Code *</label>
+                <div style="display:flex;gap:0.5rem;">
+                    <input type="text" id="new-school-code" class="form-input" 
+                           placeholder="AUTO-GENERATED" required
+                           style="flex:1;background:#f8fafc;">
+                    <button type="button" class="btn btn-secondary" onclick="regenerateSchoolCode()" title="Regenerate Code">
+                        🔄
+                    </button>
+                </div>
+                <small style="color:#64748b;">Auto-generated from school name (editable, click 🔄 to regenerate)</small>
+            </div>
+            <div style="padding:1rem;background:#f8fafc;border-radius:8px;margin-bottom:1rem;">
+                <small style="color:#64748b;">
+                    ℹ️ <strong>Note:</strong> Invitation code will be automatically generated after creation
+                </small>
             </div>
             <button class="btn btn-primary" onclick="createSchool()">创建 Create</button>
         </div>
@@ -885,8 +898,8 @@
             </div>
             <input type="hidden" id="edit-school-id">
             <div class="form-group">
-                <label class="form-label">学校代码 School Code (不可修改)</label>
-                <input type="text" id="edit-school-code" class="form-input" disabled>
+                <label class="form-label">学校代码 School Code</label>
+                <input type="text" id="edit-school-code" class="form-input">
             </div>
             <div class="form-group">
                 <label class="form-label">学校名称 School Name</label>
@@ -896,7 +909,10 @@
                 <label class="form-label">邀请码 Invitation Code</label>
                 <input type="text" id="edit-school-invite" class="form-input">
             </div>
-            <button class="btn btn-primary" onclick="updateSchool()">保存 Save</button>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <button class="btn btn-secondary" onclick="regenerateInviteCode()">重新生成 Regenerate</button>
+                <button class="btn btn-primary" onclick="updateSchool()">保存 Save</button>
+            </div>
         </div>
     </div>
 
@@ -1084,11 +1100,66 @@ curl -X POST http://your-server/api/generate_graph \
 
         // Modal functions
         function showCreateSchoolModal() {
+            // Clear form first
+            document.getElementById('new-school-name').value = '';
+            document.getElementById('new-school-code').value = '';
             document.getElementById('create-school-modal').classList.add('show');
         }
 
         function closeModal(id) {
             document.getElementById(id).classList.remove('show');
+        }
+
+        // Auto-generate school code from school name
+        function autoGenerateSchoolCode() {
+            const nameInput = document.getElementById('new-school-name');
+            const codeInput = document.getElementById('new-school-code');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                codeInput.value = '';
+                return;
+            }
+            
+            // Extract English letters and Chinese characters
+            const letters = name.match(/[A-Za-z]+/g) || [];
+            const chinese = name.match(/[\u4e00-\u9fa5]+/g) || [];
+            
+            let prefix = '';
+            
+            // Prefer English letters for code generation
+            if (letters.length > 0) {
+                prefix = letters.join('').toUpperCase();
+            } else if (chinese.length > 0) {
+                // Use first letter of Chinese pinyin or just use first character
+                // For simplicity, we'll just use "SCHOOL" as fallback
+                prefix = 'SCHOOL';
+            }
+            
+            // Take first 2-4 letters for prefix
+            prefix = prefix.substring(0, Math.min(prefix.length, 4));
+            if (prefix.length < 2) prefix = prefix.padEnd(2, 'X');
+            
+            // Add random suffix with timestamp component for uniqueness
+            const timestamp = Date.now().toString().slice(-3);
+            const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase();
+            
+            codeInput.value = `${prefix}-${randomChars}${timestamp}`;
+        }
+        
+        // Regenerate school code manually
+        function regenerateSchoolCode() {
+            const nameInput = document.getElementById('new-school-name');
+            const codeInput = document.getElementById('new-school-code');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                showAlert('请先输入学校名称 Please enter school name first', 'error');
+                return;
+            }
+            
+            // Generate with different random seed
+            autoGenerateSchoolCode();
         }
 
         // Dashboard
@@ -1149,12 +1220,11 @@ curl -X POST http://your-server/api/generate_graph \
         async function createSchool() {
             const data = {
                 code: document.getElementById('new-school-code').value,
-                name: document.getElementById('new-school-name').value,
-                invitation_code: document.getElementById('new-school-invite').value
+                name: document.getElementById('new-school-name').value
             };
 
-            if (!data.code || !data.name || !data.invitation_code) {
-                showAlert('请填写所有字段 Please fill all fields', 'error');
+            if (!data.code || !data.name) {
+                showAlert('请填写必填字段 Please fill required fields', 'error');
                 return;
             }
 
@@ -1172,7 +1242,7 @@ curl -X POST http://your-server/api/generate_graph \
                 // Clear form
                 document.getElementById('new-school-code').value = '';
                 document.getElementById('new-school-name').value = '';
-                document.getElementById('new-school-invite').value = '';
+                // Invitation code is generated on the server
             } catch (error) {
                 showAlert('创建失败 Creation failed: ' + error.message, 'error');
             }
@@ -1190,9 +1260,22 @@ curl -X POST http://your-server/api/generate_graph \
             document.getElementById('edit-school-modal').classList.add('show');
         }
 
+        function regenerateInviteCode() {
+            const name = document.getElementById('edit-school-name').value;
+            const code = document.getElementById('edit-school-code').value;
+            const prefix = (name || code || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 4).padEnd(4, 'X');
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let suffix = '';
+            for (let i = 0; i < 5; i++) {
+                suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('edit-school-invite').value = `${prefix}-${suffix}`;
+        }
+
         async function updateSchool() {
             const id = document.getElementById('edit-school-id').value;
             const data = {
+                code: document.getElementById('edit-school-code').value,
                 name: document.getElementById('edit-school-name').value,
                 invitation_code: document.getElementById('edit-school-invite').value
             };

@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from captcha.image import ImageCaptcha
 
 from config.database import get_db
+from utils.invitations import normalize_or_generate, INVITE_PATTERN
 from models.auth import User, Organization
 from models.requests import RegisterRequest, LoginRequest, DemoPasskeyRequest
 from utils.auth import (
@@ -76,6 +77,23 @@ async def get_auth_mode():
     return {"mode": AUTH_MODE}
 
 
+@router.get("/organizations")
+async def list_organizations(db: Session = Depends(get_db)):
+    """
+    Get list of all organizations (public endpoint for registration)
+    
+    Returns basic organization info for registration form dropdown.
+    """
+    orgs = db.query(Organization).all()
+    return [
+        {
+            "code": org.code,
+            "name": org.name
+        }
+        for org in orgs
+    ]
+
+
 # ============================================================================
 # REGISTRATION
 # ============================================================================
@@ -90,12 +108,41 @@ async def register(
     Register new user (K12 teacher)
     
     Validates:
+    - Captcha verification (bot protection)
     - 11-digit Chinese mobile number
     - 8+ character password
     - Mandatory name (no numbers)
     - Valid organization code
     - Valid invitation code (not expired)
     """
+    # Validate captcha first (anti-bot protection)
+    if request.captcha_id not in captcha_store:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha expired or invalid. Please refresh."
+        )
+    
+    stored_captcha = captcha_store[request.captcha_id]
+    
+    # Check expiration
+    if time.time() > stored_captcha["expires"]:
+        del captcha_store[request.captcha_id]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha expired. Please refresh."
+        )
+    
+    if stored_captcha['code'].upper() != request.captcha.upper():
+        # Don't delete captcha_id yet, allow retry
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect captcha code"
+        )
+    
+    # Captcha verified, remove from store (one-time use)
+    del captcha_store[request.captcha_id]
+    logger.debug(f"Captcha verified for registration: {request.phone}")
+    
     # Check if phone already exists
     existing_user = db.query(User).filter(User.phone == request.phone).first()
     if existing_user:
@@ -115,8 +162,10 @@ async def register(
             detail=f"Organization '{request.organization_code}' not found"
         )
     
-    # Validate invitation code
-    if not validate_invitation_code(request.organization_code, request.invitation_code):
+    # Validate invitation code (database only)
+    provided_invite = (request.invitation_code or "").strip().upper()
+    db_invite = (org.invitation_code or "").strip().upper()
+    if not (db_invite and db_invite == provided_invite):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid or expired invitation code"
@@ -568,17 +617,34 @@ async def create_organization_admin(
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     
-    if not all(k in request for k in ["code", "name", "invitation_code"]):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required fields")
+    if not all(k in request for k in ["code", "name"]):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required fields: code, name")
     
     existing = db.query(Organization).filter(Organization.code == request["code"]).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Organization '{request['code']}' exists")
     
+    # Prepare invitation code: accept provided if valid, otherwise auto-generate following pattern
+    provided_invite = request.get("invitation_code")
+    invitation_code = normalize_or_generate(provided_invite, request.get("name"), request.get("code"))
+
+    # Ensure uniqueness of invitation codes across organizations if possible
+    existing_invite = db.query(Organization).filter(Organization.invitation_code == invitation_code).first()
+    if existing_invite:
+        # Regenerate a few times to avoid collision
+        attempts = 0
+        while attempts < 5:
+            invitation_code = normalize_or_generate(None, request.get("name"), request.get("code"))
+            if not db.query(Organization).filter(Organization.invitation_code == invitation_code).first():
+                break
+            attempts += 1
+        if attempts == 5:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate unique invitation code")
+
     new_org = Organization(
         code=request["code"],
         name=request["name"],
-        invitation_code=request["invitation_code"],
+        invitation_code=invitation_code,
         created_at=datetime.utcnow()
     )
     db.add(new_org)
@@ -610,10 +676,44 @@ async def update_organization_admin(
     if not org:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Organization ID {org_id} not found")
     
+    # Update code (if provided)
+    if "code" in request:
+        new_code = (request["code"] or "").strip()
+        if not new_code:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization code cannot be empty")
+        if len(new_code) > 50:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization code too long (max 50)")
+        if new_code != org.code:
+            conflict = db.query(Organization).filter(Organization.code == new_code).first()
+            if conflict:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Organization '{new_code}' exists")
+            org.code = new_code
+
     if "name" in request:
         org.name = request["name"]
     if "invitation_code" in request:
-        org.invitation_code = request["invitation_code"]
+        proposed = request.get("invitation_code")
+        # Normalize/enforce pattern; if not matching, auto-generate from (new) name/code
+        normalized = normalize_or_generate(
+            proposed,
+            request.get("name", org.name),
+            request.get("code", org.code)
+        )
+        # Ensure uniqueness across organizations (exclude current org)
+        conflict = db.query(Organization).filter(
+            Organization.invitation_code == normalized,
+            Organization.id != org.id
+        ).first()
+        if conflict:
+            attempts = 0
+            while attempts < 5:
+                normalized = normalize_or_generate(None, request.get("name", org.name), request.get("code", org.code))
+                if not db.query(Organization).filter(Organization.invitation_code == normalized, Organization.id != org.id).first():
+                    break
+                attempts += 1
+            if attempts == 5:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate unique invitation code")
+        org.invitation_code = normalized
     
     db.commit()
     db.refresh(org)

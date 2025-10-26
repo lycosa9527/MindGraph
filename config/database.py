@@ -33,45 +33,67 @@ def init_db():
     """
     Initialize database: create tables and seed demo data
     """
+    # Import here to avoid circular dependency
+    from utils.auth import load_invitation_codes
+    
     # Create all tables
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully")
     
-    # Seed demo organizations
+    # Seed organizations
     db = SessionLocal()
     try:
         # Check if organizations already exist
         if db.query(Organization).count() == 0:
-            demo_orgs = [
-                Organization(
-                    code="DEMO-001",
-                    name="Demo School for Testing",
-                    invitation_code="DEMO2024",
-                    created_at=datetime.utcnow()
-                ),
-                Organization(
-                    code="SPRING-EDU",
-                    name="Springfield Elementary School",
-                    invitation_code="SPRING123",
-                    created_at=datetime.utcnow()
-                ),
-                Organization(
-                    code="BJ-001",
-                    name="Beijing First High School",
-                    invitation_code="BJ-INVITE",
-                    created_at=datetime.utcnow()
-                ),
-                Organization(
-                    code="SH-042",
-                    name="Shanghai International School",
-                    invitation_code="SH2024",
-                    created_at=datetime.utcnow()
-                )
-            ]
-            
-            db.add_all(demo_orgs)
-            db.commit()
-            logger.info(f"Seeded {len(demo_orgs)} demo organizations")
+            # Prefer seeding from .env INVITATION_CODES if provided
+            env_codes = load_invitation_codes()
+            seeded_orgs = []
+            if env_codes:
+                for org_code, (invite, _expiry) in env_codes.items():
+                    # Use org_code as name fallback; admin can edit later
+                    seeded_orgs.append(
+                        Organization(
+                            code=org_code,
+                            name=org_code,
+                            invitation_code=invite,
+                            created_at=datetime.utcnow()
+                        )
+                    )
+                logger.info(f"Seeding organizations from .env: {len(seeded_orgs)} entries")
+            else:
+                # Fallback demo data if .env not configured
+                seeded_orgs = [
+                    Organization(
+                        code="DEMO-001",
+                        name="Demo School for Testing",
+                        invitation_code="DEMO2024",
+                        created_at=datetime.utcnow()
+                    ),
+                    Organization(
+                        code="SPRING-EDU",
+                        name="Springfield Elementary School",
+                        invitation_code="SPRING123",
+                        created_at=datetime.utcnow()
+                    ),
+                    Organization(
+                        code="BJ-001",
+                        name="Beijing First High School",
+                        invitation_code="BJ-INVITE",
+                        created_at=datetime.utcnow()
+                    ),
+                    Organization(
+                        code="SH-042",
+                        name="Shanghai International School",
+                        invitation_code="SH2024",
+                        created_at=datetime.utcnow()
+                    )
+                ]
+                logger.info("Seeding default demo organizations (no INVITATION_CODES in .env)")
+
+            if seeded_orgs:
+                db.add_all(seeded_orgs)
+                db.commit()
+                logger.info(f"Seeded {len(seeded_orgs)} organizations")
         else:
             logger.info("Organizations already exist, skipping seed")
             
