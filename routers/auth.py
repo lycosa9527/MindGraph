@@ -113,8 +113,10 @@ async def register(
     - 11-digit Chinese mobile number
     - 8+ character password
     - Mandatory name (no numbers)
-    - Valid organization code
-    - Valid invitation code (not expired)
+    - Valid invitation code (automatically binds user to school)
+    
+    Note: Organization is automatically determined from invitation code.
+    Each invitation code is unique and belongs to one school.
     """
     # Validate captcha first (anti-bot protection)
     if request.captcha_id not in captcha_store:
@@ -140,7 +142,7 @@ async def register(
             detail="Incorrect captcha code"
         )
     
-    # Captcha verified, remove from store (one-time use)
+    # Captcha verified (case-insensitive), remove from store (one-time use)
     del captcha_store[request.captcha_id]
     logger.debug(f"Captcha verified for registration: {request.phone}")
     
@@ -152,25 +154,25 @@ async def register(
             detail="Phone number already registered"
         )
     
-    # Validate organization
+    # Find organization by invitation code (each invitation code is unique)
+    provided_invite = (request.invitation_code or "").strip().upper()
+    if not provided_invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invitation code is required"
+        )
+    
     org = db.query(Organization).filter(
-        Organization.code == request.organization_code
+        Organization.invitation_code == provided_invite
     ).first()
     
     if not org:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organization '{request.organization_code}' not found"
-        )
-    
-    # Validate invitation code (database only)
-    provided_invite = (request.invitation_code or "").strip().upper()
-    db_invite = (org.invitation_code or "").strip().upper()
-    if not (db_invite and db_invite == provided_invite):
-        raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid or expired invitation code"
         )
+    
+    logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
     
     # Create new user
     new_user = User(
@@ -295,6 +297,27 @@ async def login(
     # Get organization
     org = db.query(Organization).filter(Organization.id == user.organization_id).first()
     
+    # Check organization status (locked or expired)
+    if org:
+        # Check if organization is locked
+        is_active = org.is_active if hasattr(org, 'is_active') else True
+        if not is_active:
+            logger.warning(f"Login blocked: Organization {org.code} is locked")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organization account is locked. Please contact support."
+            )
+        
+        # Check if organization subscription has expired
+        if hasattr(org, 'expires_at') and org.expires_at:
+            from datetime import datetime
+            if org.expires_at < datetime.utcnow():
+                logger.warning(f"Login blocked: Organization {org.code} expired on {org.expires_at}")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Organization subscription has expired. Please contact support."
+                )
+    
     # Generate JWT token
     token = create_access_token(user)
     
@@ -404,6 +427,9 @@ def verify_captcha(captcha_id: str, user_code: str) -> bool:
     """
     Verify captcha code
     
+    Note: Verification is CASE-INSENSITIVE for better user experience.
+    Users can enter captcha in any case (upper/lower/mixed).
+    
     Returns True if valid, False otherwise
     Removes captcha after verification (one-time use)
     """
@@ -419,7 +445,7 @@ def verify_captcha(captcha_id: str, user_code: str) -> bool:
         logger.warning(f"Captcha expired: {captcha_id}")
         return False
     
-    # Verify code (case-insensitive)
+    # Verify code (CASE-INSENSITIVE comparison)
     is_valid = stored["code"].upper() == user_code.upper()
     
     # Remove captcha (one-time use)
@@ -604,6 +630,8 @@ async def list_organizations_admin(
             "name": org.name,
             "invitation_code": org.invitation_code,
             "user_count": user_count,
+            "expires_at": org.expires_at.isoformat() if org.expires_at else None,
+            "is_active": org.is_active if hasattr(org, 'is_active') else True,
             "created_at": org.created_at.isoformat() if org.created_at else None
         })
     return result
@@ -717,6 +745,23 @@ async def update_organization_admin(
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate unique invitation code")
         org.invitation_code = normalized
     
+    # Update expiration date (if provided)
+    if "expires_at" in request:
+        expires_str = request.get("expires_at")
+        if expires_str:
+            from datetime import datetime
+            try:
+                # Parse ISO format date string
+                org.expires_at = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
+            except ValueError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format. Use ISO format (YYYY-MM-DD)")
+        else:
+            org.expires_at = None
+    
+    # Update active status (if provided)
+    if "is_active" in request:
+        org.is_active = bool(request.get("is_active"))
+    
     db.commit()
     db.refresh(org)
     
@@ -726,6 +771,8 @@ async def update_organization_admin(
         "code": org.code,
         "name": org.name,
         "invitation_code": org.invitation_code,
+        "expires_at": org.expires_at.isoformat() if org.expires_at else None,
+        "is_active": org.is_active if hasattr(org, 'is_active') else True,
         "created_at": org.created_at.isoformat() if org.created_at else None
     }
 
@@ -764,28 +811,178 @@ async def delete_organization_admin(
 async def list_users_admin(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 100
+    page: int = 1,
+    page_size: int = 50,
+    search: str = "",
+    organization_id: int = None
 ):
-    """List all users (ADMIN ONLY)"""
+    """
+    List users with pagination and filtering (ADMIN ONLY)
+    
+    Query Parameters:
+    - page: Page number (starting from 1)
+    - page_size: Number of items per page (default: 50)
+    - search: Search by name or phone number
+    - organization_id: Filter by organization
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     
-    users = db.query(User).offset(skip).limit(limit).all()
+    # Build base query
+    query = db.query(User)
+    
+    # Apply organization filter
+    if organization_id:
+        query = query.filter(User.organization_id == organization_id)
+    
+    # Apply search filter (name or phone)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (User.name.like(search_term)) | (User.phone.like(search_term))
+        )
+    
+    # Get total count for pagination
+    total = query.count()
+    
+    # Calculate pagination
+    skip = (page - 1) * page_size
+    total_pages = (total + page_size - 1) // page_size  # Ceiling division
+    
+    # Get paginated users
+    users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
+    
     result = []
     for user in users:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        
+        # Mask phone number for privacy (show first 3 and last 4 digits)
+        # Example: 13812345678 -> 138****5678
+        masked_phone = user.phone
+        if len(user.phone) == 11:
+            masked_phone = user.phone[:3] + "****" + user.phone[-4:]
+        
         result.append({
+            "id": user.id,
+            "phone": masked_phone,  # Masked for display
+            "phone_real": user.phone,  # Real phone for editing (admin only)
+            "name": user.name,
+            "organization_id": user.organization_id,  # For editing
+            "organization_code": org.code if org else None,
+            "organization_name": org.name if org else None,
+            "locked_until": user.locked_until.isoformat() if user.locked_until else None,
+            "created_at": user.created_at.isoformat() if user.created_at else None
+        })
+    
+    return {
+        "users": result,
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": total_pages
+        }
+    }
+
+
+@router.put("/admin/users/{user_id}", dependencies=[Depends(get_current_user)])
+async def update_user_admin(
+    user_id: int,
+    request: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user information (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+    
+    # Update phone (with validation)
+    if "phone" in request:
+        new_phone = request["phone"].strip()
+        if not new_phone:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phone cannot be empty")
+        if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith('1'):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                              detail="Phone must be 11 digits starting with 1")
+        
+        # Check if phone already exists (for another user)
+        if new_phone != user.phone:
+            existing = db.query(User).filter(User.phone == new_phone).first()
+            if existing:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
+                                  detail=f"Phone number {new_phone} already registered")
+        user.phone = new_phone
+    
+    # Update name (with validation)
+    if "name" in request:
+        new_name = request["name"].strip()
+        if not new_name or len(new_name) < 2:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                              detail="Name must be at least 2 characters")
+        if any(char.isdigit() for char in new_name):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                              detail="Name cannot contain numbers")
+        user.name = new_name
+    
+    # Update organization
+    if "organization_id" in request:
+        org_id = request["organization_id"]
+        if org_id:
+            org = db.query(Organization).filter(Organization.id == org_id).first()
+            if not org:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                  detail=f"Organization ID {org_id} not found")
+            user.organization_id = org_id
+    
+    db.commit()
+    db.refresh(user)
+    
+    # Get updated organization info
+    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    
+    logger.info(f"Admin {current_user.phone} updated user: {user.phone}")
+    
+    return {
+        "message": "User updated successfully",
+        "user": {
             "id": user.id,
             "phone": user.phone,
             "name": user.name,
             "organization_code": org.code if org else None,
-            "organization_name": org.name if org else None,
-            "failed_login_attempts": user.failed_login_attempts,
-            "locked_until": user.locked_until.isoformat() if user.locked_until else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None
-        })
-    return result
+            "organization_name": org.name if org else None
+        }
+    }
+
+
+@router.delete("/admin/users/{user_id}", dependencies=[Depends(get_current_user)])
+async def delete_user_admin(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete user (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+    
+    # Prevent deleting self
+    if user.id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                          detail="Cannot delete your own account")
+    
+    user_phone = user.phone
+    db.delete(user)
+    db.commit()
+    
+    logger.warning(f"Admin {current_user.phone} deleted user: {user_phone}")
+    return {"message": f"User {user_phone} deleted successfully"}
 
 
 @router.put("/admin/users/{user_id}/unlock", dependencies=[Depends(get_current_user)])
@@ -808,6 +1005,35 @@ async def unlock_user_admin(
     
     logger.info(f"Admin {current_user.phone} unlocked user: {user.phone}")
     return {"message": f"User {user.phone} unlocked successfully"}
+
+
+@router.put("/admin/users/{user_id}/reset-password", dependencies=[Depends(get_current_user)])
+async def reset_user_password_admin(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reset user password to default (12345678) (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+    
+    # Prevent admin from resetting their own password this way
+    if user.id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot reset your own password")
+    
+    # Reset password to default
+    from utils.auth import hash_password
+    user.password_hash = hash_password("12345678")
+    user.failed_login_attempts = 0  # Also unlock if locked
+    user.locked_until = None
+    db.commit()
+    
+    logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
+    return {"message": f"Password reset to 12345678 for user {user.phone}"}
 
 
 # ============================================================================

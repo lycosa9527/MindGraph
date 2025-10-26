@@ -425,8 +425,7 @@ class RegisterRequest(BaseModel):
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
     password: str = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(..., min_length=2, description="Teacher's name (required, min 2 chars, no numbers)")
-    organization_code: str = Field(..., description="School/organization code")
-    invitation_code: str = Field(..., description="Invitation code for registration")
+    invitation_code: str = Field(..., description="Invitation code for registration (automatically binds to school)")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
     
@@ -458,7 +457,6 @@ class RegisterRequest(BaseModel):
                 "phone": "13812345678",
                 "password": "Teacher123!",
                 "name": "Zhang Wei",
-                "organization_code": "DEMO-001",
                 "invitation_code": "DEMO2024",
                 "captcha": "AB3D",
                 "captcha_id": "uuid-captcha-session"

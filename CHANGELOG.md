@@ -7,6 +7,276 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.19.7] - 2025-10-26 - User Management Pagination, Filtering & Password Reset
+
+### Added
+
+- **User List Pagination & Filtering** (`templates/admin.html`, `routers/auth.py`)
+  - **Pagination**: 50 users per page (handles 1000+ users efficiently)
+  - **Search**: Filter by name or phone number
+  - **Organization Filter**: Dropdown to filter by specific school
+  - **Navigation Controls**:
+    - Previous/Next buttons
+    - Direct page number buttons (shows 5 pages at a time)
+    - Current page highlighted
+    - Page info display: "Showing 1-50 of 1,234"
+  - **Backend API** (`/api/auth/admin/users`):
+    - Query parameters: `page`, `page_size`, `search`, `organization_id`
+    - Returns paginated results with metadata
+    - Database-level filtering for performance
+    - Sorted by newest users first
+
+- **Password Reset Feature** (`routers/auth.py`, `templates/admin.html`)
+  - Admin can reset user passwords to default (`12345678`)
+  - Reset button in Edit User modal (orange warning style)
+  - API endpoint: `PUT /admin/users/{user_id}/reset-password`
+  - Security: Prevents admin from resetting their own password
+  - Also unlocks account when resetting password
+  - Detailed confirmation dialog with user info
+  - Action logged for audit trail
+
+- **Organization Account Lock Enforcement** (`routers/auth.py`, `utils/auth.py`)
+  - Login blocked for locked organizations (HTTP 403)
+  - Login blocked for expired subscriptions (HTTP 403)
+  - Enforcement at two levels:
+    - During initial login (`/login` endpoint)
+    - During API requests (`get_current_user` middleware)
+  - Clear error messages: "Organization account is locked" / "Subscription has expired"
+  - Logged in users are immediately kicked out when org is locked/expired
+
+- **Favicon Support** (`templates/admin.html`)
+  - Added favicon link to admin panel
+  - Prevents 404 errors for `/favicon.ico`
+  - Uses `/static/favicon.svg`
+
+### Fixed
+
+- **Edit User Button Not Working** (`templates/admin.html`)
+  - Added missing `openModal()` function
+  - Edit button now properly opens the user edit modal
+  - Modal correctly populates user data and organization dropdown
+
+- **User Filter Dropdown Population**
+  - `loadUserFilters()` loads all organizations into filter dropdown
+  - Called automatically when switching to Users tab
+  - Maintains selection after reload
+
+### Changed
+
+- **User Actions Layout**
+  - Edit and Delete buttons remain in table
+  - Password reset moved to Edit User modal
+  - Cleaner action column in user list
+
+- **Admin Panel Header Layout** (`templates/admin.html`)
+  - Moved language toggle button next to "MindGraph Admin Panel" title
+  - Better visual grouping: title + language selector on left, user controls on right
+  - Cleaner, more intuitive header design
+
+### Technical Details
+
+- **Performance Optimization**:
+  - Only loads 50 users per page (not all 1000+)
+  - Database-level filtering with SQL LIKE queries
+  - Efficient pagination with offset/limit
+  - Minimal memory footprint
+
+- **User Experience**:
+  - Reset button clears filters and returns to page 1
+  - Enter key in search box triggers search
+  - Bilingual support for all new features
+  - Responsive pagination controls
+
+---
+
+## [4.19.6] - 2025-10-26 - Admin Panel Language Toggle & Organization Expiration Management
+
+### Added
+
+- **Admin Panel Language Toggle** (`templates/admin.html`)
+  - Added EN/中文 toggle button in admin panel header
+  - Default language: English (EN)
+  - Switches ALL bilingual text throughout admin interface
+  - Saves language preference to localStorage (separate from auth page)
+  - Covers: dashboard, schools, users, API keys, settings, logs
+  - Updates: headers, table columns, buttons, badges, modal titles, form labels
+
+- **Organization Expiration Management** (`models/auth.py`, `routers/auth.py`, `templates/admin.html`)
+  - Added `expires_at` (DateTime) column to organizations table
+  - Added `is_active` (Boolean) column for lock/unlock status
+  - New "Expiration" column in schools table showing service end date
+  - New "Status" column with visual indicators:
+    - 🔒 **Locked** (red) - Organization manually locked by admin
+    - ⏰ **Expired** (red) - Service subscription has expired
+    - ✅ **Active** (green) - Organization is active and not expired
+  - Expired/locked organizations highlighted with red background
+  - Edit modal now includes:
+    - Date picker for setting/updating expiration dates
+    - Active/Locked dropdown for instant account control
+    - Help text explaining lock implications
+  - Backend API updates:
+    - `list_organizations_admin` returns expiration and active status
+    - `update_organization_admin` handles expiration date changes
+    - Proper ISO date format parsing and validation
+
+- **Auto-Migration for Existing Databases** (`config/database.py`)
+  - Automatic detection and addition of new columns on server startup
+  - Safe migration: checks if columns exist before adding
+  - All existing organizations default to active with no expiration
+  - No manual migration required
+
+- **Database Backup Tools** (`scripts/`)
+  - **`backup_database.py`**: Automated timestamped backups
+    - Backs up `mindgraph.db` and `.env` files
+    - Creates restoration instructions
+    - Auto-cleanup of old backups (keeps last 10)
+  - **`test_backup_restore.py`**: Portability verification
+    - Demonstrates bcrypt hash portability
+    - Tests password verification after restore
+
+### Changed
+
+- **Admin Panel UI Cleanup**
+  - Removed emoji icons (✏️ 🗑️) from Edit and Delete buttons
+  - Cleaner, more professional appearance
+  - Text-only buttons: "编辑/Edit" and "删除/Delete"
+
+### Fixed
+
+- **Language Toggle Initialization Error** (`templates/admin.html`)
+  - Fixed "Cannot access 'currentLang' before initialization" error
+  - Fixed "Cannot access 'currentTab' before initialization" error
+  - Moved variable declarations before `initLanguage()` call
+  - Resolved temporal dead zone issue with `let` declarations
+  - Admin panel now loads correctly with all data
+
+### Security & Technical Notes
+
+- **Password Security**: 
+  - Bcrypt hashes with random salts (12 rounds)
+  - Salts embedded in hash (self-contained, fully portable)
+  - Database backup includes all password hashes
+  - No external keys needed for password verification
+  
+- **JWT Token Management**:
+  - JWT_SECRET_KEY stored in `.env` file
+  - Used only for login session tokens (24-hour expiration)
+  - If JWT secret changes: existing tokens invalid (users re-login)
+  - Database passwords remain valid regardless of JWT secret
+
+- **Database Portability**:
+  - Single file backup (`mindgraph.db`) is fully sufficient
+  - All data preserved: users, organizations, passwords, expiration dates
+  - Optional `.env` backup prevents mass re-logins
+  - Simple disaster recovery: copy file and restart
+
+---
+
+## [4.19.5] - 2025-10-26 - Auth Page UX Improvements & Registration Simplification
+
+### Added
+
+- **Language Toggle Button** (`templates/auth.html`)
+  - Added EN/中文 toggle button in top-right corner of auth header
+  - Default language: Chinese (中文)
+  - Switches all labels, placeholders, hints, and error messages
+  - Saves language preference to localStorage
+  - Clean, modern design with smooth transitions
+
+- **Animated Rainbow Border** (`templates/auth.html`)
+  - Added traveling rainbow light effect around login modal border
+  - Uses conic-gradient with 8 colors rotating continuously
+  - 3-second smooth animation cycle
+  - 10px blur for soft glow effect
+  - Colors: Purple → Pink → Blue → Cyan → Green → Pink-Red → Yellow
+
+- **Enhanced Error Handling** (`templates/auth.html`)
+  - Better display of Pydantic validation errors (422 status)
+  - Shows detailed field-level error messages
+  - Console logging for debugging
+  - User-friendly error messages in both languages
+
+- **Favicon Link** (`templates/auth.html`)
+  - Added missing favicon link to prevent 404 errors
+  - Points to `/static/favicon.svg`
+
+### Changed
+
+- **Captcha Rate Limit** (`utils/auth.py`)
+  - Increased from 10 to 30 attempts per IP per 15 minutes
+  - More reasonable limit for legitimate users
+  - Maintains security while improving UX
+
+- **Registration Workflow Simplification**
+  - **Removed**: School selection dropdown from registration form
+  - **Updated**: Registration now automatically binds user to school via invitation code
+  - **Backend** (`routers/auth.py`):
+    - Finds organization by invitation code (each code is unique)
+    - Removed `organization_code` parameter requirement
+    - Reversed lookup: `invitation_code` → `Organization`
+    - Better error messages for invalid invitation codes
+  - **Frontend** (`templates/auth.html`):
+    - Removed school dropdown and organization loading logic
+    - Removed `organization_code` from form submission
+    - Updated hint text: "邀请码会自动绑定到您的学校" / "Code automatically binds you to your school"
+  - **Models** (`models/requests.py`):
+    - Removed `organization_code` field from `RegisterRequest`
+    - Updated model documentation and examples
+
+- **Phone Number Placeholder** (`templates/auth.html`)
+  - Updated to clarify phone is used as username
+  - Chinese: "手机号作为用户名"
+  - English: "Phone as username"
+  - Applies to both login and registration forms
+
+- **Platform Description** (`templates/auth.html`)
+  - Updated from "K12 教师思维导图平台" (Mind Mapping Platform)
+  - To "K12 教师思维可视化工具平台" (Thinking Visualization Tool Platform)
+  - English: "K12 Teacher Thinking Visualization Tool Platform"
+  - Better reflects the comprehensive nature of MindGraph
+
+### Fixed
+
+- **Mobile View White Corners** (`templates/auth.html`)
+  - Changed form container background from semi-transparent to solid white
+  - Added proper border-radius to header and form sections on mobile
+  - Maintains rounded corners with proper margin on small screens
+
+- **Captcha Case Sensitivity** (Documentation Update)
+  - **Already Working**: Captcha verification is case-insensitive
+  - Added clear documentation in code comments (`routers/auth.py`)
+  - Users can enter captcha in any case (upper/lower/mixed)
+
+### Impact
+
+**Simpler Registration Process:**
+- ✅ Users only need 5 fields (phone, password, name, invitation code, captcha)
+- ✅ No confusion about which school to select
+- ✅ Invitation code automatically determines school
+- ✅ Each invitation code is unique across all organizations
+
+**Better UX:**
+- ✅ Bilingual support with easy toggle
+- ✅ Modern animated border effect
+- ✅ Clearer field labels and hints
+- ✅ Better error messages
+- ✅ More generous captcha limits
+
+**Security Maintained:**
+- ✅ Invitation codes remain unique per school
+- ✅ Case-insensitive captcha improves UX without reducing security
+- ✅ Rate limiting still prevents abuse
+- ✅ All validation checks intact
+
+### Files Modified
+
+- `templates/auth.html` - Language toggle, animations, form simplification
+- `routers/auth.py` - Registration logic update, invitation code lookup
+- `models/requests.py` - RegisterRequest model simplified
+- `utils/auth.py` - Captcha limit increased to 30
+
+---
+
 ## [4.19.4] - 2025-10-26 - Fix: Landing Page & Demo Route Logic
 
 ### Fixed

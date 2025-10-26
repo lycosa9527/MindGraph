@@ -29,6 +29,10 @@ class Organization(Base):
     invitation_code = Column(String(50), nullable=True)  # For controlled registration
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Service subscription management
+    expires_at = Column(DateTime, nullable=True)  # Service expiration date
+    is_active = Column(Boolean, default=True)  # Active/locked status
+    
     # Relationship
     users = relationship("User", back_populates="organization")
 

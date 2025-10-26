@@ -53,7 +53,7 @@ ADMIN_PHONES = os.getenv("ADMIN_PHONES", "").split(",")
 
 # Security Configuration
 MAX_LOGIN_ATTEMPTS = 5
-MAX_CAPTCHA_ATTEMPTS = 10
+MAX_CAPTCHA_ATTEMPTS = 30
 LOCKOUT_DURATION_MINUTES = 15
 RATE_LIMIT_WINDOW_MINUTES = 15
 
@@ -317,6 +317,26 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
         )
+    
+    # Check organization status (locked or expired)
+    if user.organization_id:
+        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        if org:
+            # Check if organization is locked
+            is_active = org.is_active if hasattr(org, 'is_active') else True
+            if not is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Organization account is locked. Please contact support."
+                )
+            
+            # Check if organization subscription has expired
+            if hasattr(org, 'expires_at') and org.expires_at:
+                if org.expires_at < datetime.utcnow():
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Organization subscription has expired. Please contact support."
+                    )
     
     return user
 

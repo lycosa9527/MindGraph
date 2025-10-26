@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindGraph 管理后台 | Admin Panel</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/fonts/inter.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,6 +36,26 @@
             align-items: center;
             gap: 1rem;
         }
+
+        .lang-toggle {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #667eea;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: scale(1.05);
+        }
+
+        .lang-en { display: inline; }
+        .lang-zh { display: none; }
 
         /* Main Container */
         .container {
@@ -196,6 +217,15 @@
         .btn-success {
             background: #10b981;
             color: white;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #d97706;
         }
 
         .btn-secondary {
@@ -441,10 +471,19 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <h1>🎓 MindGraph 管理后台</h1>
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <h1>🎓 MindGraph <span class="lang-zh">管理后台</span><span class="lang-en">Admin Panel</span></h1>
+            <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
+                <span class="lang-zh">EN</span>
+                <span class="lang-en">中文</span>
+            </button>
+        </div>
         <div class="user-info">
             <span id="adminName">Admin</span>
-            <button class="btn btn-secondary btn-sm" onclick="logout()">登出 Logout</button>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">
+                <span class="lang-zh">登出</span>
+                <span class="lang-en">Logout</span>
+            </button>
         </div>
     </div>
 
@@ -455,38 +494,38 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('dashboard')">📊 仪表盘 Dashboard</button>
-            <button class="tab" onclick="switchTab('schools')">🏫 学校管理 Schools</button>
-            <button class="tab" onclick="switchTab('users')">👥 用户管理 Users</button>
-            <button class="tab" onclick="switchTab('apikeys')">🔑 API Keys</button>
-            <button class="tab" onclick="switchTab('settings')">⚙️ 系统设置 Settings</button>
-            <button class="tab" onclick="switchTab('logs')">📋 调试日志 Debug Logs</button>
+            <button class="tab active" onclick="switchTab('dashboard')">📊 <span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
+            <button class="tab" onclick="switchTab('schools')">🏫 <span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
+            <button class="tab" onclick="switchTab('users')">👥 <span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
+            <button class="tab" onclick="switchTab('apikeys')">🔑 <span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ <span class="lang-zh">系统设置</span><span class="lang-en">Settings</span></button>
+            <button class="tab" onclick="switchTab('logs')">📋 <span class="lang-zh">调试日志</span><span class="lang-en">Debug Logs</span></button>
         </div>
 
         <!-- Dashboard Tab -->
         <div id="dashboard-tab" class="tab-content active">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>总用户数 Total Users</h3>
+                    <h3><span class="lang-zh">总用户数</span><span class="lang-en">Total Users</span></h3>
                     <div class="value" id="stat-users">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>学校数量 Organizations</h3>
+                    <h3><span class="lang-zh">学校数量</span><span class="lang-en">Organizations</span></h3>
                     <div class="value" id="stat-orgs">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>锁定账户 Locked Accounts</h3>
+                    <h3><span class="lang-zh">锁定账户</span><span class="lang-en">Locked Accounts</span></h3>
                     <div class="value" id="stat-locked">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>本周注册 This Week</h3>
+                    <h3><span class="lang-zh">本周注册</span><span class="lang-en">This Week</span></h3>
                     <div class="value" id="stat-recent">-</div>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">各学校用户分布 Users by Organization</h2>
+                    <h2 class="card-title"><span class="lang-zh">各学校用户分布</span><span class="lang-en">Users by Organization</span></h2>
                 </div>
                 <div id="org-distribution"></div>
             </div>
@@ -496,20 +535,22 @@
         <div id="schools-tab" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">学校列表 School List</h2>
+                    <h2 class="card-title"><span class="lang-zh">学校列表</span><span class="lang-en">School List</span></h2>
                     <button class="btn btn-primary" onclick="showCreateSchoolModal()">
-                        ➕ 创建学校 Create School
+                        ➕ <span class="lang-zh">创建学校</span><span class="lang-en">Create School</span>
                     </button>
                 </div>
                 <div id="schools-loading" class="spinner"></div>
                 <table id="schools-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th>学校代码 Code</th>
-                            <th>学校名称 Name</th>
-                            <th>邀请码 Invitation Code</th>
-                            <th>用户数 Users</th>
-                            <th>操作 Actions</th>
+                            <th><span class="lang-zh">学校代码</span><span class="lang-en">Code</span></th>
+                            <th><span class="lang-zh">学校名称</span><span class="lang-en">Name</span></th>
+                            <th><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></th>
+                            <th><span class="lang-zh">到期日期</span><span class="lang-en">Expiration</span></th>
+                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
+                            <th><span class="lang-zh">用户数</span><span class="lang-en">Users</span></th>
+                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody id="schools-tbody"></tbody>
@@ -521,22 +562,66 @@
         <div id="users-tab" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">用户列表 User List</h2>
+                    <h2 class="card-title"><span class="lang-zh">用户列表</span><span class="lang-en">User List</span></h2>
                 </div>
+                
+                <!-- Filter Controls -->
+                <div style="padding:1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
+                        <div style="flex:1;min-width:200px;">
+                            <label class="form-label" style="margin-bottom:0.25rem;"><span class="lang-zh">搜索</span><span class="lang-en">Search</span></label>
+                            <input type="text" id="user-search" class="form-input" 
+                                   placeholder="Name or Phone" 
+                                   onkeyup="if(event.key==='Enter') filterUsers()">
+                        </div>
+                        <div style="min-width:200px;">
+                            <label class="form-label" style="margin-bottom:0.25rem;"><span class="lang-zh">学校筛选</span><span class="lang-en">Filter by School</span></label>
+                            <select id="user-org-filter" class="form-select" onchange="filterUsers()">
+                                <option value=""><span class="lang-zh">全部学校</span><span class="lang-en">All Schools</span></option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="filterUsers()">
+                            🔍 <span class="lang-zh">搜索</span><span class="lang-en">Search</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearUserFilters()">
+                            ↻ <span class="lang-zh">重置</span><span class="lang-en">Reset</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div id="users-loading" class="spinner"></div>
                 <table id="users-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th>手机号 Phone</th>
-                            <th>姓名 Name</th>
-                            <th>学校 Organization</th>
-                            <th>失败次数 Failed Attempts</th>
-                            <th>状态 Status</th>
-                            <th>操作 Actions</th>
+                            <th><span class="lang-zh">手机号</span><span class="lang-en">Phone</span></th>
+                            <th><span class="lang-zh">姓名</span><span class="lang-en">Name</span></th>
+                            <th><span class="lang-zh">学校</span><span class="lang-en">Organization</span></th>
+                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
+                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody id="users-tbody"></tbody>
                 </table>
+                
+                <!-- Pagination Controls -->
+                <div id="users-pagination" style="display:none;padding:1rem;border-top:1px solid #e2e8f0;background:#f8fafc;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+                        <div id="users-page-info" style="color:#64748b;">
+                            <!-- Page info will be inserted here -->
+                        </div>
+                        <div style="display:flex;gap:0.5rem;">
+                            <button id="users-prev-btn" class="btn btn-secondary btn-sm" onclick="previousUsersPage()">
+                                ← <span class="lang-zh">上一页</span><span class="lang-en">Previous</span>
+                            </button>
+                            <div id="users-page-numbers" style="display:flex;gap:0.25rem;">
+                                <!-- Page numbers will be inserted here -->
+                            </div>
+                            <button id="users-next-btn" class="btn btn-secondary btn-sm" onclick="nextUsersPage()">
+                                <span class="lang-zh">下一页</span><span class="lang-en">Next</span> →
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -544,22 +629,22 @@
         <div id="apikeys-tab" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">🔑 API Keys Management</h2>
+                    <h2 class="card-title">🔑 <span class="lang-zh">API密钥管理</span><span class="lang-en">API Keys Management</span></h2>
                     <button class="btn btn-primary" onclick="showCreateAPIKeyModal()">
-                        ➕ Create API Key
+                        ➕ <span class="lang-zh">创建密钥</span><span class="lang-en">Create API Key</span>
                     </button>
                 </div>
                 <div id="apikeys-loading" class="spinner"></div>
                 <table id="apikeys-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>API Key</th>
-                            <th>Usage</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th>Last Used</th>
-                            <th>Actions</th>
+                            <th><span class="lang-zh">名称</span><span class="lang-en">Name</span></th>
+                            <th><span class="lang-zh">API密钥</span><span class="lang-en">API Key</span></th>
+                            <th><span class="lang-zh">使用量</span><span class="lang-en">Usage</span></th>
+                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
+                            <th><span class="lang-zh">创建时间</span><span class="lang-en">Created</span></th>
+                            <th><span class="lang-zh">最后使用</span><span class="lang-en">Last Used</span></th>
+                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody id="apikeys-tbody"></tbody>
@@ -572,12 +657,12 @@
             <!-- Action Bar -->
             <div class="card" style="margin-bottom:1rem;">
                 <div class="card-header">
-                    <h2 class="card-title">系统配置 System Settings</h2>
+                    <h2 class="card-title"><span class="lang-zh">系统配置</span><span class="lang-en">System Settings</span></h2>
                     <div style="display:flex;gap:0.5rem;">
-                        <button class="btn btn-secondary btn-sm" onclick="loadEnvSettings()">🔄 Refresh</button>
-                        <button class="btn btn-primary btn-sm" onclick="showBackupListModal()">📦 Backups</button>
-                        <button class="btn btn-success btn-sm" onclick="validateEnvSettings()">✓ Validate</button>
-                        <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All</button>
+                        <button class="btn btn-secondary btn-sm" onclick="loadEnvSettings()">🔄 <span class="lang-zh">刷新</span><span class="lang-en">Refresh</span></button>
+                        <button class="btn btn-primary btn-sm" onclick="showBackupListModal()">📦 <span class="lang-zh">备份</span><span class="lang-en">Backups</span></button>
+                        <button class="btn btn-success btn-sm" onclick="validateEnvSettings()">✓ <span class="lang-zh">验证</span><span class="lang-en">Validate</span></button>
+                        <button class="btn btn-primary" onclick="saveEnvSettings()">💾 <span class="lang-zh">保存全部</span><span class="lang-en">Save All</span></button>
                     </div>
                 </div>
             </div>
@@ -786,7 +871,7 @@
         <div id="logs-tab" class="tab-content">
             <div class="card" style="margin-bottom:1rem;">
                 <div class="card-header">
-                    <h2 class="card-title">📋 Debug Logs</h2>
+                    <h2 class="card-title">📋 <span class="lang-zh">调试日志</span><span class="lang-en">Debug Logs</span></h2>
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
                         <select id="log-source-select" class="form-select" style="width:auto;" onchange="logViewer.setSource(this.value)">
                             <option value="app">Application</option>
@@ -858,18 +943,18 @@
     <div id="create-school-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">创建学校 Create School</h3>
+                <h3 class="modal-title"><span class="lang-zh">创建学校</span><span class="lang-en">Create School</span></h3>
                 <span class="close" onclick="closeModal('create-school-modal')">&times;</span>
             </div>
             <div class="form-group">
-                <label class="form-label">学校名称 School Name *</label>
+                <label class="form-label"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span> *</label>
                 <input type="text" id="new-school-name" class="form-input" 
                        placeholder="Beijing High School 北京高中" 
                        oninput="autoGenerateSchoolCode()" required>
                 <small style="color:#64748b;">Enter the school name first, code will be generated automatically</small>
             </div>
             <div class="form-group">
-                <label class="form-label">学校代码 School Code *</label>
+                <label class="form-label"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span> *</label>
                 <div style="display:flex;gap:0.5rem;">
                     <input type="text" id="new-school-code" class="form-input" 
                            placeholder="AUTO-GENERATED" required
@@ -885,7 +970,7 @@
                     ℹ️ <strong>Note:</strong> Invitation code will be automatically generated after creation
                 </small>
             </div>
-            <button class="btn btn-primary" onclick="createSchool()">创建 Create</button>
+            <button class="btn btn-primary" onclick="createSchool()"><span class="lang-zh">创建</span><span class="lang-en">Create</span></button>
         </div>
     </div>
 
@@ -893,25 +978,71 @@
     <div id="edit-school-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">编辑学校 Edit School</h3>
+                <h3 class="modal-title"><span class="lang-zh">编辑学校</span><span class="lang-en">Edit School</span></h3>
                 <span class="close" onclick="closeModal('edit-school-modal')">&times;</span>
             </div>
             <input type="hidden" id="edit-school-id">
             <div class="form-group">
-                <label class="form-label">学校代码 School Code</label>
+                <label class="form-label"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span></label>
                 <input type="text" id="edit-school-code" class="form-input">
             </div>
             <div class="form-group">
-                <label class="form-label">学校名称 School Name</label>
+                <label class="form-label"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span></label>
                 <input type="text" id="edit-school-name" class="form-input">
             </div>
             <div class="form-group">
-                <label class="form-label">邀请码 Invitation Code</label>
+                <label class="form-label"><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></label>
                 <input type="text" id="edit-school-invite" class="form-input">
             </div>
+            <div class="form-group">
+                <label class="form-label"><span class="lang-zh">服务到期日期</span><span class="lang-en">Service Expiration Date</span></label>
+                <input type="date" id="edit-school-expires" class="form-input">
+                <small style="color:#64748b;"><span class="lang-zh">留空表示永久有效</span><span class="lang-en">Leave empty for no expiration</span></small>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><span class="lang-zh">账户状态</span><span class="lang-en">Account Status</span></label>
+                <select id="edit-school-active" class="form-select">
+                    <option value="true"><span class="lang-zh">激活</span><span class="lang-en">Active</span></option>
+                    <option value="false"><span class="lang-zh">锁定</span><span class="lang-en">Locked</span></option>
+                </select>
+                <small style="color:#64748b;"><span class="lang-zh">锁定后该组织的所有用户将无法登录</span><span class="lang-en">Locked organizations cannot login</span></small>
+            </div>
             <div style="display:flex; gap:0.5rem; align-items:center;">
-                <button class="btn btn-secondary" onclick="regenerateInviteCode()">重新生成 Regenerate</button>
-                <button class="btn btn-primary" onclick="updateSchool()">保存 Save</button>
+                <button class="btn btn-secondary" onclick="regenerateInviteCode()"><span class="lang-zh">重新生成</span><span class="lang-en">Regenerate</span></button>
+                <button class="btn btn-primary" onclick="updateSchool()"><span class="lang-zh">保存</span><span class="lang-en">Save</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><span class="lang-zh">编辑用户</span><span class="lang-en">Edit User</span></h3>
+                <span class="close" onclick="closeModal('edit-user-modal')">&times;</span>
+            </div>
+            <input type="hidden" id="edit-user-id">
+            <div class="form-group">
+                <label class="form-label"><span class="lang-zh">手机号</span><span class="lang-en">Phone Number</span> *</label>
+                <input type="tel" id="edit-user-phone" class="form-input" 
+                       placeholder="13812345678" maxlength="11" required>
+                <small style="color:#64748b;">11-digit Chinese mobile number</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><span class="lang-zh">姓名</span><span class="lang-en">Name</span> *</label>
+                <input type="text" id="edit-user-name" class="form-input" 
+                       placeholder="Zhang Wei" required>
+                <small style="color:#64748b;">At least 2 characters, no numbers</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><span class="lang-zh">学校</span><span class="lang-en">School</span> *</label>
+                <select id="edit-user-org" class="form-select" required>
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <button class="btn btn-primary" onclick="updateUser()">💾 <span class="lang-zh">保存</span><span class="lang-en">Save</span></button>
+                <button class="btn btn-warning" onclick="resetPasswordFromModal()">🔑 <span class="lang-zh">重置密码为 12345678</span><span class="lang-en">Reset Password to 12345678</span></button>
             </div>
         </div>
     </div>
@@ -1063,13 +1194,57 @@ curl -X POST http://your-server/api/generate_graph \
             }
         }
         
-        // Check on page load
-        checkAdminAuth();
-
-        // Global state
+        // Global state (must be declared before functions use them)
         let currentTab = 'dashboard';
         let schools = [];
         let users = [];
+        let currentLang = 'en'; // Default to English
+        
+        // User pagination state
+        let usersCurrentPage = 1;
+        let usersPageSize = 50;
+        let usersTotalPages = 1;
+        let usersTotal = 0;
+
+        // Check on page load
+        checkAdminAuth();
+        
+        // Initialize language
+        initLanguage();
+
+        // Toggle language between Chinese and English
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            
+            // Update all elements with lang classes
+            if (currentLang === 'zh') {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+            } else {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+            }
+            
+            // Save language preference
+            localStorage.setItem('adminLanguage', currentLang);
+        }
+
+        // Initialize language on page load
+        function initLanguage() {
+            const savedLang = localStorage.getItem('adminLanguage');
+            if (savedLang) {
+                currentLang = savedLang;
+            }
+            
+            // Apply the language display settings
+            if (currentLang === 'zh') {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+            } else {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+            }
+        }
 
         // Tab switching
         function switchTab(tab) {
@@ -1084,7 +1259,10 @@ curl -X POST http://your-server/api/generate_graph \
             // Load data
             if (tab === 'dashboard') loadDashboard();
             if (tab === 'schools') loadSchools();
-            if (tab === 'users') loadUsers();
+            if (tab === 'users') {
+                loadUserFilters(); // Load filter dropdown options
+                loadUsers(); // Load user list
+            }
             if (tab === 'apikeys') loadAPIKeys();
             if (tab === 'settings') loadEnvSettings();
             if (tab === 'logs') initLogViewer();
@@ -1106,6 +1284,10 @@ curl -X POST http://your-server/api/generate_graph \
             document.getElementById('create-school-modal').classList.add('show');
         }
 
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+        
         function closeModal(id) {
             document.getElementById(id).classList.remove('show');
         }
@@ -1197,18 +1379,35 @@ curl -X POST http://your-server/api/generate_graph \
                 schools = await response.json();
 
                 const tbody = document.getElementById('schools-tbody');
-                tbody.innerHTML = schools.map(school => `
-                    <tr>
-                        <td><strong>${school.code}</strong></td>
-                        <td>${school.name}</td>
-                        <td><span class="badge badge-success">${school.invitation_code}</span></td>
-                        <td>${school.user_count} 用户</td>
-                        <td>
-                            <button class="btn btn-primary btn-sm" onclick="editSchool(${school.id})">编辑</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteSchool(${school.id}, '${school.code}')">删除</button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = schools.map(school => {
+                    const now = new Date();
+                    const expiresAt = school.expires_at ? new Date(school.expires_at) : null;
+                    const isExpired = expiresAt && expiresAt < now;
+                    const isActive = school.is_active !== false;
+                    const expiresText = expiresAt ? expiresAt.toLocaleDateString() : '<span class="lang-zh">永久</span><span class="lang-en">Never</span>';
+                    
+                    return `
+                        <tr style="${!isActive || isExpired ? 'background:#fee;' : ''}">
+                            <td><strong>${school.code}</strong></td>
+                            <td>${school.name}</td>
+                            <td><span class="badge badge-success">${school.invitation_code}</span></td>
+                            <td>${expiresText}</td>
+                            <td>
+                                ${!isActive ? 
+                                    '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span></span>' : 
+                                    isExpired ? 
+                                    '<span class="badge badge-danger">⏰ <span class="lang-zh">已过期</span><span class="lang-en">Expired</span></span>' :
+                                    '<span class="badge badge-success">✅ <span class="lang-zh">正常</span><span class="lang-en">Active</span></span>'
+                                }
+                            </td>
+                            <td>${school.user_count} <span class="lang-zh">用户</span><span class="lang-en">users</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="editSchool(${school.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteSchool(${school.id}, '${school.code}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
 
                 document.getElementById('schools-loading').style.display = 'none';
                 document.getElementById('schools-table').style.display = 'table';
@@ -1257,6 +1456,17 @@ curl -X POST http://your-server/api/generate_graph \
             document.getElementById('edit-school-name').value = school.name;
             document.getElementById('edit-school-invite').value = school.invitation_code;
             
+            // Set expiration date (convert from ISO to YYYY-MM-DD format for date input)
+            if (school.expires_at) {
+                const date = new Date(school.expires_at);
+                document.getElementById('edit-school-expires').value = date.toISOString().split('T')[0];
+            } else {
+                document.getElementById('edit-school-expires').value = '';
+            }
+            
+            // Set active status
+            document.getElementById('edit-school-active').value = school.is_active !== false ? 'true' : 'false';
+            
             document.getElementById('edit-school-modal').classList.add('show');
         }
 
@@ -1274,10 +1484,14 @@ curl -X POST http://your-server/api/generate_graph \
 
         async function updateSchool() {
             const id = document.getElementById('edit-school-id').value;
+            const expiresValue = document.getElementById('edit-school-expires').value;
+            
             const data = {
                 code: document.getElementById('edit-school-code').value,
                 name: document.getElementById('edit-school-name').value,
-                invitation_code: document.getElementById('edit-school-invite').value
+                invitation_code: document.getElementById('edit-school-invite').value,
+                expires_at: expiresValue ? expiresValue : null,  // Convert to null if empty
+                is_active: document.getElementById('edit-school-active').value === 'true'
             };
 
             try {
@@ -1311,13 +1525,27 @@ curl -X POST http://your-server/api/generate_graph \
         }
 
         // Users
-        async function loadUsers() {
+        async function loadUsers(page = 1) {
             document.getElementById('users-loading').style.display = 'block';
             document.getElementById('users-table').style.display = 'none';
+            document.getElementById('users-pagination').style.display = 'none';
 
             try {
-                const response = await auth.fetch('/api/auth/admin/users');
-                users = await response.json();
+                // Build query parameters
+                const search = document.getElementById('user-search').value.trim();
+                const orgId = document.getElementById('user-org-filter').value;
+                
+                let url = `/api/auth/admin/users?page=${page}&page_size=${usersPageSize}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (orgId) url += `&organization_id=${orgId}`;
+                
+                const response = await auth.fetch(url);
+                const data = await response.json();
+                
+                users = data.users;
+                usersCurrentPage = data.pagination.page;
+                usersTotalPages = data.pagination.total_pages;
+                usersTotal = data.pagination.total;
 
                 const tbody = document.getElementById('users-tbody');
                 tbody.innerHTML = users.map(user => {
@@ -1327,27 +1555,201 @@ curl -X POST http://your-server/api/generate_graph \
                             <td>${user.phone}</td>
                             <td>${user.name || '-'}</td>
                             <td>${user.organization_name || '-'} (${user.organization_code || '-'})</td>
-                            <td>${user.failed_login_attempts}</td>
                             <td>
                                 ${isLocked ? 
-                                    '<span class="badge badge-danger">🔒 锁定 Locked</span>' : 
-                                    '<span class="badge badge-success">✅ 正常 Active</span>'
+                                    '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span></span>' : 
+                                    '<span class="badge badge-success">✅ <span class="lang-zh">正常</span><span class="lang-en">Active</span></span>'
                                 }
                             </td>
                             <td>
+                                <button class="btn btn-primary btn-sm" onclick="showEditUserModal(${user.id})" title="Edit User"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id}, '${user.phone}')" title="Delete User"><span class="lang-zh">删除</span><span class="lang-en">Delete</span></button>
                                 ${isLocked ? 
-                                    `<button class="btn btn-success btn-sm" onclick="unlockUser(${user.id}, '${user.phone}')">解锁 Unlock</button>` : 
-                                    '-'
+                                    `<button class="btn btn-success btn-sm" onclick="unlockUser(${user.id}, '${user.phone}')" title="Unlock Account">🔓 <span class="lang-zh">解锁</span><span class="lang-en">Unlock</span></button>` : 
+                                    ''
                                 }
                             </td>
                         </tr>
                     `;
                 }).join('');
 
+                // Update pagination info
+                updateUsersPagination();
+
                 document.getElementById('users-loading').style.display = 'none';
                 document.getElementById('users-table').style.display = 'table';
+                document.getElementById('users-pagination').style.display = 'block';
             } catch (error) {
                 showAlert('加载用户列表失败 Failed to load users', 'error');
+                console.error(error);
+            }
+        }
+        
+        function updateUsersPagination() {
+            // Update page info
+            const start = (usersCurrentPage - 1) * usersPageSize + 1;
+            const end = Math.min(usersCurrentPage * usersPageSize, usersTotal);
+            document.getElementById('users-page-info').innerHTML = `
+                <span class="lang-zh">显示 ${start}-${end} 共 ${usersTotal} 条</span>
+                <span class="lang-en">Showing ${start}-${end} of ${usersTotal}</span>
+            `;
+            
+            // Update prev/next buttons
+            document.getElementById('users-prev-btn').disabled = usersCurrentPage === 1;
+            document.getElementById('users-next-btn').disabled = usersCurrentPage === usersTotalPages;
+            
+            // Generate page numbers (show max 5 pages)
+            const pageNumbers = document.getElementById('users-page-numbers');
+            pageNumbers.innerHTML = '';
+            
+            let startPage = Math.max(1, usersCurrentPage - 2);
+            let endPage = Math.min(usersTotalPages, startPage + 4);
+            
+            // Adjust start if we're near the end
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.className = `btn btn-sm ${i === usersCurrentPage ? 'btn-primary' : 'btn-secondary'}`;
+                btn.textContent = i;
+                btn.onclick = () => gotoUsersPage(i);
+                pageNumbers.appendChild(btn);
+            }
+        }
+        
+        function filterUsers() {
+            usersCurrentPage = 1; // Reset to page 1 when filtering
+            loadUsers(1);
+        }
+        
+        function clearUserFilters() {
+            document.getElementById('user-search').value = '';
+            document.getElementById('user-org-filter').value = '';
+            filterUsers();
+        }
+        
+        function previousUsersPage() {
+            if (usersCurrentPage > 1) {
+                loadUsers(usersCurrentPage - 1);
+            }
+        }
+        
+        function nextUsersPage() {
+            if (usersCurrentPage < usersTotalPages) {
+                loadUsers(usersCurrentPage + 1);
+            }
+        }
+        
+        function gotoUsersPage(page) {
+            loadUsers(page);
+        }
+        
+        // Load organizations into filter dropdown
+        async function loadUserFilters() {
+            try {
+                const response = await auth.fetch('/api/auth/admin/organizations');
+                const orgs = await response.json();
+                
+                const select = document.getElementById('user-org-filter');
+                const currentValue = select.value;
+                
+                select.innerHTML = '<option value=""><span class="lang-zh">全部学校</span><span class="lang-en">All Schools</span></option>' + 
+                    orgs.map(org => `<option value="${org.id}">${org.code} - ${org.name}</option>`).join('');
+                
+                select.value = currentValue; // Restore selection if any
+            } catch (error) {
+                console.error('Failed to load organizations for filter:', error);
+            }
+        }
+
+        async function showEditUserModal(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) {
+                showAlert('User not found', 'error');
+                return;
+            }
+
+            // Set user data (use real phone for editing)
+            document.getElementById('edit-user-id').value = user.id;
+            document.getElementById('edit-user-phone').value = user.phone_real || user.phone;
+            document.getElementById('edit-user-name').value = user.name || '';
+
+            // Load organizations for dropdown
+            try {
+                const response = await auth.fetch('/api/auth/organizations');
+                const orgs = await response.json();
+                
+                const select = document.getElementById('edit-user-org');
+                select.innerHTML = orgs.map(org => {
+                    const selected = org.id === user.organization_id ? 'selected' : '';
+                    return `<option value="${org.id}" ${selected}>${org.code} - ${org.name}</option>`;
+                }).join('');
+            } catch (error) {
+                showAlert('Failed to load organizations', 'error');
+                return;
+            }
+
+            openModal('edit-user-modal');
+        }
+
+        async function updateUser() {
+            const userId = document.getElementById('edit-user-id').value;
+            const phone = document.getElementById('edit-user-phone').value.trim();
+            const name = document.getElementById('edit-user-name').value.trim();
+            const orgId = parseInt(document.getElementById('edit-user-org').value);
+
+            if (!phone || !name || !orgId) {
+                showAlert('所有字段必填 All fields required', 'error');
+                return;
+            }
+
+            // Validate phone
+            if (!/^1\d{10}$/.test(phone)) {
+                showAlert('Invalid phone number! Must be 11 digits starting with 1', 'error');
+                return;
+            }
+
+            // Validate name
+            if (/\d/.test(name)) {
+                showAlert('Name cannot contain numbers!', 'error');
+                return;
+            }
+
+            try {
+                await auth.fetch(`/api/auth/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        name: name,
+                        organization_id: orgId
+                    })
+                });
+
+                showAlert('用户更新成功 User updated successfully', 'success');
+                closeModal('edit-user-modal');
+                loadUsers();
+            } catch (error) {
+                showAlert('更新失败 Update failed: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId, phone) {
+            if (!confirm(`⚠️ 确定删除用户 ${phone}？\n⚠️ Are you sure to delete user ${phone}?\n\nThis action cannot be undone!`)) {
+                return;
+            }
+
+            try {
+                await auth.fetch(`/api/auth/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                showAlert('用户删除成功 User deleted successfully', 'success');
+                loadUsers();
+            } catch (error) {
+                showAlert('删除失败 Delete failed: ' + error.message, 'error');
             }
         }
 
@@ -1363,6 +1765,27 @@ curl -X POST http://your-server/api/generate_graph \
                 loadUsers();
             } catch (error) {
                 showAlert('解锁失败 Unlock failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function resetPasswordFromModal() {
+            const userId = document.getElementById('edit-user-id').value;
+            const phone = document.getElementById('edit-user-phone').value;
+            
+            if (!confirm(`⚠️ 确定重置该用户的密码为 12345678？\n⚠️ Reset this user's password to 12345678?\n\nUser: ${phone}\n\nThe user will need to login again with the new password.`)) {
+                return;
+            }
+
+            try {
+                await auth.fetch(`/api/auth/admin/users/${userId}/reset-password`, {
+                    method: 'PUT'
+                });
+
+                showAlert('密码重置成功 Password reset to 12345678 successfully', 'success');
+                closeModal('edit-user-modal');
+                loadUsers();
+            } catch (error) {
+                showAlert('密码重置失败 Password reset failed: ' + error.message, 'error');
             }
         }
 
@@ -1569,17 +1992,17 @@ curl -X POST http://your-server/api/generate_graph \
                             </td>
                             <td>
                                 ${key.is_active && !isExpired ? 
-                                    '<span class="badge badge-success">✅ Active</span>' : 
-                                    isExpired ? '<span class="badge badge-danger">⏰ Expired</span>' :
-                                    '<span class="badge badge-danger">❌ Disabled</span>'
+                                    '<span class="badge badge-success">✅ <span class="lang-zh">激活</span><span class="lang-en">Active</span></span>' : 
+                                    isExpired ? '<span class="badge badge-danger">⏰ <span class="lang-zh">过期</span><span class="lang-en">Expired</span></span>' :
+                                    '<span class="badge badge-danger">❌ <span class="lang-zh">禁用</span><span class="lang-en">Disabled</span></span>'
                                 }
                             </td>
                             <td><small>${new Date(key.created_at).toLocaleDateString()}</small></td>
                             <td><small>${key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</small></td>
                             <td>
-                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ Disable' : '▶️ Enable'}</button>
-                                <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})">✏️ Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')">🗑️ Delete</button>
+                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ <span class="lang-zh">禁用</span><span class="lang-en">Disable</span>' : '▶️ <span class="lang-zh">启用</span><span class="lang-en">Enable</span>'}</button>
+                                <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span></button>
                             </td>
                         </tr>
                     `;

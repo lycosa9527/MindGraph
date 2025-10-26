@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindGraph - 用户登录/注册</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/fonts/inter.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,12 +33,48 @@
         .auth-container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 450px;
-            overflow: hidden;
             position: relative;
             z-index: 1;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: visible;
+        }
+
+        /* Rotating rainbow light border effect */
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 23px;
+            background: conic-gradient(
+                from 0deg,
+                #667eea,
+                #764ba2,
+                #f093fb,
+                #4facfe,
+                #00f2fe,
+                #43e97b,
+                #fa709a,
+                #fee140,
+                #667eea
+            );
+            z-index: -1;
+            animation: rotate-border 3s linear infinite;
+            filter: blur(10px);
+        }
+
+        /* Rotation animation */
+        @keyframes rotate-border {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .auth-header {
@@ -45,6 +82,9 @@
             padding: 30px;
             text-align: center;
             color: white;
+            position: relative;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
         }
 
         .auth-header h1 {
@@ -57,10 +97,34 @@
             opacity: 0.9;
         }
 
+        .lang-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: white;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .lang-en { display: none; }
+        .lang-zh { display: inline; }
+
         .tabs {
             display: flex;
             background: #f8fafc;
             border-bottom: 2px solid #e2e8f0;
+            overflow: hidden;
         }
 
         .tab {
@@ -86,6 +150,8 @@
 
         .form-container {
             padding: 30px;
+            background: white;
+            border-radius: 0 0 20px 20px;
         }
 
         .form-group {
@@ -220,10 +286,15 @@
         /* Responsive */
         @media (max-width: 480px) {
             .auth-container {
-                border-radius: 0;
+                border-radius: 20px;
+                margin: 10px;
+            }
+            .auth-header {
+                border-radius: 20px 20px 0 0;
             }
             .form-container {
                 padding: 20px;
+                border-radius: 0 0 20px 20px;
             }
         }
     </style>
@@ -233,13 +304,26 @@
 
     <div class="auth-container">
         <div class="auth-header">
+            <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
+                <span class="lang-zh">EN</span>
+                <span class="lang-en">中文</span>
+            </button>
             <h1>🎓 MindGraph</h1>
-            <p>K12 教师思维导图平台</p>
+            <p>
+                <span class="lang-zh">K12 教师思维可视化工具平台</span>
+                <span class="lang-en">K12 Teacher Thinking Visualization Tool Platform</span>
+            </p>
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('login')">登录 Login</div>
-            <div class="tab" onclick="switchTab('register')">注册 Register</div>
+            <div class="tab active" onclick="switchTab('login')">
+                <span class="lang-zh">登录</span>
+                <span class="lang-en">Login</span>
+            </div>
+            <div class="tab" onclick="switchTab('register')">
+                <span class="lang-zh">注册</span>
+                <span class="lang-en">Register</span>
+            </div>
         </div>
 
         <div class="form-container">
@@ -248,84 +332,124 @@
             <!-- Login Form -->
             <form id="login-form" style="display: block;">
                 <div class="form-group">
-                    <label class="form-label">手机号 Phone Number</label>
-                    <input type="tel" class="form-input" name="phone" 
-                           placeholder="11位手机号" maxlength="11" required>
+                    <label class="form-label">
+                        <span class="lang-zh">手机号</span>
+                        <span class="lang-en">Phone Number</span>
+                    </label>
+                    <input type="tel" class="form-input" name="phone" id="login-phone"
+                           placeholder="手机号作为用户名" maxlength="11" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">密码 Password</label>
-                    <input type="password" class="form-input" name="password" 
+                    <label class="form-label">
+                        <span class="lang-zh">密码</span>
+                        <span class="lang-en">Password</span>
+                    </label>
+                    <input type="password" class="form-input" name="password" id="login-password"
                            placeholder="输入密码" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">验证码 Verification Code</label>
+                    <label class="form-label">
+                        <span class="lang-zh">验证码</span>
+                        <span class="lang-en">Verification Code</span>
+                    </label>
                     <div class="captcha-group">
-                        <input type="text" class="form-input captcha-input" name="captcha" 
+                        <input type="text" class="form-input captcha-input" name="captcha" id="login-captcha"
                                placeholder="输入验证码" maxlength="4" required>
                         <img id="captchaImage" class="captcha-image" src="" alt="验证码" 
                              onclick="refreshCaptcha()" title="点击刷新">
                     </div>
-                    <small class="hint-text">点击图片刷新验证码</small>
+                    <small class="hint-text">
+                        <span class="lang-zh">点击图片刷新验证码</span>
+                        <span class="lang-en">Click image to refresh</span>
+                    </small>
                     <input type="hidden" name="captcha_id" id="captchaId">
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="login-btn">登录 Login</button>
+                <button type="submit" class="btn btn-primary" id="login-btn">
+                    <span class="lang-zh">登录</span>
+                    <span class="lang-en">Login</span>
+                </button>
                 <div class="spinner" id="login-spinner"></div>
             </form>
 
             <!-- Register Form -->
             <form id="register-form" style="display: none;">
                 <div class="form-group">
-                    <label class="form-label">手机号 Phone Number *</label>
-                    <input type="tel" class="form-input" name="phone" 
-                           placeholder="11位手机号 (1开头)" maxlength="11" required>
-                    <small class="hint-text">11位中国手机号</small>
+                    <label class="form-label">
+                        <span class="lang-zh">手机号 *</span>
+                        <span class="lang-en">Phone Number *</span>
+                    </label>
+                    <input type="tel" class="form-input" name="phone" id="register-phone"
+                           placeholder="手机号作为用户名" maxlength="11" required>
+                    <small class="hint-text">
+                        <span class="lang-zh">11位中国手机号</span>
+                        <span class="lang-en">11-digit Chinese mobile number</span>
+                    </small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">密码 Password *</label>
-                    <input type="password" class="form-input" name="password" 
+                    <label class="form-label">
+                        <span class="lang-zh">密码 *</span>
+                        <span class="lang-en">Password *</span>
+                    </label>
+                    <input type="password" class="form-input" name="password" id="register-password"
                            placeholder="至少8位字符" minlength="8" required>
-                    <small class="hint-text">最少8个字符</small>
+                    <small class="hint-text">
+                        <span class="lang-zh">最少8个字符</span>
+                        <span class="lang-en">Minimum 8 characters</span>
+                    </small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">姓名 Name *</label>
-                    <input type="text" class="form-input" name="name" 
+                    <label class="form-label">
+                        <span class="lang-zh">姓名 *</span>
+                        <span class="lang-en">Name *</span>
+                    </label>
+                    <input type="text" class="form-input" name="name" id="register-name"
                            placeholder="您的姓名" required>
-                    <small class="hint-text">至少2个字符，不能包含数字</small>
+                    <small class="hint-text">
+                        <span class="lang-zh">至少2个字符，不能包含数字</span>
+                        <span class="lang-en">At least 2 characters, no numbers</span>
+                    </small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">学校代码 School Code *</label>
-                    <select class="form-select" name="organization_code" id="organization-select" required>
-                        <option value="">加载中... Loading...</option>
-                    </select>
-                    <small class="hint-text">如果看不到您的学校，请联系管理员</small>
+                    <label class="form-label">
+                        <span class="lang-zh">邀请码 *</span>
+                        <span class="lang-en">Invitation Code *</span>
+                    </label>
+                    <input type="text" class="form-input" name="invitation_code" id="register-invitation"
+                           placeholder="学校邀请码" required>
+                    <small class="hint-text">
+                        <span class="lang-zh">邀请码会自动绑定到您的学校</span>
+                        <span class="lang-en">Code automatically binds you to your school</span>
+                    </small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">邀请码 Invitation Code *</label>
-                    <input type="text" class="form-input" name="invitation_code" 
-                           placeholder="学校提供的邀请码" required>
-                    <small class="hint-text">请向学校管理员获取</small>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">验证码 Verification Code *</label>
+                    <label class="form-label">
+                        <span class="lang-zh">验证码 *</span>
+                        <span class="lang-en">Verification Code *</span>
+                    </label>
                     <div class="captcha-group">
-                        <input type="text" class="form-input captcha-input" name="captcha" 
+                        <input type="text" class="form-input captcha-input" name="captcha" id="register-captcha"
                                placeholder="输入验证码" maxlength="4" required>
                         <img id="registerCaptchaImage" class="captcha-image" src="" alt="验证码" 
                              onclick="refreshRegisterCaptcha()" title="点击刷新">
                     </div>
-                    <small class="hint-text">点击图片刷新验证码</small>
+                    <small class="hint-text">
+                        <span class="lang-zh">点击图片刷新验证码</span>
+                        <span class="lang-en">Click image to refresh</span>
+                    </small>
                     <input type="hidden" name="captcha_id" id="registerCaptchaId">
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="register-btn">注册 Register</button>
+                <button type="submit" class="btn btn-primary" id="register-btn">
+                    <span class="lang-zh">注册</span>
+                    <span class="lang-en">Register</span>
+                </button>
                 <div class="spinner" id="register-spinner"></div>
             </form>
         </div>
@@ -334,32 +458,63 @@
     <script src="/static/js/auth-helper.js"></script>
     <script>
         let currentTab = 'login';
+        let currentLang = 'zh'; // Default to Chinese
 
-        // Load organizations for registration
-        async function loadOrganizations() {
-            const select = document.getElementById('organization-select');
+        // Toggle language between Chinese and English
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
             
-            try {
-                const response = await fetch('/api/auth/organizations');
-                const organizations = await response.json();
+            // Update all elements with lang classes
+            if (currentLang === 'zh') {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+            } else {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+            }
+            
+            // Update placeholders
+            updatePlaceholders();
+            
+            // Save language preference
+            localStorage.setItem('preferredLanguage', currentLang);
+        }
+
+        // Update input placeholders based on language
+        function updatePlaceholders() {
+            if (currentLang === 'zh') {
+                // Login form
+                document.getElementById('login-phone').placeholder = '手机号作为用户名';
+                document.getElementById('login-password').placeholder = '输入密码';
+                document.getElementById('login-captcha').placeholder = '输入验证码';
                 
-                // Clear existing options
-                select.innerHTML = '<option value="">选择学校 Select School</option>';
+                // Register form
+                document.getElementById('register-phone').placeholder = '手机号作为用户名';
+                document.getElementById('register-password').placeholder = '至少8位字符';
+                document.getElementById('register-name').placeholder = '您的姓名';
+                document.getElementById('register-invitation').placeholder = '学校邀请码';
+                document.getElementById('register-captcha').placeholder = '输入验证码';
+            } else {
+                // Login form
+                document.getElementById('login-phone').placeholder = 'Phone as username';
+                document.getElementById('login-password').placeholder = 'Enter password';
+                document.getElementById('login-captcha').placeholder = 'Enter code';
                 
-                // Add organizations
-                organizations.forEach(org => {
-                    const option = document.createElement('option');
-                    option.value = org.code;
-                    option.textContent = `${org.code} - ${org.name}`;
-                    select.appendChild(option);
-                });
-                
-                if (organizations.length === 0) {
-                    select.innerHTML = '<option value="">暂无学校 No schools available</option>';
-                }
-            } catch (error) {
-                console.error('Failed to load organizations:', error);
-                select.innerHTML = '<option value="">加载失败 Loading failed</option>';
+                // Register form
+                document.getElementById('register-phone').placeholder = 'Phone as username';
+                document.getElementById('register-password').placeholder = 'At least 8 characters';
+                document.getElementById('register-name').placeholder = 'Your name';
+                document.getElementById('register-invitation').placeholder = 'School invitation code';
+                document.getElementById('register-captcha').placeholder = 'Enter code';
+            }
+        }
+
+        // Initialize language on page load
+        function initLanguage() {
+            const savedLang = localStorage.getItem('preferredLanguage');
+            if (savedLang && savedLang !== 'zh') {
+                currentLang = savedLang;
+                toggleLanguage(); // This will set to the saved language
             }
         }
 
@@ -383,15 +538,16 @@
                 refreshCaptcha();
             }
             
-            // Load organizations and captcha for register
+            // Load captcha for register
             if (tab === 'register') {
-                loadOrganizations();
                 refreshRegisterCaptcha();
             }
         }
 
         // Check if already authenticated and load captcha on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            // Initialize language first
+            initLanguage();
             // Check if user is already logged in
             const isAuth = await auth.isAuthenticated();
             if (isAuth) {
@@ -418,10 +574,9 @@
                 }
             }
             
-            // Not authenticated, load captcha and organizations
+            // Not authenticated, load captcha
             refreshCaptcha();
             refreshRegisterCaptcha(); // Preload register captcha
-            loadOrganizations(); // Preload organizations for faster registration
         });
 
         // Refresh captcha (login)
@@ -433,7 +588,8 @@
                 document.getElementById('captchaImage').src = data.captcha_image;
                 document.getElementById('captchaId').value = data.captcha_id;
             } catch (error) {
-                showAlert('验证码加载失败 Failed to load captcha', 'error');
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
             }
         }
 
@@ -446,7 +602,8 @@
                 document.getElementById('registerCaptchaImage').src = data.captcha_image;
                 document.getElementById('registerCaptchaId').value = data.captcha_id;
             } catch (error) {
-                showAlert('验证码加载失败 Failed to load captcha', 'error');
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
             }
         }
 
@@ -494,18 +651,21 @@
                     auth.setUser(result.user);
                     auth.setMode('standard');
                     
-                    showAlert('登录成功！Redirecting...', 'success');
+                    const msg = currentLang === 'zh' ? '登录成功！跳转中...' : 'Login successful! Redirecting...';
+                    showAlert(msg, 'success');
                     
                     // Check for redirect parameter
                     const urlParams = new URLSearchParams(window.location.search);
                     const redirectUrl = urlParams.get('redirect') || '/editor';
                     setTimeout(() => window.location.href = redirectUrl, 1000);
                 } else {
-                    showAlert(result.detail || '登录失败 Login failed', 'error');
+                    const msg = result.detail || (currentLang === 'zh' ? '登录失败' : 'Login failed');
+                    showAlert(msg, 'error');
                     refreshCaptcha(); // Refresh captcha on error
                 }
             } catch (error) {
-                showAlert('网络错误 Network error: ' + error.message, 'error');
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
                 refreshCaptcha();
             } finally {
                 document.getElementById('login-btn').disabled = false;
@@ -523,7 +683,6 @@
                 phone: formData.get('phone'),
                 password: formData.get('password'),
                 name: formData.get('name'),
-                organization_code: formData.get('organization_code'),
                 invitation_code: formData.get('invitation_code'),
                 captcha: formData.get('captcha'),
                 captcha_id: formData.get('captcha_id')
@@ -531,25 +690,31 @@
 
             // Validate phone
             if (!/^1\d{10}$/.test(data.phone)) {
-                showAlert('手机号格式错误！必须是11位数字，1开头', 'error');
+                const msg = currentLang === 'zh' ? '手机号格式错误！必须是11位数字，1开头' : 'Invalid phone number! Must be 11 digits starting with 1';
+                showAlert(msg, 'error');
                 return;
             }
 
             // Validate name
             if (/\d/.test(data.name)) {
-                showAlert('姓名不能包含数字！', 'error');
+                const msg = currentLang === 'zh' ? '姓名不能包含数字！' : 'Name cannot contain numbers!';
+                showAlert(msg, 'error');
                 return;
             }
 
             // Validate captcha
             if (!data.captcha || data.captcha.length !== 4) {
-                showAlert('请输入4位验证码！', 'error');
+                const msg = currentLang === 'zh' ? '请输入4位验证码！' : 'Please enter 4-digit verification code!';
+                showAlert(msg, 'error');
                 return;
             }
 
             // Show loading
             document.getElementById('register-btn').disabled = true;
             document.getElementById('register-spinner').style.display = 'block';
+
+            // Debug: log what we're sending
+            console.log('Registration data:', data);
 
             try {
                 const response = await fetch('/api/auth/register', {
@@ -566,18 +731,31 @@
                     auth.setUser(result.user);
                     auth.setMode('standard');
                     
-                    showAlert('注册成功！Redirecting...', 'success');
+                    const msg = currentLang === 'zh' ? '注册成功！跳转中...' : 'Registration successful! Redirecting...';
+                    showAlert(msg, 'success');
                     
                     // Check for redirect parameter
                     const urlParams = new URLSearchParams(window.location.search);
                     const redirectUrl = urlParams.get('redirect') || '/editor';
                     setTimeout(() => window.location.href = redirectUrl, 1000);
                 } else {
-                    showAlert(result.detail || '注册失败 Registration failed', 'error');
+                    // Handle detailed validation errors (422)
+                    let errorMsg;
+                    if (response.status === 422 && result.detail && Array.isArray(result.detail)) {
+                        // Pydantic validation error format
+                        const errors = result.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('; ');
+                        errorMsg = currentLang === 'zh' ? `验证错误: ${errors}` : `Validation error: ${errors}`;
+                    } else if (typeof result.detail === 'string') {
+                        errorMsg = result.detail;
+                    } else {
+                        errorMsg = currentLang === 'zh' ? '注册失败' : 'Registration failed';
+                    }
+                    showAlert(errorMsg, 'error');
                     refreshRegisterCaptcha(); // Refresh captcha on error
                 }
             } catch (error) {
-                showAlert('网络错误 Network error: ' + error.message, 'error');
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
                 refreshRegisterCaptcha(); // Refresh captcha on error
             } finally {
                 document.getElementById('register-btn').disabled = false;
