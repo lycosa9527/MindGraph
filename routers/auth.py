@@ -38,6 +38,7 @@ from utils.auth import (
     increment_failed_attempts,
     reset_failed_attempts,
     is_admin,
+    get_client_ip,
     login_attempts,
     ip_attempts,
     captcha_attempts,
@@ -343,7 +344,8 @@ async def generate_captcha(request: Request):
         }
     """
     # Rate limit captcha generation by IP (prevent abuse)
-    client_ip = request.client.host
+    # Use get_client_ip to handle reverse proxy (nginx) correctly
+    client_ip = get_client_ip(request)
     is_allowed, rate_limit_msg = check_rate_limit(
         client_ip, captcha_attempts, MAX_CAPTCHA_ATTEMPTS
     )

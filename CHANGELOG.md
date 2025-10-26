@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.19.3] - 2025-10-26 - Fix: Reverse Proxy Client IP Detection
+
+### Fixed
+
+- **Captcha Rate Limiting Behind Reverse Proxy**
+  - **Issue**: When deployed behind nginx/reverse proxy, all requests appeared to come from proxy IP
+  - **Symptom**: Captcha rate limit triggered immediately for all users (HTTP 429)
+  - **Root Cause**: Application used `request.client.host` which returns proxy IP, not real client IP
+  - **Solution**: Added `get_client_ip()` helper function to read real IP from proxy headers
+
+### Added
+
+- **Client IP Detection Function** (`utils/auth.py`)
+  - `get_client_ip(request)` - Extracts real client IP from proxy headers
+  - Checks headers in order: `X-Forwarded-For` → `X-Real-IP` → `request.client.host`
+  - Handles multiple proxies (takes leftmost IP from X-Forwarded-For)
+  - Debug logging for IP source tracking
+
+- **Nginx Configuration Documentation** (`docs/NGINX_REVERSE_PROXY_SETUP.md`)
+  - Complete guide for Nginx Proxy Manager setup
+  - Standard nginx configuration examples
+  - Cloudflare + nginx setup instructions
+  - Verification and troubleshooting steps
+  - Production deployment checklist
+
+- **Environment Configuration** (`env.example`)
+  - Added reverse proxy configuration section
+  - Nginx Proxy Manager setup instructions
+  - `TRUSTED_PROXY_IPS` configuration (optional)
+  - Header configuration examples
+
+### Changed
+
+- **Captcha Generation Endpoint** (`routers/auth.py`)
+  - Updated `/api/auth/captcha/generate` to use `get_client_ip(request)`
+  - Rate limiting now works correctly per real client IP
+  - Added comment explaining proxy handling
+
+### Technical Details
+
+**Before (Broken):**
+```python
+client_ip = request.client.host  # Returns proxy IP: 82.157.13.133
+```
+
+**After (Fixed):**
+```python
+client_ip = get_client_ip(request)  # Returns real client IP: 203.0.113.45
+```
+
+**Header Priority:**
+1. `X-Forwarded-For: client, proxy1, proxy2` → Uses leftmost IP (client)
+2. `X-Real-IP: client` → Direct value
+3. `request.client.host` → Fallback for direct connections
+
+### Nginx Configuration Required
+
+Add to Nginx Proxy Manager → Advanced → Custom Nginx Configuration:
+
+```nginx
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+```
+
+### Verification
+
+Check logs for correct IP detection:
+```bash
+tail -f logs/app.log | grep "Client IP"
+```
+
+Expected output:
+```
+[DEBUG] Client IP from X-Forwarded-For: 203.0.113.45
+```
+
+### Impact
+
+- ✅ Captcha rate limiting works correctly per user
+- ✅ Login rate limiting isolated per client
+- ✅ Security features function properly
+- ✅ Multiple users can access simultaneously without false lockouts
+
+### Files Modified
+
+- `utils/auth.py` - Added `get_client_ip()` function
+- `routers/auth.py` - Updated captcha endpoint to use real client IP
+- `env.example` - Added reverse proxy configuration docs
+- `docs/NGINX_REVERSE_PROXY_SETUP.md` - New nginx setup guide
+
 ## [4.19.2] - 2025-10-26 - Capacity Analysis: 100 Concurrent Teachers Support
 
 ### Analysis

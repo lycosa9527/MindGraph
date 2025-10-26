@@ -14,7 +14,7 @@ from collections import defaultdict
 
 from jose import JWTError, jwt
 import bcrypt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from sqlalchemy.orm import Session
 
@@ -33,6 +33,9 @@ logger = logging.getLogger(__name__)
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+
+# Reverse Proxy Configuration
+TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else []
 
 # Authentication Mode
 AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()  # standard, enterprise, demo
@@ -53,6 +56,50 @@ MAX_LOGIN_ATTEMPTS = 5
 MAX_CAPTCHA_ATTEMPTS = 10
 LOCKOUT_DURATION_MINUTES = 15
 RATE_LIMIT_WINDOW_MINUTES = 15
+
+# ============================================================================
+# Reverse Proxy Helpers
+# ============================================================================
+
+def get_client_ip(request: Request) -> str:
+    """
+    Get real client IP address, even behind reverse proxy (nginx, etc.)
+    
+    Checks headers in order:
+    1. X-Forwarded-For (most common, can be comma-separated)
+    2. X-Real-IP (nginx specific)
+    3. request.client.host (fallback, direct connection)
+    
+    Args:
+        request: FastAPI Request object
+        
+    Returns:
+        Client IP address string
+        
+    Example:
+        With nginx proxy_pass:
+        X-Forwarded-For: 203.0.113.45, 198.51.100.178
+        Returns: 203.0.113.45 (leftmost = original client)
+    """
+    # Check X-Forwarded-For header (most common with reverse proxies)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
+        # The leftmost is the original client IP
+        client_ip = forwarded_for.split(",")[0].strip()
+        logger.debug(f"Client IP from X-Forwarded-For: {client_ip} (full: {forwarded_for})")
+        return client_ip
+    
+    # Check X-Real-IP header (nginx-specific)
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        logger.debug(f"Client IP from X-Real-IP: {real_ip}")
+        return real_ip
+    
+    # Fallback to direct connection IP
+    direct_ip = request.client.host if request.client else "unknown"
+    logger.debug(f"Client IP from request.client.host: {direct_ip}")
+    return direct_ip
 
 # ============================================================================
 # Password Hashing
