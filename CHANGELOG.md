@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.19.4] - 2025-10-26 - Fix: Landing Page & Demo Route Logic
+
+### Fixed
+
+- **Landing Page Routing** (`routers/pages.py` - `/` route)
+  - **Standard Mode**: Now redirects to `/auth` (login/register page) instead of showing API docs
+  - **Demo Mode**: Redirects to `/demo` passkey page
+  - **Enterprise Mode**: Redirects directly to `/editor` (no auth)
+  - **Behavior**: Checks authentication status and redirects logged-in users to `/editor`
+
+- **Demo Route Access Control** (`routers/pages.py` - `/demo` route)
+  - **Issue**: Demo passkey page was accessible in all modes
+  - **Fix**: Now blocks access in standard/enterprise modes
+  - **Standard Mode**: Redirects `/demo` → `/auth`
+  - **Enterprise Mode**: Redirects `/demo` → `/editor`
+  - **Demo Mode**: Functions normally (passkey login)
+
+### Changed
+
+- **Mind Map Gallery Description** (Chinese)
+  - Changed from "因果分析" (cause-effect analysis)
+  - To "概念梳理" (concept organization)
+  - Better reflects mind map's purpose
+
+### Impact
+
+**Standard Mode** (AUTH_MODE=standard):
+- ✅ Landing page (`/`) properly shows login/register
+- ✅ Demo route (`/demo`) blocked and redirects to auth
+- ✅ Users must authenticate to access application
+
+**Demo Mode** (AUTH_MODE=demo):
+- ✅ Landing page (`/`) redirects to demo passkey
+- ✅ Demo route (`/demo`) works normally
+- ✅ Passkey authentication flow intact
+
+**Enterprise Mode** (AUTH_MODE=enterprise):
+- ✅ Landing page (`/`) goes straight to editor
+- ✅ Demo route (`/demo`) blocked and redirects to editor
+- ✅ No authentication required
+
+### Files Modified
+
+- `routers/pages.py` - Updated `/` and `/demo` route logic
+- `static/js/editor/language-manager.js` - Updated mind map Chinese description
+
 ## [4.19.3] - 2025-10-26 - Fix: Reverse Proxy Client IP Detection
 
 ### Fixed

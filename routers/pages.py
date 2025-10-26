@@ -33,10 +33,38 @@ templates = Jinja2Templates(directory="templates")
 # ============================================================================
 
 @router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Landing page - index.html"""
+async def index(request: Request, db: Session = Depends(get_db)):
+    """Landing page - redirects based on AUTH_MODE"""
     try:
-        return templates.TemplateResponse("index.html", {"request": request})
+        # Standard mode: redirect to /auth for login/register
+        if AUTH_MODE == "standard":
+            auth_cookie = request.cookies.get("access_token")
+            if auth_cookie:
+                user = get_user_from_cookie(auth_cookie, db)
+                if user:
+                    # Already authenticated, go to editor
+                    logger.debug("Standard mode: Authenticated user, redirecting / to /editor")
+                    return RedirectResponse(url="/editor", status_code=303)
+            
+            # Not authenticated, go to auth page
+            logger.debug("Standard mode: Redirecting / to /auth")
+            return RedirectResponse(url="/auth", status_code=303)
+        
+        # Demo mode: redirect to /demo
+        elif AUTH_MODE == "demo":
+            logger.debug("Demo mode: Redirecting / to /demo")
+            return RedirectResponse(url="/demo", status_code=303)
+        
+        # Enterprise mode: go directly to editor (no auth)
+        elif AUTH_MODE == "enterprise":
+            logger.debug("Enterprise mode: Redirecting / to /editor")
+            return RedirectResponse(url="/editor", status_code=303)
+        
+        # Fallback: show API docs (index.html)
+        else:
+            logger.warning(f"Unknown AUTH_MODE: {AUTH_MODE}, serving index.html")
+            return templates.TemplateResponse("index.html", {"request": request})
+            
     except Exception as e:
         logger.error(f"/ route failed: {e}", exc_info=True)
         raise
@@ -181,21 +209,25 @@ async def auth_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/demo", response_class=HTMLResponse)
 async def demo_page(request: Request, db: Session = Depends(get_db)):
-    """Demo mode passkey page"""
+    """Demo mode passkey page - only accessible in demo mode"""
     try:
+        # Block access if not in demo mode
+        if AUTH_MODE != "demo":
+            logger.warning(f"/demo accessed in {AUTH_MODE} mode, redirecting to /auth")
+            return RedirectResponse(url="/auth" if AUTH_MODE == "standard" else "/editor", status_code=303)
+        
         # If user is already authenticated via cookie, redirect based on role
-        if AUTH_MODE == "demo":
-            auth_cookie = request.cookies.get("access_token")
-            if auth_cookie:
-                user = get_user_from_cookie(auth_cookie, db)
-                if user:
-                    # Redirect based on admin status
-                    if is_admin(user):
-                        logger.debug(f"Demo mode: Admin {user.phone} already authenticated, redirecting to /admin")
-                        return RedirectResponse(url="/admin", status_code=303)
-                    else:
-                        logger.debug(f"Demo mode: User {user.phone} already authenticated, redirecting to /editor")
-                        return RedirectResponse(url="/editor", status_code=303)
+        auth_cookie = request.cookies.get("access_token")
+        if auth_cookie:
+            user = get_user_from_cookie(auth_cookie, db)
+            if user:
+                # Redirect based on admin status
+                if is_admin(user):
+                    logger.debug(f"Demo mode: Admin {user.phone} already authenticated, redirecting to /admin")
+                    return RedirectResponse(url="/admin", status_code=303)
+                else:
+                    logger.debug(f"Demo mode: User {user.phone} already authenticated, redirecting to /editor")
+                    return RedirectResponse(url="/editor", status_code=303)
         
         return templates.TemplateResponse("demo-login.html", {"request": request})
     except Exception as e:
