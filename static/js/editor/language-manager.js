@@ -268,7 +268,7 @@ class LanguageManager {
                 bridgeMap: '桥形图',
                 bridgeMapDesc: '类比推理',
                 mindMap: '思维导图',
-                mindMapDesc: '因果分析',
+                mindMapDesc: '概念梳理',
                 conceptMap: '概念图',
                 conceptMapDesc: '概念关系',
                 thinkingTools: '思维工具',
