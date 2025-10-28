@@ -108,7 +108,7 @@ def extract_central_topic_llm(user_prompt: str, language: str = 'zh') -> str:
         logger.error(f"LLM topic extraction error: {e}, using original prompt")
         return user_prompt.strip()
 
-async def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh') -> str:
+async def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh', model: str = 'qwen') -> str:
     """
     Extract two topics for double bubble map comparison using LLM.
     This is specialized for double bubble maps that need two separate topics.
@@ -143,7 +143,7 @@ Your output:"""
         
         result = await llm_service.chat(
             prompt=prompt,
-            model='qwen',
+            model=model,
             max_tokens=100,
             temperature=0.3
         )
@@ -719,13 +719,14 @@ def validate_agent_setup():
 
 
 
-async def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> str:
+async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, model: str = 'qwen') -> str:
     """
     LLM-based diagram type detection using semantic understanding.
     
     Args:
         user_prompt: User's input prompt
         language: Language ('zh' or 'en')
+        model: LLM model to use ('qwen', 'deepseek', 'kimi', 'hunyuan')
     
     Returns:
         str: Detected diagram type
@@ -741,7 +742,7 @@ async def _detect_diagram_type_from_prompt(user_prompt: str, language: str) -> s
         from services.llm_service import llm_service
         response = await llm_service.chat(
             prompt=classification_prompt,
-            model='qwen',
+            model=model,
             max_tokens=50,
             temperature=0.3
         )
@@ -1574,7 +1575,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
             logger.info(f"Agent: Using forced diagram type: {diagram_type}")
         else:
             # LLM-based diagram type detection for semantic understanding
-            diagram_type = await _detect_diagram_type_from_prompt(user_prompt, language)
+            diagram_type = await _detect_diagram_type_from_prompt(user_prompt, language, model)
             logger.info(f"Agent: Detected diagram type: {diagram_type}")
         
         # Add learning sheet detection

@@ -438,11 +438,153 @@ class DiagramSelector {
             // Start a new session
             const sessionId = this.startSession(diagramType);
             
+            // Initialize session lifecycle manager
+            window.sessionLifecycle.startSession(sessionId, diagramType);
+            
             // Create editor and attach session info
             window.currentEditor = new InteractiveEditor(diagramType, template);
             window.currentEditor.sessionId = sessionId;
             window.currentEditor.sessionDiagramType = diagramType;
             window.currentEditor.initialize();
+            
+            // Create session managers (previously wrongly global)
+            window.currentEditor.thinkGuide = window.sessionLifecycle.register(
+                new ThinkGuideManager(window.eventBus, window.stateManager, window.sseClient, logger),
+                'thinkGuide'
+            );
+            
+            window.currentEditor.mindMate = window.sessionLifecycle.register(
+                new MindMateManager(window.eventBus, window.stateManager, logger),
+                'mindMate'
+            );
+            
+            window.currentEditor.nodePalette = window.sessionLifecycle.register(
+                new NodePaletteManager(),
+                'nodePalette'
+            );
+            
+            window.currentEditor.voiceAgent = window.sessionLifecycle.register(
+                new VoiceAgentManager(window.eventBus, window.stateManager, logger),
+                'voiceAgent'
+            );
+            
+            // Phase 7: Instantiate extracted modules
+            // These modules use the existing Event Bus (window.eventBus) for decoupled communication
+            window.currentEditor.modules = {
+                export: window.sessionLifecycle.register(
+                    new ExportManager(window.eventBus, window.stateManager, logger),
+                    'export'
+                ),
+                session: window.sessionLifecycle.register(
+                    new SessionManager(window.eventBus, window.stateManager, logger),
+                    'session'
+                ),
+                propertyPanel: window.sessionLifecycle.register(
+                    new PropertyPanelManager(window.eventBus, window.stateManager, logger),
+                    'propertyPanel'
+                ),
+                history: window.sessionLifecycle.register(
+                    new HistoryManager(window.eventBus, window.stateManager, logger),
+                    'history'
+                ),
+                canvas: window.sessionLifecycle.register(
+                    new CanvasController(window.eventBus, window.stateManager, logger),
+                    'canvas'
+                ),
+                circleMap: window.sessionLifecycle.register(
+                    new CircleMapOperations(window.eventBus, window.stateManager, logger),
+                    'circleMap'
+                ),
+                bubbleMap: window.sessionLifecycle.register(
+                    new BubbleMapOperations(window.eventBus, window.stateManager, logger),
+                    'bubbleMap'
+                ),
+                // Day 1: LLM Validation Module
+                llmValidation: window.sessionLifecycle.register(
+                    new LLMValidationManager(window.eventBus, window.stateManager, logger, window.currentEditor),
+                    'llmValidation'
+                )
+            };
+            
+            // Day 2: LLM Auto-Complete Module (needs reference to llmValidation for synchronous calls)
+            window.currentEditor.modules.llmAutoComplete = window.sessionLifecycle.register(
+                new LLMAutoCompleteManager(
+                    window.eventBus, 
+                    window.stateManager, 
+                    logger, 
+                    window.currentEditor, 
+                    window.currentEditor.toolbarManager,
+                    window.currentEditor.modules.llmValidation
+                ),
+                'llmAutoComplete'
+            );
+            
+            // Day 3: Node & Property Operations Module
+            window.currentEditor.modules.nodePropertyOps = window.sessionLifecycle.register(
+                new NodePropertyOperationsManager(
+                    window.eventBus,
+                    window.stateManager,
+                    logger,
+                    window.currentEditor,
+                    window.currentEditor.toolbarManager
+                ),
+                'nodePropertyOps'
+            );
+            
+            // Day 4: UI State & LLM Selector Module
+            window.currentEditor.modules.uiStateLLM = window.sessionLifecycle.register(
+                new UIStateLLMManager(
+                    window.eventBus,
+                    window.stateManager,
+                    logger,
+                    window.currentEditor,
+                    window.currentEditor.toolbarManager
+                ),
+                'uiStateLLM'
+            );
+            
+            // Day 5: Text & Toolbar State Module
+            window.currentEditor.modules.textToolbarState = window.sessionLifecycle.register(
+                new TextToolbarStateManager(
+                    window.eventBus,
+                    window.stateManager,
+                    logger,
+                    window.currentEditor,
+                    window.currentEditor.toolbarManager
+                ),
+                'textToolbarState'
+            );
+            
+            // Day 6: Node Counter & Feature Mode Module
+            window.currentEditor.modules.nodeCounterFeatureMode = window.sessionLifecycle.register(
+                new NodeCounterFeatureModeManager(
+                    window.eventBus,
+                    window.stateManager,
+                    logger,
+                    window.currentEditor,
+                    window.currentEditor.toolbarManager
+                ),
+                'nodeCounterFeatureMode'
+            );
+            
+            // Day 7: Small Operations Module
+            window.currentEditor.modules.smallOps = window.sessionLifecycle.register(
+                new SmallOperationsManager(
+                    window.eventBus,
+                    window.stateManager,
+                    logger,
+                    window.currentEditor,
+                    window.currentEditor.toolbarManager
+                ),
+                'smallOps'
+            );
+            
+            logger.info('DiagramSelector', 'All 18 managers registered with SessionLifecycleManager', {
+                sessionManagers: 4,
+                moduleManagers: Object.keys(window.currentEditor.modules).length,
+                totalManagers: 4 + Object.keys(window.currentEditor.modules).length,
+                managers: ['thinkGuide', 'mindMate', 'nodePalette', 'voiceAgent', ...Object.keys(window.currentEditor.modules)]
+            });
             
             // CRITICAL: Single auto-fit trigger for initial load
             // This is the ONLY place where auto-fit is called when entering canvas from gallery
@@ -562,6 +704,9 @@ class DiagramSelector {
         // PHASE 2: END SESSION & CLEAN CANVAS
         // ========================================
         
+        // Clean up all registered managers (18 total)
+        window.sessionLifecycle.cleanup();
+        
         this.endSession();
         this.cleanupCanvas();
         
@@ -569,7 +714,11 @@ class DiagramSelector {
         // PHASE 3: RESET ALL PANELS & MANAGERS
         // ========================================
         
-        // 1. MindMate AI Assistant
+        // NOTE: Session managers (ThinkGuide, MindMate, NodePalette, VoiceAgent) 
+        // are now automatically destroyed by SessionLifecycleManager.cleanup()
+        // No manual reset needed!
+        
+        // 1. MindMate AI Assistant - UI cleanup only
         const aiPanel = document.getElementById('ai-assistant-panel');
         if (aiPanel) {
             aiPanel.classList.add('collapsed');
@@ -578,14 +727,8 @@ class DiagramSelector {
         if (mindmateBtn) {
             mindmateBtn.classList.remove('active');
         }
-        if (window.aiAssistantManager) {
-            window.aiAssistantManager.diagramSessionId = null;
-            window.aiAssistantManager.conversationId = null;
-            window.aiAssistantManager.hasGreeted = false;
-            logger.debug('DiagramSelector', 'MindMate reset complete');
-        }
         
-        // 2. ThinkGuide Panel
+        // 2. ThinkGuide Panel - UI cleanup only
         const thinkPanel = document.getElementById('thinking-panel');
         if (thinkPanel) {
             thinkPanel.classList.add('collapsed');
@@ -594,23 +737,12 @@ class DiagramSelector {
         if (thinkingBtn) {
             thinkingBtn.classList.remove('active');
         }
-        if (window.thinkingModeManager) {
-            window.thinkingModeManager.diagramSessionId = null;
-            window.thinkingModeManager.sessionId = null;
-            window.thinkingModeManager.currentState = 'CONTEXT_GATHERING';
-            logger.debug('DiagramSelector', 'ThinkGuide reset complete');
-        }
         
-        // 3. Node Palette (CATAPULT System)
+        // 3. Node Palette - UI cleanup only
         const nodePalettePanel = document.getElementById('node-palette-panel');
         if (nodePalettePanel) {
             nodePalettePanel.style.display = 'none';
             nodePalettePanel.classList.remove('thinkguide-visible');
-        }
-        if (window.nodePaletteManager) {
-            // Clear all state: nodes, selections, tabs, sessions, animations
-            window.nodePaletteManager.clearAll();
-            logger.debug('DiagramSelector', 'Node Palette reset complete');
         }
         
         // 4. Property Panel

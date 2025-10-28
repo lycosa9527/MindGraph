@@ -146,7 +146,10 @@ class ComicBubble {
     }
 }
 
-// Export for module usage
+// Make available globally
+window.ComicBubble = ComicBubble;
+
+// Export for module usage (if needed)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ComicBubble;
 }

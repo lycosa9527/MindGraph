@@ -25,6 +25,7 @@ class VoiceAgentManager {
         this.micStream = null;
         this.audioQueue = [];
         this.isPlaying = false;
+        this.currentAudioSource = null;
         
         // State
         this.isActive = false;
@@ -96,7 +97,7 @@ class VoiceAgentManager {
         
         try {
             // Update state
-            this.stateManager.updateState(['voice', 'isActive'], true);
+            this.stateManager.updateVoice({ active: true });
             
             // Get microphone access
             this.micStream = await navigator.mediaDevices.getUserMedia({
@@ -130,8 +131,10 @@ class VoiceAgentManager {
             this.logger.error('VoiceAgentManager', 'Start failed:', error);
             
             // Update state
-            this.stateManager.updateState(['voice', 'isActive'], false);
-            this.stateManager.updateState(['voice', 'error'], error.message);
+            this.stateManager.updateVoice({ 
+                active: false,
+                error: error.message
+            });
             
             // Emit error event
             this.eventBus.emit('voice:error', { error: error.message });
@@ -155,6 +158,31 @@ class VoiceAgentManager {
                 this.micStream = null;
             }
             
+            // Disconnect audio worklet/processor
+            if (this.audioWorklet) {
+                try {
+                    this.audioWorklet.disconnect();
+                } catch (e) {
+                    // Ignore if already disconnected
+                }
+                this.audioWorklet = null;
+            }
+            
+            // Stop currently playing audio immediately
+            if (this.currentAudioSource) {
+                try {
+                    this.currentAudioSource.stop();
+                    this.currentAudioSource.disconnect();
+                } catch (e) {
+                    // Ignore if already stopped
+                }
+                this.currentAudioSource = null;
+            }
+            
+            // Clear audio playback queue and stop playback
+            this.audioQueue = [];
+            this.isPlaying = false;
+            
             // Close WebSocket
             if (this.ws) {
                 this.ws.send(JSON.stringify({ type: 'stop' }));
@@ -166,8 +194,10 @@ class VoiceAgentManager {
             this.sessionId = null;
             
             // Update state
-            this.stateManager.updateState(['voice', 'isActive'], false);
-            this.stateManager.updateState(['voice', 'sessionId'], null);
+            this.stateManager.updateVoice({ 
+                active: false,
+                sessionId: null
+            });
             
             this.logger.info('VoiceAgentManager', 'Conversation stopped');
             
@@ -225,7 +255,7 @@ class VoiceAgentManager {
                     
                     if (data.type === 'connected') {
                         this.sessionId = data.session_id;
-                        this.stateManager.updateState(['voice', 'sessionId'], this.sessionId);
+                        this.stateManager.updateVoice({ sessionId: this.sessionId });
                         resolve();
                     }
                 } catch (error) {
@@ -242,7 +272,7 @@ class VoiceAgentManager {
             this.ws.onclose = () => {
                 this.logger.info('VoiceAgentManager', 'WebSocket closed');
                 this.isActive = false;
-                this.stateManager.updateState(['voice', 'isActive'], false);
+                this.stateManager.updateVoice({ active: false });
                 this.eventBus.emit('voice:ws_closed', {});
             };
         });
@@ -252,6 +282,16 @@ class VoiceAgentManager {
      * Start audio capture
      */
     async startAudioCapture() {
+        if (!this.audioContext) {
+            throw new Error('AudioContext not initialized');
+        }
+        
+        // Resume AudioContext if suspended (browser policy)
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+            this.logger.info('VoiceAgentManager', 'AudioContext resumed');
+        }
+        
         const source = this.audioContext.createMediaStreamSource(this.micStream);
         
         // Use ScriptProcessorNode for audio capture (compatibility)
@@ -278,6 +318,9 @@ class VoiceAgentManager {
                     type: 'audio',
                     data: audioBase64
                 }));
+                
+                // Log audio data being sent (debug)
+                this.logger.debug('VoiceAgentManager', `Sending audio: ${pcm16.length} samples`);
             }
         };
         
@@ -285,6 +328,8 @@ class VoiceAgentManager {
         processor.connect(this.audioContext.destination);
         
         this.audioWorklet = processor;
+        
+        this.logger.info('VoiceAgentManager', 'Audio capture started');
     }
     
     /**
@@ -639,6 +684,7 @@ class VoiceAgentManager {
     playNextAudio() {
         if (this.audioQueue.length === 0) {
             this.isPlaying = false;
+            this.currentAudioSource = null;
             return;
         }
         
@@ -649,7 +695,11 @@ class VoiceAgentManager {
         source.buffer = audioBuffer;
         source.connect(this.audioContext.destination);
         
+        // Store reference to current source
+        this.currentAudioSource = source;
+        
         source.onended = () => {
+            this.currentAudioSource = null;
             this.playNextAudio();
         };
         
@@ -695,31 +745,70 @@ class VoiceAgentManager {
      * Cleanup
      */
     destroy() {
-        this.stopConversation();
+        this.logger.debug('VoiceAgentManager', 'Destroying');
+        
+        // Stop any active conversation
+        if (this.isActive) {
+            this.stopConversation();
+        }
+        
+        // Stop any playing audio
+        if (this.currentAudioSource) {
+            try {
+                this.currentAudioSource.stop();
+                this.currentAudioSource.disconnect();
+            } catch (e) {
+                // Ignore if already stopped
+            }
+            this.currentAudioSource = null;
+        }
+        
+        // Close WebSocket
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        
+        // Release audio resources
         if (this.audioContext) {
             this.audioContext.close();
+            this.audioContext = null;
         }
+        
+        if (this.audioWorklet) {
+            this.audioWorklet = null;
+        }
+        
+        if (this.micStream) {
+            this.micStream.getTracks().forEach(track => track.stop());
+            this.micStream = null;
+        }
+        
+        // Remove Event Bus listeners
+        this.eventBus.off('voice:start_requested');
+        this.eventBus.off('voice:stop_requested');
+        this.eventBus.off('state:changed');
+        
+        // Clear session
+        this.sessionId = null;
+        this.isActive = false;
+        this.isPlaying = false;
+        this.audioQueue = [];
+        
+        // Cleanup UI references
+        if (this.comicBubble) {
+            this.comicBubble.hide();
+        }
+        
+        // Nullify references
+        this.eventBus = null;
+        this.stateManager = null;
+        this.comicBubble = null;
+        this.blackCat = null;
+        this.logger = null;
     }
 }
 
-// Initialize when dependencies are ready
-if (typeof window !== 'undefined') {
-    const initVoiceAgentManager = () => {
-        if (window.eventBus && window.stateManager && window.logger) {
-            window.voiceAgent = new VoiceAgentManager(
-                window.eventBus,
-                window.stateManager,
-                window.logger
-            );
-            
-            if (window.logger.debugMode) {
-                console.log('%c[VoiceAgentManager] Initialized with Event Bus', 'color: #ff5722; font-weight: bold;');
-            }
-        } else {
-            setTimeout(initVoiceAgentManager, 50);
-        }
-    };
-    
-    initVoiceAgentManager();
-}
+// NOTE: No longer auto-initialized globally.
+// Now created per-session in DiagramSelector and managed by SessionLifecycleManager.
 

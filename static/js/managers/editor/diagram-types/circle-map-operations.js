@@ -1,0 +1,225 @@
+/**
+ * Circle Map Operations
+ * =====================
+ * 
+ * Handles add/delete/update operations specific to Circle Maps.
+ * Manages context nodes around a central topic.
+ * 
+ * @author lycosa9527
+ * @made_by MindSpring Team
+ * @size_target ~200 lines
+ */
+
+class CircleMapOperations {
+    constructor(eventBus, stateManager, logger) {
+        this.eventBus = eventBus;
+        this.stateManager = stateManager;
+        this.logger = logger || console;
+        
+        // Circle map configuration
+        this.nodeType = 'context';
+        this.arrayField = 'context';
+        
+        this.logger.info('CircleMapOperations', 'Circle Map Operations initialized');
+    }
+    
+    /**
+     * Add a new context node to Circle Map
+     * @param {Object} spec - Current diagram spec
+     * @param {Object} editor - Editor instance
+     * @returns {Object} Updated spec
+     */
+    addNode(spec, editor) {
+        if (!spec || !Array.isArray(spec.context)) {
+            this.logger.error('CircleMapOperations', 'Invalid circle map spec');
+            return null;
+        }
+        
+        // Get language for new node text
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        const newContextText = lang === 'zh' ? '新背景' : 'New Context';
+        
+        // Add new context item
+        spec.context.push(newContextText);
+        
+        this.logger.debug('CircleMapOperations', 'Added new context node', {
+            contextCount: spec.context.length,
+            newText: newContextText
+        });
+        
+        // Emit node added event
+        this.eventBus.emit('diagram:node_added', {
+            diagramType: 'circle_map',
+            nodeType: 'context',
+            nodeIndex: spec.context.length - 1,
+            spec
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Delete selected nodes from Circle Map
+     * @param {Object} spec - Current diagram spec
+     * @param {Array} nodeIds - Node IDs to delete
+     * @returns {Object} Updated spec
+     */
+    deleteNodes(spec, nodeIds) {
+        if (!spec || !Array.isArray(spec.context)) {
+            this.logger.error('CircleMapOperations', 'Invalid circle map spec');
+            return null;
+        }
+        
+        // Collect indices to delete and check for main topic
+        const indicesToDelete = [];
+        let attemptedMainTopicDelete = false;
+        
+        nodeIds.forEach(nodeId => {
+            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (!shapeElement.empty()) {
+                const nodeType = shapeElement.attr('data-node-type');
+                
+                if (nodeType === 'context') {
+                    const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
+                    if (!isNaN(arrayIndex)) {
+                        indicesToDelete.push(arrayIndex);
+                    }
+                } else if (nodeType === 'topic') {
+                    attemptedMainTopicDelete = true;
+                }
+            }
+        });
+        
+        // Warn if trying to delete main topic
+        if (attemptedMainTopicDelete) {
+            this.eventBus.emit('diagram:operation_warning', {
+                message: 'Main topic node cannot be deleted',
+                type: 'warning'
+            });
+        }
+        
+        // If no valid nodes to delete, return early
+        if (indicesToDelete.length === 0) {
+            return spec;
+        }
+        
+        // Sort indices in descending order to delete from end to start
+        indicesToDelete.sort((a, b) => b - a);
+        
+        // Remove from spec
+        indicesToDelete.forEach(index => {
+            spec.context.splice(index, 1);
+        });
+        
+        this.logger.debug('CircleMapOperations', 'Deleted context nodes', {
+            deletedCount: indicesToDelete.length,
+            remainingCount: spec.context.length
+        });
+        
+        // Emit nodes deleted event
+        this.eventBus.emit('diagram:nodes_deleted', {
+            diagramType: 'circle_map',
+            nodeType: 'context',
+            deletedIndices: indicesToDelete,
+            spec
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Update a node in Circle Map
+     * @param {Object} spec - Current diagram spec
+     * @param {string} nodeId - Node ID
+     * @param {Object} updates - Updates to apply
+     * @returns {Object} Updated spec
+     */
+    updateNode(spec, nodeId, updates) {
+        if (!spec || !Array.isArray(spec.context)) {
+            this.logger.error('CircleMapOperations', 'Invalid circle map spec');
+            return null;
+        }
+        
+        // Find the node
+        const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+        if (shapeElement.empty()) {
+            this.logger.warn('CircleMapOperations', `Node not found: ${nodeId}`);
+            return spec;
+        }
+        
+        const nodeType = shapeElement.attr('data-node-type');
+        
+        if (nodeType === 'context') {
+            // Update context node
+            const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
+            if (!isNaN(arrayIndex) && arrayIndex < spec.context.length) {
+                if (updates.text !== undefined) {
+                    spec.context[arrayIndex] = updates.text;
+                }
+            }
+        } else if (nodeType === 'topic') {
+            // Update main topic
+            if (updates.text !== undefined) {
+                spec.topic = updates.text;
+            }
+        }
+        
+        this.logger.debug('CircleMapOperations', 'Updated node', {
+            nodeId,
+            nodeType,
+            updates
+        });
+        
+        // Emit node updated event
+        this.eventBus.emit('diagram:node_updated', {
+            diagramType: 'circle_map',
+            nodeId,
+            nodeType,
+            updates,
+            spec
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Validate Circle Map spec
+     * @param {Object} spec - Diagram spec
+     * @returns {boolean} Whether spec is valid
+     */
+    validateSpec(spec) {
+        if (!spec) {
+            return false;
+        }
+        
+        if (!spec.topic || typeof spec.topic !== 'string') {
+            this.logger.warn('CircleMapOperations', 'Invalid or missing topic');
+            return false;
+        }
+        
+        if (!Array.isArray(spec.context)) {
+            this.logger.warn('CircleMapOperations', 'Invalid or missing context array');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        this.logger.debug('CircleMapOperations', 'Destroying');
+        
+        // This manager doesn't register event listeners (only emits)
+        // Just nullify references
+        this.eventBus = null;
+        this.stateManager = null;
+        this.logger = null;
+    }
+}
+
+// Make available globally
+window.CircleMapOperations = CircleMapOperations;
+
+

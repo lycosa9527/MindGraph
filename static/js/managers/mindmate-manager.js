@@ -624,41 +624,35 @@ class MindMateManager {
         }
         return userId;
     }
-}
-
-// Initialize when dependencies are ready
-if (typeof window !== 'undefined') {
-    const initMindMateManager = () => {
-        // Check if MindMate feature is enabled (button exists)
-        const mindmateBtn = document.getElementById('mindmate-ai-btn');
-        if (!mindmateBtn) {
-            window.logger?.debug('MindMateManager', 'Feature disabled, skipping initialization');
-            return;
-        }
-        
-        if (window.eventBus && window.stateManager && window.logger) {
-            window.aiAssistantManager = new MindMateManager(
-                window.eventBus,
-                window.stateManager,
-                window.logger
-            );
-            
-            // Backward compatibility
-            window.aiAssistant = window.aiAssistantManager;
-            
-            if (window.logger.debugMode) {
-                console.log('%c[MindMateManager] Initialized with Event Bus', 'color: #4caf50; font-weight: bold;');
-            }
-        } else {
-            setTimeout(initMindMateManager, 50);
-        }
-    };
     
-    // Wait for DOM
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initMindMateManager);
-    } else {
-        initMindMateManager();
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        this.logger.debug('MindMateManager', 'Destroying');
+        
+        // Remove Event Bus listeners
+        this.eventBus.off('panel:open_requested');
+        this.eventBus.off('panel:close_requested');
+        this.eventBus.off('mindmate:send_message');
+        
+        // Clear session data
+        this.conversationId = null;
+        this.diagramSessionId = null;
+        this.hasGreeted = false;
+        
+        // Nullify references
+        this.eventBus = null;
+        this.stateManager = null;
+        this.chatPanel = null;
+        this.chatMessages = null;
+        this.chatInput = null;
+        this.chatSendBtn = null;
+        this.md = null;
+        this.logger = null;
     }
 }
+
+// NOTE: No longer auto-initialized globally.
+// Now created per-session in DiagramSelector and managed by SessionLifecycleManager.
 

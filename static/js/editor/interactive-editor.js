@@ -2905,7 +2905,7 @@ class InteractiveEditor {
             }
             
             // Call backend to recalculate layout
-            const response = await fetch('/api/recalculate_mindmap_layout', {
+            const response = await window.auth.fetch('/api/recalculate_mindmap_layout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -4095,6 +4095,23 @@ class InteractiveEditor {
             this.canvasManager.clear();
             this.canvasManager = null;
         }
+        
+        // ========================================
+        // 2.5 DESTROY ALL REFACTORED MODULES
+        // ========================================
+        // NOTE: All 18 managers (4 session + 14 modules) are now managed by SessionLifecycleManager
+        // They're destroyed in DiagramSelector.backToGallery() via sessionLifecycle.cleanup()
+        // We just need to nullify the references here
+        if (this.modules) {
+            logger.debug('Editor', 'Clearing module references (destroyed by SessionLifecycleManager)');
+            this.modules = null;
+        }
+        
+        // Nullify session manager references
+        this.thinkGuide = null;
+        this.mindMate = null;
+        this.nodePalette = null;
+        this.voiceAgent = null;
         
         // ========================================
         // 3. CLEAR ALL DATA STRUCTURES

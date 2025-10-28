@@ -29,8 +29,8 @@ class ToolbarManager {
         this.sessionId = editor.sessionId;
         this.diagramType = editor.diagramType;
         
-        // Track in-progress LLM requests for cancellation
-        this.activeAbortControllers = new Map(); // Map<modelName, AbortController>
+        // NOTE: activeAbortControllers removed - now managed by LLMEngineManager
+        // Cancellation is handled via Event Bus to LLMAutoCompleteManager
         
         // Initialize DiagramValidator and LearningModeManager for Learning Mode
         this.validator = new DiagramValidator();
@@ -51,31 +51,15 @@ class ToolbarManager {
     /**
      * Cancel all in-progress LLM requests
      * Called when returning to gallery or destroying the editor
+     * Delegates to LLMAutoCompleteManager via Event Bus
      */
     cancelAllLLMRequests() {
-        if (this.activeAbortControllers.size > 0) {
-            logger.info('ToolbarManager', `Cancelling ${this.activeAbortControllers.size} LLM requests`);
-            this.activeAbortControllers.forEach((controller, model) => {
-                controller.abort();
-            });
-            this.activeAbortControllers.clear();
-        }
+        logger.info('ToolbarManager', 'Requesting cancellation of all LLM requests');
+        // Delegate to LLMAutoCompleteManager which manages actual abort controllers
+        window.eventBus.emit('autocomplete:cancel_requested', {});
     }
     
-    /**
-     * @deprecated - Use logger.debug/info/warn/error directly instead
-     * Legacy method for backward compatibility
-     */
-    logToBackend(level, message, data = null) {
-        // Now handled by centralized logger
-        const levelMap = {
-            'DEBUG': () => logger.debug('ToolbarManager', message, data),
-            'INFO': () => logger.info('ToolbarManager', message, data),
-            'WARN': () => logger.warn('ToolbarManager', message, data),
-            'ERROR': () => logger.error('ToolbarManager', message, data)
-        };
-        (levelMap[level] || levelMap['INFO'])();
-    }
+    // NOTE: logToBackend() removed - use logger.debug/info/warn/error directly
     
     /**
      * Register this toolbar manager instance globally, cleaning up old instances from different sessions
@@ -112,8 +96,8 @@ class ToolbarManager {
         // Toolbar buttons
         this.addNodeBtn = document.getElementById('add-node-btn');
         
-        // LLM selector buttons
-        this.llmButtons = document.querySelectorAll('.llm-btn');
+        // LLM selector buttons (convert NodeList to Array for .find() support)
+        this.llmButtons = Array.from(document.querySelectorAll('.llm-btn'));
         this.deleteNodeBtn = document.getElementById('delete-node-btn');
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.lineModeBtn = document.getElementById('line-mode-btn');
@@ -352,231 +336,30 @@ class ToolbarManager {
     }
     
     /**
-     * Handle LLM selection button click
+     * Handle LLM model selection button click
+     * EVENT BUS WRAPPER - Delegates to UIStateLLMManager
      */
     handleLLMSelection(button) {
-        const llmModel = button.getAttribute('data-llm');
-        if (!llmModel) return;
-        
-        // VERBOSE LOG: LLM model switched
-        logger.info('ToolbarManager', '=== LLM MODEL BUTTON CLICKED ===', {
-            timestamp: new Date().toISOString(),
-            clickedModel: llmModel,
-            previousModel: this.selectedLLM,
-            modelState: {
-                hasCachedResult: !!this.llmResults[llmModel],
-                isSuccess: this.llmResults[llmModel]?.success || false,
-                hasError: !!(this.llmResults[llmModel]?.error),
-                errorMessage: this.llmResults[llmModel]?.error || null
-            },
-            systemState: {
-                isGeneratingMulti: this.isGeneratingMulti,
-                totalCachedModels: Object.keys(this.llmResults).length
-            },
-            allModelsStatus: Object.keys(this.llmResults).map(model => ({
-                model: model,
-                success: this.llmResults[model].success,
-                error: this.llmResults[model].error || null
-            }))
-        });
-        
-        // Check if this LLM has cached results
-        if (this.llmResults[llmModel]) {
-            // Check if it's a successful result
-            if (this.llmResults[llmModel].success) {
-                logger.info('ToolbarManager', `✓ Switching to successful ${llmModel} result`);
-                this.selectedLLM = llmModel;
-                this.updateLLMButtonStates();
-                
-                // Render the cached result
-                this.renderCachedLLMResult(llmModel);
-                
-                const modelNames = {
-                    'qwen': 'Qwen',
-                    'deepseek': 'DeepSeek',
-                    'kimi': 'Kimi',
-                    'hunyuan': 'HunYuan'
-                };
-                logger.debug('ToolbarManager', `Switched to ${modelNames[llmModel] || llmModel} result`);
-            } else {
-                // Error result - show notification
-                const error = this.llmResults[llmModel].error || 'Generation failed';
-                logger.warn('ToolbarManager', `User clicked on failed ${llmModel} result`, {
-                    error: error
-                });
-                const lang = window.languageManager?.getCurrentLanguage() || 'en';
-                const message = lang === 'zh' 
-                    ? `${llmModel} 生成失败: ${error}` 
-                    : `${llmModel} generation failed: ${error}`;
-                this.showNotification(message, 'error');
-            }
-        } else if (this.isGeneratingMulti) {
-            // CRITICAL FIX: User clicked before this LLM finished generating
-            // Show notification instead of silently ignoring the click
-            logger.debug('ToolbarManager', `User clicked ${llmModel} while still generating`);
-            const lang = window.languageManager?.getCurrentLanguage() || 'en';
-            const modelNames = {
-                'qwen': 'Qwen',
-                'deepseek': 'DeepSeek',
-                'kimi': 'Kimi',
-                'hunyuan': 'HunYuan'
-            };
-            const modelName = modelNames[llmModel] || llmModel;
-            const message = lang === 'zh' 
-                ? `${modelName} 还在生成中，请稍候...` 
-                : `${modelName} is still generating, please wait...`;
-            this.showNotification(message, 'warning');
-        } else {
-            // No cached results yet, not generating - just update selection
-            logger.debug('ToolbarManager', `${llmModel} selected (no cached results yet)`);
-            this.selectedLLM = llmModel;
-            this.updateLLMButtonStates();
-        }
+        window.eventBus.emit('llm:model_selection_clicked', { button });
+        logger.debug('ToolbarManager', 'LLM selection requested via Event Bus');
     }
     
     /**
      * Render cached LLM result
+     * EVENT BUS WRAPPER - Delegates to LLMAutoCompleteManager
      */
     renderCachedLLMResult(llmModel) {
-        logger.info('ToolbarManager', `=== RENDERING CACHED RESULT FROM ${llmModel.toUpperCase()} ===`, {
-            timestamp: new Date().toISOString(),
-            model: llmModel
-        });
-        
-        const cachedData = this.llmResults[llmModel];
-        if (!cachedData || !cachedData.success) {
-            logger.error('ToolbarManager', `Cannot render ${llmModel}: No cached data or failed`, {
-                hasCachedData: !!cachedData,
-                success: cachedData?.success
-            });
-            this.showNotification(`Error loading ${llmModel} result`, 'error');
-            return;
-        }
-        
-        const result = cachedData.result;
-        const spec = result.spec;
-        
-        // VERBOSE LOG: Detailed spec analysis
-        logger.info('ToolbarManager', `Analyzing spec from ${llmModel}`, {
-            diagramType: result.diagram_type,
-            specStructure: {
-                hasNodes: !!spec?.nodes,
-                nodeCount: spec?.nodes?.length || 0,
-                hasChildren: !!spec?.children,
-                childrenCount: spec?.children?.length || 0,
-                hasTopic: !!spec?.topic,
-                topic: spec?.topic,
-                hasSteps: !!spec?.steps,
-                stepsCount: spec?.steps?.length || 0,
-                hasAnalogies: !!spec?.analogies,
-                analogiesCount: spec?.analogies?.length || 0,
-                allKeys: spec ? Object.keys(spec) : []
-            }
-        });
-        
-        // VERBOSE LOG: Extract and log all nodes/children with positions
-        let nodesInfo = [];
-        if (spec?.nodes) {
-            nodesInfo = spec.nodes.map((node, i) => ({
-                index: i,
-                id: node.id || 'no-id',
-                text: node.text || node.label || 'no-text',
-                position: { x: node.x || 0, y: node.y || 0 },
-                type: node.type || 'unknown',
-                level: node.level || 'unknown'
-            }));
-        } else if (spec?.children) {
-            nodesInfo = spec.children.map((child, i) => ({
-                index: i,
-                text: child.text || child.label || child,
-                type: 'child'
-            }));
-        } else if (spec?.steps) {
-            nodesInfo = spec.steps.map((step, i) => ({
-                index: i,
-                text: typeof step === 'string' ? step : step.text || step.label,
-                type: 'step'
-            }));
-        }
-        
-        logger.info('ToolbarManager', `=== NODES GENERATED BY ${llmModel.toUpperCase()} ===`, {
-            timestamp: new Date().toISOString(),
-            totalNodes: nodesInfo.length,
-            nodes: nodesInfo
-        });
-        
-        logger.debug('ToolbarManager', `Rendering ${llmModel} result`, {
-            nodes: spec?.nodes?.length || 0
-        });
-        
-        // Normalize diagram type (backend returns "mind_map", frontend uses "mindmap")
-        let diagramType = result.diagram_type;
-        if (diagramType === 'mind_map') {
-            diagramType = 'mindmap';
-        }
-        
-        // Update editor with cached spec
-        if (this.editor) {
-            logger.info('ToolbarManager', 'Updating editor with new spec and rendering', {
-                diagramType: diagramType,
-                sessionId: this.editor.sessionId
-            });
-            
-            this.editor.currentSpec = spec;
-            this.editor.diagramType = diagramType;
-            this.editor.renderDiagram();
-            
-            logger.info('ToolbarManager', '✓ Diagram rendered successfully', {
-                model: llmModel,
-                diagramType: diagramType
-            });
-            
-            // Reset view to optimal position after rendering completes
-            setTimeout(() => {
-                this.editor.fitDiagramToWindow();
-                logger.debug('ToolbarManager', 'View fitted to window');
-            }, 300);
-        } else {
-            logger.error('ToolbarManager', 'Cannot render: editor not initialized');
-        }
+        window.eventBus.emit('autocomplete:render_cached_requested', { llmModel });
+        logger.debug('ToolbarManager', `Render cached result requested for ${llmModel} via Event Bus`);
     }
     
     /**
      * Update LLM button active states
+     * EVENT BUS WRAPPER - Delegates to LLMAutoCompleteManager
      */
     updateLLMButtonStates() {
-        this.llmButtons.forEach(btn => {
-            const llmModel = btn.getAttribute('data-llm');
-            
-            // Set active state
-            if (llmModel === this.selectedLLM) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-            
-            // Set ready/error/disabled states based on cached results
-            if (this.llmResults[llmModel] && this.llmResults[llmModel].success) {
-                // Has successful result - enable and mark as ready
-                btn.classList.add('ready');
-                btn.classList.remove('error', 'disabled');
-                btn.disabled = false;
-            } else if (this.llmResults[llmModel] && !this.llmResults[llmModel].success) {
-                // Has error result - enable but mark as error (user can click to see error)
-                btn.classList.add('error');
-                btn.classList.remove('ready', 'disabled');
-                btn.disabled = false;
-            } else if (this.isGeneratingMulti) {
-                // CRITICAL FIX: No result yet and still generating - disable to prevent confusion
-                btn.classList.add('disabled');
-                btn.classList.remove('ready', 'error');
-                btn.disabled = true; // Actually disable the button
-            } else {
-                // No result yet, not generating - reset to default state
-                btn.classList.remove('ready', 'error', 'disabled');
-                btn.disabled = false;
-            }
-        });
+        window.eventBus.emit('autocomplete:update_button_states_requested', {});
+        logger.debug('ToolbarManager', 'Button states update requested via Event Bus');
     }
     
     /**
@@ -966,263 +749,36 @@ class ToolbarManager {
     /**
      * Apply text changes
      */
+    /**
+     * Apply text to selected nodes - EVENT BUS WRAPPER
+     */
     applyText(silent = false) {
-        if (this.currentSelection.length === 0) return;
-        
-        const newText = this.propText.value.trim();
-        if (!newText) {
-            // If empty, no text to apply (user didn't type anything)
-            this.showNotification(this.getNotif('textEmpty'), 'warning');
-            return;
-        }
-        
-        logger.debug('ToolbarManager', 'Applying text to selected nodes', {
-            count: this.currentSelection.length
-        });
-        
-        this.currentSelection.forEach(nodeId => {
-            // Get the shape node
-            const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
-            if (shapeElement.empty()) {
-                logger.warn('ToolbarManager', `Node ${nodeId} not found`);
-                return;
-            }
-            
-            const shapeNode = shapeElement.node();
-            
-            // Find associated text element
-            let textNode = null;
-            
-            // Method 1: Try data-text-for attribute
-            const textByDataAttr = d3.select(`[data-text-for="${nodeId}"]`);
-            if (!textByDataAttr.empty()) {
-                textNode = textByDataAttr.node();
-            } else {
-                // Method 2: Try next sibling
-                if (shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
-                    textNode = shapeNode.nextElementSibling;
-                } else {
-                    // Method 3: Try child text (for grouped elements)
-                    const textChild = shapeElement.select('text');
-                    if (!textChild.empty()) {
-                        textNode = textChild.node();
-                    }
-                }
-            }
-            
-            // Use the editor's updateNodeText method which handles all diagram types properly
-            if (this.editor && typeof this.editor.updateNodeText === 'function') {
-                this.editor.updateNodeText(nodeId, shapeNode, textNode, newText);
-            } else {
-                logger.error('ToolbarManager', 'Editor updateNodeText method not available');
-            }
-        });
-        
-        // Only show notification if not called from applyAllProperties
-        if (!silent) {
-            this.showNotification(this.getNotif('textUpdated'), 'success');
-        }
+        window.eventBus.emit('text:apply_requested', { silent });
+        logger.debug('ToolbarManager', 'Apply text requested via Event Bus');
     }
     
     /**
-     * Apply all properties to selected nodes
+     * Apply all properties to selected nodes - EVENT BUS WRAPPER
      */
     applyAllProperties() {
-        if (this.currentSelection.length === 0) return;
-        
-        const properties = {
-            text: this.propText?.value,
-            fontSize: this.propFontSize?.value,
-            fontFamily: this.propFontFamily?.value,
-            textColor: this.propTextColor?.value,
-            fillColor: this.propFillColor?.value,
-            strokeColor: this.propStrokeColor?.value,
-            strokeWidth: this.propStrokeWidth?.value,
-            opacity: this.propOpacity?.value,
-            bold: this.propBold?.classList.contains('active'),
-            italic: this.propItalic?.classList.contains('active'),
-            underline: this.propUnderline?.classList.contains('active')
-        };
-        
-        logger.debug('ToolbarManager', 'Applying all properties', {
-            count: this.currentSelection.length
-        });
-        
-        // Apply text changes first using the proper method (silently - we'll show one notification at the end)
-        if (properties.text && properties.text.trim()) {
-            this.applyText(true); // Pass true to suppress notification
-        }
-        
-        this.currentSelection.forEach(nodeId => {
-            const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
-            if (nodeElement.empty()) return;
-            
-            // Find text element using multiple methods
-            let textElement = d3.select(`[data-text-for="${nodeId}"]`);
-            if (textElement.empty()) {
-                const node = nodeElement.node();
-                if (node.nextElementSibling && node.nextElementSibling.tagName === 'text') {
-                    textElement = d3.select(node.nextElementSibling);
-                } else {
-                    textElement = nodeElement.select('text');
-                }
-            }
-            
-            // Apply shape properties
-            if (properties.fillColor) {
-                nodeElement.attr('fill', properties.fillColor);
-            }
-            if (properties.strokeColor) {
-                nodeElement.attr('stroke', properties.strokeColor);
-            }
-            if (properties.strokeWidth) {
-                nodeElement.attr('stroke-width', properties.strokeWidth);
-            }
-            if (properties.opacity) {
-                nodeElement.attr('opacity', properties.opacity);
-            }
-            
-            // Apply text styling properties (not content - that's handled by applyText)
-            if (!textElement.empty()) {
-                if (properties.fontSize) {
-                    textElement.attr('font-size', properties.fontSize);
-                }
-                if (properties.fontFamily) {
-                    textElement.attr('font-family', properties.fontFamily);
-                }
-                if (properties.textColor) {
-                    textElement.attr('fill', properties.textColor);
-                }
-                if (properties.bold) {
-                    textElement.attr('font-weight', 'bold');
-                } else {
-                    textElement.attr('font-weight', 'normal');
-                }
-                if (properties.italic) {
-                    textElement.attr('font-style', 'italic');
-                } else {
-                    textElement.attr('font-style', 'normal');
-                }
-                if (properties.underline) {
-                    textElement.attr('text-decoration', 'underline');
-                } else {
-                    textElement.attr('text-decoration', 'none');
-                }
-            }
-        });
-        
-        this.editor?.saveToHistory('update_properties', { 
-            nodes: this.currentSelection, 
-            properties 
-        });
-        
-        this.showNotification(this.getNotif('propertiesApplied'), 'success');
+        window.eventBus.emit('properties:apply_all_requested', {});
+        logger.debug('ToolbarManager', 'Apply all properties requested via Event Bus');
     }
     
     /**
-     * Apply styles in real-time (without notification)
+     * Apply styles in real-time (without notification) - EVENT BUS WRAPPER
      */
     applyStylesRealtime() {
-        if (this.currentSelection.length === 0) return;
-        
-        const properties = {
-            fontSize: this.propFontSize?.value,
-            fontFamily: this.propFontFamily?.value,
-            textColor: this.propTextColor?.value,
-            fillColor: this.propFillColor?.value,
-            strokeColor: this.propStrokeColor?.value,
-            strokeWidth: this.propStrokeWidth?.value,
-            opacity: this.propOpacity?.value,
-            bold: this.propBold?.classList.contains('active'),
-            italic: this.propItalic?.classList.contains('active'),
-            underline: this.propUnderline?.classList.contains('active')
-        };
-        
-        // Apply to all selected nodes
-        this.currentSelection.forEach(nodeId => {
-            const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
-            if (nodeElement.empty()) return;
-            
-            // Apply shape properties
-            if (properties.fillColor) {
-                nodeElement.attr('fill', properties.fillColor);
-            }
-            if (properties.strokeColor) {
-                nodeElement.attr('stroke', properties.strokeColor);
-            }
-            if (properties.strokeWidth) {
-                nodeElement.attr('stroke-width', properties.strokeWidth);
-            }
-            if (properties.opacity) {
-                nodeElement.attr('opacity', properties.opacity);
-            }
-            
-            // Find and apply text properties
-            let textElement = nodeElement.select('text');
-            if (textElement.empty()) {
-                textElement = d3.select(`[data-text-for="${nodeId}"]`);
-            }
-            
-            if (!textElement.empty()) {
-                if (properties.fontSize) {
-                    textElement.attr('font-size', properties.fontSize);
-                }
-                if (properties.fontFamily) {
-                    textElement.attr('font-family', properties.fontFamily);
-                }
-                if (properties.textColor) {
-                    textElement.attr('fill', properties.textColor);
-                }
-                textElement.attr('font-weight', properties.bold ? 'bold' : 'normal');
-                textElement.attr('font-style', properties.italic ? 'italic' : 'normal');
-                textElement.attr('text-decoration', properties.underline ? 'underline' : 'none');
-            }
-        });
-        
-        // Save to history silently
-        this.editor?.saveToHistory('update_properties', { 
-            nodes: this.currentSelection, 
-            properties 
-        });
+        window.eventBus.emit('properties:apply_realtime_requested', {});
+        logger.debug('ToolbarManager', 'Apply realtime styles requested via Event Bus');
     }
     
     /**
-     * Reset styles to template defaults (keep text unchanged)
+     * Reset styles to template defaults (keep text unchanged) - EVENT BUS WRAPPER
      */
     resetStyles() {
-        if (this.currentSelection.length === 0) return;
-        
-        // Get template defaults based on diagram type
-        const defaultProps = this.getTemplateDefaults();
-        
-        // Update UI inputs to template defaults
-        if (this.propFontSize) this.propFontSize.value = parseInt(defaultProps.fontSize);
-        if (this.propFontFamily) this.propFontFamily.value = defaultProps.fontFamily;
-        if (this.propTextColor) this.propTextColor.value = defaultProps.textColor;
-        if (this.propTextColorHex) this.propTextColorHex.value = defaultProps.textColor.toUpperCase();
-        if (this.propFillColor) this.propFillColor.value = defaultProps.fillColor;
-        if (this.propFillColorHex) this.propFillColorHex.value = defaultProps.fillColor.toUpperCase();
-        if (this.propStrokeColor) this.propStrokeColor.value = defaultProps.strokeColor;
-        if (this.propStrokeColorHex) this.propStrokeColorHex.value = defaultProps.strokeColor.toUpperCase();
-        if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(defaultProps.strokeWidth);
-        if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${defaultProps.strokeWidth}px`;
-        if (this.propOpacity) this.propOpacity.value = parseFloat(defaultProps.opacity);
-        if (this.opacityValue) this.opacityValue.textContent = `${Math.round(parseFloat(defaultProps.opacity) * 100)}%`;
-        
-        // Reset style toggles to defaults (off)
-        this.propBold?.classList.remove('active');
-        this.propItalic?.classList.remove('active');
-        this.propUnderline?.classList.remove('active');
-        
-        // Apply template defaults to selected nodes
-        this.applyStylesRealtime();
-        
-        this.showNotification(
-            window.languageManager?.getCurrentLanguage() === 'zh' 
-                ? '样式已重置为模板默认值' 
-                : 'Styles reset to template defaults',
-            'success'
-        );
+        window.eventBus.emit('properties:reset_requested', {});
+        logger.debug('ToolbarManager', 'Reset styles requested via Event Bus');
     }
     
     /**
@@ -1264,1657 +820,113 @@ class ToolbarManager {
     /**
      * Toggle bold
      */
+    /**
+     * Toggle bold - EVENT BUS WRAPPER
+     */
     toggleBold() {
-        this.propBold.classList.toggle('active');
+        window.eventBus.emit('properties:toggle_bold_requested', {});
     }
     
     /**
-     * Toggle italic
+     * Toggle italic - EVENT BUS WRAPPER
      */
     toggleItalic() {
-        this.propItalic.classList.toggle('active');
+        window.eventBus.emit('properties:toggle_italic_requested', {});
     }
     
     /**
-     * Toggle underline
+     * Toggle underline - EVENT BUS WRAPPER
      */
     toggleUnderline() {
-        this.propUnderline.classList.toggle('active');
+        window.eventBus.emit('properties:toggle_underline_requested', {});
     }
     
     /**
-     * Handle add node
+     * Handle add node - EVENT BUS WRAPPER
      */
     handleAddNode() {
-        logger.debug('ToolbarManager', 'handleAddNode called', {
-            diagramType: this.editor?.diagramType
-        });
-        
-        if (!this.editor) {
-            logger.error('ToolbarManager', 'handleAddNode blocked - editor not initialized');
-            this.showNotification(this.getNotif('editorNotInit'), 'error');
-            return;
-        }
-        
-        const diagramType = this.editor.diagramType;
-        const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'mindmap'].includes(diagramType);
-
-        // Check if selection is required for this diagram type
-        if (requiresSelection && this.currentSelection.length === 0) {
-            this.showNotification(this.getNotif('selectNodeToAdd'), 'warning');
-            return;
-        }
-        
-        // Call editor's addNode method (it will handle diagram-specific logic)
-        this.editor.addNode();
-        
-        // Only show generic success notification for diagram types that don't show their own
-            const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'bridge_map', 'circle_map', 'bubble_map', 'concept_map', 'mindmap'].includes(diagramType);
-            if (!showsOwnNotification) {
-                this.showNotification(this.getNotif('nodeAdded'), 'success');
-            }
-        
-        // Node count updates automatically via MutationObserver
+        window.eventBus.emit('node:add_requested', {});
+        logger.debug('ToolbarManager', 'Add node requested via Event Bus');
     }
     
     /**
-     * Handle delete node
+     * Handle delete node - EVENT BUS WRAPPER
      */
     handleDeleteNode() {
-        if (this.editor && this.currentSelection.length > 0) {
-            const count = this.currentSelection.length;
-            this.editor.deleteSelectedNodes();
-            this.hidePropertyPanel();
-            this.showNotification(this.getNotif('nodesDeleted', count), 'success');
-            
-            // Node count updates automatically via MutationObserver
-        } else {
-            this.showNotification(this.getNotif('selectNodeToDelete'), 'warning');
-        }
+        window.eventBus.emit('node:delete_requested', {});
+        logger.debug('ToolbarManager', 'Delete node requested via Event Bus');
     }
     
     /**
-     * Handle empty node text (clear text but keep node)
+     * Handle empty node text (clear text but keep node) - EVENT BUS WRAPPER
      */
     handleEmptyNode() {
-        if (this.editor && this.currentSelection.length > 0) {
-            const nodeIds = [...this.currentSelection];
-            
-            nodeIds.forEach(nodeId => {
-                // Find the shape element
-                const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
-                if (shapeElement.empty()) {
-                    logger.warn('ToolbarManager', `Shape not found for nodeId: ${nodeId}`);
-                    return;
-                }
-                
-                // Find the text element
-                let textElement = d3.select(`[data-text-for="${nodeId}"]`);
-                
-                // If not found, try to find text as sibling or in parent group
-                if (textElement.empty()) {
-                    const shapeNode = shapeElement.node();
-                    const nextSibling = shapeNode.nextElementSibling;
-                    if (nextSibling && nextSibling.tagName === 'text') {
-                        textElement = d3.select(nextSibling);
-                    } else if (shapeNode.parentElement && shapeNode.parentElement.tagName === 'g') {
-                        textElement = d3.select(shapeNode.parentElement).select('text');
-                    }
-                }
-                
-                if (!textElement.empty()) {
-                    const textNode = textElement.node();
-                    
-                    // Update the text to empty string
-                    if (this.editor && typeof this.editor.updateNodeText === 'function') {
-                        this.editor.updateNodeText(nodeId, shapeElement.node(), textNode, '');
-                    } else {
-                        // Fallback: just update the DOM
-                        textElement.text('');
-                    }
-                }
-            });
-            
-            const count = nodeIds.length;
-            this.showNotification(this.getNotif('nodesEmptied', count), 'success');
-            
-            // Update property panel if still showing
-            if (this.currentSelection.length > 0) {
-                this.loadNodeProperties(this.currentSelection[0]);
-            }
-        } else {
-            this.showNotification(this.getNotif('selectNodeToEmpty'), 'warning');
-        }
+        window.eventBus.emit('node:empty_requested', {});
+        logger.debug('ToolbarManager', 'Empty node requested via Event Bus');
     }
     
     /**
      * Handle auto-complete diagram with AI
+     * EVENT BUS WRAPPER - Delegates to LLMAutoCompleteManager
      */
     async handleAutoComplete() {
-        // VERBOSE LOG: Complete environment and state at start
-        logger.info('ToolbarManager', '=== AUTO-COMPLETE FUNCTION STARTED ===', {
-            timestamp: new Date().toISOString(),
-            diagramState: {
-                type: this.editor?.diagramType,
-                sessionId: this.editor?.sessionId,
-                hasSpec: !!this.editor?.currentSpec,
-                specKeys: this.editor?.currentSpec ? Object.keys(this.editor.currentSpec) : []
-            },
-            systemState: {
-                selectedLLM: this.selectedLLM,
-                cachedResultsCount: Object.keys(this.llmResults).length,
-                isAutoCompleting: this.isAutoCompleting,
-                isGeneratingMulti: this.isGeneratingMulti,
-                activeAbortControllers: this.activeAbortControllers.size
-            },
-            environment: {
-                userAgent: navigator.userAgent,
-                language: navigator.language,
-                platform: navigator.platform,
-                onLine: navigator.onLine,
-                cookieEnabled: navigator.cookieEnabled,
-                viewport: {
-                    width: window.innerWidth,
-                    height: window.innerHeight,
-                    devicePixelRatio: window.devicePixelRatio
-                },
-                memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'unknown',
-                connectionType: navigator.connection ? navigator.connection.effectiveType : 'unknown'
-            },
-            performance: {
-                loadTime: performance.now() + 'ms since page load',
-                timing: performance.timing ? {
-                    domComplete: performance.timing.domComplete - performance.timing.navigationStart + 'ms',
-                    loadComplete: performance.timing.loadEventEnd - performance.timing.navigationStart + 'ms'
-                } : 'unavailable'
-            }
-        });
-        
-        logger.info('ToolbarManager', 'Auto-complete started', {
-            diagramType: this.editor?.diagramType
-        });
-        
-        // Prevent concurrent auto-complete operations
-        if (this.isAutoCompleting) {
-            logger.warn('ToolbarManager', 'Auto-complete already in progress - rejecting new request', {
-                timestamp: new Date().toISOString(),
-                isGeneratingMulti: this.isGeneratingMulti,
-                cachedResults: Object.keys(this.llmResults)
-            });
-            return;
-        }
-        
-        if (!this.editor) {
-            this.showNotification(this.getNotif('editorNotInit'), 'error');
-            logger.error('ToolbarManager', 'Auto-complete failed - editor not initialized');
-            return;
-        }
-        
-        // Set flag to prevent concurrent operations
-        this.isAutoCompleting = true;
-        
-        // CRITICAL: Validate session before auto-complete
-        if (!this.editor.validateSession('Auto-complete')) {
-            logger.error('ToolbarManager', 'Session validation failed, aborting auto-complete');
-            this.isAutoCompleting = false; // Clear flag on early return
-            return;
-        }
-        
-        // CRITICAL: Store the current diagram type and session ID to prevent accidental switching
-        const currentDiagramType = this.editor.diagramType;
-        const currentSessionId = this.editor.sessionId;
-        
-        // Extract existing nodes from the diagram
-        const existingNodes = this.extractExistingNodes();
-        logger.debug('ToolbarManager', 'Extracted existing nodes', {
-            count: existingNodes.length
-        });
-        
-        if (existingNodes.length === 0) {
-            this.showNotification(this.getNotif('addNodesFirst'), 'warning');
-            this.isAutoCompleting = false; // Clear flag on early return
-            return;
-        }
-        
-        // Identify the main/central topic (center-most or largest node)
-        const mainTopic = this.identifyMainTopic(existingNodes);
-        const diagramType = currentDiagramType; // Use locked type
-        
-        // Log what we identified
-        logger.info('ToolbarManager', `Main topic identified: "${mainTopic}"`, {
-            spec_topic: this.editor.currentSpec?.topic,
-            nodes_count: existingNodes.length
-        });
-        
-        // Store the original topic to preserve it later
-        const originalTopic = this.editor.currentSpec?.topic || mainTopic;
-        
-        // For flow maps, prioritize title for language detection
-        let textForLanguageDetection = mainTopic;
-        if (diagramType === 'flow_map' && this.editor.currentSpec?.title) {
-            textForLanguageDetection = this.editor.currentSpec.title;
-        }
-        
-        // For bridge maps, check all existing nodes for Chinese characters (prioritize user content)
-        if (diagramType === 'bridge_map' && existingNodes.length > 0) {
-            // Check if any existing node has Chinese characters
-            const hasChineseInNodes = existingNodes.some(node => /[\u4e00-\u9fa5]/.test(node.text));
-            if (hasChineseInNodes) {
-                textForLanguageDetection = existingNodes.find(node => /[\u4e00-\u9fa5]/.test(node.text)).text;
-            }
-        }
-        
-        // For brace maps, check all existing nodes for Chinese characters (prioritize user content)
-        if (diagramType === 'brace_map' && existingNodes.length > 0) {
-            // Check if any existing node has Chinese characters
-            const hasChineseInNodes = existingNodes.some(node => /[\u4e00-\u9fa5]/.test(node.text));
-            if (hasChineseInNodes) {
-                textForLanguageDetection = existingNodes.find(node => /[\u4e00-\u9fa5]/.test(node.text)).text;
-            }
-        }
-        
-        // Detect language from the topic/title text (if contains Chinese characters, use Chinese)
-        const hasChinese = /[\u4e00-\u9fa5]/.test(textForLanguageDetection);
-        const language = hasChinese ? 'zh' : (window.languageManager?.getCurrentLanguage() || 'en');
-        
-        // Send clean topic to backend - let the agent add the instructions
-        // The backend agents already wrap the prompt with proper instructions
-        // (e.g., "请为以下描述创建一个圆圈图：{topic}")
-        let prompt = mainTopic;
-        
-        // For brace maps, tree maps, and bridge maps, check if user has specified a dimension
-        let dimensionPreference = null;
-        if (diagramType === 'brace_map' || diagramType === 'tree_map' || diagramType === 'bridge_map') {
-            const dimensionNode = d3.select('[data-node-type="dimension"]');
-            if (!dimensionNode.empty()) {
-                const rawDimension = dimensionNode.attr('data-dimension-value') || this.editor.currentSpec?.dimension;
-                
-                // Only use dimension if it's actually filled (not empty, not just whitespace)
-                // If empty, let LLM auto-select the best dimension for the topic
-                if (rawDimension && rawDimension.trim() !== '') {
-                    dimensionPreference = rawDimension.trim();
-                }
-            }
-        }
-        
-        // Show loading state
-        this.setAutoButtonLoading(true);
-        this.showNotification(this.getNotif('aiCompleting', mainTopic), 'info');
-        
-        try {
-            // Prepare base request body
-            const baseRequestBody = {
-                prompt: prompt,
-                diagram_type: diagramType,
-                language: language,
-                session_id: this.editor.sessionId  // Track session
-            };
-            
-            // Add dimension preference if specified
-            if (dimensionPreference) {
-                baseRequestBody.dimension_preference = dimensionPreference;
-            }
-            
-            // VERBOSE LOG: Base request body prepared
-            logger.info('ToolbarManager', '=== LLM REQUEST BODY PREPARED ===', {
-                timestamp: new Date().toISOString(),
-                requestBody: {
-                    prompt: prompt,
-                    diagram_type: diagramType,
-                    language: language,
-                    session_id: this.editor.sessionId,
-                    dimension_preference: dimensionPreference || 'not set',
-                    prompt_length: prompt.length,
-                    has_chinese: /[\u4e00-\u9fa5]/.test(prompt)
-                },
-                contextInfo: {
-                    existingNodesCount: existingNodes.length,
-                    mainTopic: mainTopic,
-                    originalTopic: originalTopic,
-                    textForLanguageDetection: textForLanguageDetection
-                }
-            });
-            
-            logger.info('ToolbarManager', 'Starting PARALLEL LLM generation');
-            this.isGeneratingMulti = true;
-            
-            // Set all buttons to loading state
-            this.setAllLLMButtonsLoading(true);
-            
-            // Clear previous results
-            this.llmResults = {};
-            
-            // PARALLEL EXECUTION: Call all LLMs simultaneously using new endpoint!
-            const models = LLM_CONFIG.MODELS;
-            let firstSuccessfulModel = null;
-            
-            // Prepare request for parallel generation
-            const parallelRequestBody = {
-                ...baseRequestBody,
-                models: models  // Request all 4 models in parallel
-            };
-            
-            // VERBOSE LOG: Actual request being sent to backend
-            logger.info('ToolbarManager', '=== SENDING REQUEST TO LLM MIDDLEWARE ===', {
-                timestamp: new Date().toISOString(),
-                endpoint: '/api/generate_multi_progressive',
-                method: 'POST',
-                models: models,
-                fullRequestBody: JSON.parse(JSON.stringify(parallelRequestBody)), // Deep copy for logging
-                requestSize: JSON.stringify(parallelRequestBody).length + ' bytes'
-            });
-            
-            try {
-                logger.info('ToolbarManager', 'Calling progressive generation endpoint (SSE)');
-                
-                // CRITICAL: Create AbortController for cancellation
-                const abortController = new AbortController();
-                this.activeAbortControllers.set('multi_progressive', abortController);
-                
-                // Set timeout (same as sequential mode)
-                const timeoutId = setTimeout(() => {
-                    logger.warn('ToolbarManager', 'Multi-progressive timeout, aborting');
-                    abortController.abort();
-                }, LLM_CONFIG.TIMEOUT_MS);
-                
-                // Use SSE streaming (same pattern as MindMate ai-assistant-manager.js:333-380)
-                const response = await auth.fetch('/api/generate_multi_progressive', {
-                    method: 'POST',
-                    signal: abortController.signal, // Enable cancellation
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(parallelRequestBody)
-                });
-                
-                // Clear timeout on successful connection
-                clearTimeout(timeoutId);
-                
-                // VERBOSE LOG: Response received from server
-                logger.info('ToolbarManager', '=== LLM MIDDLEWARE RESPONSE RECEIVED ===', {
-                    timestamp: new Date().toISOString(),
-                    status: response.status,
-                    statusText: response.statusText,
-                    ok: response.ok,
-                    headers: {
-                        contentType: response.headers.get('content-type'),
-                        contentLength: response.headers.get('content-length')
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                // Read SSE stream with clean async/await pattern
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-                let completedCount = 0;
-                const startTime = Date.now();
-                
-                // Modern async/await loop - much cleaner than .then() recursion
-                while (true) {
-                    const { done, value } = await reader.read();
-                    
-                    if (done) {
-                        // Stream ended
-                        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-                        logger.info('ToolbarManager', `Progressive generation stream ended after ${elapsed}s`);
-                        break;
-                    }
-                    
-                    // Decode chunk
-                    const chunk = decoder.decode(value, { stream: true });
-                    buffer += chunk;
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop(); // Keep incomplete line in buffer (critical!)
-                    
-                    // Process each complete line
-                    for (const line of lines) {
-                        if (!line.startsWith('data: ')) continue;
-                        
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            
-                            // VERBOSE LOG: Raw SSE data received
-                            logger.debug('ToolbarManager', '=== SSE DATA CHUNK RECEIVED ===', {
-                                timestamp: new Date().toISOString(),
-                                rawLine: line.substring(0, 200) + (line.length > 200 ? '...' : ''),
-                                parsedData: {
-                                    event: data.event || 'model_result',
-                                    model: data.model || 'unknown',
-                                    success: data.success,
-                                    hasSpec: !!data.spec,
-                                    hasDuration: !!data.duration
-                                }
-                            });
-                            
-                            // Handle completion event
-                            if (data.event === 'complete') {
-                                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-                                logger.info('ToolbarManager', `All models completed in ${elapsed}s`);
-                                continue;
-                            }
-                            
-                            // Handle error event
-                            if (data.event === 'error') {
-                                logger.error('ToolbarManager', `Progressive generation error: ${data.message}`);
-                                continue;
-                            }
-                            
-                            // Handle model result
-                            const model = data.model;
-                            if (!model) continue;
-                            
-                            completedCount++;
-                            const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-                            logger.debug('ToolbarManager', `${model} completed (${completedCount}/${models.length}) in ${elapsed}s`);
-                            
-                            if (data.success) {
-                                // Validate spec before accepting it
-                                const specValidation = this._validateLLMSpec(model, data.spec, diagramType);
-                                
-                                // VERBOSE LOG: Successful LLM response JSON with validation
-                                logger.info('ToolbarManager', `=== JSON RESPONSE FROM ${model.toUpperCase()} ===`, {
-                                    timestamp: new Date().toISOString(),
-                                    model: model,
-                                    duration: data.duration ? data.duration.toFixed(2) + 's' : 'unknown',
-                                    response: {
-                                        diagram_type: data.diagram_type,
-                                        has_spec: !!data.spec,
-                                        spec_keys: data.spec ? Object.keys(data.spec) : [],
-                                        topics: data.topics || [],
-                                        style_preferences: data.style_preferences || {},
-                                        raw_spec: data.spec  // Full spec for debugging
-                                    },
-                                    validation: specValidation,
-                                    elapsed: elapsed + 's'
-                                });
-                                
-                                // Log validation issues if any
-                                if (!specValidation.isValid) {
-                                    logger.warn('ToolbarManager', `⚠️ ${model.toUpperCase()} SPEC VALIDATION WARNINGS`, {
-                                        model: model,
-                                        issues: specValidation.issues,
-                                        missingFields: specValidation.missingFields,
-                                        invalidFields: specValidation.invalidFields,
-                                        spec: data.spec
-                                    });
-                                }
-                                
-                                // Normalize diagram type
-                                let responseDiagramType = data.diagram_type || diagramType;
-                                if (responseDiagramType === 'mind_map') {
-                                    responseDiagramType = 'mindmap';
-                                }
-                                
-                                // Cache this model's result
-                                this.llmResults[model] = {
-                                    model: model,
-                                    success: true,
-                                    result: {
-                                        spec: data.spec,
-                                        diagram_type: responseDiagramType,
-                                        topics: data.topics || [],
-                                        style_preferences: data.style_preferences || {}
-                                    },
-                                    validation: specValidation
-                                };
-                                
-                                // Update button state
-                                this.setLLMButtonState(model, 'ready');
-                                
-                                // Render FIRST successful result IMMEDIATELY
-                                if (!firstSuccessfulModel) {
-                                    firstSuccessfulModel = model;
-                                    this.selectedLLM = model;
-                                    this.renderCachedLLMResult(model);
-                                    this.updateLLMButtonStates();
-                                    
-                                    const modelName = LLM_CONFIG.MODEL_NAMES[model] || model;
-                                    logger.info('ToolbarManager', `First result from ${modelName} rendered at ${elapsed}s`);
-                                    
-                                    // Play success sound notification
-                                    this.playNotificationSound();
-                                }
-                                
-                                logger.debug('ToolbarManager', `${model} result cached (${data.duration.toFixed(2)}s)`);
-                            } else {
-                                // Model failed
-                                const errorMessage = data.error || 'Unknown error';
-                                
-                                // VERBOSE LOG: LLM failure details
-                                logger.error('ToolbarManager', `=== LLM FAILURE: ${model.toUpperCase()} ===`, {
-                                    timestamp: new Date().toISOString(),
-                                    model: model,
-                                    error: errorMessage,
-                                    errorDetails: {
-                                        hasError: !!data.error,
-                                        errorType: data.error_type || 'unknown',
-                                        errorCode: data.error_code || 'unknown',
-                                        rawResponse: data
-                                    },
-                                    requestInfo: {
-                                        prompt: prompt,
-                                        diagram_type: diagramType,
-                                        language: language
-                                    },
-                                    elapsed: elapsed + 's'
-                                });
-                                
-                                this.llmResults[model] = {
-                                    model: model,
-                                    success: false,
-                                    error: errorMessage,
-                                    timestamp: Date.now()
-                                };
-                                
-                                this.setLLMButtonState(model, 'error');
-                                logger.warn('ToolbarManager', `${model} failed: ${errorMessage}`);
-                            }
-                            
-                        } catch (e) {
-                            logger.debug('ToolbarManager', 'Skipping malformed SSE line');
-                        }
-                    }
-                }
-                
-            } catch (error) {
-                // Handle abort gracefully (user cancelled or timeout)
-                if (error.name === 'AbortError') {
-                    logger.info('ToolbarManager', 'Multi-progressive request cancelled', {
-                        reason: 'User cancelled or timeout',
-                        activeControllers: this.activeAbortControllers.size
-                    });
-                    this.showNotification(this.getNotif('requestCancelled') || 'Request cancelled', 'info');
-                    this.llmResults = {}; // Clear partial results
-                    return; // Exit cleanly without fallback
-                }
-                
-                // VERBOSE LOG: Parallel endpoint failure details
-                logger.error('ToolbarManager', '=== PARALLEL ENDPOINT FAILED ===', {
-                    timestamp: new Date().toISOString(),
-                    error: error.message,
-                    errorStack: error.stack,
-                    endpoint: '/api/generate_multi_progressive',
-                    requestBody: {
-                        prompt: prompt,
-                        diagram_type: diagramType,
-                        models: models,
-                        language: language
-                    },
-                    fallback: 'sequential generation'
-                });
-                
-                logger.error('ToolbarManager', 'Parallel generation endpoint failed, falling back to sequential', error);
-                
-                // FALLBACK: If parallel endpoint fails, fall back to sequential (original code)
-                for (const model of models) {
-                // Check if diagram type changed during generation (session ID may change when spec updates)
-                // We only check diagram type to allow spec updates from the first successful result
-                if (this.editor.diagramType !== currentDiagramType) {
-                    logger.warn('ToolbarManager', 'Auto-complete aborted - diagram type changed');
-                    throw new Error('Diagram type changed during generation');
-                }
-                
-                try {
-                    const requestId = `${currentSessionId}_${model}_${Date.now()}`;
-                    
-                    // Call single LLM endpoint with model parameter
-                    const modelRequestBody = {
-                        ...baseRequestBody,
-                        llm: model,  // Fixed: backend expects 'llm', not 'llm_model'
-                        request_id: requestId
-                    };
-                    
-                    // Create abort controller for timeout and cancellation
-                    const abortController = new AbortController();
-                    this.activeAbortControllers.set(model, abortController); // Track for cancellation
-                    const timeoutId = setTimeout(() => abortController.abort(), LLM_CONFIG.TIMEOUT_MS);
-                    
-                    const response = await auth.fetch('/api/generate_graph', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(modelRequestBody),
-                        signal: abortController.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    this.activeAbortControllers.delete(model); // Remove when complete
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-                    
-                    logger.debug('ToolbarManager', `${model} received spec`, {
-                        nodes: data.spec?.nodes?.length || 0
-                    });
-                    
-                    // Normalize diagram type (backend returns "mind_map", frontend uses "mindmap")
-                    let responseDiagramType = data.diagram_type || diagramType;
-                    if (responseDiagramType === 'mind_map') {
-                        responseDiagramType = 'mindmap';
-                    }
-                    
-                    // Cache this model's result
-                    this.llmResults[model] = {
-                        model: model,
-                        success: true,
-                        result: {
-                            spec: data.spec,
-                            diagram_type: responseDiagramType,
-                            topics: data.topics || [],
-                            style_preferences: data.style_preferences || {}
-                        }
-                    };
-                    
-                    // Update button state for this model immediately
-                    this.setLLMButtonState(model, 'ready');
-                    
-                    // Render first successful result
-                    if (!firstSuccessfulModel) {
-                        firstSuccessfulModel = model;
-                        this.selectedLLM = model;
-                        this.renderCachedLLMResult(model);
-                        this.updateLLMButtonStates();
-                    }
-                    
-                } catch (error) {
-                    // Remove abortController from tracking when request fails
-                    this.activeAbortControllers.delete(model);
-                    
-                    // Handle different error types
-                    let errorMessage = error.message;
-                    if (error.name === 'AbortError') {
-                        errorMessage = `Timeout (>${LLM_CONFIG.TIMEOUT_MS/1000}s)`;
-                        logger.warn('ToolbarManager', `${model} timed out`);
-                    } else {
-                        logger.error('ToolbarManager', `${model} failed`, error);
-                    }
-                    
-                    // Cache error result with details
-                    this.llmResults[model] = {
-                        model: model,
-                        success: false,
-                        error: errorMessage,
-                        timestamp: Date.now()
-                    };
-                    
-                    // Update button to error state
-                    this.setLLMButtonState(model, 'error');
-                }
-                }  // End of fallback sequential loop
-            } finally {
-                // CRITICAL: Clean up abort controller
-                this.activeAbortControllers.delete('multi_progressive');
-            }  // End of try-catch-finally for parallel vs sequential
-            
-            // Count successful results
-            const successCount = Object.values(this.llmResults).filter(r => r.success).length;
-            logger.info('ToolbarManager', `Auto-complete: ${successCount}/4 LLMs completed`);
-            
-            // VERBOSE LOG: Compare all LLM results for inconsistencies
-            if (successCount > 1) {
-                this._logLLMConsistencyAnalysis();
-            }
-            
-            // Clear loading states
-            this.setAllLLMButtonsLoading(false);
-            this.updateLLMButtonStates();
-            
-            // Validate at least one model succeeded
-            if (!firstSuccessfulModel || successCount === 0) {
-                throw new Error('All LLMs failed to generate results');
-            }
-            
-            // Success notification (firstSuccessfulModel already rendered in loop)
-            const notifMessage = this.getNotif('multiLLMReady', 
-                successCount, 
-                LLM_CONFIG.MODELS.length, 
-                LLM_CONFIG.MODEL_NAMES[firstSuccessfulModel]
-            );
-            this.showNotification(notifMessage, 'success');
-            
-            // Reset view to optimal position after rendering completes
-            setTimeout(() => {
-                this.editor.fitDiagramToWindow();
-            }, LLM_CONFIG.RENDER_DELAY_MS);
-            
-        } catch (error) {
-            // VERBOSE LOG: Complete auto-complete failure details
-            logger.error('ToolbarManager', '=== AUTO-COMPLETE FATAL ERROR ===', {
-                timestamp: new Date().toISOString(),
-                error: error.message,
-                errorStack: error.stack,
-                errorName: error.name,
-                context: {
-                    diagramType: diagramType,
-                    sessionId: this.editor?.sessionId,
-                    existingNodesCount: existingNodes?.length || 0,
-                    mainTopic: mainTopic || 'unknown',
-                    language: language,
-                    currentStep: this.isGeneratingMulti ? 'during_generation' : 'before_generation',
-                    llmResultsCount: Object.keys(this.llmResults).length,
-                    isAutoCompleting: this.isAutoCompleting,
-                    isGeneratingMulti: this.isGeneratingMulti
-                },
-                browser: {
-                    userAgent: navigator.userAgent,
-                    language: navigator.language,
-                    onLine: navigator.onLine,
-                    viewport: {
-                        width: window.innerWidth,
-                        height: window.innerHeight
-                    }
-                }
-            });
-            
-            logger.error('ToolbarManager', 'Auto-complete error', error);
-            this.showNotification(this.getNotif('autoCompleteFailed', error.message), 'error');
-            this.setAllLLMButtonsLoading(false);
-        } finally {
-            // VERBOSE LOG: Auto-complete cleanup
-            logger.debug('ToolbarManager', '=== AUTO-COMPLETE CLEANUP ===', {
-                timestamp: new Date().toISOString(),
-                flags: {
-                    wasAutoCompleting: this.isAutoCompleting,
-                    wasGeneratingMulti: this.isGeneratingMulti
-                },
-                results: {
-                    totalCached: Object.keys(this.llmResults).length,
-                    successful: Object.values(this.llmResults).filter(r => r.success).length,
-                    failed: Object.values(this.llmResults).filter(r => !r.success).length
-                }
-            });
-            
-            this.setAutoButtonLoading(false);
-            this.isAutoCompleting = false;
-            this.isGeneratingMulti = false;
-        }
+        window.eventBus.emit('autocomplete:start_requested', {});
+        logger.debug('ToolbarManager', 'Auto-complete requested via Event Bus');
     }
     
-    /**
-     * Validate LLM spec structure for inconsistencies
-     */
-    _validateLLMSpec(model, spec, expectedDiagramType) {
-        const issues = [];
-        const missingFields = [];
-        const invalidFields = [];
-        
-        // Basic validation
-        if (!spec || typeof spec !== 'object') {
-            return {
-                isValid: false,
-                issues: ['Spec is not an object'],
-                missingFields: [],
-                invalidFields: ['spec']
-            };
-        }
-        
-        // Diagram-specific validation
-        switch (expectedDiagramType) {
-            case 'bubble_map':
-                if (!spec.topic) missingFields.push('topic');
-                if (!spec.attributes || !Array.isArray(spec.attributes)) {
-                    invalidFields.push('attributes');
-                } else if (spec.attributes.length === 0) {
-                    issues.push('Empty attributes array');
-                }
-                break;
-                
-            case 'circle_map':
-                if (!spec.topic) missingFields.push('topic');
-                if (!spec.context || !Array.isArray(spec.context)) {
-                    invalidFields.push('context');
-                } else if (spec.context.length === 0) {
-                    issues.push('Empty context array');
-                }
-                break;
-                
-            case 'mindmap':
-            case 'mind_map':
-                if (!spec.topic) missingFields.push('topic');
-                if (!spec.children || !Array.isArray(spec.children)) {
-                    invalidFields.push('children');
-                } else if (spec.children.length === 0) {
-                    issues.push('Empty children array');
-                }
-                break;
-                
-            case 'tree_map':
-                if (!spec.topic) missingFields.push('topic');
-                if (!spec.children || !Array.isArray(spec.children)) {
-                    invalidFields.push('children');
-                } else if (spec.children.length === 0) {
-                    issues.push('Empty children array');
-                }
-                break;
-                
-            case 'brace_map':
-                if (!spec.whole) missingFields.push('whole');
-                if (!spec.parts || !Array.isArray(spec.parts)) {
-                    invalidFields.push('parts');
-                } else if (spec.parts.length === 0) {
-                    issues.push('Empty parts array');
-                }
-                break;
-                
-            case 'bridge_map':
-                if (!spec.analogies || !Array.isArray(spec.analogies)) {
-                    invalidFields.push('analogies');
-                } else if (spec.analogies.length === 0) {
-                    issues.push('Empty analogies array');
-                } else {
-                    // Check each analogy has left and right
-                    spec.analogies.forEach((analogy, i) => {
-                        if (!analogy.left) missingFields.push(`analogies[${i}].left`);
-                        if (!analogy.right) missingFields.push(`analogies[${i}].right`);
-                    });
-                }
-                break;
-                
-            case 'double_bubble_map':
-                if (!spec.left) missingFields.push('left');
-                if (!spec.right) missingFields.push('right');
-                if (!spec.similarities || !Array.isArray(spec.similarities)) {
-                    invalidFields.push('similarities');
-                }
-                if (!spec.left_differences || !Array.isArray(spec.left_differences)) {
-                    invalidFields.push('left_differences');
-                }
-                if (!spec.right_differences || !Array.isArray(spec.right_differences)) {
-                    invalidFields.push('right_differences');
-                }
-                break;
-                
-            case 'flow_map':
-                if (!spec.title) missingFields.push('title');
-                if (!spec.steps || !Array.isArray(spec.steps)) {
-                    invalidFields.push('steps');
-                } else if (spec.steps.length === 0) {
-                    issues.push('Empty steps array');
-                }
-                break;
-                
-            case 'multi_flow_map':
-                if (!spec.event) missingFields.push('event');
-                if (!spec.causes || !Array.isArray(spec.causes)) {
-                    invalidFields.push('causes');
-                }
-                if (!spec.effects || !Array.isArray(spec.effects)) {
-                    invalidFields.push('effects');
-                }
-                break;
-                
-            case 'concept_map':
-                if (!spec.nodes || !Array.isArray(spec.nodes)) {
-                    invalidFields.push('nodes');
-                } else if (spec.nodes.length === 0) {
-                    issues.push('Empty nodes array');
-                }
-                if (!spec.connections || !Array.isArray(spec.connections)) {
-                    invalidFields.push('connections');
-                }
-                break;
-        }
-        
-        const isValid = missingFields.length === 0 && invalidFields.length === 0 && issues.length === 0;
-        
-        return {
-            isValid: isValid,
-            issues: issues,
-            missingFields: missingFields,
-            invalidFields: invalidFields
-        };
-    }
+    // NOTE: LLM validation methods moved to PropertyValidator (property-validator.js)
+    
+    // NOTE: Button state methods moved to:
+    // - LLMProgressRenderer.setAllLLMButtonsLoading() (llm-progress-renderer.js)
+    // - LLMProgressRenderer.setLLMButtonState() (llm-progress-renderer.js)
+    // - UIStateLLMManager also has its own implementation (ui-state-llm-manager.js)
     
     /**
-     * Log consistency analysis comparing all LLM results
-     */
-    _logLLMConsistencyAnalysis() {
-        const successful = Object.entries(this.llmResults)
-            .filter(([_, result]) => result.success)
-            .map(([model, result]) => ({ model, ...result }));
-        
-        if (successful.length < 2) return;
-        
-        logger.info('ToolbarManager', '=== LLM CONSISTENCY ANALYSIS ===', {
-            timestamp: new Date().toISOString(),
-            totalModels: successful.length,
-            models: successful.map(r => r.model)
-        });
-        
-        // Compare specs
-        const specComparison = {
-            models: successful.map(r => r.model),
-            specs: {}
-        };
-        
-        successful.forEach(({ model, result, validation }) => {
-            const spec = result.spec;
-            specComparison.specs[model] = {
-                diagram_type: result.diagram_type,
-                spec_keys: spec ? Object.keys(spec) : [],
-                validation: validation,
-                structure: {}
-            };
-            
-            // Extract key structural info
-            if (spec) {
-                if (spec.topic) specComparison.specs[model].structure.topic = spec.topic;
-                if (spec.children) specComparison.specs[model].structure.childrenCount = spec.children.length;
-                if (spec.nodes) specComparison.specs[model].structure.nodesCount = spec.nodes.length;
-                if (spec.categories) specComparison.specs[model].structure.categoriesCount = spec.categories.length;
-                if (spec.parts) specComparison.specs[model].structure.partsCount = spec.parts.length;
-                if (spec.analogies) specComparison.specs[model].structure.analogiesCount = spec.analogies.length;
-                if (spec.steps) specComparison.specs[model].structure.stepsCount = spec.steps.length;
-            }
-        });
-        
-        logger.info('ToolbarManager', 'Spec comparison across models:', specComparison);
-        
-        // Identify inconsistencies
-        const inconsistencies = [];
-        
-        // Check if all have same number of children/nodes
-        const childCounts = successful
-            .map(r => r.result.spec?.children?.length || r.result.spec?.nodes?.length || 0)
-            .filter(c => c > 0);
-        
-        if (childCounts.length > 1) {
-            const min = Math.min(...childCounts);
-            const max = Math.max(...childCounts);
-            if (max - min > 2) {
-                inconsistencies.push({
-                    type: 'content_count_variance',
-                    message: `Large variance in content count: ${min} to ${max}`,
-                    models: successful.map((r, i) => ({
-                        model: r.model,
-                        count: childCounts[i]
-                    }))
-                });
-            }
-        }
-        
-        // Check for validation failures
-        const validationIssues = successful.filter(r => r.validation && !r.validation.isValid);
-        if (validationIssues.length > 0) {
-            inconsistencies.push({
-                type: 'validation_failures',
-                message: `${validationIssues.length} model(s) have validation issues`,
-                models: validationIssues.map(r => ({
-                    model: r.model,
-                    issues: r.validation.issues,
-                    missingFields: r.validation.missingFields,
-                    invalidFields: r.validation.invalidFields
-                }))
-            });
-        }
-        
-        // Log inconsistencies
-        if (inconsistencies.length > 0) {
-            logger.warn('ToolbarManager', '⚠️ LLM INCONSISTENCIES DETECTED', {
-                timestamp: new Date().toISOString(),
-                inconsistencyCount: inconsistencies.length,
-                inconsistencies: inconsistencies
-            });
-        } else {
-            logger.info('ToolbarManager', '✓ All LLM results are consistent', {
-                timestamp: new Date().toISOString(),
-                modelsCompared: successful.length
-            });
-        }
-    }
-    
-    /**
-     * Set loading state for all LLM buttons
-     */
-    setAllLLMButtonsLoading(isLoading) {
-        this.llmButtons.forEach(btn => {
-            if (isLoading) {
-                btn.classList.add('loading');
-                btn.disabled = true;
-            } else {
-                btn.classList.remove('loading');
-                btn.disabled = false;
-            }
-        });
-    }
-    
-    /**
-     * Set state for specific LLM button
-     */
-    setLLMButtonState(model, state) {
-        this.llmButtons.forEach(btn => {
-            const llmModel = btn.getAttribute('data-llm');
-            if (llmModel === model) {
-                btn.classList.remove('loading');
-                btn.disabled = false;
-                
-                if (state === 'ready') {
-                    btn.classList.add('ready');
-                    btn.classList.remove('error');
-                } else if (state === 'error') {
-                    btn.classList.add('error');
-                    btn.classList.remove('ready');
-                }
-            }
-        });
-    }
-    
-    /**
-     * Identify the main topic from existing nodes
-     * Uses diagram-specific structure first, then falls back to heuristics
-     */
-    identifyMainTopic(nodes) {
-        logger.info('ToolbarManager', '=== IDENTIFYING MAIN TOPIC ===', {
-            timestamp: new Date().toISOString(),
-            nodeCount: nodes.length,
-            diagramType: this.editor?.diagramType,
-            hasSpec: !!this.editor?.currentSpec
-        });
-        
-        if (nodes.length === 0) {
-            logger.warn('ToolbarManager', 'No nodes provided, returning empty string');
-            return '';
-        }
-        
-        if (nodes.length === 1) {
-            logger.info('ToolbarManager', `Single node detected: "${nodes[0].text}"`);
-            return nodes[0].text;
-        }
-        
-        const diagramType = this.editor.diagramType;
-        const spec = this.editor.currentSpec;
-        
-        // Strategy 1: For diagrams with topic field, prioritize spec (source of truth)
-        // The spec is updated by updateNodeText when user edits the topic
-        if (diagramType === 'bubble_map' || diagramType === 'circle_map' || 
-            diagramType === 'tree_map') {
-            
-            logger.info('ToolbarManager', `Strategy 1: Diagram type "${diagramType}" - checking spec.topic`);
-            
-            // Check spec first (updated by updateNodeText)
-            if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
-                logger.info('ToolbarManager', `✓ Main topic from spec.topic: "${spec.topic}"`);
-                return spec.topic;
-            }
-            
-            // Fallback: Check DOM if spec is not available
-            // CRITICAL: Circle map uses 'center', not 'topic'!
-            const topicNode = nodes.find(node => 
-                node.nodeType === 'topic' || node.nodeType === 'center'
-            );
-            if (topicNode && topicNode.text && !this.validator.isPlaceholderText(topicNode.text)) {
-                logger.info('ToolbarManager', `✓ Main topic from DOM node (type: ${topicNode.nodeType}): "${topicNode.text}"`);
-                return topicNode.text;
-            }
-            
-            logger.debug('ToolbarManager', 'Strategy 1 failed, continuing to next strategy');
-        }
-        
-        // Strategy 1e: For Brace Map, check spec.whole (not spec.topic!)
-        if (diagramType === 'brace_map') {
-            logger.info('ToolbarManager', 'Strategy 1e: Brace map - checking spec.whole');
-            
-            // Check spec first (updated by updateNodeText)
-            if (spec && spec.whole && !this.validator.isPlaceholderText(spec.whole)) {
-                logger.info('ToolbarManager', `✓ Main topic from spec.whole: "${spec.whole}"`);
-                return spec.whole;
-            }
-            
-            // Fallback: Check DOM if spec is not available
-            const wholeNode = nodes.find(node => node.nodeType === 'topic');
-            if (wholeNode && wholeNode.text && !this.validator.isPlaceholderText(wholeNode.text)) {
-                logger.info('ToolbarManager', `✓ Main topic from DOM node (whole): "${wholeNode.text}"`);
-                return wholeNode.text;
-            }
-            
-            logger.debug('ToolbarManager', 'Strategy 1e failed, continuing to next strategy');
-        }
-        
-        // Strategy 1-flow: For Flow Map, check spec.title (NOT spec.topic)
-        // Flow Map uses 'title' field, similar to how Circle Map uses 'center' nodeType
-        if (diagramType === 'flow_map') {
-            // Check spec first (updated by updateFlowMapText)
-            if (spec && spec.title && !this.validator.isPlaceholderText(spec.title)) {
-                return spec.title;
-            }
-            // Fallback: Check DOM if spec is not available
-            const titleNode = nodes.find(node => node.nodeType === 'title');
-            if (titleNode && titleNode.text && !this.validator.isPlaceholderText(titleNode.text)) {
-                return titleNode.text;
-            }
-        }
-        
-        // Strategy 1-multiflow: For Multi-Flow Map, check spec.event (NOT spec.topic)
-        // Multi-Flow Map uses 'event' field for the central event
-        if (diagramType === 'multi_flow_map') {
-            // Check spec first (updated by updateMultiFlowMapText)
-            if (spec && spec.event && !this.validator.isPlaceholderText(spec.event)) {
-                return spec.event;
-            }
-            // Fallback: Check DOM if spec is not available
-            const eventNode = nodes.find(node => node.nodeType === 'event');
-            if (eventNode && eventNode.text && !this.validator.isPlaceholderText(eventNode.text)) {
-                return eventNode.text;
-            }
-        }
-        
-        // Strategy 1b: For double bubble maps, ALWAYS read from currentSpec first
-        // CONSISTENCY FIX: Like bridge_map, use spec as source of truth
-        if (diagramType === 'double_bubble_map') {
-            logger.info('ToolbarManager', 'Strategy 1b: Double bubble map - checking spec.left and spec.right');
-            
-            if (spec && spec.left && spec.right) {
-                const combinedTopic = `${spec.left} vs ${spec.right}`;
-                logger.info('ToolbarManager', `✓ Main topic from spec: "${combinedTopic}"`, {
-                    left: spec.left,
-                    right: spec.right
-                });
-                return combinedTopic;
-            }
-            logger.warn('ToolbarManager', 'Double bubble map: No valid left/right topics in spec');
-        }
-        
-        // Strategy 1c: For bridge maps, ALWAYS read from currentSpec
-        // ROOT CAUSE FIX: DOM node array order ≠ pair index order
-        // currentSpec.analogies[0] is the source of truth (updated by updateBridgeMapText)
-        if (diagramType === 'bridge_map') {
-            logger.info('ToolbarManager', 'Strategy 1c: Bridge map - checking spec.analogies[0]');
-            
-            if (spec && spec.analogies && spec.analogies.length > 0) {
-                const firstPair = spec.analogies[0];
-                if (firstPair.left && firstPair.right) {
-                    const mainTopic = `${firstPair.left}/${firstPair.right}`;
-                    logger.info('ToolbarManager', `✓ Main topic from spec.analogies[0]: "${mainTopic}"`, {
-                        left: firstPair.left,
-                        right: firstPair.right,
-                        relatingFactor: spec.relatingFactor || 'not set'
-                    });
-                    return mainTopic;
-                }
-            }
-            logger.warn('ToolbarManager', 'Bridge map: No valid analogies in spec');
-        }
-        
-        // Strategy 1d: For MindMap, prioritize spec first
-        // CONSISTENCY FIX: Read from spec before geometric detection
-        if (diagramType === 'mindmap') {
-            logger.info('ToolbarManager', 'Strategy 1d: MindMap - checking spec.topic');
-            
-            // First, try to get from spec (source of truth)
-            if (spec && spec.topic && !this.validator.isPlaceholderText(spec.topic)) {
-                logger.info('ToolbarManager', `✓ Main topic from spec.topic: "${spec.topic}"`);
-                return spec.topic;
-            }
-            
-            logger.debug('ToolbarManager', 'Spec topic not available, falling back to geometric center detection');
-            
-            // Fallback: Find the node closest to center by position
-            const svg = d3.select('#d3-container svg');
-            if (!svg.empty()) {
-                const width = parseFloat(svg.attr('width')) || 800;
-                const height = parseFloat(svg.attr('height')) || 600;
-                const centerX = width / 2;
-                const centerY = height / 2;
-                
-                // Find the node closest to center
-                let centralNode = nodes[0];
-                let minDistance = Infinity;
-                
-                nodes.forEach(node => {
-                    const distance = Math.sqrt(
-                        Math.pow(node.x - centerX, 2) + 
-                        Math.pow(node.y - centerY, 2)
-                    );
-                    
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        centralNode = node;
-                    }
-                });
-                
-                // Return the text from the central node (skip if placeholder)
-                if (centralNode && centralNode.text && !this.validator.isPlaceholderText(centralNode.text)) {
-                    return centralNode.text;
-                }
-            }
-        }
-        
-        // Strategy 2: Use diagram-specific structure from spec (fallback)
-        if (spec) {
-            let mainTopic = null;
-            
-            switch (diagramType) {
-                case 'bubble_map':
-                    // For bubble map, the main topic is spec.topic (skip placeholders)
-                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
-                    break;
-                    
-                case 'circle_map':
-                    // For circle map, the main topic is spec.topic (skip placeholders)
-                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
-                    break;
-                    
-                case 'tree_map':
-                case 'mindmap':
-                    // For tree/mind maps, the main topic is spec.topic (skip placeholders)
-                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
-                    break;
-                    
-                case 'brace_map':
-                    // For brace map, the main topic is spec.whole (skip placeholders)
-                    mainTopic = spec.whole && !this.validator.isPlaceholderText(spec.whole) ? spec.whole : null;
-                    break;
-                    
-                case 'double_bubble_map':
-                    // For double bubble map, use the left topic as primary (skip placeholders)
-                    const leftTopic = spec.left && !this.validator.isPlaceholderText(spec.left) ? spec.left : null;
-                    const rightTopic = spec.right && !this.validator.isPlaceholderText(spec.right) ? spec.right : null;
-                    mainTopic = leftTopic || rightTopic;
-                    break;
-                    
-                case 'multi_flow_map':
-                    // For multi-flow map, the main topic is spec.event (skip placeholders)
-                    mainTopic = spec.event && !this.validator.isPlaceholderText(spec.event) ? spec.event : null;
-                    break;
-                    
-                case 'flow_map':
-                    // For flow map, use the title or first step (skip placeholders)
-                    const title = spec.title && !this.validator.isPlaceholderText(spec.title) ? spec.title : null;
-                    const firstStep = spec.steps && spec.steps[0] && !this.validator.isPlaceholderText(spec.steps[0]) ? spec.steps[0] : null;
-                    mainTopic = title || firstStep;
-                    break;
-                    
-                case 'concept_map':
-                    // For concept map, the main topic is spec.topic (skip placeholders)
-                    mainTopic = spec.topic && !this.validator.isPlaceholderText(spec.topic) ? spec.topic : null;
-                    break;
-                    
-                case 'bridge_map':
-                    // For bridge map, extract from actual SVG nodes (Strategy 1c above)
-                    // This fallback uses spec only if node extraction failed
-                    if (spec.analogies && spec.analogies.length > 0) {
-                        const firstPair = spec.analogies[0];
-                        const leftItem = firstPair.left && !this.validator.isPlaceholderText(firstPair.left) ? firstPair.left : null;
-                        const rightItem = firstPair.right && !this.validator.isPlaceholderText(firstPair.right) ? firstPair.right : null;
-                        if (leftItem && rightItem) {
-                            mainTopic = `${leftItem}/${rightItem}`;
-                        }
-                    }
-                    break;
-            }
-            
-            if (mainTopic) {
-                return mainTopic;
-            }
-        }
-        
-        // Strategy 2: Find node closest to center of canvas (geometric fallback)
-        const svg = d3.select('#d3-container svg');
-        if (!svg.empty()) {
-            const width = parseFloat(svg.attr('width')) || 800;
-            const height = parseFloat(svg.attr('height')) || 600;
-            const centerX = width / 2;
-            const centerY = height / 2;
-            
-            // Calculate distance from center for each node (skip placeholders)
-            let closestNode = null;
-            let minDistance = Infinity;
-            
-            nodes.forEach(node => {
-                if (!this.validator.isPlaceholderText(node.text)) {
-                    const distance = Math.sqrt(
-                        Math.pow(node.x - centerX, 2) + 
-                        Math.pow(node.y - centerY, 2)
-                    );
-                    
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestNode = node;
-                    }
-                }
-            });
-            
-            if (closestNode) {
-                return closestNode.text;
-            }
-        }
-        
-        // Strategy 3: Fallback - find first meaningful node (skip placeholders)
-        const meaningfulNode = nodes.find(n => 
-            n.text && 
-            n.text.trim().length > 1 && 
-            !this.validator.isPlaceholderText(n.text)
-        );
-        
-        // Last resort: return first node's text (even if placeholder - user needs to edit it)
-        return meaningfulNode ? meaningfulNode.text : (nodes[0]?.text || '');
-    }
-    
-    /**
-     * Extract existing nodes from the current diagram
-     */
-    extractExistingNodes() {
-        logger.info('ToolbarManager', '=== EXTRACTING EXISTING NODES ===', {
-            timestamp: new Date().toISOString(),
-            diagramType: this.editor?.diagramType
-        });
-        
-        const nodes = [];
-        let skippedPlaceholders = 0;
-        let skippedEmpty = 0;
-        
-        // Define placeholder/template text patterns to skip
-        const placeholderPatterns = [
-            /^New Node$/i,
-            /^New (Left|Right|Item|Concept|Step|Substep|Category|Child|Part|Subpart|Cause|Effect|Attribute|Context|Branch)$/i,
-            /^Item [A-Z0-9]+$/i,  // Item 1, Item A, Item B, etc.
-            /^Item \d+$/i,        // Item 1, Item 2, Item 3, etc.
-            /^Branch\s*\d+$/i,    // Branch 1, Branch 2, Branch 3, Branch 4, etc.
-            /^as$/i,              // Bridge map relating factor default
-            /^Main Topic$/i,
-            /^Central Topic$/i,   // Central topic placeholder
-            /^Topic [A-Z]?$/i,
-            /^主题$/,
-            /^中心主题$/,          // Chinese "Central Topic"
-            /^新节点$/,
-            /^新分支$/,            // Chinese "New Branch"
-            /^分支\d+$/,           // Chinese "Branch 1", "Branch 2", etc.
-            /^项目[A-Z0-9]+$/
-        ];
-        
-        // Find all text elements in the SVG
-        d3.selectAll('#d3-container text').each(function() {
-            const textElement = d3.select(this);
-            const text = textElement.text().trim();
-            
-            // Skip empty or placeholder text
-            if (!text || text.length === 0) {
-                skippedEmpty++;
-                return;
-            }
-            
-            // Check if this is placeholder text
-            const isPlaceholder = placeholderPatterns.some(pattern => pattern.test(text));
-            if (isPlaceholder) {
-                skippedPlaceholders++;
-                logger.debug('ToolbarManager', `Skipping placeholder node: "${text}"`);
-                return;
-            }
-            
-            const x = parseFloat(textElement.attr('x')) || 0;
-            const y = parseFloat(textElement.attr('y')) || 0;
-            
-            // Capture data-node-type and data-node-id from the text element itself
-            // (these attributes help identify the central topic vs. children/branches)
-            const nodeType = textElement.attr('data-node-type') || '';
-            const nodeId = textElement.attr('data-node-id') || '';
-            
-            const nodeData = {
-                text: text,
-                x: x,
-                y: y,
-                nodeType: nodeType,
-                nodeId: nodeId
-            };
-            
-            nodes.push(nodeData);
-            
-            // VERBOSE LOG: Each node extracted
-            logger.info('ToolbarManager', `✓ Node extracted: "${text}"`, {
-                index: nodes.length,
-                nodeType: nodeType || 'unknown',
-                nodeId: nodeId || 'unknown',
-                position: { x, y },
-                textLength: text.length
-            });
-        });
-        
-        // VERBOSE LOG: Summary of extraction
-        logger.info('ToolbarManager', '=== NODE EXTRACTION COMPLETE ===', {
-            totalNodesExtracted: nodes.length,
-            skippedEmpty: skippedEmpty,
-            skippedPlaceholders: skippedPlaceholders,
-            extractedNodes: nodes.map((n, i) => ({
-                index: i + 1,
-                text: n.text.substring(0, 50) + (n.text.length > 50 ? '...' : ''),
-                type: n.nodeType || 'unknown',
-                position: { x: Math.round(n.x), y: Math.round(n.y) }
-            }))
-        });
-        
-        return nodes;
-    }
-    
-    /**
-     * Toggle line mode (black and white, no fill)
+     * Toggle line mode (black and white, no fill) - EVENT BUS WRAPPER
      */
     toggleLineMode() {
-        this.isLineMode = !this.isLineMode;
-        
-        // Toggle button active state
-        if (this.isLineMode) {
-            this.lineModeBtn.classList.add('active');
-        } else {
-            this.lineModeBtn.classList.remove('active');
-        }
-        
-        const svg = d3.select('#d3-container svg');
-        if (svg.empty()) {
-            logger.warn('ToolbarManager', 'No SVG found in container');
-            return;
-        }
-        
-        if (this.isLineMode) {
-            // Apply black and white line mode
-            
-            // Remove canvas background
-            svg.style('background-color', 'transparent');
-            
-            // Select all shapes (circles, rects, ellipses, polygons, paths)
-            svg.selectAll('circle, rect, ellipse, polygon, path')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    // Store original styles as data attributes (for restoration)
-                    if (!element.attr('data-original-fill')) {
-                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || 'none');
-                    }
-                    if (!element.attr('data-original-stroke')) {
-                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || 'none');
-                    }
-                    if (!element.attr('data-original-stroke-width')) {
-                        element.attr('data-original-stroke-width', element.style('stroke-width') || element.attr('stroke-width') || '1');
-                    }
-                    
-                    // Apply line mode: no fill, black stroke
-                    element
-                        .style('fill', 'none')
-                        .style('stroke', '#000000')
-                        .style('stroke-width', '2px');
-                });
-            
-            // Make all text black
-            svg.selectAll('text')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    // Store original text color
-                    if (!element.attr('data-original-fill')) {
-                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || '#000000');
-                    }
-                    
-                    // Apply black text
-                    element.style('fill', '#000000');
-                });
-            
-            // Make all lines/connections black
-            svg.selectAll('line')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    // Store original stroke
-                    if (!element.attr('data-original-stroke')) {
-                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || '#000000');
-                    }
-                    
-                    // Apply black stroke
-                    element.style('stroke', '#000000');
-                });
-            
-            this.showNotification(this.getNotif('lineModeEnabled'), 'success');
-            
-        } else {
-            // Restore original colors
-            
-            // Restore canvas background (if it had one)
-            svg.style('background-color', null);
-            
-            // Restore shapes
-            svg.selectAll('circle, rect, ellipse, polygon, path')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    const originalFill = element.attr('data-original-fill');
-                    const originalStroke = element.attr('data-original-stroke');
-                    const originalStrokeWidth = element.attr('data-original-stroke-width');
-                    
-                    if (originalFill) {
-                        element.style('fill', originalFill === 'none' ? 'none' : originalFill);
-                        element.attr('data-original-fill', null);
-                    }
-                    if (originalStroke) {
-                        element.style('stroke', originalStroke === 'none' ? 'none' : originalStroke);
-                        element.attr('data-original-stroke', null);
-                    }
-                    if (originalStrokeWidth) {
-                        element.style('stroke-width', originalStrokeWidth);
-                        element.attr('data-original-stroke-width', null);
-                    }
-                });
-            
-            // Restore text colors
-            svg.selectAll('text')
-                .each(function() {
-                    const element = d3.select(this);
-                    const originalFill = element.attr('data-original-fill');
-                    
-                    if (originalFill) {
-                        element.style('fill', originalFill);
-                        element.attr('data-original-fill', null);
-                    }
-                });
-            
-            // Restore line colors
-            svg.selectAll('line')
-                .each(function() {
-                    const element = d3.select(this);
-                    const originalStroke = element.attr('data-original-stroke');
-                    
-                    if (originalStroke) {
-                        element.style('stroke', originalStroke);
-                        element.attr('data-original-stroke', null);
-                    }
-                });
-            
-            this.showNotification(this.getNotif('lineModeDisabled'), 'success');
-        }
+        window.eventBus.emit('ui:toggle_line_mode', {});
+        logger.debug('ToolbarManager', 'Toggle line mode requested via Event Bus');
     }
     
     /**
-     * Set loading state for auto button
+     * Set loading state for auto button - EVENT BUS WRAPPER
      */
     setAutoButtonLoading(isLoading) {
-        if (!this.autoCompleteBtn) return;
-        
-        if (isLoading) {
-            this.autoCompleteBtn.classList.add('loading');
-            this.autoCompleteBtn.disabled = true;
-        } else {
-            this.autoCompleteBtn.classList.remove('loading');
-            this.autoCompleteBtn.disabled = false;
-        }
+        window.eventBus.emit('ui:set_auto_button_loading', { isLoading });
+        logger.debug('ToolbarManager', 'Set auto button loading state via Event Bus', { isLoading });
     }
     
     /**
-     * Handle duplicate node
+     * Handle duplicate node - EVENT BUS WRAPPER
      */
     handleDuplicateNode() {
-        this.showNotification(this.getNotif('duplicateComingSoon'));
+        window.eventBus.emit('node:duplicate_requested', {});
+        logger.debug('ToolbarManager', 'Duplicate node requested via Event Bus');
     }
     
     /**
-     * Handle undo
+     * Handle undo - EVENT BUS WRAPPER
      */
     handleUndo() {
-        if (this.editor) {
-            this.editor.undo();
-        }
+        window.eventBus.emit('history:undo_requested', {});
+        logger.debug('ToolbarManager', 'Undo requested via Event Bus');
     }
     
     /**
-     * Handle redo
+     * Handle redo - EVENT BUS WRAPPER
      */
     handleRedo() {
-        if (this.editor) {
-            this.editor.redo();
-        }
+        window.eventBus.emit('history:redo_requested', {});
+        logger.debug('ToolbarManager', 'Redo requested via Event Bus');
     }
     
     /**
-     * Reset canvas to blank template
+     * Reset canvas to blank template - EVENT BUS WRAPPER
      */
     handleReset() {
-        if (!this.editor) return;
-        
-        // Confirm with user - language-aware message
-        const confirmMessage = this.getNotif('resetConfirm');
-        const confirmed = confirm(confirmMessage);
-        if (!confirmed) return;
-        
-        // Get the diagram selector to retrieve blank template
-        const diagramSelector = window.diagramSelector;
-        if (!diagramSelector) {
-            logger.error('ToolbarManager', 'Diagram selector not available');
-            this.showNotification(this.getNotif('resetFailed'), 'error');
-            return;
-        }
-        
-        // Get blank template for current diagram type
-        const blankTemplate = diagramSelector.getTemplate(this.editor.diagramType);
-        if (!blankTemplate) {
-            logger.error('ToolbarManager', `Failed to get blank template for: ${this.editor.diagramType}`);
-            this.showNotification(this.getNotif('templateNotFound'), 'error');
-            return;
-        }
-        
-        // Reset the spec and re-render
-        this.editor.currentSpec = blankTemplate;
-        this.editor.renderDiagram();
-        
-        // Clear history
-        if (this.editor.history) {
-            this.editor.history = [JSON.parse(JSON.stringify(blankTemplate))];
-            this.editor.historyIndex = 0;
-        }
-        
-        // Clear selection
-        if (this.editor.selectionManager) {
-            this.editor.selectionManager.clearSelection();
-        }
-        
-        this.showNotification(this.getNotif('canvasReset'), 'success');
+        window.eventBus.emit('diagram:reset_requested', {});
+        logger.debug('ToolbarManager', 'Reset diagram requested via Event Bus');
     }
     
     /**
@@ -3059,138 +1071,45 @@ class ToolbarManager {
     }
     
     /**
-     * Get translated notification message
-     * @param {string} key - Notification key from language-manager
-     * @param  {...any} args - Arguments for function-based notifications
+     * Get translated notification message - EVENT BUS WRAPPER
      */
     getNotif(key, ...args) {
         if (window.languageManager && window.languageManager.getNotification) {
             return window.languageManager.getNotification(key, ...args);
         }
-        return key; // Fallback to key if language manager not available
+        return key;
     }
     
     /**
-     * Show notification using centralized notification manager
+     * Show notification - EVENT BUS WRAPPER
      */
     showNotification(message, type = 'info') {
-        if (window.notificationManager) {
-            window.notificationManager.show(message, type);
-        } else {
-            logger.error('ToolbarManager', 'NotificationManager not available');
-        }
+        window.eventBus.emit('notification:show', { message, type });
+        logger.debug('ToolbarManager', 'Show notification via Event Bus', { message, type });
     }
     
     /**
-     * Play notification sound when first diagram is rendered
+     * Play notification sound - EVENT BUS WRAPPER
      */
     playNotificationSound() {
-        try {
-            // Create audio context for a pleasant "ding" sound
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            // Connect nodes
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Configure pleasant notification sound (two-tone ding)
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // First tone (higher)
-            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1); // Second tone (lower)
-            
-            // Quick fade out for smooth sound
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            
-            // Play
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
-            
-            logger.debug('ToolbarManager', 'Notification sound played');
-        } catch (error) {
-            // Silently fail if audio is not supported or blocked
-            logger.debug('ToolbarManager', 'Could not play notification sound', error);
-        }
+        window.eventBus.emit('notification:play_sound', {});
+        logger.debug('ToolbarManager', 'Play notification sound via Event Bus');
     }
     
     /**
-     * Set up automatic node counter using MutationObserver
-     * Watches the SVG container and updates count whenever it changes
+     * Set up automatic node counter using MutationObserver - EVENT BUS WRAPPER
      */
     setupNodeCounterObserver() {
-        const container = document.getElementById('d3-container');
-        if (!container) {
-            logger.warn('ToolbarManager', 'd3-container not found for node counter observer');
-            return;
-        }
-        
-        // Create a MutationObserver to watch for DOM changes in the SVG
-        // Use minimal configuration for better performance
-        this.nodeCountObserver = new MutationObserver((mutations) => {
-            // Debounce updates to avoid excessive calls
-            if (this.nodeCountUpdateTimeout) {
-                clearTimeout(this.nodeCountUpdateTimeout);
-            }
-            this.nodeCountUpdateTimeout = setTimeout(() => {
-                this.updateNodeCount();
-                this.validateLearningMode(); // Also validate diagram for Learning Mode
-            }, 100); // Update after 100ms of no changes
-        });
-        
-        // Start observing - only watch for added/removed children
-        // This is the most efficient way and catches all diagram updates
-        this.nodeCountObserver.observe(container, {
-            childList: true,      // Watch for added/removed children
-            subtree: true         // Watch all descendants
-            // No attributes watching - not needed, saves resources
-        });
-        
-        logger.debug('ToolbarManager', 'Node counter observer set up');
-        
-        // Initial count and validation with longer delay to ensure SVG is fully rendered
-        setTimeout(() => {
-            this.updateNodeCount();
-            this.validateLearningMode();
-        }, 500);
+        window.eventBus.emit('node_counter:setup', {});
+        logger.debug('ToolbarManager', 'Setup node counter observer via Event Bus');
     }
     
     /**
-     * Update node count in status bar
+     * Update node count in status bar - EVENT BUS WRAPPER
      */
     updateNodeCount() {
-        if (!this.nodeCountElement) {
-            logger.warn('ToolbarManager', 'Node count element not found');
-            return;
-        }
-        
-        // Count all text elements in the SVG
-        const svg = d3.select('#d3-container svg');
-        if (svg.empty()) {
-            const label = window.languageManager?.translate('nodeCount') || 'Nodes';
-            this.nodeCountElement.textContent = `${label}: 0`;
-            return;
-        }
-        
-        // Count all text elements that have data-node-id (all actual diagram nodes)
-        let count = 0;
-        const nodeIds = [];
-        
-        svg.selectAll('text').each(function() {
-            const element = d3.select(this);
-            const nodeId = element.attr('data-node-id');
-            
-            // Count any text element with a node-id
-            if (nodeId) {
-                count++;
-                nodeIds.push(nodeId);
-            }
-        });
-        
-        // Update the display
-        const label = window.languageManager?.translate('nodeCount') || 'Nodes';
-        this.nodeCountElement.textContent = `${label}: ${count}`;
+        window.eventBus.emit('node_counter:update', {});
+        logger.debug('ToolbarManager', 'Update node count via Event Bus');
     }
     
     /**
@@ -3227,217 +1146,27 @@ class ToolbarManager {
     }
     
     /**
-     * 🧠 Validate diagram for Learning Mode and enable/disable button
+     * Validate diagram for Learning Mode - EVENT BUS WRAPPER
      */
     validateLearningMode() {
-        if (!this.validator || !this.learningBtn) {
-            return;
-        }
-        
-        const result = this.validator.validateAndUpdateButton(this.learningBtn, this.diagramType);
-        
-        // Store validation result for later use
-        this.lastValidationResult = result;
-        
-        return result;
+        window.eventBus.emit('learning_mode:validate', {});
+        logger.debug('ToolbarManager', 'Validate learning mode via Event Bus');
     }
     
     /**
-     * 🆕 Handle Learning Mode button click
+     * Handle Learning Mode button click - EVENT BUS WRAPPER
      */
     async handleLearningMode() {
-        logger.info('ToolbarManager', 'Learning Mode initiated');
-        
-        // Validate diagram first
-        const validationResult = this.validateLearningMode();
-        
-        if (!validationResult || !validationResult.isValid) {
-            // Show validation error message
-            const lang = window.languageManager;
-            const currentLang = lang?.currentLanguage || 'en';
-            const message = this.validator.getValidationMessage(validationResult, currentLang);
-            
-            this.showNotification(message, 'error');
-            logger.warn('ToolbarManager', 'Learning Mode validation failed', {
-                reason: validationResult.reason
-            });
-            return;
-        }
-        
-        // Validation passed - Enter Learning Mode!
-        logger.info('ToolbarManager', 'Diagram validation passed');
-        
-        try {
-            // Initialize LearningModeManager if not already done
-            if (!this.learningModeManager) {
-                this.learningModeManager = new LearningModeManager(this, this.editor);
-            }
-            
-            // Start Learning Mode
-            await this.learningModeManager.startLearningMode(validationResult);
-            
-            logger.info('ToolbarManager', 'Learning Mode started successfully');
-            
-        } catch (error) {
-            logger.error('ToolbarManager', 'Failed to start Learning Mode', error);
-            this.showNotification(
-                'Failed to start Learning Mode. Please try again.',
-                'error'
-            );
-        }
+        window.eventBus.emit('learning_mode:start_requested', {});
+        logger.debug('ToolbarManager', 'Learning mode start requested via Event Bus');
     }
     
     /**
-     * Handle Thinking Mode (ThinkGuide) button click
+     * Handle Thinking Mode (ThinkGuide) button click - EVENT BUS WRAPPER
      */
     async handleThinkingMode() {
-        logger.info('ToolbarManager', 'ThinkGuide Mode initiated - BUTTON CLICKED');
-        
-        // Check if panel is already open - toggle behavior like MindMate
-        const thinkPanel = document.getElementById('thinking-panel');
-        const isPanelOpen = thinkPanel && !thinkPanel.classList.contains('collapsed');
-        
-        logger.info('ToolbarManager', 'Initial panel state:', {
-            thinkPanelCollapsed: thinkPanel?.classList.contains('collapsed'),
-            isPanelOpen: isPanelOpen,
-            currentPanel: window.panelManager?.getCurrentPanel()
-        });
-        
-        // If panel is already open, close it (toggle behavior)
-        if (isPanelOpen) {
-            logger.info('ToolbarManager', 'ThinkGuide panel already open - closing it');
-            if (window.panelManager) {
-                window.panelManager.closeThinkGuidePanel();
-                logger.info('ToolbarManager', 'ThinkGuide panel closed');
-            }
-            return;
-        }
-        
-        // Check if diagram type is supported by ThinkGuide BEFORE opening panel
-        const diagramType = this.editor.diagramType;
-        const supportedTypes = [
-            'circle_map',
-            'bubble_map', 
-            'double_bubble_map',
-            'tree_map',
-            'flow_map',
-            'multi_flow_map',
-            'brace_map',
-            'bridge_map',
-            'mindmap'
-        ];
-        
-        if (!supportedTypes.includes(diagramType)) {
-            logger.warn('ToolbarManager', `ThinkGuide not yet implemented for ${diagramType}`);
-            
-            // Show friendly message - only concept_map is unsupported now
-            const diagramNames = {
-                'concept_map': 'Concept Map'
-            };
-            const diagramDisplayName = diagramNames[diagramType] || diagramType;
-            
-            const message = this.validator.language === 'zh'
-                ? `ThinkGuide 暂不支持 ${diagramDisplayName}，敬请期待！`
-                : `ThinkGuide is not yet available for ${diagramDisplayName}. Coming soon!`;
-            
-            alert(message);
-            return;
-        }
-        
-        // Panel is closed and diagram is supported, open it
-        logger.info('ToolbarManager', 'Opening ThinkGuide (diagram type supported)');
-        
-        try {
-            // DIAGNOSTIC: Log everything about the editor state
-            logger.info('ToolbarManager', 'ThinkGuide clicked - Diagnostic Info:', {
-                hasThisEditor: !!this.editor,
-                hasWindowEditor: !!window.currentEditor,
-                editorsMatch: this.editor === window.currentEditor,
-                thisEditorType: this.editor?.diagramType,
-                thisEditorSpec: !!this.editor?.currentSpec,
-                thisEditorSpecKeys: this.editor?.currentSpec ? Object.keys(this.editor.currentSpec) : [],
-                windowEditorType: window.currentEditor?.diagramType,
-                windowEditorSpec: !!window.currentEditor?.currentSpec,
-                sessionId: this.sessionId?.substr(-8)
-            });
-            
-            // Use global thinkingModeManager instance
-            if (!window.thinkingModeManager) {
-                const errorMsg = 'ThinkGuide not initialized. Please reload the page.';
-                logger.error('ToolbarManager', errorMsg);
-                this.showNotification(errorMsg, 'error');
-                return;
-            }
-            
-            // Check if we have a valid editor with data
-            if (!this.editor) {
-                logger.error('ToolbarManager', 'CRITICAL: this.editor is null!', {
-                    sessionId: this.sessionId,
-                    windowEditor: !!window.currentEditor,
-                    registrySize: window.toolbarManagerRegistry?.size,
-                    registryKeys: Array.from(window.toolbarManagerRegistry?.keys() || [])
-                });
-                throw new Error('ToolbarManager has no editor reference');
-            }
-            
-            if (!this.editor.currentSpec) {
-                logger.error('ToolbarManager', 'this.editor.currentSpec is undefined!', {
-                    editorType: this.editor.diagramType,
-                    editorKeys: Object.keys(this.editor),
-                    hasHistory: !!this.editor.history,
-                    historyLength: this.editor.history?.length
-                });
-                throw new Error('No diagram data found in editor.currentSpec');
-            }
-            
-            // Get current diagram data - normalize it to ThinkGuide format
-            const diagramType = this.editor.diagramType || 'circle_map';
-            const rawSpec = this.editor.currentSpec;
-            
-            // Normalize diagram data to standard format
-            const diagramData = window.thinkingModeManager.normalizeDiagramData(rawSpec, diagramType);
-            
-            // Extract center topic based on diagram type for logging
-            let centerTopic;
-            if (['tree_map', 'mindmap'].includes(diagramType)) {
-                centerTopic = diagramData.topic;
-            } else if (diagramType === 'flow_map') {
-                centerTopic = diagramData.title;
-            } else if (diagramType === 'brace_map') {
-                centerTopic = diagramData.whole;
-            } else if (diagramType === 'double_bubble_map') {
-                centerTopic = { left: diagramData.left, right: diagramData.right };
-            } else if (diagramType === 'multi_flow_map') {
-                centerTopic = diagramData.event;
-            } else if (diagramType === 'bridge_map') {
-                centerTopic = diagramData.dimension;
-            } else {
-                centerTopic = diagramData.center;
-            }
-            
-            logger.info('ToolbarManager', 'ThinkGuide starting with data:', {
-                diagramType,
-                center: centerTopic,
-                childCount: diagramData.children?.length || 0
-            });
-            
-            // Start Thinking Mode (this will call openPanel internally)
-            logger.info('ToolbarManager', 'Calling thinkingModeManager.startThinkingMode()');
-            await window.thinkingModeManager.startThinkingMode(diagramType, diagramData);
-            
-            logger.info('ToolbarManager', 'ThinkGuide Mode started successfully');
-            
-        } catch (error) {
-            logger.error('ToolbarManager', 'Failed to start ThinkGuide Mode', {
-                error: error,
-                message: error.message,
-                stack: error.stack
-            });
-            this.showNotification(
-                `Failed to start ThinkGuide Mode: ${error.message}`,
-                'error'
-            );
-        }
+        window.eventBus.emit('thinking_mode:start_requested', {});
+        logger.debug('ToolbarManager', 'Thinking mode start requested via Event Bus');
     }
     
     /**

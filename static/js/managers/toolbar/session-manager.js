@@ -1,0 +1,233 @@
+/**
+ * Session Manager
+ * ===============
+ * 
+ * Manages toolbar manager instance lifecycle and session tracking.
+ * Handles session registration, validation, and cleanup.
+ * 
+ * @author lycosa9527
+ * @made_by MindSpring Team
+ * @size_target ~300-400 lines
+ */
+
+class SessionManager {
+    constructor(eventBus, stateManager, logger) {
+        this.eventBus = eventBus;
+        this.stateManager = stateManager;
+        this.logger = logger || console;
+        
+        // Session tracking
+        this.sessionId = null;
+        this.diagramType = null;
+        this.registeredInstances = new Map();
+        
+        // Initialize global registry
+        if (!window.toolbarManagerRegistry) {
+            window.toolbarManagerRegistry = new Map();
+            this.logger.debug('SessionManager', 'Registry initialized');
+        }
+        
+        // Subscribe to events
+        this.subscribeToEvents();
+        
+        this.logger.info('SessionManager', 'Session Manager initialized');
+    }
+    
+    /**
+     * Subscribe to Event Bus events
+     */
+    subscribeToEvents() {
+        // Listen for session registration requests
+        this.eventBus.on('session:register_requested', (data) => {
+            this.registerInstance(data.sessionId, data.diagramType, data.instance);
+        });
+        
+        // Listen for session validation requests
+        this.eventBus.on('session:validate_requested', (data) => {
+            const isValid = this.validateSession(data.sessionId);
+            this.eventBus.emit('session:validation_result', {
+                sessionId: data.sessionId,
+                isValid
+            });
+        });
+        
+        // Listen for session cleanup requests
+        this.eventBus.on('session:cleanup_requested', (data) => {
+            this.cleanupSession(data.sessionId);
+        });
+        
+        this.logger.debug('SessionManager', 'Subscribed to events');
+    }
+    
+    /**
+     * Register a toolbar manager instance
+     * @param {string} sessionId - Session ID
+     * @param {string} diagramType - Diagram type
+     * @param {Object} instance - Toolbar manager instance
+     */
+    registerInstance(sessionId, diagramType, instance) {
+        if (!sessionId) {
+            this.logger.error('SessionManager', 'Cannot register instance - no session ID');
+            return;
+        }
+        
+        this.sessionId = sessionId;
+        this.diagramType = diagramType;
+        
+        // Clean up any existing toolbar manager from a different session
+        window.toolbarManagerRegistry.forEach((oldManager, oldSessionId) => {
+            if (oldSessionId !== sessionId) {
+                this.logger.debug('SessionManager', 'Cleaning up old instance', {
+                    oldSession: oldSessionId?.substr(-8)
+                });
+                
+                // Emit cleanup event
+                this.eventBus.emit('session:old_instance_cleanup', {
+                    sessionId: oldSessionId
+                });
+                
+                // Destroy old instance if it has a destroy method
+                if (oldManager && typeof oldManager.destroy === 'function') {
+                    oldManager.destroy();
+                }
+                
+                window.toolbarManagerRegistry.delete(oldSessionId);
+            }
+        });
+        
+        // Register new instance
+        window.toolbarManagerRegistry.set(sessionId, instance);
+        this.registeredInstances.set(sessionId, {
+            diagramType,
+            registeredAt: Date.now()
+        });
+        
+        this.logger.info('SessionManager', 'Instance registered', {
+            sessionId: sessionId?.substr(-8),
+            diagramType,
+            totalRegistered: window.toolbarManagerRegistry.size
+        });
+        
+        // Emit registration event
+        this.eventBus.emit('session:registered', {
+            sessionId,
+            diagramType
+        });
+    }
+    
+    /**
+     * Validate session
+     * @param {string} sessionId - Session ID to validate
+     * @returns {boolean} Whether session is valid
+     */
+    validateSession(sessionId) {
+        if (!sessionId) {
+            this.logger.warn('SessionManager', 'Validation failed - no session ID provided');
+            return false;
+        }
+        
+        if (sessionId !== this.sessionId) {
+            this.logger.warn('SessionManager', 'Validation failed - session ID mismatch', {
+                expected: this.sessionId?.substr(-8),
+                received: sessionId?.substr(-8)
+            });
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get current session info
+     * @returns {Object|null} Session info
+     */
+    getSessionInfo() {
+        if (!this.sessionId) {
+            return null;
+        }
+        
+        return {
+            sessionId: this.sessionId,
+            diagramType: this.diagramType,
+            registered: this.registeredInstances.has(this.sessionId)
+        };
+    }
+    
+    /**
+     * Cleanup session
+     * @param {string} sessionId - Session ID to cleanup
+     */
+    cleanupSession(sessionId) {
+        if (!sessionId) {
+            sessionId = this.sessionId;
+        }
+        
+        if (!sessionId) {
+            this.logger.warn('SessionManager', 'No session to cleanup');
+            return;
+        }
+        
+        this.logger.info('SessionManager', 'Cleaning up session', {
+            sessionId: sessionId?.substr(-8)
+        });
+        
+        // Remove from registry
+        window.toolbarManagerRegistry.delete(sessionId);
+        this.registeredInstances.delete(sessionId);
+        
+        // Clear current session if it matches
+        if (sessionId === this.sessionId) {
+            this.sessionId = null;
+            this.diagramType = null;
+        }
+        
+        // Emit cleanup complete event
+        this.eventBus.emit('session:cleanup_completed', {
+            sessionId
+        });
+    }
+    
+    /**
+     * Cleanup all sessions
+     */
+    cleanupAllSessions() {
+        this.logger.info('SessionManager', 'Cleaning up all sessions');
+        
+        const sessionIds = Array.from(this.registeredInstances.keys());
+        sessionIds.forEach(sessionId => {
+            this.cleanupSession(sessionId);
+        });
+    }
+    
+    /**
+     * Get all registered sessions
+     * @returns {Array} List of session info objects
+     */
+    getAllSessions() {
+        const sessions = [];
+        
+        this.registeredInstances.forEach((info, sessionId) => {
+            sessions.push({
+                sessionId,
+                diagramType: info.diagramType,
+                registeredAt: info.registeredAt,
+                age: Date.now() - info.registeredAt
+            });
+        });
+        
+        return sessions;
+    }
+    
+    /**
+     * Destroy session manager
+     */
+    destroy() {
+        this.logger.info('SessionManager', 'Destroying Session Manager');
+        this.cleanupAllSessions();
+    }
+}
+
+// Make available globally
+window.SessionManager = SessionManager;
+
+

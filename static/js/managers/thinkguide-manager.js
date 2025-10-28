@@ -793,27 +793,47 @@ class ThinkGuideManager {
             }
         };
     }
+    
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        this.logger.debug('ThinkGuideManager', 'Destroying');
+        
+        // Stop any active streaming
+        if (this.currentAbortController) {
+            this.currentAbortController.abort();
+            this.currentAbortController = null;
+        }
+        
+        // Remove Event Bus listeners
+        this.eventBus.off('panel:open_requested');
+        this.eventBus.off('panel:close_requested');
+        this.eventBus.off('thinkguide:send_message');
+        this.eventBus.off('thinkguide:explain_requested');
+        
+        // Clear session data
+        this.sessionId = null;
+        this.diagramSessionId = null;
+        
+        // Nullify references
+        this.eventBus = null;
+        this.stateManager = null;
+        this.sseClient = null;
+        this.panel = null;
+        this.messagesContainer = null;
+        this.inputArea = null;
+        this.sendBtn = null;
+        this.stopBtn = null;
+        this.progressFill = null;
+        this.progressLabel = null;
+        this.closeBtn = null;
+        this.nodePaletteBtn = null;
+        this.md = null;
+        this.logger = null;
+    }
 }
 
-// Initialize when dependencies are ready
-if (typeof window !== 'undefined') {
-    const initThinkGuideManager = () => {
-        if (window.eventBus && window.stateManager && window.sseClient && window.logger) {
-            window.thinkingModeManager = new ThinkGuideManager(
-                window.eventBus,
-                window.stateManager,
-                window.sseClient,
-                window.logger
-            );
-            
-            if (window.logger.debugMode) {
-                console.log('%c[ThinkGuideManager] Initialized with Event Bus', 'color: #9c27b0; font-weight: bold;');
-            }
-        } else {
-            setTimeout(initThinkGuideManager, 50);
-        }
-    };
-    
-    initThinkGuideManager();
-}
+// NOTE: No longer auto-initialized globally.
+// Now created per-session in DiagramSelector and managed by SessionLifecycleManager.
 

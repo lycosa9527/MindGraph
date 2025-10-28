@@ -4883,6 +4883,41 @@ class NodePaletteManager {
             alert(`Error rendering mindmap: ${error.message}`);
         }
     }
+    
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        console.log('[NodePalette] Destroying');
+        
+        // Abort any in-progress SSE streams
+        if (this.currentBatchAbortController) {
+            this.currentBatchAbortController.abort();
+            this.currentBatchAbortController = null;
+        }
+        
+        // Clear all state
+        this.nodes = [];
+        this.selectedNodes.clear();
+        this.tabNodes = {};
+        this.tabSelectedNodes = {};
+        this.tabScrollPositions = {};
+        this.stageData = {};
+        this.lockedTabs.clear();
+        
+        // Clear session
+        this.sessionId = null;
+        this.centerTopic = null;
+        this.diagramData = null;
+        this.diagramType = null;
+        this.currentTab = null;
+        this.currentStage = null;
+        this.currentBatch = 0;
+        this.stageGeneration = 0;
+        this.isLoadingBatch = false;
+        
+        console.log('[NodePalette] Cleanup complete');
+    }
 }
 
 // Export for use in other modules
@@ -4890,9 +4925,6 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = NodePaletteManager;
 }
 
-// Global instance
-window.nodePaletteManager = new NodePaletteManager();
-
-// Note: Button listener is now attached when panel opens (see showPalettePanel)
-// This ensures the listener is active even if panel opens after DOMContentLoaded
+// NOTE: No longer auto-initialized globally.
+// Now created per-session in DiagramSelector and managed by SessionLifecycleManager.
 

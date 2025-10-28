@@ -38,7 +38,7 @@ class Logger {
         };
         
         // Current minimum level to display
-        this.minLevel = (this.debugMode || this.verboseMode) ? this.levels.DEBUG : this.levels.WARN;
+        this.minLevel = (this.debugMode || this.verboseMode) ? this.levels.DEBUG : this.levels.INFO;
         
         // Batching system for backend logs
         this.logBatch = [];
@@ -75,7 +75,7 @@ class Logger {
      */
     setDebugMode(enabled) {
         this.debugMode = enabled;
-        this.minLevel = (enabled || this.verboseMode) ? this.levels.DEBUG : this.levels.WARN;
+        this.minLevel = (enabled || this.verboseMode) ? this.levels.DEBUG : this.levels.INFO;
         
         // Try to save to localStorage (may not be available in headless contexts)
         try {
@@ -156,7 +156,8 @@ class Logger {
         const prefix = `[${timestamp}] ${levelStr.padEnd(5)} | ${component.padEnd(20)}`;
         
         // Round numbers in data for cleaner logs
-        const cleanData = data ? this._roundNumbers(data) : null;
+        // Skip _roundNumbers for Error objects to preserve error information
+        const cleanData = data ? (data instanceof Error ? data : this._roundNumbers(data)) : null;
         
         return { prefix, color, message, data: cleanData };
     }
@@ -252,7 +253,23 @@ class Logger {
         const { prefix, color, message: msg, data: e } = this._format(this.levels.ERROR, component, message, error);
         
         if (e) {
-            console.error(`%c${prefix} | ${msg}`, `color: ${color}; font-weight: bold;`, e);
+            // Format error information for better console display
+            let errorInfo = '';
+            if (e instanceof Error) {
+                errorInfo = `\n    Error: ${e.message}`;
+                if (this.debugMode && e.stack) {
+                    errorInfo += `\n    Stack: ${e.stack}`;
+                }
+            } else if (typeof e === 'object') {
+                try {
+                    errorInfo = `\n    ${JSON.stringify(e, null, 2)}`;
+                } catch (err) {
+                    errorInfo = `\n    ${e.toString()}`;
+                }
+            } else {
+                errorInfo = `\n    ${e}`;
+            }
+            console.error(`%c${prefix} | ${msg}${errorInfo}`, `color: ${color}; font-weight: bold;`);
         } else {
             console.error(`%c${prefix} | ${msg}`, `color: ${color}; font-weight: bold;`);
         }

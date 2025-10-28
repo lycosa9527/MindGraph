@@ -777,6 +777,7 @@
     <!-- Event Bus Architecture (Core) - Load SECOND (after logger) -->
     <script src="/static/js/core/event-bus.js"></script>
     <script src="/static/js/core/state-manager.js"></script>
+    <script src="/static/js/core/session-lifecycle.js"></script>
     <script src="/static/js/utils/sse-client.js"></script>
     
     <script src="/static/js/theme-config.js"></script>
@@ -797,6 +798,31 @@
     <script src="/static/js/editor/node-editor.js"></script>
     <script src="/static/js/editor/diagram-validator.js"></script>
     <script src="/static/js/editor/learning-mode-manager.js"></script>
+    
+    <!-- Phase 7: Extracted Modules (Load BEFORE toolbar-manager & interactive-editor) -->
+    <!-- Toolbar Modules -->
+    <script src="/static/js/managers/toolbar/export-manager.js"></script>
+    <script src="/static/js/managers/toolbar/session-manager.js"></script>
+    <script src="/static/js/managers/toolbar/property-panel-manager.js"></script>
+    <script src="/static/js/managers/toolbar/llm-validation-manager.js"></script>
+    <!-- LLM Auto-Complete Sub-Managers (Load in order) -->
+    <script src="/static/js/managers/toolbar/property-validator.js"></script>
+    <script src="/static/js/managers/toolbar/llm-result-cache.js"></script>
+    <script src="/static/js/managers/toolbar/llm-progress-renderer.js"></script>
+    <script src="/static/js/managers/toolbar/llm-engine-manager.js"></script>
+    <script src="/static/js/managers/toolbar/llm-autocomplete-manager.js"></script>
+    <script src="/static/js/managers/toolbar/node-property-operations-manager.js"></script>
+    <script src="/static/js/managers/toolbar/ui-state-llm-manager.js"></script>
+    <script src="/static/js/managers/toolbar/text-toolbar-state-manager.js"></script>
+    <script src="/static/js/managers/toolbar/node-counter-feature-mode-manager.js"></script>
+    <script src="/static/js/managers/toolbar/small-operations-manager.js"></script>
+    <!-- Editor Modules -->
+    <script src="/static/js/managers/editor/history-manager.js"></script>
+    <script src="/static/js/managers/editor/canvas-controller.js"></script>
+    <!-- Diagram Operations -->
+    <script src="/static/js/managers/editor/diagram-types/circle-map-operations.js"></script>
+    <script src="/static/js/managers/editor/diagram-types/bubble-map-operations.js"></script>
+    
     <script src="/static/js/editor/toolbar-manager.js"></script>
     <script src="/static/js/editor/toolbar-responsive.js"></script>
     <script src="/static/js/editor/interactive-editor.js"></script>
@@ -844,7 +870,7 @@
                 window.blackCat = blackCat;
                 
                 // Initialize VoiceAgent
-                const voiceAgent = new VoiceAgent();
+                const voiceAgent = new VoiceAgentManager(window.eventBus, window.stateManager, window.logger);
                 voiceAgent.init();
                 window.voiceAgent = voiceAgent;
                 

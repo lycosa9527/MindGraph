@@ -122,6 +122,7 @@ async def update_env_settings(
     - Creates automatic backup before changes
     - Prevents modification of JWT_SECRET_KEY and DATABASE_URL via this endpoint
     - Logs all changes with admin user ID
+    - Skips masked values to preserve existing secrets
     
     Args:
         request: Dict of setting key-value pairs to update
@@ -152,8 +153,29 @@ async def update_env_settings(
     try:
         env_manager = EnvManager()
         
+        # Read existing settings to preserve masked values
+        existing_settings = env_manager.read_env()
+        
+        # Filter out masked values - preserve existing secrets
+        filtered_request = {}
+        skipped_masked = []
+        for key, value in request.items():
+            # Detect masked values
+            if value and (value.startswith("***...") or value == "***HIDDEN***" or value == "***" or value == "******"):
+                # This is a masked value - keep the existing value from .env
+                if key in existing_settings:
+                    filtered_request[key] = existing_settings[key]
+                    skipped_masked.append(key)
+                # If key not in existing settings, skip it entirely (don't add to filtered_request)
+            else:
+                # This is a real value - use it
+                filtered_request[key] = value
+        
+        if skipped_masked:
+            logger.info(f"Preserved {len(skipped_masked)} masked values: {', '.join(skipped_masked)}")
+        
         # Validate settings before writing
-        is_valid, errors = env_manager.validate_env(request)
+        is_valid, errors = env_manager.validate_env(filtered_request)
         if not is_valid:
             logger.warning(f"Settings validation failed: {errors}")
             raise HTTPException(
@@ -166,15 +188,15 @@ async def update_env_settings(
         logger.info(f"Created backup: {backup_file}")
         
         # Write new settings
-        env_manager.write_env(request)
+        env_manager.write_env(filtered_request)
         
         # Log the change (mask sensitive values in log)
         masked_keys = []
-        for key in request.keys():
+        for key in filtered_request.keys():
             if any(sensitive in key for sensitive in ['API_KEY', 'SECRET', 'PASSWORD', 'PASSKEY']):
                 masked_keys.append(f"{key}=***")
             else:
-                masked_keys.append(f"{key}={request[key]}")
+                masked_keys.append(f"{key}={filtered_request[key]}")
         
         logger.warning(
             f"Admin {current_user.phone} updated .env settings: "
@@ -184,7 +206,7 @@ async def update_env_settings(
         return {
             "message": "Settings updated successfully",
             "backup_file": backup_file,
-            "updated_keys": list(request.keys()),
+            "updated_keys": list(filtered_request.keys()),
             "warning": "⚠️ Server restart required for changes to take effect!"
         }
         
