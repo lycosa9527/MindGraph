@@ -598,7 +598,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
         prompt_text = get_prompt(graph_type, language, 'generation')
         
         if not prompt_text:
-            logger.error(f"Agent: No prompt found for graph type: {graph_type}")
+            logger.error(f"No prompt found for graph type: {graph_type}")
             return create_error_response(f"No prompt template found for {graph_type}", "template", {"graph_type": graph_type})
         
         # Sanitize template to ensure only {user_prompt} is a variable; all other braces become literal
@@ -651,18 +651,18 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             
             # Note: Agent validation is now handled by specialized agents, not here
             
-            logger.info(f"Agent: {graph_type} specification generated successfully")
+            logger.info(f"{graph_type} specification generated successfully")
             return spec
             
         except Exception as e:
-            logger.error(f"Agent: {graph_type} JSON generation failed: {e}")
+            logger.error(f"{graph_type} JSON generation failed: {e}")
             return create_error_response(f"Failed to generate valid {graph_type} JSON", "generation", {"graph_type": graph_type})
             
     except ImportError:
-        logger.error("Agent: Failed to import centralized prompt registry")
+        logger.error("Failed to import centralized prompt registry")
         return create_error_response("Prompt registry not available", "import", {"graph_type": graph_type})
     except Exception as e:
-        logger.error(f"Agent: Unexpected error in generate_graph_spec: {e}")
+        logger.error(f"Unexpected error in generate_graph_spec: {e}")
         return create_error_response(f"Unexpected error generating {graph_type}", "unexpected", {"graph_type": graph_type})
 
 
@@ -706,20 +706,20 @@ def validate_agent_setup():
         # Test LLM connection using classification model (fast/cheap)
         test_prompt = "Test"
         llm_classification._call(test_prompt)
-        logger.info("Agent: LLM connection validation completed successfully")
+        logger.info("LLM connection validation completed successfully")
         return True
     except TimeoutError:
-        logger.error("Agent: LLM validation timed out")
+        logger.error("LLM validation timed out")
         return False
     except Exception as e:
-        logger.error(f"Agent: LLM connection failed: {e}")
+        logger.error(f"LLM connection failed: {e}")
         return False
     finally:
         timer.cancel() 
 
 
 
-async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, model: str = 'qwen') -> str:
+async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, model: str = 'qwen') -> dict:
     """
     LLM-based diagram type detection using semantic understanding.
     
@@ -729,11 +729,18 @@ async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, mode
         model: LLM model to use ('qwen', 'deepseek', 'kimi', 'hunyuan')
     
     Returns:
-        str: Detected diagram type
+        dict: {'diagram_type': str, 'clarity': str, 'has_topic': bool}
+              clarity can be 'clear', 'unclear', or 'very_unclear'
     """
     try:
         # Validate inputs
         validate_inputs(user_prompt, language)
+        
+        # Check if prompt is too vague or complex (basic heuristics before LLM)
+        prompt_words = user_prompt.strip().split()
+        is_too_short = len(prompt_words) < 2
+        is_too_long = len(prompt_words) > 100
+        
         # Get classification prompt from centralized system
         classification_prompt = get_prompt("classification", language, "generation")
         classification_prompt = classification_prompt.format(user_prompt=user_prompt)
@@ -750,30 +757,51 @@ async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, mode
         # Extract diagram type from response
         detected_type = response.strip().lower()
         
-        # Validate the detected type
+        # Validate the detected type - only include working diagram types
+        # 8 thinking maps + 1 mindmap (concept_map and thinking tools are work in progress)
         valid_types = {
-            'bubble_map', 'bridge_map', 'tree_map', 'circle_map', 
-            'double_bubble_map', 'multi_flow_map', 'flow_map', 
-            'brace_map', 'concept_map', 'mind_map',
-            # Thinking Tools
-            'factor_analysis', 'three_position_analysis', 'perspective_analysis',
-            'goal_analysis', 'possibility_analysis', 'result_analysis',
-            'five_w_one_h', 'whwm_analysis', 'four_quadrant'
+            'circle_map', 'bubble_map', 'double_bubble_map', 
+            'brace_map', 'bridge_map', 'tree_map', 
+            'flow_map', 'multi_flow_map', 
+            'mind_map'
         }
         
-        if detected_type in valid_types:
-            logger.info(f"LLM classification completed: '{user_prompt}' → {detected_type}")
-            return detected_type
-        else:
-            logger.warning(f"LLM returned invalid type '{detected_type}', using default mind_map")
-            return 'mind_map'
+        # Determine clarity based on LLM response and heuristics
+        clarity = 'clear'
+        has_topic = True
+        
+        # Check if LLM explicitly returned "unclear"
+        if detected_type == 'unclear':
+            clarity = 'very_unclear'
+            has_topic = False
+            detected_type = 'mind_map'  # Default fallback
+            logger.warning(f"LLM explicitly returned 'unclear' for prompt: '{user_prompt}'")
+        elif detected_type not in valid_types:
+            # LLM returned something invalid
+            clarity = 'very_unclear'
+            has_topic = False
+            detected_type = 'mind_map'  # Default fallback
+            logger.warning(f"LLM returned invalid type '{detected_type}', prompt may be too complex: '{user_prompt}'")
+        elif is_too_short or is_too_long:
+            # Prompt length is suspicious
+            clarity = 'unclear'
+            logger.info(f"Prompt length is suspicious (words: {len(prompt_words)})")
+        
+        result = {
+            'diagram_type': detected_type,
+            'clarity': clarity,
+            'has_topic': has_topic
+        }
+        
+        logger.info(f"LLM classification: '{user_prompt}' → {detected_type} (clarity: {clarity})")
+        return result
             
     except ValueError as e:
         logger.error(f"Input validation failed: {e}")
-        return 'mind_map'  # Safe default
+        return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
     except Exception as e:
-        logger.error(f"LLM classification failed: {e}, using default mind_map")
-        return 'mind_map'
+        logger.error(f"LLM classification failed: {e}")
+        return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
 
 
 
@@ -1146,7 +1174,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
         if isinstance(central_topic, list):
             central_topic = ' '.join(central_topic)
         
-        logger.debug(f"Agent: Using central topic for 30-concept generation: {central_topic}")
+        logger.debug(f"Using central topic for 30-concept generation: {central_topic}")
         
         # Generate exactly 30 concepts using centralized prompts
         from prompts import get_prompt
@@ -1309,7 +1337,7 @@ Requirements:
             }
         }
         
-        logger.debug(f"Agent: Enhanced 30-concept generation completed successfully with {len(concepts)} concepts and {len(relationships)} relationships")
+        logger.debug(f"Enhanced 30-concept generation completed successfully with {len(concepts)} concepts and {len(relationships)} relationships")
         return spec
         
     except Exception as e:
@@ -1340,7 +1368,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
             logger.warning(f"Enhanced 30-concept generation failed: {e}")
             # Try with fewer concepts as fallback
             try:
-                logger.debug("Agent: Attempting fallback with simplified two-stage generation...")
+                logger.debug("Attempting fallback with simplified two-stage generation...")
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
                 result = agent.generate_simplified_two_stage(user_prompt, llm_generation, language)
@@ -1563,7 +1591,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
     """
-    logger.info(f"Agent: Starting simplified graph workflow")
+    logger.info("Starting simplified graph workflow")
     
     try:
         # Validate inputs
@@ -1572,26 +1600,75 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
         # Use forced diagram type if provided, otherwise detect from prompt
         if forced_diagram_type:
             diagram_type = forced_diagram_type
-            logger.info(f"Agent: Using forced diagram type: {diagram_type}")
+            detection_result = {'diagram_type': diagram_type, 'clarity': 'clear', 'has_topic': True}
+            logger.info(f"Using forced diagram type: {diagram_type}")
         else:
             # LLM-based diagram type detection for semantic understanding
-            diagram_type = await _detect_diagram_type_from_prompt(user_prompt, language, model)
-            logger.info(f"Agent: Detected diagram type: {diagram_type}")
+            detection_result = await _detect_diagram_type_from_prompt(user_prompt, language, model)
+            diagram_type = detection_result['diagram_type']
+            logger.info(f"Detected diagram type: {diagram_type}, clarity: {detection_result['clarity']}")
+            
+            # Check if prompt is too complex/unclear and should show guidance modal
+            if detection_result['clarity'] == 'very_unclear' and not detection_result['has_topic']:
+                logger.warning(f"Prompt is too complex or unclear: '{user_prompt}'")
+                return {
+                    'success': False,
+                    'error_type': 'prompt_too_complex',
+                    'error': 'Unable to understand the request',
+                    'spec': create_error_response(
+                        'Prompt is too complex or unclear', 
+                        'prompt_too_complex',
+                        {'user_prompt': user_prompt}
+                    ),
+                    'diagram_type': 'mind_map',
+                    'topics': [],
+                    'style_preferences': {},
+                    'language': language,
+                    'show_guidance': True
+                }
         
+        # Extract main topic from prompt using LLM (only if not forced diagram type)
+        if not forced_diagram_type:
+            # Prompt-based generation: just extract topic, let frontend use default template
+            from services.llm_service import llm_service
+            
+            # Use centralized topic extraction prompt
+            topic_extraction_prompt = get_prompt("topic_extraction", language, "generation")
+            topic_extraction_prompt = topic_extraction_prompt.format(user_prompt=user_prompt)
+            
+            main_topic = await llm_service.chat(
+                prompt=topic_extraction_prompt,
+                model=model,
+                max_tokens=50,
+                temperature=0.1  # Lower temperature for more deterministic extraction
+            )
+            main_topic = main_topic.strip().strip('"\'')
+            logger.info(f"Extracted main topic: '{main_topic}'")
+            
+            # Return just the topic and diagram type - frontend will load default template
+            return {
+                'success': True,
+                'diagram_type': diagram_type,
+                'extracted_topic': main_topic,  # Just the topic, no spec
+                'language': language,
+                'use_default_template': True  # Signal to frontend to use default template + trigger auto-complete
+            }
+        
+        # For forced diagram type (manual generation), use full agent workflow
         # Add learning sheet detection
         is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
-        logger.info(f"Agent: Learning sheet detected: {is_learning_sheet}")
+        logger.info(f"Learning sheet detected: {is_learning_sheet}")
         
         # Clean the prompt for learning sheets to generate actual content, not meta-content
         generation_prompt = _clean_prompt_for_learning_sheet(user_prompt) if is_learning_sheet else user_prompt
         if is_learning_sheet:
-            logger.info(f"Agent: Using cleaned prompt for generation: '{generation_prompt}'")
+            logger.info(f"Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
         spec = await _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference, model)
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
-            logger.error(f"Agent: Failed to generate spec for {diagram_type}")
+            logger.error(f"Failed to generate spec for {diagram_type}")
             return {
                 'success': False,
                 'spec': spec or create_error_response('Failed to generate specification', 'generation', {'diagram_type': diagram_type}),
@@ -1618,11 +1695,11 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
             'hidden_node_percentage': hidden_percentage  # NEW
         }
         
-        logger.info(f"Agent: Simplified workflow completed successfully, learning sheet: {is_learning_sheet}")
+        logger.info(f"Simplified workflow completed successfully, learning sheet: {is_learning_sheet}")
         return result
         
     except ValueError as e:
-        logger.error(f"Agent: Input validation failed: {e}")
+        logger.error(f"Input validation failed: {e}")
         return {
             'success': False,
             'spec': create_error_response(f'Invalid input: {str(e)}', 'validation', {'language': language}),
@@ -1632,7 +1709,7 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
             'language': language
         }
     except Exception as e:
-        logger.error(f"Agent: Simplified workflow failed: {e}")
+        logger.error(f"Simplified workflow failed: {e}")
         return {
             'success': False,
             'spec': create_error_response(f'Generation failed: {str(e)}', 'workflow', {'language': language}),

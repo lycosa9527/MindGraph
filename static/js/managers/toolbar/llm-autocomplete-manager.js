@@ -130,28 +130,27 @@ class LLMAutoCompleteManager {
         this.isAutoCompleting = true;
         
         try {
-            // Store context
-            const currentDiagramType = this.editor.diagramType;
+            // Store context - normalize diagram type to match rendering logic
+            let currentDiagramType = this.editor.diagramType;
+            if (currentDiagramType === 'mind_map') {
+                currentDiagramType = 'mindmap';
+            }
             const currentSessionId = this.editor.sessionId;
             
-            // Extract nodes and identify topic
+            // Extract nodes and topic from canvas
             const existingNodes = this.llmValidationManager.extractExistingNodes();
-            if (existingNodes.length === 0) {
-                this.toolbarManager.showNotification(
-                    this.toolbarManager.getNotif('addNodesFirst'),
-                    'warning'
-                );
-                return;
-            }
             
+            // For initial generation from prompt, there might be only the topic node
+            // That's fine - we'll generate the full diagram
             const mainTopic = this.llmValidationManager.identifyMainTopic(existingNodes);
             this.logger.info('LLMAutoCompleteManager', `Topic identified: "${mainTopic}"`);
             
             // Detect language
             const language = this._detectLanguage(mainTopic);
             
-            // Build request
+            // Build request - always use continue mode (canvas already has minimal template)
             const prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
+            this.logger.info('LLMAutoCompleteManager', `Enriching diagram: ${existingNodes.length} existing nodes`);
             
             const requestBody = {
                 prompt: prompt,
@@ -163,15 +162,27 @@ class LLMAutoCompleteManager {
             // Clear previous results
             this.resultCache.clear();
             
-            // Show loading state
+            // Run multi-model generation
+            // Check if a model should be excluded (e.g., already used for initial generation)
+            let models = ['qwen', 'deepseek', 'kimi', 'hunyuan'];
+            
+            // Catapult mode: exclude model that was already used for initial generation
+            if (window._autoCompleteExcludeModel) {
+                const excludeModel = window._autoCompleteExcludeModel;
+                models = models.filter(m => m !== excludeModel);
+                this.logger.info('LLMAutoCompleteManager', `Catapult mode: excluding ${excludeModel}, running ${models.length} models: ${models.join(', ')}`);
+                // Clear the flag after reading
+                window._autoCompleteExcludeModel = null;
+            } else {
+                this.logger.info('LLMAutoCompleteManager', `Running all ${models.length} models: ${models.join(', ')}`);
+            }
+            
+            // Show loading state ONLY for models that will actually run
             this.toolbarManager.showNotification(
                 language === 'zh' ? '正在生成内容...' : 'Generating content...',
                 'info'
             );
-            this.progressRenderer.setAllLLMButtonsLoading(true);
-            
-            // Run multi-model generation
-            const models = ['qwen', 'deepseek', 'kimi', 'hunyuan'];
+            this.progressRenderer.setAllLLMButtonsLoading(true, models);
             
             // Emit generation started event
             this.eventBus.emit('llm:generation_started', {
@@ -225,8 +236,14 @@ class LLMAutoCompleteManager {
             return;
         }
         
-        if (this.editor.diagramType !== expectedDiagramType) {
-            this.logger.warn('LLMAutoCompleteManager', `Diagram type changed during ${result.model} generation`);
+        // Normalize current diagram type for comparison (mind_map → mindmap)
+        let currentDiagramType = this.editor.diagramType;
+        if (currentDiagramType === 'mind_map') {
+            currentDiagramType = 'mindmap';
+        }
+        
+        if (currentDiagramType !== expectedDiagramType) {
+            this.logger.warn('LLMAutoCompleteManager', `Diagram type changed during ${result.model} generation (expected: ${expectedDiagramType}, current: ${currentDiagramType})`);
             return;
         }
         

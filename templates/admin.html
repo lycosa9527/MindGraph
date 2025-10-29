@@ -514,10 +514,6 @@
                     <div class="value" id="stat-orgs">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3><span class="lang-zh">锁定账户</span><span class="lang-en">Locked Accounts</span></h3>
-                    <div class="value" id="stat-locked">-</div>
-                </div>
-                <div class="stat-card">
                     <h3><span class="lang-zh">本周注册</span><span class="lang-en">This Week</span></h3>
                     <div class="value" id="stat-recent">-</div>
                 </div>
@@ -525,7 +521,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title"><span class="lang-zh">各学校用户分布</span><span class="lang-en">Users by Organization</span></h2>
+                    <h2 class="card-title">🏆 <span class="lang-zh">学校用户排行榜 (Top 10)</span><span class="lang-en">Top 10 Schools Leaderboard</span></h2>
                 </div>
                 <div id="org-distribution"></div>
             </div>
@@ -1136,6 +1132,32 @@ curl -X POST http://your-server/api/generate_graph \
         </div>
     </div>
 
+    <!-- Share Invitation Info Modal -->
+    <div id="share-invite-modal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📤 <span class="lang-zh">分享邀请信息</span><span class="lang-en">Share Invitation Info</span></h3>
+                <span class="close" onclick="closeModal('share-invite-modal')">&times;</span>
+            </div>
+            <div style="margin-bottom:1rem;color:#64748b;font-size:0.9rem;">
+                <span class="lang-zh">复制以下信息分享给用户：</span>
+                <span class="lang-en">Copy the information below to share with users:</span>
+            </div>
+            <div class="form-group">
+                <textarea id="share-invite-text" class="form-textarea" readonly
+                          style="min-height:100px;font-size:1rem;line-height:1.6;background:#f8fafc;border:2px solid #667eea;font-family:inherit;"
+                          onclick="this.select()"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="selectShareText()" style="width:100%;">
+                📋 <span class="lang-zh">选中全部文本</span><span class="lang-en">Select All Text</span>
+            </button>
+            <small style="display:block;margin-top:1rem;color:#94a3b8;text-align:center;">
+                <span class="lang-zh">点击文本框即可选中，然后按 Ctrl+C (或 Cmd+C) 复制</span>
+                <span class="lang-en">Click the text box to select, then press Ctrl+C (or Cmd+C) to copy</span>
+            </small>
+        </div>
+    </div>
+
     <!-- Unauthenticated Overlay -->
     <div id="auth-required-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
         <div style="background:white; border-radius:20px; padding:3rem; text-align:center; max-width:500px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
@@ -1352,18 +1374,51 @@ curl -X POST http://your-server/api/generate_graph \
 
                 document.getElementById('stat-users').textContent = stats.total_users;
                 document.getElementById('stat-orgs').textContent = stats.total_organizations;
-                document.getElementById('stat-locked').textContent = stats.locked_users;
                 document.getElementById('stat-recent').textContent = stats.recent_registrations;
 
-                // Organization distribution
+                // Organization distribution - Top 10 only with rankings
                 const dist = document.getElementById('org-distribution');
-                dist.innerHTML = Object.entries(stats.users_by_org)
-                    .map(([org, count]) => `
-                        <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #e2e8f0;">
-                            <span>${org}</span>
-                            <span style="font-weight:600;color:#667eea;">${count} 用户</span>
-                        </div>
-                    `).join('');
+                const sortedOrgs = Object.entries(stats.users_by_org)
+                    .sort((a, b) => b[1] - a[1])  // Sort by count descending
+                    .slice(0, 10);  // Take top 10 only
+                
+                if (sortedOrgs.length === 0) {
+                    dist.innerHTML = '<div style="color:#64748b;text-align:center;padding:2rem;">No schools yet</div>';
+                } else {
+                    dist.innerHTML = sortedOrgs.map(([org, count], index) => {
+                        const rank = index + 1;
+                        let rankBadge = '';
+                        let rankStyle = '';
+                        
+                        if (rank === 1) {
+                            rankBadge = '🥇';
+                            rankStyle = 'background:linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);color:#000;';
+                        } else if (rank === 2) {
+                            rankBadge = '🥈';
+                            rankStyle = 'background:linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);color:#000;';
+                        } else if (rank === 3) {
+                            rankBadge = '🥉';
+                            rankStyle = 'background:linear-gradient(135deg, #cd7f32 0%, #d4a574 100%);color:#000;';
+                        } else {
+                            rankBadge = `#${rank}`;
+                            rankStyle = 'background:#f1f5f9;color:#64748b;';
+                        }
+                        
+                        return `
+                            <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border-bottom:1px solid #e2e8f0;transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <div style="min-width:50px;text-align:center;font-weight:700;padding:0.5rem;border-radius:8px;${rankStyle}">
+                                    ${rankBadge}
+                                </div>
+                                <div style="flex:1;font-weight:500;">
+                                    ${org}
+                                </div>
+                                <div style="font-weight:700;color:#667eea;font-size:1.1rem;">
+                                    ${count} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">用户</span><span class="lang-en">users</span></span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
             } catch (error) {
                 showAlert('加载统计数据失败 Failed to load stats', 'error');
             }
@@ -1390,7 +1445,15 @@ curl -X POST http://your-server/api/generate_graph \
                         <tr style="${!isActive || isExpired ? 'background:#fee;' : ''}">
                             <td><strong>${school.code}</strong></td>
                             <td>${school.name}</td>
-                            <td><span class="badge badge-success">${school.invitation_code}</span></td>
+                            <td>
+                                <span class="badge badge-success">${school.invitation_code}</span>
+                                <button class="btn btn-sm" 
+                                        onclick="copySchoolInviteInfo('${school.invitation_code}')" 
+                                        title="Copy share info"
+                                        style="background:transparent;border:none;padding:0.25rem 0.5rem;cursor:pointer;font-size:1.1rem;">
+                                    📤
+                                </button>
+                            </td>
                             <td>${expiresText}</td>
                             <td>
                                 ${!isActive ? 
@@ -1522,6 +1585,22 @@ curl -X POST http://your-server/api/generate_graph \
             } catch (error) {
                 showAlert('删除失败 Delete failed: ' + error.message, 'error');
             }
+        }
+
+        function copySchoolInviteInfo(invitationCode) {
+            const shareText = `MindGraph专业版\nmg.mindspringedu.cn\n${invitationCode}`;
+            
+            // Set the text in the modal
+            document.getElementById('share-invite-text').value = shareText;
+            
+            // Show the modal
+            openModal('share-invite-modal');
+        }
+        
+        function selectShareText() {
+            const textarea = document.getElementById('share-invite-text');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // For mobile devices
         }
 
         // Users

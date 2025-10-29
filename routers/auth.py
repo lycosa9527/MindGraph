@@ -229,8 +229,8 @@ async def login(
     
     Security features:
     - Captcha verification (bot protection)
-    - Rate limiting: 5 attempts per 15 minutes (per phone)
-    - Account lockout: 15 minutes after 5 failed attempts
+    - Rate limiting: 8 attempts per 15 minutes (per phone)
+    - Account lockout: 15 minutes after 8 failed attempts
     - Failed attempt tracking in database
     """
     # Check rate limit by phone
@@ -358,7 +358,7 @@ async def generate_captcha(request: Request):
     - Uses existing Inter fonts from project
     - Generates distorted image to prevent OCR bots
     - 100% self-hosted (China-compatible)
-    - Rate limited: Max 10 requests per 15 minutes per IP
+    - Rate limited: Max 30 requests per 15 minutes per IP (shared across login/register)
     
     Returns:
         {
@@ -1128,25 +1128,23 @@ async def get_stats_admin(
     total_users = db.query(User).count()
     total_orgs = db.query(Organization).count()
     
-    now = datetime.utcnow()
-    locked_users = db.query(User).filter(
-        User.locked_until != None,
-        User.locked_until > now
-    ).count()
-    
+    # Get users by organization (using school name, sorted by count descending)
     users_by_org = {}
     orgs = db.query(Organization).all()
     for org in orgs:
         count = db.query(User).filter(User.organization_id == org.id).count()
-        users_by_org[org.code] = count
+        users_by_org[org.name] = count
     
+    # Sort by count (highest first)
+    users_by_org = dict(sorted(users_by_org.items(), key=lambda x: x[1], reverse=True))
+    
+    now = datetime.utcnow()
     week_ago = now - timedelta(days=7)
     recent_registrations = db.query(User).filter(User.created_at >= week_ago).count()
     
     return {
         "total_users": total_users,
         "total_organizations": total_orgs,
-        "locked_users": locked_users,
         "users_by_org": users_by_org,
         "recent_registrations": recent_registrations
     }

@@ -152,10 +152,19 @@ class LLMProgressRenderer {
     }
     
     /**
-     * Set all LLM buttons to loading state
+     * Set LLM buttons to loading state
+     * @param {boolean} isLoading - Whether to set loading state
+     * @param {Array<string>} models - Optional: specific models to set loading on (defaults to all)
      */
-    setAllLLMButtonsLoading(isLoading) {
+    setAllLLMButtonsLoading(isLoading, models = null) {
         this.llmButtons.forEach(btn => {
+            const btnModel = btn.dataset?.llm || btn.id?.replace('llm-', '');
+            
+            // If models array is provided, only set loading for those specific models
+            if (models && !models.includes(btnModel)) {
+                return; // Skip this button
+            }
+            
             if (isLoading) {
                 btn.classList.add('loading');
                 btn.disabled = true;
@@ -165,7 +174,8 @@ class LLMProgressRenderer {
             }
         });
         
-        this.logger.debug('LLMProgressRenderer', `All buttons loading state: ${isLoading}`);
+        const targetInfo = models ? `models: ${models.join(', ')}` : 'all buttons';
+        this.logger.debug('LLMProgressRenderer', `Loading state: ${isLoading} for ${targetInfo}`);
     }
     
     /**

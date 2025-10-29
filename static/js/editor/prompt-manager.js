@@ -99,6 +99,10 @@ class PromptManager {
             // Get current language
             const language = window.languageManager?.currentLanguage || 'en';
             
+            // ALWAYS use Qwen for initial prompt generation (fast, reliable)
+            // Then catapult the other 3 LLMs in background after canvas loads
+            const initialLLM = 'qwen';
+            
             // Send to AI generation endpoint
             const response = await auth.fetch('/api/generate_graph', {
                 method: 'POST',
@@ -107,7 +111,8 @@ class PromptManager {
                 },
                 body: JSON.stringify({
                     prompt: prompt,
-                    language: language
+                    language: language,
+                    llm: initialLLM  // Force Qwen for prompt-based generation
                 })
             });
             
@@ -117,7 +122,28 @@ class PromptManager {
             
             const data = await response.json();
             
-            // Check for errors in response
+            // Check for prompt too complex error - show guidance modal
+            if (data.error_type === 'prompt_too_complex' || data.show_guidance) {
+                // Hide loading spinner
+                this.hideLoadingSpinner();
+                
+                // Re-enable send button
+                this.sendBtn.disabled = false;
+                
+                // Show friendly guidance modal
+                if (window.modalManager) {
+                    window.modalManager.showPromptGuidance(language);
+                } else {
+                    // Fallback to notification if modal manager not available
+                    const errorMsg = language === 'zh' 
+                        ? '您的指令有点复杂，请尝试使用更简单明确的描述，包括主题和想做什么。'
+                        : 'Your prompt is a bit complex. Please try using simpler and clearer instructions with a topic and what you want to do.';
+                    window.notificationManager?.show(errorMsg, 'warning', 6000);
+                }
+                return;
+            }
+            
+            // Check for other errors in response
             if (data.error) {
                 throw new Error(data.error);
             }
@@ -129,11 +155,12 @@ class PromptManager {
             // Close history if open
             this.closeHistory();
             
+            // Hide loading spinner immediately so user sees canvas right away
+            // Auto-complete will enrich it in the background
+            this.hideLoadingSpinner();
+            
             // Transition to editor with generated diagram
             this.transitionToEditorWithDiagram(data);
-            
-            // Hide loading spinner (will be hidden by transition anyway)
-            this.hideLoadingSpinner();
             
         } catch (error) {
             logger.error('PromptManager', 'Diagram generation failed', error);
@@ -160,14 +187,79 @@ class PromptManager {
     transitionToEditorWithDiagram(data) {
         logger.info('PromptManager', 'Transitioning to editor', {
             diagramType: data.diagram_type || data.type,
-            hasSpec: !!data.spec
+            hasSpec: !!data.spec,
+            useDefaultTemplate: !!data.use_default_template,
+            extractedTopic: data.extracted_topic,
+            fullData: data
         });
         
         // Get diagram type
         const diagramType = data.diagram_type || data.type;
         
-        if (!diagramType || !data.spec) {
-            logger.error('PromptManager', 'Missing diagram type or spec');
+        if (!diagramType) {
+            logger.error('PromptManager', 'Missing diagram type');
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh' 
+                    ? '数据不完整' 
+                    : 'Incomplete data',
+                'error'
+            );
+            return;
+        }
+        
+        // Handle default template mode (prompt-based generation)
+        if (data.use_default_template && data.extracted_topic) {
+            logger.info('PromptManager', `Using default template mode: diagramType=${diagramType}, topic="${data.extracted_topic}"`);
+            
+            // Check if DiagramSelector is available
+            if (!window.diagramSelector) {
+                logger.error('PromptManager', 'DiagramSelector not available');
+                this.showNotification(
+                    window.languageManager?.currentLanguage === 'zh' 
+                        ? '系统未初始化' 
+                        : 'System not initialized',
+                    'error'
+                );
+                return;
+            }
+            
+            // Normalize diagram type (mind_map → mindmap)
+            const normalizedType = diagramType === 'mind_map' ? 'mindmap' : diagramType;
+            logger.info('PromptManager', `Normalized type: ${normalizedType}`);
+            
+            // Load default template from DiagramSelector using factory method
+            const template = window.diagramSelector.getTemplate(normalizedType);
+            logger.info('PromptManager', `Template loaded:`, template);
+            
+            if (!template) {
+                logger.error('PromptManager', `No default template for ${normalizedType}`);
+                this.showNotification(
+                    window.languageManager?.currentLanguage === 'zh' 
+                        ? '无法加载模板' 
+                        : 'Failed to load template',
+                    'error'
+                );
+                return;
+            }
+            
+            // Replace topic in template
+            template.topic = data.extracted_topic;
+            if (template.center) template.center = data.extracted_topic;
+            if (template.central_topic) template.central_topic = data.extracted_topic;
+            
+            // Update positions if exists
+            if (template._layout && template._layout.positions && template._layout.positions.topic) {
+                template._layout.positions.topic.text = data.extracted_topic;
+            }
+            
+            logger.info('PromptManager', 'Template loaded and topic replaced successfully');
+            
+            // Use this template as spec
+            data.spec = template;
+        }
+        
+        if (!data.spec) {
+            logger.error('PromptManager', 'Missing spec');
             this.showNotification(
                 window.languageManager?.currentLanguage === 'zh' 
                     ? '数据不完整' 
@@ -211,6 +303,16 @@ class PromptManager {
                     : 'Diagram generated successfully!',
                 'success'
             );
+            
+            // Check if we should trigger auto-complete (prompt-based generation)
+            if (data.use_default_template) {
+                // Default template loaded - trigger auto-complete with ALL 4 LLMs to enrich it
+                logger.info('PromptManager', 'Default template loaded, scheduling auto-complete with ALL 4 LLMs');
+                setTimeout(() => {
+                    this.triggerAutoComplete(null); // No exclusion - use all 4 LLMs
+                }, 1200); // Wait for canvas to fully render before triggering
+            }
+            
         } catch (error) {
             logger.error('PromptManager', 'Transition error', error);
             this.showNotification(
@@ -422,6 +524,7 @@ class PromptManager {
         spinner.style.borderTop = '8px solid #667eea';
         spinner.style.borderRadius = '50%';
         spinner.style.animation = 'spin 1s linear infinite';
+        spinner.style.margin = '0 auto';
         
         // Create loading text
         const loadingText = document.createElement('div');
@@ -485,6 +588,55 @@ class PromptManager {
                     overlay.parentNode.removeChild(overlay);
                 }
             }, 300);
+        }
+    }
+    
+    /**
+     * Auto-trigger auto-complete to enrich the diagram with LLM suggestions
+     * @param {string} excludeModel - Model to exclude (already used for initial generation)
+     */
+    triggerAutoComplete(excludeModel = null) {
+        try {
+            // Find the auto-complete button
+            const autoCompleteBtn = document.getElementById('auto-complete-btn');
+            
+            if (!autoCompleteBtn) {
+                logger.warn('PromptManager', 'Auto-complete button not found');
+                return;
+            }
+            
+            // Check if editor is ready
+            if (!window.currentEditor || !window.currentEditor.currentSpec) {
+                logger.warn('PromptManager', 'Editor not ready for auto-complete');
+                return;
+            }
+            
+            // Store excluded model in window for auto-complete manager to read
+            if (excludeModel) {
+                window._autoCompleteExcludeModel = excludeModel;
+                logger.info('PromptManager', `Catapult triggering - excluding ${excludeModel} (already used)`);
+            } else {
+                window._autoCompleteExcludeModel = null;
+                logger.info('PromptManager', 'Triggering auto-complete with all models');
+            }
+            
+            // Count of models to run
+            const modelCount = excludeModel ? 3 : 4;
+            
+            // Show info notification
+            this.showNotification(
+                window.languageManager?.currentLanguage === 'zh'
+                    ? `正在使用${modelCount}个AI模型自动补全内容...`
+                    : `Auto-completing with ${modelCount} AI models...`,
+                'info'
+            );
+            
+            // Trigger the auto-complete button click
+            autoCompleteBtn.click();
+            
+        } catch (error) {
+            logger.error('PromptManager', 'Error triggering auto-complete', error);
+            // Don't show error to user - auto-complete is optional enhancement
         }
     }
     

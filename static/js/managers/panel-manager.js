@@ -138,7 +138,7 @@ class PanelManager {
             this.closeAll();
         });
         
-        this.logger.debug('PanelManagerV2', 'Subscribed to events');
+        this.logger.debug('PanelManager', 'Subscribed to events');
     }
     
     /**
@@ -155,7 +155,7 @@ class PanelManager {
             openCallback: config.openCallback
         };
         
-        this.logger.debug('PanelManagerV2', `Registered panel: ${name}`, {
+        this.logger.debug('PanelManager', `Registered panel: ${name}`, {
             hasElement: !!config.element,
             hasButton: !!config.button,
             hasOpenCallback: !!config.openCallback,
@@ -222,7 +222,7 @@ class PanelManager {
         // Run open callback if defined
         if (panel.openCallback) {
             try {
-                this.logger.debug('PanelManagerV2', `Running openCallback for ${name}`);
+                this.logger.debug('PanelManager', `Running openCallback for ${name}`);
                 panel.openCallback();
             } catch (error) {
                 this.logger.error('PanelManager', `Error in open callback for ${name}:`, error);
@@ -256,7 +256,7 @@ class PanelManager {
         }
         
         const elementId = panel.element.id;
-        this.logger.debug('PanelManagerV2', `Closing panel: ${name} (element: ${elementId})`);
+        this.logger.debug('PanelManager', `Closing panel: ${name} (element: ${elementId})`);
         
         // Close the panel
         if (panel.type === 'class') {
@@ -271,7 +271,7 @@ class PanelManager {
         // Run close callback if defined
         if (panel.closeCallback) {
             try {
-                this.logger.debug('PanelManagerV2', `Running closeCallback for ${name}`);
+                this.logger.debug('PanelManager', `Running closeCallback for ${name}`);
                 panel.closeCallback();
             } catch (error) {
                 this.logger.error('PanelManager', `Error in close callback for ${name}:`, error);
@@ -288,7 +288,7 @@ class PanelManager {
             isOpen: false
         });
         
-        this.logger.debug('PanelManagerV2', `✅ Panel closed: ${name}`, {
+        this.logger.debug('PanelManager', `✅ Panel closed: ${name}`, {
             elementId,
             isActuallyClosed: !this.isPanelOpen(name)
         });
@@ -304,7 +304,7 @@ class PanelManager {
             this.closePanel(name);
         });
         this.currentPanel = null;
-        this.logger.debug('PanelManagerV2', 'Closed all panels');
+        this.logger.debug('PanelManager', 'Closed all panels');
         
         this.eventBus.emit('panel:all_closed', {});
     }
@@ -314,7 +314,7 @@ class PanelManager {
      */
     closeAllExcept(exceptName) {
         const toClose = Object.keys(this.panels).filter(name => name !== exceptName);
-        this.logger.debug('PanelManagerV2', `Closing all panels except: ${exceptName}`, {
+        this.logger.debug('PanelManager', `Closing all panels except: ${exceptName}`, {
             closingPanels: toClose
         });
         

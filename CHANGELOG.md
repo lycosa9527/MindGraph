@@ -7,6 +7,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.24.0] - 2025-10-29 - User Experience Enhancements: Guidance Modal + Auto-Complete
+
+### Added
+
+- **"Catapult" Auto-Complete for Gallery Prompts** (`static/js/editor/prompt-manager.js`, `static/js/managers/toolbar/llm-autocomplete-manager.js`)
+  - **Problem**: Users generating diagrams from gallery prompts only got basic skeletons, and wastefully re-ran the same LLM
+  - **Solution**: Smart "catapult" system that uses Qwen for initial generation, then fires the OTHER 3 LLMs
+  - **How It Works**:
+    1. Prompt submitted → **Always use Qwen** (fast, reliable default)
+    2. Canvas appears immediately with Qwen's initial diagram
+    3. After 800ms → **Catapult fires DeepSeek, Kimi, Hunyuan** (excludes Qwen to avoid duplication)
+    4. User sees 3 new perspectives appear while exploring
+  - **Benefits**: 
+    - No token waste from re-running same model
+    - Users get 4 diverse perspectives total (1 initial + 3 catapulted)
+    - Faster perceived performance (show canvas immediately, enrich in background)
+    - Saves users from manually clicking "Auto Complete"
+  - **Technical**: Uses `window._autoCompleteExcludeModel` flag to pass exclusion info between managers
+
+- **Friendly Guidance Modal for Unclear Prompts** (`static/js/editor/modal-manager.js`)
+  - **Problem**: Users entering complex or unclear prompts would silently fall back to mind_map without guidance
+  - **Solution**: Created a cute, friendly modal that appears when the AI can't understand the user's intent
+  - **Features**:
+    - Beautiful animated modal with gradient styling
+    - Bilingual support (English and Chinese)
+    - Clear guidance on what makes a good prompt
+    - Helpful examples for users to follow
+    - Non-blocking UI that allows users to try again immediately
+  - **User Experience**: Instead of frustration, users get friendly, actionable feedback
+
+- **Enhanced Prompt Classification** (`agents/main_agent.py`, `prompts/main_agent.py`)
+  - **Detection Enhancement**: LLM now explicitly returns "unclear" when it can't determine user intent
+  - **Clarity Scoring**: Returns clarity level ('clear', 'unclear', 'very_unclear') and topic detection
+  - **Smart Heuristics**: Added length checks (too short < 2 words, too long > 100 words) as pre-filters
+  - **Improved Prompts**: Updated classification prompts to be more explicit about handling unclear cases
+
+### Fixed
+
+- **Catapult Race Condition** (`static/js/managers/toolbar/llm-autocomplete-manager.js`)
+  - Fixed "Diagram type changed during generation" false warnings discarding ALL 3 catapult results
+  - **Root Cause**: `mind_map` vs `mindmap` normalization mismatch on BOTH sides of comparison
+  - **Flow**: 
+    - Store `expectedDiagramType = 'mindmap'` (normalized) ✓
+    - Compare against `this.editor.diagramType = 'mind_map'` (not normalized) ❌
+    - Comparison: `'mind_map' !== 'mindmap'` → false alarm!
+  - **Fix**: Normalize BOTH sides of comparison (expected AND current) to ensure consistent matching
+  - **Impact**: All 3 catapult results (DeepSeek, Kimi, Hunyuan) now render correctly instead of being silently discarded
+  - **Before**: Users only got 2 perspectives (Qwen + first catapult result to finish)
+  - **After**: Users get all 4 perspectives (Qwen + DeepSeek + Kimi + Hunyuan)
+
+- **Catapult Button States** (`static/js/managers/toolbar/llm-progress-renderer.js`, `static/js/managers/toolbar/llm-autocomplete-manager.js`)
+  - Fixed all 4 LLM buttons showing loading state during catapult (should only show 3)
+  - Updated `setAllLLMButtonsLoading()` to accept optional models array
+  - Now only DeepSeek, Kimi, Hunyuan buttons show loading during catapult (Qwen excluded correctly)
+  - Improves UX clarity - users can see which models are actively working
+
+- **Loading Spinner Alignment** (`static/js/editor/prompt-manager.js`)
+  - Fixed loading circle animation being slightly off-center to the left
+  - Added `margin: 0 auto` for proper horizontal centering
+  - Improved visual polish for "AI正在生成图表，请稍候" loading screen
+
+### Changed
+
+- **Classification Response Structure** (`agents/main_agent.py`)
+  - Changed from returning just `diagram_type` string to returning structured dict:
+    ```python
+    {
+      'diagram_type': str,
+      'clarity': str,  # 'clear', 'unclear', 'very_unclear'
+      'has_topic': bool
+    }
+    ```
+  - Enables better error handling and user guidance throughout the system
+
+- **Prompt Manager Enhancement** (`static/js/editor/prompt-manager.js`)
+  - Detects `error_type === 'prompt_too_complex'` or `show_guidance` flag
+  - Shows modal instead of transitioning to editor
+  - Re-enables input for immediate retry
+  - Graceful fallback to notification if modal manager unavailable
+
+### Technical Details
+
+- **Modal Manager Architecture**:
+  - Singleton pattern for global access (`window.modalManager`)
+  - CSS animations for smooth fade-in/slide-in effects
+  - Overlay with backdrop click-to-close
+  - Body scroll prevention when modal is open
+  - Clean separation from notification system
+
+- **Integration Points**:
+  - Loaded in `templates/editor.html` between notification and language managers
+  - Hooked into prompt manager's error handling flow
+  - Works seamlessly with existing language toggle system
+
+---
+
+## [4.23.1] - 2025-10-29 - LLM Classifier Optimization + Dead Code Cleanup
+
+### Fixed
+
+- **LLM Classifier - Removed Work-in-Progress Types** (`agents/main_agent.py`, `prompts/main_agent.py`)
+  - **Problem**: LLM classifier included `concept_map` and 9 thinking tools that are still work in progress, causing misclassifications
+  - **Solution**: Limited classifier to only 9 working diagram types (8 thinking maps + mindmap)
+  - **Valid Types**: `circle_map`, `bubble_map`, `double_bubble_map`, `brace_map`, `bridge_map`, `tree_map`, `flow_map`, `multi_flow_map`, `mind_map`
+  - **Removed**: `concept_map`, `factor_analysis`, `three_position_analysis`, `perspective_analysis`, `goal_analysis`, `possibility_analysis`, `result_analysis`, `five_w_one_h`, `whwm_analysis`, `four_quadrant`
+  - **Impact**: LLM classifier now only suggests fully implemented diagram types, preventing user frustration with incomplete features
+
+- **PanelManager Dead Code Cleanup** (`static/js/managers/panel-manager.js`)
+  - Removed 8 instances of `PanelManagerV2` references in debug logs
+  - All logging now uses correct `PanelManager` component name
+  - Consistent with changelog documentation claiming "Removed V2 naming"
+
+### Changed
+
+- **Classification Prompts Streamlined** (`prompts/main_agent.py`)
+  - Reduced from 19 diagram types to 9 working types in classification instructions
+  - Updated examples to only reference implemented diagram types
+  - Cleaner, more focused LLM instructions for better classification accuracy
+
+---
+
 ## [4.23.0] - 2025-10-28 - Interactive Editor Refactoring: Modular Architecture (IN PROGRESS)
 
 ### Status: 🚧 IN PROGRESS (29% Complete)
@@ -674,6 +795,7 @@ class DiagramTypeOperations {
   - Registered Node Palette panel
   - Fixed `propertyPanel` → `property` naming inconsistency
   - Removed "V2" naming (renamed to `PanelManager`)
+  - Removed unnecessary warning "No openCallback defined for property" - property panel intentionally doesn't need an openCallback
 
 ### Changed
 

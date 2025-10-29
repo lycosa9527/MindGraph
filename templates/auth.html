@@ -585,6 +585,28 @@
                 const response = await fetch('/api/auth/captcha/generate');
                 const data = await response.json();
                 
+                if (!response.ok) {
+                    // Handle rate limit error with specific wait time
+                    if (response.status === 429) {
+                        // Parse wait time from backend message (e.g. "Too many attempts. Try again in 10 minutes.")
+                        let errorMsg;
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                        } else {
+                            errorMsg = currentLang === 'zh' ? '请求过于频繁，请稍后再试' : 'Too many requests, please try again later';
+                        }
+                        showAlert(errorMsg, 'error');
+                    } else {
+                        const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                        showAlert(msg, 'error');
+                    }
+                    return;
+                }
+                
                 document.getElementById('captchaImage').src = data.captcha_image;
                 document.getElementById('captchaId').value = data.captcha_id;
             } catch (error) {
@@ -598,6 +620,28 @@
             try {
                 const response = await fetch('/api/auth/captcha/generate');
                 const data = await response.json();
+                
+                if (!response.ok) {
+                    // Handle rate limit error with specific wait time
+                    if (response.status === 429) {
+                        // Parse wait time from backend message (e.g. "Too many attempts. Try again in 10 minutes.")
+                        let errorMsg;
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                        } else {
+                            errorMsg = currentLang === 'zh' ? '请求过于频繁，请稍后再试' : 'Too many requests, please try again later';
+                        }
+                        showAlert(errorMsg, 'error');
+                    } else {
+                        const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                        showAlert(msg, 'error');
+                    }
+                    return;
+                }
                 
                 document.getElementById('registerCaptchaImage').src = data.captcha_image;
                 document.getElementById('registerCaptchaId').value = data.captcha_id;
@@ -659,7 +703,21 @@
                     const redirectUrl = urlParams.get('redirect') || '/editor';
                     setTimeout(() => window.location.href = redirectUrl, 1000);
                 } else {
-                    const msg = result.detail || (currentLang === 'zh' ? '登录失败' : 'Login failed');
+                    let msg;
+                    // Handle rate limit error with specific wait time
+                    if (response.status === 429 && result.detail) {
+                        const match = result.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            msg = currentLang === 'zh' 
+                                ? `登录次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                        } else {
+                            msg = result.detail;
+                        }
+                    } else {
+                        msg = result.detail || (currentLang === 'zh' ? '登录失败' : 'Login failed');
+                    }
                     showAlert(msg, 'error');
                     refreshCaptcha(); // Refresh captcha on error
                 }
@@ -741,7 +799,18 @@
                 } else {
                     // Handle detailed validation errors (422)
                     let errorMsg;
-                    if (response.status === 422 && result.detail && Array.isArray(result.detail)) {
+                    if (response.status === 429 && result.detail) {
+                        // Handle rate limit error with specific wait time
+                        const match = result.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            errorMsg = currentLang === 'zh' 
+                                ? `注册次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                        } else {
+                            errorMsg = result.detail;
+                        }
+                    } else if (response.status === 422 && result.detail && Array.isArray(result.detail)) {
                         // Pydantic validation error format
                         const errors = result.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('; ');
                         errorMsg = currentLang === 'zh' ? `验证错误: ${errors}` : `Validation error: ${errors}`;
