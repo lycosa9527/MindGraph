@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.27.3] - 2025-11-03 - Demo Mode Display Fix
+
+### Fixed
+
+- **Demo Mode Indicator Display** (`static/js/editor/interactive-editor.js`)
+  - Fixed issue where "Demo" mode indicator was not showing in the lower right corner
+  - Now properly displays "Demo" or "Enterprise" labels when in respective modes
+  - Added server-side mode detection fallback when mode is not set in localStorage
+  - **Impact**: Users can now see their authentication mode (Demo/Enterprise) displayed in the editor UI
+
 ## [4.27.2] - 2025-11-03 - Admin Page Improvements
 
 ### Changed

@@ -657,8 +657,41 @@ class InteractiveEditor {
                 schoolNameDisplay.style.fontWeight = '500';
                 console.log('[Editor] School name displayed:', schoolName);
             } else {
-                console.warn('[Editor] No school name available. User:', user);
-                schoolNameDisplay.style.display = 'none';
+                // Check if we're in demo or enterprise mode
+                let mode = authHelper.getMode();
+                
+                // If mode not set in localStorage, try to detect from server
+                if (mode === 'standard' && typeof authHelper.detectMode === 'function') {
+                    try {
+                        mode = await authHelper.detectMode();
+                        if (mode && mode !== 'standard') {
+                            authHelper.setMode(mode);
+                        }
+                    } catch (e) {
+                        console.debug('[Editor] Could not detect mode from server:', e);
+                    }
+                }
+                
+                if (mode === 'demo') {
+                    schoolNameDisplay.textContent = 'Demo';
+                    schoolNameDisplay.style.display = 'inline-block';
+                    schoolNameDisplay.style.marginRight = '12px';
+                    schoolNameDisplay.style.color = '#ffffff';
+                    schoolNameDisplay.style.fontSize = '12px';
+                    schoolNameDisplay.style.fontWeight = '500';
+                    console.log('[Editor] Demo mode');
+                } else if (mode === 'enterprise') {
+                    schoolNameDisplay.textContent = 'Enterprise';
+                    schoolNameDisplay.style.display = 'inline-block';
+                    schoolNameDisplay.style.marginRight = '12px';
+                    schoolNameDisplay.style.color = '#ffffff';
+                    schoolNameDisplay.style.fontSize = '12px';
+                    schoolNameDisplay.style.fontWeight = '500';
+                    console.log('[Editor] Enterprise mode');
+                } else {
+                    console.warn('[Editor] No school name available. User:', user);
+                    schoolNameDisplay.style.display = 'none';
+                }
             }
         } catch (error) {
             console.error('[Editor] Error updating school name display:', error);
