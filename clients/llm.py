@@ -82,7 +82,14 @@ class QwenClient:
                 async with session.post(self.api_url, json=payload, headers=headers) as response:
                     if response.status == 200:
                         data = await response.json()
-                        return data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        # Extract usage data (Dashscope uses 'prompt_tokens'/'completion_tokens')
+                        usage = data.get('usage', {})
+                        # Return both content and usage for token tracking
+                        return {
+                            'content': content,
+                            'usage': usage  # Contains prompt_tokens, completion_tokens, total_tokens
+                        }
                     else:
                         error_text = await response.text()
                         logger.error(f"Qwen API error {response.status}: {error_text}")
@@ -152,6 +159,7 @@ class QwenClient:
                         raise Exception(f"Qwen stream error: {response.status}")
                     
                     # Read SSE stream line by line
+                    last_usage = None
                     async for line_bytes in response.content:
                         line = line_bytes.decode('utf-8').strip()
                         
@@ -162,19 +170,32 @@ class QwenClient:
                         
                         # Handle [DONE] signal
                         if data_content.strip() == '[DONE]':
+                            # Yield usage data as final chunk
+                            if last_usage:
+                                yield {'type': 'usage', 'usage': last_usage}
                             break
                         
                         try:
                             data = json.loads(data_content)
+                            
+                            # Check for usage data (in final chunk)
+                            if 'usage' in data:
+                                last_usage = data.get('usage', {})
+                                # Continue to also yield content if present
+                            
                             # Extract content delta from streaming response
                             delta = data.get('choices', [{}])[0].get('delta', {})
                             content = delta.get('content', '')
                             
                             if content:
-                                yield content
+                                yield {'type': 'token', 'content': content}
                         
                         except json.JSONDecodeError:
                             continue
+                    
+                    # If we didn't get [DONE] but stream ended, yield usage if we have it
+                    if last_usage:
+                        yield {'type': 'usage', 'usage': last_usage}
         
         except Exception as e:
             logger.error(f"Qwen streaming error: {e}")
@@ -238,7 +259,12 @@ class DeepSeekClient:
                         data = await response.json()
                         content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
                         logger.debug(f"DeepSeek response length: {len(content)} chars")
-                        return content
+                        # Extract usage data
+                        usage = data.get('usage', {})
+                        return {
+                            'content': content,
+                            'usage': usage
+                        }
                     else:
                         error_text = await response.text()
                         logger.error(f"DeepSeek API error {response.status}: {error_text}")
@@ -305,6 +331,7 @@ class DeepSeekClient:
                         logger.error(f"DeepSeek stream error {response.status}: {error_text}")
                         raise Exception(f"DeepSeek stream error: {response.status}")
                     
+                    last_usage = None
                     async for line_bytes in response.content:
                         line = line_bytes.decode('utf-8').strip()
                         
@@ -314,18 +341,30 @@ class DeepSeekClient:
                         data_content = line[6:]
                         
                         if data_content.strip() == '[DONE]':
+                            # Yield usage data as final chunk
+                            if last_usage:
+                                yield {'type': 'usage', 'usage': last_usage}
                             break
                         
                         try:
                             data = json.loads(data_content)
+                            
+                            # Check for usage data (in final chunk)
+                            if 'usage' in data:
+                                last_usage = data.get('usage', {})
+                            
                             delta = data.get('choices', [{}])[0].get('delta', {})
                             content = delta.get('content', '')
                             
                             if content:
-                                yield content
+                                yield {'type': 'token', 'content': content}
                         
                         except json.JSONDecodeError:
                             continue
+                    
+                    # If we didn't get [DONE] but stream ended, yield usage if we have it
+                    if last_usage:
+                        yield {'type': 'usage', 'usage': last_usage}
         
         except Exception as e:
             logger.error(f"DeepSeek streaming error: {e}")
@@ -375,7 +414,12 @@ class KimiClient:
                         data = await response.json()
                         content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
                         logger.debug(f"Kimi response length: {len(content)} chars")
-                        return content
+                        # Extract usage data
+                        usage = data.get('usage', {})
+                        return {
+                            'content': content,
+                            'usage': usage
+                        }
                     else:
                         error_text = await response.text()
                         logger.error(f"Kimi API error {response.status}: {error_text}")
@@ -442,6 +486,7 @@ class KimiClient:
                         logger.error(f"Kimi stream error {response.status}: {error_text}")
                         raise Exception(f"Kimi stream error: {response.status}")
                     
+                    last_usage = None
                     async for line_bytes in response.content:
                         line = line_bytes.decode('utf-8').strip()
                         
@@ -451,18 +496,30 @@ class KimiClient:
                         data_content = line[6:]
                         
                         if data_content.strip() == '[DONE]':
+                            # Yield usage data as final chunk
+                            if last_usage:
+                                yield {'type': 'usage', 'usage': last_usage}
                             break
                         
                         try:
                             data = json.loads(data_content)
+                            
+                            # Check for usage data (in final chunk)
+                            if 'usage' in data:
+                                last_usage = data.get('usage', {})
+                            
                             delta = data.get('choices', [{}])[0].get('delta', {})
                             content = delta.get('content', '')
                             
                             if content:
-                                yield content
+                                yield {'type': 'token', 'content': content}
                         
                         except json.JSONDecodeError:
                             continue
+                    
+                    # If we didn't get [DONE] but stream ended, yield usage if we have it
+                    if last_usage:
+                        yield {'type': 'usage', 'usage': last_usage}
         
         except Exception as e:
             logger.error(f"Kimi streaming error: {e}")
@@ -524,7 +581,18 @@ class HunyuanClient:
             
             if content:
                 logger.debug(f"Hunyuan response length: {len(content)} chars")
-                return content
+                # Extract usage data (OpenAI SDK uses 'usage' attribute)
+                usage = {}
+                if hasattr(completion, 'usage') and completion.usage:
+                    usage = {
+                        'prompt_tokens': completion.usage.prompt_tokens if hasattr(completion.usage, 'prompt_tokens') else 0,
+                        'completion_tokens': completion.usage.completion_tokens if hasattr(completion.usage, 'completion_tokens') else 0,
+                        'total_tokens': completion.usage.total_tokens if hasattr(completion.usage, 'total_tokens') else 0
+                    }
+                return {
+                    'content': content,
+                    'usage': usage
+                }
             else:
                 logger.error("Hunyuan API returned empty content")
                 raise Exception("Hunyuan API returned empty content")
@@ -562,20 +630,34 @@ class HunyuanClient:
             
             logger.debug(f"Hunyuan stream API request: {self.model_name} (temp: {temperature})")
             
-            # Use OpenAI SDK's streaming
+            # Use OpenAI SDK's streaming with usage tracking
             stream = await self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                stream=True  # Enable streaming
+                stream=True,  # Enable streaming
+                stream_options={"include_usage": True}  # Request usage in stream
             )
             
+            last_usage = None
             async for chunk in stream:
+                # Check for usage data (usually in last chunk)
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    last_usage = {
+                        'prompt_tokens': chunk.usage.prompt_tokens if hasattr(chunk.usage, 'prompt_tokens') else 0,
+                        'completion_tokens': chunk.usage.completion_tokens if hasattr(chunk.usage, 'completion_tokens') else 0,
+                        'total_tokens': chunk.usage.total_tokens if hasattr(chunk.usage, 'total_tokens') else 0
+                    }
+                
                 if chunk.choices:
                     delta = chunk.choices[0].delta
                     if delta.content:
-                        yield delta.content
+                        yield {'type': 'token', 'content': delta.content}
+            
+            # Yield usage data as final chunk
+            if last_usage:
+                yield {'type': 'usage', 'usage': last_usage}
         
         except Exception as e:
             logger.error(f"Hunyuan streaming error: {e}")

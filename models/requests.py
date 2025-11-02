@@ -21,6 +21,7 @@ class GenerateRequest(BaseModel):
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     models: Optional[List[str]] = Field(None, description="List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'hunyuan'])")
     dimension_preference: Optional[str] = Field(None, description="Optional dimension preference for certain diagrams")
+    request_type: Optional[str] = Field('diagram_generation', description="Request type for token tracking: 'diagram_generation' or 'autocomplete'")
     
     @field_validator('diagram_type', mode='before')
     @classmethod
@@ -500,6 +501,26 @@ class DemoPasskeyRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "passkey": "888888"
+            }
+        }
+
+
+class FeedbackRequest(BaseModel):
+    """Request model for /api/feedback endpoint"""
+    message: str = Field(..., min_length=1, max_length=5000, description="Feedback message content")
+    captcha_id: str = Field(..., description="Captcha session ID from /api/auth/captcha/generate")
+    captcha: str = Field(..., min_length=4, max_length=4, description="User-entered captcha code")
+    user_id: Optional[str] = Field(None, description="User ID if available")
+    user_name: Optional[str] = Field(None, description="User name if available")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "The diagram export feature is not working properly.",
+                "captcha_id": "uuid-here",
+                "captcha": "ABCD",
+                "user_id": "user123",
+                "user_name": "John Doe"
             }
         }
 

@@ -75,13 +75,29 @@ class MindMapAgent(BaseAgent):
         self._font_size_cache.clear()
         self._node_height_cache.clear()
     
-    async def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def generate_graph(
+        self, 
+        prompt: str, 
+        language: str = "en",
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Generate a mind map from a prompt."""
         try:
             # Clear caches at the start of each generation
             self._clear_caches()
             # Generate the initial mind map specification
-            spec = await self._generate_mind_map_spec(prompt, language)
+            spec = await self._generate_mind_map_spec(
+                prompt, 
+                language,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
             if not spec:
                 return {
                     'success': False,
@@ -114,7 +130,16 @@ class MindMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    async def _generate_mind_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    async def _generate_mind_map_spec(
+        self, 
+        prompt: str, 
+        language: str,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
         """Generate the mind map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -136,7 +161,13 @@ class MindMapAgent(BaseAgent):
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=1.0
+                temperature=1.0,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='mind_map'
             )
             
             if not response:

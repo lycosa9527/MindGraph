@@ -20,7 +20,17 @@ class BridgeMapAgent(BaseAgent):
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "bridge_map"
         
-    async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
+    async def generate_graph(
+        self, 
+        prompt: str, 
+        language: str = "en", 
+        dimension_preference: str = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Generate a bridge map from a prompt.
         
@@ -28,6 +38,10 @@ class BridgeMapAgent(BaseAgent):
             prompt: User's description of what analogy they want to show
             language: Language for generation ("en" or "zh")
             dimension_preference: Optional analogy relationship pattern preference
+            user_id: User ID for token tracking
+            organization_id: Organization ID for token tracking
+            request_type: Request type for token tracking
+            endpoint_path: Endpoint path for token tracking
             
         Returns:
             Dict containing success status and generated spec
@@ -36,7 +50,15 @@ class BridgeMapAgent(BaseAgent):
             logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
             # Generate the bridge map specification
-            spec = await self._generate_bridge_map_spec(prompt, language, dimension_preference)
+            spec = await self._generate_bridge_map_spec(
+                prompt, 
+                language, 
+                dimension_preference,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
             
             if not spec:
                 return {
@@ -119,7 +141,17 @@ class BridgeMapAgent(BaseAgent):
         except Exception as e:
             return False, f"Basic validation error: {str(e)}"
     
-    async def _generate_bridge_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
+    async def _generate_bridge_map_spec(
+        self, 
+        prompt: str, 
+        language: str, 
+        dimension_preference: str = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
         """Generate the bridge map specification using LLM."""
         try:
             logger.debug(f"=== BRIDGE MAP SPEC GENERATION START ===")
@@ -160,7 +192,13 @@ class BridgeMapAgent(BaseAgent):
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE
+                temperature=config.LLM_TEMPERATURE,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='bridge_map'
             )
             
             logger.debug(f"LLM response received: {response[:500] if response else 'None'}...")

@@ -216,7 +216,6 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
             .text(n.text);
     });
 
-    // Watermark removed from canvas display - will be added during PNG export only
 }
 
 function renderFlowMap(spec, theme = null, dimensions = null) {
@@ -656,7 +655,6 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         // DON'T set explicit width/height on container - let CSS handle it (100% fill)
     }
     
-    // Watermark removed from canvas display - will be added during PNG export only
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
@@ -1333,7 +1331,6 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('cursor', 'pointer')
         .text(spec.event);
     
-    // Watermark removed from canvas display - will be added during PNG export only
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);

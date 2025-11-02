@@ -14,12 +14,15 @@ class TextToolbarStateManager {
     constructor(eventBus, stateManager, logger, editor, toolbarManager) {
         this.eventBus = eventBus;
         this.stateManager = stateManager;
-        this.logger = logger || console;
+        // Ensure logger is always valid - check multiple fallbacks
+        this.logger = logger || window.logger || window.frontendLogger || console;
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements
         
         this.setupEventListeners();
-        this.logger.info('TextToolbarStateManager', 'Text & Toolbar State Manager initialized');
+        if (this.logger && typeof this.logger.info === 'function') {
+            this.logger.info('TextToolbarStateManager', 'Text & Toolbar State Manager initialized');
+        }
     }
     
     /**
@@ -47,7 +50,9 @@ class TextToolbarStateManager {
             this.playNotificationSound();
         });
         
-        this.logger.debug('TextToolbarStateManager', 'Event Bus listeners registered');
+        if (this.logger && typeof this.logger.debug === 'function') {
+            this.logger.debug('TextToolbarStateManager', 'Event Bus listeners registered');
+        }
     }
     
     /**
@@ -55,7 +60,37 @@ class TextToolbarStateManager {
      * EXTRACTED FROM: toolbar-manager.js lines 731-787
      */
     applyText(silent = false) {
-        if (this.toolbarManager.currentSelection.length === 0) return;
+        // Safety check: ensure logger is available
+        if (!this.logger) {
+            this.logger = window.logger || window.frontendLogger || console;
+        }
+        
+        // ARCHITECTURE: Use State Manager as source of truth for selection
+        // Fallback to toolbarManager.currentSelection if stateManager not available
+        let selectedNodes = [];
+        if (this.stateManager && typeof this.stateManager.getDiagramState === 'function') {
+            const diagramState = this.stateManager.getDiagramState();
+            selectedNodes = diagramState?.selectedNodes || [];
+        } else if (this.toolbarManager?.currentSelection) {
+            // Fallback to toolbarManager local state if stateManager not available
+            selectedNodes = this.toolbarManager.currentSelection;
+        }
+        
+        // Validate selection exists
+        if (!selectedNodes || selectedNodes.length === 0) {
+            if (this.logger && typeof this.logger.debug === 'function') {
+                this.logger.debug('TextToolbarStateManager', 'Cannot apply text: no selection');
+            }
+            return;
+        }
+        
+        // Safety check: ensure propText is available
+        if (!this.toolbarManager.propText) {
+            if (this.logger && typeof this.logger.debug === 'function') {
+                this.logger.debug('TextToolbarStateManager', 'Cannot apply text: propText is null');
+            }
+            return;
+        }
         
         const newText = this.toolbarManager.propText.value.trim();
         if (!newText) {
@@ -64,15 +99,19 @@ class TextToolbarStateManager {
             return;
         }
         
-        this.logger.debug('TextToolbarStateManager', 'Applying text to selected nodes', {
-            count: this.toolbarManager.currentSelection.length
-        });
+        if (this.logger && typeof this.logger.debug === 'function') {
+            this.logger.debug('TextToolbarStateManager', 'Applying text to selected nodes', {
+                count: selectedNodes.length
+            });
+        }
         
-        this.toolbarManager.currentSelection.forEach(nodeId => {
+        selectedNodes.forEach(nodeId => {
             // Get the shape node
             const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (shapeElement.empty()) {
-                this.logger.warn('TextToolbarStateManager', `Node ${nodeId} not found`);
+                if (this.logger && typeof this.logger.warn === 'function') {
+                    this.logger.warn('TextToolbarStateManager', `Node ${nodeId} not found`);
+                }
                 return;
             }
             
@@ -102,7 +141,9 @@ class TextToolbarStateManager {
             if (this.editor && typeof this.editor.updateNodeText === 'function') {
                 this.editor.updateNodeText(nodeId, shapeNode, textNode, newText);
             } else {
-                this.logger.error('TextToolbarStateManager', 'Editor updateNodeText method not available');
+                if (this.logger && typeof this.logger.error === 'function') {
+                    this.logger.error('TextToolbarStateManager', 'Editor updateNodeText method not available');
+                }
             }
         });
         
@@ -172,7 +213,9 @@ class TextToolbarStateManager {
         if (window.notificationManager) {
             window.notificationManager.show(message, type);
         } else {
-            this.logger.error('TextToolbarStateManager', 'NotificationManager not available');
+            if (this.logger && typeof this.logger.error === 'function') {
+                this.logger.error('TextToolbarStateManager', 'NotificationManager not available');
+            }
         }
     }
     
@@ -204,10 +247,14 @@ class TextToolbarStateManager {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
             
-            this.logger.debug('TextToolbarStateManager', 'Notification sound played');
+            if (this.logger && typeof this.logger.debug === 'function') {
+                this.logger.debug('TextToolbarStateManager', 'Notification sound played');
+            }
         } catch (error) {
             // Silently fail if audio is not supported or blocked
-            this.logger.debug('TextToolbarStateManager', 'Could not play notification sound', error);
+            if (this.logger && typeof this.logger.debug === 'function') {
+                this.logger.debug('TextToolbarStateManager', 'Could not play notification sound', error);
+            }
         }
     }
     
@@ -215,7 +262,9 @@ class TextToolbarStateManager {
      * Clean up resources
      */
     destroy() {
-        this.logger.debug('TextToolbarStateManager', 'Destroying');
+        if (this.logger && typeof this.logger.debug === 'function') {
+            this.logger.debug('TextToolbarStateManager', 'Destroying');
+        }
         
         // Remove Event Bus listeners
         this.eventBus.off('text:apply_requested');

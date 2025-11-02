@@ -18,6 +18,22 @@ class NodeCounterFeatureModeManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements and validator
         
+        // Store callback references for proper cleanup
+        this.callbacks = {
+            setupObserver: () => this.setupNodeCounterObserver(),
+            updateCounter: () => this.updateNodeCount(),
+            validateSession: (data) => {
+                const isValid = this.validateToolbarSession(data.operation);
+                this.eventBus.emit('session:validated', { isValid, operation: data.operation });
+            },
+            validateLearningMode: () => {
+                const result = this.validateLearningMode();
+                this.eventBus.emit('learning_mode:validated', { result });
+            },
+            startLearningMode: () => this.handleLearningMode(),
+            toggleThinkingMode: () => this.handleThinkingMode()
+        };
+        
         this.setupEventListeners();
         this.logger.info('NodeCounterFeatureModeManager', 'Node Counter & Feature Mode Manager initialized');
     }
@@ -26,31 +42,13 @@ class NodeCounterFeatureModeManager {
      * Setup Event Bus listeners
      */
     setupEventListeners() {
-        this.eventBus.on('node_counter:setup_observer', () => {
-            this.setupNodeCounterObserver();
-        });
-        
-        this.eventBus.on('node_counter:update_requested', () => {
-            this.updateNodeCount();
-        });
-        
-        this.eventBus.on('session:validate_requested', (data) => {
-            const isValid = this.validateToolbarSession(data.operation);
-            this.eventBus.emit('session:validated', { isValid, operation: data.operation });
-        });
-        
-        this.eventBus.on('learning_mode:validate', () => {
-            const result = this.validateLearningMode();
-            this.eventBus.emit('learning_mode:validated', { result });
-        });
-        
-        this.eventBus.on('learning_mode:start_requested', () => {
-            this.handleLearningMode();
-        });
-        
-        this.eventBus.on('thinking_mode:toggle_requested', () => {
-            this.handleThinkingMode();
-        });
+        // Register with stored callback references
+        this.eventBus.on('node_counter:setup_observer', this.callbacks.setupObserver);
+        this.eventBus.on('node_counter:update_requested', this.callbacks.updateCounter);
+        this.eventBus.on('session:validate_requested', this.callbacks.validateSession);
+        this.eventBus.on('learning_mode:validate', this.callbacks.validateLearningMode);
+        this.eventBus.on('learning_mode:start_requested', this.callbacks.startLearningMode);
+        this.eventBus.on('thinking_mode:toggle_requested', this.callbacks.toggleThinkingMode);
         
         this.logger.debug('NodeCounterFeatureModeManager', 'Event Bus listeners registered');
     }
@@ -283,34 +281,39 @@ class NodeCounterFeatureModeManager {
             return;
         }
         
-        // Panel not open AND diagram type supported - open it
-        this.logger.info('NodeCounterFeatureModeManager', 'Opening ThinkGuide panel...');
+        // Panel not open AND diagram type supported - start thinking mode
+        this.logger.info('NodeCounterFeatureModeManager', 'Starting ThinkGuide mode...');
         
-        if (window.panelManager) {
+        // ThinkGuide manager is registered as window.currentEditor.thinkGuide
+        const thinkGuideManager = window.currentEditor?.thinkGuide;
+        
+        if (thinkGuideManager) {
             try {
-                // Emit event to initialize ThinkGuide manager if needed
-                if (window.thinkGuideManager) {
-                    window.thinkGuideManager.setDiagramContext(this.editor);
+                // Get current diagram data
+                const diagramData = this.editor?.getCurrentDiagramData();
+                if (!diagramData) {
+                    this.logger.error('NodeCounterFeatureModeManager', 'No diagram data available');
+                    return;
                 }
                 
-                // Open the panel (which will trigger ThinkGuide initialization)
-                await window.panelManager.openThinkGuidePanel();
+                // Start thinking mode (this opens panel + sends greeting + preloads palette)
+                await thinkGuideManager.startThinkingMode(diagramType, diagramData);
                 
-                this.logger.info('NodeCounterFeatureModeManager', 'ThinkGuide panel opened successfully', {
+                this.logger.info('NodeCounterFeatureModeManager', 'ThinkGuide mode started successfully', {
                     diagramType: diagramType,
                     panelState: thinkPanel?.classList.contains('collapsed') ? 'collapsed' : 'open'
                 });
                 
             } catch (error) {
-                this.logger.error('NodeCounterFeatureModeManager', 'Failed to open ThinkGuide panel', error);
+                this.logger.error('NodeCounterFeatureModeManager', 'Failed to start ThinkGuide mode', error);
                 const lang = window.languageManager?.getCurrentLanguage() || 'en';
                 const message = lang === 'zh' 
-                    ? '无法打开思考导航面板，请重试' 
-                    : 'Failed to open ThinkGuide panel. Please try again.';
+                    ? '无法启动思考导航，请重试' 
+                    : 'Failed to start ThinkGuide. Please try again.';
                 this.toolbarManager.showNotification(message, 'error');
             }
         } else {
-            this.logger.error('NodeCounterFeatureModeManager', 'PanelManager not available');
+            this.logger.error('NodeCounterFeatureModeManager', 'ThinkGuideManager not available at window.currentEditor.thinkGuide');
         }
     }
     
@@ -320,15 +323,18 @@ class NodeCounterFeatureModeManager {
     destroy() {
         this.logger.debug('NodeCounterFeatureModeManager', 'Destroying');
         
-        // Remove Event Bus listeners
-        this.eventBus.off('node_counter:setup_observer');
-        this.eventBus.off('node_counter:update_requested');
-        this.eventBus.off('session:validate_requested');
-        this.eventBus.off('learning_mode:validate');
-        this.eventBus.off('learning_mode:start_requested');
-        this.eventBus.off('thinking_mode:toggle_requested');
+        // Remove Event Bus listeners using stored callback references
+        this.eventBus.off('node_counter:setup_observer', this.callbacks.setupObserver);
+        this.eventBus.off('node_counter:update_requested', this.callbacks.updateCounter);
+        this.eventBus.off('session:validate_requested', this.callbacks.validateSession);
+        this.eventBus.off('learning_mode:validate', this.callbacks.validateLearningMode);
+        this.eventBus.off('learning_mode:start_requested', this.callbacks.startLearningMode);
+        this.eventBus.off('thinking_mode:toggle_requested', this.callbacks.toggleThinkingMode);
+        
+        this.logger.debug('NodeCounterFeatureModeManager', 'Event listeners successfully removed');
         
         // Nullify references
+        this.callbacks = null;
         this.eventBus = null;
         this.stateManager = null;
         this.editor = null;

@@ -29,11 +29,29 @@ class TreeMapAgent(BaseAgent):
         super().__init__(model=model)
         self.diagram_type = "tree_map"
     
-    async def generate_graph(self, prompt: str, language: str = "en", dimension_preference: str = None) -> Dict[str, Any]:
+    async def generate_graph(
+        self, 
+        prompt: str, 
+        language: str = "en", 
+        dimension_preference: str = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Generate a tree map from a prompt."""
         try:
             # Generate the initial tree map specification
-            spec = await self._generate_tree_map_spec(prompt, language, dimension_preference)
+            spec = await self._generate_tree_map_spec(
+                prompt, 
+                language, 
+                dimension_preference,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
             if not spec:
                 return {
                     'success': False,
@@ -72,7 +90,17 @@ class TreeMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    async def _generate_tree_map_spec(self, prompt: str, language: str, dimension_preference: str = None) -> Optional[Dict]:
+    async def _generate_tree_map_spec(
+        self, 
+        prompt: str, 
+        language: str, 
+        dimension_preference: str = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -104,7 +132,13 @@ class TreeMapAgent(BaseAgent):
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE
+                temperature=config.LLM_TEMPERATURE,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='tree_map'
             )
             
             if not response:

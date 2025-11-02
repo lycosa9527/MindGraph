@@ -15,7 +15,8 @@ class ThinkGuideManager {
         this.eventBus = eventBus;
         this.stateManager = stateManager;
         this.sseClient = sseClient;
-        this.logger = logger;
+        // Ensure logger is always valid - check multiple fallbacks
+        this.logger = logger || window.logger || window.frontendLogger || console;
         
         // DOM elements
         this.panel = null;
@@ -32,17 +33,44 @@ class ThinkGuideManager {
         this.sessionId = null;
         this.diagramSessionId = null;
         this.currentAbortController = null;
-        this.language = 'en';
+        // Initialize language from languageManager if available
+        this.language = window.languageManager?.getCurrentLanguage() || 'en';
         
         // Markdown renderer
         this.md = window.markdownit ? window.markdownit({
             html: false,
             linkify: true,
-            breaks: false
+            breaks: false,
+            // Disable typographer to prevent automatic character replacement
+            // This prevents ":)" from being converted to "：）" etc.
+            typographer: false
         }) : null;
         
         // Labels (i18n)
         this.labels = this._getLabels();
+        
+        // Store callback references for proper cleanup
+        this.callbacks = {
+            panelOpen: (data) => {
+                if (data.panel === 'thinkguide') {
+                    this.openPanel();
+                }
+            },
+            panelClose: (data) => {
+                if (data.panel === 'thinkguide') {
+                    this.closePanel();
+                }
+            },
+            sendMessage: (data) => {
+                if (data.message) {
+                    this.inputArea.value = data.message;
+                    this.sendMessage();
+                }
+            },
+            explainRequested: (data) => {
+                this.explainConflict(data.conflictId);
+            }
+        };
         
         // Initialize
         this.init();
@@ -85,34 +113,19 @@ class ThinkGuideManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for panel open requests
-        this.eventBus.on('panel:open_requested', (data) => {
-            if (data.panel === 'thinkguide') {
-                this.openPanel();
-            }
-        });
+        // Listen for panel open requests - use stored callback
+        this.eventBus.on('panel:open_requested', this.callbacks.panelOpen);
         
-        // Listen for panel close requests
-        this.eventBus.on('panel:close_requested', (data) => {
-            if (data.panel === 'thinkguide') {
-                this.closePanel();
-            }
-        });
+        // Listen for panel close requests - use stored callback
+        this.eventBus.on('panel:close_requested', this.callbacks.panelClose);
         
-        // Listen for message send requests (from voice agent)
-        this.eventBus.on('thinkguide:send_message', (data) => {
-            if (data.message) {
-                this.inputArea.value = data.message;
-                this.sendMessage();
-            }
-        });
+        // Listen for message send requests (from voice agent) - use stored callback
+        this.eventBus.on('thinkguide:send_message', this.callbacks.sendMessage);
         
-        // Listen for explain requests (from voice agent)
-        this.eventBus.on('thinkguide:explain_requested', (data) => {
-            this.explainConflict(data.conflictId);
-        });
+        // Listen for explain requests (from voice agent) - use stored callback
+        this.eventBus.on('thinkguide:explain_requested', this.callbacks.explainRequested);
         
-        this.logger.debug('ThinkGuideManager', 'Subscribed to events');
+        this.logger.debug('ThinkGuideManager', 'Event listeners registered');
     }
     
     /**
@@ -173,60 +186,122 @@ class ThinkGuideManager {
             window.panelManager.openThinkGuidePanel();
         }
         
+        // CATAPULT PRE-LOADING: Pre-load Node Palette data as soon as panel opens
+        // This ensures data is ready when user clicks Node Palette button
+        const rawDiagramData = window.currentEditor?.getCurrentDiagramData();
+        if (rawDiagramData && this.diagramType) {
+            this.preloadNodePalette(rawDiagramData).catch(err => {
+                this.logger.error('ThinkGuideManager', 'Catapult pre-load failed (non-critical)', err);
+            });
+        }
+        
         this.logger.info('ThinkGuideManager', 'Panel opened');
     }
     
     /**
      * Close ThinkGuide panel
+     * 
+     * @param {Object} options - Options for closing
+     * @param {boolean} options._internal - If true, called from PanelManager (skip PanelManager call)
      */
-    closePanel() {
-        // Stop any active streaming
+    closePanel(options = {}) {
+        if (!this.panel) return;
+        
+        // Check if already closed (prevent duplicate operations)
+        if (this.panel.classList.contains('collapsed')) {
+            this.logger.debug('ThinkGuideManager', 'Panel already closed, skipping');
+            return;
+        }
+        
+        const source = options._internal ? 'panel_manager' : 'user';
+        this.logger.info('ThinkGuideManager', 'Closing panel', { source });
+        
+        // Stop any active streaming (always do this, regardless of source)
         if (this.currentAbortController) {
             this.stopStreaming();
         }
         
-        // Update state
-        this.stateManager.closePanel('thinkguide');
-        
-        // Hide panel via panel manager
-        if (window.panelManager) {
-            window.panelManager.closeThinkGuidePanel();
+        // If called from PanelManager, just do internal cleanup
+        // Otherwise, ask PanelManager to close (which will call us back with _internal flag)
+        if (options._internal) {
+            // Internal call from PanelManager - do internal cleanup
+            // PanelManager will handle DOM and state updates
+            // Update our own state
+            this.stateManager.closePanel('thinkguide');
+            this.logger.info('ThinkGuideManager', 'Panel closed', { source });
+            
+        } else {
+            // User-initiated close - delegate to PanelManager
+            // PanelManager will call this method again with _internal: true
+            // to allow us to do cleanup (stop streaming, update state)
+            // Don't do cleanup here - wait for PanelManager's callback
+            if (window.panelManager) {
+                window.panelManager.closeThinkGuidePanel();
+            } else {
+                // Fallback if PanelManager not available
+                this.stateManager.closePanel('thinkguide');
+                if (this.panel) {
+                    this.panel.classList.add('collapsed');
+                }
+            }
+            // Note: PanelManager will call this method again with _internal: true,
+            // which will handle the actual cleanup (stop streaming, update state)
         }
-        
-        this.logger.info('ThinkGuideManager', 'Panel closed');
     }
     
     /**
      * Start thinking mode for current diagram
      */
     async startThinkingMode(diagramType, diagramData) {
-        this.diagramSessionId = window.currentEditor?.sessionId;
         this.diagramType = diagramType;
         
-        // Open panel first
+        // Sync language when starting (user may have changed it)
+        this.language = window.languageManager?.getCurrentLanguage() || this.language;
+        
+        // Check if we're opening for a new diagram session (following MindMate pattern)
+        const currentDiagramSessionId = window.currentEditor?.sessionId;
+        const isNewDiagramSession = !this.diagramSessionId || this.diagramSessionId !== currentDiagramSessionId;
+        
+        // Check if conversation already exists (has messages)
+        const hasExistingMessages = this.messagesContainer && 
+                                    this.messagesContainer.children.length > 0;
+        
+        // Open panel first (this will trigger catapult pre-loading automatically)
         await this.openPanel();
         
-        // Clear messages
-        if (this.messagesContainer) {
-            this.messagesContainer.innerHTML = '';
-        }
-        
-        // CATAPULT PRE-LOADING: Get raw diagram data for Node Palette
-        // Node Palette needs raw spec, not normalized data
-        const rawDiagramData = window.currentEditor?.getCurrentDiagramData();
-        if (rawDiagramData) {
-            this.preloadNodePalette(rawDiagramData).catch(err => {
-                this.logger.error('ThinkGuideManager', 'Catapult pre-load failed (non-critical)', err);
+        // Only clear messages and start stream if NEW diagram session OR no existing messages
+        if (isNewDiagramSession || !hasExistingMessages) {
+            // New diagram or first time - start fresh
+            if (isNewDiagramSession) {
+                this.logger.info('ThinkGuideManager', 'New diagram session detected', {
+                    oldSession: this.diagramSessionId,
+                    newSession: currentDiagramSessionId
+                });
+                this.diagramSessionId = currentDiagramSessionId;
+            }
+            
+            // Clear messages
+            if (this.messagesContainer) {
+                this.messagesContainer.innerHTML = '';
+            }
+            
+            // Start streaming analysis (backend will send greeting)
+            await this.streamAnalysis(diagramData, true);
+            
+            this.logger.info('ThinkGuideManager', 'Thinking mode started', {
+                diagramType,
+                language: this.language,
+                isNewSession: isNewDiagramSession
             });
+        } else {
+            // Same diagram session with existing conversation - keep it alive
+            this.logger.info('ThinkGuideManager', 'Resuming existing conversation', {
+                diagramType,
+                messageCount: this.messagesContainer.children.length,
+                diagramSessionId: this.diagramSessionId
+            });
+            // Panel already opened above - conversation preserved ✅
         }
-        
-        // Start streaming analysis (backend will send greeting)
-        await this.streamAnalysis(diagramData, true);
-        
-        this.logger.info('ThinkGuideManager', 'Thinking mode started', {
-            diagramType,
-            language: this.language
-        });
     }
     
     /**
@@ -552,8 +627,8 @@ class ThinkGuideManager {
             });
             
             // Call Node Palette Manager's preload method
-            if (window.nodePaletteManager && window.nodePaletteManager.preload) {
-                await window.nodePaletteManager.preload(
+            if (window.currentEditor?.nodePalette && window.currentEditor.nodePalette.preload) {
+                await window.currentEditor.nodePalette.preload(
                     centerTopic,
                     diagramSpec,
                     this.sessionId,
@@ -619,8 +694,17 @@ class ThinkGuideManager {
         this.eventBus.emit('panel:open_requested', { panel: 'nodePalette' });
         
         // Start Node Palette Manager with raw spec (backend expects raw format)
-        if (window.nodePaletteManager) {
-            window.nodePaletteManager.start(
+        if (window.currentEditor?.nodePalette) {
+            const nodePalette = window.currentEditor.nodePalette;
+            
+            // Check if Node Palette already has nodes for this session (user returning)
+            // Check BEFORE calling start() because start() may modify sessionId
+            const isReturningSession = nodePalette.sessionId === this.sessionId && 
+                                       nodePalette.nodes && 
+                                       nodePalette.nodes.length > 0;
+            
+            // Call start() - this will preserve nodes if same session, or clear if new session
+            await nodePalette.start(
                 centerTopic,
                 diagramSpec,  // Send raw spec format, not normalized
                 this.sessionId,
@@ -628,11 +712,19 @@ class ThinkGuideManager {
                 this.diagramType
             );
             
-            // Add confirmation message
-            const msg = this.language === 'zh' ? 
-                '正在打开节点选择板，AI将为您头脑风暴更多想法...' : 
-                'Opening Node Palette, AI will brainstorm more ideas for you...';
-            this.addSystemMessage(msg);
+            // Only show message if it's a NEW session (first time opening)
+            // If returning to existing session with nodes, don't spam the message
+            if (!isReturningSession) {
+                const msg = this.language === 'zh' ? 
+                    '正在打开节点选择板，AI将为您头脑风暴更多想法...' : 
+                    'Opening Node Palette, AI will brainstorm more ideas for you...';
+                this.addSystemMessage(msg);
+            } else {
+                this.logger.debug('ThinkGuideManager', 'Node Palette returning session - skipping opening message', {
+                    sessionId: this.sessionId,
+                    existingNodes: nodePalette.nodes.length
+                });
+            }
         } else {
             this.logger.error('ThinkGuideManager', 'NodePaletteManager not found');
         }
@@ -806,17 +898,20 @@ class ThinkGuideManager {
             this.currentAbortController = null;
         }
         
-        // Remove Event Bus listeners
-        this.eventBus.off('panel:open_requested');
-        this.eventBus.off('panel:close_requested');
-        this.eventBus.off('thinkguide:send_message');
-        this.eventBus.off('thinkguide:explain_requested');
+        // Remove Event Bus listeners using stored callback references
+        this.eventBus.off('panel:open_requested', this.callbacks.panelOpen);
+        this.eventBus.off('panel:close_requested', this.callbacks.panelClose);
+        this.eventBus.off('thinkguide:send_message', this.callbacks.sendMessage);
+        this.eventBus.off('thinkguide:explain_requested', this.callbacks.explainRequested);
+        
+        this.logger.debug('ThinkGuideManager', 'Event listeners successfully removed');
         
         // Clear session data
         this.sessionId = null;
         this.diagramSessionId = null;
         
         // Nullify references
+        this.callbacks = null;
         this.eventBus = null;
         this.stateManager = null;
         this.sseClient = null;

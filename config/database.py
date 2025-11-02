@@ -13,6 +13,13 @@ from models.auth import Base, Organization
 from datetime import datetime
 import logging
 
+# Import TokenUsage model so it's registered with Base
+try:
+    from models.token_usage import TokenUsage
+except ImportError:
+    # TokenUsage model may not exist yet - that's okay
+    TokenUsage = None
+
 logger = logging.getLogger(__name__)
 
 # Database URL from environment variable
@@ -31,38 +38,26 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     """
-    Initialize database: create tables and seed demo data
+    Initialize database: create tables, run migrations, and seed demo data
     """
     # Import here to avoid circular dependency
     from utils.auth import load_invitation_codes
-    from sqlalchemy import inspect, text
     
-    # Create all tables
+    # Step 1: Create all tables (for new databases)
     Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully")
+    logger.info("Database tables created/verified")
     
-    # Migration: Add expires_at and is_active columns if they don't exist
-    inspector = inspect(engine)
-    columns = [col['name'] for col in inspector.get_columns('organizations')]
-    
-    db = SessionLocal()
+    # Step 2: Run automatic migrations (add missing columns)
     try:
-        if 'expires_at' not in columns:
-            logger.info("Adding expires_at column to organizations table...")
-            db.execute(text("ALTER TABLE organizations ADD COLUMN expires_at DATETIME"))
-            db.commit()
-            logger.info("expires_at column added successfully")
-        
-        if 'is_active' not in columns:
-            logger.info("Adding is_active column to organizations table...")
-            db.execute(text("ALTER TABLE organizations ADD COLUMN is_active BOOLEAN DEFAULT 1"))
-            db.commit()
-            logger.info("is_active column added successfully")
+        from utils.db_migration import run_migrations
+        migration_success = run_migrations()
+        if migration_success:
+            logger.info("Database schema migration completed")
+        else:
+            logger.warning("Database schema migration encountered issues - check logs")
     except Exception as e:
-        logger.error(f"Migration error: {e}")
-        db.rollback()
-    finally:
-        db.close()
+        logger.error(f"Migration manager error: {e}", exc_info=True)
+        # Continue anyway - migration failures shouldn't break startup
     
     # Seed organizations
     db = SessionLocal()

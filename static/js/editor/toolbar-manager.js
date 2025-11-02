@@ -753,6 +753,8 @@ class ToolbarManager {
      * Apply text to selected nodes - EVENT BUS WRAPPER
      */
     applyText(silent = false) {
+        // ARCHITECTURE: Event Bus pattern - emit event, let handler validate state
+        // The handler (TextToolbarStateManager) will check State Manager for selection
         window.eventBus.emit('text:apply_requested', { silent });
         logger.debug('ToolbarManager', 'Apply text requested via Event Bus');
     }
@@ -1165,8 +1167,8 @@ class ToolbarManager {
      * Handle Thinking Mode (ThinkGuide) button click - EVENT BUS WRAPPER
      */
     async handleThinkingMode() {
-        window.eventBus.emit('thinking_mode:start_requested', {});
-        logger.debug('ToolbarManager', 'Thinking mode start requested via Event Bus');
+        window.eventBus.emit('thinking_mode:toggle_requested', {});
+        logger.debug('ToolbarManager', 'Thinking mode toggle requested via Event Bus');
     }
     
     /**

@@ -217,12 +217,23 @@ Observation nodes ({len(children)} total):
 User message: {message}"""
         
         try:
+            # Get user context from session for token tracking
+            user_id = session.get('user_id')
+            organization_id = session.get('organization_id')
+            
             result_text = await self.llm.chat(
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 temperature=0.1,
-                max_tokens=500
+                max_tokens=500,
+                # Token tracking parameters
+                user_id=int(user_id) if user_id and str(user_id).isdigit() else None,
+                organization_id=organization_id,
+                request_type='thinkguide',
+                endpoint_path='/thinking_mode/stream',
+                conversation_id=session.get('session_id'),
+                diagram_type=self.diagram_type
             )
             
             # Extract JSON

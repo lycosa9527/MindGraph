@@ -24,6 +24,7 @@ from services.client_manager import client_manager
 from services.llm_service import llm_service  # LLM Middleware
 from services.voice_intent_service import VoiceIntentService
 from services.voice_diagram_agent_v2 import voice_diagram_agent_v2
+from services.token_tracker import get_token_tracker
 from config.database import get_db
 from utils.auth import decode_access_token
 from models.auth import User
@@ -683,6 +684,46 @@ async def voice_conversation(
                     
                     elif event_type == 'response_done':
                         logger.info(f"Omni response complete")
+                        
+                        # Track token usage from Omni response
+                        try:
+                            response = event.get('response', {})
+                            usage = response.get('usage', {})
+                            if usage:
+                                # Get user info from session
+                                session = get_voice_session(voice_session_id)
+                                user_id = None
+                                organization_id = None
+                                if session:
+                                    user_id = session.get('user_id')
+                                    # Get organization_id from user if available
+                                    if user_id:
+                                        try:
+                                            db = next(get_db())
+                                            user = db.query(User).filter(User.id == user_id).first()
+                                            if user:
+                                                organization_id = user.organization_id
+                                        except:
+                                            pass
+                                
+                                token_tracker = get_token_tracker()
+                                input_tokens = usage.get('prompt_tokens', 0)
+                                output_tokens = usage.get('completion_tokens', 0)
+                                
+                                await token_tracker.track_usage(
+                                    model_alias='qwen-omni',
+                                    input_tokens=input_tokens,
+                                    output_tokens=output_tokens,
+                                    request_type='voice_omni',
+                                    user_id=user_id,
+                                    organization_id=organization_id,
+                                    session_id=voice_session_id,
+                                    endpoint_path='/ws/voice',
+                                    success=True
+                                )
+                        except Exception as e:
+                            logger.debug(f"Omni token tracking failed (non-critical): {e}")
+                        
                         await websocket.send_json({
                             'type': 'response_done'
                         })

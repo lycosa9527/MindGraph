@@ -52,7 +52,7 @@
 .editor-toolbar,
 .toolbar-section,
 .toolbar-group,
-.toolbar-group label,
+.toolbar-group-label,
 .btn-tool,
 .mindmate-ai-btn {
     transition: all 0.3s ease;
@@ -71,7 +71,7 @@
 }
 
 /* Compact mode */
-.editor-toolbar.toolbar-compact .toolbar-group label {
+.editor-toolbar.toolbar-compact .toolbar-group-label {
     display: none;
 }
 
@@ -80,7 +80,7 @@
 }
 
 /* Minimal mode */
-.editor-toolbar.toolbar-minimal .toolbar-group label {
+.editor-toolbar.toolbar-minimal .toolbar-group-label {
     display: none;
 }
 
@@ -134,7 +134,7 @@
         gap: 6px;
     }
     
-    .toolbar-group label {
+    .toolbar-group-label {
         font-size: 11px;
         display: inline-flex;
         align-items: center;
@@ -164,7 +164,7 @@
         gap: 6px;
     }
     
-    .toolbar-group label {
+    .toolbar-group-label {
         display: none; /* Hide "Nodes:" and "Tools:" labels */
     }
     
@@ -213,7 +213,7 @@
         gap: 5px;
     }
     
-    .toolbar-group label {
+    .toolbar-group-label {
         display: none;
     }
     
@@ -319,7 +319,7 @@
         opacity: 1 !important;
     }
     
-    .toolbar-group label {
+    .toolbar-group-label {
         font-size: 11px;
         margin-right: 6px;
         white-space: nowrap;

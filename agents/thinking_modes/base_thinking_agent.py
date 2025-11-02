@@ -158,6 +158,7 @@ class BaseThinkingAgent(ABC):
         diagram_data: Dict,
         current_state: str,
         user_id: str = None,
+        organization_id: int = None,  # Added for token tracking
         is_initial_greeting: bool = False,
         language: str = 'en'
     ) -> AsyncGenerator[Dict, None]:
@@ -183,6 +184,10 @@ class BaseThinkingAgent(ABC):
             user_id=user_id,
             initial_state=current_state
         )
+        
+        # Store organization_id in session for token tracking
+        if organization_id is not None:
+            session['organization_id'] = organization_id
         
         # Update language in session (from UI toggle)
         session['language'] = language
@@ -239,8 +244,8 @@ class BaseThinkingAgent(ABC):
             has_history = len(session.get('history', [])) > 0
             
             if has_history:
-                # Session already has conversation - resume silently
-                logger.info(f"[{self.__class__.__name__}] Greeting requested but session has history - resuming silently")
+                # Session already has conversation - will send welcome back message
+                logger.info(f"[{self.__class__.__name__}] Greeting requested but session has history - will send welcome back message")
                 return {'action': 'resume', 'state': current_state}
             else:
                 # New session - greet user
@@ -286,15 +291,25 @@ class BaseThinkingAgent(ABC):
                 yield event
         
         elif action == 'resume':
-            # Panel reopened - resume existing conversation silently (no duplicate greeting)
+            # Panel reopened - send a friendly welcome back message
             logger.info(f"[{self.__class__.__name__}] Resuming existing conversation | History: {len(session.get('history', []))} messages")
-            # Send a silent completion event to indicate panel is ready
+            
+            # Send a friendly "welcome back" message
+            language = session.get('language', 'en')
+            if language == 'zh':
+                welcome_message = "👋 欢迎回来！让我们继续探索吧。有什么我可以帮助你的吗？"
+            else:
+                welcome_message = "👋 Welcome back! Let's continue exploring. How can I help you?"
+            
+            # Stream the welcome message
+            yield {
+                'event': 'message_chunk',
+                'content': welcome_message
+            }
+            
             yield {
                 'event': 'message_complete',
-                'data': {
-                    'state': current_state,
-                    'silent_resume': True
-                }
+                'new_state': current_state
             }
         
         elif action == 'discuss':
@@ -330,13 +345,24 @@ class BaseThinkingAgent(ABC):
             language = session.get('language', 'en')
             system_prompt = self._get_base_system_prompt(language)
             
+            # Get user context from session for token tracking
+            user_id = session.get('user_id')
+            organization_id = session.get('organization_id')
+            
             full_content = ""
             
             async for chunk in self.llm.chat_stream(
                 prompt=prompt,
                 model=self.model,
                 system_message=system_prompt,
-                temperature=temperature
+                temperature=temperature,
+                # Token tracking parameters
+                user_id=int(user_id) if user_id and str(user_id).isdigit() else None,
+                organization_id=organization_id,
+                request_type='thinkguide',
+                endpoint_path='/thinking_mode/stream',
+                conversation_id=session.get('session_id'),
+                diagram_type=self.diagram_type
             ):
                 full_content += chunk
                 yield {

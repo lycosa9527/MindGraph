@@ -87,6 +87,10 @@ async def thinking_mode_stream(
         logger.info(f"[ThinkGuide] Starting session: {req.session_id} | Diagram: {req.diagram_type} | State: {req.current_state}")
         logger.info(f"[ThinkGuide] Diagram data - Center: '{center_text}' | Children: {child_count}")
         
+        # Get user context for token tracking
+        user_id = current_user.id if current_user else (req.user_id if hasattr(req, 'user_id') else None)
+        organization_id = current_user.organization_id if current_user else None
+        
         # SSE generator
         async def generate():
             """Async generator for SSE streaming"""
@@ -96,7 +100,8 @@ async def thinking_mode_stream(
                     session_id=req.session_id,
                     diagram_data=req.diagram_data,
                     current_state=req.current_state,
-                    user_id=req.user_id,
+                    user_id=user_id,
+                    organization_id=organization_id,  # Pass organization_id for token tracking
                     is_initial_greeting=req.is_initial_greeting,
                     language=req.language
                 ):
@@ -300,7 +305,10 @@ async def start_node_palette(
                         center_topic=center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
-                        mode=mode  # Pass mode for tab-enabled diagrams
+                        mode=mode,  # Pass mode for tab-enabled diagrams
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type
                     ):
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
@@ -315,7 +323,10 @@ async def start_node_palette(
                         educational_context=req.educational_context,
                         nodes_per_llm=15,
                         stage=stage,  # Current stage (dimensions, categories, parts, etc.)
-                        stage_data=stage_data  # Stage-specific data (dimension, category_name, part_name, etc.)
+                        stage_data=stage_data,  # Stage-specific data (dimension, category_name, part_name, etc.)
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type
                     ):
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
@@ -327,7 +338,10 @@ async def start_node_palette(
                         session_id=session_id,
                         center_topic=center_topic,
                         educational_context=req.educational_context,
-                        nodes_per_llm=15  # Each LLM generates 15 nodes = 60 total per batch
+                        nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type
                     ):
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
@@ -432,7 +446,10 @@ async def get_next_batch(
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,  # 60 total nodes per scroll trigger
-                        mode=mode  # Pass mode for tab-enabled diagrams
+                        mode=mode,  # Pass mode for tab-enabled diagrams
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type
                     ):
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
@@ -447,7 +464,10 @@ async def get_next_batch(
                         educational_context=req.educational_context,
                         nodes_per_llm=15,
                         stage=stage,  # Current stage (dimensions, categories, parts, etc.)
-                        stage_data=stage_data  # Stage-specific data (dimension, category_name, part_name, etc.)
+                        stage_data=stage_data,  # Stage-specific data (dimension, category_name, part_name, etc.)
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type
                     ):
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
@@ -459,7 +479,10 @@ async def get_next_batch(
                         session_id=session_id,
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
-                        nodes_per_llm=15  # 60 total nodes per scroll trigger
+                        nodes_per_llm=15,  # 60 total nodes per scroll trigger
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type
                     ):
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
@@ -528,39 +551,17 @@ async def log_finish_selection(
     total_generated = req.total_nodes_generated
     batches_loaded = req.batches_loaded
     
-    logger.info("[NodePalette-Finish] User completed session | Session: %s", session_id[:8])
+    logger.info("[NodePalette-Finish] User closed palette | Session: %s", session_id[:8])
     logger.info("[NodePalette-Finish]   Selected: %d/%d nodes | Batches: %d | Selection rate: %.1f%%", 
                selected_count, total_generated, batches_loaded, 
                (selected_count/max(total_generated,1))*100)
     
-    # End session in appropriate generator
-    if hasattr(req, 'diagram_type'):
-        if req.diagram_type == 'circle_map':
-            generator = get_circle_map_palette_generator()
-        elif req.diagram_type == 'bubble_map':
-            generator = get_bubble_map_palette_generator()
-        elif req.diagram_type == 'double_bubble_map':
-            generator = get_double_bubble_palette_generator()
-        elif req.diagram_type == 'multi_flow_map':
-            generator = get_multi_flow_palette_generator()
-        elif req.diagram_type == 'tree_map':
-            generator = get_tree_map_palette_generator()
-        elif req.diagram_type == 'flow_map':
-            generator = get_flow_map_palette_generator()
-        elif req.diagram_type == 'brace_map':
-            generator = get_brace_map_palette_generator()
-        elif req.diagram_type == 'bridge_map':
-            generator = get_bridge_map_palette_generator()
-        elif req.diagram_type == 'mindmap':
-            generator = get_mindmap_palette_generator()
-        else:
-            generator = get_circle_map_palette_generator()
-    else:
-        generator = get_circle_map_palette_generator()
+    # NOTE: Do NOT end the session here!
+    # Session should persist throughout the entire canvas session.
+    # User may return to Node Palette multiple times to add more nodes.
+    # Session will be properly cleaned up when user leaves canvas (backToGallery).
     
-    generator.end_session(session_id, reason="user_finished")
-    
-    return {"status": "session_ended"}
+    return {"status": "palette_closed"}
 
 
 @router.post("/thinking_mode/node_palette/cancel")
@@ -578,38 +579,58 @@ async def node_palette_cancel(
     total_generated = request.total_nodes_generated
     batches_loaded = request.batches_loaded
     
-    logger.info("[NodePalette-Cancel] User cancelled session | Session: %s", session_id[:8])
+    logger.info("[NodePalette-Cancel] User cancelled palette | Session: %s", session_id[:8])
     logger.info("[NodePalette-Cancel]   Selected: %d/%d nodes (NOT added) | Batches: %d", 
                selected_count, total_generated, batches_loaded)
     
-    # End session in appropriate generator
-    if hasattr(request, 'diagram_type'):
-        if request.diagram_type == 'circle_map':
-            generator = get_circle_map_palette_generator()
-        elif request.diagram_type == 'bubble_map':
-            generator = get_bubble_map_palette_generator()
-        elif request.diagram_type == 'double_bubble_map':
-            generator = get_double_bubble_palette_generator()
-        elif request.diagram_type == 'multi_flow_map':
-            generator = get_multi_flow_palette_generator()
-        elif request.diagram_type == 'tree_map':
-            generator = get_tree_map_palette_generator()
-        elif request.diagram_type == 'flow_map':
-            generator = get_flow_map_palette_generator()
-        elif request.diagram_type == 'brace_map':
-            generator = get_brace_map_palette_generator()
-        elif request.diagram_type == 'bridge_map':
-            generator = get_bridge_map_palette_generator()
-        elif request.diagram_type == 'mindmap':
-            generator = get_mindmap_palette_generator()
-        else:
-            generator = get_circle_map_palette_generator()
+    # NOTE: Do NOT end the session here!
+    # User may have clicked Cancel by mistake and want to reopen.
+    # Session will be properly cleaned up when user leaves canvas (backToGallery).
+    
+    return {"status": "palette_cancelled"}
+
+
+@router.post("/thinking_mode/node_palette/cleanup")
+async def node_palette_cleanup(
+    request: NodePaletteFinishRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Clean up Node Palette session when user leaves canvas.
+    
+    Called from diagram-selector.js backToGallery() to properly end session
+    and free memory when user exits to gallery.
+    """
+    session_id = request.session_id
+    diagram_type = request.diagram_type or 'circle_map'
+    
+    logger.info("[NodePalette-Cleanup] Ending session (user left canvas) | Session: %s", session_id[:8])
+    
+    # Get appropriate generator and end session
+    if diagram_type == 'circle_map':
+        generator = get_circle_map_palette_generator()
+    elif diagram_type == 'bubble_map':
+        generator = get_bubble_map_palette_generator()
+    elif diagram_type == 'double_bubble_map':
+        generator = get_double_bubble_palette_generator()
+    elif diagram_type == 'multi_flow_map':
+        generator = get_multi_flow_palette_generator()
+    elif diagram_type == 'tree_map':
+        generator = get_tree_map_palette_generator()
+    elif diagram_type == 'flow_map':
+        generator = get_flow_map_palette_generator()
+    elif diagram_type == 'brace_map':
+        generator = get_brace_map_palette_generator()
+    elif diagram_type == 'bridge_map':
+        generator = get_bridge_map_palette_generator()
+    elif diagram_type == 'mindmap':
+        generator = get_mindmap_palette_generator()
     else:
         generator = get_circle_map_palette_generator()
     
-    generator.end_session(session_id, reason="user_cancelled")
+    generator.end_session(session_id, reason="canvas_exit")
     
-    return {"status": "session_cancelled"}
+    return {"status": "session_cleaned"}
 
 
 # Debug endpoint removed - V2 generator uses different session tracking

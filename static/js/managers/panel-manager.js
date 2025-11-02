@@ -19,6 +19,28 @@ class PanelManager {
         this.panels = {};
         this.currentPanel = null;
         
+        // Store callback references for proper cleanup
+        this.callbacks = {
+            panelOpen: (data) => {
+                if (data.panel) {
+                    this.openPanel(data.panel, data.options);
+                }
+            },
+            panelClose: (data) => {
+                if (data.panel) {
+                    this.closePanel(data.panel);
+                }
+            },
+            panelToggle: (data) => {
+                if (data.panel) {
+                    this.togglePanel(data.panel);
+                }
+            },
+            closeAll: () => {
+                this.closeAll();
+            }
+        };
+        
         this.init();
         this.subscribeToEvents();
         
@@ -61,7 +83,7 @@ class PanelManager {
             element: thinkingPanel,
             type: 'class', // Uses collapsed class
             button: thinkingBtn,
-            manager: () => window.thinkingModeManager,
+            manager: () => window.currentEditor?.thinkGuide,
             closeCallback: () => {
                 if (thinkingBtn) thinkingBtn.classList.remove('active');
             },
@@ -75,7 +97,7 @@ class PanelManager {
             element: aiPanel,
             type: 'class', // Uses collapsed class
             button: mindmateBtn,
-            manager: () => window.aiAssistantManager,
+            manager: () => window.currentEditor?.mindMate,
             closeCallback: () => {
                 if (mindmateBtn) mindmateBtn.classList.remove('active');
             },
@@ -89,7 +111,7 @@ class PanelManager {
         this.registerPanel('nodePalette', {
             element: nodePalettePanel,
             type: 'style', // Uses style.display
-            manager: () => window.nodePaletteManager,
+            manager: () => window.currentEditor?.nodePalette,
             closeCallback: () => {
                 // Hide panel and clean up
                 if (nodePalettePanel) {
@@ -99,8 +121,8 @@ class PanelManager {
             },
             openCallback: () => {
                 // Show panel using NodePaletteManager's method
-                if (window.nodePaletteManager) {
-                    window.nodePaletteManager.showPalettePanel();
+                if (window.currentEditor?.nodePalette) {
+                    window.currentEditor.nodePalette.showPalettePanel();
                 }
             }
         });
@@ -112,33 +134,19 @@ class PanelManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for panel open requests
-        this.eventBus.on('panel:open_requested', (data) => {
-            if (data.panel) {
-                this.openPanel(data.panel, data.options);
-            }
-        });
+        // Listen for panel open requests - use stored callback
+        this.eventBus.on('panel:open_requested', this.callbacks.panelOpen);
         
-        // Listen for panel close requests
-        this.eventBus.on('panel:close_requested', (data) => {
-            if (data.panel) {
-                this.closePanel(data.panel);
-            }
-        });
+        // Listen for panel close requests - use stored callback
+        this.eventBus.on('panel:close_requested', this.callbacks.panelClose);
         
-        // Listen for panel toggle requests
-        this.eventBus.on('panel:toggle_requested', (data) => {
-            if (data.panel) {
-                this.togglePanel(data.panel);
-            }
-        });
+        // Listen for panel toggle requests - use stored callback
+        this.eventBus.on('panel:toggle_requested', this.callbacks.panelToggle);
         
-        // Listen for close all requests
-        this.eventBus.on('panel:close_all_requested', () => {
-            this.closeAll();
-        });
+        // Listen for close all requests - use stored callback
+        this.eventBus.on('panel:close_all_requested', this.callbacks.closeAll);
         
-        this.logger.debug('PanelManager', 'Subscribed to events');
+        this.logger.debug('PanelManager', 'Event listeners registered');
     }
     
     /**
@@ -247,18 +255,53 @@ class PanelManager {
     
     /**
      * Close a specific panel
+     * 
+     * @param {string} name - Panel name to close
+     * @param {Object} options - Options for closing
+     * @param {boolean} options._internal - If true, skips manager notification (prevents loops)
+     * @returns {boolean} True if panel was closed, false otherwise
      */
-    closePanel(name) {
+    closePanel(name, options = {}) {
         const panel = this.panels[name];
         if (!panel || !panel.element) {
             this.logger.warn('PanelManager', `Cannot close panel "${name}" - not found`);
             return false;
         }
         
-        const elementId = panel.element.id;
-        this.logger.debug('PanelManager', `Closing panel: ${name} (element: ${elementId})`);
+        // Check if already closed (prevent unnecessary operations)
+        if (!this.isPanelOpen(name)) {
+            this.logger.debug('PanelManager', `Panel "${name}" already closed, skipping`);
+            return false;
+        }
         
-        // Close the panel
+        const elementId = panel.element.id;
+        const source = options._internal ? 'manager' : 'panel_manager';
+        this.logger.debug('PanelManager', `Closing panel: ${name} (element: ${elementId}, source: ${source})`);
+        
+        // Notify manager BEFORE DOM manipulation
+        // This allows manager to cleanup state (stop streams, etc.)
+        // The _internal flag in options means this call originated from a manager,
+        // so we skip manager notification to prevent circular calls
+        if (!options._internal) {
+            const manager = panel.manager?.();
+            if (manager && typeof manager.closePanel === 'function') {
+                try {
+                    this.logger.debug('PanelManager', `Notifying manager for panel: ${name}`);
+                    // Pass internal flag to prevent manager from calling PanelManager back
+                    // Manager will do internal cleanup only, not call PanelManager again
+                    manager.closePanel({ _internal: true });
+                } catch (error) {
+                    this.logger.error('PanelManager', `Error notifying manager for ${name}:`, error);
+                    // Continue with close even if manager notification fails
+                }
+            } else {
+                this.logger.debug('PanelManager', `No manager found for panel: ${name}`);
+            }
+        } else {
+            this.logger.debug('PanelManager', `Skipping manager notification (internal call from manager)`);
+        }
+        
+        // Close the panel (DOM manipulation)
         if (panel.type === 'class') {
             panel.element.classList.add('collapsed');
         } else if (panel.type === 'style') {
@@ -282,15 +325,17 @@ class PanelManager {
             this.currentPanel = null;
         }
         
-        // Emit event
+        // Emit event (notification that closing is complete)
         this.eventBus.emit('panel:closed', {
             panel: name,
-            isOpen: false
+            isOpen: false,
+            source: source
         });
         
         this.logger.debug('PanelManager', `✅ Panel closed: ${name}`, {
             elementId,
-            isActuallyClosed: !this.isPanelOpen(name)
+            isActuallyClosed: !this.isPanelOpen(name),
+            source: source
         });
         
         return true;
@@ -311,6 +356,11 @@ class PanelManager {
     
     /**
      * Close all panels except the specified one
+     * 
+     * This is called automatically when opening a panel to ensure only one is open.
+     * Managers will be notified via their closePanel() method with _internal flag.
+     * 
+     * @param {string} exceptName - Panel name to keep open
      */
     closeAllExcept(exceptName) {
         const toClose = Object.keys(this.panels).filter(name => name !== exceptName);
@@ -319,6 +369,8 @@ class PanelManager {
         });
         
         toClose.forEach(name => {
+            // Call with no options (not _internal) so managers get notified
+            // This is PanelManager-initiated, not user-initiated, but we want managers to know
             this.closePanel(name);
         });
     }
@@ -452,6 +504,31 @@ class PanelManager {
     closeNodePalettePanel() {
         this.logger.info('PanelManager', '🎨 closeNodePalettePanel() called - EXPLICIT');
         return this.closePanel('nodePalette');
+    }
+    
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        this.logger.debug('PanelManager', 'Destroying');
+        
+        // Remove Event Bus listeners using stored callback references
+        this.eventBus.off('panel:open_requested', this.callbacks.panelOpen);
+        this.eventBus.off('panel:close_requested', this.callbacks.panelClose);
+        this.eventBus.off('panel:toggle_requested', this.callbacks.panelToggle);
+        this.eventBus.off('panel:close_all_requested', this.callbacks.closeAll);
+        
+        this.logger.debug('PanelManager', 'Event listeners successfully removed');
+        
+        // Clear panel registry
+        this.panels = {};
+        this.currentPanel = null;
+        
+        // Nullify references
+        this.callbacks = null;
+        this.eventBus = null;
+        this.stateManager = null;
+        this.logger = null;
     }
 }
 

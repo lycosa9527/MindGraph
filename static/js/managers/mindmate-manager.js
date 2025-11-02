@@ -41,6 +41,26 @@ class MindMateManager {
         this.toggleBtn = null;
         this.mindmateBtn = null;
         
+        // Store callback references for proper cleanup
+        this.callbacks = {
+            panelOpen: (data) => {
+                if (data.panel === 'mindmate') {
+                    this.openPanel();
+                }
+            },
+            panelClose: (data) => {
+                if (data.panel === 'mindmate') {
+                    this.closePanel();
+                }
+            },
+            sendMessage: (data) => {
+                if (data.message) {
+                    this.chatInput.value = data.message;
+                    this.sendMessage(data.message);
+                }
+            }
+        };
+        
         // Initialize
         this.initializeElements();
         this.bindEvents();
@@ -110,29 +130,16 @@ class MindMateManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for panel open requests
-        this.eventBus.on('panel:open_requested', (data) => {
-            if (data.panel === 'mindmate') {
-                this.openPanel();
-            }
-        });
+        // Listen for panel open requests - use stored callback
+        this.eventBus.on('panel:open_requested', this.callbacks.panelOpen);
         
-        // Listen for panel close requests
-        this.eventBus.on('panel:close_requested', (data) => {
-            if (data.panel === 'mindmate') {
-                this.closePanel();
-            }
-        });
+        // Listen for panel close requests - use stored callback
+        this.eventBus.on('panel:close_requested', this.callbacks.panelClose);
         
-        // Listen for message send requests (from voice agent)
-        this.eventBus.on('mindmate:send_message', (data) => {
-            if (data.message) {
-                this.chatInput.value = data.message;
-                this.sendMessage();
-            }
-        });
+        // Listen for message send requests (from voice agent) - use stored callback
+        this.eventBus.on('mindmate:send_message', this.callbacks.sendMessage);
         
-        this.logger.debug('MindMateManager', 'Subscribed to events');
+        this.logger.debug('MindMateManager', 'Event listeners registered');
     }
     
     /**
@@ -218,24 +225,50 @@ class MindMateManager {
     
     /**
      * Close MindMate panel
+     * 
+     * @param {Object} options - Options for closing
+     * @param {boolean} options._internal - If true, called from PanelManager (skip PanelManager call)
      */
-    closePanel() {
+    closePanel(options = {}) {
         if (!this.panel) return;
         
-        this.logger.info('MindMateManager', 'Closing panel');
-        
-        // Close via Panel Manager (Event Bus)
-        if (window.panelManager) {
-            window.panelManager.closeMindMatePanel();
-        } else {
-            // Fallback
-            this.panel.classList.add('collapsed');
-            if (this.mindmateBtn) {
-                this.mindmateBtn.classList.remove('active');
-            }
+        // Check if already closed (prevent duplicate operations)
+        if (this.panel.classList.contains('collapsed')) {
+            this.logger.debug('MindMateManager', 'Panel already closed, skipping');
+            return;
         }
         
-        // Emit event
+        const source = options._internal ? 'panel_manager' : 'user';
+        this.logger.info('MindMateManager', 'Closing panel', { source });
+        
+        // If called from PanelManager, just do internal cleanup
+        // Otherwise, ask PanelManager to close (which will call us back with _internal flag)
+        if (options._internal) {
+            // Internal call from PanelManager - just cleanup internal state
+            // PanelManager will handle DOM and state updates
+            // Do any manager-specific cleanup here if needed
+            // No need to call PanelManager - it's already handling the close
+            
+        } else {
+            // User-initiated close - delegate to PanelManager
+            // PanelManager will call this method again with _internal: true
+            // to allow us to do cleanup, but we prevent that double-call with the check above
+            if (window.panelManager) {
+                window.panelManager.closeMindMatePanel();
+            } else {
+                // Fallback if PanelManager not available
+                this.panel.classList.add('collapsed');
+                if (this.mindmateBtn) {
+                    this.mindmateBtn.classList.remove('active');
+                }
+                // Emit event for fallback case
+                this.eventBus.emit('mindmate:closed', {});
+            }
+            return; // Exit early - PanelManager will handle the rest
+        }
+        
+        // Only emit event if this was an internal call (PanelManager-initiated)
+        // User-initiated closes are handled above
         this.eventBus.emit('mindmate:closed', {});
     }
     
@@ -631,10 +664,12 @@ class MindMateManager {
     destroy() {
         this.logger.debug('MindMateManager', 'Destroying');
         
-        // Remove Event Bus listeners
-        this.eventBus.off('panel:open_requested');
-        this.eventBus.off('panel:close_requested');
-        this.eventBus.off('mindmate:send_message');
+        // Remove Event Bus listeners using stored callback references
+        this.eventBus.off('panel:open_requested', this.callbacks.panelOpen);
+        this.eventBus.off('panel:close_requested', this.callbacks.panelClose);
+        this.eventBus.off('mindmate:send_message', this.callbacks.sendMessage);
+        
+        this.logger.debug('MindMateManager', 'Event listeners successfully removed');
         
         // Clear session data
         this.conversationId = null;
@@ -642,6 +677,7 @@ class MindMateManager {
         this.hasGreeted = false;
         
         // Nullify references
+        this.callbacks = null;
         this.eventBus = null;
         this.stateManager = null;
         this.chatPanel = null;

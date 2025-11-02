@@ -155,7 +155,8 @@ class LLMAutoCompleteManager {
             const requestBody = {
                 prompt: prompt,
                 diagram_type: currentDiagramType,
-                language: language
+                language: language,
+                request_type: 'autocomplete'  // Distinguish from diagram_generation for token tracking
                 // Note: 'llm' parameter added per-model by LLMEngineManager
             };
             

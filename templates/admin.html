@@ -517,6 +517,10 @@
                     <h3><span class="lang-zh">本周注册</span><span class="lang-en">This Week</span></h3>
                     <div class="value" id="stat-recent">-</div>
                 </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">本周Token</span><span class="lang-en">This Week Tokens</span></h3>
+                    <div class="value" id="stat-tokens">-</div>
+                </div>
             </div>
 
             <div class="card">
@@ -543,7 +547,7 @@
                             <th><span class="lang-zh">学校代码</span><span class="lang-en">Code</span></th>
                             <th><span class="lang-zh">学校名称</span><span class="lang-en">Name</span></th>
                             <th><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></th>
-                            <th><span class="lang-zh">到期日期</span><span class="lang-en">Expiration</span></th>
+                            <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span></th>
                             <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
                             <th><span class="lang-zh">用户数</span><span class="lang-en">Users</span></th>
                             <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
@@ -565,14 +569,15 @@
                 <div style="padding:1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
                         <div style="flex:1;min-width:200px;">
-                            <label class="form-label" style="margin-bottom:0.25rem;"><span class="lang-zh">搜索</span><span class="lang-en">Search</span></label>
-                            <input type="text" id="user-search" class="form-input" 
+                            <label class="form-label" style="margin-bottom:0.25rem;" for="user-search"><span class="lang-zh">搜索</span><span class="lang-en">Search</span></label>
+                            <input type="text" id="user-search" name="user-search" class="form-input" 
                                    placeholder="Name or Phone" 
+                                   autocomplete="off"
                                    onkeyup="if(event.key==='Enter') filterUsers()">
                         </div>
                         <div style="min-width:200px;">
-                            <label class="form-label" style="margin-bottom:0.25rem;"><span class="lang-zh">学校筛选</span><span class="lang-en">Filter by School</span></label>
-                            <select id="user-org-filter" class="form-select" onchange="filterUsers()">
+                            <label class="form-label" style="margin-bottom:0.25rem;" for="user-org-filter"><span class="lang-zh">学校筛选</span><span class="lang-en">Filter by School</span></label>
+                            <select id="user-org-filter" name="user-org-filter" class="form-select" onchange="filterUsers()">
                                 <option value=""><span class="lang-zh">全部学校</span><span class="lang-en">All Schools</span></option>
                             </select>
                         </div>
@@ -592,6 +597,7 @@
                             <th><span class="lang-zh">手机号</span><span class="lang-en">Phone</span></th>
                             <th><span class="lang-zh">姓名</span><span class="lang-en">Name</span></th>
                             <th><span class="lang-zh">学校</span><span class="lang-en">Organization</span></th>
+                            <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span></th>
                             <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
                             <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
                         </tr>
@@ -666,6 +672,7 @@
             <div id="settings-loading" class="spinner"></div>
             
             <div id="settings-form" style="display:none;">
+                <form id="env-settings-form" onsubmit="event.preventDefault(); saveEnvSettings(); return false;">
                 <!-- Category 1: Application Server -->
                 <div class="card">
                     <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('app-settings')">
@@ -675,25 +682,25 @@
                     <div id="app-settings-content" class="category-content">
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">HOST <span style="color:#94a3b8;font-size:0.85rem;">(Server host address)</span></label>
-                                <input type="text" id="env-HOST" class="form-input" placeholder="0.0.0.0">
+                                <label class="form-label" for="env-HOST">HOST <span style="color:#94a3b8;font-size:0.85rem;">(Server host address)</span></label>
+                                <input type="text" id="env-HOST" name="env-HOST" class="form-input" placeholder="0.0.0.0" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">PORT <span style="color:#94a3b8;font-size:0.85rem;">(1-65535)</span></label>
-                                <input type="number" id="env-PORT" class="form-input" min="1" max="65535" placeholder="9527">
+                                <label class="form-label" for="env-PORT">PORT <span style="color:#94a3b8;font-size:0.85rem;">(1-65535)</span></label>
+                                <input type="number" id="env-PORT" name="env-PORT" class="form-input" min="1" max="65535" placeholder="9527" autocomplete="off">
                             </div>
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">DEBUG <span style="color:#94a3b8;font-size:0.85rem;">(Enable debug mode)</span></label>
-                                <select id="env-DEBUG" class="form-select">
+                                <label class="form-label" for="env-DEBUG">DEBUG <span style="color:#94a3b8;font-size:0.85rem;">(Enable debug mode)</span></label>
+                                <select id="env-DEBUG" name="env-DEBUG" class="form-select">
                                     <option value="False">False</option>
                                     <option value="True">True</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">EXTERNAL_HOST <span style="color:#94a3b8;font-size:0.85rem;">(Public IP, optional)</span></label>
-                                <input type="text" id="env-EXTERNAL_HOST" class="form-input" placeholder="Leave empty for auto-detect">
+                                <label class="form-label" for="env-EXTERNAL_HOST">EXTERNAL_HOST <span style="color:#94a3b8;font-size:0.85rem;">(Public IP, optional)</span></label>
+                                <input type="text" id="env-EXTERNAL_HOST" name="env-EXTERNAL_HOST" class="form-input" placeholder="Leave empty for auto-detect" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -707,41 +714,41 @@
                     </div>
                     <div id="qwen-settings-content" class="category-content">
                         <div class="form-group">
-                            <label class="form-label">QWEN_API_KEY <span style="color:#ef4444;">*Required</span></label>
-                            <input type="password" id="env-QWEN_API_KEY" class="form-input" placeholder="sk-...">
+                            <label class="form-label" for="env-QWEN_API_KEY">QWEN_API_KEY <span style="color:#ef4444;">*Required</span></label>
+                            <input type="password" id="env-QWEN_API_KEY" name="env-QWEN_API_KEY" class="form-input" placeholder="sk-..." autocomplete="current-password">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">QWEN_API_URL</label>
-                            <input type="text" id="env-QWEN_API_URL" class="form-input" placeholder="https://dashscope.aliyuncs.com/...">
+                            <label class="form-label" for="env-QWEN_API_URL">QWEN_API_URL</label>
+                            <input type="text" id="env-QWEN_API_URL" name="env-QWEN_API_URL" class="form-input" placeholder="https://dashscope.aliyuncs.com/..." autocomplete="off">
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">QWEN_MODEL_CLASSIFICATION <span style="color:#94a3b8;font-size:0.85rem;">(Fast/cheap)</span></label>
-                                <input type="text" id="env-QWEN_MODEL_CLASSIFICATION" class="form-input" placeholder="qwen-turbo">
+                                <label class="form-label" for="env-QWEN_MODEL_CLASSIFICATION">QWEN_MODEL_CLASSIFICATION <span style="color:#94a3b8;font-size:0.85rem;">(Fast/cheap)</span></label>
+                                <input type="text" id="env-QWEN_MODEL_CLASSIFICATION" name="env-QWEN_MODEL_CLASSIFICATION" class="form-input" placeholder="qwen-turbo" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">QWEN_MODEL_GENERATION <span style="color:#94a3b8;font-size:0.85rem;">(High quality)</span></label>
-                                <input type="text" id="env-QWEN_MODEL_GENERATION" class="form-input" placeholder="qwen-plus">
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label">QWEN_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(0.0-2.0)</span></label>
-                                <input type="number" id="env-QWEN_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.7">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">LLM_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(Diagram gen, 0.0-2.0)</span></label>
-                                <input type="number" id="env-LLM_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.3">
+                                <label class="form-label" for="env-QWEN_MODEL_GENERATION">QWEN_MODEL_GENERATION <span style="color:#94a3b8;font-size:0.85rem;">(High quality)</span></label>
+                                <input type="text" id="env-QWEN_MODEL_GENERATION" name="env-QWEN_MODEL_GENERATION" class="form-input" placeholder="qwen-plus" autocomplete="off">
                             </div>
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">QWEN_MAX_TOKENS</label>
-                                <input type="number" id="env-QWEN_MAX_TOKENS" class="form-input" min="1" placeholder="1000">
+                                <label class="form-label" for="env-QWEN_TEMPERATURE">QWEN_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(0.0-2.0)</span></label>
+                                <input type="number" id="env-QWEN_TEMPERATURE" name="env-QWEN_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.7" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">QWEN_TIMEOUT <span style="color:#94a3b8;font-size:0.85rem;">(seconds, 5-120)</span></label>
-                                <input type="number" id="env-QWEN_TIMEOUT" class="form-input" min="5" max="120" placeholder="40">
+                                <label class="form-label" for="env-LLM_TEMPERATURE">LLM_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(Diagram gen, 0.0-2.0)</span></label>
+                                <input type="number" id="env-LLM_TEMPERATURE" name="env-LLM_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.3" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="env-QWEN_MAX_TOKENS">QWEN_MAX_TOKENS</label>
+                                <input type="number" id="env-QWEN_MAX_TOKENS" name="env-QWEN_MAX_TOKENS" class="form-input" min="1" placeholder="1000" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="env-QWEN_TIMEOUT">QWEN_TIMEOUT <span style="color:#94a3b8;font-size:0.85rem;">(seconds, 5-120)</span></label>
+                                <input type="number" id="env-QWEN_TIMEOUT" name="env-QWEN_TIMEOUT" class="form-input" min="5" max="120" placeholder="40" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -756,8 +763,8 @@
                     <div id="misc-settings-content" class="category-content">
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">LOG_LEVEL</label>
-                                <select id="env-LOG_LEVEL" class="form-select">
+                                <label class="form-label" for="env-LOG_LEVEL">LOG_LEVEL</label>
+                                <select id="env-LOG_LEVEL" name="env-LOG_LEVEL" class="form-select">
                                     <option value="DEBUG">DEBUG</option>
                                     <option value="INFO">INFO</option>
                                     <option value="WARNING">WARNING</option>
@@ -766,8 +773,8 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">VERBOSE_LOGGING</label>
-                                <select id="env-VERBOSE_LOGGING" class="form-select">
+                                <label class="form-label" for="env-VERBOSE_LOGGING">VERBOSE_LOGGING</label>
+                                <select id="env-VERBOSE_LOGGING" name="env-VERBOSE_LOGGING" class="form-select">
                                     <option value="False">False</option>
                                     <option value="True">True</option>
                                 </select>
@@ -775,15 +782,15 @@
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">FEATURE_LEARNING_MODE</label>
-                                <select id="env-FEATURE_LEARNING_MODE" class="form-select">
+                                <label class="form-label" for="env-FEATURE_LEARNING_MODE">FEATURE_LEARNING_MODE</label>
+                                <select id="env-FEATURE_LEARNING_MODE" name="env-FEATURE_LEARNING_MODE" class="form-select">
                                     <option value="False">Disabled</option>
                                     <option value="True">Enabled</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">FEATURE_THINKGUIDE</label>
-                                <select id="env-FEATURE_THINKGUIDE" class="form-select">
+                                <label class="form-label" for="env-FEATURE_THINKGUIDE">FEATURE_THINKGUIDE</label>
+                                <select id="env-FEATURE_THINKGUIDE" name="env-FEATURE_THINKGUIDE" class="form-select">
                                     <option value="False">Disabled</option>
                                     <option value="True">Enabled</option>
                                 </select>
@@ -791,15 +798,15 @@
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">FEATURE_MINDMATE</label>
-                                <select id="env-FEATURE_MINDMATE" class="form-select">
+                                <label class="form-label" for="env-FEATURE_MINDMATE">FEATURE_MINDMATE</label>
+                                <select id="env-FEATURE_MINDMATE" name="env-FEATURE_MINDMATE" class="form-select">
                                     <option value="False">Disabled</option>
                                     <option value="True">Enabled</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">FEATURE_VOICE_AGENT</label>
-                                <select id="env-FEATURE_VOICE_AGENT" class="form-select">
+                                <label class="form-label" for="env-FEATURE_VOICE_AGENT">FEATURE_VOICE_AGENT</label>
+                                <select id="env-FEATURE_VOICE_AGENT" name="env-FEATURE_VOICE_AGENT" class="form-select">
                                     <option value="False">Disabled</option>
                                     <option value="True">Enabled</option>
                                 </select>
@@ -817,34 +824,34 @@
                     <div id="auth-settings-content" class="category-content">
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">AUTH_MODE</label>
-                                <select id="env-AUTH_MODE" class="form-select">
+                                <label class="form-label" for="env-AUTH_MODE">AUTH_MODE</label>
+                                <select id="env-AUTH_MODE" name="env-AUTH_MODE" class="form-select">
                                     <option value="standard">Standard</option>
                                     <option value="enterprise">Enterprise</option>
                                     <option value="demo">Demo</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">JWT_EXPIRY_HOURS <span style="color:#94a3b8;font-size:0.85rem;">(hours)</span></label>
-                                <input type="number" id="env-JWT_EXPIRY_HOURS" class="form-input" min="1" max="168" placeholder="24">
+                                <label class="form-label" for="env-JWT_EXPIRY_HOURS">JWT_EXPIRY_HOURS <span style="color:#94a3b8;font-size:0.85rem;">(hours)</span></label>
+                                <input type="number" id="env-JWT_EXPIRY_HOURS" name="env-JWT_EXPIRY_HOURS" class="form-input" min="1" max="168" placeholder="24" autocomplete="off">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">ADMIN_PHONES <span style="color:#94a3b8;font-size:0.85rem;">(Comma-separated)</span></label>
-                            <input type="text" id="env-ADMIN_PHONES" class="form-input" placeholder="13800000000,13900000000">
+                            <label class="form-label" for="env-ADMIN_PHONES">ADMIN_PHONES <span style="color:#94a3b8;font-size:0.85rem;">(Comma-separated)</span></label>
+                            <input type="text" id="env-ADMIN_PHONES" name="env-ADMIN_PHONES" class="form-input" placeholder="13800000000,13900000000" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">INVITATION_CODES <span style="color:#94a3b8;font-size:0.85rem;">(ORG:CODE:DATE,ORG2:CODE2:DATE2)</span></label>
-                            <textarea id="env-INVITATION_CODES" class="form-textarea" rows="3" placeholder="DEMO-001:DEMO2024:2025-12-31"></textarea>
+                            <label class="form-label" for="env-INVITATION_CODES">INVITATION_CODES <span style="color:#94a3b8;font-size:0.85rem;">(ORG:CODE:DATE,ORG2:CODE2:DATE2)</span></label>
+                            <textarea id="env-INVITATION_CODES" name="env-INVITATION_CODES" class="form-textarea" rows="3" placeholder="DEMO-001:DEMO2024:2025-12-31" autocomplete="off"></textarea>
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
-                                <input type="text" id="env-DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="888888">
+                                <label class="form-label" for="env-DEMO_PASSKEY">DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
+                                <input type="text" id="env-DEMO_PASSKEY" name="env-DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="888888" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">ADMIN_DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
-                                <input type="text" id="env-ADMIN_DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="999999">
+                                <label class="form-label" for="env-ADMIN_DEMO_PASSKEY">ADMIN_DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
+                                <input type="text" id="env-ADMIN_DEMO_PASSKEY" name="env-ADMIN_DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="999999" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -860,6 +867,7 @@
                     <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All Settings</button>
                     <button class="btn btn-secondary" onclick="loadEnvSettings()">↻ Reset to Current</button>
                 </div>
+                </form>
             </div>
         </div>
 
@@ -869,12 +877,14 @@
                 <div class="card-header">
                     <h2 class="card-title">📋 <span class="lang-zh">调试日志</span><span class="lang-en">Debug Logs</span></h2>
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                        <select id="log-source-select" class="form-select" style="width:auto;" onchange="logViewer.setSource(this.value)">
+                        <label for="log-source-select" style="display:none;">Log Source</label>
+                        <select id="log-source-select" name="log-source-select" class="form-select" style="width:auto;" onchange="logViewer.setSource(this.value)">
                             <option value="app">Application</option>
                             <option value="uvicorn">Uvicorn</option>
                             <option value="error">Errors</option>
                         </select>
-                        <select id="log-level-filter" class="form-select" style="width:auto;" onchange="logViewer.setFilterLevel(this.value)">
+                        <label for="log-level-filter" style="display:none;">Log Level Filter</label>
+                        <select id="log-level-filter" name="log-level-filter" class="form-select" style="width:auto;" onchange="logViewer.setFilterLevel(this.value)">
                             <option value="ALL">All Levels</option>
                             <option value="DEBUG">DEBUG</option>
                             <option value="INFO">INFO</option>
@@ -893,8 +903,9 @@
             <div class="card">
                 <div style="padding:1rem;border-bottom:1px solid #e2e8f0;">
                     <div style="display:flex;gap:0.5rem;">
-                        <input type="text" id="log-search-input" class="form-input" 
+                        <input type="text" id="log-search-input" name="log-search-input" class="form-input" 
                                placeholder="Search logs (press Enter)..." 
+                               autocomplete="off"
                                onkeypress="if(event.key==='Enter') performLogSearch()"
                                style="flex:1;">
                         <button class="btn btn-primary" onclick="performLogSearch()">🔍 Search</button>
@@ -943,17 +954,19 @@
                 <span class="close" onclick="closeModal('create-school-modal')">&times;</span>
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span> *</label>
-                <input type="text" id="new-school-name" class="form-input" 
+                <label class="form-label" for="new-school-name"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span> *</label>
+                <input type="text" id="new-school-name" name="new-school-name" class="form-input" 
                        placeholder="Beijing High School 北京高中" 
+                       autocomplete="organization"
                        oninput="autoGenerateSchoolCode()" required>
                 <small style="color:#64748b;">Enter the school name first, code will be generated automatically</small>
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span> *</label>
+                <label class="form-label" for="new-school-code"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span> *</label>
                 <div style="display:flex;gap:0.5rem;">
-                    <input type="text" id="new-school-code" class="form-input" 
+                    <input type="text" id="new-school-code" name="new-school-code" class="form-input" 
                            placeholder="AUTO-GENERATED" required
+                           autocomplete="off"
                            style="flex:1;background:#f8fafc;">
                     <button type="button" class="btn btn-secondary" onclick="regenerateSchoolCode()" title="Regenerate Code">
                         🔄
@@ -977,27 +990,27 @@
                 <h3 class="modal-title"><span class="lang-zh">编辑学校</span><span class="lang-en">Edit School</span></h3>
                 <span class="close" onclick="closeModal('edit-school-modal')">&times;</span>
             </div>
-            <input type="hidden" id="edit-school-id">
+            <input type="hidden" id="edit-school-id" name="edit-school-id">
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span></label>
-                <input type="text" id="edit-school-code" class="form-input">
+                <label class="form-label" for="edit-school-code"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span></label>
+                <input type="text" id="edit-school-code" name="edit-school-code" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span></label>
-                <input type="text" id="edit-school-name" class="form-input">
+                <label class="form-label" for="edit-school-name"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span></label>
+                <input type="text" id="edit-school-name" name="edit-school-name" class="form-input" autocomplete="organization">
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></label>
-                <input type="text" id="edit-school-invite" class="form-input">
+                <label class="form-label" for="edit-school-invite"><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></label>
+                <input type="text" id="edit-school-invite" name="edit-school-invite" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">服务到期日期</span><span class="lang-en">Service Expiration Date</span></label>
-                <input type="date" id="edit-school-expires" class="form-input">
+                <label class="form-label" for="edit-school-expires"><span class="lang-zh">服务到期日期</span><span class="lang-en">Service Expiration Date</span></label>
+                <input type="date" id="edit-school-expires" name="edit-school-expires" class="form-input" autocomplete="off">
                 <small style="color:#64748b;"><span class="lang-zh">留空表示永久有效</span><span class="lang-en">Leave empty for no expiration</span></small>
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">账户状态</span><span class="lang-en">Account Status</span></label>
-                <select id="edit-school-active" class="form-select">
+                <label class="form-label" for="edit-school-active"><span class="lang-zh">账户状态</span><span class="lang-en">Account Status</span></label>
+                <select id="edit-school-active" name="edit-school-active" class="form-select">
                     <option value="true"><span class="lang-zh">激活</span><span class="lang-en">Active</span></option>
                     <option value="false"><span class="lang-zh">锁定</span><span class="lang-en">Locked</span></option>
                 </select>
@@ -1017,28 +1030,34 @@
                 <h3 class="modal-title"><span class="lang-zh">编辑用户</span><span class="lang-en">Edit User</span></h3>
                 <span class="close" onclick="closeModal('edit-user-modal')">&times;</span>
             </div>
-            <input type="hidden" id="edit-user-id">
+            <input type="hidden" id="edit-user-id" name="edit-user-id">
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">手机号</span><span class="lang-en">Phone Number</span> *</label>
-                <input type="tel" id="edit-user-phone" class="form-input" 
-                       placeholder="13812345678" maxlength="11" required>
+                <label class="form-label" for="edit-user-phone"><span class="lang-zh">手机号</span><span class="lang-en">Phone Number</span> *</label>
+                <input type="tel" id="edit-user-phone" name="edit-user-phone" class="form-input" 
+                       placeholder="13812345678" maxlength="11" autocomplete="tel" required>
                 <small style="color:#64748b;">11-digit Chinese mobile number</small>
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">姓名</span><span class="lang-en">Name</span> *</label>
-                <input type="text" id="edit-user-name" class="form-input" 
-                       placeholder="Zhang Wei" required>
+                <label class="form-label" for="edit-user-name"><span class="lang-zh">姓名</span><span class="lang-en">Name</span> *</label>
+                <input type="text" id="edit-user-name" name="edit-user-name" class="form-input" 
+                       placeholder="Zhang Wei" autocomplete="name" required>
                 <small style="color:#64748b;">At least 2 characters, no numbers</small>
             </div>
             <div class="form-group">
-                <label class="form-label"><span class="lang-zh">学校</span><span class="lang-en">School</span> *</label>
-                <select id="edit-user-org" class="form-select" required>
+                <label class="form-label" for="edit-user-org"><span class="lang-zh">学校</span><span class="lang-en">School</span> *</label>
+                <select id="edit-user-org" name="edit-user-org" class="form-select" required>
                     <option value="">Loading...</option>
                 </select>
             </div>
-            <div style="display:flex;gap:0.5rem;align-items:center;">
-                <button class="btn btn-primary" onclick="updateUser()">💾 <span class="lang-zh">保存</span><span class="lang-en">Save</span></button>
-                <button class="btn btn-warning" onclick="resetPasswordFromModal()">🔑 <span class="lang-zh">重置密码为 12345678</span><span class="lang-en">Reset Password to 12345678</span></button>
+            <div class="form-group">
+                <label class="form-label" for="edit-user-reset-password"><span class="lang-zh">重置密码</span><span class="lang-en">Reset Password</span></label>
+                <input type="text" id="edit-user-reset-password" name="edit-user-reset-password" class="form-input" 
+                       placeholder="12345678" value="12345678" autocomplete="new-password">
+                <small style="color:#64748b;"><span class="lang-zh">留空或输入 '12345678' 将重置为默认密码 '12345678'</span><span class="lang-en">Leave empty or enter '12345678' to use default password '12345678'</span></small>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;justify-content:center;">
+                <button class="btn btn-primary" onclick="updateUser()"><span class="lang-zh">保存</span><span class="lang-en">Save</span></button>
+                <button class="btn btn-warning" onclick="resetPasswordFromModal()"><span class="lang-zh">重置密码</span><span class="lang-en">Reset Password</span></button>
             </div>
         </div>
     </div>
@@ -1051,24 +1070,24 @@
                 <span class="close" onclick="closeModal('create-apikey-modal')">&times;</span>
             </div>
             <div class="form-group">
-                <label class="form-label">Name *</label>
-                <input type="text" id="new-apikey-name" class="form-input" 
-                       placeholder="Dify Integration, Mobile App, etc." required>
+                <label class="form-label" for="new-apikey-name">Name *</label>
+                <input type="text" id="new-apikey-name" name="new-apikey-name" class="form-input" 
+                       placeholder="Dify Integration, Mobile App, etc." autocomplete="off" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Description</label>
-                <textarea id="new-apikey-description" class="form-textarea" style="min-height:80px;"
-                          placeholder="Purpose of this API key..."></textarea>
+                <label class="form-label" for="new-apikey-description">Description</label>
+                <textarea id="new-apikey-description" name="new-apikey-description" class="form-textarea" style="min-height:80px;"
+                          placeholder="Purpose of this API key..." autocomplete="off"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Quota Limit (leave empty for unlimited)</label>
-                <input type="number" id="new-apikey-quota" class="form-input" 
-                       placeholder="10000">
+                <label class="form-label" for="new-apikey-quota">Quota Limit (leave empty for unlimited)</label>
+                <input type="number" id="new-apikey-quota" name="new-apikey-quota" class="form-input" 
+                       placeholder="10000" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label">Expires in (days, optional)</label>
-                <input type="number" id="new-apikey-expires" class="form-input" 
-                       placeholder="365">
+                <label class="form-label" for="new-apikey-expires">Expires in (days, optional)</label>
+                <input type="number" id="new-apikey-expires" name="new-apikey-expires" class="form-input" 
+                       placeholder="365" autocomplete="off">
             </div>
             <button class="btn btn-primary" onclick="createAPIKey()">🔑 Generate API Key</button>
         </div>
@@ -1085,13 +1104,14 @@
                 ⚠️ <strong>Important:</strong> Save this key securely - it won't be shown again!
             </div>
             <div class="form-group">
-                <label class="form-label">API Key</label>
-                <input type="text" id="generated-apikey" class="form-input" readonly 
+                <label class="form-label" for="generated-apikey">API Key</label>
+                <input type="text" id="generated-apikey" name="generated-apikey" class="form-input" readonly 
+                       autocomplete="off"
                        style="font-family:monospace;font-size:0.875rem;" onclick="this.select()">
             </div>
             <div class="form-group">
-                <label class="form-label">Usage Instructions</label>
-                <textarea readonly class="form-textarea" style="min-height:100px;">Add this header to your HTTP requests:
+                <label class="form-label" for="apikey-usage-instructions">Usage Instructions</label>
+                <textarea id="apikey-usage-instructions" name="apikey-usage-instructions" readonly class="form-textarea" style="min-height:100px;" autocomplete="off">Add this header to your HTTP requests:
 X-API-Key: [your-key-here]
 
 Example (curl):
@@ -1111,22 +1131,22 @@ curl -X POST http://your-server/api/generate_graph \
                 <h3 class="modal-title">✏️ Edit API Key</h3>
                 <span class="close" onclick="closeModal('edit-apikey-modal')">&times;</span>
             </div>
-            <input type="hidden" id="edit-apikey-id">
+            <input type="hidden" id="edit-apikey-id" name="edit-apikey-id">
             <div class="form-group">
-                <label class="form-label">Name</label>
-                <input type="text" id="edit-apikey-name" class="form-input">
+                <label class="form-label" for="edit-apikey-name">Name</label>
+                <input type="text" id="edit-apikey-name" name="edit-apikey-name" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label">Description</label>
-                <textarea id="edit-apikey-description" class="form-textarea" style="min-height:80px;"></textarea>
+                <label class="form-label" for="edit-apikey-description">Description</label>
+                <textarea id="edit-apikey-description" name="edit-apikey-description" class="form-textarea" style="min-height:80px;" autocomplete="off"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Quota Limit (empty for unlimited)</label>
-                <input type="number" id="edit-apikey-quota" class="form-input">
+                <label class="form-label" for="edit-apikey-quota">Quota Limit (empty for unlimited)</label>
+                <input type="number" id="edit-apikey-quota" name="edit-apikey-quota" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label">Usage Count (reset to 0 if needed)</label>
-                <input type="number" id="edit-apikey-usage" class="form-input">
+                <label class="form-label" for="edit-apikey-usage">Usage Count (reset to 0 if needed)</label>
+                <input type="number" id="edit-apikey-usage" name="edit-apikey-usage" class="form-input" autocomplete="off">
             </div>
             <button class="btn btn-primary" onclick="updateAPIKey()">💾 Save Changes</button>
         </div>
@@ -1144,8 +1164,10 @@ curl -X POST http://your-server/api/generate_graph \
                 <span class="lang-en">Copy the information below to share with users:</span>
             </div>
             <div class="form-group">
-                <textarea id="share-invite-text" class="form-textarea" readonly
+                <label class="form-label" for="share-invite-text" style="display:none;">Share Invitation Text</label>
+                <textarea id="share-invite-text" name="share-invite-text" class="form-textarea" readonly
                           style="min-height:100px;font-size:1rem;line-height:1.6;background:#f8fafc;border:2px solid #667eea;font-family:inherit;"
+                          autocomplete="off"
                           onclick="this.select()"></textarea>
             </div>
             <button class="btn btn-primary" onclick="selectShareText()" style="width:100%;">
@@ -1375,9 +1397,33 @@ curl -X POST http://your-server/api/generate_graph \
                 document.getElementById('stat-users').textContent = stats.total_users;
                 document.getElementById('stat-orgs').textContent = stats.total_organizations;
                 document.getElementById('stat-recent').textContent = stats.recent_registrations;
+                
+                // Token stats in "XX+yy" format (input+output)
+                const tokenStats = stats.token_stats || { input_tokens: 0, output_tokens: 0 };
+                const inputTokens = tokenStats.input_tokens || 0;
+                const outputTokens = tokenStats.output_tokens || 0;
+                
+                // Format numbers with K/M suffix for readability
+                function formatNumber(num) {
+                    if (num >= 1000000000000) {
+                        return (num / 1000000000000).toFixed(1) + 'T';
+                    } else if (num >= 1000000000) {
+                        return (num / 1000000000).toFixed(1) + 'G';
+                    } else if (num >= 1000000) {
+                        return (num / 1000000).toFixed(1) + 'M';
+                    } else if (num >= 1000) {
+                        return (num / 1000).toFixed(1) + 'K';
+                    }
+                    return num.toString();
+                }
+                
+                const formattedInput = formatNumber(inputTokens);
+                const formattedOutput = formatNumber(outputTokens);
+                document.getElementById('stat-tokens').textContent = `${formattedInput}+${formattedOutput}`;
 
                 // Organization distribution - Top 10 only with rankings
                 const dist = document.getElementById('org-distribution');
+                const tokenStatsByOrg = stats.token_stats_by_org || {};
                 const sortedOrgs = Object.entries(stats.users_by_org)
                     .sort((a, b) => b[1] - a[1])  // Sort by count descending
                     .slice(0, 10);  // Take top 10 only
@@ -1404,6 +1450,16 @@ curl -X POST http://your-server/api/generate_graph \
                             rankStyle = 'background:#f1f5f9;color:#64748b;';
                         }
                         
+                        // Get token stats for this organization
+                        const orgTokenStats = tokenStatsByOrg[org] || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                        const inputTokens = orgTokenStats.input_tokens || 0;
+                        const outputTokens = orgTokenStats.output_tokens || 0;
+                        const formattedInput = formatNumber(inputTokens);
+                        const formattedOutput = formatNumber(outputTokens);
+                        const tokenDisplay = inputTokens > 0 || outputTokens > 0 
+                            ? `${formattedInput}+${formattedOutput}` 
+                            : '0';
+                        
                         return `
                             <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border-bottom:1px solid #e2e8f0;transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                 <div style="min-width:50px;text-align:center;font-weight:700;padding:0.5rem;border-radius:8px;${rankStyle}">
@@ -1414,6 +1470,9 @@ curl -X POST http://your-server/api/generate_graph \
                                 </div>
                                 <div style="font-weight:700;color:#667eea;font-size:1.1rem;">
                                     ${count} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">用户</span><span class="lang-en">users</span></span>
+                                </div>
+                                <div style="font-weight:700;color:#10b981;font-size:1.1rem;min-width:100px;text-align:right;">
+                                    ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
                                 </div>
                             </div>
                         `;
@@ -1439,7 +1498,27 @@ curl -X POST http://your-server/api/generate_graph \
                     const expiresAt = school.expires_at ? new Date(school.expires_at) : null;
                     const isExpired = expiresAt && expiresAt < now;
                     const isActive = school.is_active !== false;
-                    const expiresText = expiresAt ? expiresAt.toLocaleDateString() : '<span class="lang-zh">永久</span><span class="lang-en">Never</span>';
+                    
+                    // Get token stats for this school
+                    const tokenStats = school.token_stats || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                    const inputTokens = tokenStats.input_tokens || 0;
+                    const outputTokens = tokenStats.output_tokens || 0;
+                    
+                    // Format token numbers (reuse formatNumber from loadDashboard)
+                    function formatNumber(num) {
+                        if (num >= 1000000) {
+                            return (num / 1000000).toFixed(1) + 'M';
+                        } else if (num >= 1000) {
+                            return (num / 1000).toFixed(1) + 'K';
+                        }
+                        return num.toString();
+                    }
+                    
+                    const formattedInput = formatNumber(inputTokens);
+                    const formattedOutput = formatNumber(outputTokens);
+                    const tokenDisplay = inputTokens > 0 || outputTokens > 0 
+                        ? `${formattedInput}+${formattedOutput}` 
+                        : '0';
                     
                     return `
                         <tr style="${!isActive || isExpired ? 'background:#fee;' : ''}">
@@ -1454,7 +1533,9 @@ curl -X POST http://your-server/api/generate_graph \
                                     📤
                                 </button>
                             </td>
-                            <td>${expiresText}</td>
+                            <td style="font-weight:700;color:#10b981;">
+                                ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
+                            </td>
                             <td>
                                 ${!isActive ? 
                                     '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span></span>' : 
@@ -1627,13 +1708,42 @@ curl -X POST http://your-server/api/generate_graph \
                 usersTotal = data.pagination.total;
 
                 const tbody = document.getElementById('users-tbody');
+                
+                // Format number helper (reuse from dashboard)
+                function formatNumber(num) {
+                    if (num >= 1000000000000) {
+                        return (num / 1000000000000).toFixed(1) + 'T';
+                    } else if (num >= 1000000000) {
+                        return (num / 1000000000).toFixed(1) + 'G';
+                    } else if (num >= 1000000) {
+                        return (num / 1000000).toFixed(1) + 'M';
+                    } else if (num >= 1000) {
+                        return (num / 1000).toFixed(1) + 'K';
+                    }
+                    return num.toString();
+                }
+                
                 tbody.innerHTML = users.map(user => {
                     const isLocked = user.locked_until && new Date(user.locked_until) > new Date();
+                    
+                    // Get token stats for this user
+                    const tokenStats = user.token_stats || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                    const inputTokens = tokenStats.input_tokens || 0;
+                    const outputTokens = tokenStats.output_tokens || 0;
+                    const formattedInput = formatNumber(inputTokens);
+                    const formattedOutput = formatNumber(outputTokens);
+                    const tokenDisplay = inputTokens > 0 || outputTokens > 0 
+                        ? `${formattedInput}+${formattedOutput}` 
+                        : '0';
+                    
                     return `
                         <tr>
                             <td>${user.phone}</td>
                             <td>${user.name || '-'}</td>
                             <td>${user.organization_name || '-'} (${user.organization_code || '-'})</td>
+                            <td style="font-weight:700;color:#10b981;">
+                                ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
+                            </td>
                             <td>
                                 ${isLocked ? 
                                     '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span></span>' : 
@@ -1754,6 +1864,8 @@ curl -X POST http://your-server/api/generate_graph \
             document.getElementById('edit-user-id').value = user.id;
             document.getElementById('edit-user-phone').value = user.phone_real || user.phone;
             document.getElementById('edit-user-name').value = user.name || '';
+            // Reset password field to default
+            document.getElementById('edit-user-reset-password').value = '12345678';
 
             // Load organizations for dropdown
             try {
@@ -1850,17 +1962,31 @@ curl -X POST http://your-server/api/generate_graph \
         async function resetPasswordFromModal() {
             const userId = document.getElementById('edit-user-id').value;
             const phone = document.getElementById('edit-user-phone').value;
+            const passwordInput = document.getElementById('edit-user-reset-password');
+            const newPassword = passwordInput.value.trim() || '12345678';
             
-            if (!confirm(`⚠️ 确定重置该用户的密码为 12345678？\n⚠️ Reset this user's password to 12345678?\n\nUser: ${phone}\n\nThe user will need to login again with the new password.`)) {
+            const confirmMessage = newPassword === '12345678' 
+                ? `⚠️ 确定重置该用户的密码为 '12345678'？\n⚠️ Reset this user's password to '12345678'?\n\nUser: ${phone}\n\nThe user will need to login again with the new password.`
+                : `⚠️ 确定重置该用户的密码？\n⚠️ Reset this user's password?\n\nUser: ${phone}\n\nNew password: ${'*'.repeat(newPassword.length)}\n\nThe user will need to login again with the new password.`;
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
 
             try {
+                const requestBody = { password: newPassword };
                 await auth.fetch(`/api/auth/admin/users/${userId}/reset-password`, {
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
                 });
 
-                showAlert('密码重置成功 Password reset to 12345678 successfully', 'success');
+                const successMessage = newPassword === '12345678'
+                    ? '密码重置成功 (重置为默认密码 "12345678") Password reset successfully (to default "12345678")'
+                    : `密码重置成功 Password reset successfully`;
+                showAlert(successMessage, 'success');
                 closeModal('edit-user-modal');
                 loadUsers();
             } catch (error) {

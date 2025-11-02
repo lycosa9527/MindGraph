@@ -15,8 +15,9 @@ import string
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
 from captcha.image import ImageCaptcha
 
 from config.database import get_db
@@ -622,8 +623,49 @@ async def list_organizations_admin(
     
     orgs = db.query(Organization).all()
     result = []
+    
+    # Get token stats for all organizations (this week)
+    token_stats_by_org = {}
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+    
+    try:
+        from models.token_usage import TokenUsage
+        org_token_stats = db.query(
+            Organization.id,
+            Organization.name,
+            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
+            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
+        ).outerjoin(
+            TokenUsage,
+            and_(
+                Organization.id == TokenUsage.organization_id,
+                TokenUsage.created_at >= week_ago,
+                TokenUsage.success == True
+            )
+        ).group_by(
+            Organization.id,
+            Organization.name
+        ).all()
+        
+        for org_stat in org_token_stats:
+            token_stats_by_org[org_stat.id] = {
+                "input_tokens": int(org_stat.input_tokens or 0),
+                "output_tokens": int(org_stat.output_tokens or 0),
+                "total_tokens": int(org_stat.total_tokens or 0)
+            }
+    except (ImportError, Exception) as e:
+        logger.debug(f"TokenUsage not available yet: {e}")
+    
     for org in orgs:
         user_count = db.query(User).filter(User.organization_id == org.id).count()
+        org_token_stats = token_stats_by_org.get(org.id, {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0
+        })
+        
         result.append({
             "id": org.id,
             "code": org.code,
@@ -632,7 +674,8 @@ async def list_organizations_admin(
             "user_count": user_count,
             "expires_at": org.expires_at.isoformat() if org.expires_at else None,
             "is_active": org.is_active if hasattr(org, 'is_active') else True,
-            "created_at": org.created_at.isoformat() if org.created_at else None
+            "created_at": org.created_at.isoformat() if org.created_at else None,
+            "token_stats": org_token_stats
         })
     return result
 
@@ -852,6 +895,35 @@ async def list_users_admin(
     # Get paginated users
     users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
     
+    # Get token stats for all users (this week)
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+    token_stats_by_user = {}
+    
+    try:
+        from models.token_usage import TokenUsage
+        user_token_stats = db.query(
+            TokenUsage.user_id,
+            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
+            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
+        ).filter(
+            TokenUsage.created_at >= week_ago,
+            TokenUsage.success == True,
+            TokenUsage.user_id.isnot(None)
+        ).group_by(
+            TokenUsage.user_id
+        ).all()
+        
+        for stat in user_token_stats:
+            token_stats_by_user[stat.user_id] = {
+                "input_tokens": int(stat.input_tokens or 0),
+                "output_tokens": int(stat.output_tokens or 0),
+                "total_tokens": int(stat.total_tokens or 0)
+            }
+    except (ImportError, Exception) as e:
+        logger.debug(f"TokenUsage not available yet: {e}")
+    
     result = []
     for user in users:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
@@ -862,6 +934,13 @@ async def list_users_admin(
         if len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
         
+        # Get token stats for this user
+        user_token_stats = token_stats_by_user.get(user.id, {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0
+        })
+        
         result.append({
             "id": user.id,
             "phone": masked_phone,  # Masked for display
@@ -871,7 +950,8 @@ async def list_users_admin(
             "organization_code": org.code if org else None,
             "organization_name": org.name if org else None,
             "locked_until": user.locked_until.isoformat() if user.locked_until else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "token_stats": user_token_stats  # Token usage for this user
         })
     
     return {
@@ -1010,10 +1090,22 @@ async def unlock_user_admin(
 @router.put("/admin/users/{user_id}/reset-password", dependencies=[Depends(get_current_user)])
 async def reset_user_password_admin(
     user_id: int,
+    request: Optional[dict] = Body(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Reset user password to default (12345678) (ADMIN ONLY)"""
+    """Reset user password (ADMIN ONLY)
+    
+    Request body (optional):
+        {
+            "password": "new_password"  # Optional, defaults to "12345678" if not provided
+        }
+    
+    Security:
+        - Admin only
+        - Cannot reset own password
+        - Also unlocks account if locked
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     
@@ -1025,15 +1117,24 @@ async def reset_user_password_admin(
     if user.id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot reset your own password")
     
-    # Reset password to default
-    from utils.auth import hash_password
-    user.password_hash = hash_password("12345678")
+    # Get password from request body, default to '12345678' if not provided
+    password = request.get("password") if request and isinstance(request, dict) else None
+    new_password = password if password and password.strip() else "12345678"
+    
+    # Validate password length (minimum 8 characters as per system requirement)
+    if not new_password or len(new_password.strip()) == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password cannot be empty")
+    if len(new_password.strip()) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters long")
+    
+    # Reset password
+    user.password_hash = hash_password(new_password)
     user.failed_login_attempts = 0  # Also unlock if locked
     user.locked_until = None
     db.commit()
     
     logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
-    return {"message": f"Password reset to 12345678 for user {user.phone}"}
+    return {"message": f"Password reset successfully for user {user.phone}"}
 
 
 # ============================================================================
@@ -1142,11 +1243,80 @@ async def get_stats_admin(
     week_ago = now - timedelta(days=7)
     recent_registrations = db.query(User).filter(User.created_at >= week_ago).count()
     
+    # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
+    token_stats = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+    }
+    
+    # Per-organization token usage (for school-level reporting)
+    token_stats_by_org = {}
+    
+    try:
+        from models.token_usage import TokenUsage
+        
+        # Global token stats for past week
+        week_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.created_at >= week_ago,
+            TokenUsage.success == True
+        ).first()
+        
+        if week_token_stats:
+            token_stats = {
+                "input_tokens": int(week_token_stats.input_tokens or 0),
+                "output_tokens": int(week_token_stats.output_tokens or 0),
+                "total_tokens": int(week_token_stats.total_tokens or 0)
+            }
+        
+        # Per-organization token usage (track every school's usage!)
+        # Use LEFT JOIN to include organizations with no token usage
+        org_token_stats = db.query(
+            Organization.id,
+            Organization.name,
+            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
+            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
+            func.coalesce(func.count(TokenUsage.id), 0).label('request_count')
+        ).outerjoin(
+            TokenUsage, 
+            and_(
+                Organization.id == TokenUsage.organization_id,
+                TokenUsage.created_at >= week_ago,
+                TokenUsage.success == True
+            )
+        ).group_by(
+            Organization.id,
+            Organization.name
+        ).all()
+        
+        # Build per-organization stats dictionary
+        # Only include organizations that actually have token usage
+        for org_stat in org_token_stats:
+            if org_stat.request_count and org_stat.request_count > 0:
+                token_stats_by_org[org_stat.name] = {
+                    "org_id": org_stat.id,
+                    "input_tokens": int(org_stat.input_tokens or 0),
+                    "output_tokens": int(org_stat.output_tokens or 0),
+                    "total_tokens": int(org_stat.total_tokens or 0),
+                    "request_count": int(org_stat.request_count or 0)
+                }
+            
+    except (ImportError, Exception) as e:
+        # TokenUsage model doesn't exist yet or table not created - return zeros
+        logger.debug(f"TokenUsage not available yet: {e}")
+    
     return {
         "total_users": total_users,
         "total_organizations": total_orgs,
         "users_by_org": users_by_org,
-        "recent_registrations": recent_registrations
+        "recent_registrations": recent_registrations,
+        "token_stats": token_stats,  # Global token stats
+        "token_stats_by_org": token_stats_by_org  # Per-organization token stats (every school!)
     }
 
 

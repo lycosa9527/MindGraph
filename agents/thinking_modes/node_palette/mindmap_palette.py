@@ -43,7 +43,11 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
         educational_context: Optional[Dict[str, Any]] = None,
         nodes_per_llm: int = 15,
         stage: str = 'branches',  # NEW: stage parameter
-        stage_data: Optional[Dict[str, Any]] = None  # NEW: stage-specific data
+        stage_data: Optional[Dict[str, Any]] = None,  # NEW: stage-specific data
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        diagram_type: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
@@ -56,7 +60,7 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
             stage: Generation stage ('branches', 'children')
             stage_data: Stage-specific data (branch_name, etc.)
         """
-        # Store stage info
+        # Store stage info (for backward compatibility and state tracking)
         if session_id not in self.session_stages:
             self.session_stages[session_id] = {}
         self.session_stages[session_id]['stage'] = stage
@@ -68,17 +72,24 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
         if stage_data:
             logger.info("[MindMapPalette] Stage data: %s", stage_data)
         
-        # Pass session_id through educational_context so _build_prompt can access it
+        # Pass session_id and stage_data through educational_context so _build_prompt can access them directly
+        # This is better than relying on session_stages lookup (avoids timing/state sync issues)
         if educational_context is None:
             educational_context = {}
-        educational_context = {**educational_context, '_session_id': session_id}
+        educational_context = {**educational_context, 
+                              '_session_id': session_id,
+                              '_stage': stage,
+                              '_stage_data': stage_data or {}}
         
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
             session_id=session_id,
             center_topic=center_topic,
             educational_context=educational_context,
-            nodes_per_llm=nodes_per_llm
+            nodes_per_llm=nodes_per_llm,
+            user_id=user_id,
+            organization_id=organization_id,
+            diagram_type=diagram_type
         ):
             # Add mode field to every node for explicit tracking
             if event.get('event') == 'node_generated':

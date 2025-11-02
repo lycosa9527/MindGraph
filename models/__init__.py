@@ -22,6 +22,7 @@ from .requests import (
     FrontendLogRequest,
     FrontendLogBatchRequest,
     RecalculateLayoutRequest,
+    FeedbackRequest,
 )
 
 from .responses import (
@@ -49,6 +50,7 @@ __all__ = [
     "FrontendLogRequest",
     "FrontendLogBatchRequest",
     "RecalculateLayoutRequest",
+    "FeedbackRequest",
     # Responses
     "GenerateResponse",
     "ErrorResponse",

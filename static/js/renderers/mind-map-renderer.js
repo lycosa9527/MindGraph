@@ -88,8 +88,6 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         return;
     }
     
-    // Watermark removed from canvas display - will be added during PNG export only
-    
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);

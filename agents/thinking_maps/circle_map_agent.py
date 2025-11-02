@@ -19,13 +19,26 @@ class CircleMapAgent(BaseAgent):
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "circle_map"
         
-    async def generate_graph(self, prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def generate_graph(
+        self, 
+        prompt: str, 
+        language: str = "en",
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Generate a circle map from a prompt.
         
         Args:
             prompt: User's description of what they want to define
             language: Language for generation ("en" or "zh")
+            user_id: User ID for token tracking
+            organization_id: Organization ID for token tracking
+            request_type: Request type for token tracking
+            endpoint_path: Endpoint path for token tracking
             
         Returns:
             Dict containing success status and generated spec
@@ -34,7 +47,14 @@ class CircleMapAgent(BaseAgent):
             logger.info(f"CircleMapAgent: Starting circle map generation for prompt")
             
             # Generate the circle map specification
-            spec = await self._generate_circle_map_spec(prompt, language)
+            spec = await self._generate_circle_map_spec(
+                prompt, 
+                language,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
             
             if not spec:
                 return {
@@ -68,7 +88,16 @@ class CircleMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    async def _generate_circle_map_spec(self, prompt: str, language: str) -> Optional[Dict]:
+    async def _generate_circle_map_spec(
+        self, 
+        prompt: str, 
+        language: str,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
         """Generate the circle map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -92,7 +121,13 @@ class CircleMapAgent(BaseAgent):
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE  # From .env (default 0.3 for structured output)
+                temperature=config.LLM_TEMPERATURE,  # From .env (default 0.3 for structured output)
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='circle_map'
             )
             
             # Extract JSON from response

@@ -67,39 +67,75 @@ function cleanupMeasurementContainer() {
 
 // --- Watermark utilities ---
 function getWatermarkText(theme = null) {
-    return theme?.watermark?.text || 'MindGraph';
+    // Try to get school name from user's organization
+    try {
+        // Try multiple ways to access auth (global, window.auth, window.AuthHelper)
+        const authHelper = window.auth || window.AuthHelper || (typeof auth !== 'undefined' ? auth : null);
+        
+        if (authHelper && typeof authHelper.getUser === 'function') {
+            const user = authHelper.getUser();
+            if (user && user.organization && user.organization.name) {
+                return user.organization.name;
+            }
+        }
+    } catch (error) {
+        // Silently fallback if auth is not available
+        console.debug('Watermark: Could not get school name', error);
+    }
+    
+    // Fallback to theme watermark or default
+    return theme?.watermark?.text || '';
 }
 
 function addWatermark(svg, theme = null) {
+    if (!svg || !svg.node()) {
+        console.debug('Watermark: SVG not valid');
+        return;
+    }
+    
     const watermarkText = getWatermarkText(theme);
+    
+    // Don't add watermark if there's no school name
+    if (!watermarkText || watermarkText.trim() === '') {
+        console.debug('Watermark: No school name available, skipping watermark');
+        return;
+    }
+    
     const watermarkConfig = theme?.watermark || {};
     
-    // Default watermark configuration - EXACTLY as in original d3-renderers.js
+    // Elegant, professional, clean, and simple watermark configuration
     const config = {
         text: watermarkText,
-        fontSize: watermarkConfig.fontSize || '12px',
-        fill: watermarkConfig.fill || '#2c3e50', // Changed to match original: dark blue-grey
-        opacity: watermarkConfig.opacity || 0.8, // Changed to match original: 80% opacity
+        fontSize: watermarkConfig.fontSize || '11px',
+        fill: watermarkConfig.fill || '#6b7280', // Subtle gray color
+        opacity: watermarkConfig.opacity || 0.65, // Subtle opacity for elegant look
         position: watermarkConfig.position || 'bottom-right',
-        padding: watermarkConfig.padding || 10
+        padding: watermarkConfig.padding || 12
     };
     
     // Get SVG dimensions AND viewBox offsets (critical for bubble/circle maps)
     const svgNode = svg.node();
+    if (!svgNode) {
+        console.debug('Watermark: SVG node not found');
+        return;
+    }
+    
     let width, height, offsetX = 0, offsetY = 0;
     
     // Try to get viewBox first (most reliable and handles offsets)
     const viewBox = svgNode.getAttribute('viewBox');
     if (viewBox) {
         const parts = viewBox.split(' ').map(Number);
-        offsetX = parts[0];  // minX offset (can be negative for bubble/circle maps)
-        offsetY = parts[1];  // minY offset (can be negative for bubble/circle maps)
-        width = parts[2];    // viewBox width
-        height = parts[3];   // viewBox height
+        if (parts.length === 4) {
+            offsetX = parts[0];  // minX offset (can be negative for bubble/circle maps)
+            offsetY = parts[1];  // minY offset (can be negative for bubble/circle maps)
+            width = parts[2];    // viewBox width
+            height = parts[3];   // viewBox height
+        }
     } else {
         // Fallback to width/height attributes if no viewBox
-        width = parseFloat(svgNode.getAttribute('width')) || 800;
-        height = parseFloat(svgNode.getAttribute('height')) || 600;
+        width = parseFloat(svgNode.getAttribute('width')) || parseFloat(svgNode.style.width) || 800;
+        height = parseFloat(svgNode.getAttribute('height')) || parseFloat(svgNode.style.height) || 600;
         // offsetX and offsetY remain 0
     }
     
@@ -130,20 +166,27 @@ function addWatermark(svg, theme = null) {
             break;
     }
     
-    // Add watermark text - EXACTLY as in original d3-renderers.js
+    // Remove existing watermark if any (to avoid duplicates on re-render)
+    svg.selectAll('.watermark').remove();
+    
+    // Add watermark text - elegant, professional, clean, and simple
     svg.append('text')
         .attr('class', 'watermark')
         .attr('x', x)
         .attr('y', y)
         .attr('text-anchor', textAnchor)
-        .attr('dominant-baseline', 'alphabetic') // Added to match original
+        .attr('dominant-baseline', 'alphabetic')
         .attr('font-size', config.fontSize)
-        .attr('font-family', 'Inter, Segoe UI, sans-serif') // Changed back to Inter
-        .attr('font-weight', '500') // Changed to match original
+        .attr('font-family', 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif')
+        .attr('font-weight', '400') // Regular weight for clean, simple look
+        .attr('letter-spacing', '0.01em') // Subtle letter spacing for elegance
         .attr('fill', config.fill)
         .attr('opacity', config.opacity)
-        .attr('pointer-events', 'none') // Changed from style to attr to match original
+        .attr('pointer-events', 'none')
+        .style('user-select', 'none') // Prevent text selection
         .text(config.text);
+    
+    console.debug('Watermark: Added school name watermark', { text: watermarkText, x, y, width, height });
 }
 
 // --- Common color and styling utilities ---

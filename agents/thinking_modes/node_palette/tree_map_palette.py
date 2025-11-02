@@ -45,7 +45,11 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         educational_context: Optional[Dict[str, Any]] = None,
         nodes_per_llm: int = 15,
         stage: str = 'categories',  # NEW: stage parameter
-        stage_data: Optional[Dict[str, Any]] = None  # NEW: stage-specific data
+        stage_data: Optional[Dict[str, Any]] = None,  # NEW: stage-specific data
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        diagram_type: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
@@ -80,7 +84,10 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
             session_id=session_id,
             center_topic=center_topic,
             educational_context=educational_context,
-            nodes_per_llm=nodes_per_llm
+            nodes_per_llm=nodes_per_llm,
+            user_id=user_id,
+            organization_id=organization_id,
+            diagram_type=diagram_type
         ):
             # Add mode field to every node for explicit tracking (like Double Bubble and Multi Flow)
             if event.get('event') == 'node_generated':

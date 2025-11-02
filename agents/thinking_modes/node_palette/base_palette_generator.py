@@ -60,7 +60,11 @@ class BasePaletteGenerator(ABC):
         session_id: str,
         center_topic: str,
         educational_context: Optional[Dict[str, Any]] = None,
-        nodes_per_llm: int = 15
+        nodes_per_llm: int = 15,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        diagram_type: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch of nodes using ALL 4 LLMs with concurrent token streaming.
@@ -116,8 +120,15 @@ class BasePaletteGenerator(ABC):
         llm_unique_counts = {llm: 0 for llm in self.llm_models}
         llm_duplicate_counts = {llm: 0 for llm in self.llm_models}
         
+        # Round-robin buffering: collect nodes from each LLM and yield in interleaved order
+        # This ensures users see nodes from all LLMs mixed together, not grouped by LLM
+        pending_nodes = {llm: [] for llm in self.llm_models}
+        llm_active = {llm: True for llm in self.llm_models}  # Track which LLMs are still streaming
+        llm_yield_order = self.llm_models.copy()  # Round-robin order
+        next_llm_index = 0
+        
         # 🚀 CONCURRENT TOKEN STREAMING - All 4 LLMs fire simultaneously!
-        logger.info("[NodePalette] Streaming from %d LLMs with progressive rendering...", len(self.llm_models))
+        logger.info("[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...", len(self.llm_models))
         
         async for chunk in self.llm_service.stream_progressive(
             prompt=prompt,
@@ -125,7 +136,14 @@ class BasePaletteGenerator(ABC):
             temperature=temperature,
             max_tokens=500,
             timeout=20.0,
-            system_message=system_message
+            system_message=system_message,
+            # Token tracking parameters
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type='node_palette',
+            diagram_type=diagram_type,
+            endpoint_path='/thinking_mode/node_palette/start',
+            session_id=session_id
         ):
             event = chunk['event']
             llm_name = chunk['llm']
@@ -156,7 +174,7 @@ class BasePaletteGenerator(ABC):
                         is_unique, match_type, similarity = self._deduplicate_node(node_text, session_id)
                         
                         if is_unique:
-                            # UNIQUE NODE - yield immediately for progressive rendering!
+                            # UNIQUE NODE - add to round-robin buffer for interleaved yielding
                             node = {
                                 'id': f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
                                 'text': node_text,
@@ -177,17 +195,34 @@ class BasePaletteGenerator(ABC):
                                 self.generated_nodes[session_id] = []
                             self.generated_nodes[session_id].append(node)
                             
-                            # Yield immediately - node appears NOW!
-                            yield {
+                            # Add to round-robin buffer instead of yielding immediately
+                            pending_nodes[llm_name].append({
                                 'event': 'node_generated',
                                 'node': node
-                            }
+                            })
+                            
+                            # Yield nodes in round-robin order (ensures interleaving)
+                            # Yield up to 4 nodes (one from each LLM if available)
+                            yielded_any = False
+                            for _ in range(len(self.llm_models)):
+                                llm = llm_yield_order[next_llm_index]
+                                next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
+                                
+                                if len(pending_nodes[llm]) > 0:
+                                    yield pending_nodes[llm].pop(0)
+                                    yielded_any = True
+                            
+                            # If no nodes yielded (all buffers empty), don't block
+                            # The next node arrival will trigger another round-robin cycle
                             
                             llm_unique_counts[llm_name] += 1
                         else:
                             llm_duplicate_counts[llm_name] += 1
             
             elif event == 'complete':
+                # LLM stream complete - mark as inactive and yield any remaining pending nodes
+                llm_active[llm_name] = False
+                
                 # LLM stream complete - process any remaining text
                 if current_lines[llm_name].strip():
                     node_text = current_lines[llm_name].lstrip('0123456789.-、）) ').strip()
@@ -212,10 +247,21 @@ class BasePaletteGenerator(ABC):
                             if session_id not in self.generated_nodes:
                                 self.generated_nodes[session_id] = []
                             self.generated_nodes[session_id].append(node)
-                            yield {
+                            
+                            # Add to round-robin buffer (final node from this LLM)
+                            pending_nodes[llm_name].append({
                                 'event': 'node_generated',
                                 'node': node
-                            }
+                            })
+                            
+                            # Yield any pending nodes in round-robin order
+                            for _ in range(len(self.llm_models)):
+                                llm = llm_yield_order[next_llm_index]
+                                next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
+                                
+                                if len(pending_nodes[llm]) > 0:
+                                    yield pending_nodes[llm].pop(0)
+                            
                             llm_unique_counts[llm_name] += 1
                 
                 # Record stats for this LLM
@@ -225,6 +271,10 @@ class BasePaletteGenerator(ABC):
                     'duration': chunk.get('duration', 0),
                     'token_count': chunk.get('token_count', 0)
                 }
+                
+                # Yield any remaining pending nodes from this LLM before completing
+                while len(pending_nodes[llm_name]) > 0:
+                    yield pending_nodes[llm_name].pop(0)
                 
                 # Yield llm_complete event
                 yield {
@@ -240,6 +290,14 @@ class BasePaletteGenerator(ABC):
                     llm_name, batch_num, llm_unique_counts[llm_name], 
                     llm_duplicate_counts[llm_name], chunk.get('duration', 0)
                 )
+                
+                # After LLM completes, yield any remaining nodes from other LLMs in round-robin
+                for _ in range(len(self.llm_models)):
+                    llm = llm_yield_order[next_llm_index]
+                    next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
+                    
+                    if len(pending_nodes[llm]) > 0:
+                        yield pending_nodes[llm].pop(0)
             
             elif event == 'error':
                 # LLM failed

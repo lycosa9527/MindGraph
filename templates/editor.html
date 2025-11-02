@@ -41,8 +41,9 @@
             <button id="language-toggle" class="control-btn" title="Switch Language">
                 <span class="lang-text">EN</span>
             </button>
-            <button id="share-btn" class="control-btn" title="Share">
-                <span>Share</span>
+            <button id="feedback-btn" class="control-btn" title="Feedback" style="display: none;">
+                <span class="lang-en">Feedback</span>
+                <span class="lang-zh">反馈</span>
             </button>
             <button id="logout-btn" class="control-btn" title="Logout">
                 <span>Logout</span>
@@ -58,9 +59,11 @@
         <div class="prompt-section">
             <div class="prompt-container">
                 <div class="prompt-input-wrapper">
+                    <label for="prompt-input" style="display:none;">Diagram prompt input</label>
                     <input 
                         type="text" 
                         id="prompt-input" 
+                        name="prompt-input"
                         class="prompt-input" 
                         placeholder="Describe your diagram or choose from templates below..."
                         autocomplete="off"
@@ -422,7 +425,7 @@
             <!-- Nodes Section: Node Management (节点) -->
             <div class="toolbar-section toolbar-nodes-section">
                 <div class="toolbar-group nodes-toolbar-group">
-                    <label>Nodes:</label>
+                    <span class="toolbar-group-label">Nodes:</span>
                     <button id="add-node-btn" class="btn-tool" title="Add Node">Add</button>
                     <button id="delete-node-btn" class="btn-tool" title="Delete Selected">Delete</button>
                     <button id="auto-complete-btn" class="btn-tool btn-auto" title="Auto-complete diagram with AI">
@@ -466,7 +469,7 @@
             <!-- Tools Section: Tool Management (工具) -->
             <div class="toolbar-section toolbar-tools-section">
                 <div class="toolbar-group tools-toolbar-group">
-                    <label>Tools:</label>
+                    <span class="toolbar-group-label">Tools:</span>
                     <button id="empty-node-btn" class="btn-tool" title="Empty selected node text">Empty</button>
                     <button id="undo-btn" class="btn-tool" title="Undo">Undo</button>
                     <button id="redo-btn" class="btn-tool" title="Redo">Redo</button>
@@ -506,16 +509,17 @@
                 <div class="property-content">
                     <!-- Text Properties -->
                     <div class="property-group">
-                        <label>Text</label>
-                        <input type="text" id="prop-text" class="prop-input" placeholder="Node text">
+                        <label for="prop-text">Text</label>
+                        <input type="text" id="prop-text" name="prop-text" class="prop-input" placeholder="Node text" autocomplete="off">
                         <button id="prop-text-apply" class="prop-btn">Apply</button>
                     </div>
                     
                     <!-- Font Properties -->
                     <div class="property-group">
-                        <label>Font Size</label>
-                        <input type="number" id="prop-font-size" class="prop-input" min="8" max="72" value="14">
-                        <select id="prop-font-family" class="prop-select">
+                        <label for="prop-font-size">Font Size</label>
+                        <input type="number" id="prop-font-size" name="prop-font-size" class="prop-input" min="8" max="72" value="14" autocomplete="off">
+                        <label for="prop-font-family" style="display:none;">Font Family</label>
+                        <select id="prop-font-family" name="prop-font-family" class="prop-select">
                             <option value="Inter, sans-serif">Inter</option>
                             <option value="Arial, sans-serif">Arial</option>
                             <option value="Georgia, serif">Georgia</option>
@@ -536,40 +540,43 @@
                     
                     <!-- Color Properties -->
                     <div class="property-group">
-                        <label>Text Color</label>
+                        <label for="prop-text-color">Text Color</label>
                         <div class="color-picker-group">
-                            <input type="color" id="prop-text-color" value="#000000">
-                            <input type="text" id="prop-text-color-hex" class="color-hex-input" value="#000000">
+                            <input type="color" id="prop-text-color" name="prop-text-color" value="#000000">
+                            <label for="prop-text-color-hex" style="display:none;">Text Color Hex Value</label>
+                            <input type="text" id="prop-text-color-hex" name="prop-text-color-hex" class="color-hex-input" value="#000000" autocomplete="off">
                         </div>
                     </div>
                     
                     <div class="property-group">
-                        <label>Fill Color</label>
+                        <label for="prop-fill-color">Fill Color</label>
                         <div class="color-picker-group">
-                            <input type="color" id="prop-fill-color" value="#2196f3">
-                            <input type="text" id="prop-fill-color-hex" class="color-hex-input" value="#2196f3">
+                            <input type="color" id="prop-fill-color" name="prop-fill-color" value="#2196f3">
+                            <label for="prop-fill-color-hex" style="display:none;">Fill Color Hex Value</label>
+                            <input type="text" id="prop-fill-color-hex" name="prop-fill-color-hex" class="color-hex-input" value="#2196f3" autocomplete="off">
                         </div>
                     </div>
                     
                     <div class="property-group">
-                        <label>Stroke Color</label>
+                        <label for="prop-stroke-color">Stroke Color</label>
                         <div class="color-picker-group">
-                            <input type="color" id="prop-stroke-color" value="#1976d2">
-                            <input type="text" id="prop-stroke-color-hex" class="color-hex-input" value="#1976d2">
+                            <input type="color" id="prop-stroke-color" name="prop-stroke-color" value="#1976d2">
+                            <label for="prop-stroke-color-hex" style="display:none;">Stroke Color Hex Value</label>
+                            <input type="text" id="prop-stroke-color-hex" name="prop-stroke-color-hex" class="color-hex-input" value="#1976d2" autocomplete="off">
                         </div>
                     </div>
                     
                     <!-- Stroke Width -->
                     <div class="property-group">
-                        <label>Stroke Width</label>
-                        <input type="range" id="prop-stroke-width" class="prop-slider" min="0" max="10" step="0.5" value="2">
+                        <label for="prop-stroke-width">Stroke Width</label>
+                        <input type="range" id="prop-stroke-width" name="prop-stroke-width" class="prop-slider" min="0" max="10" step="0.5" value="2">
                         <span id="stroke-width-value">2px</span>
                     </div>
                     
                     <!-- Opacity -->
                     <div class="property-group">
-                        <label>Opacity</label>
-                        <input type="range" id="prop-opacity" class="prop-slider" min="0" max="1" step="0.1" value="1">
+                        <label for="prop-opacity">Opacity</label>
+                        <input type="range" id="prop-opacity" name="prop-opacity" class="prop-slider" min="0" max="1" step="0.1" value="1">
                         <span id="opacity-value">100%</span>
                     </div>
                     
@@ -632,11 +639,14 @@
                 
                 <div class="thinking-input-area">
                     <div class="thinking-input-wrapper">
+                        <label for="thinking-input" style="display:none;">Thinking input</label>
                         <textarea 
                             id="thinking-input" 
+                            name="thinking-input"
                             class="thinking-input" 
                             placeholder="输入你的回答..."
                             rows="1"
+                            autocomplete="off"
                         ></textarea>
                         <button id="thinking-stop-btn" class="thinking-stop-btn" title="Stop generation" style="display: none;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -690,11 +700,14 @@
                     
                     <div class="ai-chat-input-container">
                         <div class="ai-input-wrapper">
+                            <label for="ai-chat-input" style="display:none;">AI chat input</label>
                             <textarea 
                                 id="ai-chat-input" 
+                                name="ai-chat-input"
                                 class="ai-chat-input" 
                                 placeholder="Ask {{ ai_assistant_name.split(' ')[0] if ai_assistant_name else 'MindMate' }} anything..."
                                 rows="1"
+                                autocomplete="off"
                             ></textarea>
                             <button id="ai-chat-send" class="ai-chat-send-btn">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -763,6 +776,7 @@
                 </div>
             </div>
             <div class="status-right">
+                <span id="school-name-display" class="school-name" style="display: none;"></span>
                 <button id="reset-view-btn" class="reset-view-btn" title="Fit diagram to window">
                     <span class="reset-view-icon">⛶</span> Reset View
                 </button>

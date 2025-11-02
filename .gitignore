@@ -53,6 +53,11 @@ logs/*.pid
 *.sqlite
 *.sqlite3
 
+# Database backups
+backups/
+*.backup_*
+*_backup_*.sql
+
 # Node.js
 node_modules/
 npm-debug.log*

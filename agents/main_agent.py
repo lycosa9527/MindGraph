@@ -719,7 +719,16 @@ def validate_agent_setup():
 
 
 
-async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, model: str = 'qwen') -> dict:
+async def _detect_diagram_type_from_prompt(
+    user_prompt: str, 
+    language: str, 
+    model: str = 'qwen',
+    # Token tracking parameters
+    user_id=None,
+    organization_id=None,
+    request_type='diagram_generation',
+    endpoint_path=None
+) -> dict:
     """
     LLM-based diagram type detection using semantic understanding.
     
@@ -751,7 +760,12 @@ async def _detect_diagram_type_from_prompt(user_prompt: str, language: str, mode
             prompt=classification_prompt,
             model=model,
             max_tokens=50,
-            temperature=0.3
+            temperature=0.3,
+            # Token tracking parameters
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=request_type,
+            endpoint_path=endpoint_path
         )
         
         # Extract diagram type from response
@@ -1401,7 +1415,19 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
     raise ValueError("All concept map generation methods failed - check LLM configuration")
 
 
-async def _generate_spec_with_agent(user_prompt: str, diagram_type: str, language: str, dimension_preference: str = None, model: str = 'qwen') -> dict:
+async def _generate_spec_with_agent(
+    user_prompt: str, 
+    diagram_type: str, 
+    language: str, 
+    dimension_preference: str = None, 
+    model: str = 'qwen',
+    # Token tracking parameters
+    user_id=None,
+    organization_id=None,
+    request_type='diagram_generation',
+    endpoint_path=None,
+    diagram_type_for_tracking=None
+) -> dict:
     """
     Generate specification using the appropriate specialized agent.
     
@@ -1495,9 +1521,26 @@ async def _generate_spec_with_agent(user_prompt: str, diagram_type: str, languag
                 logger.info(f"Passing classification dimension preference to tree map agent: {dimension_preference}")
             elif diagram_type == 'bridge_map':
                 logger.info(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
-            result = await agent.generate_graph(user_prompt, language, dimension_preference)
+            result = await agent.generate_graph(
+                user_prompt, 
+                language, 
+                dimension_preference,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
         else:
-            result = await agent.generate_graph(user_prompt, language)
+            result = await agent.generate_graph(
+                user_prompt, 
+                language,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
         
         logger.debug(f"Agent result type: {type(result)}")
         logger.debug(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
@@ -1576,7 +1619,18 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     return cleaned_prompt
 
 
-async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_diagram_type=None, dimension_preference=None, model='qwen'):
+async def agent_graph_workflow_with_styles(
+    user_prompt, 
+    language='zh', 
+    forced_diagram_type=None, 
+    dimension_preference=None, 
+    model='qwen',
+    # Token tracking parameters
+    user_id=None,
+    organization_id=None,
+    request_type='diagram_generation',
+    endpoint_path=None
+):
     """
     Simplified agent workflow that directly calls specialized agents.
     
@@ -1604,7 +1658,16 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
             logger.info(f"Using forced diagram type: {diagram_type}")
         else:
             # LLM-based diagram type detection for semantic understanding
-            detection_result = await _detect_diagram_type_from_prompt(user_prompt, language, model)
+            detection_result = await _detect_diagram_type_from_prompt(
+                user_prompt, 
+                language, 
+                model,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
+            )
             diagram_type = detection_result['diagram_type']
             logger.info(f"Detected diagram type: {diagram_type}, clarity: {detection_result['clarity']}")
             
@@ -1640,7 +1703,12 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
                 prompt=topic_extraction_prompt,
                 model=model,
                 max_tokens=50,
-                temperature=0.1  # Lower temperature for more deterministic extraction
+                temperature=0.1,  # Lower temperature for more deterministic extraction
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path
             )
             main_topic = main_topic.strip().strip('"\'')
             logger.info(f"Extracted main topic: '{main_topic}'")
@@ -1665,7 +1733,19 @@ async def agent_graph_workflow_with_styles(user_prompt, language='zh', forced_di
             logger.info(f"Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
-        spec = await _generate_spec_with_agent(generation_prompt, diagram_type, language, dimension_preference, model)
+        spec = await _generate_spec_with_agent(
+            generation_prompt, 
+            diagram_type, 
+            language, 
+            dimension_preference, 
+            model,
+            # Token tracking parameters
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=request_type,
+            endpoint_path=endpoint_path,
+            diagram_type_for_tracking=diagram_type
+        )
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Failed to generate spec for {diagram_type}")

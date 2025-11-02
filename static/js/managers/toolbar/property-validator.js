@@ -244,11 +244,25 @@ class PropertyValidator {
         
         // Log inconsistencies
         if (inconsistencies.length > 0) {
-            analyzeLogger.warn('PropertyValidator', '⚠️ LLM INCONSISTENCIES DETECTED', {
-                timestamp: new Date().toISOString(),
-                inconsistencyCount: inconsistencies.length,
-                inconsistencies: inconsistencies
-            });
+            // Check if there are actual validation failures (real problems)
+            const hasValidationFailures = inconsistencies.some(i => i.type === 'validation_failures');
+            
+            // Only count variance is expected behavior, use INFO level
+            // Validation failures are actual problems, use WARN level
+            if (hasValidationFailures) {
+                analyzeLogger.warn('PropertyValidator', '⚠️ LLM INCONSISTENCIES DETECTED', {
+                    timestamp: new Date().toISOString(),
+                    inconsistencyCount: inconsistencies.length,
+                    inconsistencies: inconsistencies
+                });
+            } else {
+                // Only content count variance - this is normal, use INFO
+                analyzeLogger.info('PropertyValidator', 'ℹ️ LLM content variance (normal)', {
+                    timestamp: new Date().toISOString(),
+                    varianceCount: inconsistencies.length,
+                    variances: inconsistencies
+                });
+            }
         } else {
             analyzeLogger.info('PropertyValidator', '✓ All LLM results are consistent', {
                 timestamp: new Date().toISOString(),

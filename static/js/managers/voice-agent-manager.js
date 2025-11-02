@@ -34,6 +34,17 @@ class VoiceAgentManager {
         this.comicBubble = null;
         this.blackCat = null;
         
+        // Store callback references for proper cleanup
+        this.callbacks = {
+            voiceStart: () => this.startConversation(),
+            voiceStop: () => this.stopConversation(),
+            stateChanged: (data) => {
+                if (data.path === 'panels' && this.isActive) {
+                    this.updateContext();
+                }
+            }
+        };
+        
         // Initialize
         this.init();
         this.subscribeToEvents();
@@ -72,18 +83,14 @@ class VoiceAgentManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for voice agent start/stop requests
-        this.eventBus.on('voice:start_requested', () => this.startConversation());
-        this.eventBus.on('voice:stop_requested', () => this.stopConversation());
+        // Listen for voice agent start/stop requests - use stored callbacks
+        this.eventBus.on('voice:start_requested', this.callbacks.voiceStart);
+        this.eventBus.on('voice:stop_requested', this.callbacks.voiceStop);
         
-        // Listen for panel state changes (to provide context)
-        this.eventBus.on('state:changed', (data) => {
-            if (data.path === 'panels' && this.isActive) {
-                this.updateContext();
-            }
-        });
+        // Listen for panel state changes (to provide context) - use stored callback
+        this.eventBus.on('state:changed', this.callbacks.stateChanged);
         
-        this.logger.debug('VoiceAgentManager', 'Subscribed to events');
+        this.logger.debug('VoiceAgentManager', 'Event listeners registered');
     }
     
     /**
@@ -567,8 +574,8 @@ class VoiceAgentManager {
             
             case 'delete_node':
                 const deleteNodeId = updates.node_id;
-                if (deleteNodeId && window.thinkingModeManager) {
-                    window.thinkingModeManager.removeDiagramNode(deleteNodeId);
+                if (deleteNodeId && window.currentEditor?.thinkGuide) {
+                    window.currentEditor.thinkGuide.removeDiagramNode(deleteNodeId);
                 }
                 break;
         }
@@ -784,10 +791,12 @@ class VoiceAgentManager {
             this.micStream = null;
         }
         
-        // Remove Event Bus listeners
-        this.eventBus.off('voice:start_requested');
-        this.eventBus.off('voice:stop_requested');
-        this.eventBus.off('state:changed');
+        // Remove Event Bus listeners using stored callback references
+        this.eventBus.off('voice:start_requested', this.callbacks.voiceStart);
+        this.eventBus.off('voice:stop_requested', this.callbacks.voiceStop);
+        this.eventBus.off('state:changed', this.callbacks.stateChanged);
+        
+        this.logger.debug('VoiceAgentManager', 'Event listeners successfully removed');
         
         // Clear session
         this.sessionId = null;
@@ -801,6 +810,7 @@ class VoiceAgentManager {
         }
         
         // Nullify references
+        this.callbacks = null;
         this.eventBus = null;
         this.stateManager = null;
         this.comicBubble = null;

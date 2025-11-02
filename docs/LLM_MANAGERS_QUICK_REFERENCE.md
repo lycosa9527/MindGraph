@@ -1,7 +1,7 @@
 # LLM Managers - Quick Reference Guide
 
-**Date:** 2025-10-28  
-**Version:** 1.0 (Post-Refactoring)  
+**Date:** 2025-11-02  
+**Version:** 1.1 (Updated)  
 **Purpose:** Quick reference for using the modular LLM auto-complete architecture
 
 ---
@@ -242,7 +242,7 @@ const requestBody = {
 
 #### Example Usage
 ```javascript
-const engine = new LLMEngineManager(validator, logger);
+const engine = new LLMEngineManager(llmValidationManager, validator, logger);
 
 const results = await engine.callMultipleModels(
     ['qwen', 'deepseek'],
@@ -451,6 +451,7 @@ LLMAutoCompleteManager
 ├─ requires LLMResultCache
 ├─ requires LLMProgressRenderer
 ├─ requires LLMEngineManager
+│  ├─ requires llmValidationManager
 │  └─ requires PropertyValidator
 └─ requires llmValidationManager
 ```
@@ -466,7 +467,7 @@ LLMAutoCompleteManager
 
 ## 📚 References
 
-- **Main Guide:** `docs/TOOLBAR_MANAGER_REFACTORING_GUIDE.md`
+- **Editor Improvements:** `docs/EDITOR_IMPROVEMENT_GUIDE.md` (contains toolbar refactoring details)
 - **Event Bus:** `static/js/managers/event-bus.js`
 - **Logger:** `static/js/managers/logger.js`
 - **Validation Manager:** `static/js/managers/toolbar/llm-validation-manager.js`

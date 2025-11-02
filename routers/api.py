@@ -18,8 +18,9 @@ import asyncio
 import uuid
 from pathlib import Path
 import aiofiles
+import httpx
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.responses import StreamingResponse, JSONResponse, Response, PlainTextResponse, FileResponse
 
 # Import Pydantic models
@@ -33,6 +34,7 @@ from models import (
     FrontendLogRequest,
     FrontendLogBatchRequest,
     RecalculateLayoutRequest,
+    FeedbackRequest,
     Messages,
     get_request_language
 )
@@ -183,12 +185,24 @@ async def generate_graph(
     try:
         # Generate diagram specification - fully async
         # Pass model directly through call chain (no global state)
+        # Pass user context for token tracking
+        user_id = current_user.id if current_user else None
+        organization_id = current_user.organization_id if current_user else None
+        
+        # Determine request type for token tracking (default to 'diagram_generation')
+        request_type = req.request_type if req.request_type else 'diagram_generation'
+        
         result = await agent.agent_graph_workflow_with_styles(
             prompt,
             language=language,
             forced_diagram_type=req.diagram_type.value if req.diagram_type else None,
             dimension_preference=req.dimension_preference,
-            model=llm_model  # Pass model explicitly (fixes race condition)
+            model=llm_model,  # Pass model explicitly (fixes race condition)
+            # Token tracking parameters
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=request_type,
+            endpoint_path='/api/generate_graph'
         )
         
         logger.debug(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram with {llm_model}")
@@ -1268,6 +1282,193 @@ async def generate_multi_progressive(
             'Connection': 'keep-alive'
         }
     )
+
+
+@router.post('/feedback')
+async def submit_feedback(
+    req: FeedbackRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Submit user feedback (bugs, features, issues) via email to support team.
+    Uses Resend API (https://resend.com) for simple email delivery without SMTP setup.
+    Includes captcha verification to prevent spam.
+    """
+    try:
+        from datetime import datetime
+        import time
+        
+        # Import captcha store from auth router
+        # Note: In production, use Redis for multi-server support
+        from routers.auth import captcha_store
+        
+        # Validate captcha first (anti-spam protection)
+        if req.captcha_id not in captcha_store:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha expired or invalid. Please refresh."
+            )
+        
+        stored_captcha = captcha_store[req.captcha_id]
+        
+        # Check expiration
+        if time.time() > stored_captcha["expires"]:
+            del captcha_store[req.captcha_id]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha expired. Please refresh."
+            )
+        
+        # Verify captcha code (case-insensitive)
+        if stored_captcha['code'].upper() != req.captcha.upper():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect captcha code"
+            )
+        
+        # Captcha verified, remove from store (one-time use)
+        del captcha_store[req.captcha_id]
+        logger.debug(f"Captcha verified for feedback from user {req.user_id or 'anonymous'}")
+        
+        # Support email
+        support_email = 'support@mindspringedu.cn'
+        
+        # Try to get user from JWT token if available (optional - allows anonymous feedback)
+        current_user = None
+        try:
+            # Try to get token from Authorization header first
+            auth_header = request.headers.get('Authorization', '')
+            token = None
+            if auth_header.startswith('Bearer '):
+                token = auth_header[7:]
+            else:
+                # Try to get token from cookies (how browser-based auth typically works)
+                token = request.cookies.get('access_token')
+            
+            if token:
+                from utils.auth import decode_access_token
+                payload = decode_access_token(token)
+                user_id_from_token = payload.get("sub")
+                if user_id_from_token:
+                    current_user = db.query(User).filter(User.id == int(user_id_from_token)).first()
+        except Exception:
+            # No valid token, continue as anonymous (this is OK for feedback)
+            pass
+        
+        # Get user info (use from request if provided, otherwise from token, otherwise anonymous)
+        user_id = req.user_id or (current_user.id if current_user else 'anonymous')
+        user_name = req.user_name or (current_user.name if current_user else 'Anonymous User')
+        
+        # Always log feedback to application logs first
+        logger.info(f"[FEEDBACK] User: {user_name} ({user_id})")
+        logger.info(f"[FEEDBACK] Message: {req.message}")
+        
+        # Try to send via Resend API if configured
+        resend_api_key = os.getenv('RESEND_API_KEY')
+        
+        if resend_api_key:
+            try:
+                # Prepare email content
+                email_subject = f'[MindGraph Feedback] From {user_name}'
+                email_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }}
+        .info-row {{ margin: 10px 0; }}
+        .label {{ font-weight: bold; color: #667eea; }}
+        .message-box {{ background: white; padding: 15px; border-left: 4px solid #667eea; margin: 15px 0; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>MindGraph Feedback Submission</h2>
+        </div>
+        <div class="content">
+            <div class="info-row">
+                <span class="label">User ID:</span> {user_id}
+            </div>
+            <div class="info-row">
+                <span class="label">User Name:</span> {user_name}
+            </div>
+            <div class="info-row">
+                <span class="label">Timestamp:</span> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            </div>
+            <div class="message-box">
+                <div class="label">Message:</div>
+                <div style="margin-top: 10px; white-space: pre-wrap;">{req.message}</div>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                This feedback was submitted through MindGraph application.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+                
+                email_text = f"""
+User ID: {user_id}
+User Name: {user_name}
+Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Message:
+{req.message}
+
+---
+This feedback was submitted through MindGraph application.
+"""
+                
+                # Send via Resend API
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(
+                        'https://api.resend.com/emails',
+                        headers={
+                            'Authorization': f'Bearer {resend_api_key}',
+                            'Content-Type': 'application/json'
+                        },
+                        json={
+                            'from': os.getenv('RESEND_FROM_EMAIL', 'MindGraph <feedback@mindspringedu.cn>'),
+                            'to': [support_email],
+                            'subject': email_subject,
+                            'html': email_html,
+                            'text': email_text
+                        }
+                    )
+                    
+                    if response.status_code == 200:
+                        logger.info(f"Feedback email sent successfully via Resend from user {user_id} ({user_name})")
+                    else:
+                        logger.error(f"Resend API error: {response.status_code} - {response.text}")
+                        # Continue - feedback is still logged
+                        
+            except Exception as e:
+                logger.error(f"Failed to send feedback email via Resend: {e}", exc_info=True)
+                # Continue - feedback is still logged
+        else:
+            logger.warning("RESEND_API_KEY not configured, feedback logged only. Set RESEND_API_KEY in .env to enable email delivery.")
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                'success': True,
+                'message': 'Feedback submitted successfully'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing feedback: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail='Failed to submit feedback. Please try again later.'
+        )
 
 
 # Only log from main worker to avoid duplicate messages

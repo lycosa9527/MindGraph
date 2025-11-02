@@ -133,6 +133,13 @@ class InteractiveEditor {
             backgroundColor: '#f5f5f5'
         });
         
+        // Update school name display immediately and also after a short delay
+        // (to ensure auth data is loaded if it wasn't ready)
+        this.updateSchoolNameDisplay();
+        setTimeout(() => {
+            this.updateSchoolNameDisplay();
+        }, 500);
+        
         // Save initial state to history (so user can undo back to start)
         this.saveToHistory('initial_load', { diagramType: this.diagramType });
         
@@ -203,6 +210,11 @@ class InteractiveEditor {
             // - Click and drag: pan around
             // - Middle mouse button drag: pan around
             this.enableZoomAndPan();
+            
+            // Update school name display in status bar (async, no await needed)
+            this.updateSchoolNameDisplay().catch(err => {
+                logger.debug('Editor', 'School name update failed', err);
+            });
             
             // NOTE: Auto-fit is handled by DiagramSelector after initialization
             // This prevents duplicate triggers and ensures clean initial load
@@ -591,6 +603,72 @@ class InteractiveEditor {
      * - Left click + drag: pan around
      * - Middle mouse button + drag: pan around
      */
+    /**
+     * Update school name display in status bar
+     */
+    async updateSchoolNameDisplay() {
+        try {
+            const schoolNameDisplay = document.getElementById('school-name-display');
+            if (!schoolNameDisplay) {
+                console.warn('[Editor] School name display element not found in DOM');
+                return;
+            }
+            
+            // Try to get school name from user's organization
+            const authHelper = window.auth || window.AuthHelper;
+            if (!authHelper) {
+                console.warn('[Editor] Auth helper not available');
+                schoolNameDisplay.style.display = 'none';
+                return;
+            }
+            
+            // First try to get from localStorage
+            let user = null;
+            if (typeof authHelper.getUser === 'function') {
+                user = authHelper.getUser();
+                console.log('[Editor] User from localStorage:', user);
+            }
+            
+            // If no user data, fetch it from server
+            if (!user && typeof authHelper.getCurrentUser === 'function') {
+                console.log('[Editor] Fetching user data from server...');
+                user = await authHelper.getCurrentUser();
+                console.log('[Editor] User from server:', user);
+            }
+            
+            // Handle both string and object organization formats
+            let schoolName = null;
+            if (user && user.organization) {
+                if (typeof user.organization === 'string') {
+                    // Organization stored as string (from localStorage)
+                    schoolName = user.organization;
+                } else if (user.organization.name) {
+                    // Organization stored as object with name property (from server)
+                    schoolName = user.organization.name;
+                }
+            }
+            
+            if (schoolName) {
+                schoolNameDisplay.textContent = schoolName;
+                schoolNameDisplay.style.display = 'inline-block';
+                schoolNameDisplay.style.marginRight = '12px';
+                schoolNameDisplay.style.color = '#ffffff';
+                schoolNameDisplay.style.fontSize = '12px';
+                schoolNameDisplay.style.fontWeight = '500';
+                console.log('[Editor] School name displayed:', schoolName);
+            } else {
+                console.warn('[Editor] No school name available. User:', user);
+                schoolNameDisplay.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('[Editor] Error updating school name display:', error);
+            const schoolNameDisplay = document.getElementById('school-name-display');
+            if (schoolNameDisplay) {
+                schoolNameDisplay.style.display = 'none';
+            }
+        }
+    }
+    
     enableZoomAndPan() {
         const svg = d3.select('#d3-container svg');
         if (svg.empty()) {
@@ -4034,11 +4112,17 @@ class InteractiveEditor {
      */
     updateToolbarState() {
         const hasSelection = this.selectedNodes.size > 0;
+        const selectedNodesArray = Array.from(this.selectedNodes);
+        
+        // Update State Manager (source of truth for selection)
+        if (window.stateManager && typeof window.stateManager.selectNodes === 'function') {
+            window.stateManager.selectNodes(selectedNodesArray);
+        }
         
         // Dispatch custom event for toolbar to listen
         window.dispatchEvent(new CustomEvent('editor-selection-change', {
             detail: {
-                selectedNodes: Array.from(this.selectedNodes),
+                selectedNodes: selectedNodesArray,
                 hasSelection: hasSelection
             }
         }));

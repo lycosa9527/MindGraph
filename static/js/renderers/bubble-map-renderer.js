@@ -248,8 +248,6 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             .text(node.text);
     });
     
-    // Watermark removed from canvas display - will be added during PNG export only
-    
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
@@ -378,10 +376,26 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     };
     
     // Calculate uniform radius for all context nodes
-    const contextRadii = spec.context.map(t => getTextRadius(t, THEME.fontContext, 10));
-    const uniformContextR = Math.max(...contextRadii, 30); // Use the largest required radius for all
+    const contextRadii = spec.context.map((t, idx) => {
+        const radius = getTextRadius(t, THEME.fontContext, 10);
+        return { index: idx, text: t, radius };
+    });
+    const uniformContextR = Math.max(...contextRadii.map(n => n.radius), 30); // Use the largest required radius for all
+    
+    // Find which node(s) determined the uniform radius
+    const largestNodes = contextRadii.filter(n => n.radius === uniformContextR);
     
     logger.info(`[CircleMap-Renderer] Rendering ${spec.context.length} context nodes with uniform radius: ${uniformContextR}px`);
+    console.log('[CircleMap-Renderer] 📏 Node sizing:', {
+        totalNodes: spec.context.length,
+        uniformRadius: Math.round(uniformContextR),
+        largestNode: largestNodes.length > 0 ? {
+            index: largestNodes[0].index,
+            text: largestNodes[0].text.substring(0, 30) + (largestNodes[0].text.length > 30 ? '...' : ''),
+            radius: Math.round(largestNodes[0].radius)
+        } : 'N/A',
+        allRadii: contextRadii.map(n => Math.round(n.radius))
+    });
     
     // Calculate topic circle size (made smaller like original)
     const topicTextRadius = getTextRadius(spec.topic, THEME.fontTopic, 15);
@@ -391,21 +405,69 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     const centerX = baseWidth / 2;
     const centerY = baseHeight / 2;
     
-    // Calculate outer circle radius to accommodate all context circles
-    // Context circles should be adjacent to the outer circle but inside it
-    // Ensure minimum distance between topic and context circles to prevent overlap
-    // Half a circle size away between topic and context nodes
-    const minDistanceBetweenCircles = topicR + uniformContextR + Math.max(topicR, uniformContextR) * 0.5; // Half a circle size gap
-    const outerCircleR = Math.max(minDistanceBetweenCircles + 60, topicR + uniformContextR + 120); // Space between topic and context circles
+    // Calculate optimal radius for children nodes (aim for ~half radius from center)
+    // TWO CONSTRAINTS must be satisfied:
     
-    // Position context circles evenly around the inner perimeter of the outer circle
+    // 1. RADIAL CONSTRAINT: Minimum distance from center for nodes
+    //    Target: topicR + 0.5×topicR (half radius gap) + context node radius
+    //    This keeps nodes close to center while preventing overlap with center node
+    const targetRadialDistance = topicR + (topicR * 0.5) + uniformContextR + 5; // Reduced safety margin from 10px to 5px
+    
+    // 2. CIRCUMFERENTIAL CONSTRAINT: Nodes must not overlap around the perimeter
+    //    Arc length between adjacent node centers must be >= spacingMultiplier × nodeRadius
+    //    Formula: (2π × radius) / nodeCount >= spacingMultiplier × nodeRadius
+    //    Solving for minimum radius: radius >= (spacingMultiplier × nodeRadius × nodeCount) / (2π)
+    //    
+    //    Dynamic spacing based on node count:
+    //      - Few nodes (≤3): minimum spacing (nodes touching)
+    //      - Medium nodes (4-6): tight spacing (5% gap)
+    //      - Many nodes (7+): comfortable spacing (10% gap)
+    let spacingMultiplier;
+    if (spec.context.length <= 3) {
+        spacingMultiplier = 2.0;  // Minimum - nodes just touching
+    } else if (spec.context.length <= 6) {
+        spacingMultiplier = 2.05; // Tight - 5% gap
+    } else {
+        spacingMultiplier = 2.1;  // Comfortable - 10% gap
+    }
+    
+    // CORRECTED FORMULA: Divide by 2π (not just π) - this was causing nodes to be 2× too far apart!
+    const circumferentialMinRadius = (uniformContextR * spec.context.length * spacingMultiplier) / (2 * Math.PI);
+    
+    // Use the LARGER of both constraints to ensure no overlap
+    // This ensures nodes are as close as possible while preventing overlaps
+    const childrenRadius = Math.max(targetRadialDistance, circumferentialMinRadius, 100); // Reduced minimum from 120px to 100px
+    
+    // Outer circle is children nodes + their radius + margin (for visual outer ring)
+    const outerCircleR = childrenRadius + uniformContextR + 10; // Reduced margin from 15px to 10px
+    
+    // Log detailed calculation for debugging
+    const calculationDetails = {
+        nodeCount: spec.context.length,
+        uniformContextR: Math.round(uniformContextR),
+        topicR: Math.round(topicR),
+        targetRadialDistance: Math.round(targetRadialDistance),
+        circumferentialMinRadius: Math.round(circumferentialMinRadius),
+        childrenRadius: Math.round(childrenRadius),
+        finalOuterR: Math.round(outerCircleR),
+        constraintUsed: childrenRadius === circumferentialMinRadius ? 'circumferential' : 'radial',
+        spacingMultiplier: spacingMultiplier,
+        formula: circumferentialMinRadius > targetRadialDistance 
+            ? `(${Math.round(uniformContextR)} × ${spec.context.length} × ${spacingMultiplier}) / (2π) = ${Math.round(circumferentialMinRadius)}`
+            : `topicR(${Math.round(topicR)}) + 0.5×topicR(${Math.round(topicR * 0.5)}) + nodeR(${Math.round(uniformContextR)}) = ${Math.round(targetRadialDistance)}`,
+        distanceFromCenter: Math.round(childrenRadius),
+        gapFromCenter: Math.round(childrenRadius - topicR)
+    };
+    logger.info('[CircleMap-Renderer] Node positioning calculation:', calculationDetails);
+    console.log('[CircleMap-Renderer] 🔵 CIRCLE MAP LAYOUT:', calculationDetails);
+    
+    // Position context circles at calculated radius from center (closer to center, ~half radius gap)
     const nodes = spec.context.map((ctx, i) => {
         // Calculate even angle distribution around the circle
         const angle = (i * 360 / spec.context.length) - 90; // -90 to start from top
-        // Position context circles adjacent to but inside the outer circle
-        const targetDistance = outerCircleR - uniformContextR - 5; // 5px margin from outer circle edge
-        const targetX = centerX + targetDistance * Math.cos(angle * Math.PI / 180);
-        const targetY = centerY + targetDistance * Math.sin(angle * Math.PI / 180);
+        // Position at childrenRadius from center (this ensures ~half radius gap when possible)
+        const targetX = centerX + childrenRadius * Math.cos(angle * Math.PI / 180);
+        const targetY = centerY + childrenRadius * Math.sin(angle * Math.PI / 180);
         
         return {
             id: i,
@@ -422,12 +484,36 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     });
     
     // Calculate bounds for SVG (outer circle + padding)
-    const minX = centerX - outerCircleR - padding;
-    const maxX = centerX + outerCircleR + padding;
-    const minY = centerY - outerCircleR - padding;
-    const maxY = centerY + outerCircleR + padding;
+    // Ensure the canvas is large enough to fit the calculated outer circle
+    const requiredDimension = (outerCircleR + padding) * 2;
+    const actualWidth = Math.max(baseWidth, requiredDimension);
+    const actualHeight = Math.max(baseHeight, requiredDimension);
+    
+    // Recalculate center if canvas was expanded
+    const actualCenterX = actualWidth / 2;
+    const actualCenterY = actualHeight / 2;
+    
+    // Update node positions with actual center
+    nodes.forEach(node => {
+        const dx = node.x - centerX;
+        const dy = node.y - centerY;
+        node.x = actualCenterX + dx;
+        node.y = actualCenterY + dy;
+    });
+    
+    const minX = actualCenterX - outerCircleR - padding;
+    const maxX = actualCenterX + outerCircleR + padding;
+    const minY = actualCenterY - outerCircleR - padding;
+    const maxY = actualCenterY + outerCircleR + padding;
     const width = maxX - minX;
     const height = maxY - minY;
+    
+    logger.info('[CircleMap-Renderer] Canvas dimensions:', {
+        requestedBase: { width: baseWidth, height: baseHeight },
+        required: requiredDimension,
+        actual: { width: actualWidth, height: actualHeight },
+        finalSVG: { width: Math.round(width), height: Math.round(height) }
+    });
     
     const svg = d3.select('#d3-container').append('svg')
         .attr('width', width)
@@ -447,8 +533,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     
     // Draw outer circle first (background boundary)
     svg.append('circle')
-        .attr('cx', centerX)
-        .attr('cy', centerY)
+        .attr('cx', actualCenterX)
+        .attr('cy', actualCenterY)
         .attr('r', outerCircleR)
         .attr('fill', THEME.outerCircleFill)
         .attr('stroke', THEME.outerCircleStroke)
@@ -486,8 +572,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     
     // Draw topic circle at center
     svg.append('circle')
-        .attr('cx', centerX)
-        .attr('cy', centerY)
+        .attr('cx', actualCenterX)
+        .attr('cy', actualCenterY)
         .attr('r', topicR)
         .attr('fill', THEME.topicFill)
         .attr('stroke', THEME.topicStroke)
@@ -498,8 +584,8 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     
     // Draw topic text on top
     svg.append('text')
-        .attr('x', centerX)
-        .attr('y', centerY)
+        .attr('x', actualCenterX)
+        .attr('y', actualCenterY)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('fill', THEME.topicText)
@@ -510,8 +596,6 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-type', 'center')
         .style('cursor', 'pointer')
         .text(spec.topic);
-    
-    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
@@ -932,8 +1016,6 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('data-array-index', i);
         });
     }
-    
-    // Watermark removed from canvas display - will be added during PNG export only
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {

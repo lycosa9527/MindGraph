@@ -18,51 +18,62 @@ class NodePropertyOperationsManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements and notifications
         
+        // Store callback references for proper cleanup
+        // CRITICAL: We must store these to be able to unregister listeners properly
+        this.callbacks = {
+            applyAll: () => this.applyAllProperties(),
+            applyRealtime: () => this.applyStylesRealtime(),
+            reset: () => this.resetStyles(),
+            toggleBold: () => this.toggleBold(),
+            toggleItalic: () => this.toggleItalic(),
+            toggleUnderline: () => this.toggleUnderline(),
+            addNode: () => this.handleAddNode(),
+            deleteNode: () => this.handleDeleteNode(),
+            emptyNode: () => this.handleEmptyNode()
+        };
+        
         this.setupEventListeners();
         this.logger.info('NodePropertyOperationsManager', 'Node & Property Operations Manager initialized');
+    }
+    
+    /**
+     * Get selected nodes from State Manager (source of truth) with fallback
+     * ARCHITECTURE: Uses State Manager as primary source, falls back to toolbarManager if needed
+     */
+    getSelectedNodes() {
+        // Try State Manager first (source of truth)
+        if (this.stateManager && typeof this.stateManager.getDiagramState === 'function') {
+            const diagramState = this.stateManager.getDiagramState();
+            const selectedNodes = diagramState?.selectedNodes || [];
+            if (selectedNodes.length > 0) {
+                return selectedNodes;
+            }
+        }
+        
+        // Fallback to toolbarManager local state
+        if (this.toolbarManager?.currentSelection) {
+            return this.toolbarManager.currentSelection;
+        }
+        
+        return [];
     }
     
     /**
      * Setup Event Bus listeners
      */
     setupEventListeners() {
-        // Property operations
-        this.eventBus.on('properties:apply_all_requested', () => {
-            this.applyAllProperties();
-        });
+        // Property operations - use stored callback references
+        this.eventBus.on('properties:apply_all_requested', this.callbacks.applyAll);
+        this.eventBus.on('properties:apply_realtime_requested', this.callbacks.applyRealtime);
+        this.eventBus.on('properties:reset_requested', this.callbacks.reset);
+        this.eventBus.on('properties:toggle_bold_requested', this.callbacks.toggleBold);
+        this.eventBus.on('properties:toggle_italic_requested', this.callbacks.toggleItalic);
+        this.eventBus.on('properties:toggle_underline_requested', this.callbacks.toggleUnderline);
         
-        this.eventBus.on('properties:apply_realtime_requested', () => {
-            this.applyStylesRealtime();
-        });
-        
-        this.eventBus.on('properties:reset_requested', () => {
-            this.resetStyles();
-        });
-        
-        this.eventBus.on('properties:toggle_bold_requested', () => {
-            this.toggleBold();
-        });
-        
-        this.eventBus.on('properties:toggle_italic_requested', () => {
-            this.toggleItalic();
-        });
-        
-        this.eventBus.on('properties:toggle_underline_requested', () => {
-            this.toggleUnderline();
-        });
-        
-        // Node operations
-        this.eventBus.on('node:add_requested', () => {
-            this.handleAddNode();
-        });
-        
-        this.eventBus.on('node:delete_requested', () => {
-            this.handleDeleteNode();
-        });
-        
-        this.eventBus.on('node:empty_requested', () => {
-            this.handleEmptyNode();
-        });
+        // Node operations - use stored callback references
+        this.eventBus.on('node:add_requested', this.callbacks.addNode);
+        this.eventBus.on('node:delete_requested', this.callbacks.deleteNode);
+        this.eventBus.on('node:empty_requested', this.callbacks.emptyNode);
         
         this.logger.debug('NodePropertyOperationsManager', 'Event Bus listeners registered');
     }
@@ -72,7 +83,10 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 780-870
      */
     applyAllProperties() {
-        if (this.toolbarManager.currentSelection.length === 0) return;
+        if (!this.toolbarManager) return;
+        
+        const selectedNodes = this.getSelectedNodes();
+        if (selectedNodes.length === 0) return;
         
         const properties = {
             text: this.toolbarManager.propText?.value,
@@ -89,7 +103,7 @@ class NodePropertyOperationsManager {
         };
         
         this.logger.debug('NodePropertyOperationsManager', 'Applying all properties', {
-            count: this.toolbarManager.currentSelection.length
+            count: selectedNodes.length
         });
         
         // Apply text changes first using the proper method (silently - we'll show one notification at the end)
@@ -97,7 +111,7 @@ class NodePropertyOperationsManager {
             this.toolbarManager.applyText(true); // Pass true to suppress notification
         }
         
-        this.toolbarManager.currentSelection.forEach(nodeId => {
+        selectedNodes.forEach(nodeId => {
             const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (nodeElement.empty()) return;
             
@@ -156,7 +170,7 @@ class NodePropertyOperationsManager {
         });
         
         this.editor?.saveToHistory('update_properties', { 
-            nodes: this.toolbarManager.currentSelection, 
+            nodes: selectedNodes, 
             properties 
         });
         
@@ -168,7 +182,10 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 875-937
      */
     applyStylesRealtime() {
-        if (this.toolbarManager.currentSelection.length === 0) return;
+        if (!this.toolbarManager) return;
+        
+        const selectedNodes = this.getSelectedNodes();
+        if (selectedNodes.length === 0) return;
         
         const properties = {
             fontSize: this.toolbarManager.propFontSize?.value,
@@ -184,7 +201,7 @@ class NodePropertyOperationsManager {
         };
         
         // Apply to all selected nodes
-        this.toolbarManager.currentSelection.forEach(nodeId => {
+        selectedNodes.forEach(nodeId => {
             const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (nodeElement.empty()) return;
             
@@ -226,7 +243,7 @@ class NodePropertyOperationsManager {
         
         // Save to history silently
         this.editor?.saveToHistory('update_properties', { 
-            nodes: this.toolbarManager.currentSelection, 
+            nodes: selectedNodes, 
             properties 
         });
     }
@@ -236,7 +253,10 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 942-976
      */
     resetStyles() {
-        if (this.toolbarManager.currentSelection.length === 0) return;
+        if (!this.toolbarManager) return;
+        
+        const selectedNodes = this.getSelectedNodes();
+        if (selectedNodes.length === 0) return;
         
         // Get template defaults based on diagram type
         const defaultProps = this.getTemplateDefaults();
@@ -313,6 +333,7 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 1017-1019
      */
     toggleBold() {
+        if (!this.toolbarManager) return;
         this.toolbarManager.propBold.classList.toggle('active');
     }
     
@@ -321,6 +342,7 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 1024-1026
      */
     toggleItalic() {
+        if (!this.toolbarManager) return;
         this.toolbarManager.propItalic.classList.toggle('active');
     }
     
@@ -329,6 +351,7 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 1031-1033
      */
     toggleUnderline() {
+        if (!this.toolbarManager) return;
         this.toolbarManager.propUnderline.classList.toggle('active');
     }
     
@@ -337,6 +360,18 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 1038-1068
      */
     handleAddNode() {
+        // Defensive checks for null references
+        if (!this.logger) {
+            console.error('[NodePropertyOperationsManager] Logger is null, using console fallback');
+            this.logger = console;
+        }
+        
+        if (!this.toolbarManager) {
+            console.error('[NodePropertyOperationsManager] ToolbarManager is null, cannot proceed');
+            this.logger.error('NodePropertyOperationsManager', 'handleAddNode blocked - toolbarManager not initialized');
+            return;
+        }
+        
         this.logger.debug('NodePropertyOperationsManager', 'handleAddNode called', {
             diagramType: this.editor?.diagramType
         });
@@ -351,7 +386,8 @@ class NodePropertyOperationsManager {
         const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'mindmap'].includes(diagramType);
 
         // Check if selection is required for this diagram type
-        if (requiresSelection && this.toolbarManager.currentSelection.length === 0) {
+        const selectedNodes = this.getSelectedNodes();
+        if (requiresSelection && selectedNodes.length === 0) {
             this.toolbarManager.showNotification(this.toolbarManager.getNotif('selectNodeToAdd'), 'warning');
             return;
         }
@@ -361,7 +397,7 @@ class NodePropertyOperationsManager {
         
         // Only show generic success notification for diagram types that don't show their own
         const showsOwnNotification = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map', 'bridge_map', 'circle_map', 'bubble_map', 'concept_map', 'mindmap'].includes(diagramType);
-        if (!showsOwnNotification) {
+        if (!showsOwnNotification && this.toolbarManager) {
             this.toolbarManager.showNotification(this.toolbarManager.getNotif('nodeAdded'), 'success');
         }
         
@@ -373,8 +409,11 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 1073-1084
      */
     handleDeleteNode() {
-        if (this.editor && this.toolbarManager.currentSelection.length > 0) {
-            const count = this.toolbarManager.currentSelection.length;
+        if (!this.toolbarManager) return;
+        
+        const selectedNodes = this.getSelectedNodes();
+        if (this.editor && selectedNodes.length > 0) {
+            const count = selectedNodes.length;
             this.editor.deleteSelectedNodes();
             
             // Hide property panel via Event Bus
@@ -393,8 +432,11 @@ class NodePropertyOperationsManager {
      * EXTRACTED FROM: toolbar-manager.js lines 1089-1138
      */
     handleEmptyNode() {
-        if (this.editor && this.toolbarManager.currentSelection.length > 0) {
-            const nodeIds = [...this.toolbarManager.currentSelection];
+        if (!this.toolbarManager) return;
+        
+        const selectedNodes = this.getSelectedNodes();
+        if (this.editor && selectedNodes.length > 0) {
+            const nodeIds = [...selectedNodes];
             
             nodeIds.forEach(nodeId => {
                 // Find the shape element
@@ -435,8 +477,9 @@ class NodePropertyOperationsManager {
             this.toolbarManager.showNotification(this.toolbarManager.getNotif('nodesEmptied', count), 'success');
             
             // Update property panel if still showing
-            if (this.toolbarManager.currentSelection.length > 0) {
-                this.toolbarManager.loadNodeProperties(this.toolbarManager.currentSelection[0]);
+            const currentSelectedNodes = this.getSelectedNodes();
+            if (currentSelectedNodes.length > 0) {
+                this.toolbarManager.loadNodeProperties(currentSelectedNodes[0]);
             }
         } else {
             this.toolbarManager.showNotification(this.toolbarManager.getNotif('selectNodeToEmpty'), 'warning');
@@ -449,20 +492,22 @@ class NodePropertyOperationsManager {
     destroy() {
         this.logger.debug('NodePropertyOperationsManager', 'Destroying');
         
-        // Remove all Event Bus listeners
-        // Note: Since callbacks weren't stored, we remove by event name
-        // This removes ALL listeners for these events (safe since manager is being destroyed)
-        this.eventBus.off('properties:apply_all_requested');
-        this.eventBus.off('properties:apply_realtime_requested');
-        this.eventBus.off('properties:reset_requested');
-        this.eventBus.off('properties:toggle_bold_requested');
-        this.eventBus.off('properties:toggle_italic_requested');
-        this.eventBus.off('properties:toggle_underline_requested');
-        this.eventBus.off('node:add_requested');
-        this.eventBus.off('node:delete_requested');
-        this.eventBus.off('node:empty_requested');
+        // Remove all Event Bus listeners using stored callback references
+        // FIXED: Now passing both event name AND callback to properly unregister
+        this.eventBus.off('properties:apply_all_requested', this.callbacks.applyAll);
+        this.eventBus.off('properties:apply_realtime_requested', this.callbacks.applyRealtime);
+        this.eventBus.off('properties:reset_requested', this.callbacks.reset);
+        this.eventBus.off('properties:toggle_bold_requested', this.callbacks.toggleBold);
+        this.eventBus.off('properties:toggle_italic_requested', this.callbacks.toggleItalic);
+        this.eventBus.off('properties:toggle_underline_requested', this.callbacks.toggleUnderline);
+        this.eventBus.off('node:add_requested', this.callbacks.addNode);
+        this.eventBus.off('node:delete_requested', this.callbacks.deleteNode);
+        this.eventBus.off('node:empty_requested', this.callbacks.emptyNode);
         
-        // Nullify references
+        this.logger.debug('NodePropertyOperationsManager', 'Event listeners successfully removed');
+        
+        // Nullify references (now safe since listeners are actually removed)
+        this.callbacks = null;
         this.eventBus = null;
         this.stateManager = null;
         this.editor = null;

@@ -728,9 +728,6 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .text(dimensionChips);
     }
     
-    // Note: Watermark is handled by the global rendering system, not individual renderers
-    // This prevents duplicate watermarks when re-rendering
-    
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);

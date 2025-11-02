@@ -7,6 +7,354 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.27.0] - 2025-11-02 - Token Tracking System & Authentication Enhancements
+
+### Added
+
+- **Comprehensive Token Tracking System** (`models/token_usage.py`, `services/token_tracker.py`)
+  - **TokenUsage Database Model**: New SQLAlchemy model for tracking LLM token consumption
+    - Tracks input/output/total tokens per request
+    - Calculates costs in CNY based on model pricing
+    - Supports per-user and per-organization tracking
+    - Stores request metadata (type, diagram_type, endpoint, response_time, success)
+    - Session ID support for grouping multi-LLM requests (node palette batches)
+    - Conversation ID support for multi-turn conversations (thinkguide, mindmate)
+    - Indexed columns for efficient analytics queries
+  - **TokenTracker Service**: Async, non-blocking token tracking service
+    - Queue-based batch writes for performance optimization
+    - Automatic batching (every 10 records or 5 seconds)
+    - Non-blocking design (doesn't slow down LLM responses)
+    - Graceful degradation if queue is full
+    - Background worker for async processing
+    - Model pricing built-in (qwen, deepseek, kimi, hunyuan)
+  - **Integration**: Token tracking integrated across all LLM clients and agents
+    - All diagram generation agents track tokens
+    - Node palette system tracks session-based usage
+    - ThinkGuide and MindMate track conversation-based usage
+    - Autocomplete and validation track per-request usage
+  - **Impact**: Full visibility into LLM costs and usage patterns per user/organization
+
+- **Database Migration Utility** (`utils/db_migration.py`)
+  - **DatabaseMigrationManager**: Automatic schema migration system
+    - Validates database schema on startup
+    - Detects missing columns automatically
+    - Creates automatic backups before migrations (SQLite file copy)
+    - Safe transaction-based migrations with rollback support
+    - Supports SQLite ADD COLUMN operations
+    - Backup cleanup (keeps last 10 backups)
+  - **Features**:
+    - Automatic backup creation before schema changes
+    - Column detection and addition for new models
+    - Verification after migration to ensure success
+    - Graceful error handling and logging
+    - SQLite-optimized migration logic
+  - **Impact**: Zero-downtime schema updates, automatic database evolution
+
+- **API Key Authentication System** (`routers/api.py`, `routers/auth.py`, `utils/auth.py`)
+  - **Enhanced Authentication**: Dual-mode authentication (JWT + API Key)
+    - Priority-based authentication: JWT tokens (teachers) → API keys (Dify/public API)
+    - `get_current_user_or_api_key()` function supports both authentication methods
+    - API key validation and quota tracking
+    - Usage counting per API key
+  - **Admin Panel Integration**: Full CRUD interface for API key management
+    - Key generation, editing, deletion
+    - Quota limits and usage tracking
+    - Active/inactive status management
+    - Expiration date support
+  - **Impact**: Seamless Dify integration, secure public API access
+
+- **Enhanced Language Manager** (`static/js/editor/language-manager.js`)
+  - **Major Refactoring**: Complete rewrite for better maintainability
+    - Improved language detection and switching
+    - Better state management
+    - Enhanced UI feedback
+    - More robust error handling
+  - **Features**: 500+ lines of improvements
+    - Better language persistence
+    - Improved locale switching
+    - Enhanced multilingual support
+
+- **Documentation Cleanup**
+  - Removed obsolete documentation files (15+ files)
+    - Removed: `ACCURATE_TOKEN_TRACKING.md`, `API_KEY_SECURITY_IMPLEMENTATION.md`, `BRACE_FLOW_MAP_CODE_REVIEW_AND_FIX_PLAN.md`, `BRACE_FLOW_MAP_STAGE_FIX.md`, `CATAPULT_PRELOAD_CODE_REVIEW.md`, `DASHSCOPE_SDK_VS_REST_API.md`, `ENTERPRISE_MODE_IMPLEMENTATION_GUIDE.md`, `FLOW_MAP_AUDIT_AND_STATUS.md`, `IP_WHITELIST_VS_CORS_ANALYSIS.md`, `MINDMAP_CODE_REVIEW.md`, `MINDMAP_FIELD_NAME_AUDIT.md`, `MINDMAP_NODE_PALETTE_IMPLEMENTATION.md`, `NAMING_CONSISTENCY_REVIEW.md`, `SQLITE_OPTIMIZED_IP_WHITELIST.md`, `TOKEN_COST_TRACKING_IMPLEMENTATION.md`, `TREE_MAP_COMPLETE_REFERENCE.md`
+  - Added new comprehensive guides:
+    - `API_KEY_AUTHENTICATION_GUIDE.md`: Complete API key system documentation
+    - `ENTERPRISE_MODE_COMPLETE_GUIDE.md`: Enterprise deployment guide
+    - `BRACE_MAP_NODE_PALETTE_CODE_REVIEW.md`: Brace map palette review
+    - `BRACE_MAP_PALETTE_PROMPTS_REVIEW.md`: Prompt analysis
+    - `NODE_PALETTE_PIPELINE_CODE_REVIEW.md`: Pipeline architecture review
+  - **Impact**: Cleaner documentation structure, easier navigation
+
+### Changed
+
+- **Token Tracking Integration** (All agent files, `clients/llm.py`, `services/llm_service.py`)
+  - All LLM calls now tracked via TokenTracker service
+  - Token tracking parameters added to all palette generators
+  - Request metadata passed through all agent workflows
+  - Session and conversation IDs tracked for analytics
+  - **Files Updated**:
+    - `agents/main_agent.py`
+    - `agents/mind_maps/mind_map_agent.py`
+    - All `agents/thinking_maps/*_agent.py` files
+    - All `agents/thinking_modes/node_palette/*_palette.py` files
+    - `agents/thinking_modes/base_thinking_agent.py`
+    - `agents/thinking_modes/circle_map_agent_react.py`
+    - `clients/llm.py`
+    - `services/llm_service.py`
+  - **Impact**: Complete visibility into LLM usage and costs
+
+- **Enhanced Admin Panel** (`templates/admin.html`)
+  - **Major UI Overhaul**: 350+ lines of improvements
+    - Better API key management interface
+    - Improved user and organization management
+    - Enhanced token usage visualization (when available)
+    - Better responsive design
+    - Improved error handling and feedback
+
+- **Node Palette Manager Enhancements** (`static/js/editor/node-palette-manager.js`)
+  - **Major Updates**: 700+ lines of improvements
+    - Better error handling and recovery
+    - Improved state management
+    - Enhanced UI feedback
+    - Better integration with token tracking
+    - Improved batch loading logic
+
+- **Routers Enhanced** (`routers/api.py`, `routers/auth.py`, `routers/thinking.py`, `routers/voice.py`)
+  - **Authentication Improvements**: All endpoints support dual authentication
+  - **Token Tracking**: All LLM endpoints track usage
+  - **Better Error Handling**: Improved error messages and status codes
+  - **API Key Support**: Public API endpoints support API key authentication
+
+- **Database Configuration** (`config/database.py`)
+  - **Migration Integration**: Automatic migration on startup
+  - **Backup Support**: Automatic backup creation before migrations
+  - **Better Error Handling**: Graceful handling of database issues
+
+- **Environment Configuration** (`env.example`)
+  - Added new environment variables for token tracking
+  - Updated API key configuration examples
+  - Added migration-related configuration options
+
+### Fixed
+
+- **Token Tracking Parameters** (All palette generators)
+  - **CRITICAL FIX**: Fixed `TypeError: got an unexpected keyword argument 'user_id'`
+  - **Root Cause**: Router passes `user_id`, `organization_id`, `diagram_type` for token tracking, but palette generators didn't accept them
+  - **Solution**: Added token tracking parameters to all palette generator `generate_batch()` methods
+  - **Impact**: Token tracking now works correctly across all diagram types
+
+- **Frontend Authentication** (Multiple frontend files)
+  - Fixed authentication header issues in 12+ `auth.fetch()` calls
+  - Better error handling for authentication failures
+  - Improved token refresh logic
+
+- **Learning Mode Endpoints** (`routers/thinking.py`)
+  - Fixed 4 learning mode endpoints with proper authentication
+  - Better error messages and validation
+
+### Technical Details
+
+- **Database Schema**: New `token_usage` table with comprehensive indexes
+- **Performance**: Async queue-based token tracking (non-blocking)
+- **Backward Compatibility**: All changes are backward compatible
+- **Migration Safety**: Automatic backups before any schema changes
+- **Code Quality**: Removed 12,759 lines of obsolete documentation, added 4,279 lines of new code
+
+---
+
+## [4.26.1] - 2025-11-02 - Node Palette Improvements & Testing Watermark
+
+### Added
+
+- **Full-Screen Testing Watermark** (`static/js/editor/node-palette-manager.js`, `static/css/node-palette.css`)
+  - Added "测试中" (Testing) watermark overlay when node palette opens
+  - Displays 5 watermarks positioned across screen (top-left, top-right, center, bottom-left, bottom-right)
+  - All watermarks rotated at -15deg for consistent watermark effect
+  - Semi-transparent styling with fade-in animation
+  - Non-intrusive (`pointer-events: none`) - allows full interaction with palette
+  - Automatically removed when palette closes
+  - **Impact**: Clear visual indication that node palette feature is in testing phase
+
+### Fixed
+
+- **Node Interleaving in Catapult System** (`agents/thinking_modes/node_palette/base_palette_generator.py`)
+  - **CRITICAL FIX**: Nodes were appearing grouped by LLM (all Hunyuan first, then others)
+  - **Root Cause**: Backend yielded nodes immediately as they arrived from each LLM, causing faster LLMs to display all nodes before slower ones
+  - **Solution**: Implemented round-robin buffering system
+    - Nodes from all 4 LLMs collected in buffers
+    - Yields nodes in round-robin order: qwen → deepseek → kimi → hunyuan → repeat
+    - Ensures visual interleaving so users see mixed nodes from all LLMs immediately
+  - **Impact**: Users now see nodes from all 4 LLMs mixed together, better UX and perceived performance
+
+- **Mindmap Node Assembly** (`static/js/editor/node-palette-manager.js`)
+  - **Problem**: Children nodes were being added as top-level branches instead of nested under parent branches
+  - **Root Cause**: `assembleNodesToMindMap()` treated all selected nodes as branches regardless of `mode` field
+  - **Solution**: 
+    - Separate nodes by `mode`: `mode='branches'` → branches, `mode=<branch_name>` → children
+    - First add branch nodes as top-level branches
+    - Then find parent branches by name and add children to their `children` arrays
+    - Fallback: if branch not found, create it with children attached
+  - **Impact**: Mindmap now correctly nests children under their parent branches
+
+- **Mindmap Node Routing** (`agents/thinking_modes/node_palette/mindmap_palette.py`, `static/js/editor/node-palette-manager.js`)
+  - **Problem**: Nodes generated for branch tabs were tagged with `mode='children'` instead of branch name
+  - **Root Cause**: `loadNextBatch()` didn't set `branch_name` in `stage_data` when loading for specific branch tabs
+  - **Solution**: 
+    - Modified `loadNextBatch()` to detect `stage === 'children'` with `currentTab` set to branch name
+    - Sets `stage_data.branch_name = currentTab` for proper node tagging
+    - Backend now tags nodes with branch name instead of generic 'children'
+  - **Impact**: Nodes correctly route to their branch-specific tabs instead of generic "children" tab
+
+- **Stage Data Passing** (`agents/thinking_modes/node_palette/mindmap_palette.py`, `agents/thinking_modes/node_palette/brace_map_palette.py`)
+  - **Improvement**: Pass `stage_data` directly through `educational_context` instead of session state lookup
+  - **Benefits**: More reliable (no timing issues), explicit data flow, easier debugging
+  - **Impact**: Better reliability and maintainability for staged diagram workflows
+
+### Changed
+
+- **Brace Map Prompts Enhanced** (`agents/thinking_modes/node_palette/brace_map_palette.py`)
+  - **Parts Prompt**: Clarified that parts should be instances/categories of the selected dimension
+  - **Subparts Prompt**: 
+    - Added context-aware logic: physical entities → components, categories → instances
+    - Emphasizes decomposing the part itself, not just more dimension examples
+    - Added concrete examples (apples from color dimension → skin, flesh, core; Germany from country → VW, Audi, BMW)
+  - **Impact**: More accurate node generation aligned with user intent
+
+---
+
+## [4.26.0] - 2025-11-02 - Architecture & Stability Fixes
+
+### Fixed
+
+- **Logger Null Reference Errors** (`static/js/managers/toolbar/text-toolbar-state-manager.js`, `static/js/managers/thinkguide-manager.js`)
+  - **Problem**: `Cannot read properties of null (reading 'warn')` errors when logger was null
+  - **Root Cause**: Managers directly assigned logger parameter without fallback chain
+  - **Solution**: Added fallback chain `logger || window.logger || window.frontendLogger || console` in constructors
+  - **Files Fixed**:
+    - `TextToolbarStateManager`: Added logger fallback and safety checks before all logger calls
+    - `ThinkGuideManager`: Added logger fallback to prevent null reference errors
+  - **Impact**: Managers gracefully handle missing logger, no more null reference crashes
+
+- **State Manager Architecture Compliance** (`static/js/managers/toolbar/text-toolbar-state-manager.js`, `static/js/managers/toolbar/node-property-operations-manager.js`)
+  - **Problem**: Managers reading selection from `toolbarManager.currentSelection` instead of State Manager
+  - **Root Cause**: Duplicate state management - selection stored in both ToolbarManager and State Manager
+  - **Solution**: 
+    - `TextToolbarStateManager.applyText()` now checks State Manager first, falls back to toolbarManager
+    - `NodePropertyOperationsManager` added `getSelectedNodes()` helper method that prioritizes State Manager
+    - All selection access now follows: `stateManager.getDiagramState().selectedNodes` → `toolbarManager.currentSelection` → `[]`
+  - **Architecture Pattern**: 
+    - Event Bus: Emitters don't validate (decoupled)
+    - Handlers validate state from State Manager (source of truth)
+    - Graceful degradation if State Manager not maintained
+  - **Impact**: Proper Event Bus + State Manager pattern, handlers use centralized state
+
+- **Palette Generator user_id Parameter Missing** (`agents/thinking_modes/node_palette/*.py`)
+  - **CRITICAL FIX**: Fixed `TypeError: got an unexpected keyword argument 'user_id'` in all palette generators
+  - **Root Cause**: Router passes `user_id`, `organization_id`, `diagram_type` for token tracking, but palette generator subclasses didn't accept them
+  - **Solution**: Added token tracking parameters to all palette generator `generate_batch()` methods
+  - **Files Fixed**:
+    - `FlowMapPaletteGenerator`: Added parameters and pass-through to base class
+    - `TreeMapPaletteGenerator`: Added parameters and pass-through to base class
+    - `MultiFlowPaletteGenerator`: Added parameters and pass-through to base class
+    - `DoubleBubblePaletteGenerator`: Added parameters and pass-through to base class
+    - `BraceMapPaletteGenerator`: Added parameters and pass-through to base class
+    - `BridgeMapPaletteGenerator`: Added parameters and pass-through to base class
+    - `MindMapPaletteGenerator`: Added parameters and pass-through to base class
+    - `BubbleMapPaletteGenerator`: No change needed (uses base class directly)
+    - `CircleMapPaletteGenerator`: No change needed (uses base class directly)
+  - **Impact**: Token tracking now works correctly for all node palette generation, no more parameter errors
+
+### Changed
+
+- **TextToolbarStateManager Log Level** (`static/js/managers/toolbar/text-toolbar-state-manager.js`)
+  - Changed warnings to debug level for "no selection" cases
+  - **Rationale**: User trying to apply text without selection is expected behavior, not an error
+  - **Impact**: Cleaner production logs, debug info still available when needed
+
+---
+
+## [4.25.0] - 2025-11-01 - Panel Management & Circle Map Improvements
+
+### Fixed
+
+- **PanelManager State Desync** (`static/js/managers/panel-manager.js`, `static/js/managers/mindmate-manager.js`, `static/js/managers/thinkguide-manager.js`)
+  - **CRITICAL FIX**: Fixed MindMate panel appearing unexpectedly when ThinkGuide opens
+  - **Root Cause**: PanelManager closed panels without notifying managers, causing state desync
+  - **Solution**: PanelManager now notifies managers before closing via `manager.closePanel({ _internal: true })`
+  - **Implementation**:
+    - Added `_internal` flag to prevent circular calls when managers respond to PanelManager
+    - Managers check flag to distinguish user-initiated vs PanelManager-initiated closes
+    - Added defensive checks to prevent duplicate operations
+  - **Impact**: Panel state stays synced, no more unexpected panel appearances
+
+- **ThinkGuide Blank Panel on Reopen** (`static/js/managers/thinkguide-manager.js`)
+  - **Problem**: ThinkGuide always cleared messages when reopening, causing blank panel
+  - **Root Cause**: `startThinkingMode()` always cleared messages and started new stream, even when conversation existed
+  - **Solution**: Added session preservation logic following MindMate pattern
+    - Checks `isNewDiagramSession` before clearing
+    - Checks `hasExistingMessages` before starting stream
+    - Only clears/streams if new diagram OR no messages
+    - Preserves conversation within same diagram session
+  - **Impact**: Conversations persist when reopening ThinkGuide, no more blank panels
+
+- **ThinkGuide Language Not Syncing** (`static/js/managers/thinkguide-manager.js`)
+  - **Problem**: ThinkGuide defaulted to English even when editor was in Chinese
+  - **Root Cause**: Hardcoded `this.language = 'en'` in constructor, only updated via event listener
+  - **Solution**: Initialize from `languageManager.getCurrentLanguage()` in constructor and sync in `startThinkingMode()`
+  - **Impact**: ThinkGuide now correctly matches editor language
+
+- **Node Palette Opening Message Duplication** (`static/js/managers/thinkguide-manager.js`)
+  - **Problem**: "正在打开节点选择板..." message appeared multiple times when returning to Node Palette
+  - **Root Cause**: Message added every time `openNodePalette()` called, even for returning sessions
+  - **Solution**: Check if Node Palette already has nodes for same session before showing message
+  - **Impact**: Message only shows once on first open, not when returning to existing session
+
+- **Markdown Typographer Character Replacement** (`static/js/managers/thinkguide-manager.js`)
+  - **Problem**: Strange symbols like "）。" appearing in greeting messages
+  - **Root Cause**: `markdownit` typographer converting characters (e.g., `:)` → `：）`)
+  - **Solution**: Disabled typographer option (`typographer: false`) to prevent automatic character replacements
+  - **Impact**: Messages display exactly as LLM sends them, no unexpected character conversions
+
+- **Circle Map Node Spacing Bug** (`static/js/renderers/bubble-map-renderer.js`)
+  - **CRITICAL FIX**: Fixed formula dividing by `π` instead of `2π`, causing nodes to be 2× too far apart
+  - **Root Cause**: Circumferential constraint formula was `(nodeRadius × nodeCount × multiplier) / π` instead of `/(2π)`
+  - **Example Impact**: With 8 nodes, 40px radius - was 214px from center, now correctly ~107px
+  - **Additional Improvements**:
+    - Dynamic spacing multiplier based on node count:
+      - ≤3 nodes: `2.0×` (nodes touching)
+      - 4-6 nodes: `2.05×` (5% gap)
+      - 7+ nodes: `2.1×` (10% gap)
+    - Reduced safety margins (10px→5px, 120px→100px, 15px→10px)
+  - **Impact**: Children nodes are now ~50% closer to center while still preventing overlaps
+
+### Added
+
+- **Node Palette Scroll Position Memory Per Tab** (`static/js/editor/node-palette-manager.js`)
+  - **Enhancement**: Node Palette now remembers scroll position for each tab independently
+  - **Implementation**:
+    - Created `saveCurrentTabScrollPosition()` method
+    - Saves scroll position on scroll events (throttled at 150ms)
+    - Saves scroll position when switching tabs
+    - Saves scroll position when hiding palette
+  - **Impact**: Users can return to any tab at the exact scroll position they left it
+  - **Works for**: All tab types (similarities, differences, causes, effects, dimensions, categories, children, etc.)
+
+### Changed
+
+- **Admin Password Reset Functionality** (`routers/auth.py`, `templates/admin.html`)
+  - **Enhancement**: Improved password reset feature with customizable passwords
+  - **Changes**:
+    - Changed default reset password from `"12345678"` to allow administrators to set any password
+    - Default placeholder and value set to `"12345678"` (meets 8-character minimum requirement)
+    - Added password input field in Edit User modal for custom password setting
+    - Backend now accepts optional password parameter in request body
+    - Added validation to ensure passwords meet minimum 8-character requirement
+  - **UI Improvements**:
+    - Removed emojis from Save and Reset Password buttons
+    - Center-aligned Save and Reset Password buttons in modal
+    - Updated confirmation dialogs to show appropriate messages based on password type
+  - **Impact**: Administrators can now reset user passwords to any value (minimum 8 characters) or use default `"12345678"`
+
 ## [4.24.0] - 2025-10-29 - User Experience Enhancements: Guidance Modal + Auto-Complete
 
 ### Added
@@ -45,6 +393,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Panel Session Lifecycle Bugs** (`routers/thinking.py`, `agents/thinking_modes/base_thinking_agent.py`, `static/js/editor/diagram-selector.js`)
+  - **CRITICAL FIX**: Fixed broken panel reopen behavior for both Node Palette and ThinkGuide
+  
+  **Issue 1: Node Palette Sessions Being Destroyed**
+  - **Root Cause**: Backend was ending session when user clicked "Finish", destroying all generated nodes and deduplication cache
+    - When user reopened Node Palette → Backend had no memory → Either started fresh OR had stale data issues
+    - Log showed: `[NodePalette] Session ended: thinkgui | Reason: user_finished`
+  - **Fix**: Node Palette sessions now persist throughout canvas session
+  - **Correct Lifecycle**:
+    - ✅ **Finish/Cancel**: Keep session alive (user may return to add more nodes)
+    - ✅ **Leave Canvas**: Properly end session via new `/thinking_mode/node_palette/cleanup` endpoint
+  
+  **Issue 2: ThinkGuide "Silent Resume" - Blank Panel**
+  - **Root Cause**: When reopening ThinkGuide with existing conversation history, agent would "resume silently" sending NO message to UI
+    - Log showed: `Greeting requested but session has history - resuming silently`
+    - User sees blank panel with no feedback
+    - **Additional Bug**: Wrong SSE event name - was using `'complete'` instead of `'message_complete'`
+  - **Fix**: Now sends friendly "Welcome back!" message when reopening with correct SSE event format
+  
+  - **Benefits**:
+    - Users can access ThinkGuide → Node Palette → MindMate multiple times without session breaks
+    - Generated nodes persist in memory for instant reopen
+    - Deduplication cache preserved for better quality
+    - No more "continue end-resume" problems
+    - Friendly UI feedback when reopening panels
+  
+  - **Files Updated**:
+    - `routers/thinking.py`: Lines 531-541 (finish), 559-567 (cancel), 570-610 (new cleanup endpoint)
+    - `diagram-selector.js`: Lines 639-659 (call cleanup on backToGallery)
+    - `base_thinking_agent.py`: Lines 288-307 (send welcome message on resume instead of silent)
+
+- **NodePaletteManager Reference Error** (`static/js/managers/panel-manager.js`, `static/js/managers/thinkguide-manager.js`, `static/js/editor/diagram-selector.js`)
+  - Fixed "NodePaletteManager not found" and "NodePaletteManager.preload not available" errors in ThinkGuideManager
+  - **Root Cause**: NodePaletteManager was instantiated at `window.currentEditor.nodePalette` but code was looking for it at `window.nodePaletteManager`
+  - **Solution**: Updated all references to use `window.currentEditor?.nodePalette` consistently
+  - **Files Updated**:
+    - `panel-manager.js`: Lines 114, 124-125
+    - `thinkguide-manager.js`: Lines 563, 630
+    - `diagram-selector.js`: Line 639
+  - **Performance Improvement**: Moved catapult pre-loading from `startThinkingMode` to `openPanel` so Node Palette data is preloaded as soon as ThinkGuide opens, ensuring instant availability when users click the Node Palette button
+
 - **Catapult Race Condition** (`static/js/managers/toolbar/llm-autocomplete-manager.js`)
   - Fixed "Diagram type changed during generation" false warnings discarding ALL 3 catapult results
   - **Root Cause**: `mind_map` vs `mindmap` normalization mismatch on BOTH sides of comparison
@@ -67,6 +456,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed loading circle animation being slightly off-center to the left
   - Added `margin: 0 auto` for proper horizontal centering
   - Improved visual polish for "AI正在生成图表，请稍候" loading screen
+
+- **Circle Map Dynamic Overlap Prevention** (`static/js/renderers/bubble-map-renderer.js`)
+  - **Problem**: When adding many context nodes or nodes with larger radii (long text), they would overlap around the circle perimeter
+  - **Root Cause**: Outer circle radius calculation only considered radial distance, ignoring circumferential spacing
+  - **Mathematical Fix**: 
+    - Added **circumferential constraint**: `outerR >= (nodeRadius × nodeCount × spacingMultiplier) / π`
+    - Outer circle now uses `Math.max(radialConstraint, circumferentialConstraint)`
+    - **Dynamic spacing multiplier** = 2.1× (expands ONLY when needed to prevent overlap)
+      - 2.0× = nodes exactly touching (minimum possible)
+      - 2.1× = 10% gap between nodes (tight but comfortable)
+      - No wasteful over-expansion
+  - **Dynamic Expansion**: 
+    - Recalculates `uniformContextR` (largest node) on EVERY render
+    - Adjusts outer circle automatically when nodes with longer text are added
+    - Canvas expands if outer circle exceeds base dimensions
+    - Expands progressively: more nodes = larger circle, bigger nodes = larger circle
+  - **Impact**: Circle maps scale efficiently - tight packing when few nodes, expands naturally when needed
+  - **Bulk Node Support**: System handles adding 20+ nodes at once efficiently (single re-render after all additions)
+  - **Technical Details**:
+    - Radial constraint: `topicR + gap + contextR + 20px margin`
+    - Circumferential constraint: `(nodeRadius × nodeCount × 2.1) / π` derived from arc length formula
+    - Canvas recalculates center if expansion needed, updates all node positions accordingly
+    - Added detailed console logging showing:
+      - Node sizing with largest node identification
+      - Spacing multiplier and constraint calculations with formula
+      - Expansion percentage from baseline
+    - No caching - full recalculation on every render for true dynamic expansion
+
+- **ThinkGuide Button Not Working - Multiple Issues** (`static/js/editor/toolbar-manager.js`, `static/js/managers/toolbar/node-counter-feature-mode-manager.js`)
+  - **Problem 1 - Event Name Mismatch**:
+    - Button emitted: `thinking_mode:start_requested`
+    - Listener expected: `thinking_mode:toggle_requested`
+    - Events never connected, button did nothing!
+  - **Problem 2 - Incomplete Initialization**:
+    - Handler only opened the panel (`openThinkGuidePanel()`)
+    - Never called `startThinkingMode()` to initialize the workflow
+    - Result: Panel opened but NO greeting, NO node palette preload, NO initial analysis
+  - **Fix**:
+    1. Changed event emit to match listener: `thinking_mode:toggle_requested`
+    2. Changed handler to call `startThinkingMode(diagramType, diagramData)` instead of just opening panel
+    3. Fixed manager reference: `window.thinkGuideManager` → `window.currentEditor.thinkGuide`
+    4. Removed dead code (`setDiagramContext()` that doesn't exist)
+  - **Impact**: 
+    - ThinkGuide button now works completely
+    - Opens panel + sends greeting + preloads node palette + streams initial analysis
+    - Node palette now properly populated with suggestions
+
+- **Node Property Operations Event Listener Memory Leak Fix** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - **Problem**: "Cannot read properties of null (reading 'debug')" and "Cannot read properties of null (reading 'showNotification')" errors when adding/deleting/editing nodes
+  - **Root Cause - "Use After Free" Bug**:
+    - Event listeners registered with **inline arrow functions** (no stored reference)
+    - `destroy()` method called `eventBus.off('event_name')` **without callback parameter**
+    - EventBus requires `off(event, callback)` with BOTH parameters to remove listener
+    - Without callback reference, **listeners stayed registered** (memory leak)
+    - References nullified: `this.toolbarManager = null`, `this.logger = null`
+    - When events fired later, listeners still active → accessed null references → **CRASH**
+  - **Fix - Two-Pronged Approach**:
+    1. **Proper Cleanup** (root cause fix):
+       - Store callback references in `this.callbacks = { addNode: () => ..., deleteNode: () => ... }`
+       - Register listeners using stored references: `eventBus.on('event', this.callbacks.addNode)`
+       - Unregister properly in `destroy()`: `eventBus.off('event', this.callbacks.addNode)`
+       - NOW listeners are actually removed before nullification
+    2. **Defensive Guards** (safety net):
+       - Added null checks at start of all public methods as defensive programming
+       - Handles edge cases and race conditions
+       - Methods: `handleAddNode`, `handleDeleteNode`, `handleEmptyNode`, `applyAllProperties`, `applyStylesRealtime`, `resetStyles`, `toggleBold/Italic/Underline`
+  - **Impact**: 
+    - Fixed memory leak - listeners properly cleaned up
+    - Eliminated error spam in console
+    - Graceful degradation if manager destroyed during operation
+    - Proper resource management prevents "use after free" scenarios
+
+- **Node Counter Feature Mode Manager Memory Leak Fix** (`static/js/managers/toolbar/node-counter-feature-mode-manager.js`)
+  - **Problem**: Same "use after free" bug as NodePropertyOperationsManager
+  - **Root Cause**: Event listeners registered with inline arrow functions, destroy() called `eventBus.off()` without callback parameter
+  - **Fix**: Applied same pattern - store callback references in `this.callbacks`, use them for registration and proper cleanup
+  - **Impact**: Listeners for node counter, learning mode, and thinking mode now properly cleaned up
 
 ### Changed
 

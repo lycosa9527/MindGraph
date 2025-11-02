@@ -281,10 +281,18 @@ class LearningModeManager {
             .style('margin-bottom', '16px')
             .style('min-height', '100px');
         
+        // Input field label
+        this.learningOverlay.append('label')
+            .attr('for', 'learning-input')
+            .attr('style', 'display: none;')
+            .text(this.lang?.translate('learningModeInputLabel') || 'Learning mode input');
+        
         // Input field
         this.inputField = this.learningOverlay.append('input')
             .attr('type', 'text')
             .attr('id', 'learning-input')
+            .attr('name', 'learning-input')
+            .attr('autocomplete', 'off')
             .attr('placeholder', this.lang?.translate('learningModeInputPlaceholder') || 'Type your answer here...')
             .style('width', '100%')
             .style('padding', '12px')
@@ -1083,8 +1091,17 @@ class LearningModeManager {
         const inputContainer = modalContent.append('div')
             .style('margin-bottom', '20px');
         
+        const verificationInputId = `learning-verification-input-${Date.now()}`;
+        inputContainer.append('label')
+            .attr('for', verificationInputId)
+            .attr('style', 'display: none;')
+            .text(this.lang?.translate('learningModeVerificationLabel') || 'Verification answer input');
+        
         const verificationInput = inputContainer.append('input')
+            .attr('id', verificationInputId)
+            .attr('name', 'learning-verification-input')
             .attr('type', 'text')
+            .attr('autocomplete', 'off')
             .attr('placeholder', this.lang?.translate('learningModeInputPlaceholder') || 'Type your answer...')
             .style('width', '100%')
             .style('padding', '14px')

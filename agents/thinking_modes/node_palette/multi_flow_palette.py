@@ -41,7 +41,11 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         center_topic: str,  # Central event
         educational_context: Optional[Dict[str, Any]] = None,
         nodes_per_llm: int = 15,
-        mode: str = 'causes'  # NEW: 'causes' or 'effects'
+        mode: str = 'causes',  # NEW: 'causes' or 'effects'
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        diagram_type: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with mode support.
@@ -64,7 +68,10 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             session_id=session_id,
             center_topic=center_topic,
             educational_context=educational_context,
-            nodes_per_llm=nodes_per_llm
+            nodes_per_llm=nodes_per_llm,
+            user_id=user_id,
+            organization_id=organization_id,
+            diagram_type=diagram_type
         ):
             # Add mode field to every node for explicit tracking
             if chunk.get('event') == 'node_generated':

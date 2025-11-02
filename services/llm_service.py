@@ -19,6 +19,7 @@ from services.error_handler import error_handler, LLMServiceError
 from services.rate_limiter import initialize_rate_limiter, get_rate_limiter
 from services.prompt_manager import prompt_manager
 from services.performance_tracker import performance_tracker
+from services.token_tracker import get_token_tracker
 from config.settings import config
 
 logger = logging.getLogger(__name__)
@@ -89,6 +90,14 @@ class LLMService:
         max_tokens: int = 2000,
         system_message: Optional[str] = None,
         timeout: Optional[float] = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         **kwargs
     ) -> str:
         """
@@ -186,7 +195,45 @@ class LLMService:
             response = error_handler.validate_response(response)
             
             duration = time.time() - start_time
+            
+            # Extract content and usage from response (new format: dict with 'content' and 'usage')
+            content = response
+            usage_data = {}
+            
+            if isinstance(response, dict):
+                content = response.get('content', '')
+                usage_data = response.get('usage', {})
+            else:
+                # Backward compatibility: plain string response
+                content = str(response)
+                usage_data = {}
+            
             logger.info(f"[LLMService] {model} responded in {duration:.2f}s")
+            
+            # Track token usage (async, non-blocking)
+            if usage_data:
+                try:
+                    # Normalize token field names (API uses prompt_tokens/completion_tokens, we use input_tokens/output_tokens)
+                    input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
+                    output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                    
+                    token_tracker = get_token_tracker()
+                    await token_tracker.track_usage(
+                        model_alias=model,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        request_type=request_type,
+                        diagram_type=diagram_type,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        session_id=session_id,
+                        conversation_id=conversation_id,
+                        endpoint_path=endpoint_path,
+                        response_time=duration,
+                        success=True
+                    )
+                except Exception as e:
+                    logger.debug(f"[LLMService] Token tracking failed (non-critical): {e}")
             
             # Record performance metrics
             self.performance_tracker.record_request(
@@ -195,7 +242,7 @@ class LLMService:
                 success=True
             )
             
-            return response
+            return content
             
         except ValueError as e:
             # Let ValueError pass through (e.g., invalid model)
@@ -222,6 +269,14 @@ class LLMService:
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
         system_message: Optional[str] = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         **kwargs
     ):
         """
@@ -276,17 +331,56 @@ class LLMService:
                 yield response
                 return
             
-            # Stream the response
+            # Stream the response and capture usage
+            usage_data = None
             async for chunk in stream_method(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 **kwargs
             ):
-                yield chunk
+                # Handle new format: chunk can be dict with 'type' and content/usage
+                if isinstance(chunk, dict):
+                    chunk_type = chunk.get('type', 'token')
+                    if chunk_type == 'usage':
+                        # Capture usage data from final chunk
+                        usage_data = chunk.get('usage', {})
+                    elif chunk_type == 'token':
+                        # Yield content token
+                        content = chunk.get('content', '')
+                        if content:
+                            yield content
+                else:
+                    # Backward compatibility: plain string chunk
+                    yield chunk
             
             duration = time.time() - start_time
             logger.info(f"[LLMService] {model} stream completed in {duration:.2f}s")
+            
+            # Track token usage (async, non-blocking)
+            if usage_data:
+                try:
+                    # Normalize token field names
+                    input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
+                    output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                    
+                    token_tracker = get_token_tracker()
+                    await token_tracker.track_usage(
+                        model_alias=model,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        request_type=request_type,
+                        diagram_type=diagram_type,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        session_id=session_id,
+                        conversation_id=conversation_id,
+                        endpoint_path=endpoint_path,
+                        response_time=duration,
+                        success=True
+                    )
+                except Exception as e:
+                    logger.debug(f"[LLMService] Token tracking failed (non-critical): {e}")
             
             # Record performance metrics
             self.performance_tracker.record_request(
@@ -626,6 +720,14 @@ class LLMService:
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
         system_message: Optional[str] = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'node_palette',
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         **kwargs
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
@@ -681,6 +783,7 @@ class LLMService:
             
             try:
                 # Use existing chat_stream (rate limiter & error handling automatic!)
+                # Pass token tracking parameters
                 async for token in self.chat_stream(
                     prompt=prompt,
                     model=model,
@@ -688,6 +791,13 @@ class LLMService:
                     max_tokens=max_tokens,
                     timeout=timeout,
                     system_message=system_message,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    diagram_type=diagram_type,
+                    endpoint_path=endpoint_path,
+                    session_id=session_id,
+                    conversation_id=conversation_id,
                     **kwargs
                 ):
                     token_count += 1

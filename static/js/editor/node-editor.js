@@ -120,7 +120,9 @@ class NodeEditor {
             .style('font-weight', '700');
         
         // Text input label
+        const textInputId = `node-text-input-${Date.now()}`;
         this.modal.append('label')
+            .attr('for', textInputId)
             .text((lang?.translate('text') || 'Text') + ':')
             .style('display', 'block')
             .style('margin-bottom', '10px')
@@ -133,8 +135,11 @@ class NodeEditor {
             .style('position', 'relative');
         
         this.textInput = inputWrapper.append('textarea')
+            .attr('id', textInputId)
+            .attr('name', 'node-text-input')
             .attr('class', 'node-text-input')
             .attr('rows', 4)
+            .attr('autocomplete', 'off')
             .style('width', '100%')
             .style('padding', '14px 16px')
             .style('border', '2px solid #e2e8f0')

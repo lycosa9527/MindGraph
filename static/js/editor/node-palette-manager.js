@@ -1003,6 +1003,9 @@ class NodePaletteManager {
         
         // Save current tab state (preserve user progress)
         const container = document.getElementById('node-palette-container');
+        
+        // Ensure scroll position is saved before switching (always check)
+        this.saveCurrentTabScrollPosition();
         const currentScrollPos = container ? container.scrollTop : 0;
         
         console.log(`[NodePalette] Saving ${this.currentTab} state:`);
@@ -1012,7 +1015,10 @@ class NodePaletteManager {
         
         this.tabNodes[this.currentTab] = [...this.nodes];
         this.tabSelectedNodes[this.currentTab] = new Set(this.selectedNodes);
-        this.tabScrollPositions[this.currentTab] = currentScrollPos;
+        // Scroll position already saved by saveCurrentTabScrollPosition(), but ensure it's set
+        if (this.usesTabs() && this.currentTab && this.tabScrollPositions) {
+            this.tabScrollPositions[this.currentTab] = currentScrollPos;
+        }
         
         // Fade out current grid
         const grid = document.getElementById('node-palette-grid');
@@ -1051,10 +1057,26 @@ class NodePaletteManager {
             }
             
             // If the new tab has no nodes yet, CATAPULT!
+            // BUT: For staged diagrams, only load if it's valid for current stage
             if (this.nodes.length === 0) {
-                console.log(`[NodePalette] New tab empty, CATAPULT for ${tabName}...`);
-                this.currentBatch = 0; // Reset batch counter for this tab
-                this.loadNextBatch();
+                // For staged diagrams, check if this tab is valid for current stage
+                let shouldLoad = true;
+                if (this.usesStages() && this.diagramType === 'brace_map') {
+                    if (this.currentStage === 'dimensions' && tabName === 'parts') {
+                        // Can't load parts without dimension selected
+                        shouldLoad = false;
+                        console.log(`[NodePalette-BraceMap] Skipping load for parts tab - no dimension selected`);
+                    } else if (this.currentStage === 'parts' && tabName === 'dimensions') {
+                        // Dimensions tab should already be loaded, don't reload unnecessarily
+                        console.log(`[NodePalette-BraceMap] Dimensions already processed, not reloading`);
+                    }
+                }
+                
+                if (shouldLoad) {
+                    console.log(`[NodePalette] New tab empty, CATAPULT for ${tabName}...`);
+                    this.currentBatch = 0; // Reset batch counter for this tab
+                    this.loadNextBatch();
+                }
             }
             
             // Fade in new grid
@@ -1186,6 +1208,17 @@ class NodePaletteManager {
                 
                 newButton.addEventListener('click', () => {
                     console.log(`[NodePalette] User clicked ${tabName} tab`);
+                    
+                    // For staged diagrams, check if tab is valid for current stage
+                    if (this.usesStages() && this.diagramType === 'brace_map') {
+                        // Brace Map stage validation
+                        if (this.currentStage === 'dimensions' && tabName === 'parts') {
+                            console.warn('[NodePalette-BraceMap] Cannot switch to parts tab - no dimension selected yet');
+                            alert('Please select a dimension first before viewing parts.');
+                            return;
+                        }
+                    }
+                    
                     this.switchTab(tabName);
                 });
             }
@@ -1486,10 +1519,44 @@ class NodePaletteManager {
                 console.log(`[NodePalette-Preload] Tab-based diagram detected - firing BOTH catapults (8 LLMs)!`);
                 await this.loadBothTabsInitial();
             } else if (this.diagramType === 'tree_map') {
-                // Tree map: Don't pre-load - it has complex 3-stage workflow
-                // Pre-loading stage 1 could be confusing since user needs to see stage progression
-                console.log('[NodePalette-Preload] Skipping tree_map pre-load (uses multi-stage workflow)');
-                return;
+                // Tree map: Pre-load Stage 1 dimensions if no dimension selected
+                const hasDimension = diagramData?.dimension?.trim().length > 0;
+                if (!hasDimension) {
+                    console.log('[NodePalette-Preload] Tree map Stage 1 - pre-loading dimensions');
+                    // Initialize staged workflow
+                    this.currentStage = 'dimensions';
+                    this.currentTab = 'dimensions';
+                    // Initialize tab storage
+                    if (!this.tabNodes) {
+                        this.tabNodes = { dimensions: [], categories: [] };
+                        this.tabSelectedNodes = { dimensions: new Set(), categories: new Set() };
+                        this.tabScrollPositions = { dimensions: 0, categories: 0 };
+                    }
+                    // Pre-load dimensions
+                    await this.loadNextBatch();
+                } else {
+                    console.log('[NodePalette-Preload] Tree map has dimension - skipping preload');
+                }
+            } else if (this.diagramType === 'brace_map') {
+                // Brace map: Pre-load Stage 1 dimensions if no dimension selected
+                const hasDimension = diagramData?.dimension?.trim().length > 0;
+                if (!hasDimension) {
+                    console.log('[NodePalette-Preload] Brace map Stage 1 - pre-loading dimensions');
+                    // Initialize staged workflow
+                    this.currentStage = 'dimensions';
+                    this.currentTab = 'dimensions';
+                    this.stageData = {}; // Initialize stage data
+                    // Initialize tab storage
+                    if (!this.tabNodes) {
+                        this.tabNodes = { dimensions: [], parts: [] };
+                        this.tabSelectedNodes = { dimensions: new Set(), parts: new Set() };
+                        this.tabScrollPositions = { dimensions: 0, parts: 0 };
+                    }
+                    // Pre-load dimensions
+                    await this.loadNextBatch();
+                } else {
+                    console.log('[NodePalette-Preload] Brace map has dimension - skipping preload');
+                }
             } else {
                 // Other diagrams: load single batch (4 LLMs)
                 console.log('[NodePalette-Preload] Standard diagram - firing catapult (4 LLMs)');
@@ -2046,14 +2113,27 @@ class NodePaletteManager {
                     console.log('[NodePalette-TreeMap] Locked dimensions and categories tabs (Stage 3)');
                 }
                 
-                // For Brace Map Stage 3: Lock dimensions and parts tabs
-                if (this.diagramType === 'brace_map' && this.currentStage === 'subparts') {
-                    this.lockTab('dimensions');
-                    this.lockTab('parts');
-                    console.log('[NodePalette-BraceMap] Locked dimensions and parts tabs (Stage 3)');
-                } else if (this.diagramType === 'brace_map' && this.currentStage === 'parts') {
-                    this.lockTab('dimensions');
-                    console.log('[NodePalette-BraceMap] Locked dimensions tab (Stage 2)');
+                // For Brace Map: Lock tabs based on stage
+                if (this.diagramType === 'brace_map') {
+                    if (this.currentStage === 'subparts') {
+                        // Stage 3: Lock dimensions and parts tabs
+                        this.lockTab('dimensions');
+                        this.lockTab('parts');
+                        console.log('[NodePalette-BraceMap] Locked dimensions and parts tabs (Stage 3)');
+                    } else if (this.currentStage === 'parts') {
+                        // Stage 2: Lock dimensions tab, disable parts tab clicking (should be view-only after selection)
+                        this.lockTab('dimensions');
+                        console.log('[NodePalette-BraceMap] Locked dimensions tab (Stage 2)');
+                    } else if (this.currentStage === 'dimensions') {
+                        // Stage 1: Disable parts tab - user must select dimension first
+                        const partsTab = document.getElementById('tab-parts');
+                        if (partsTab) {
+                            partsTab.style.opacity = '0.5';
+                            partsTab.style.cursor = 'not-allowed';
+                            partsTab.title = 'Please select a dimension first';
+                            console.log('[NodePalette-BraceMap] Disabled parts tab (Stage 1 - no dimension selected)');
+                        }
+                    }
                 }
                 
                 // For Mindmap Stage 2: Lock branches tab
@@ -2080,10 +2160,30 @@ class NodePaletteManager {
         }
         
         // Check if data was preloaded (nodes already exist)
+        // For staged diagrams (tree_map, brace_map, etc.), only check if we're in Stage 3+ with actual data
         let hasPreloadedData = this.nodes.length > 0;
         if (this.tabNodes && Object.keys(this.tabNodes).length > 0) {
             // Check if any tab has nodes (works for double bubble & multi flow)
-            hasPreloadedData = hasPreloadedData || Object.values(this.tabNodes).some(arr => arr?.length > 0);
+            // IMPORTANT: Empty arrays [] should NOT count as preloaded data
+            const hasNodesInTabs = Object.values(this.tabNodes).some(arr => arr && Array.isArray(arr) && arr.length > 0);
+            hasPreloadedData = hasPreloadedData || hasNodesInTabs;
+            
+            console.log(`[NodePalette] Preload check: nodes=${this.nodes.length}, hasNodesInTabs=${hasNodesInTabs}, hasPreloadedData=${hasPreloadedData}`);
+            
+            // For staged diagrams, also check if we're resuming a session with data
+            if (this.usesStages() && !hasPreloadedData) {
+                // Staged diagrams (tree_map, brace_map) should only skip catapult if:
+                // 1. We have actual nodes, OR
+                // 2. We're reopening a Stage 3+ session with existing category/part tabs
+                // Otherwise, always load the current stage
+                const isResumingStage3Plus = (this.currentStage === 'children' && this.stageData.categories?.length > 0) ||
+                                            (this.currentStage === 'subparts' && this.stageData.parts?.length > 0);
+                console.log(`[NodePalette] Staged diagram check: currentStage=${this.currentStage}, isResumingStage3Plus=${isResumingStage3Plus}`);
+                if (!isResumingStage3Plus) {
+                    hasPreloadedData = false; // Force loading for Stage 1/2
+                    console.log(`[NodePalette] Forcing load for stage ${this.currentStage}`);
+                }
+            }
         }
         
         if (hasPreloadedData) {
@@ -2183,7 +2283,9 @@ class NodePaletteManager {
                     
                     this.isLoadingBatch = false;
                 } else {
-                    // For Stage 1 or 2, use normal batch loading
+                    // For Stage 1 (dimensions) or Stage 2 (parts), use normal batch loading
+                    // Stage 1 should always load dimensions automatically
+                    console.log(`[NodePalette-BraceMap] Stage ${this.currentStage}: Loading nodes for current tab "${this.currentTab}"`);
                     await this.loadNextBatch();
                 }
             } else if (this.diagramType === 'mindmap' && this.usesStages()) {
@@ -2391,12 +2493,227 @@ class NodePaletteManager {
             setTimeout(() => {
                 palettePanel.style.transition = 'opacity 0.3s';
                 palettePanel.style.opacity = '1';
+                
+                // Show watermark after panel is fully visible
+                // Use a small delay to ensure container is properly positioned
+                setTimeout(() => {
+                    this.showTestingWatermark();
+                }, 50);
             }, 10);
+        } else {
+            // Panel already visible, show watermark immediately
+            this.showTestingWatermark();
         }
         
         // Attach button listeners when panel opens
         this.attachFinishButtonListener();
         this.attachCancelButtonListener();
+    }
+    
+    showTestingWatermark() {
+        /**
+         * Show watermarks "测试中" (Testing) ONLY within the node palette panel
+         * Watermarks stay fixed in viewport while content scrolls
+         */
+        // Remove existing watermarks if any
+        const existing = document.querySelectorAll('.node-palette-testing-watermark, .node-palette-watermark-overlay');
+        existing.forEach(el => el.remove());
+        
+        // Find the node palette container and panel
+        const container = document.getElementById('node-palette-container');
+        const panel = document.getElementById('node-palette-panel');
+        
+        if (!container || !panel) {
+            console.warn('[NodePalette] Node palette container or panel not found, cannot show watermark', {
+                hasContainer: !!container,
+                hasPanel: !!panel,
+                panelDisplay: panel?.style.display,
+                panelOpacity: panel?.style.opacity
+            });
+            return;
+        }
+        
+        // Check if panel is actually visible
+        if (panel.style.display === 'none') {
+            console.warn('[NodePalette] Panel is hidden, waiting to show watermark...');
+            // Retry after a short delay
+            setTimeout(() => this.showTestingWatermark(), 200);
+            return;
+        }
+        
+        // Create an overlay that covers the container's visible area
+        // We'll use fixed positioning but calculate relative to container's viewport
+        const overlay = document.createElement('div');
+        overlay.className = 'node-palette-watermark-overlay';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '1001'; // Above panel (z-index 1000) but below modals
+        
+        // Function to update overlay position and size based on container's visible bounds
+        const updateOverlay = () => {
+            // Check if container is still visible
+            if (!container || !panel || panel.style.display === 'none') {
+                return;
+            }
+            
+            const containerRect = container.getBoundingClientRect();
+            
+            // Only update if container is actually visible in viewport
+            if (containerRect.width > 0 && containerRect.height > 0) {
+                overlay.style.position = 'fixed';
+                overlay.style.top = `${containerRect.top}px`;
+                overlay.style.left = `${containerRect.left}px`;
+                overlay.style.width = `${containerRect.width}px`;
+                overlay.style.height = `${containerRect.height}px`;
+            }
+        };
+        
+        // Update position initially - use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            updateOverlay();
+            
+            // Verify overlay was positioned correctly
+            const overlayRect = overlay.getBoundingClientRect();
+            console.log('[NodePalette] Watermark overlay positioned:', {
+                top: overlayRect.top,
+                left: overlayRect.left,
+                width: overlayRect.width,
+                height: overlayRect.height,
+                visible: overlayRect.width > 0 && overlayRect.height > 0
+            });
+            
+            // Also update after a short delay to catch any layout changes
+            setTimeout(() => {
+                updateOverlay();
+                const overlayRect2 = overlay.getBoundingClientRect();
+                console.log('[NodePalette] Watermark overlay after delay:', {
+                    top: overlayRect2.top,
+                    left: overlayRect2.left,
+                    width: overlayRect2.width,
+                    height: overlayRect2.height
+                });
+            }, 100);
+        });
+        
+        // Update on scroll/resize
+        container.addEventListener('scroll', updateOverlay, { passive: true });
+        window.addEventListener('resize', updateOverlay);
+        window.addEventListener('scroll', updateOverlay, { passive: true });
+        
+        // Also update when tab switches (container might resize)
+        const tabSwitchHandler = () => {
+            setTimeout(updateOverlay, 50);
+        };
+        container.addEventListener('DOMSubtreeModified', tabSwitchHandler);
+        
+        // Store cleanup function
+        overlay._cleanup = () => {
+            container.removeEventListener('scroll', updateOverlay);
+            window.removeEventListener('resize', updateOverlay);
+            window.removeEventListener('scroll', updateOverlay);
+            container.removeEventListener('DOMSubtreeModified', tabSwitchHandler);
+        };
+        
+        // Create 5 watermarks positioned within the overlay - all with same -15deg rotation
+        const positions = [
+            { top: '10%', left: '10%' },                      // Top-left
+            { top: '10%', right: '10%' },                      // Top-right
+            { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },  // Center
+            { bottom: '20%', left: '15%' },                   // Bottom-left
+            { bottom: '20%', right: '15%' }                    // Bottom-right
+        ];
+        
+        const rotation = -15; // Same rotation for all
+        
+        positions.forEach((pos, index) => {
+            const watermark = document.createElement('div');
+            watermark.className = 'node-palette-testing-watermark';
+            watermark.textContent = '测试中';
+            
+            // Set position - use absolute positioning relative to overlay
+            watermark.style.position = 'absolute';
+            if (pos.top) watermark.style.top = pos.top;
+            if (pos.bottom) watermark.style.bottom = pos.bottom;
+            if (pos.left) watermark.style.left = pos.left;
+            if (pos.right) watermark.style.right = pos.right;
+            
+            // Combine transform for rotation and centering (all same rotation)
+            let transform = `rotate(${rotation}deg)`;
+            if (pos.transform) {
+                transform = `${pos.transform} ${transform}`;
+            }
+            watermark.style.transform = transform;
+            watermark.style.opacity = '0';
+            
+            // Add to overlay
+            overlay.appendChild(watermark);
+            
+            // Fade in animation with slight delay for each
+            setTimeout(() => {
+                watermark.style.opacity = '1';
+            }, 100 + (index * 50)); // Stagger the fade-in
+        });
+        
+        // Add overlay to body (it uses fixed positioning relative to viewport)
+        document.body.appendChild(overlay);
+        
+        // Store overlay reference for cleanup
+        this.currentWatermarkOverlay = overlay;
+        
+        // Get initial container rect for logging
+        const initialRect = container.getBoundingClientRect();
+        console.log('[NodePalette] Testing watermarks created:', {
+            overlayCreated: !!overlay,
+            watermarkCount: overlay.children.length,
+            containerVisible: initialRect.width > 0 && initialRect.height > 0,
+            containerSize: { width: initialRect.width, height: initialRect.height }
+        });
+        
+        // Verify watermarks are actually in DOM
+        setTimeout(() => {
+            const checkWatermarks = document.querySelectorAll('.node-palette-testing-watermark');
+            console.log('[NodePalette] Watermarks in DOM:', checkWatermarks.length);
+            checkWatermarks.forEach((wm, idx) => {
+                const rect = wm.getBoundingClientRect();
+                console.log(`[NodePalette] Watermark ${idx + 1}:`, {
+                    visible: rect.width > 0 && rect.height > 0,
+                    opacity: getComputedStyle(wm).opacity,
+                    position: { top: rect.top, left: rect.left }
+                });
+            });
+        }, 500);
+    }
+    
+    hideTestingWatermark() {
+        /**
+         * Hide all testing watermarks
+         */
+        // Try to get overlay from stored reference first, then fallback to querySelector
+        const overlay = this.currentWatermarkOverlay || document.querySelector('.node-palette-watermark-overlay');
+        const watermarks = overlay ? overlay.querySelectorAll('.node-palette-testing-watermark') : [];
+        
+        if (watermarks.length > 0) {
+            watermarks.forEach(watermark => {
+                watermark.style.opacity = '0';
+            });
+        }
+        
+        // Remove after fade-out animation
+        setTimeout(() => {
+            if (overlay) {
+                // Clean up event listeners
+                if (overlay._cleanup && typeof overlay._cleanup === 'function') {
+                    overlay._cleanup();
+                }
+                overlay.remove();
+            }
+            
+            // Clear stored reference
+            this.currentWatermarkOverlay = null;
+            
+            // Fallback: remove any remaining watermarks
+            const remaining = document.querySelectorAll('.node-palette-testing-watermark, .node-palette-watermark-overlay');
+            remaining.forEach(el => el.remove());
+        }, 300); // Wait for fade-out
     }
     
     attachFinishButtonListener() {
@@ -2495,17 +2812,11 @@ class NodePaletteManager {
          * Hide Node Palette panel and show Circle Map.
          * Saves scroll position before hiding for restoration on re-entry.
          */
-        // Save scroll position before hiding (for tabs and non-tabs)
-        const container = document.getElementById('node-palette-container');
-        if (container && this.usesTabs() && this.currentTab) {
-            const scrollPos = container.scrollTop;
-            this.tabScrollPositions[this.currentTab] = scrollPos;
-            console.log(`[NodePalette] Saved ${this.currentTab} scroll position: ${scrollPos}px`);
-        } else if (container && !this.usesTabs()) {
-            // For non-tab diagrams, save to a general scroll position
-            this.lastScrollPosition = container.scrollTop;
-            console.log(`[NodePalette] Saved scroll position: ${this.lastScrollPosition}px`);
-        }
+        // Hide testing watermark
+        this.hideTestingWatermark();
+        
+        // Save scroll position before hiding (use centralized method)
+        this.saveCurrentTabScrollPosition();
         
         const d3Container = document.getElementById('d3-container');
         const palettePanel = document.getElementById('node-palette-panel');
@@ -2586,6 +2897,7 @@ class NodePaletteManager {
     setupScrollListener() {
         /**
          * Setup infinite scroll listener - triggers at 2/3 scroll position.
+         * Also saves scroll position for current tab (for persistence).
          */
         const container = document.getElementById('node-palette-container');
         if (!container) return;
@@ -2595,9 +2907,47 @@ class NodePaletteManager {
         container.addEventListener('scroll', () => {
             if (scrollTimeout) clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => {
+                // Save scroll position for current tab (always keep it updated)
+                this.saveCurrentTabScrollPosition();
+                
+                // Check for infinite scroll trigger
                 this.onScroll();
             }, 150);
         });
+    }
+    
+    /**
+     * Save scroll position for current tab (if using tabs) or general scroll position.
+     * This is called on scroll events to ensure scroll position is always saved per tab.
+     */
+    saveCurrentTabScrollPosition() {
+        const container = document.getElementById('node-palette-container');
+        if (!container) return;
+        
+        const scrollPos = container.scrollTop;
+        
+        if (this.usesTabs() && this.currentTab) {
+            // Save per-tab scroll position
+            if (!this.tabScrollPositions) {
+                this.tabScrollPositions = {};
+            }
+            const previousScrollPos = this.tabScrollPositions[this.currentTab] || 0;
+            this.tabScrollPositions[this.currentTab] = scrollPos;
+            
+            // Only log on significant changes to avoid console spam (every 100px or at 0)
+            if (Math.abs(scrollPos - previousScrollPos) >= 100 || scrollPos === 0) {
+                console.log(`[NodePalette] Saved ${this.currentTab} scroll position: ${scrollPos}px`);
+            }
+        } else if (!this.usesTabs()) {
+            // Save general scroll position for non-tab diagrams
+            const previousScrollPos = this.lastScrollPosition || 0;
+            this.lastScrollPosition = scrollPos;
+            
+            // Only log on significant changes to avoid console spam
+            if (Math.abs(scrollPos - previousScrollPos) >= 100 || scrollPos === 0) {
+                console.log(`[NodePalette] Saved scroll position: ${scrollPos}px`);
+            }
+        }
     }
     
     onScroll() {
@@ -3039,16 +3389,42 @@ class NodePaletteManager {
                             
                             // Add node to appropriate target (tab-specific or main array)
                             if (targetMode && this.tabNodes) {
-                                // For double bubble: validate node matches target mode using explicit mode field
+                                // For double bubble and staged diagrams: validate node matches target mode using explicit mode field
                                 const nodeMode = node.mode || null;
                                 
                                 console.log(`[NodePalette] Received node - Target: ${targetMode}, Node mode: ${nodeMode}, Has left/right: ${!!(node.left && node.right)}, ID: ${node.id}`);
                                 
-                                // Strict validation: node must have the correct mode tag
-                                if (nodeMode !== targetMode) {
+                                // For staged diagrams (tree_map, brace_map, flow_map, mindmap), use more lenient matching
+                                // Nodes tagged with stage name (e.g., 'dimensions', 'parts') should match the target tab
+                                const isStagedDiagram = this.usesStages();
+                                let shouldAccept = false;
+                                
+                                if (isStagedDiagram) {
+                                    // For staged diagrams: accept if node.mode matches targetMode OR currentTab
+                                    // This handles cases where mode is set to stage name (e.g., 'dimensions')
+                                    shouldAccept = (nodeMode === targetMode || nodeMode === this.currentTab);
+                                    if (!shouldAccept && this.currentStage) {
+                                        // Also accept if mode matches current stage
+                                        shouldAccept = (nodeMode === this.currentStage);
+                                    }
+                                } else {
+                                    // For double bubble: strict validation
+                                    shouldAccept = (nodeMode === targetMode);
+                                }
+                                
+                                if (!shouldAccept) {
                                     console.warn(`[NodePalette] ⚠️ Node mode mismatch - expected '${targetMode}', got '${nodeMode}': ${node.id}`);
                                     nodeCount--; // Don't count this node
                                     continue;
+                                }
+                                
+                                // Ensure tab storage exists
+                                if (!this.tabNodes[targetMode]) {
+                                    console.log(`[NodePalette] Initializing tab storage for: ${targetMode}`);
+                                    this.tabNodes[targetMode] = [];
+                                    if (!this.tabSelectedNodes[targetMode]) {
+                                        this.tabSelectedNodes[targetMode] = new Set();
+                                    }
                                 }
                                 
                                 // Add to specific tab's storage
@@ -3173,6 +3549,12 @@ class NodePaletteManager {
             } else if (this.diagramType === 'mindmap') {
                 payload.stage = this.currentStage || 'branches';
                 payload.stage_data = this.stageData || {};
+                // CRITICAL FIX: In Stage 2 (children), if we have a currentTab, it means we're loading for a specific branch
+                // Set branch_name so nodes get tagged with the branch name instead of generic 'children'
+                if (payload.stage === 'children' && this.currentTab && this.currentTab !== 'children') {
+                    payload.stage_data = {...payload.stage_data, branch_name: this.currentTab};
+                    console.log(`[NodePalette-Mindmap] Stage 2: Setting branch_name=${this.currentTab} for proper node tagging`);
+                }
                 console.log(`[NodePalette-Mindmap] Loading batch | Stage: ${payload.stage} | Data:`, payload.stage_data);
             } else if (this.diagramType === 'flow_map') {
                 payload.stage = this.currentStage || 'dimensions';
@@ -4006,6 +4388,10 @@ class NodePaletteManager {
             console.log('[NodePalette-Assemble] ✓ Routing to assembleNodesToMindMap()');
             return await this.assembleNodesToMindMap(selectedNodes);
         }
+        if (this.diagramType === 'brace_map') {
+            console.log('[NodePalette-Assemble] ✓ Routing to assembleNodesToBraceMap()');
+            return await this.assembleNodesToBraceMap(selectedNodes);
+        }
         
         // Generic handling for all other diagram types
         console.log('[NodePalette-Assemble] Using generic assembly logic');
@@ -4783,6 +5169,175 @@ class NodePaletteManager {
         }
     }
     
+    async assembleNodesToBraceMap(selectedNodes) {
+        /**
+         * Specialized assembly for Brace Map.
+         * Multi-stage workflow: dimension → parts → subparts
+         * 
+         * Builds hierarchical structure:
+         * {
+         *   whole: "蛋糕",
+         *   dimension: "组成部分",
+         *   parts: [
+         *     { name: "部分1", subparts: [{name: "子部分1.1"}, {name: "子部分1.2"}] },
+         *     { name: "部分2", subparts: [{name: "子部分2.1"}, {name: "子部分2.2"}] }
+         *   ]
+         * }
+         */
+        
+        console.log('[BraceMap-Assemble] ========================================');
+        console.log('[BraceMap-Assemble] ASSEMBLING NODES TO BRACE MAP');
+        console.log('[BraceMap-Assemble] ========================================');
+        console.log(`[BraceMap-Assemble] Total selected nodes: ${selectedNodes.length}`);
+        console.log(`[BraceMap-Assemble] Stage data:`, this.stageData);
+        
+        const editor = window.currentEditor;
+        if (!editor || !editor.currentSpec) {
+            console.error('[BraceMap-Assemble] ERROR: No active editor found');
+            alert('Error: No active editor found.');
+            return;
+        }
+        
+        const currentSpec = editor.currentSpec;
+        
+        // Extract dimension and parts from stage data
+        const dimension = this.stageData.dimension || '';
+        const selectedParts = this.stageData.parts || [];
+        
+        console.log(`[BraceMap-Assemble] Dimension: "${dimension}"`);
+        console.log(`[BraceMap-Assemble] Parts: ${selectedParts.length} selected`);
+        console.log(`[BraceMap-Assemble] Parts:`, selectedParts);
+        
+        // Group subparts nodes by part (using node.mode)
+        const nodesByPart = {};
+        
+        selectedNodes.forEach(node => {
+            const partName = node.mode;  // e.g., '部分1', '部分2'
+            
+            if (!partName) {
+                console.warn(`[BraceMap-Assemble] Node has no mode field:`, node);
+                return;
+            }
+            
+            // Only process nodes that belong to our selected parts
+            if (!selectedParts.includes(partName)) {
+                console.warn(`[BraceMap-Assemble] Node part "${partName}" not in selected parts, skipping`);
+                return;
+            }
+            
+            if (!nodesByPart[partName]) {
+                nodesByPart[partName] = [];
+            }
+            
+            nodesByPart[partName].push(node);
+        });
+        
+        console.log('[BraceMap-Assemble] Nodes grouped by part:');
+        Object.keys(nodesByPart).forEach(part => {
+            console.log(`  ${part}: ${nodesByPart[part].length} subparts`);
+        });
+        
+        // Filter out placeholder parts from existing parts first
+        const existingParts = (currentSpec.parts || []).filter(part => {
+            const partName = part.name || part.text || '';
+            return partName.trim().length > 0 && !this.isPlaceholder(partName);
+        });
+        
+        // Build hierarchical structure
+        // Add all selected parts, even if they have no subparts yet
+        const newParts = [];
+        
+        selectedParts.forEach(partName => {
+            const partNodes = nodesByPart[partName] || [];
+            
+            // Build part object with subparts (even if empty)
+            const partObj = {
+                name: partName,
+                subparts: partNodes.map(node => ({
+                    name: node.text
+                }))
+            };
+            
+            newParts.push(partObj);
+            
+            // Mark nodes as added
+            partNodes.forEach(node => {
+                node.added_to_diagram = true;
+            });
+            
+            console.log(`[BraceMap-Assemble] ✓ Part "${partName}": ${partNodes.length} subparts`);
+        });
+        
+        // Also add parts that were selected but have no subparts yet
+        // (This ensures parts appear in the diagram even if user hasn't selected subparts)
+        const partsWithSubparts = new Set(Object.keys(nodesByPart));
+        selectedParts.forEach(partName => {
+            if (!partsWithSubparts.has(partName)) {
+                // Part was selected but no subparts were selected for it
+                // Check if it already exists in the diagram
+                const alreadyExists = existingParts.some(p => 
+                    (p.name || p.text || '') === partName
+                );
+                
+                if (!alreadyExists) {
+                    newParts.push({
+                        name: partName,
+                        subparts: []
+                    });
+                    console.log(`[BraceMap-Assemble] ✓ Part "${partName}": added with empty subparts`);
+                }
+            }
+        });
+        
+        console.log(`[BraceMap-Assemble] Keeping ${existingParts.length} existing non-placeholder parts`);
+        
+        // Merge existing + new parts
+        currentSpec.parts = [...existingParts, ...newParts];
+        
+        // Set dimension if provided
+        if (dimension) {
+            currentSpec.dimension = dimension;
+            console.log(`[BraceMap-Assemble] ✓ Set dimension: "${dimension}"`);
+        }
+        
+        console.log(`[BraceMap-Assemble] ✓ Added ${newParts.length} parts with subparts`);
+        console.log(`[BraceMap-Assemble] Total parts now: ${currentSpec.parts.length}`);
+        
+        // Log final structure
+        console.log('[BraceMap-Assemble] Final structure:');
+        console.log(`  Whole: "${currentSpec.whole}"`);
+        console.log(`  Dimension: "${currentSpec.dimension}"`);
+        console.log(`  Parts: ${currentSpec.parts.length}`);
+        currentSpec.parts.forEach((part, idx) => {
+            const subpartCount = part.subparts ? part.subparts.length : 0;
+            const partName = part.name || part.text || 'Unknown';
+            console.log(`    [${idx + 1}] ${partName}: ${subpartCount} subparts`);
+        });
+        
+        // Re-render
+        try {
+            if (typeof editor.renderDiagram === 'function') {
+                await editor.renderDiagram(currentSpec);
+                console.log('[BraceMap-Assemble] ✓ Diagram re-rendered');
+            } else if (typeof editor.render === 'function') {
+                await editor.render();
+                console.log('[BraceMap-Assemble] ✓ Diagram rendered (legacy)');
+            }
+            
+            if (typeof editor.saveHistoryState === 'function') {
+                editor.saveHistoryState('node_palette_add');
+                console.log('[BraceMap-Assemble] ✓ History saved');
+            }
+            
+            console.log('[BraceMap-Assemble] ========================================');
+            console.log('[BraceMap-Assemble] ✓ ASSEMBLY COMPLETE');
+            console.log('[BraceMap-Assemble] ========================================');
+        } catch (error) {
+            console.error('[BraceMap-Assemble] ERROR:', error);
+            alert(`Error rendering diagram: ${error.message}`);
+        }
+    }
+    
     async assembleNodesToMindMap(selectedNodes) {
         /**
          * Specialized assembly for Mind Map.
@@ -4798,9 +5353,9 @@ class NodePaletteManager {
          */
         
         console.log('[MindMap-Assemble] ========================================');
-        console.log('[MindMap-Assemble] ASSEMBLING BRANCHES TO MINDMAP');
+        console.log('[MindMap-Assemble] ASSEMBLING BRANCHES AND CHILDREN TO MINDMAP');
         console.log('[MindMap-Assemble] ========================================');
-        console.log(`[MindMap-Assemble] Input: ${selectedNodes.length} selected branches`);
+        console.log(`[MindMap-Assemble] Input: ${selectedNodes.length} selected nodes`);
         
         const editor = window.currentEditor;
         if (!editor || !editor.currentSpec) {
@@ -4837,30 +5392,106 @@ class NodePaletteManager {
             return true;
         });
         
-        console.log(`[MindMap-Assemble] Keeping ${realBranches.length} real branches`);
-        console.log(`[MindMap-Assemble] Adding ${selectedNodes.length} new branches`);
+        // Separate nodes into branches and children
+        const newBranchNodes = [];
+        const childrenByBranch = {};  // branch_name → [nodes]
+        
+        selectedNodes.forEach(node => {
+            const mode = node.mode || 'branches';
+            
+            if (mode === 'branches') {
+                // This is a branch node
+                newBranchNodes.push(node);
+            } else {
+                // This is a child node, belongs to a branch named by mode
+                const branchName = mode;
+                if (!childrenByBranch[branchName]) {
+                    childrenByBranch[branchName] = [];
+                }
+                childrenByBranch[branchName].push(node);
+            }
+        });
+        
+        console.log(`[MindMap-Assemble] Keeping ${realBranches.length} existing branches`);
+        console.log(`[MindMap-Assemble] Adding ${newBranchNodes.length} new branches`);
+        console.log(`[MindMap-Assemble] Adding children to ${Object.keys(childrenByBranch).length} branches`);
         
         // Build new array: keep real branches + add selected branches
         const newBranches = [...realBranches];
         const startIndex = newBranches.length;
         
-        selectedNodes.forEach((node, idx) => {
+        // First, add all new branch nodes as top-level branches
+        newBranchNodes.forEach((node, idx) => {
             const branchIndex = startIndex + idx;
             const newBranch = {
                 id: `branch_${branchIndex}`,
                 label: node.text,
                 text: node.text,  // backward compatibility
-                children: []  // empty sub-items array
+                children: []  // empty sub-items array initially
             };
             newBranches.push(newBranch);
             node.added_to_diagram = true;
-            console.log(`  [${idx + 1}/${selectedNodes.length}] ADDED: "${node.text}" | ID: ${newBranch.id}`);
+            console.log(`  [${idx + 1}/${newBranchNodes.length}] ADDED BRANCH: "${node.text}" | ID: ${newBranch.id}`);
+        });
+        
+        // Then, add children to their parent branches
+        Object.keys(childrenByBranch).forEach(branchName => {
+            const children = childrenByBranch[branchName];
+            
+            // Find the branch with this name
+            let targetBranch = newBranches.find(branch => 
+                (branch.label || branch.text || '').trim() === branchName.trim()
+            );
+            
+            if (targetBranch) {
+                // Initialize children array if needed
+                if (!Array.isArray(targetBranch.children)) {
+                    targetBranch.children = [];
+                }
+                
+                // Add children to this branch
+                children.forEach((node, idx) => {
+                    const childId = `child_${targetBranch.id}_${targetBranch.children.length}`;
+                    const newChild = {
+                        id: childId,
+                        label: node.text,
+                        text: node.text,
+                        children: []
+                    };
+                    targetBranch.children.push(newChild);
+                    node.added_to_diagram = true;
+                    console.log(`  [${idx + 1}/${children.length}] ADDED CHILD to "${branchName}": "${node.text}" | ID: ${childId}`);
+                });
+                
+                console.log(`[MindMap-Assemble] ✓ Added ${children.length} children to branch "${branchName}"`);
+            } else {
+                console.warn(`[MindMap-Assemble] ⚠️ Branch "${branchName}" not found! Cannot add ${children.length} children. Creating as branch instead.`);
+                // Fallback: if branch not found, create it as a branch and add children
+                const branchIndex = newBranches.length;
+                const fallbackBranch = {
+                    id: `branch_${branchIndex}`,
+                    label: branchName,
+                    text: branchName,
+                    children: children.map((node, idx) => ({
+                        id: `child_branch_${branchIndex}_${idx}`,
+                        label: node.text,
+                        text: node.text,
+                        children: []
+                    }))
+                };
+                newBranches.push(fallbackBranch);
+                children.forEach(node => {
+                    node.added_to_diagram = true;
+                });
+            }
         });
         
         // Update spec
         currentSpec.children = newBranches;
         
-        console.log(`[MindMap-Assemble] AFTER: ${newBranches.length} branches (+${selectedNodes.length})`);
+        const totalBranchesAdded = newBranchNodes.length;
+        const totalChildrenAdded = Object.values(childrenByBranch).reduce((sum, arr) => sum + arr.length, 0);
+        console.log(`[MindMap-Assemble] AFTER: ${newBranches.length} branches (+${totalBranchesAdded} new), ${totalChildrenAdded} children added`);
         console.log('[MindMap-Assemble] ========================================');
         console.log('[MindMap-Assemble] Calling backend to recalculate layout...');
         console.log('[MindMap-Assemble] ========================================');
@@ -4876,7 +5507,7 @@ class NodePaletteManager {
             }
             
             console.log('[MindMap-Assemble] ========================================');
-            console.log(`[MindMap-Assemble] ✓ SUCCESS: ${selectedNodes.length} branches added to mindmap`);
+            console.log(`[MindMap-Assemble] ✓ SUCCESS: ${totalBranchesAdded} branches, ${totalChildrenAdded} children added to mindmap`);
             console.log('[MindMap-Assemble] ========================================');
         } catch (error) {
             console.error('[MindMap-Assemble] ERROR:', error);

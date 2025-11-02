@@ -630,14 +630,32 @@ class DiagramSelector {
         // 2. CLEAN UP ALL PANELS
         // ========================================
         
-        // Node Palette
+        // Node Palette - Clean up session on backend before destroying
         const nodePalettePanel = document.getElementById('node-palette-panel');
         if (nodePalettePanel) {
             nodePalettePanel.style.display = 'none';
             nodePalettePanel.classList.remove('thinkguide-visible');
         }
-        if (window.nodePaletteManager) {
-            window.nodePaletteManager.clearAll();
+        if (window.currentEditor?.nodePalette) {
+            // Send cleanup request to backend to properly end session
+            const sessionId = window.currentEditor.thinkGuide?.sessionId;
+            const diagramType = window.currentEditor.diagramType;
+            if (sessionId && diagramType) {
+                auth.fetch('/thinking_mode/node_palette/cleanup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        diagram_type: diagramType,
+                        selected_node_ids: [],
+                        total_nodes_generated: 0,
+                        batches_loaded: 0
+                    })
+                }).catch(err => {
+                    logger.debug('DiagramSelector', 'Node Palette cleanup failed (non-critical)', err);
+                });
+            }
+            window.currentEditor.nodePalette.clearAll();
         }
         
         // Property Panel
