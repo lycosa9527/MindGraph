@@ -143,6 +143,9 @@ class InteractiveEditor {
         // Save initial state to history (so user can undo back to start)
         this.saveToHistory('initial_load', { diagramType: this.diagramType });
         
+        // Update flow map orientation button visibility
+        this.updateFlowMapOrientationButtonVisibility();
+        
         // Render initial diagram
         this.renderDiagram();
         
@@ -171,6 +174,9 @@ class InteractiveEditor {
         this.log('InteractiveEditor: Starting diagram render', {
             specKeys: Object.keys(this.currentSpec || {})
         });
+        
+        // Update flow map orientation button visibility
+        this.updateFlowMapOrientationButtonVisibility();
         
         try {
             // For templates: don't set adaptive dimensions during render
@@ -218,6 +224,9 @@ class InteractiveEditor {
             
             // NOTE: Auto-fit is handled by DiagramSelector after initialization
             // This prevents duplicate triggers and ensures clean initial load
+            
+            // Update flow map orientation button visibility
+            this.updateFlowMapOrientationButtonVisibility();
             
             // Dispatch event to update node count and other UI elements
             window.dispatchEvent(new CustomEvent('diagram-rendered'));
@@ -799,6 +808,46 @@ class InteractiveEditor {
             
             logger.debug('Editor', 'Mobile zoom controls added');
         }
+    }
+    
+    /**
+     * Show flow map orientation button in toolbar (only for flow_map diagram type)
+     */
+    updateFlowMapOrientationButtonVisibility() {
+        const btn = document.getElementById('flow-map-orientation-btn');
+        if (btn) {
+            // ONLY show for flow_map diagram type
+            if (this.diagramType === 'flow_map') {
+                btn.style.display = '';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+    }
+    
+    /**
+     * Flip flow map orientation between vertical and horizontal
+     */
+    flipFlowMapOrientation() {
+        const currentSpec = this.currentSpec;
+        if (!currentSpec || this.diagramType !== 'flow_map') {
+            return;
+        }
+        
+        // Toggle orientation
+        const currentOrientation = currentSpec.orientation || 'vertical';
+        const newOrientation = currentOrientation === 'vertical' ? 'horizontal' : 'vertical';
+        currentSpec.orientation = newOrientation;
+        
+        // Save to history
+        this.saveToHistory('flip_orientation', { 
+            orientation: newOrientation 
+        });
+        
+        // Re-render diagram
+        this.renderDiagram();
+        
+        logger.debug('Editor', `Flow map orientation flipped to: ${newOrientation}`);
     }
     
     /**

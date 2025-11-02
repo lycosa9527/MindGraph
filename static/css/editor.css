@@ -2361,3 +2361,43 @@ body {
     transform: scale(0.95);
 }
 
+/* ========== Flow Map Orientation Controls ========== */
+.flow-map-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+}
+
+.flow-map-control-btn {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.flow-map-control-btn:hover {
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.flow-map-control-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.flow-map-control-btn:focus {
+    outline: 2px solid rgba(25, 118, 210, 0.5);
+    outline-offset: 2px;
+}
+

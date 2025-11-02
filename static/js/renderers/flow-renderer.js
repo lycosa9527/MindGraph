@@ -227,6 +227,9 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         return;
     }
 
+    // Get orientation (default to 'vertical' for backward compatibility)
+    const orientation = spec.orientation || 'vertical';
+
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let padding;
     
@@ -383,9 +386,6 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     // Clean up temp svg (measurement SVG)
     tempSvg.remove();
 
-    const centerX = baseWidth / 2;
-    const startY = padding + titleSize.h + THEME.vPadTitle + 10; // Further reduced from 20 to 10
-
     // DON'T set explicit width/height on container - let CSS handle it (100% fill)
     // This allows the canvas to fill the viewport and auto-fit to work properly
 
@@ -394,26 +394,15 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         .attr('viewBox', `0 0 ${baseWidth} ${baseHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet');
 
-    // Draw title at the top - centered to the canvas width, not the step nodes
-    const titleY = padding + titleSize.h; // baseline roughly below top padding
-    svg.append('text')
-        .attr('x', baseWidth / 2)  // Center to canvas width
-        .attr('y', titleY)
-        .attr('text-anchor', 'middle')
-        .attr('fill', THEME.titleText)
-        .attr('font-size', THEME.fontTitle)
-        .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
-        .attr('font-weight', 'bold')
-        .attr('data-node-id', 'flow-title')
-        .attr('data-node-type', 'title')
-        .attr('cursor', 'pointer')
-        .text(spec.title);
-
-    // NEW APPROACH: Calculate all substep positions first, then position steps accordingly
-    
-    // Step 1: Calculate all substep node positions with perfect spacing
-    const allSubstepPositions = [];
-    let currentSubY = startY + 15; // Further reduced from 30 to 15
+    // Render based on orientation (title will be drawn after step positions are calculated)
+    if (orientation === 'vertical') {
+        // VERTICAL LAYOUT (existing code)
+        const centerX = baseWidth / 2;
+        const startY = padding + 40; // Starting position for content (title will be positioned above step 1)
+        
+        // Step 1: Calculate all substep node positions with perfect spacing
+        const allSubstepPositions = [];
+        let currentSubY = startY + 15; // Further reduced from 30 to 15
     
     for (let stepIdx = 0; stepIdx < stepSizes.length; stepIdx++) {
         const nodes = subNodesPerStep[stepIdx];
@@ -461,6 +450,40 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         }
         
         stepCenters.push(stepYCenter);
+    }
+    
+    // Draw title above step 1's first substep (if exists) or above step 1 (before drawing connectors and steps)
+    let titleY = padding;
+    if (stepCenters.length > 0) {
+        let referenceY;
+        
+        // Check if step 1 has substeps - if yes, position title above first substep
+        const step1Substeps = allSubstepPositions[0];
+        if (step1Substeps && step1Substeps.length > 0) {
+            // Position above first substep of step 1
+            const firstSubstepTop = step1Substeps[0].y;
+            referenceY = firstSubstepTop;
+        } else {
+            // No substeps - position above step 1
+            const step1YCenter = stepCenters[0];
+            const step1Top = step1YCenter - stepSizes[0].h / 2;
+            referenceY = step1Top;
+        }
+        
+        titleY = Math.max(padding, referenceY - titleSize.h - 15); // 15px gap above reference
+        
+        svg.append('text')
+            .attr('x', centerX)  // Aligned with step 1 (centerX)
+            .attr('y', titleY)
+            .attr('text-anchor', 'middle')
+            .attr('fill', THEME.titleText)
+            .attr('font-size', THEME.fontTitle)
+            .attr('font-family', THEME.fontFamily)
+            .attr('font-weight', 'bold')
+            .attr('data-node-id', 'flow-title')
+            .attr('data-node-type', 'title')
+            .attr('cursor', 'pointer')
+            .text(spec.title);
     }
     
     // RENDERING ORDER: Draw all connectors FIRST, then nodes on top
@@ -646,13 +669,276 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         });
     });
     
-    // Update SVG dimensions to match calculated content
-    if (cw > baseWidth || ch > baseHeight) {
-        svg.attr('width', cw)
-           .attr('viewBox', `0 0 ${cw} ${ch}`)
-           .attr('preserveAspectRatio', 'xMidYMid meet');
+        // Update SVG dimensions to match calculated content
+        if (cw > baseWidth || ch > baseHeight) {
+            svg.attr('width', cw)
+               .attr('viewBox', `0 0 ${cw} ${ch}`)
+               .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            // DON'T set explicit width/height on container - let CSS handle it (100% fill)
+        }
         
-        // DON'T set explicit width/height on container - let CSS handle it (100% fill)
+    } else {
+        // HORIZONTAL LAYOUT (new code)
+        const centerY = baseHeight / 2;
+        const startX = padding + 60; // Start from left with padding
+        
+        const subOffsetY = 40; // Gap between step and substeps (below)
+        // Reuse subSpacing from above (30) for consistency
+        
+        // Calculate horizontal step spacing
+        const stepSpacing = 100; // Horizontal spacing between steps
+        const totalStepsWidth = stepSizes.reduce((sum, s) => sum + s.w, 0) + (stepSizes.length - 1) * stepSpacing;
+        
+        // Adjust baseWidth if needed for horizontal layout
+        const maxSubGroupHeight = subGroupHeights.reduce((mx, h) => Math.max(mx, h), 0);
+        const requiredHeight = Math.max(
+            baseHeight,
+            maxSubGroupHeight + subOffsetY + maxStepWidth + padding * 2
+        );
+        
+        if (requiredHeight > baseHeight) {
+            baseHeight = requiredHeight;
+            svg.attr('viewBox', `0 0 ${baseWidth} ${baseHeight}`)
+               .attr('preserveAspectRatio', 'xMidYMid meet');
+        }
+        
+        // Calculate step X positions (horizontal row)
+        const stepCentersX = [];
+        let currentStepX = startX;
+        
+        for (let stepIdx = 0; stepIdx < stepSizes.length; stepIdx++) {
+            const stepWidth = stepSizes[stepIdx].w;
+            stepCentersX.push(currentStepX + stepWidth / 2);
+            currentStepX += stepWidth + stepSpacing;
+        }
+        
+        // Draw title above step 1
+        let titleY = padding;
+        if (stepCentersX.length > 0) {
+            const step1XCenter = stepCentersX[0];
+            const step1Top = centerY - stepSizes[0].h / 2;
+            titleY = Math.max(padding, step1Top - titleSize.h - 15); // 15px gap above step 1
+            
+            svg.append('text')
+                .attr('x', step1XCenter)  // Aligned with step 1 X center
+                .attr('y', titleY)
+                .attr('text-anchor', 'middle')
+                .attr('fill', THEME.titleText)
+                .attr('font-size', THEME.fontTitle)
+                .attr('font-family', THEME.fontFamily)
+                .attr('font-weight', 'bold')
+                .attr('data-node-id', 'flow-title')
+                .attr('data-node-type', 'title')
+                .attr('cursor', 'pointer')
+                .text(spec.title);
+        }
+        
+        // Adjust centerY to account for substeps below
+        const maxSubHeight = maxSubGroupHeight;
+        const adjustedCenterY = centerY;
+        
+        // Calculate substep positions (below each step)
+        const allSubstepPositions = [];
+        for (let stepIdx = 0; stepIdx < stepSizes.length; stepIdx++) {
+            const nodes = subNodesPerStep[stepIdx];
+            const stepPositions = [];
+            const stepXCenter = stepCentersX[stepIdx];
+            const stepBottomY = adjustedCenterY + stepSizes[stepIdx].h / 2;
+            
+            if (nodes.length > 0) {
+                let currentSubY = stepBottomY + subOffsetY;
+                for (let nodeIdx = 0; nodeIdx < nodes.length; nodeIdx++) {
+                    const node = nodes[nodeIdx];
+                    stepPositions.push({
+                        x: stepXCenter - node.w / 2, // Center substep under step
+                        y: currentSubY,
+                        w: node.w,
+                        h: node.h,
+                        text: node.text
+                    });
+                    currentSubY += node.h + subSpacing;
+                }
+            }
+            allSubstepPositions.push(stepPositions);
+        }
+        
+        // Draw arrows between steps (horizontal, pointing right)
+        stepSizes.forEach((s, index) => {
+            const stepXCenter = stepCentersX[index];
+            const stepYCenter = adjustedCenterY;
+            
+            if (index < stepSizes.length - 1) {
+                const nextStepXCenter = stepCentersX[index + 1];
+                const currentRight = stepXCenter + s.w / 2 + 6;
+                const nextLeft = nextStepXCenter - stepSizes[index + 1].w / 2 - 6;
+                
+                if (nextLeft > currentRight) {
+                    svg.append('line')
+                        .attr('x1', currentRight)
+                        .attr('y1', stepYCenter)
+                        .attr('x2', nextLeft)
+                        .attr('y2', stepYCenter)
+                        .attr('stroke', '#666')
+                        .attr('stroke-width', 2);
+                    svg.append('polygon')
+                        .attr('points', `${nextLeft},${stepYCenter} ${nextLeft - 10},${stepYCenter - 5} ${nextLeft - 10},${stepYCenter + 5}`)
+                        .attr('fill', '#666');
+                }
+            }
+        });
+        
+        // Draw L-shaped connectors from steps to substeps (down, then to substep)
+        allSubstepPositions.forEach((stepPositions, stepIdx) => {
+            const stepXCenter = stepCentersX[stepIdx];
+            const stepYCenter = adjustedCenterY;
+            const stepBottomY = stepYCenter + stepSizes[stepIdx].h / 2;
+            
+            stepPositions.forEach((substep, nodeIdx) => {
+                const substepCenterX = substep.x + substep.w / 2;
+                const substepCenterY = substep.y + substep.h / 2;
+                const midY = stepBottomY + Math.max(8, subOffsetY / 2);
+                
+                // Vertical line from step bottom
+                svg.append('line')
+                    .attr('x1', stepXCenter)
+                    .attr('y1', stepBottomY)
+                    .attr('x2', stepXCenter)
+                    .attr('y2', midY)
+                    .attr('stroke', '#888')
+                    .attr('stroke-width', 1.5);
+                
+                // Horizontal line to substep
+                svg.append('line')
+                    .attr('x1', stepXCenter)
+                    .attr('y1', midY)
+                    .attr('x2', substepCenterX)
+                    .attr('y2', midY)
+                    .attr('stroke', '#888')
+                    .attr('stroke-width', 1.5);
+                
+                // Vertical line down to substep
+                svg.append('line')
+                    .attr('x1', substepCenterX)
+                    .attr('y1', midY)
+                    .attr('x2', substepCenterX)
+                    .attr('y2', substepCenterY)
+                    .attr('stroke', '#888')
+                    .attr('stroke-width', 1.5);
+            });
+        });
+        
+        // Draw main step nodes
+        stepSizes.forEach((s, index) => {
+            const stepXCenter = stepCentersX[index];
+            const stepYCenter = adjustedCenterY;
+            
+            // Rect
+            svg.append('rect')
+                .attr('x', stepXCenter - s.w / 2)
+                .attr('y', stepYCenter - s.h / 2)
+                .attr('width', s.w)
+                .attr('height', s.h)
+                .attr('rx', THEME.rectRadius)
+                .attr('fill', THEME.stepFill)
+                .attr('stroke', THEME.stepStroke)
+                .attr('stroke-width', THEME.stepStrokeWidth)
+                .attr('data-node-id', `flow-step-${index}`)
+                .attr('data-node-type', 'step')
+                .attr('data-step-index', index)
+                .attr('cursor', 'pointer');
+            
+            // Text
+            svg.append('text')
+                .attr('x', stepXCenter)
+                .attr('y', stepYCenter)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.stepText)
+                .attr('font-size', THEME.fontStep)
+                .attr('font-family', THEME.fontFamily)
+                .attr('data-node-id', `flow-step-${index}`)
+                .attr('data-node-type', 'step')
+                .attr('data-step-index', index)
+                .attr('cursor', 'pointer')
+                .text(s.text);
+        });
+        
+        // Draw substeps
+        allSubstepPositions.forEach((stepPositions, stepIdx) => {
+            stepPositions.forEach((substep, nodeIdx) => {
+                // Draw substep rectangle
+                svg.append('rect')
+                    .attr('x', substep.x)
+                    .attr('y', substep.y)
+                    .attr('width', substep.w)
+                    .attr('height', substep.h)
+                    .attr('rx', Math.max(4, THEME.rectRadius - 2))
+                    .attr('fill', THEME.substepFill)
+                    .attr('stroke', THEME.substepStroke)
+                    .attr('stroke-width', Math.max(1, THEME.stepStrokeWidth - 1))
+                    .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                    .attr('data-node-type', 'substep')
+                    .attr('data-step-index', stepIdx)
+                    .attr('data-substep-index', nodeIdx)
+                    .attr('cursor', 'pointer');
+                
+                // Draw substep text
+                svg.append('text')
+                    .attr('x', substep.x + substep.w / 2)
+                    .attr('y', substep.y + substep.h / 2)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', THEME.substepText)
+                    .attr('font-size', Math.max(12, THEME.fontStep - 1))
+                    .attr('font-family', THEME.fontFamily)
+                    .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                    .attr('data-node-type', 'substep')
+                    .attr('data-step-index', stepIdx)
+                    .attr('data-substep-index', nodeIdx)
+                    .attr('cursor', 'pointer')
+                    .text(substep.text);
+            });
+        });
+        
+        // Calculate canvas dimensions for horizontal layout
+        let contentBottom = 0;
+        let contentRight = 0;
+        const stepStrokeOffset = Math.ceil(THEME.stepStrokeWidth / 2);
+        
+        // Find right edge of steps
+        if (stepCentersX.length > 0) {
+            const lastStepIndex = stepCentersX.length - 1;
+            const lastStepRight = stepCentersX[lastStepIndex] + stepSizes[lastStepIndex].w / 2 + stepStrokeOffset;
+            contentRight = Math.max(contentRight, lastStepRight);
+        }
+        
+        // Find bottom of substeps
+        const substepStrokeWidth = Math.max(1, THEME.stepStrokeWidth - 1);
+        const strokeOffset = Math.ceil(substepStrokeWidth / 2);
+        
+        for (let stepIdx = 0; stepIdx < allSubstepPositions.length; stepIdx++) {
+            const stepPositions = allSubstepPositions[stepIdx];
+            for (let nodeIdx = 0; nodeIdx < stepPositions.length; nodeIdx++) {
+                const substep = stepPositions[nodeIdx];
+                const substepBottom = substep.y + substep.h + strokeOffset;
+                const substepRight = substep.x + substep.w + strokeOffset;
+                contentBottom = Math.max(contentBottom, substepBottom);
+                contentRight = Math.max(contentRight, substepRight);
+            }
+        }
+        
+        // Update SVG dimensions
+        const calculatedHeight = contentBottom + padding;
+        const calculatedWidth = Math.max(contentRight + padding, totalStepsWidth + padding * 2);
+        const ch = __round1(calculatedHeight);
+        const cw = __round1(calculatedWidth);
+        
+        if (cw > baseWidth || ch > baseHeight) {
+            svg.attr('width', cw)
+               .attr('viewBox', `0 0 ${cw} ${ch}`)
+               .attr('preserveAspectRatio', 'xMidYMid meet');
+        }
     }
     
     // Apply learning sheet text knockout if needed

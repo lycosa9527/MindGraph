@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.27.4] - 2025-11-03 - Flow Map Orientation Toggle Feature
+
+### Added
+
+- **Flow Map Orientation Button** (`static/js/editor/interactive-editor.js`, `static/js/editor/toolbar-manager.js`, `templates/editor.html`)
+  - Added "转向" (Flip) button in toolbar Tools section, positioned to the left of "Empty" button
+  - Button only appears for `flow_map` diagram type (hidden for all other diagram types)
+  - Toggles flow map between vertical and horizontal orientations
+  - Orientation state persists through undo/redo operations
+  - Button visibility automatically updates when switching diagram types
+  - **Impact**: Users can now flip flow maps between vertical and horizontal layouts for better readability
+
+- **Horizontal Flow Map Layout** (`static/js/renderers/flow-renderer.js`)
+  - Implemented complete horizontal layout rendering for flow maps
+  - Steps arranged horizontally (left to right) instead of vertically stacked
+  - Substeps positioned below each step (instead of to the right)
+  - Horizontal arrows between steps pointing right
+  - Inverted L-shaped connectors (down from step, then right to substeps)
+  - Adaptive canvas dimensions for horizontal layout
+  - **Impact**: Flow maps can now be displayed horizontally for wide screens or different viewing preferences
+
+- **Improved Flow Map Title Positioning** (`static/js/renderers/flow-renderer.js`)
+  - Vertical mode: Title positioned above first substep of step 1 (if substeps exist) to prevent overlap
+  - Horizontal mode: Title positioned above step 1
+  - Title aligned with step 1's X position for visual consistency
+  - **Impact**: Better title placement that avoids overlapping with substep nodes
+
+### Technical Details
+
+- **Renderer Changes**:
+  - Added `orientation` property to flow map spec (defaults to 'vertical' for backward compatibility)
+  - Conditional rendering logic for vertical vs horizontal layouts
+  - Separate positioning calculations for each orientation
+  - Canvas dimension calculations adjusted for both orientations
+
+- **UI Integration**:
+  - Toolbar button initialized in `ToolbarManager.initializeElements()`
+  - Event listener attached in `ToolbarManager.attachEventListeners()`
+  - Visibility managed in `InteractiveEditor.updateFlowMapOrientationButtonVisibility()`
+  - Orientation toggle in `InteractiveEditor.flipFlowMapOrientation()`
+
 ## [4.27.3] - 2025-11-03 - Demo Mode Display Fix
 
 ### Fixed

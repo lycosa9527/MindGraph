@@ -105,6 +105,7 @@ class ToolbarManager {
         this.thinkingBtn = document.getElementById('thinking-btn');  // 🆕 ThinkGuide button
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.emptyNodeBtn = document.getElementById('empty-node-btn');
+        this.flowMapOrientationBtn = document.getElementById('flow-map-orientation-btn');
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
         this.resetBtn = document.getElementById('reset-btn');
@@ -197,6 +198,12 @@ class ToolbarManager {
         this.lineModeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleLineMode();
+        });
+        this.flowMapOrientationBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.editor && this.editor.flipFlowMapOrientation) {
+                this.editor.flipFlowMapOrientation();
+            }
         });
         this.learningBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
