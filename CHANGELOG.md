@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.27.2] - 2025-11-03 - Admin Page Improvements
+
+### Changed
+
+- **Admin Dashboard Token Display** (`templates/admin.html`)
+  - Changed token count formatting from one decimal place to whole numbers (ones place)
+  - Applied to dashboard stats, organization distribution, schools table, and users table
+  - Examples: `5.2K` → `5K`, `10.3M` → `10M`
+  - **Impact**: Cleaner, easier-to-read token counts
+
+- **Admin Dashboard Registration Stats** (`routers/auth.py`, `templates/admin.html`)
+  - Changed "本周注册" (This Week) to "今日注册" (Today) card
+  - Now displays users registered today (from midnight UTC) instead of past week
+  - **Impact**: More relevant daily registration tracking for administrators
+
+- **Users List Table Improvements** (`templates/admin.html`)
+  - Replaced "状态" (Status) column with "注册时间" (Registration Time)
+  - Shows registration date in `YYYY-MM-DD` format (date only, no time)
+  - Removed school code from school column (name only)
+  - **Impact**: Better visibility into when users registered, cleaner school display
+
+## [4.27.1] - 2025-11-03 - Logging Improvements
+
+### Changed
+
+- **Improved Logging for Demo and Enterprise Modes** (`static/js/editor/interactive-editor.js`)
+  - Updated `updateSchoolNameDisplay()` function to show mode-specific log messages
+  - In demo mode: shows `[Editor] Demo mode` instead of warning about missing school name
+  - In enterprise mode: shows `[Editor] Enterprise mode` instead of warning about missing school name
+  - Standard mode: retains original warning behavior for debugging
+  - **Impact**: Cleaner, more informative console logs that clearly indicate the application mode
+
 ## [4.27.0] - 2025-11-02 - Token Tracking System & Authentication Enhancements
 
 ### Added

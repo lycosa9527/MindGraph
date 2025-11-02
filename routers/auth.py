@@ -1240,8 +1240,9 @@ async def get_stats_admin(
     users_by_org = dict(sorted(users_by_org.items(), key=lambda x: x[1], reverse=True))
     
     now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
-    recent_registrations = db.query(User).filter(User.created_at >= week_ago).count()
+    recent_registrations = db.query(User).filter(User.created_at >= today_start).count()
     
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
     token_stats = {

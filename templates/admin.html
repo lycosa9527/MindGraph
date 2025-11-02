@@ -514,7 +514,7 @@
                     <div class="value" id="stat-orgs">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3><span class="lang-zh">本周注册</span><span class="lang-en">This Week</span></h3>
+                    <h3><span class="lang-zh">今日注册</span><span class="lang-en">Today</span></h3>
                     <div class="value" id="stat-recent">-</div>
                 </div>
                 <div class="stat-card">
@@ -598,7 +598,7 @@
                             <th><span class="lang-zh">姓名</span><span class="lang-en">Name</span></th>
                             <th><span class="lang-zh">学校</span><span class="lang-en">Organization</span></th>
                             <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span></th>
-                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
+                            <th><span class="lang-zh">注册时间</span><span class="lang-en">Registration Time</span></th>
                             <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
                         </tr>
                     </thead>
@@ -1406,13 +1406,13 @@ curl -X POST http://your-server/api/generate_graph \
                 // Format numbers with K/M suffix for readability
                 function formatNumber(num) {
                     if (num >= 1000000000000) {
-                        return (num / 1000000000000).toFixed(1) + 'T';
+                        return Math.round(num / 1000000000000) + 'T';
                     } else if (num >= 1000000000) {
-                        return (num / 1000000000).toFixed(1) + 'G';
+                        return Math.round(num / 1000000000) + 'G';
                     } else if (num >= 1000000) {
-                        return (num / 1000000).toFixed(1) + 'M';
+                        return Math.round(num / 1000000) + 'M';
                     } else if (num >= 1000) {
-                        return (num / 1000).toFixed(1) + 'K';
+                        return Math.round(num / 1000) + 'K';
                     }
                     return num.toString();
                 }
@@ -1507,9 +1507,9 @@ curl -X POST http://your-server/api/generate_graph \
                     // Format token numbers (reuse formatNumber from loadDashboard)
                     function formatNumber(num) {
                         if (num >= 1000000) {
-                            return (num / 1000000).toFixed(1) + 'M';
+                            return Math.round(num / 1000000) + 'M';
                         } else if (num >= 1000) {
-                            return (num / 1000).toFixed(1) + 'K';
+                            return Math.round(num / 1000) + 'K';
                         }
                         return num.toString();
                     }
@@ -1712,13 +1712,13 @@ curl -X POST http://your-server/api/generate_graph \
                 // Format number helper (reuse from dashboard)
                 function formatNumber(num) {
                     if (num >= 1000000000000) {
-                        return (num / 1000000000000).toFixed(1) + 'T';
+                        return Math.round(num / 1000000000000) + 'T';
                     } else if (num >= 1000000000) {
-                        return (num / 1000000000).toFixed(1) + 'G';
+                        return Math.round(num / 1000000000) + 'G';
                     } else if (num >= 1000000) {
-                        return (num / 1000000).toFixed(1) + 'M';
+                        return Math.round(num / 1000000) + 'M';
                     } else if (num >= 1000) {
-                        return (num / 1000).toFixed(1) + 'K';
+                        return Math.round(num / 1000) + 'K';
                     }
                     return num.toString();
                 }
@@ -1740,15 +1740,18 @@ curl -X POST http://your-server/api/generate_graph \
                         <tr>
                             <td>${user.phone}</td>
                             <td>${user.name || '-'}</td>
-                            <td>${user.organization_name || '-'} (${user.organization_code || '-'})</td>
+                            <td>${user.organization_name || '-'}</td>
                             <td style="font-weight:700;color:#10b981;">
                                 ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
                             </td>
-                            <td>
-                                ${isLocked ? 
-                                    '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span></span>' : 
-                                    '<span class="badge badge-success">✅ <span class="lang-zh">正常</span><span class="lang-en">Active</span></span>'
-                                }
+                            <td style="color:#64748b;">
+                                ${user.created_at ? (() => {
+                                    const date = new Date(user.created_at);
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    return `${year}-${month}-${day}`;
+                                })() : '-'}
                             </td>
                             <td>
                                 <button class="btn btn-primary btn-sm" onclick="showEditUserModal(${user.id})" title="Edit User"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
