@@ -864,13 +864,21 @@ class InteractiveEditor {
      */
     updateFlowMapOrientationButtonVisibility() {
         const btn = document.getElementById('flow-map-orientation-btn');
-        if (btn) {
-            // ONLY show for flow_map diagram type
-            if (this.diagramType === 'flow_map') {
-                btn.style.display = '';
-            } else {
-                btn.style.display = 'none';
-            }
+        if (!btn) {
+            return;
+        }
+        
+        // CRITICAL: Button should ONLY appear for flow_map diagram type
+        // Use setProperty with !important to override any CSS rules that might show it
+        if (this.diagramType === 'flow_map') {
+            // Show button (match other toolbar buttons' display style)
+            btn.style.setProperty('display', 'inline-flex', 'important');
+            logger.debug('Editor', 'Flow map orientation button shown', {
+                diagramType: this.diagramType
+            });
+        } else {
+            // Explicitly hide for all other diagram types with !important
+            btn.style.setProperty('display', 'none', 'important');
         }
     }
     

@@ -350,8 +350,12 @@ class ToolbarResponsiveManager {
                     group.classList.remove('collapsible-group', 'collapsed');
                     group.classList.add('always-visible');
                     
-                    // Show all buttons
+                    // Show all buttons (except flow-map-orientation-btn which is controlled by diagram type)
                     buttons.forEach(btn => {
+                        // Skip flow map orientation button - it's controlled by diagram type visibility
+                        if (btn.id === 'flow-map-orientation-btn') {
+                            return;
+                        }
                         btn.style.display = '';
                     });
                 }
@@ -400,11 +404,15 @@ class ToolbarResponsiveManager {
         group.classList.add('expanded');
         toggle.innerHTML = '▼';
         
-        // Show all buttons
+        // Show all buttons (except flow-map-orientation-btn which is controlled by diagram type)
         const buttons = Array.from(group.children).filter(
             child => child.tagName === 'BUTTON' && !child.classList.contains('toolbar-group-toggle')
         );
         buttons.forEach(btn => {
+            // Skip flow map orientation button - it's controlled by diagram type visibility
+            if (btn.id === 'flow-map-orientation-btn') {
+                return;
+            }
             btn.style.display = '';
         });
         
@@ -429,11 +437,15 @@ class ToolbarResponsiveManager {
             // Remove collapsible classes
             group.classList.remove('collapsible-group', 'collapsed', 'expanded');
             
-            // Show all buttons
+            // Show all buttons (except flow-map-orientation-btn which is controlled by diagram type)
             const buttons = Array.from(group.children).filter(
                 child => child.tagName === 'BUTTON' && !child.classList.contains('toolbar-group-toggle')
             );
             buttons.forEach(btn => {
+                // Skip flow map orientation button - it's controlled by diagram type visibility
+                if (btn.id === 'flow-map-orientation-btn') {
+                    return;
+                }
                 btn.style.display = '';
             });
             

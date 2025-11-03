@@ -206,7 +206,8 @@ class ToolbarManager {
         });
         this.flowMapOrientationBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (this.editor && this.editor.flipFlowMapOrientation) {
+            // CRITICAL: Only allow flip for flow_map diagram type
+            if (this.editor && this.editor.diagramType === 'flow_map' && this.editor.flipFlowMapOrientation) {
                 this.editor.flipFlowMapOrientation();
             }
         });

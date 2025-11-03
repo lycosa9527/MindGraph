@@ -503,6 +503,11 @@
     }
 }
 
+/* Flow Map Orientation Button - Hidden by default, shown only for flow_map diagram type */
+#flow-map-orientation-btn {
+    display: none !important;
+}
+
 /* MindMate AI Button */
 .mindmate-ai-btn {
     display: flex;

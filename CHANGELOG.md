@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.2] - 2025-11-04 - Flow Map Orientation Button Visibility Fixes
+
+### Fixed
+
+- **Flow Map Orientation Button Visibility** (`static/css/editor-toolbar.css`, `static/js/editor/interactive-editor.js`)
+  - Fixed issue where flow map orientation button could appear for non-flow-map diagram types
+  - Added CSS rule to hide button by default with `!important` flag
+  - Enhanced visibility logic in `updateFlowMapOrientationButtonVisibility()` to use `setProperty()` with `!important`
+  - Button now explicitly shows as `inline-flex` for flow maps and `none` for all other diagram types
+  - Added debug logging for visibility state changes
+  - **Impact**: Flow map orientation button now correctly appears only for flow_map diagrams
+
+- **Flow Map Orientation Button Click Protection** (`static/js/editor/toolbar-manager.js`)
+  - Added diagram type check before allowing orientation flip action
+  - Prevents orientation toggle from executing if diagram type is not `flow_map`
+  - **Impact**: Prevents accidental orientation changes when button is somehow accessible for wrong diagram types
+
+- **Responsive Toolbar Flow Map Button Handling** (`static/js/editor/toolbar-responsive.js`)
+  - Fixed issue where responsive toolbar manager could override flow map button visibility
+  - Added checks to skip `flow-map-orientation-btn` when showing/hiding buttons in collapsible groups
+  - Button visibility now exclusively controlled by diagram type, not by responsive toolbar state
+  - Applied to all responsive toolbar operations: desktop expansion, mobile expansion, and always-visible groups
+  - **Impact**: Flow map orientation button visibility is now properly maintained regardless of toolbar responsive state
+
+---
+
 ## [4.28.1] - 2025-01-02 - Copyright and Company Name Update
 
 ### Changed
