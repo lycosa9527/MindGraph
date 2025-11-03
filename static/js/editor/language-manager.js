@@ -110,6 +110,7 @@ class LanguageManager {
                 lineModeTooltip: 'Toggle black & white line mode',
                 learningModeTooltip: 'Start Interactive Learning Mode',
                 thinkingModeTooltip: 'Start Socratic Thinking Mode',
+                nodePaletteTooltip: 'Open Node Palette to brainstorm nodes with AI',
                 thinkingModeTitle: 'ThinkGuide - Thinking Guide',
                 thinkingInputPlaceholder: 'Type your response...',
                 // Learning Mode UI
@@ -360,6 +361,7 @@ class LanguageManager {
                 lineModeTooltip: '切换黑白线稿模式',
                 learningModeTooltip: '开始交互式学习模式',
                 thinkingModeTooltip: '开始苏格拉底式思维模式',
+                nodePaletteTooltip: '打开瀑布流，AI为您头脑风暴更多节点',
                 thinkingModeTitle: '思维向导',
                 thinkingInputPlaceholder: '输入你的回答...',
                 // Learning Mode UI | 学习模式界面
@@ -841,6 +843,16 @@ class LanguageManager {
         const nodePaletteTitle = document.querySelector('.node-palette-title h3');
         if (nodePaletteTitle) {
             nodePaletteTitle.textContent = t.nodePalette;
+        }
+        
+        // Update Node Palette button text and tooltip
+        const nodePaletteBtnText = document.getElementById('node-palette-btn-text');
+        if (nodePaletteBtnText) {
+            nodePaletteBtnText.textContent = t.nodePalette;
+        }
+        const nodePaletteTooltip = document.getElementById('node-palette-tooltip');
+        if (nodePaletteTooltip) {
+            nodePaletteTooltip.textContent = t.nodePaletteTooltip;
         }
         
         // Update Properties Panel

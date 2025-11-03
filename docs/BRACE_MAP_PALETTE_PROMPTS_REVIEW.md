@@ -246,3 +246,5 @@ The subparts prompt currently doesn't receive dimension information, which could
 - Show you specific examples of what the improved prompts would look like?
 - Focus on a particular aspect (parts vs subparts)?
 
+
+

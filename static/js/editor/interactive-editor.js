@@ -471,10 +471,25 @@ class InteractiveEditor {
                     }
                 })
                 .on('mouseover', function() {
-                    d3.select(this).style('opacity', 0.8);
+                    // Skip opacity animation for mindmap nodes (topic, branch, and child)
+                    // to keep connection lines visible
+                    const nodeType = element.attr('data-node-type');
+                    const isMindMapNode = self.diagramType === 'mindmap' && 
+                        (nodeType === 'topic' || nodeType === 'branch' || nodeType === 'child');
+                    
+                    if (!isMindMapNode) {
+                        d3.select(this).style('opacity', 0.8);
+                    }
                 })
                 .on('mouseout', function() {
-                    d3.select(this).style('opacity', 1);
+                    // Skip opacity animation for mindmap nodes (topic, branch, and child)
+                    const nodeType = element.attr('data-node-type');
+                    const isMindMapNode = self.diagramType === 'mindmap' && 
+                        (nodeType === 'topic' || nodeType === 'branch' || nodeType === 'child');
+                    
+                    if (!isMindMapNode) {
+                        d3.select(this).style('opacity', 1);
+                    }
                 });
         });
         
@@ -515,10 +530,25 @@ class InteractiveEditor {
                         self.openNodeEditor(ownNodeId, textNode, textNode, currentText);
                     })
                     .on('mouseover', function() {
-                        d3.select(this).style('opacity', 0.8);
+                        // Skip opacity animation for mindmap nodes (topic, branch, and child)
+                        // to keep connection lines visible
+                        const nodeType = element.attr('data-node-type');
+                        const isMindMapNode = self.diagramType === 'mindmap' && 
+                            (nodeType === 'topic' || nodeType === 'branch' || nodeType === 'child');
+                        
+                        if (!isMindMapNode) {
+                            d3.select(this).style('opacity', 0.8);
+                        }
                     })
                     .on('mouseout', function() {
-                        d3.select(this).style('opacity', 1);
+                        // Skip opacity animation for mindmap nodes (topic, branch, and child)
+                        const nodeType = element.attr('data-node-type');
+                        const isMindMapNode = self.diagramType === 'mindmap' && 
+                            (nodeType === 'topic' || nodeType === 'branch' || nodeType === 'child');
+                        
+                        if (!isMindMapNode) {
+                            d3.select(this).style('opacity', 1);
+                        }
                     });
                 return; // Skip the associated node logic below
             }
@@ -1702,13 +1732,17 @@ class InteractiveEditor {
         
         const nodeType = shape.attr('data-node-type');
         
+        // Declare branchIndex and childIndex at function scope so they're accessible later
+        let branchIndex = NaN;
+        let childIndex = NaN;
+        
         if (nodeType === 'topic') {
             // Update the central topic
             this.currentSpec.topic = newText;
             logger.debug('Editor', 'Updated MindMap topic to:', newText);
         } else if (nodeType === 'branch') {
             // Update branch label in children array
-            const branchIndex = parseInt(shape.attr('data-branch-index'));
+            branchIndex = parseInt(shape.attr('data-branch-index'));
             if (!isNaN(branchIndex) && Array.isArray(this.currentSpec.children)) {
                 if (this.currentSpec.children[branchIndex]) {
                     this.currentSpec.children[branchIndex].label = newText;
@@ -1717,8 +1751,8 @@ class InteractiveEditor {
             }
         } else if (nodeType === 'child') {
             // Update child label in nested children array
-            const branchIndex = parseInt(shape.attr('data-branch-index'));
-            const childIndex = parseInt(shape.attr('data-child-index'));
+            branchIndex = parseInt(shape.attr('data-branch-index'));
+            childIndex = parseInt(shape.attr('data-child-index'));
             if (!isNaN(branchIndex) && !isNaN(childIndex) && 
                 Array.isArray(this.currentSpec.children) &&
                 this.currentSpec.children[branchIndex] &&
@@ -1735,15 +1769,31 @@ class InteractiveEditor {
             const positions = this.currentSpec._layout.positions;
             if (nodeType === 'topic' && positions.topic) {
                 positions.topic.text = newText;
-            } else if (nodeType === 'branch' && positions[`branch_${branchIndex}`]) {
+            } else if (nodeType === 'branch' && !isNaN(branchIndex) && positions[`branch_${branchIndex}`]) {
                 positions[`branch_${branchIndex}`].text = newText;
-            } else if (nodeType === 'child' && positions[`child_${branchIndex}_${childIndex}`]) {
+            } else if (nodeType === 'child' && !isNaN(branchIndex) && !isNaN(childIndex) && positions[`child_${branchIndex}_${childIndex}`]) {
                 positions[`child_${branchIndex}_${childIndex}`].text = newText;
             }
         }
         
+        // Store selected nodes before re-render
+        const selectedNodesBeforeRender = this.selectionManager ? 
+            Array.from(this.selectionManager.getSelectedNodes()) : [];
+        
         // Re-render with updated text (positions stay the same)
-        this.renderDiagram();
+        this.renderDiagram().then(() => {
+            // Restore selection styling after re-render
+            // When nodes are re-rendered, they lose their selection styling (stroke, stroke-width, filter)
+            // We need to re-apply the selection styling to maintain visual feedback
+            if (this.selectionManager && selectedNodesBeforeRender.length > 0) {
+                selectedNodesBeforeRender.forEach(nodeId => {
+                    // Re-apply selection styling to restore the border/highlight
+                    this.selectionManager.updateVisualSelection(nodeId, true);
+                });
+            }
+        }).catch(err => {
+            logger.error('Editor', 'Error restoring selection after mindmap text update:', err);
+        });
     }
     
     /**

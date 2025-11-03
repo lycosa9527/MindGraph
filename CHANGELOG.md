@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.27.5] - 2025-11-02 - Mindmap Editing and UI Improvements
+
+### Fixed
+
+- **Mindmap Node Text Editing** (`static/js/editor/interactive-editor.js`)
+  - Fixed `ReferenceError: branchIndex is not defined` error when editing mindmap nodes
+  - Declared `branchIndex` and `childIndex` at function scope to ensure accessibility throughout `updateMindMapText()`
+  - Added NaN checks before using these variables in positions update logic
+  - **Impact**: Users can now successfully edit topic, branch, and child nodes in mindmaps without errors
+
+- **Mindmap Branch Node Border Persistence** (`static/js/editor/interactive-editor.js`)
+  - Fixed issue where branch node borders disappeared after editing
+  - Added selection styling restoration after re-render to preserve visual feedback
+  - Stores selected nodes before re-render and restores selection styling (stroke, stroke-width, filter) after render completes
+  - **Impact**: Branch node borders now remain visible after editing, maintaining clear visual feedback
+
+### Changed
+
+- **Mindmap Node Hover Behavior** (`static/js/editor/interactive-editor.js`)
+  - Removed opacity animation on hover for all mindmap nodes (topic, branch, and child)
+  - Nodes now maintain full opacity (1.0) when hovered, keeping connection lines clearly visible
+  - Opacity animation still applies to all other diagram types for consistency
+  - **Impact**: Connection lines in mindmaps remain fully visible when hovering over nodes, improving diagram readability
+
 ## [4.27.4] - 2025-11-03 - Flow Map Orientation Toggle Feature
 
 ### Added

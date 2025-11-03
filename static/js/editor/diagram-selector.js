@@ -459,7 +459,7 @@ class DiagramSelector {
             );
             
             window.currentEditor.nodePalette = window.sessionLifecycle.register(
-                new NodePaletteManager(),
+                new NodePaletteManager(window.eventBus, window.stateManager, logger),
                 'nodePalette'
             );
             

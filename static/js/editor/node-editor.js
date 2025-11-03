@@ -265,7 +265,21 @@ class NodeEditor {
                 if (event.key === 'Escape') {
                     this.handleCancel();
                 } else if (event.key === 'Enter' && event.ctrlKey) {
-                    this.handleSave();
+                    // Insert manual line break at cursor position
+                    event.preventDefault();
+                    const textarea = this.textInput;
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const value = textarea.value;
+                    
+                    // Insert newline at cursor position
+                    textarea.value = value.substring(0, start) + '\n' + value.substring(end);
+                    
+                    // Restore cursor position after the newline
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                    
+                    // Trigger input event to update character count
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             });
     }

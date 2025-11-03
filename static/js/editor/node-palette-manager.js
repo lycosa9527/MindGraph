@@ -16,7 +16,10 @@
  */
 
 class NodePaletteManager {
-    constructor() {
+    constructor(eventBus, stateManager, logger) {
+        this.eventBus = eventBus;
+        this.stateManager = stateManager;
+        this.logger = logger;
         this.nodes = [];
         this.selectedNodes = new Set();
         this.currentBatch = 0;
@@ -2715,7 +2718,21 @@ class NodePaletteManager {
             remaining.forEach(el => el.remove());
         }, 300); // Wait for fade-out
     }
-    
+
+    /**
+     * Close the node palette panel and clean up resources
+     * Called by PanelManager when the panel is closed
+     */
+    closePanel() {
+        this.logger?.debug('NodePalette', 'closePanel() called - cleaning up watermark');
+
+        // Hide testing watermark
+        this.hideTestingWatermark();
+
+        // Additional cleanup can be added here if needed
+        // For example: clear timers, abort requests, etc.
+    }
+
     attachFinishButtonListener() {
         /**
          * Attach click listener to Finish/Next button.
@@ -5519,8 +5536,11 @@ class NodePaletteManager {
      * Clean up resources
      */
     destroy() {
-        console.log('[NodePalette] Destroying');
-        
+        this.logger?.info('NodePalette', 'Destroying');
+
+        // Clean up watermark
+        this.hideTestingWatermark();
+
         // Abort any in-progress SSE streams
         if (this.currentBatchAbortController) {
             this.currentBatchAbortController.abort();
