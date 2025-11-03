@@ -7,8 +7,9 @@ Bridge Map specific node palette generator.
 Generates analogy pair nodes for Bridge Maps with paired left/right format.
 Similar to double bubble map's differences, but for analogies.
 
-Author: lycosa9527
-Made by: MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

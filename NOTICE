@@ -1,19 +1,19 @@
 MindGraph - Enterprise-Grade AI Diagram Generation Platform
-Copyright 2024-2025 lycosa9527 / MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 
-This product includes software developed by lycosa9527 and MindSpring Team.
+This product includes software developed by 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.).
 
 ===============================================================================
 
 TRADEMARKS
 
-The following are trademarks of lycosa9527/MindSpring Team:
+The following are trademarks of 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.):
 - MindGraph (name)
 - MindGraph logos and visual identity
-- MindSpring Team branding
+- Related branding
 
-While this software is licensed under Apache License 2.0, our trademarks 
-are NOT included in this license grant (see Section 6 of the Apache License 2.0).
+This software is licensed under a Proprietary License (All Rights Reserved). 
+Our trademarks are protected and may not be used without explicit written permission.
 
 If you fork or redistribute this software, you must:
 - Remove all MindGraph branding and logos
@@ -37,8 +37,7 @@ Key Achievement:
 - Bilingual English/Chinese support
 - 100% AI-assisted development with Cursor AI
 
-Built with ❤️ by lycosa9527
-Made by MindSpring Team
+Developed by 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 Powered by Cursor AI - https://cursor.sh
 
 ===============================================================================

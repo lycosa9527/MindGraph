@@ -3,13 +3,14 @@
  * 
  * Manages the interactive Learning Mode experience:
  * - Knocks out 20% of random nodes
- * - Provides input fields for user answers
- * - Validates answers with LLM
- * - Generates hints and learning materials
- * - Uses Socratic questioning and educational scaffolding
  * 
- * @author lycosa9527
- * @made by MindSpring Team
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 class LearningModeManager {

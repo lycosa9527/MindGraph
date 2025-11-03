@@ -6,8 +6,9 @@ MindGraph Uvicorn Server Launcher
 Async server launcher using Uvicorn for FastAPI application.
 Works on both Windows 11 (development) and Ubuntu (production).
 
-@author lycosa9527
-@made_by MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os
@@ -126,7 +127,7 @@ def run_uvicorn():
         print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
         print("=" * 80)
         print("    AI-Powered Visual Thinking Tools for K12 Education")
-        print(f"    Version {config.VERSION} | Made by MindSpring Team | Author: lycosa9527")
+        print(f"    Version {config.VERSION} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
         print("=" * 80)
         print()
         print(f"Environment: {environment} (DEBUG={debug})")

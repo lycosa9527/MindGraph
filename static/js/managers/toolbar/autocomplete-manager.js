@@ -5,9 +5,13 @@
  * Manages 4-LLM auto-complete workflow with SSE streaming.
  * Handles parallel model execution, progress tracking, and result selection.
  * 
- * @author lycosa9527
- * @made_by MindSpring Team
- * @size_target ~800-900 lines
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 // Multi-LLM Configuration

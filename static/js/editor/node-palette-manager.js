@@ -3,16 +3,14 @@
  * ====================
  * 
  * Manages the Node Palette feature for all diagram types.
- * Handles multi-LLM node generation, selection, and diagram integration.
  * 
- * Features:
- * - SSE streaming from 4 LLMs (qwen, deepseek, hunyuan, kimi)
- * - Infinite scroll with smart stopping (200 nodes or 12 batches)
- * - Real-time node selection with animations
- * - Support for multiple diagram types with appropriate terminology
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
  * 
- * @author lycosa9527
- * @made_by MindSpring Team
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 class NodePaletteManager {

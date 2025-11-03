@@ -5,15 +5,13 @@
  * Dynamically adjusts toolbar layout when window is resized,
  * ensuring MindMate AI button and other tools fit in one line.
  * 
- * Features:
- * - Real-time width monitoring
- * - Smart label hiding
- * - Button text abbreviation
- * - Collapsible sections on mobile
- * - Dynamic reflow
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
  * 
- * @author lycosa9527
- * @made_by MindSpring Team
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 class ToolbarResponsiveManager {

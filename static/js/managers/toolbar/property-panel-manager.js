@@ -5,9 +5,13 @@
  * Manages property panel UI for node styling and editing.
  * Handles color pickers, font styling, and property updates.
  * 
- * @author lycosa9527
- * @made_by MindSpring Team
- * @size_target ~700-800 lines
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 class PropertyPanelManager {

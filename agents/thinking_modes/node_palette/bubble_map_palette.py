@@ -6,8 +6,9 @@ Bubble Map specific node palette generator.
 
 Generates attribute/adjective nodes for Bubble Maps using centralized prompt system.
 
-Author: lycosa9527
-Made by: MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

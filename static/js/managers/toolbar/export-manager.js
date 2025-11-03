@@ -5,9 +5,13 @@
  * Manages diagram export to PNG, SVG, and JSON formats.
  * Handles file download and export preparation.
  * 
- * @author lycosa9527
- * @made_by MindSpring Team
- * @size_target ~400-500 lines
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 class ExportManager {

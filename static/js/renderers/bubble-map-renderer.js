@@ -7,6 +7,14 @@
  * Performance Impact: Loads only ~50KB instead of full 213KB
  * 
  * Last Updated: 2024-12-19 - Fixed adaptive sizing for double bubble maps
+ * 
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 // Check if shared utilities are available

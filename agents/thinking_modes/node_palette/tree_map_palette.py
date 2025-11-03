@@ -9,8 +9,9 @@ Supports 3-stage progressive generation:
 2. Stage 2 (categories): Generate categories for selected dimension
 3. Stage 3 (children): Generate children for selected categories
 
-Author: lycosa9527
-Made by: MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

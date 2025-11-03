@@ -5,9 +5,9 @@ MindGraph - AI-Powered Graph Generation Application (FastAPI)
 Modern async web application for AI-powered diagram generation.
 
 Version: See VERSION file (centralized version management)
-Author: lycosa9527
-Made by: MindSpring Team
-License: AGPLv3
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 
 Features:
 - Full async/await support for 4,000+ concurrent SSE connections

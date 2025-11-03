@@ -1,8 +1,27 @@
 /**
  * InteractiveEditor - Main controller for the interactive diagram editor
  * 
- * @author lycosa9527
- * @made_by MindSpring Team
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * PROPRIETARY LICENSE - ALL RIGHTS RESERVED
+ * 
+ * This software and associated documentation files (the "Software") are the proprietary
+ * and confidential information of 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.).
+ * 
+ * WITHOUT EXPLICIT WRITTEN PERMISSION FROM THE COPYRIGHT HOLDER, ALL USE IS PROHIBITED,
+ * including but not limited to:
+ * - Use, execution, or deployment
+ * - Copying, downloading, or access
+ * - Modification or creation of derivative works
+ * - Distribution, redistribution, or sharing
+ * - Commercial use or any production deployment
+ * 
+ * Unauthorized use may result in severe civil and criminal penalties.
+ * 
+ * For licensing inquiries, please contact the copyright holder.
+ * 
+ * @author WANG CUNCHI
  */
 
 class InteractiveEditor {

@@ -4,7 +4,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-4.12.0-brightgreen.svg)](CHANGELOG.md)
 [![Built with Cursor](https://img.shields.io/badge/Built%20with-Cursor%20AI-blueviolet.svg)](https://cursor.sh)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
@@ -373,24 +373,51 @@ We welcome contributions! | 欢迎贡献！ Please follow these steps | 请遵�
 
 ## 📄 License | 许可证
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.  
-本项目采用**Apache 2.0许可证** - 详情请参阅[LICENSE](LICENSE)文件。
+This project is licensed under a **Proprietary License (All Rights Reserved)** - see the [LICENSE](LICENSE) file for details.  
+本项目采用**专有许可证（保留所有权利）** - 详情请参阅[LICENSE](LICENSE)文件。
+
+**IMPORTANT NOTICE | 重要声明:**
+
+This software is **NOT open source**. Unauthorized use, copying, modification, distribution, or execution is strictly prohibited by law.  
+本软件**不是开源软件**。未经授权使用、复制、修改、分发或执行严格禁止。
 
 **Key Points | 要点:**
-- ✅ Free for personal, educational, and commercial use | 免费用于个人、教育和商业用途
-- ✅ Open source contributions welcome | 欢迎开源贡献
-- ✅ Patent grant and protection included | 包含专利授权和保护
-- ⚠️ **Trademark NOT included**: MindGraph name and logos are protected | **商标不包括在内**：MindGraph名称和标志受保护
+- Viewing source code for learning purposes only (viewing only) | 仅可查看源代码用于学习目的（仅查看）
+- **All use requires explicit written permission** | **所有使用都需要明确的书面许可**
+- **Running or executing** the software requires explicit permission | **运行或执行**软件需要明确许可
+- **Educational use** requires explicit permission | **教育用途**需要明确许可
+- **Commercial use** requires explicit permission | **商业用途**需要明确许可
+- **Modifying or distributing** requires explicit permission | **修改或分发**需要明确许可
+- **Creating derivative works** requires explicit permission | **创建衍生作品**需要明确许可
+
+**Licensing Inquiries | 许可咨询:**
+
+For licensing requests, please contact:  
+如需许可请求，请联系：
+
+- **Email | 邮件**: Contact via GitHub  
+- **GitHub**: [lycosa9527](https://github.com/lycosa9527)
+- **Company | 公司**: 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+
+**Educational Use | 教育用途:**
+
+Educational institutions must obtain explicit written permission before any use. Please contact us with details about your intended use.  
+教育机构在使用前必须获得明确的书面许可。请联系我们并提供使用详情。
+
+**Commercial Use | 商业用途:**
+
+Commercial licensing is available. Please contact us to discuss terms and pricing.  
+商业许可可用。请联系我们讨论条款和定价。
+
+**Contributions | 贡献:**
+
+If you wish to contribute to this project, please contact us first. Contributors must sign a Contributor License Agreement (CLA).  
+如果您想为此项目做贡献，请先联系我们。贡献者必须签署贡献者许可协议（CLA）。
 
 **Trademark Notice | 商标声明:**
 
-The **MindGraph** name, logos, and branding are trademarks of lycosa9527/MindSpring Team and are NOT included in the Apache 2.0 license grant. If you fork or redistribute this software:
-
-**MindGraph** 名称、标志和品牌是lycosa9527/MindSpring团队的商标，不包含在Apache 2.0许可授权中。如果您fork或重新分发此软件：
-
-- ❌ Remove all MindGraph branding and logos | 删除所有MindGraph品牌和标志
-- ❌ Use a different name for your project | 为您的项目使用不同的名称
-- ✅ Provide attribution to the original project | 对原始项目提供署名
+The **MindGraph** name, logos, and branding are trademarks of 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.) and may not be used without explicit written permission.  
+**MindGraph** 名称、标志和品牌是北京思源智教科技有限公司的商标，未经明确书面许可不得使用。
 
 See [NOTICE](NOTICE) file for complete trademark and attribution information.
 
@@ -408,8 +435,8 @@ See [NOTICE](NOTICE) file for complete trademark and attribution information.
 
 ## 🌟 Acknowledgments | 致谢
 
-### Built with ❤️ by lycosa9527 | 由lycosa9527用❤️构建
-**Made by MindSpring Team | MindSpring团队出品**
+### Developed by 北京思源智教科技有限公司 | 由北京思源智教科技有限公司开发
+**Beijing Siyuan Zhijiao Technology Co., Ltd. | 北京思源智教科技有限公司**
 
 > **Powered by [Cursor AI](https://cursor.sh)** - The AI-first code editor that made this project possible
 > 

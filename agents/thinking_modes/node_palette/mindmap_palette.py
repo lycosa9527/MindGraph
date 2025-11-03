@@ -8,8 +8,9 @@ Supports 2-stage progressive generation:
 1. Stage 1 (branches): Generate main branches from central topic
 2. Stage 2 (children): Generate sub-branches for selected branch
 
-Author: lycosa9527
-Made by: MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

@@ -4,8 +4,9 @@ Node Palette Generators - Modular Architecture
 
 Base class + diagram-specific generators for node palette.
 
-Author: lycosa9527
-Made by: MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from agents.thinking_modes.node_palette.base_palette_generator import BasePaletteGenerator

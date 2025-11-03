@@ -6,8 +6,9 @@ Generates nodes for Multi Flow Map with TWO modes:
 1. Causes: individual cause nodes
 2. Effects: individual effect nodes
 
-Author: lycosa9527
-Made by: MindSpring Team
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

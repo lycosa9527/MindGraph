@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.1] - 2025-01-02 - Copyright and Company Name Update
+
+### Changed
+
+- **Copyright Holder Update**
+  - Updated copyright holder from lycosa9527 / MindSpring Team to **北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)**
+  - Updated LICENSE file with company name as copyright holder
+  - Updated NOTICE file with company name for trademarks and attribution
+  - Updated README.md license section and acknowledgments with company name
+  - Updated CHANGELOG.md license section with company name
+  - Updated Python source files with new copyright headers:
+    - `main.py`
+    - `run_server.py`
+    - `utils/db_migration.py`
+    - All files in `agents/thinking_modes/node_palette/` (10 files)
+  - Updated startup message in `run_server.py` to display company name
+  - **Note**: JavaScript files already contained correct copyright headers with company name
+
+---
+
+## [4.28.0] - 2025-01-02 - License Change to Proprietary
+
+### Changed
+
+- **License Change** - **CRITICAL NOTICE**
+  - Changed from Apache License 2.0 to **Proprietary License (All Rights Reserved)**
+  - This software is now **NOT open source**
+  - All use, copying, modification, distribution, or execution requires explicit written permission
+  - Updated LICENSE file with proprietary license terms
+  - Updated README.md license section with new restrictions and contact information
+  - Updated NOTICE file with proprietary license information
+  - **Impact**: Users who access code after this date are bound by the new proprietary license terms
+  - All use, including educational use, requires explicit written permission
+  - For licensing inquiries, contact via GitHub: [lycosa9527](https://github.com/lycosa9527) or 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+  - Educational and commercial licensing options available upon request
+
+---
+
 ## [4.27.5] - 2025-11-02 - Mindmap Editing and UI Improvements
 
 ### Fixed
@@ -9974,4 +10012,8 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3) - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under a **Proprietary License (All Rights Reserved)** - see the [LICENSE](LICENSE) file for details.
+
+**⚠️ IMPORTANT:** This software is NOT open source. Unauthorized use, copying, modification, distribution, or execution is strictly prohibited by law. All use requires explicit written permission from the copyright holder.
+
+For licensing inquiries, please contact via GitHub: [lycosa9527](https://github.com/lycosa9527) or 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.). 

@@ -5,6 +5,14 @@
  * Requires: shared-utilities.js, style-manager.js
  * 
  * Performance Impact: Loads only ~95KB instead of full 213KB
+ * 
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 function renderConceptMap(spec, theme = null, dimensions = null) {

@@ -2,8 +2,13 @@
  * Brace Map Renderer for MindGraph
  * Renders hierarchical brace maps with professional styling
  * 
- * @version 2.4.0
- * @author MindGraph Team
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
  */
 
 // Verify MindGraphUtils availability
