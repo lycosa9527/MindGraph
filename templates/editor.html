@@ -23,7 +23,8 @@
     data-feature-learning-mode="{{ feature_learning_mode | tojson }}"
     data-feature-thinkguide="{{ feature_thinkguide | tojson }}"
     data-feature-voice-agent="{{ feature_voice_agent | tojson }}"
-    data-ai-assistant-name="{{ ai_assistant_name }}">
+    data-ai-assistant-name="{{ ai_assistant_name }}"
+    data-default-language="{{ default_language }}">
     <!-- Configuration from backend -->
     <script>
         // Load configuration from data attributes
@@ -33,6 +34,7 @@
         window.FEATURE_THINKGUIDE = bodyElement.dataset.featureThinkguide === 'true';
         window.FEATURE_VOICE_AGENT = bodyElement.dataset.featureVoiceAgent === 'true';
         window.AI_ASSISTANT_NAME = bodyElement.dataset.aiAssistantName || 'MindMate AI';
+        window.DEFAULT_LANGUAGE = bodyElement.dataset.defaultLanguage || 'zh';
     </script>
     <!-- Landing Page / Gallery -->
     <div class="editor-landing" id="editor-landing">

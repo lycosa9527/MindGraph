@@ -460,16 +460,27 @@
         let currentTab = 'login';
         let currentLang = 'zh'; // Default to Chinese
 
-        // Toggle language between Chinese and English
+        // Toggle language between English, Chinese, and Azerbaijani
         function toggleLanguage() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            const languages = ['en', 'zh', 'az'];
+            const currentIndex = languages.indexOf(currentLang);
+            const nextIndex = (currentIndex + 1) % languages.length;
+            currentLang = languages[nextIndex];
             
             // Update all elements with lang classes
+            document.querySelectorAll('.lang-en, .lang-zh, .lang-az').forEach(el => {
+                el.style.display = 'none';
+            });
+            
             if (currentLang === 'zh') {
                 document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
-                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+            } else if (currentLang === 'az') {
+                document.querySelectorAll('.lang-az').forEach(el => el.style.display = 'inline');
+                // Fallback to English if Azerbaijani not available
+                if (document.querySelectorAll('.lang-az').length === 0) {
+                    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+                }
             } else {
-                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
             }
             
@@ -494,6 +505,18 @@
                 document.getElementById('register-name').placeholder = '您的姓名';
                 document.getElementById('register-invitation').placeholder = '学校邀请码';
                 document.getElementById('register-captcha').placeholder = '输入验证码';
+            } else if (currentLang === 'az') {
+                // Login form
+                document.getElementById('login-phone').placeholder = 'Telefon istifadəçi adı kimi';
+                document.getElementById('login-password').placeholder = 'Şifrəni daxil edin';
+                document.getElementById('login-captcha').placeholder = 'Kod daxil edin';
+                
+                // Register form
+                document.getElementById('register-phone').placeholder = 'Telefon istifadəçi adı kimi';
+                document.getElementById('register-password').placeholder = 'Ən azı 8 simvol';
+                document.getElementById('register-name').placeholder = 'Adınız';
+                document.getElementById('register-invitation').placeholder = 'Məktəb dəvət kodu';
+                document.getElementById('register-captcha').placeholder = 'Kod daxil edin';
             } else {
                 // Login form
                 document.getElementById('login-phone').placeholder = 'Phone as username';
@@ -512,10 +535,29 @@
         // Initialize language on page load
         function initLanguage() {
             const savedLang = localStorage.getItem('preferredLanguage');
-            if (savedLang && savedLang !== 'zh') {
+            if (savedLang && ['en', 'zh', 'az'].includes(savedLang)) {
                 currentLang = savedLang;
-                toggleLanguage(); // This will set to the saved language
             }
+            
+            // Apply the language display settings directly (don't toggle)
+            document.querySelectorAll('.lang-en, .lang-zh, .lang-az').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            if (currentLang === 'zh') {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
+            } else if (currentLang === 'az') {
+                document.querySelectorAll('.lang-az').forEach(el => el.style.display = 'inline');
+                // Fallback to English if Azerbaijani not available
+                if (document.querySelectorAll('.lang-az').length === 0) {
+                    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+                }
+            } else {
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+            }
+            
+            // Update placeholders
+            updatePlaceholders();
         }
 
         // Switch between login and register

@@ -474,8 +474,9 @@
         <div style="display:flex;align-items:center;gap:1rem;">
             <h1>🎓 MindGraph <span class="lang-zh">管理后台</span><span class="lang-en">Admin Panel</span></h1>
             <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
-                <span class="lang-zh">EN</span>
                 <span class="lang-en">中文</span>
+                <span class="lang-zh">AZ</span>
+                <span class="lang-az">EN</span>
             </button>
         </div>
         <div class="user-info">
@@ -1256,16 +1257,27 @@ curl -X POST http://your-server/api/generate_graph \
         // Initialize language
         initLanguage();
 
-        // Toggle language between Chinese and English
+        // Toggle language between English, Chinese, and Azerbaijani
         function toggleLanguage() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            const languages = ['en', 'zh', 'az'];
+            const currentIndex = languages.indexOf(currentLang);
+            const nextIndex = (currentIndex + 1) % languages.length;
+            currentLang = languages[nextIndex];
             
             // Update all elements with lang classes
+            document.querySelectorAll('.lang-en, .lang-zh, .lang-az').forEach(el => {
+                el.style.display = 'none';
+            });
+            
             if (currentLang === 'zh') {
                 document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
-                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+            } else if (currentLang === 'az') {
+                document.querySelectorAll('.lang-az').forEach(el => el.style.display = 'inline');
+                // Fallback to English if Azerbaijani not available
+                if (document.querySelectorAll('.lang-az').length === 0) {
+                    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+                }
             } else {
-                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
             }
             
@@ -1276,16 +1288,24 @@ curl -X POST http://your-server/api/generate_graph \
         // Initialize language on page load
         function initLanguage() {
             const savedLang = localStorage.getItem('adminLanguage');
-            if (savedLang) {
+            if (savedLang && ['en', 'zh', 'az'].includes(savedLang)) {
                 currentLang = savedLang;
             }
             
             // Apply the language display settings
+            document.querySelectorAll('.lang-en, .lang-zh, .lang-az').forEach(el => {
+                el.style.display = 'none';
+            });
+            
             if (currentLang === 'zh') {
                 document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
-                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+            } else if (currentLang === 'az') {
+                document.querySelectorAll('.lang-az').forEach(el => el.style.display = 'inline');
+                // Fallback to English if Azerbaijani not available
+                if (document.querySelectorAll('.lang-az').length === 0) {
+                    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+                }
             } else {
-                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
             }
         }

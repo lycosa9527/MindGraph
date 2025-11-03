@@ -321,6 +321,15 @@ class Config:
     # ============================================================================
     
     @property
+    def DEFAULT_LANGUAGE(self):
+        """Default UI language (en/zh/az)."""
+        lang = self._get_cached_value('DEFAULT_LANGUAGE', 'zh').lower()
+        if lang not in ['en', 'zh', 'az']:
+            logger.warning(f"Invalid DEFAULT_LANGUAGE '{lang}', using 'zh'")
+            return 'zh'
+        return lang
+    
+    @property
     def GRAPH_LANGUAGE(self):
         """Language for graph generation (zh/en)."""
         return self._get_cached_value('GRAPH_LANGUAGE', 'zh')

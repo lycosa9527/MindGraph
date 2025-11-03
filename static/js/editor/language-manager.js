@@ -12,7 +12,16 @@
 
 class LanguageManager {
     constructor() {
-        this.currentLanguage = 'zh';
+        // Get default language from .env (via window.DEFAULT_LANGUAGE) or localStorage, fallback to 'zh'
+        const savedLang = localStorage.getItem('preferredLanguage');
+        const defaultLang = window.DEFAULT_LANGUAGE || 'zh';
+        this.currentLanguage = savedLang || defaultLang;
+        
+        // Ensure currentLanguage is one of the supported languages
+        if (!['en', 'zh', 'az'].includes(this.currentLanguage)) {
+            this.currentLanguage = defaultLang;
+        }
+        
         this.translations = {
             en: {
                 mainTitle: 'MindGraph Pro',
@@ -515,11 +524,262 @@ class LanguageManager {
                     editorLoadError: '加载编辑器错误。请重试。',
                     clearHistoryConfirm: '确定要清除所有历史记录吗？'
                 }
+            },
+            az: {
+                mainTitle: 'MindGraph Pro',
+                mainSubtitle: 'Kainatın ən güclü AI diaqram yaratma proqramı',
+                promptPlaceholder: 'Diaqramınızı təsvir edin və ya aşağıdakı şablonlardan seçin...',
+                recentPrompts: 'Son İstəklər',
+                clearHistory: 'Təmizlə',
+                noRecentPrompts: 'Heç bir son istək yoxdur',
+                thinkingMaps: 'Düşüncə Xəritələri',
+                advancedDiagrams: 'Qabaqcıl Diaqramlar',
+                circleMap: 'Dairə Xəritəsi',
+                circleMapDesc: 'Assosiasiya, beyin fırtınası',
+                bubbleMap: 'Baloncuk Xəritəsi',
+                bubbleMapDesc: 'Xüsusiyyətləri təsvir etmək',
+                doubleBubbleMap: 'İkili Baloncuk Xəritəsi',
+                doubleBubbleMapDesc: 'Müqayisə və ziddiyyət',
+                treeMap: 'Ağac Xəritəsi',
+                treeMapDesc: 'Təsnif etmək və kateqoriyalamaq',
+                braceMap: 'Qığırcaq Xəritəsi',
+                braceMapDesc: 'Bütöv və hissələr',
+                flowMap: 'Axın Xəritəsi',
+                flowMapDesc: 'Ardıcıllıq və addımlar',
+                multiFlowMap: 'Çoxlu Axın Xəritəsi',
+                multiFlowMapDesc: 'Səbəb və nəticə analizi',
+                bridgeMap: 'Körpü Xəritəsi',
+                bridgeMapDesc: 'Analog əsaslandırma',
+                mindMap: 'Düşüncə Xəritəsi',
+                mindMapDesc: 'Səbəb və nəticə analizi',
+                conceptMap: 'Konsepsiya Xəritəsi',
+                conceptMapDesc: 'Konseptual əlaqələr',
+                thinkingTools: 'Düşüncə Alətləri',
+                comingSoon: 'Tezliklə',
+                factorAnalysis: 'Faktor Analizi',
+                factorAnalysisDesc: 'Əsas amilləri analiz etmək',
+                threePositionAnalysis: 'Üç Mövqe Analizi',
+                threePositionAnalysisDesc: 'Üç baxış bucağı',
+                perspectiveAnalysis: 'Perspektiv Analizi',
+                perspectiveAnalysisDesc: 'Baxış bucaqlarını anlamaq',
+                goalAnalysis: 'Hədəf Analizi',
+                goalAnalysisDesc: 'Hədəfləri parçalamaq',
+                possibilityAnalysis: 'Ehtimal Analizi',
+                possibilityAnalysisDesc: 'Seçimləri araşdırmaq',
+                resultAnalysis: 'Nəticə Analizi',
+                resultAnalysisDesc: 'Nəticələri analiz etmək',
+                fiveWOneH: '5W1H Analizi',
+                fiveWOneHDesc: 'Sistemli analiz',
+                whwmAnalysis: 'WHWM Analizi',
+                whwmAnalysisDesc: 'Layihə planlaşdırması',
+                fourQuadrant: 'Dörd Kvadrant Analizi',
+                fourQuadrantDesc: 'Elementləri kateqoriyalamaq',
+                selectButton: 'Seç',
+                backToGallery: 'Qalereyaya Qayıt',
+                reset: 'Sıfırla',
+                export: 'İxrac Et',
+                nodes: 'Düyünlər',
+                add: 'Əlavə Et',
+                delete: 'Sil',
+                copy: 'Kopyala',
+                auto: 'Avtomatik',
+                line: 'Xətt',
+                learn: 'Öyrən',
+                thinking: 'Düşüncə Bələdçisi',
+                tools: 'Alətlər',
+                empty: 'Boşalt',
+                undo: 'Geri Al',
+                redo: 'Təkrar Et',
+                nodeCount: 'Düyünlər',
+                editMode: 'Redaktə Rejimi: Aktiv',
+                resetView: 'Görünüşü Sıfırla',
+                resetViewTitle: 'Diaqramı pəncərəyə uyğunlaşdır',
+                nodePalette: 'Düyün Paleti',
+                // LLM Selector
+                aiModel: 'AI Modeli',
+                llmQwen: 'Qwen',
+                llmQwenTooltip: 'Qwen (Sürətli və Etibarlı)',
+                llmDeepSeek: 'DeepSeek',
+                llmDeepSeekTooltip: 'DeepSeek-v3.1 (Yüksək Keyfiyyət)',
+                llmKimi: 'Kimi',
+                llmKimiTooltip: 'Kimi (Moonshot AI)',
+                shareSuccess: 'Link panoya kopyalandı!',
+                shareError: 'Linki kopyalamaq mümkün deyil. Xahiş edirik əl ilə kopyalayın:',
+                learningModeComingSoon: 'Öyrənmə Rejimi: Mərhələ 1 işləyir!',
+                languageButton: 'AZ',
+                // Dynamic node text for adding new nodes
+                newAttribute: 'Yeni Atribut',
+                newStep: 'Yeni Addım',
+                newCause: 'Yeni Səbəb',
+                newEffect: 'Yeni Nəticə',
+                newBranch: 'Yeni Qol',
+                newNode: 'Yeni Düyün',
+                newItem: 'Yeni Element',
+                newCategory: 'Yeni Kateqoriya',
+                newSubitem: 'Yeni Alt Element',
+                newConcept: 'Yeni Konsept',
+                newRelation: 'əlaqəlidir',
+                // Tooltips
+                addNodeTooltip: 'Düyün Əlavə Et',
+                deleteNodeTooltip: 'Seçilmişləri Sil',
+                autoCompleteTooltip: 'AI ilə diaqramı avtomatik tamamla',
+                lineModeTooltip: 'Qara və ağ xətt rejimini dəyişdir',
+                learningModeTooltip: 'İnteraktiv Öyrənmə Rejimini Başlat',
+                thinkingModeTooltip: 'Sokrat Düşüncə Rejimini Başlat',
+                nodePaletteTooltip: 'Düyün Paletini açın, AI sizə daha çox düyün yaradacaq',
+                thinkingModeTitle: 'Düşüncə Bələdçisi - Düşüncə Bələdçisi',
+                thinkingInputPlaceholder: 'Cavabınızı yazın...',
+                // Learning Mode UI
+                learningModeTitle: 'Öyrənmə Rejimi',
+                learningModeProgress: (current, total) => `Sual <strong>${current}</strong> / <strong>${total}</strong>`,
+                learningModeFillIn: 'Çatışmayan düyünü doldurun:',
+                learningModeQuestionPrefix: 'Mətn nədir',
+                learningModeQuestionSuffix: '?',
+                learningModeContextHint: 'İpucu: Diaqram strukturuna və kontekstə baxın',
+                learningModeInputPlaceholder: 'Cavabınızı buraya yazın...',
+                learningModeSubmit: 'Göndər',
+                learningModeHint: 'İpucu',
+                learningModeExit: 'Öyrənmə Rejimindən Çıx',
+                learningModeCorrect: 'Düzgündür!',
+                learningModeIncorrect: (correctAnswer) => `Tam düzgün deyil. Düzgün cavab: <strong>${correctAnswer}</strong>`,
+                learningModeEnterAnswer: 'Xahiş edirik cavab daxil edin',
+                learningModeBasicHint: (firstChar, length) => `İpucu: Cavab "<strong>${firstChar}</strong>" ilə başlayır və <strong>${length}</strong> simvoldan ibarətdir.`,
+                learningModeComplete: 'Öyrənmə Tamamlandı!',
+                learningModeScore: (correct, total) => `Siz <strong>${correct}</strong> / <strong>${total}</strong> düzgün cavab verdiniz`,
+                learningModeAccuracy: (accuracy) => `Düzgünlük: <strong>${accuracy}%</strong>`,
+                learningModeFinish: 'Bitir',
+                // Learning Material Modal
+                learningMaterialTitle: 'Gəlin bu konsepti öyrənək!',
+                learningMaterialAcknowledgment: 'Anlayışınızı qəbul edirik',
+                learningMaterialContrast: 'Əsas Fərq',
+                learningMaterialVisualAid: 'Vizual Kömək',
+                learningMaterialAnalogy: 'Analoji',
+                learningMaterialKeyPrinciple: 'Əsas Prinsip',
+                learningMaterialUnderstand: 'Başa Düşürəm',
+                learningMaterialContinue: 'Davam Et',
+                learningMaterialClose: 'Bağla',
+                // Phase 4: Verification & Escalation
+                verificationTitle: 'Gəlin anlayışınızı yoxlayaq',
+                skipQuestion: 'Keç',
+                emptyNodeTooltip: 'Seçilmiş düyün mətnini boşalt',
+                undoTooltip: 'Geri Al',
+                redoTooltip: 'Təkrar Et',
+                switchLanguageTooltip: 'Dili Dəyişdir',
+                share: 'Paylaş',
+                shareTooltip: 'Paylaş',
+                feedback: 'Rəy',
+                feedbackTooltip: 'Rəy Göndər',
+                feedbackTitle: 'Rəy Göndər',
+                feedbackSubtitle: 'Xətaları bildirin, funksiya təklif edin və ya düşüncələrinizi paylaşın',
+                feedbackType: 'Növ',
+                feedbackTypeBug: 'Xəta Hesabatı',
+                feedbackTypeFeature: 'Funksiya Təklifi',
+                feedbackTypeIssue: 'Məsələ Hesabatı',
+                feedbackTypeOther: 'Digər',
+                feedbackMessage: 'Mesaj',
+                feedbackMessagePlaceholder: 'Xahiş edirik rəyinizi ətraflı təsvir edin...',
+                feedbackSubmit: 'Göndər',
+                feedbackCancel: 'Ləğv Et',
+                feedbackSuccess: 'Təşəkkürlər! Rəyiniz uğurla göndərildi.',
+                feedbackError: 'Rəy göndərilmədi. Xahiş edirik daha sonra yenidən cəhd edin.',
+                feedbackRequired: 'Xahiş edirik bütün tələb olunan sahələri doldurun.',
+                boldTooltip: 'Qalın',
+                italicTooltip: 'İtalik',
+                underlineTooltip: 'Altı Xətt',
+                closeTooltip: 'Bağla',
+                // Node Editor
+                editNodeContent: 'Düyün Məzmununu Redaktə Et',
+                characters: 'simvollar',
+                cancel: 'Ləğv Et',
+                saveChanges: 'Dəyişiklikləri Saxla',
+                // Properties Panel
+                properties: 'Xüsusiyyətlər',
+                text: 'Mətn',
+                nodeTextPlaceholder: 'Düyün mətni',
+                apply: 'Tətbiq Et',
+                resetStyles: 'Üslubları Sıfırla',
+                fontSize: 'Şrift Ölçüsü',
+                textStyle: 'Mətn Üslubu',
+                textColor: 'Mətn Rəngi',
+                fillColor: 'Doldurma Rəngi',
+                strokeColor: 'Kontur Rəngi',
+                strokeWidth: 'Kontur Genişliyi',
+                opacity: 'Şəffaflıq',
+                applyAllChanges: 'Bütün Dəyişiklikləri Tətbiq Et',
+                // MindMate AI Panel (uses configurable name from backend)
+                mindMateAI: window.AI_ASSISTANT_NAME || 'MindMate AI',
+                online: 'Onlayn',
+                welcomeTitle: `${window.AI_ASSISTANT_NAME || 'MindMate AI'}-a xoş gəlmisiniz!`,
+                welcomeMessage: 'Mən burada diaqramlarınızda kömək etmək üçün buradayam. Yaratma, redaktə etmə və ya işinizi təkmilləşdirmə ilə bağlı hər şeyi soruşa bilərsiniz.',
+                askMindMatePlaceholder: `${window.AI_ASSISTANT_NAME || 'MindMate'}-dən hər şeyi soruşun...`,
+                // Notification Messages
+                notif: {
+                    textEmpty: 'Mətn boş ola bilməz',
+                    textUpdated: 'Mətn uğurla yeniləndi',
+                    propertiesApplied: 'Bütün xüsusiyyətlər uğurla tətbiq edildi!',
+                    editorNotInit: 'Redaktor işə salınmayıb',
+                    selectNodeToAdd: 'Əlavə etmək üçün əvvəlcə bir düyün seçin',
+                    nodeAdded: 'Düyün əlavə edildi! Mətn redaktə etmək üçün iki dəfə klikləyin.',
+                    nodesDeleted: (count) => `${count} düyün silindi`,
+                    selectNodeToDelete: 'Silmək üçün əvvəlcə bir düyün seçin',
+                    nodesEmptied: (count) => `${count} düyün boşaldıldı`,
+                    selectNodeToEmpty: 'Boşaltmaq üçün əvvəlcə bir düyün seçin',
+                    addNodesFirst: 'Avtomatik istifadə etmədən əvvəl xahiş edirik bir neçə düyün əlavə edin',
+                    aiCompleting: (topic) => `AI "${topic}" haqqında diaqramı tamamlayır...`,
+                    diagramChanged: 'Avtomatik tamamlama zamanı diaqram dəyişdirildi',
+                    sessionChanged: 'Avtomatik tamamlama zamanı sessiya dəyişdirildi',
+                    autoCompleteSuccess: 'Diaqram avtomatik olaraq uğurla tamamlandı!',
+                    autoCompleteFailed: (error) => `Avtomatik tamamlama uğursuz oldu: ${error}`,
+                    multiLLMReady: (count, total, modelName) => `${count}/${total} model hazırdır. ${modelName} göstərilir. Dəyişdirmək üçün düymələrə klikləyin.`,
+                    lineModeEnabled: 'Xətt rejimi aktivləşdirildi',
+                    lineModeDisabled: 'Xətt rejimi deaktivləşdirildi',
+                    duplicateComingSoon: 'Düyün təkrarlama funksiyası tezliklə!',
+                    resetFailed: 'Sıfırlama uğursuz oldu: diaqram seçici tapılmadı',
+                    templateNotFound: 'Sıfırlama uğursuz oldu: şablon tapılmadı',
+                    canvasReset: 'Kətan boş şablona sıfırlandı',
+                    resetConfirm: 'Kətanı boş şablona sıfırlamağa əminsiniz? Bütün cari dəyişikliklər itiriləcək.',
+                    noDiagramToExport: 'İxrac ediləcək diaqram yoxdur!',
+                    diagramExported: 'Diaqram PNG kimi ixrac edildi!',
+                    exportFailed: 'Diaqramı ixrac etmək mümkün olmadı',
+                    // Interactive Editor Notifications
+                    couldNotDetermineNodeType: 'Düyün növünü müəyyən etmək mümkün olmadı. Xahiş edirik yenidən cəhd edin.',
+                    cannotAddMainTopics: 'Əsas mövzular əlavə edilə bilməz. Xahiş edirik oxşar və ya fərq düyünü seçin.',
+                    unknownNodeType: 'Naməlum düyün növü. Xahiş edirik oxşar və ya fərq düyünü seçin.',
+                    similarityNodeAdded: 'Oxşarlıq düyünü əlavə edildi!',
+                    differencePairAdded: 'Fərq cütü əlavə edildi!',
+                    invalidPartIndex: 'Etibarsız hissə indeksi',
+                    cannotAddToTopic: 'Mövzuya əlavə edilə bilməz. Xahiş edirik hissə və ya alt hissə düyünü seçin.',
+                    unknownNodeSelectPart: 'Naməlum düyün növü. Xahiş edirik hissə və ya alt hissə düyünü seçin.',
+                    invalidStepIndex: 'Etibarsız addım indeksi',
+                    invalidSubstepIndex: 'Etibarsız alt addım indeksi',
+                    cannotAddToTitle: 'Başlığa əlavə edilə bilməz. Xahiş edirik addım və ya alt addım düyünü seçin.',
+                    selectStepOrSubstep: 'Xahiş edirik addım və ya alt addım düyünü seçin',
+                    cannotAddToEvent: 'Hadisəyə əlavə edilə bilməz. Xahiş edirik səbəb və ya nəticə düyünü seçin.',
+                    selectCauseOrEffect: 'Xahiş edirik səbəb və ya nəticə düyünü seçin',
+                    cannotAddToTopicSelectCategory: 'Mövzuya əlavə edilə bilməz. Xahiş edirik kateqoriya və ya uşaq düyünü seçin.',
+                    selectCategoryOrChild: 'Xahiş edirik kateqoriya və ya uşaq düyünü seçin',
+                    selectBranchOrSubitem: 'Əlavə etmək üçün qol və ya alt element seçin',
+                    cannotAddToCentral: 'Mərkəzi mövzuya əlavə edilə bilməz. Xahiş edirik qol və ya alt element seçin.',
+                    invalidBranchIndex: 'Etibarsız qol indeksi',
+                    newSubitemAdded: 'Yeni alt element əlavə edildi!',
+                    unknownNodeSelectBranch: 'Naməlum düyün növü. Xahiş edirik qol və ya alt element seçin.',
+                    updatingLayout: 'Düzən yenilənir...',
+                    layoutUpdateFailed: 'Düzən yeniləməsi uğursuz oldu. Dəyişikliklər görünməyə bilər.',
+                    cannotDeleteTitle: 'Başlığı silmək mümkün deyil',
+                    cannotDeleteCentralEvent: 'Mərkəzi hadisəni silmək mümkün deyil',
+                    cannotDeleteRootTopic: 'Kök mövzunu silmək mümkün deyil',
+                    cannotDeleteFirstAnalogy: 'İlk analoji cütü silmək mümkün deyil',
+                    cannotDeleteCentralTopic: 'Mərkəzi mövzunu silmək mümkün deyil',
+                    // System errors
+                    aiPanelNotFound: 'AI Köməkçi paneli tapılmadı. Xahiş edirik səhifəni yeniləyin.',
+                    editorLoadError: 'Redaktor yüklənərkən xəta. Xahiş edirik yenidən cəhd edin.',
+                    clearHistoryConfirm: 'Bütün tarixçəni təmizləmək istəyirsiniz?'
+                }
             }
         };
         
         this.initializeEventListeners();
-        // Apply initial translations for Chinese default
+        // Apply initial translations
         this.applyTranslations();
     }
     
@@ -561,12 +821,20 @@ class LanguageManager {
     }
     
     /**
-     * Toggle between English and Chinese
+     * Toggle between English, Chinese, and Azerbaijani
+     * Cycles: en -> zh -> az -> en
      */
     toggleLanguage() {
-        this.currentLanguage = this.currentLanguage === 'en' ? 'zh' : 'en';
+        const languages = ['en', 'zh', 'az'];
+        const currentIndex = languages.indexOf(this.currentLanguage);
+        const nextIndex = (currentIndex + 1) % languages.length;
+        this.currentLanguage = languages[nextIndex];
+        
         this.applyTranslations();
         this.updateLanguageButton();
+        
+        // Save to localStorage
+        localStorage.setItem('preferredLanguage', this.currentLanguage);
         
         // Dispatch language change event for other managers
         window.dispatchEvent(new CustomEvent('languageChanged', {
@@ -604,11 +872,16 @@ class LanguageManager {
                     window.interactiveEditor.currentSpec = freshTemplate;
                     window.interactiveEditor.renderDiagram();
                     
-                    // Show notification
-                    this.showNotification(
-                        this.currentLanguage === 'en' ? 'Template refreshed in English' : '模板已刷新为中文',
-                        'success'
-                    );
+                // Show notification
+                const refreshMessages = {
+                    'en': 'Template refreshed in English',
+                    'zh': '模板已刷新为中文',
+                    'az': 'Şablon İngiliscə yeniləndi'
+                };
+                this.showNotification(
+                    refreshMessages[this.currentLanguage] || refreshMessages['en'],
+                    'success'
+                );
                 }
             }
         }
@@ -802,8 +1075,16 @@ class LanguageManager {
         // Update mobile menu language text
         const mobileLangText = document.getElementById('mobile-lang-text');
         if (mobileLangText) {
-            const targetLang = this.currentLanguage === 'en' ? '中文' : 'EN';
-            mobileLangText.textContent = `Switch to ${targetLang}`;
+            const languages = ['en', 'zh', 'az'];
+            const currentIndex = languages.indexOf(this.currentLanguage);
+            const nextIndex = (currentIndex + 1) % languages.length;
+            const nextLang = languages[nextIndex];
+            const buttonTexts = {
+                'en': '中文',
+                'zh': 'AZ',
+                'az': 'EN'
+            };
+            mobileLangText.textContent = `Switch to ${buttonTexts[this.currentLanguage] || 'EN'}`;
         }
         
         // Update mobile menu share text
@@ -971,7 +1252,18 @@ class LanguageManager {
         if (langToggle) {
             const langText = langToggle.querySelector('.lang-text');
             if (langText) {
-                langText.textContent = this.currentLanguage === 'en' ? '中文' : 'EN';
+                // Show next language in button
+                const languages = ['en', 'zh', 'az'];
+                const currentIndex = languages.indexOf(this.currentLanguage);
+                const nextIndex = (currentIndex + 1) % languages.length;
+                const nextLang = languages[nextIndex];
+                
+                const buttonTexts = {
+                    'en': '中文',
+                    'zh': 'AZ',
+                    'az': 'EN'
+                };
+                langText.textContent = buttonTexts[this.currentLanguage] || 'EN';
             }
         }
     }

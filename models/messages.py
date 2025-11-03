@@ -11,7 +11,7 @@ Used by API endpoints to return localized error messages.
 
 from typing import Dict, Literal
 
-Language = Literal["zh", "en"]
+Language = Literal["zh", "en", "az"]
 
 
 class Messages:
@@ -21,59 +21,73 @@ class Messages:
     ERRORS = {
         "message_required": {
             "zh": "消息不能为空",
-            "en": "Message is required"
+            "en": "Message is required",
+            "az": "Mesaj tələb olunur"
         },
         "ai_not_configured": {
             "zh": "AI助手未配置",
-            "en": "AI assistant not configured"
+            "en": "AI assistant not configured",
+            "az": "AI köməkçisi konfiqurasiya edilməyib"
         },
         "invalid_prompt": {
             "zh": "提示词无效或为空",
-            "en": "Invalid or empty prompt"
+            "en": "Invalid or empty prompt",
+            "az": "Etibarsız və ya boş prompt"
         },
         "diagram_data_required": {
             "zh": "需要图示数据",
-            "en": "Diagram data is required"
+            "en": "Diagram data is required",
+            "az": "Diaqram məlumatı tələb olunur"
         },
         "generation_failed": {
             "zh": "生成图示失败：{}",
-            "en": "Failed to generate graph: {}"
+            "en": "Failed to generate graph: {}",
+            "az": "Qrafik yaratmaq mümkün olmadı: {}"
         },
         "export_failed": {
             "zh": "导出PNG失败：{}",
-            "en": "PNG export failed: {}"
+            "en": "PNG export failed: {}",
+            "az": "PNG ixracı uğursuz oldu: {}"
         },
         "internal_error": {
             "zh": "服务器内部错误",
-            "en": "Internal server error"
+            "en": "Internal server error",
+            "az": "Daxili server xətası"
         },
         "invalid_request": {
             "zh": "请求无效",
-            "en": "Invalid request"
+            "en": "Invalid request",
+            "az": "Etibarsız sorğu"
         },
         "learning_session_start_failed": {
             "zh": "创建学习会话失败",
-            "en": "Failed to start learning session"
+            "en": "Failed to start learning session",
+            "az": "Öyrənmə sessiyasını başlatmaq mümkün olmadı"
         },
         "learning_session_not_found": {
             "zh": "学习会话未找到或已过期",
-            "en": "Learning session not found or expired"
+            "en": "Learning session not found or expired",
+            "az": "Öyrənmə sessiyası tapılmadı və ya müddəti bitib"
         },
         "learning_node_not_found": {
             "zh": "节点未在图示中找到",
-            "en": "Node not found in diagram"
+            "en": "Node not found in diagram",
+            "az": "Düyün diaqramda tapılmadı"
         },
         "learning_validation_failed": {
             "zh": "答案验证失败",
-            "en": "Answer validation failed"
+            "en": "Answer validation failed",
+            "az": "Cavab yoxlanışı uğursuz oldu"
         },
         "learning_hint_failed": {
             "zh": "提示生成失败",
-            "en": "Hint generation failed"
+            "en": "Hint generation failed",
+            "az": "İpucu yaratmaq mümkün olmadı"
         },
         "learning_verification_failed": {
             "zh": "理解验证失败",
-            "en": "Understanding verification failed"
+            "en": "Understanding verification failed",
+            "az": "Anlayış yoxlanışı uğursuz oldu"
         }
     }
     
@@ -81,15 +95,18 @@ class Messages:
     SUCCESS = {
         "diagram_generated": {
             "zh": "图示生成成功",
-            "en": "Diagram generated successfully"
+            "en": "Diagram generated successfully",
+            "az": "Diaqram uğurla yaradıldı"
         },
         "diagram_exported": {
             "zh": "图示已导出",
-            "en": "Diagram exported"
+            "en": "Diagram exported",
+            "az": "Diaqram ixrac edildi"
         },
         "request_processed": {
             "zh": "请求已处理",
-            "en": "Request processed"
+            "en": "Request processed",
+            "az": "Sorğu emal edildi"
         }
     }
     
@@ -97,11 +114,13 @@ class Messages:
     WARNINGS = {
         "slow_request": {
             "zh": "请求处理较慢",
-            "en": "Slow request processing"
+            "en": "Slow request processing",
+            "az": "Yavaş sorğu emalı"
         },
         "deprecated_endpoint": {
             "zh": "此端点已废弃",
-            "en": "This endpoint is deprecated"
+            "en": "This endpoint is deprecated",
+            "az": "Bu endpoint köhnəlmişdir"
         }
     }
     
@@ -121,7 +140,8 @@ class Messages:
         """
         messages = getattr(cls, category, {})
         message_dict = messages.get(key, {})
-        message = message_dict.get(lang, message_dict.get("en", key))
+        # Fallback order: requested lang -> en -> key
+        message = message_dict.get(lang) or message_dict.get("en") or key
         
         # Format message if arguments provided
         if args:
@@ -158,13 +178,15 @@ def get_request_language(language_header: str = None, accept_language: str = Non
         accept_language: Accept-Language header
         
     Returns:
-        'zh' or 'en'
+        'zh', 'en', or 'az'
     """
     # Priority 1: Custom X-Language header
     if language_header:
         lang = language_header.lower()
         if lang in ["zh", "zh-cn", "zh-tw", "chinese"]:
             return "zh"
+        if lang in ["az", "azeri", "azerbaijani", "azərbaycan"]:
+            return "az"
         return "en"
     
     # Priority 2: Accept-Language header
@@ -172,6 +194,8 @@ def get_request_language(language_header: str = None, accept_language: str = Non
         lang = accept_language.lower()
         if any(x in lang for x in ["zh", "chinese"]):
             return "zh"
+        if any(x in lang for x in ["az", "azeri", "azerbaijani", "azərbaycan"]):
+            return "az"
     
     # Default: English
     return "en"

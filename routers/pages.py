@@ -102,7 +102,8 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                 "feature_mindmate": config.FEATURE_MINDMATE,
                 "feature_voice_agent": config.FEATURE_VOICE_AGENT,
                 "verbose_logging": config.VERBOSE_LOGGING,
-                "ai_assistant_name": config.AI_ASSISTANT_NAME
+                "ai_assistant_name": config.AI_ASSISTANT_NAME,
+                "default_language": config.DEFAULT_LANGUAGE
             }
         )
     except Exception as e:
