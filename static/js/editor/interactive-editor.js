@@ -2039,8 +2039,22 @@ class InteractiveEditor {
             // Update step in the steps array
             const stepIndex = parseInt(shape.attr('data-step-index'));
             if (!isNaN(stepIndex) && this.currentSpec.steps && stepIndex < this.currentSpec.steps.length) {
+                // Get the old step name before updating
+                const oldStepName = this.currentSpec.steps[stepIndex];
+                
+                // Update step in the steps array
                 this.currentSpec.steps[stepIndex] = newText;
                 logger.debug('Editor', `Updated step ${stepIndex} to:`, newText);
+                
+                // CRITICAL: Update the corresponding substeps entry's step field
+                // This ensures substeps remain linked to the step after editing
+                if (Array.isArray(this.currentSpec.substeps) && oldStepName !== newText) {
+                    const substepsEntry = this.currentSpec.substeps.find(s => s.step === oldStepName);
+                    if (substepsEntry) {
+                        substepsEntry.step = newText;
+                        logger.debug('Editor', `Updated substeps entry step field from "${oldStepName}" to "${newText}"`);
+                    }
+                }
             }
         } else if (nodeType === 'substep') {
             // Update substep in the substeps array
