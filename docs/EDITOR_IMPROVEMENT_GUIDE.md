@@ -1,11 +1,68 @@
-# Interactive Editor Refactoring Guide
+# Editor Improvement Overview & Analysis
 
 **Author**: lycosa9527  
 **Made by**: MindSpring Team  
 **Date**: 2025-10-26  
-**Last Updated**: 2025-10-28  
+**Last Updated**: 2025-01-XX  
 **Status**: 🚧 **IN PROGRESS** - Interactive Editor Refactoring  
 **Target**: Full refactor with all modules 600-800 lines max [[memory:7633510]]
+
+## 📚 New Detailed Step-by-Step Guides
+
+**For detailed step-by-step instructions with Event Bus + State Manager patterns, see:**
+- **[Interactive Editor Refactoring Guide](./INTERACTIVE_EDITOR_REFACTORING_GUIDE.md)** - Complete step-by-step guide for InteractiveEditor refactoring
+- **[Toolbar Manager Refactoring Guide](./TOOLBAR_MANAGER_REFACTORING_GUIDE.md)** - Complete step-by-step guide for ToolbarManager refactoring
+
+These guides provide:
+- ✅ Detailed step-by-step instructions
+- ✅ Event Bus + State Manager integration patterns
+- ✅ Code examples for each module
+- ✅ Event naming conventions
+- ✅ State Manager structure
+- ✅ Testing checklists
+- ✅ Success criteria
+
+---
+
+## 📊 Current Analysis Summary
+
+### Files Over 1500 Lines (Found 13 files)
+
+1. **node-palette-manager.js** — 5,579 lines — Single monolithic class
+2. **interactive-editor.js** — 4,399 lines — Single monolithic class
+3. **brace_map_agent.py** — 2,448 lines — 18 classes/functions
+4. **mind_map_agent.py** — 2,436 lines — Only 2 classes/functions
+5. **admin.html** — 2,421 lines — Template file
+6. **editor.css** — 2,403 lines — Stylesheet
+7. **diagram-selector.js** — 2,341 lines — Single class
+8. **language-manager.js** — 2,009 lines — Single class
+9. **main_agent.py** — 1,862 lines — Multiple functions
+10. **concept_maps.py** — 1,781 lines — Prompts file
+11. **flow-renderer.js** — 1,658 lines — Renderer class
+12. **node-palette.css** — 1,573 lines — Stylesheet
+13. **test_all_agents.py** — 1,502 lines — Test file
+
+### InteractiveEditor Responsibilities Analysis
+
+**What `interactive-editor.js` (4,399 lines) currently does:**
+
+1. **Editor Initialization & Setup** - Initializes components, sets up canvas, manages session
+2. **Diagram Rendering** - Coordinates diagram rendering via renderGraph()
+3. **User Interactions** - Handles selection, drag, click, keyboard shortcuts
+4. **Diagram-Specific Operations** - Add/delete/update for 12 diagram types (large switch statements)
+5. **View Management** - Zoom, pan, fit to canvas, mobile responsiveness
+6. **History & Undo/Redo** - Tracks edit history, supports undo/redo
+7. **Integration** - Coordinates with ThinkGuide, MindMate, NodePalette, VoiceAgent
+8. **Session Validation** - Ensures operations in correct session
+9. **Export Functions** - PNG export and other export formats
+10. **Data Management** - Maintains currentSpec, updates diagram data
+
+**Refactoring Strategy:**
+- Extract View Management → ViewManager (400-500 lines)
+- Extract Interactions → InteractionHandler (500-600 lines)
+- Extract Export → ExportManager (300-400 lines)
+- Extract remaining diagram operations → 8 more operation modules (200-400 lines each)
+- Keep in InteractiveEditor: Initialization, rendering coordination, session management (600-700 lines)
 
 ---
 
