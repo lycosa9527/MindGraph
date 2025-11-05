@@ -30,6 +30,9 @@ class ToolbarManager {
         this.currentSelection = [];
         this.isAutoCompleting = false; // Flag to prevent concurrent auto-complete operations
         
+        // NEW: Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'ToolbarManager';
+        
         // Session management - store session ID for lifecycle management
         this.sessionId = editor.sessionId;
         this.diagramType = editor.diagramType;
@@ -207,8 +210,9 @@ class ToolbarManager {
         this.flowMapOrientationBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             // CRITICAL: Only allow flip for flow_map diagram type
-            if (this.editor && this.editor.diagramType === 'flow_map' && this.editor.flipFlowMapOrientation) {
-                this.editor.flipFlowMapOrientation();
+            // Delegate to ViewManager via Event Bus
+            if (this.editor && this.editor.diagramType === 'flow_map' && window.eventBus) {
+                window.eventBus.emit('view:flip_orientation_requested');
             }
         });
         this.learningBtn?.addEventListener('click', (e) => {
@@ -377,15 +381,18 @@ class ToolbarManager {
     
     /**
      * Listen to selection changes from editor
+     * ARCHITECTURE: Uses Event Bus instead of CustomEvent
      */
     listenToSelectionChanges() {
-        window.addEventListener('editor-selection-change', (event) => {
-            this.currentSelection = event.detail.selectedNodes;
-            const hasSelection = event.detail.hasSelection;
-            
-            // VERBOSE LOG: Node selection via mouse click
-            if (hasSelection && this.currentSelection.length > 0) {
-                logger.info('ToolbarManager', '=== NODE SELECTED (MOUSE CLICK) ===', {
+        // Listen to Event Bus for selection changes (from InteractionHandler)
+        if (window.eventBus) {
+            window.eventBus.onWithOwner('interaction:selection_changed', (data) => {
+                this.currentSelection = data.selectedNodes || [];
+                const hasSelection = this.currentSelection.length > 0;
+                
+                // VERBOSE LOG: Node selection via mouse click
+                if (hasSelection && this.currentSelection.length > 0) {
+                    logger.info('ToolbarManager', '=== NODE SELECTED (MOUSE CLICK) ===', {
                     timestamp: new Date().toISOString(),
                     selectedNodes: this.currentSelection.map(nodeId => {
                         // nodeId is a string, need to get the actual DOM element
@@ -450,7 +457,8 @@ class ToolbarManager {
                     this.clearPropertyPanel();
                 }
             }
-        });
+        }, this.ownerId);
+    }
         
         // Listen for notification requests from editor
         window.addEventListener('show-notification', (event) => {
@@ -482,8 +490,15 @@ class ToolbarManager {
         }
         
         // Add button state for diagrams that require selection (brace_map, double_bubble_map, flow_map, multi_flow_map)
-        if (this.addNodeBtn && this.editor) {
-            const diagramType = this.editor.diagramType;
+        if (this.addNodeBtn) {
+            // ARCHITECTURE: Use State Manager as source of truth for diagram type
+            const diagramState = window.stateManager.getDiagramState();
+            const diagramType = diagramState?.type;
+            
+            if (!diagramType) {
+                logger.error('ToolbarManager', 'Cannot determine diagram type from State Manager');
+                return;
+            }
             const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map'].includes(diagramType);
             
             if (requiresSelection) {
@@ -516,9 +531,8 @@ class ToolbarManager {
             // If already sized for panel, just show the panel without resizing
             if (window.currentEditor && !window.currentEditor.isSizedForPanel) {
                 setTimeout(() => {
-                    if (typeof window.currentEditor.fitToCanvasWithPanel === 'function') {
-                        window.currentEditor.fitToCanvasWithPanel(true); // true = animate
-                    }
+                    // ARCHITECTURE: Use Event Bus for view operations
+                    window.eventBus.emit('view:fit_to_canvas_requested', { animate: true });
                 }, 50); // Small delay to ensure panel is visible
             }
         } else {
@@ -542,9 +556,8 @@ class ToolbarManager {
             // Always resize to full width when panel is hidden
             // This allows diagram to expand and use all available space
             setTimeout(() => {
-                if (window.currentEditor && typeof window.currentEditor.fitToFullCanvas === 'function') {
-                    window.currentEditor.fitToFullCanvas(true); // true = animate
-                }
+                // ARCHITECTURE: Use Event Bus for view operations
+                window.eventBus.emit('view:fit_to_window_requested', { animate: true });
             }, 50); // Small delay to ensure panel is hidden
         }
     }
@@ -1192,6 +1205,14 @@ class ToolbarManager {
             session: this.sessionId?.substr(-8)
         });
         
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (window.eventBus && this.ownerId) {
+            const removedCount = window.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                logger.debug('ToolbarManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
+        
         // CRITICAL: Cancel all in-progress LLM requests before destroying
         this.cancelAllLLMRequests();
         
@@ -1248,6 +1269,7 @@ class ToolbarManager {
         
         // Clear all references
         this.editor = null;
+        this.propertyPanel = null;
         this.currentSelection = [];
         this.sessionId = null;
         this.diagramType = null;

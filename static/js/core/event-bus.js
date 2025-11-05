@@ -36,6 +36,9 @@ class EventBus {
         this.debugMode = window.VERBOSE_LOGGING || false;
         this.eventStats = new Map(); // Track event frequency for monitoring
         
+        // NEW: Listener Registry - Track listeners by owner
+        this.listenerRegistry = new Map(); // { ownerId: [{ event, callback }, ...] }
+        
         // Performance monitoring
         this.performanceThreshold = 100; // Warn if event takes > 100ms
         
@@ -65,6 +68,45 @@ class EventBus {
         
         // Return unsubscribe function
         return () => this.off(event, callback);
+    }
+    
+    /**
+     * Subscribe to an event with owner tracking
+     * @param {string} event - Event name (e.g., 'panel:opened')
+     * @param {Function} callback - Function to call when event is emitted
+     * @param {string} owner - Owner identifier (e.g., 'InteractiveEditor', 'ViewManager')
+     * @returns {Function} Unsubscribe function
+     */
+    onWithOwner(event, callback, owner) {
+        if (!owner) {
+            this.logger.warn('EventBus', 'onWithOwner called without owner - falling back to on()', {
+                event
+            });
+            return this.on(event, callback);
+        }
+        
+        // Register listener normally (existing behavior)
+        this.on(event, callback);
+        
+        // Track ownership in registry
+        if (!this.listenerRegistry.has(owner)) {
+            this.listenerRegistry.set(owner, []);
+        }
+        this.listenerRegistry.get(owner).push({ event, callback });
+        
+        if (this.debugMode) {
+            this.logger.debug('EventBus', `Listener added with owner: ${event}`, {
+                owner,
+                listenerCount: this.listeners[event].length,
+                ownerListenerCount: this.listenerRegistry.get(owner).length
+            });
+        }
+        
+        // Return unsubscribe function that removes from both places
+        return () => {
+            this.off(event, callback);
+            this.removeFromRegistry(owner, event, callback);
+        };
     }
     
     /**
@@ -145,6 +187,27 @@ class EventBus {
         const index = this.anyListeners.indexOf(callback);
         if (index > -1) {
             this.anyListeners.splice(index, 1);
+        }
+    }
+    
+    /**
+     * Remove specific listener from registry
+     * @private
+     */
+    removeFromRegistry(owner, event, callback) {
+        const ownerListeners = this.listenerRegistry.get(owner);
+        if (!ownerListeners) return;
+        
+        const index = ownerListeners.findIndex(
+            item => item.event === event && item.callback === callback
+        );
+        if (index > -1) {
+            ownerListeners.splice(index, 1);
+        }
+        
+        // Clean up empty owner entries
+        if (ownerListeners.length === 0) {
+            this.listenerRegistry.delete(owner);
         }
     }
     
@@ -241,6 +304,33 @@ class EventBus {
     }
     
     /**
+     * Remove ALL listeners for an owner (automatic cleanup)
+     * @param {string} owner - Owner identifier
+     * @returns {number} Number of listeners removed
+     */
+    removeAllListenersForOwner(owner) {
+        const listeners = this.listenerRegistry.get(owner) || [];
+        
+        if (listeners.length === 0) {
+            return 0;
+        }
+        
+        // Remove each listener from Event Bus
+        listeners.forEach(({ event, callback }) => {
+            this.off(event, callback);
+        });
+        
+        // Remove from registry
+        this.listenerRegistry.delete(owner);
+        
+        if (this.debugMode) {
+            this.logger.debug('EventBus', `Removed ${listeners.length} listeners for ${owner}`);
+        }
+        
+        return listeners.length;
+    }
+    
+    /**
      * Get event statistics (for debugging and monitoring)
      */
     getStats() {
@@ -280,6 +370,42 @@ class EventBus {
     }
     
     /**
+     * Get all listeners for an owner (for debugging)
+     * @param {string} owner - Owner identifier
+     * @returns {Array} List of {event, callback}
+     */
+    getListenersForOwner(owner) {
+        return this.listenerRegistry.get(owner) || [];
+    }
+
+    /**
+     * Get all active listeners grouped by owner (for debugging)
+     * @returns {Object} { owner: [{event, callback}, ...] }
+     */
+    getAllListeners() {
+        const result = {};
+        this.listenerRegistry.forEach((listeners, owner) => {
+            result[owner] = listeners.map(l => ({
+                event: l.event,
+                callback: l.callback.toString().substring(0, 100) // Truncate for readability
+            }));
+        });
+        return result;
+    }
+
+    /**
+     * Get listener count by owner (for debugging)
+     * @returns {Object} { owner: count }
+     */
+    getListenerCounts() {
+        const counts = {};
+        this.listenerRegistry.forEach((listeners, owner) => {
+            counts[owner] = listeners.length;
+        });
+        return counts;
+    }
+    
+    /**
      * Enable/disable debug mode
      */
     setDebugMode(enabled) {
@@ -314,7 +440,11 @@ if (typeof window !== 'undefined') {
         stats: () => window.eventBus.getStats(),
         events: () => window.eventBus.getEventNames(),
         clear: (event) => window.eventBus.removeAllListeners(event),
-        debug: (enabled) => window.eventBus.setDebugMode(enabled)
+        debug: (enabled) => window.eventBus.setDebugMode(enabled),
+        // NEW: Listener registry debug tools
+        listeners: (owner) => owner ? window.eventBus.getListenersForOwner(owner) : window.eventBus.getAllListeners(),
+        counts: () => window.eventBus.getListenerCounts(),
+        removeOwner: (owner) => window.eventBus.removeAllListenersForOwner(owner)
     };
     
     if (window.logger?.debugMode) {
@@ -323,6 +453,10 @@ if (typeof window !== 'undefined') {
         console.log('  window.debugEventBus.events() - List all event names');
         console.log('  window.debugEventBus.clear()  - Remove all listeners');
         console.log('  window.debugEventBus.debug(true/false) - Toggle debug mode');
+        console.log('  window.debugEventBus.listeners() - List all listeners by owner');
+        console.log('  window.debugEventBus.listeners("Owner") - List listeners for specific owner');
+        console.log('  window.debugEventBus.counts() - Get listener counts by owner');
+        console.log('  window.debugEventBus.removeOwner("Owner") - Remove all listeners for owner');
     }
 }
 

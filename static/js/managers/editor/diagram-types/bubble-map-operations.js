@@ -58,6 +58,12 @@ class BubbleMapOperations {
             spec
         });
         
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'add_node',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
         return spec;
     }
     
@@ -127,6 +133,12 @@ class BubbleMapOperations {
             spec
         });
         
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'delete_nodes',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
         return spec;
     }
     
@@ -180,6 +192,12 @@ class BubbleMapOperations {
             nodeType,
             updates,
             spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'update_node',
+            snapshot: JSON.parse(JSON.stringify(spec))
         });
         
         return spec;

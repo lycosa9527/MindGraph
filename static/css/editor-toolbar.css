@@ -506,6 +506,10 @@
 /* Flow Map Orientation Button - Hidden by default, shown only for flow_map diagram type */
 #flow-map-orientation-btn {
     display: none !important;
+    /* Center align text when visible */
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
 }
 
 /* MindMate AI Button */

@@ -496,6 +496,18 @@ class DiagramSelector {
                     new CanvasController(window.eventBus, window.stateManager, logger),
                     'canvas'
                 ),
+                view: window.sessionLifecycle.register(
+                    new ViewManager(window.eventBus, window.stateManager, logger, window.currentEditor),
+                    'view'
+                ),
+                interaction: window.sessionLifecycle.register(
+                    new InteractionHandler(window.eventBus, window.stateManager, logger, window.currentEditor),
+                    'interaction'
+                ),
+                diagramOperationsLoader: window.sessionLifecycle.register(
+                    new DiagramOperationsLoader(window.eventBus, window.stateManager, logger),
+                    'diagramOperationsLoader'
+                ),
                 circleMap: window.sessionLifecycle.register(
                     new CircleMapOperations(window.eventBus, window.stateManager, logger),
                     'circleMap'
@@ -675,11 +687,15 @@ class DiagramSelector {
         if (window.currentEditor) {
             // Call comprehensive destroy() method
             // This removes ALL event listeners, destroys ALL managers, and clears ALL data
-            window.currentEditor.destroy();
-            
-            // Nullify global reference
-            window.currentEditor = null;
-            logger.debug('DiagramSelector', 'Editor instance destroyed');
+            try {
+                window.currentEditor.destroy();
+                logger.debug('DiagramSelector', 'Editor instance destroyed');
+            } catch (error) {
+                logger.error('DiagramSelector', 'Error destroying editor', error);
+            } finally {
+                // Always nullify global reference, even if destroy() throws
+                window.currentEditor = null;
+            }
         }
         
         // ========================================
@@ -727,11 +743,14 @@ class DiagramSelector {
         // PHASE 2: END SESSION & CLEAN CANVAS
         // ========================================
         
+        // CRITICAL: Clean up editor and toolbar manager FIRST (before session lifecycle cleanup)
+        // This ensures InteractiveEditor and ToolbarManager are destroyed before leak detection
+        this.cleanupCanvas();
+        
         // Clean up all registered managers (18 total)
         window.sessionLifecycle.cleanup();
         
         this.endSession();
-        this.cleanupCanvas();
         
         // ========================================
         // PHASE 3: RESET ALL PANELS & MANAGERS

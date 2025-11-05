@@ -17,8 +17,13 @@
 class SessionManager {
     constructor(eventBus, stateManager, logger) {
         this.eventBus = eventBus;
+        // NOTE: stateManager is not used - kept for backward compatibility with constructor signature
+        // Can be removed in future refactoring
         this.stateManager = stateManager;
         this.logger = logger || console;
+        
+        // NEW: Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'SessionManager';
         
         // Session tracking
         this.sessionId = null;
@@ -42,25 +47,25 @@ class SessionManager {
      */
     subscribeToEvents() {
         // Listen for session registration requests
-        this.eventBus.on('session:register_requested', (data) => {
+        this.eventBus.onWithOwner('session:register_requested', (data) => {
             this.registerInstance(data.sessionId, data.diagramType, data.instance);
-        });
+        }, this.ownerId);
         
         // Listen for session validation requests
-        this.eventBus.on('session:validate_requested', (data) => {
+        this.eventBus.onWithOwner('session:validate_requested', (data) => {
             const isValid = this.validateSession(data.sessionId);
             this.eventBus.emit('session:validation_result', {
                 sessionId: data.sessionId,
                 isValid
             });
-        });
+        }, this.ownerId);
         
         // Listen for session cleanup requests
-        this.eventBus.on('session:cleanup_requested', (data) => {
+        this.eventBus.onWithOwner('session:cleanup_requested', (data) => {
             this.cleanupSession(data.sessionId);
-        });
+        }, this.ownerId);
         
-        this.logger.debug('SessionManager', 'Subscribed to events');
+        this.logger.debug('SessionManager', 'Subscribed to events with owner tracking');
     }
     
     /**
@@ -227,7 +232,22 @@ class SessionManager {
      */
     destroy() {
         this.logger.info('SessionManager', 'Destroying Session Manager');
+        
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('SessionManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
+        
+        // Cleanup all sessions
         this.cleanupAllSessions();
+        
+        // Clear references
+        this.eventBus = null;
+        this.stateManager = null;
+        this.logger = null;
     }
 }
 

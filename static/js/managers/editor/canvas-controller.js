@@ -20,6 +20,9 @@ class CanvasController {
         this.stateManager = stateManager;
         this.logger = logger || console;
         
+        // NEW: Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'CanvasController';
+        
         // Canvas state
         this.isSizedForPanel = false;
         this.lastKnownWidth = null;
@@ -49,23 +52,23 @@ class CanvasController {
      */
     subscribeToEvents() {
         // Listen for panel open/close
-        this.eventBus.on('panel:opened', (data) => {
+        this.eventBus.onWithOwner('panel:opened', (data) => {
             this.handlePanelChange(data.panel, true);
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('panel:closed', (data) => {
+        this.eventBus.onWithOwner('panel:closed', (data) => {
             this.handlePanelChange(data.panel, false);
-        });
+        }, this.ownerId);
         
         // Listen for fit requests
-        this.eventBus.on('canvas:fit_requested', (data) => {
+        this.eventBus.onWithOwner('canvas:fit_requested', (data) => {
             this.fitDiagramToWindow(data?.animate);
-        });
+        }, this.ownerId);
         
         // Listen for diagram rendered
-        this.eventBus.on('diagram:rendered', () => {
+        this.eventBus.onWithOwner('diagram:rendered', () => {
             this.checkAutoFitNeeded();
-        });
+        }, this.ownerId);
         
         this.logger.debug('CanvasController', 'Subscribed to events');
     }
@@ -398,7 +401,9 @@ class CanvasController {
             }
             
         } catch (error) {
-            this.logger.error('CanvasController', 'Error in auto-fit check:', error);
+            if (this.logger && this.logger.error) {
+                this.logger.error('CanvasController', 'Error in auto-fit check:', error || 'Unknown error');
+            }
         }
     }
     
@@ -440,11 +445,13 @@ class CanvasController {
         
         this.logger.info('CanvasController', 'Destroying Canvas Controller');
         
-        // Unsubscribe from all events
-        this.eventBus.off('panel:opened');
-        this.eventBus.off('panel:closed');
-        this.eventBus.off('canvas:fit_requested');
-        this.eventBus.off('diagram:rendered');
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('CanvasController', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
         
         // Nullify references
         this.eventBus = null;

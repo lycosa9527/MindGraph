@@ -24,6 +24,9 @@ class LLMAutoCompleteManager {
         this.toolbarManager = toolbarManager;
         this.llmValidationManager = llmValidationManager;
         
+        // NEW: Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'LLMAutoCompleteManager';
+        
         // Initialize sub-managers
         this.propertyValidator = new PropertyValidator(this.logger);
         this.llmEngine = new LLMEngineManager(llmValidationManager, this.propertyValidator, this.logger);
@@ -89,11 +92,11 @@ class LLMAutoCompleteManager {
         };
         
         // Register listeners
-        this.eventBus.on('autocomplete:start_requested', this._eventCallbacks.startRequested);
-        this.eventBus.on('autocomplete:render_cached_requested', this._eventCallbacks.renderCached);
-        this.eventBus.on('autocomplete:update_button_states_requested', this._eventCallbacks.updateButtonStates);
-        this.eventBus.on('autocomplete:cancel_requested', this._eventCallbacks.cancelRequested);
-        this.eventBus.on('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency);
+        this.eventBus.onWithOwner('autocomplete:start_requested', this._eventCallbacks.startRequested, this.ownerId);
+        this.eventBus.onWithOwner('autocomplete:render_cached_requested', this._eventCallbacks.renderCached, this.ownerId);
+        this.eventBus.onWithOwner('autocomplete:update_button_states_requested', this._eventCallbacks.updateButtonStates, this.ownerId);
+        this.eventBus.onWithOwner('autocomplete:cancel_requested', this._eventCallbacks.cancelRequested, this.ownerId);
+        this.eventBus.onWithOwner('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency, this.ownerId);
         
         this.logger.debug('LLMAutoCompleteManager', 'Event Bus listeners registered');
     }
@@ -355,9 +358,16 @@ class LLMAutoCompleteManager {
                 nodeCount: spec?.nodes?.length || spec?.children?.length || 0
             });
             
-            // Fit to window after render completes
+            // Fit to window after render completes (via ViewManager Event Bus)
             setTimeout(() => {
-                this.editor.fitDiagramToWindow();
+                if (this.eventBus) {
+                    this.eventBus.emit('view:fit_diagram_requested');
+                } else if (this.editor && typeof this.editor.fitDiagramToWindow === 'function') {
+                    // Fallback for backward compatibility
+                    this.editor.fitDiagramToWindow();
+                } else {
+                    this.logger.warn('LLMAutoCompleteManager', 'Cannot fit diagram - ViewManager not available');
+                }
             }, 300);
         } else {
             this.logger.error('LLMAutoCompleteManager', 'Cannot render: editor not initialized');
@@ -395,13 +405,12 @@ class LLMAutoCompleteManager {
         // Cancel any in-progress requests
         this.cancelAllLLMRequests();
         
-        // Remove Event Bus listeners using stored callbacks
-        if (this._eventCallbacks) {
-            this.eventBus.off('autocomplete:start_requested', this._eventCallbacks.startRequested);
-            this.eventBus.off('autocomplete:render_cached_requested', this._eventCallbacks.renderCached);
-            this.eventBus.off('autocomplete:update_button_states_requested', this._eventCallbacks.updateButtonStates);
-            this.eventBus.off('autocomplete:cancel_requested', this._eventCallbacks.cancelRequested);
-            this.eventBus.off('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency);
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('LLMAutoCompleteManager', `Removed ${removedCount} Event Bus listeners`);
+            }
         }
         
         // Clear cached results

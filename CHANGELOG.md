@@ -7,6 +7,147 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.3] - 2025-01-02 - Major Editor Refactoring & Event Bus Integration
+
+### Added
+
+- **Event Bus Listener Registry** (`static/js/core/event-bus.js`)
+  - **Owner-based Listener Tracking**: Added `onWithOwner()` method to track which module owns each event listener
+  - **Automatic Cleanup**: Implemented `removeAllListenersForOwner()` for automatic listener cleanup when modules are destroyed
+  - **Debug Tools**: Added debug methods to inspect active listeners by owner (`getListenersForOwner()`, `getAllListeners()`, `getListenerCounts()`)
+  - **Listener Registry**: Internal Map-based registry tracks all listeners with their owners for lifecycle management
+  - **Impact**: Prevents memory leaks by automatically cleaning up event listeners when modules are destroyed, simplifies destroy() methods
+
+- **Module Migration to Event Bus Listener Registry**
+  - **10 Modules Migrated**: All event bus listeners now use `onWithOwner()` for owner tracking
+    - InteractiveEditor (8 listeners)
+    - ViewManager (10 listeners)
+    - InteractionHandler (5 listeners)
+    - CanvasController (4 listeners)
+    - HistoryManager (4 listeners)
+    - DiagramOperationsLoader (3 listeners)
+    - MindMateManager (3 listeners)
+    - LLMAutoCompleteManager (5 listeners)
+    - SessionManager (3 listeners)
+    - ToolbarManager (1 listener)
+  - **Total**: 46 listeners migrated across 10 modules
+  - **Simplified Cleanup**: All modules now use single `removeAllListenersForOwner()` call in destroy() methods instead of manual cleanup
+  - **Impact**: Reduced code complexity, improved maintainability, automatic leak prevention
+
+- **Listener Leak Detection** (`static/js/core/session-lifecycle.js`)
+  - Added automatic detection of listener leaks during session cleanup
+  - Warns if any session-scoped listeners remain after cleanup
+  - Helps identify modules that fail to properly clean up their listeners
+  - **Impact**: Proactive detection of memory leaks, easier debugging
+
+- **Destroy Methods Review Documentation** (`docs/DESTROY_METHODS_REVIEW.md`)
+  - Comprehensive review of all destroy/cleanup methods in the editor lifecycle
+  - Detailed analysis of `InteractiveEditor.destroy()`, `ToolbarManager.destroy()`, `cleanupCanvas()`, and cleanup order
+  - Scoring and assessment of each method (95-100/100 scores)
+  - Recommendations and testing checklist
+  - **Impact**: Better documentation, easier to maintain and improve cleanup logic
+
+### Major Changes
+
+- **Interactive Editor Refactoring** (`static/js/editor/interactive-editor.js` and related modules)
+  - **Massive code reduction**: Reduced `interactive-editor.js` from 4,406 lines to 1,262 lines (71% reduction)
+  - **Event Bus Architecture**: Implemented global Event Bus (`window.eventBus`) for decoupled module communication
+  - **State Manager Integration**: Centralized state management via `window.stateManager` for single source of truth
+  - **Module Extraction**: Extracted 16 specialized modules from monolithic editor:
+    - **ViewManager**: All zoom, pan, fit, and orientation operations
+    - **InteractionHandler**: User interactions (selection, drag, click, text editing)
+    - **DiagramOperationsLoader**: Dynamic loading of diagram-specific operations
+    - **Diagram Operations Modules**: 8 diagram-specific operation classes (Circle, Bubble, Double Bubble, Brace, Flow, Multi Flow, Tree, Bridge, Concept, Mind Map)
+    - **ExportManager**, **SessionManager**, **PropertyPanelManager**, **HistoryManager**, **CanvasController** (already existed, now integrated)
+  - **Event-Driven Communication**: Modules communicate via events instead of direct method calls
+  - **Session Lifecycle Management**: Proper module registration and cleanup via `SessionLifecycle`
+  - **Improved Maintainability**: Each module has single responsibility, easier to test and maintain
+  - **Better Error Handling**: Clearer errors with validation and improved logging
+  - **Impact**: Codebase is now more maintainable, testable, and follows modern architectural patterns
+
+### Fixed
+
+- **InteractionHandler Timing Issue** (`static/js/managers/editor/interaction-handler.js`)
+  - Fixed warning "Editor or SelectionManager not available" by adding retry mechanism
+  - Changed warning to debug level to reduce console noise
+  - Added 100ms retry delay when editor/SelectionManager isn't ready yet
+  - **Impact**: Handlers now attach correctly even if diagram:rendered fires before editor is fully initialized
+
+- **HistoryManager Parameter Mismatch** (`static/js/managers/editor/history-manager.js`)
+  - Fixed "Cannot save to history - no spec provided" error
+  - Corrected `saveToHistory()` call to pass all 3 required parameters: `(action, metadata, spec)`
+  - Changed from `saveToHistory(data.operation, data.snapshot)` to `saveToHistory(data.operation, {}, data.snapshot)`
+  - **Impact**: History tracking now works correctly for all diagram operations (add/delete/update nodes)
+
+- **Dynamic Renderer Root Cause Fix** (`static/js/dynamic-renderer-loader.js`, `static/js/renderers/renderer-dispatcher.js`)
+  - Fixed root cause of wrong renderer being called (e.g., TreeRenderer for flow_map)
+  - Removed problematic static fallback that masked errors
+  - Added validation to ensure graphType is valid before processing
+  - Added function existence check before caching renderer
+  - Added small delay after script loading to ensure execution completes
+  - Improved error messages to show available functions when something is missing
+  - **Impact**: Dynamic renderer now correctly validates and calls the right renderer function, with clear errors if something is wrong
+
+- **MindMateManager Logger Null Error** (`static/js/managers/mindmate-manager.js`)
+  - Fixed "Cannot read properties of null (reading 'info')" error
+  - Added fallback to global logger or console in constructor
+  - Prevented logger from being nullified in destroy() method
+  - Added destroy check in `closePanel()` to prevent methods being called after cleanup
+  - **Impact**: MindMate panel operations no longer crash when manager is destroyed or logger unavailable
+
+- **Flow Map Orientation Button Center Alignment** (`static/css/editor.css`, `static/css/editor-toolbar.css`)
+  - Fixed "转向" button not being center-aligned in flow map toolbar
+  - Added `display: inline-flex`, `align-items: center`, `justify-content: center` to `.btn-tool` class
+  - Added specific center alignment rules for `#flow-map-orientation-btn`
+  - **Impact**: Flow map orientation button text is now properly center-aligned
+
+- **Favicon 404 Error on Demo Page** (`templates/demo-login.html`, `routers/pages.py`)
+  - Fixed 404 error for `/favicon.ico` on demo passkey page
+  - Added favicon link to `demo-login.html` template
+  - Added `/favicon.ico` route handler that serves SVG favicon
+  - **Impact**: Demo page no longer shows favicon 404 error in console
+
+- **fitDiagramToWindow Method Calls** (`static/js/managers/toolbar/llm-autocomplete-manager.js`, `static/js/managers/mindmate-manager.js`)
+  - Fixed "this.editor.fitDiagramToWindow is not a function" errors
+  - Updated to use Event Bus pattern: emit `view:fit_diagram_requested` instead of direct method calls
+  - Added fallback for backward compatibility
+  - **Impact**: Auto-complete and MindMate panel operations now correctly trigger diagram fitting via ViewManager
+
+- **Session Cleanup Order & False Positive Leak Warnings** (`static/js/editor/diagram-selector.js`)
+  - Fixed false positive listener leak warnings for `InteractiveEditor` and `ToolbarManager`
+  - Reordered cleanup sequence: `cleanupCanvas()` now runs BEFORE `sessionLifecycle.cleanup()`
+  - This ensures editor and toolbar manager are destroyed before leak detection runs
+  - Added error handling with try-catch around `editor.destroy()` in `cleanupCanvas()`
+  - Always nullifies global editor reference even if destroy() throws an error
+  - **Impact**: No more false positive leak warnings, more robust cleanup error handling
+
+- **ToolbarManager Property Panel Reference** (`static/js/editor/toolbar-manager.js`)
+  - Added explicit `propertyPanel` nullification in `destroy()` method
+  - Ensures all references are properly cleared during cleanup
+  - **Impact**: Complete reference cleanup, prevents potential memory leaks
+
+### Changed
+
+- **Event Bus Listener Management** (All editor modules)
+  - **Migration to Owner-based Tracking**: All 10 editor modules now use `onWithOwner()` instead of `on()` for event bus listeners
+  - **Simplified Destroy Methods**: All modules now use single `removeAllListenersForOwner(ownerId)` call instead of manual listener cleanup
+  - **Owner IDs**: Each module now has a unique `ownerId` property for listener tracking
+  - **Impact**: Automatic cleanup prevents memory leaks, reduced code complexity by ~70% in destroy() methods
+
+- **Renderer Dispatcher** (`static/js/renderers/renderer-dispatcher.js`)
+  - Removed static renderer fallback completely (no fallback approach)
+  - Now uses dynamic loading exclusively with proper error handling
+  - Updated header comment to reflect exclusive dynamic loading usage
+  - **Impact**: Failures are now explicit and clear, making debugging easier
+
+- **Dynamic Renderer Loader** (`static/js/dynamic-renderer-loader.js`)
+  - Enhanced validation and error messages
+  - Added graphType validation before processing
+  - Added function existence verification before caching
+  - Improved debug logging to track renderer selection process
+  - **Impact**: Better debugging information when renderer selection fails
+
+---
 ## [4.28.2] - 2025-11-04 - Flow Map Orientation Button Visibility Fixes
 
 ### Fixed

@@ -115,6 +115,32 @@ class SessionLifecycleManager {
         this.currentSessionId = null;
         this.diagramType = null;
         
+        // Verify Event Bus listeners are cleaned up
+        if (window.eventBus && typeof window.eventBus.getAllListeners === 'function') {
+            const remainingListeners = window.eventBus.getAllListeners();
+            const sessionOwners = [
+                'InteractiveEditor',
+                'ViewManager',
+                'InteractionHandler',
+                'CanvasController',
+                'HistoryManager',
+                'DiagramOperationsLoader',
+                'MindMateManager',
+                'LLMAutoCompleteManager',
+                'SessionManager',
+                'ToolbarManager'
+            ];
+            
+            sessionOwners.forEach(owner => {
+                if (remainingListeners[owner] && remainingListeners[owner].length > 0) {
+                    logger.warn('SessionLifecycle', `Listener leak detected for ${owner}`, {
+                        count: remainingListeners[owner].length,
+                        events: remainingListeners[owner].map(l => l.event)
+                    });
+                }
+            });
+        }
+        
         logger.info('SessionLifecycle', 'Session cleanup complete', {
             success: successCount,
             errors: errorCount

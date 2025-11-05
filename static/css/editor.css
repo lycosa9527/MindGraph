@@ -555,6 +555,10 @@ body {
     font-weight: 600;
     transition: all 0.2s ease;
     min-width: 60px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .btn-tool:hover:not(:disabled) {

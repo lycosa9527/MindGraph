@@ -19,7 +19,11 @@ class MindMateManager {
     constructor(eventBus, stateManager, logger) {
         this.eventBus = eventBus;
         this.stateManager = stateManager;
-        this.logger = logger;
+        // Ensure logger is always available - use global logger as fallback
+        this.logger = logger || window.logger || console;
+        
+        // NEW: Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'MindMateManager';
         
         // User and session management
         this.userId = this.generateUserId();
@@ -136,13 +140,13 @@ class MindMateManager {
      */
     subscribeToEvents() {
         // Listen for panel open requests - use stored callback
-        this.eventBus.on('panel:open_requested', this.callbacks.panelOpen);
+        this.eventBus.onWithOwner('panel:open_requested', this.callbacks.panelOpen, this.ownerId);
         
         // Listen for panel close requests - use stored callback
-        this.eventBus.on('panel:close_requested', this.callbacks.panelClose);
+        this.eventBus.onWithOwner('panel:close_requested', this.callbacks.panelClose, this.ownerId);
         
         // Listen for message send requests (from voice agent) - use stored callback
-        this.eventBus.on('mindmate:send_message', this.callbacks.sendMessage);
+        this.eventBus.onWithOwner('mindmate:send_message', this.callbacks.sendMessage, this.ownerId);
         
         this.logger.debug('MindMateManager', 'Event listeners registered');
     }
@@ -219,7 +223,11 @@ class MindMateManager {
         
         // Trigger canvas resize
         setTimeout(() => {
-            if (window.currentEditor && typeof window.currentEditor.fitDiagramToWindow === 'function') {
+            // Use Event Bus to request fit via ViewManager
+            if (window.eventBus) {
+                window.eventBus.emit('view:fit_diagram_requested');
+            } else if (window.currentEditor && typeof window.currentEditor.fitDiagramToWindow === 'function') {
+                // Fallback for backward compatibility
                 window.currentEditor.fitDiagramToWindow();
             }
         }, 450);
@@ -235,6 +243,12 @@ class MindMateManager {
      * @param {boolean} options._internal - If true, called from PanelManager (skip PanelManager call)
      */
     closePanel(options = {}) {
+        // Check if destroyed (eventBus is null after destroy)
+        if (!this.eventBus) {
+            // Already destroyed, ignore
+            return;
+        }
+        
         if (!this.panel) return;
         
         // Check if already closed (prevent duplicate operations)
@@ -669,19 +683,20 @@ class MindMateManager {
     destroy() {
         this.logger.debug('MindMateManager', 'Destroying');
         
-        // Remove Event Bus listeners using stored callback references
-        this.eventBus.off('panel:open_requested', this.callbacks.panelOpen);
-        this.eventBus.off('panel:close_requested', this.callbacks.panelClose);
-        this.eventBus.off('mindmate:send_message', this.callbacks.sendMessage);
-        
-        this.logger.debug('MindMateManager', 'Event listeners successfully removed');
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('MindMateManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
         
         // Clear session data
         this.conversationId = null;
         this.diagramSessionId = null;
         this.hasGreeted = false;
         
-        // Nullify references
+        // Nullify references (but keep logger for potential error logging)
         this.callbacks = null;
         this.eventBus = null;
         this.stateManager = null;
@@ -690,7 +705,8 @@ class MindMateManager {
         this.chatInput = null;
         this.chatSendBtn = null;
         this.md = null;
-        this.logger = null;
+        // Don't nullify logger - methods may still be called and need to log errors
+        // this.logger = null;
     }
 }
 

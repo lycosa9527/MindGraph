@@ -20,6 +20,9 @@ class HistoryManager {
         this.stateManager = stateManager;
         this.logger = logger || console;
         
+        // NEW: Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'HistoryManager';
+        
         // History stack
         this.history = [];
         this.historyIndex = -1;
@@ -36,24 +39,26 @@ class HistoryManager {
      */
     subscribeToEvents() {
         // Listen for history save requests
-        this.eventBus.on('diagram:operation_completed', (data) => {
-            this.saveToHistory(data.operation, data.snapshot);
-        });
+        this.eventBus.onWithOwner('diagram:operation_completed', (data) => {
+            // saveToHistory expects: (action, metadata, spec)
+            // data.operation = action, data.snapshot = spec
+            this.saveToHistory(data.operation, {}, data.snapshot);
+        }, this.ownerId);
         
         // Listen for undo requests
-        this.eventBus.on('toolbar:undo_requested', () => {
+        this.eventBus.onWithOwner('toolbar:undo_requested', () => {
             this.undo();
-        });
+        }, this.ownerId);
         
         // Listen for redo requests
-        this.eventBus.on('toolbar:redo_requested', () => {
+        this.eventBus.onWithOwner('toolbar:redo_requested', () => {
             this.redo();
-        });
+        }, this.ownerId);
         
         // Listen for history clear requests
-        this.eventBus.on('history:clear_requested', () => {
+        this.eventBus.onWithOwner('history:clear_requested', () => {
             this.clearHistory();
-        });
+        }, this.ownerId);
         
         this.logger.debug('HistoryManager', 'Subscribed to events');
     }
@@ -247,6 +252,15 @@ class HistoryManager {
      */
     destroy() {
         this.logger.info('HistoryManager', 'Destroying History Manager');
+        
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('HistoryManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
+        
         this.clearHistory();
     }
 }

@@ -10,10 +10,12 @@ Author: lycosa9527
 Made by: MindSpring Team
 """
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 import logging
+import os
+from pathlib import Path
 
 from config.settings import config
 from config.database import get_db
@@ -234,6 +236,15 @@ async def demo_page(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"/demo route failed: {e}", exc_info=True)
         raise
+
+@router.get("/favicon.ico")
+async def favicon():
+    """Serve favicon.ico - serves SVG favicon"""
+    favicon_path = Path("static/favicon.svg")
+    if favicon_path.exists():
+        return FileResponse(favicon_path, media_type="image/svg+xml")
+    # Return 404 if favicon doesn't exist
+    raise HTTPException(status_code=404, detail="Favicon not found")
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):

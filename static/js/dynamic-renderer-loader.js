@@ -140,10 +140,20 @@ class DynamicRendererLoader {
         // Load the renderer module
         const loadPromise = this.loadScript(`/static/js/renderers/${config.module}.js`)
             .then(() => {
+                // Wait a tick to ensure script execution completes
+                return new Promise(resolve => setTimeout(resolve, 0));
+            })
+            .then(() => {
                 const renderer = window[config.renderer];
                 if (!renderer) {
-                    throw new Error(`Renderer ${config.renderer} not found after loading ${config.module}`);
+                    throw new Error(`Renderer ${config.renderer} not found after loading ${config.module}. Available renderers: ${Object.keys(window).filter(k => k.includes('Renderer')).join(', ')}`);
                 }
+                
+                // Verify the specific function exists
+                if (config.function && !renderer[config.function]) {
+                    throw new Error(`Function ${config.function} not found in ${config.renderer}. Available functions: ${Object.keys(renderer).join(', ')}`);
+                }
+                
                 this.cache.set(config.module, { renderer });
                 return renderer;
             })
@@ -161,15 +171,42 @@ class DynamicRendererLoader {
      */
     async renderGraph(graphType, spec, theme = null, dimensions = null) {
         try {
-            const renderer = await this.loadRenderer(graphType);
+            // CRITICAL: Validate graphType before processing
+            if (!graphType || typeof graphType !== 'string') {
+                throw new Error(`Invalid graphType: ${graphType} (type: ${typeof graphType})`);
+            }
+            
             const normalizedType = graphType.toLowerCase().replace(/[-_\s]/g, '_');
             const config = this.config[normalizedType];
             
-            const renderFunction = renderer[config.function];
-            if (!renderFunction) {
-                throw new Error(`Render function ${config.function} not found in ${config.renderer}`);
+            if (!config) {
+                throw new Error(`No configuration found for graph type: ${graphType} (normalized: ${normalizedType}). Available types: ${Object.keys(this.config).join(', ')}`);
             }
             
+            logger.debug('DynamicRendererLoader', `Rendering ${graphType}`, {
+                originalType: graphType,
+                normalizedType,
+                renderer: config.renderer,
+                function: config.function,
+                hasRenderer: false // Will be set after loading
+            });
+            
+            const renderer = await this.loadRenderer(graphType);
+            
+            logger.debug('DynamicRendererLoader', `Renderer loaded for ${graphType}`, {
+                normalizedType,
+                renderer: config.renderer,
+                function: config.function,
+                hasRenderer: !!renderer,
+                rendererKeys: renderer ? Object.keys(renderer) : []
+            });
+            
+            const renderFunction = renderer[config.function];
+            if (!renderFunction) {
+                throw new Error(`Render function ${config.function} not found in ${config.renderer}. Available functions: ${renderer ? Object.keys(renderer).join(', ') : 'none'}`);
+            }
+            
+            logger.debug('DynamicRendererLoader', `Calling ${config.function} for ${graphType}`);
             return renderFunction(spec, theme, dimensions);
         } catch (error) {
             logger.error('DynamicRendererLoader', `Dynamic rendering failed for ${graphType}:`, error);

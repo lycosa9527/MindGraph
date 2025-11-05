@@ -59,6 +59,12 @@ class CircleMapOperations {
             spec
         });
         
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'add_node',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
         return spec;
     }
     
@@ -128,6 +134,12 @@ class CircleMapOperations {
             spec
         });
         
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'delete_nodes',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
         return spec;
     }
     
@@ -153,22 +165,48 @@ class CircleMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        this.logger.debug('CircleMapOperations', 'Updating node', {
+            nodeId,
+            nodeType,
+            updates,
+            hasTextUpdate: updates.text !== undefined
+        });
+        
         if (nodeType === 'context') {
             // Update context node
             const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
             if (!isNaN(arrayIndex) && arrayIndex < spec.context.length) {
                 if (updates.text !== undefined) {
                     spec.context[arrayIndex] = updates.text;
+                    this.logger.debug('CircleMapOperations', 'Updated context node', {
+                        arrayIndex,
+                        newText: updates.text
+                    });
                 }
+            } else {
+                this.logger.warn('CircleMapOperations', 'Invalid array index for context node', {
+                    arrayIndex,
+                    contextLength: spec.context.length
+                });
             }
-        } else if (nodeType === 'topic') {
-            // Update main topic
+        } else if (nodeType === 'topic' || nodeType === 'center') {
+            // Update main topic (renderer uses both 'topic' and 'center' for topic node)
             if (updates.text !== undefined) {
+                const oldTopic = spec.topic;
                 spec.topic = updates.text;
+                this.logger.debug('CircleMapOperations', 'Updated topic node', {
+                    oldTopic,
+                    newTopic: updates.text
+                });
             }
+        } else {
+            this.logger.warn('CircleMapOperations', `Unknown node type: ${nodeType}`, {
+                nodeId,
+                nodeType
+            });
         }
         
-        this.logger.debug('CircleMapOperations', 'Updated node', {
+        this.logger.debug('CircleMapOperations', 'Node update completed', {
             nodeId,
             nodeType,
             updates
@@ -181,6 +219,12 @@ class CircleMapOperations {
             nodeType,
             updates,
             spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'update_node',
+            snapshot: JSON.parse(JSON.stringify(spec))
         });
         
         return spec;
