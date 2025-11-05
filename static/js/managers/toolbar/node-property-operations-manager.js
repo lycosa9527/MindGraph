@@ -22,6 +22,9 @@ class NodePropertyOperationsManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements and notifications
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'NodePropertyOperationsManager';
+        
         // Store callback references for proper cleanup
         // CRITICAL: We must store these to be able to unregister listeners properly
         this.callbacks = {
@@ -66,20 +69,20 @@ class NodePropertyOperationsManager {
      * Setup Event Bus listeners
      */
     setupEventListeners() {
-        // Property operations - use stored callback references
-        this.eventBus.on('properties:apply_all_requested', this.callbacks.applyAll);
-        this.eventBus.on('properties:apply_realtime_requested', this.callbacks.applyRealtime);
-        this.eventBus.on('properties:reset_requested', this.callbacks.reset);
-        this.eventBus.on('properties:toggle_bold_requested', this.callbacks.toggleBold);
-        this.eventBus.on('properties:toggle_italic_requested', this.callbacks.toggleItalic);
-        this.eventBus.on('properties:toggle_underline_requested', this.callbacks.toggleUnderline);
+        // Property operations - use stored callback references with owner tracking
+        this.eventBus.onWithOwner('properties:apply_all_requested', this.callbacks.applyAll, this.ownerId);
+        this.eventBus.onWithOwner('properties:apply_realtime_requested', this.callbacks.applyRealtime, this.ownerId);
+        this.eventBus.onWithOwner('properties:reset_requested', this.callbacks.reset, this.ownerId);
+        this.eventBus.onWithOwner('properties:toggle_bold_requested', this.callbacks.toggleBold, this.ownerId);
+        this.eventBus.onWithOwner('properties:toggle_italic_requested', this.callbacks.toggleItalic, this.ownerId);
+        this.eventBus.onWithOwner('properties:toggle_underline_requested', this.callbacks.toggleUnderline, this.ownerId);
         
-        // Node operations - use stored callback references
-        this.eventBus.on('node:add_requested', this.callbacks.addNode);
-        this.eventBus.on('node:delete_requested', this.callbacks.deleteNode);
-        this.eventBus.on('node:empty_requested', this.callbacks.emptyNode);
+        // Node operations - use stored callback references with owner tracking
+        this.eventBus.onWithOwner('node:add_requested', this.callbacks.addNode, this.ownerId);
+        this.eventBus.onWithOwner('node:delete_requested', this.callbacks.deleteNode, this.ownerId);
+        this.eventBus.onWithOwner('node:empty_requested', this.callbacks.emptyNode, this.ownerId);
         
-        this.logger.debug('NodePropertyOperationsManager', 'Event Bus listeners registered');
+        this.logger.debug('NodePropertyOperationsManager', 'Event Bus listeners registered with owner tracking');
     }
     
     /**
@@ -496,19 +499,11 @@ class NodePropertyOperationsManager {
     destroy() {
         this.logger.debug('NodePropertyOperationsManager', 'Destroying');
         
-        // Remove all Event Bus listeners using stored callback references
-        // FIXED: Now passing both event name AND callback to properly unregister
-        this.eventBus.off('properties:apply_all_requested', this.callbacks.applyAll);
-        this.eventBus.off('properties:apply_realtime_requested', this.callbacks.applyRealtime);
-        this.eventBus.off('properties:reset_requested', this.callbacks.reset);
-        this.eventBus.off('properties:toggle_bold_requested', this.callbacks.toggleBold);
-        this.eventBus.off('properties:toggle_italic_requested', this.callbacks.toggleItalic);
-        this.eventBus.off('properties:toggle_underline_requested', this.callbacks.toggleUnderline);
-        this.eventBus.off('node:add_requested', this.callbacks.addNode);
-        this.eventBus.off('node:delete_requested', this.callbacks.deleteNode);
-        this.eventBus.off('node:empty_requested', this.callbacks.emptyNode);
-        
-        this.logger.debug('NodePropertyOperationsManager', 'Event listeners successfully removed');
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('NodePropertyOperationsManager', 'Event listeners successfully removed');
+        }
         
         // Nullify references (now safe since listeners are actually removed)
         this.callbacks = null;

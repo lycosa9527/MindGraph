@@ -15,11 +15,8 @@
  */
 
 class SessionManager {
-    constructor(eventBus, stateManager, logger) {
+    constructor(eventBus, logger) {
         this.eventBus = eventBus;
-        // NOTE: stateManager is not used - kept for backward compatibility with constructor signature
-        // Can be removed in future refactoring
-        this.stateManager = stateManager;
         this.logger = logger || console;
         
         // NEW: Add owner identifier for Event Bus Listener Registry
@@ -246,7 +243,6 @@ class SessionManager {
         
         // Clear references
         this.eventBus = null;
-        this.stateManager = null;
         this.logger = null;
     }
 }

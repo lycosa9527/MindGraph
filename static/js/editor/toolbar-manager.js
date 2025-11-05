@@ -529,6 +529,8 @@ class ToolbarManager {
             
             // Only resize if diagram is currently at full width
             // If already sized for panel, just show the panel without resizing
+            // ARCHITECTURE NOTE: Direct property access to isSizedForPanel is acceptable - this is UI state
+            // check, not application state that should be in State Manager
             if (window.currentEditor && !window.currentEditor.isSizedForPanel) {
                 setTimeout(() => {
                     // ARCHITECTURE: Use Event Bus for view operations
@@ -968,6 +970,8 @@ class ToolbarManager {
         }
         
         // Fit diagram for export (ensures full diagram is captured, not just visible area)
+        // ARCHITECTURE NOTE: Direct call to fitDiagramForExport() is acceptable - this is an export-specific
+        // operation that requires immediate synchronous execution. Event Bus is not suitable here.
         if (this.editor && typeof this.editor.fitDiagramForExport === 'function') {
             this.editor.fitDiagramForExport();
             
@@ -1070,7 +1074,8 @@ class ToolbarManager {
                     link.href = pngUrl;
                     
                     // Generate filename with diagram type and LLM model
-                    const diagramType = this.editor.diagramType || 'diagram';
+                    // ARCHITECTURE: Use State Manager as source of truth for diagram type
+                    const diagramType = window.stateManager?.getDiagramState()?.type || this.editor?.diagramType || 'diagram';
                     const llmModel = this.selectedLLM || 'qwen';
                     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
                     link.download = `${diagramType}_${llmModel}_${timestamp}.png`;

@@ -89,6 +89,16 @@ class SessionLifecycleManager {
             managerCount: this.managers.length
         });
         
+        // Emit lifecycle event BEFORE destroying managers
+        // This allows managers to cancel operations before destruction
+        if (window.eventBus) {
+            window.eventBus.emit('lifecycle:session_ending', {
+                sessionId: this.currentSessionId,
+                diagramType: this.diagramType,
+                managerCount: this.managers.length
+            });
+        }
+        
         let successCount = 0;
         let errorCount = 0;
         
@@ -118,6 +128,8 @@ class SessionLifecycleManager {
         // Verify Event Bus listeners are cleaned up
         if (window.eventBus && typeof window.eventBus.getAllListeners === 'function') {
             const remainingListeners = window.eventBus.getAllListeners();
+            
+            // Session-scoped managers (should be destroyed and have no listeners)
             const sessionOwners = [
                 'InteractiveEditor',
                 'ViewManager',
@@ -128,7 +140,23 @@ class SessionLifecycleManager {
                 'MindMateManager',
                 'LLMAutoCompleteManager',
                 'SessionManager',
-                'ToolbarManager'
+                'ToolbarManager',
+                'PropertyPanelManager',
+                'ExportManager',
+                'AutoCompleteManager',
+                'SmallOperationsManager',
+                'TextToolbarStateManager',
+                'ThinkGuideManager',
+                'VoiceAgentManager',
+                'LLMValidationManager',
+                'NodePropertyOperationsManager',
+                'NodeCounterFeatureModeManager',
+                'UIStateLLMManager'
+            ];
+            
+            // Global managers (persist across sessions - listeners are expected)
+            const globalOwners = [
+                'PanelManager'  // Global panel management, persists across sessions
             ];
             
             sessionOwners.forEach(owner => {
@@ -139,6 +167,18 @@ class SessionLifecycleManager {
                     });
                 }
             });
+            
+            // Log global owners for debugging (not a leak, just informational)
+            if (logger.debugMode) {
+                globalOwners.forEach(owner => {
+                    if (remainingListeners[owner] && remainingListeners[owner].length > 0) {
+                        logger.debug('SessionLifecycle', `Global manager ${owner} has ${remainingListeners[owner].length} listeners (expected)`, {
+                            count: remainingListeners[owner].length,
+                            events: remainingListeners[owner].map(l => l.event)
+                        });
+                    }
+                });
+            }
         }
         
         logger.info('SessionLifecycle', 'Session cleanup complete', {

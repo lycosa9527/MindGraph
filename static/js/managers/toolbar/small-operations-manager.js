@@ -21,6 +21,9 @@ class SmallOperationsManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager;
         
+        // Owner ID for Event Bus Listener Registry
+        this.ownerId = 'SmallOperationsManager';
+        
         this.setupEventListeners();
         this.logger.info('SmallOperationsManager', 'Small Operations Manager initialized');
     }
@@ -29,23 +32,23 @@ class SmallOperationsManager {
      * Setup Event Bus listeners
      */
     setupEventListeners() {
-        this.eventBus.on('node:duplicate_requested', () => {
+        this.eventBus.onWithOwner('node:duplicate_requested', () => {
             this.handleDuplicateNode();
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('history:undo_requested', () => {
+        this.eventBus.onWithOwner('history:undo_requested', () => {
             this.handleUndo();
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('history:redo_requested', () => {
+        this.eventBus.onWithOwner('history:redo_requested', () => {
             this.handleRedo();
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('diagram:reset_requested', () => {
+        this.eventBus.onWithOwner('diagram:reset_requested', () => {
             this.handleReset();
-        });
+        }, this.ownerId);
         
-        this.logger.debug('SmallOperationsManager', 'Event Bus listeners registered');
+        this.logger.debug('SmallOperationsManager', 'Event Bus listeners registered with owner tracking');
     }
     
     /**
@@ -97,9 +100,11 @@ class SmallOperationsManager {
         }
         
         // Get blank template for current diagram type
-        const blankTemplate = diagramSelector.getTemplate(this.editor.diagramType);
+        // ARCHITECTURE: Use State Manager as source of truth for diagram type
+        const diagramType = this.stateManager?.getDiagramState()?.type || this.editor?.diagramType;
+        const blankTemplate = diagramSelector.getTemplate(diagramType);
         if (!blankTemplate) {
-            this.logger.error('SmallOperationsManager', `Failed to get blank template for: ${this.editor.diagramType}`);
+            this.logger.error('SmallOperationsManager', `Failed to get blank template for: ${diagramType}`);
             this.toolbarManager.showNotification(this.toolbarManager.getNotif('templateNotFound'), 'error');
             return;
         }
@@ -128,11 +133,13 @@ class SmallOperationsManager {
     destroy() {
         this.logger.debug('SmallOperationsManager', 'Destroying');
         
-        // Remove Event Bus listeners
-        this.eventBus.off('node:duplicate_requested');
-        this.eventBus.off('history:undo_requested');
-        this.eventBus.off('history:redo_requested');
-        this.eventBus.off('diagram:reset_requested');
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('SmallOperationsManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
         
         // Nullify references
         this.eventBus = null;

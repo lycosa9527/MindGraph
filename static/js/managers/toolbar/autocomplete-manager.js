@@ -33,6 +33,9 @@ class AutoCompleteManager {
         this.stateManager = stateManager;
         this.logger = logger || console;
         
+        // Owner ID for Event Bus Listener Registry
+        this.ownerId = 'AutoCompleteManager';
+        
         // Auto-complete state
         this.isAutoCompleting = false;
         this.activeAbortControllers = new Map();
@@ -55,26 +58,26 @@ class AutoCompleteManager {
      */
     subscribeToEvents() {
         // Listen for auto-complete requests
-        this.eventBus.on('toolbar:autocomplete_requested', (data) => {
+        this.eventBus.onWithOwner('toolbar:autocomplete_requested', (data) => {
             this.startAutoComplete(data.editor);
-        });
+        }, this.ownerId);
         
         // Listen for auto-complete cancel requests
-        this.eventBus.on('autocomplete:cancel_requested', () => {
+        this.eventBus.onWithOwner('autocomplete:cancel_requested', () => {
             this.cancelAllRequests();
-        });
+        }, this.ownerId);
         
         // Listen for LLM selection
-        this.eventBus.on('autocomplete:llm_selected', (data) => {
+        this.eventBus.onWithOwner('autocomplete:llm_selected', (data) => {
             this.selectLLMResult(data.model);
-        });
+        }, this.ownerId);
         
         // Listen for session cleanup (cancel any pending requests)
-        this.eventBus.on('session:cleanup_requested', () => {
+        this.eventBus.onWithOwner('session:cleanup_requested', () => {
             this.cancelAllRequests();
-        });
+        }, this.ownerId);
         
-        this.logger.debug('AutoCompleteManager', 'Subscribed to events');
+        this.logger.debug('AutoCompleteManager', 'Subscribed to events with owner tracking');
     }
     
     /**
@@ -249,6 +252,15 @@ class AutoCompleteManager {
      */
     destroy() {
         this.logger.info('AutoCompleteManager', 'Destroying Auto-Complete Manager');
+        
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('AutoCompleteManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
+        
         this.cancelAllRequests();
     }
 }

@@ -481,7 +481,7 @@ class DiagramSelector {
                     'export'
                 ),
                 session: window.sessionLifecycle.register(
-                    new SessionManager(window.eventBus, window.stateManager, logger),
+                    new SessionManager(window.eventBus, logger),
                     'session'
                 ),
                 propertyPanel: window.sessionLifecycle.register(
@@ -751,6 +751,12 @@ class DiagramSelector {
         window.sessionLifecycle.cleanup();
         
         this.endSession();
+        
+        // Reset StateManager to initial state (prevents stale state from persisting)
+        if (window.stateManager) {
+            window.stateManager.reset();
+            logger.debug('DiagramSelector', 'StateManager reset to initial state');
+        }
         
         // ========================================
         // PHASE 3: RESET ALL PANELS & MANAGERS

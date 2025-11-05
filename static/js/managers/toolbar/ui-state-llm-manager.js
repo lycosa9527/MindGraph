@@ -22,6 +22,9 @@ class UIStateLLMManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'UIStateLLMManager';
+        
         this.isLineMode = false;
         
         // Store callback references for cleanup
@@ -56,14 +59,14 @@ class UIStateLLMManager {
             this.handleLLMSelection(data.button);
         };
         
-        // Register listeners
-        this.eventBus.on('ui:toggle_line_mode', this._eventCallbacks.toggleLineMode);
-        this.eventBus.on('ui:set_auto_button_loading', this._eventCallbacks.setAutoButtonLoading);
-        this.eventBus.on('ui:set_all_llm_buttons_loading', this._eventCallbacks.setAllLLMButtonsLoading);
-        this.eventBus.on('ui:set_llm_button_state', this._eventCallbacks.setLLMButtonState);
-        this.eventBus.on('llm:model_selection_clicked', this._eventCallbacks.modelSelectionClicked);
+        // Register listeners with owner tracking
+        this.eventBus.onWithOwner('ui:toggle_line_mode', this._eventCallbacks.toggleLineMode, this.ownerId);
+        this.eventBus.onWithOwner('ui:set_auto_button_loading', this._eventCallbacks.setAutoButtonLoading, this.ownerId);
+        this.eventBus.onWithOwner('ui:set_all_llm_buttons_loading', this._eventCallbacks.setAllLLMButtonsLoading, this.ownerId);
+        this.eventBus.onWithOwner('ui:set_llm_button_state', this._eventCallbacks.setLLMButtonState, this.ownerId);
+        this.eventBus.onWithOwner('llm:model_selection_clicked', this._eventCallbacks.modelSelectionClicked, this.ownerId);
         
-        this.logger.debug('UIStateLLMManager', 'Event Bus listeners registered');
+        this.logger.debug('UIStateLLMManager', 'Event Bus listeners registered with owner tracking');
     }
     
     /**
@@ -363,13 +366,10 @@ class UIStateLLMManager {
     destroy() {
         this.logger.debug('UIStateLLMManager', 'Destroying manager and cleaning up listeners');
         
-        // Remove Event Bus listeners using stored callbacks
-        if (this._eventCallbacks) {
-            this.eventBus.off('ui:toggle_line_mode', this._eventCallbacks.toggleLineMode);
-            this.eventBus.off('ui:set_auto_button_loading', this._eventCallbacks.setAutoButtonLoading);
-            this.eventBus.off('ui:set_all_llm_buttons_loading', this._eventCallbacks.setAllLLMButtonsLoading);
-            this.eventBus.off('ui:set_llm_button_state', this._eventCallbacks.setLLMButtonState);
-            this.eventBus.off('llm:model_selection_clicked', this._eventCallbacks.modelSelectionClicked);
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('UIStateLLMManager', 'Event listeners successfully removed');
         }
         
         // Nullify references

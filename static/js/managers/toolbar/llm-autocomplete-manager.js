@@ -45,6 +45,19 @@ class LLMAutoCompleteManager {
     }
     
     /**
+     * Check if manager is still active (has Event Bus listeners)
+     * When destroy() is called, listeners are removed, so this detects destruction
+     */
+    _isActive() {
+        if (!this.eventBus || !this.ownerId) {
+            return false;
+        }
+        // Check if we still have listeners registered (manager is active)
+        const allListeners = this.eventBus.getAllListeners?.();
+        return allListeners?.[this.ownerId]?.length > 0;
+    }
+    
+    /**
      * Get cached LLM results
      * Exposes resultCache.results for backward compatibility
      */
@@ -91,12 +104,19 @@ class LLMAutoCompleteManager {
             }
         };
         
+        // Listen to lifecycle events for graceful cancellation
+        this._eventCallbacks.sessionEnding = () => {
+            this.logger.debug('LLMAutoCompleteManager', 'Session ending - cancelling all operations');
+            this.cancelAllLLMRequests();
+        };
+        
         // Register listeners
         this.eventBus.onWithOwner('autocomplete:start_requested', this._eventCallbacks.startRequested, this.ownerId);
         this.eventBus.onWithOwner('autocomplete:render_cached_requested', this._eventCallbacks.renderCached, this.ownerId);
         this.eventBus.onWithOwner('autocomplete:update_button_states_requested', this._eventCallbacks.updateButtonStates, this.ownerId);
         this.eventBus.onWithOwner('autocomplete:cancel_requested', this._eventCallbacks.cancelRequested, this.ownerId);
         this.eventBus.onWithOwner('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency, this.ownerId);
+        this.eventBus.onWithOwner('lifecycle:session_ending', this._eventCallbacks.sessionEnding, this.ownerId);
         
         this.logger.debug('LLMAutoCompleteManager', 'Event Bus listeners registered');
     }
@@ -106,8 +126,12 @@ class LLMAutoCompleteManager {
      */
     cancelAllLLMRequests() {
         this.logger.info('LLMAutoCompleteManager', 'Cancelling all LLM requests');
-        this.llmEngine.cancelAllRequests();
-        this.progressRenderer.setAllLLMButtonsLoading(false);
+        if (this.llmEngine) {
+            this.llmEngine.cancelAllRequests();
+        }
+        if (this.progressRenderer) {
+            this.progressRenderer.setAllLLMButtonsLoading(false);
+        }
     }
     
     /**
@@ -206,7 +230,12 @@ class LLMAutoCompleteManager {
                 requestBody,
                 {
                     onEachSuccess: (result) => this._handleModelSuccess(result, currentSessionId, currentDiagramType),
-                    onEachError: (result) => this.progressRenderer.setLLMButtonState(result.model, 'error'),
+                    onEachError: (result) => {
+                        // Safety check before updating UI
+                        if (this._isActive() && this.progressRenderer) {
+                            this.progressRenderer.setLLMButtonState(result.model, 'error');
+                        }
+                    },
                     onComplete: (allResults) => this._handleAllModelsComplete(allResults, language)
                 }
             );
@@ -217,18 +246,28 @@ class LLMAutoCompleteManager {
             });
             
         } catch (error) {
-            this.logger.error('LLMAutoCompleteManager', 'Generation failed', error);
-            
-            // Emit generation failed event
-            this.eventBus.emit('llm:generation_failed', {
-                error: error.message,
-                phase: 'execution'
-            });
-            
-            this.toolbarManager.showNotification(
-                'Generation failed. Please try again.',
-                'error'
-            );
+            // Only log and notify if manager is still active (abort errors are expected during cancellation)
+            if (this._isActive()) {
+                this.logger.error('LLMAutoCompleteManager', 'Generation failed', error);
+                
+                // Emit generation failed event
+                if (this.eventBus) {
+                    this.eventBus.emit('llm:generation_failed', {
+                        error: error.message,
+                        phase: 'execution'
+                    });
+                }
+                
+                if (this.toolbarManager) {
+                    this.toolbarManager.showNotification(
+                        'Generation failed. Please try again.',
+                        'error'
+                    );
+                }
+            } else {
+                // Log cancellation silently (manager destroyed, listeners removed)
+                this.logger.debug('LLMAutoCompleteManager', 'Generation cancelled during navigation');
+            }
         } finally {
             this.isAutoCompleting = false;
         }
@@ -238,6 +277,12 @@ class LLMAutoCompleteManager {
      * Handle successful model result
      */
     _handleModelSuccess(result, expectedSessionId, expectedDiagramType) {
+        // Safety check: don't process if manager is no longer active (listeners removed = destroyed)
+        if (!this._isActive() || !this.editor || !this.progressRenderer) {
+            this.logger.debug('LLMAutoCompleteManager', `Skipping ${result.model} success handler - manager no longer active`);
+            return;
+        }
+        
         // Verify context hasn't changed
         if (this.editor.sessionId !== expectedSessionId) {
             this.logger.warn('LLMAutoCompleteManager', `Session changed during ${result.model} generation`);
@@ -256,32 +301,42 @@ class LLMAutoCompleteManager {
         }
         
         // Cache result
-        this.resultCache.store(result.model, result);
-        this.progressRenderer.setLLMButtonState(result.model, 'ready');
+        if (this.resultCache) {
+            this.resultCache.store(result.model, result);
+        }
+        if (this.progressRenderer) {
+            this.progressRenderer.setLLMButtonState(result.model, 'ready');
+        }
         
         // Emit model completed event
-        this.eventBus.emit('llm:model_completed', {
-            model: result.model,
-            success: true,
-            hasSpec: !!result.result?.spec,
-            elapsedTime: result.elapsed
-        });
+        if (this.eventBus) {
+            this.eventBus.emit('llm:model_completed', {
+                model: result.model,
+                success: true,
+                hasSpec: !!result.result?.spec,
+                elapsedTime: result.elapsed
+            });
+        }
         
         // Render first successful result
-        if (!this.selectedLLM) {
+        if (!this.selectedLLM && this._isActive()) {
             this.selectedLLM = result.model;
             this.renderCachedLLMResult(result.model);
             this.updateLLMButtonStates();
-            this.toolbarManager.playNotificationSound();
+            if (this.toolbarManager) {
+                this.toolbarManager.playNotificationSound();
+            }
             
             const displayName = window.LLM_CONFIG?.MODEL_NAMES?.[result.model] || result.model;
             this.logger.info('LLMAutoCompleteManager', `First result from ${displayName} rendered`);
             
             // Emit first result available event
-            this.eventBus.emit('llm:first_result_available', {
-                model: result.model,
-                elapsedTime: result.elapsed
-            });
+            if (this.eventBus) {
+                this.eventBus.emit('llm:first_result_available', {
+                    model: result.model,
+                    elapsedTime: result.elapsed
+                });
+            }
         }
     }
     
@@ -289,33 +344,47 @@ class LLMAutoCompleteManager {
      * Handle completion of all models
      */
     _handleAllModelsComplete(llmResults, language) {
-        this.progressRenderer.setAllLLMButtonsLoading(false);
-        this.updateLLMButtonStates();
+        // Safety check: don't update UI if manager is no longer active (listeners removed = destroyed)
+        if (!this._isActive()) {
+            this.logger.debug('LLMAutoCompleteManager', 'Skipping completion handler - manager no longer active');
+            return;
+        }
+        
+        // Only update UI if components are still available
+        if (this.progressRenderer) {
+            this.progressRenderer.setAllLLMButtonsLoading(false);
+            this.updateLLMButtonStates();
+        }
         
         const allFailed = Object.values(llmResults).every(r => !r.success);
         const successCount = Object.values(llmResults).filter(r => r.success).length;
         const totalCount = Object.values(llmResults).length;
         
         // Emit generation completed event
-        this.eventBus.emit('llm:generation_completed', {
-            successCount: successCount,
-            totalCount: totalCount,
-            allFailed: allFailed,
-            results: llmResults
-        });
+        if (this.eventBus) {
+            this.eventBus.emit('llm:generation_completed', {
+                successCount: successCount,
+                totalCount: totalCount,
+                allFailed: allFailed,
+                results: llmResults
+            });
+        }
         
-        if (allFailed) {
-            this.logger.error('LLMAutoCompleteManager', 'All LLM models failed');
-            this.toolbarManager.showNotification(
-                language === 'zh' ? '生成失败，请重试' : 'Generation failed, please try again',
-                'error'
-            );
-        } else {
-            this.logger.info('LLMAutoCompleteManager', `${successCount}/4 models succeeded`);
-            this.toolbarManager.showNotification(
-                language === 'zh' ? '内容生成成功' : 'Content generated successfully',
-                'success'
-            );
+        // Only show notifications if toolbarManager is still available
+        if (this.toolbarManager) {
+            if (allFailed) {
+                this.logger.error('LLMAutoCompleteManager', 'All LLM models failed');
+                this.toolbarManager.showNotification(
+                    language === 'zh' ? '生成失败，请重试' : 'Generation failed, please try again',
+                    'error'
+                );
+            } else {
+                this.logger.info('LLMAutoCompleteManager', `${successCount}/4 models succeeded`);
+                this.toolbarManager.showNotification(
+                    language === 'zh' ? '内容生成成功' : 'Content generated successfully',
+                    'success'
+                );
+            }
         }
     }
     
@@ -378,13 +447,20 @@ class LLMAutoCompleteManager {
      * Update LLM button states
      */
     updateLLMButtonStates() {
+        // Safety check: don't update UI if manager is no longer active
+        if (!this._isActive() || !this.progressRenderer || !this.resultCache) {
+            return;
+        }
+        
         const cachedModels = this.resultCache.getCachedModels();
         const allResults = this.resultCache.getAllResults();
         
-        this.progressRenderer.updateButtonStates(allResults);
-        
-        if (this.selectedLLM) {
-            this.progressRenderer.highlightSelectedModel(this.selectedLLM);
+        if (this.progressRenderer) {
+            this.progressRenderer.updateButtonStates(allResults);
+            
+            if (this.selectedLLM) {
+                this.progressRenderer.highlightSelectedModel(this.selectedLLM);
+            }
         }
     }
     
@@ -402,10 +478,13 @@ class LLMAutoCompleteManager {
     destroy() {
         this.logger.debug('LLMAutoCompleteManager', 'Destroying manager and cleaning up listeners');
         
-        // Cancel any in-progress requests
-        this.cancelAllLLMRequests();
+        // Cancel any in-progress requests first
+        if (this.llmEngine) {
+            this.llmEngine.cancelAllRequests();
+        }
         
-        // Remove all Event Bus listeners (using Listener Registry)
+        // Remove all Event Bus listeners (this makes _isActive() return false)
+        // Using Listener Registry
         if (this.eventBus && this.ownerId) {
             const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
             if (removedCount > 0) {

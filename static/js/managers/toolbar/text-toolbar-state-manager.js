@@ -23,6 +23,9 @@ class TextToolbarStateManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements
         
+        // Owner ID for Event Bus Listener Registry
+        this.ownerId = 'TextToolbarStateManager';
+        
         this.setupEventListeners();
         if (this.logger && typeof this.logger.info === 'function') {
             this.logger.info('TextToolbarStateManager', 'Text & Toolbar State Manager initialized');
@@ -33,29 +36,29 @@ class TextToolbarStateManager {
      * Setup Event Bus listeners
      */
     setupEventListeners() {
-        this.eventBus.on('text:apply_requested', (data) => {
+        this.eventBus.onWithOwner('text:apply_requested', (data) => {
             this.applyText(data.silent);
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('toolbar:update_state_requested', (data) => {
+        this.eventBus.onWithOwner('toolbar:update_state_requested', (data) => {
             this.updateToolbarState(data.hasSelection);
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('notification:get_text', (data) => {
+        this.eventBus.onWithOwner('notification:get_text', (data) => {
             const text = this.getNotif(data.key, ...(data.args || []));
             this.eventBus.emit('notification:text_retrieved', { key: data.key, text });
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('notification:show_requested', (data) => {
+        this.eventBus.onWithOwner('notification:show_requested', (data) => {
             this.showNotification(data.message, data.type);
-        });
+        }, this.ownerId);
         
-        this.eventBus.on('notification:play_sound_requested', () => {
+        this.eventBus.onWithOwner('notification:play_sound_requested', () => {
             this.playNotificationSound();
-        });
+        }, this.ownerId);
         
         if (this.logger && typeof this.logger.debug === 'function') {
-            this.logger.debug('TextToolbarStateManager', 'Event Bus listeners registered');
+            this.logger.debug('TextToolbarStateManager', 'Event Bus listeners registered with owner tracking');
         }
     }
     
@@ -183,8 +186,9 @@ class TextToolbarStateManager {
         }
         
         // Add button state for diagrams that require selection
+        // ARCHITECTURE: Use State Manager as source of truth for diagram type
         if (addNodeBtn && this.editor) {
-            const diagramType = this.editor.diagramType;
+            const diagramType = this.stateManager?.getDiagramState()?.type || this.editor?.diagramType;
             const requiresSelection = ['brace_map', 'double_bubble_map', 'flow_map', 'multi_flow_map', 'tree_map'].includes(diagramType);
             
             if (requiresSelection) {
@@ -270,12 +274,13 @@ class TextToolbarStateManager {
             this.logger.debug('TextToolbarStateManager', 'Destroying');
         }
         
-        // Remove Event Bus listeners
-        this.eventBus.off('text:apply_requested');
-        this.eventBus.off('toolbar:update_state_requested');
-        this.eventBus.off('notification:get_text');
-        this.eventBus.off('notification:show_requested');
-        this.eventBus.off('notification:play_sound_requested');
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0 && this.logger && typeof this.logger.debug === 'function') {
+                this.logger.debug('TextToolbarStateManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
         
         // Nullify references
         this.eventBus = null;

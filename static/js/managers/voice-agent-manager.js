@@ -20,6 +20,9 @@ class VoiceAgentManager {
         this.stateManager = stateManager;
         this.logger = logger;
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'VoiceAgentManager';
+        
         // WebSocket
         this.ws = null;
         this.sessionId = null;
@@ -88,14 +91,14 @@ class VoiceAgentManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for voice agent start/stop requests - use stored callbacks
-        this.eventBus.on('voice:start_requested', this.callbacks.voiceStart);
-        this.eventBus.on('voice:stop_requested', this.callbacks.voiceStop);
+        // Listen for voice agent start/stop requests - use stored callbacks with owner tracking
+        this.eventBus.onWithOwner('voice:start_requested', this.callbacks.voiceStart, this.ownerId);
+        this.eventBus.onWithOwner('voice:stop_requested', this.callbacks.voiceStop, this.ownerId);
         
-        // Listen for panel state changes (to provide context) - use stored callback
-        this.eventBus.on('state:changed', this.callbacks.stateChanged);
+        // Listen for panel state changes (to provide context) - use stored callback with owner tracking
+        this.eventBus.onWithOwner('state:changed', this.callbacks.stateChanged, this.ownerId);
         
-        this.logger.debug('VoiceAgentManager', 'Event listeners registered');
+        this.logger.debug('VoiceAgentManager', 'Event listeners registered with owner tracking');
     }
     
     /**
@@ -796,12 +799,11 @@ class VoiceAgentManager {
             this.micStream = null;
         }
         
-        // Remove Event Bus listeners using stored callback references
-        this.eventBus.off('voice:start_requested', this.callbacks.voiceStart);
-        this.eventBus.off('voice:stop_requested', this.callbacks.voiceStop);
-        this.eventBus.off('state:changed', this.callbacks.stateChanged);
-        
-        this.logger.debug('VoiceAgentManager', 'Event listeners successfully removed');
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('VoiceAgentManager', 'Event listeners successfully removed');
+        }
         
         // Clear session
         this.sessionId = null;

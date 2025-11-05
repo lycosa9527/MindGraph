@@ -32,6 +32,14 @@ class LLMEngineManager {
         const abortController = new AbortController();
         this.activeAbortControllers.add(abortController);
         
+        // Track if this request was intentionally cancelled
+        let wasCancelled = false;
+        
+        // Listen for abort to mark as cancelled
+        abortController.signal.addEventListener('abort', () => {
+            wasCancelled = true;
+        }, { once: true });
+        
         const startTime = Date.now();
         const modelName = model;
         
@@ -145,7 +153,31 @@ class LLMEngineManager {
                 return result;
             }
         } catch (error) {
-            this.logger.error('LLMEngineManager', `API error for ${modelName}`, error);
+            // Don't log AbortError as error - it's expected during cancellation
+            // Check multiple ways to detect abort errors across different browsers/contexts
+            const isAbortError = 
+                wasCancelled || // Intentional cancellation via our abort controller
+                error.name === 'AbortError' ||
+                error.name === 'DOMException' ||
+                (error.message && (
+                    error.message.includes('aborted') ||
+                    error.message.includes('signal is aborted') ||
+                    error.message.includes('The operation was aborted') ||
+                    error.message.includes('The user aborted a request')
+                )) ||
+                (error.code === 20); // DOMException.ABORT_ERR = 20
+            
+            if (isAbortError) {
+                // Silently handle cancellation - don't log as error
+                // Only log at debug level, and only if debug mode is enabled
+                this.logger.debug('LLMEngineManager', `Request cancelled for ${modelName}`, {
+                    model: modelName,
+                    reason: 'User navigation or explicit cancellation'
+                });
+            } else {
+                this.logger.error('LLMEngineManager', `API error for ${modelName}`, error);
+            }
+            
             this.activeAbortControllers.delete(abortController);
             
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);

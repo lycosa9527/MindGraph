@@ -3419,7 +3419,7 @@ ThinkingAgentFactory
 
 ---
 
-## [4.14.0] - 2025-01-14 - Unified API Key Security Documentation
+## [4.13.2] - 2025-01-14 - Unified API Key Security Documentation
 
 ### Added
 
@@ -3455,7 +3455,7 @@ ThinkingAgentFactory
 
 ---
 
-## [4.13.0] - 2025-01-14 - Demo Mode Authentication & Redirect Logic Overhaul
+## [4.13.3] - 2025-01-14 - Demo Mode Authentication & Redirect Logic Overhaul
 
 ### Added
 
@@ -5808,7 +5808,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [3.5.0] - 2025-10-08 - FastAPI Migration Plan
+## [2.4.1] - 2025-10-08 - FastAPI Migration Plan
 
 ### Added - Migration Documentation 📋
 - **FASTAPI_MIGRATION_PLAN.md**: Comprehensive 5-day migration plan from Flask to FastAPI
@@ -5858,7 +5858,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.4.4] - 2025-10-08 - MindMate AI Panel Initialization Fix
+## [2.3.7] - 2025-10-08 - MindMate AI Panel Initialization Fix
 
 ### Fixed - AI Assistant Panel 🔧
 - **MindMate AI Button**: Fixed panel not appearing when clicking the MindMate AI button
@@ -5890,7 +5890,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.4.3] - 2025-10-08 - Fixed Flow Map Sizing
+## [2.3.6] - 2025-10-08 - Fixed Flow Map Sizing
 
 ### Fixed - Flow Map Rendering 🔧
 - **Flow Map**: No longer appears tiny when entering canvas from gallery
@@ -5907,7 +5907,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.4.2] - 2025-10-07 - Improved Mouse Controls
+## [2.3.5] - 2025-10-07 - Improved Mouse Controls
 
 ### Changed - Mouse Interaction 🖱️
 - **Left Click + Drag**: Now reserved for node selection/interaction (no panning)
@@ -5923,7 +5923,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.4.1] - 2025-10-07 - Critical Fix: Cancel In-Progress LLM Requests
+## [2.3.4] - 2025-10-07 - Critical Fix: Cancel In-Progress LLM Requests
 
 ### Fixed - Session Management 🔧
 - **CRITICAL**: Cancel all in-progress LLM requests when returning to gallery
@@ -6169,7 +6169,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.2.5] - 2025-01-07 - View Optimization Enhancement
+## [2.5.7] - 2025-01-07 - View Optimization Enhancement
 
 ### Changed - Export & Auto-Complete Functionality 📸
 - **Auto-Reset View Before Export**
@@ -6225,7 +6225,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.2.4] - 2025-01-07 - Bridge Map Analogy Patterns 🌉
+## [2.5.6] - 2025-01-07 - Bridge Map Analogy Patterns 🌉
 
 **New Feature**: Bridge maps now display analogy relationship patterns!  
 **Pattern Labels**: Shows the relationship type used (e.g., "[Capital to Country]", "[Author to Work]")  
@@ -6300,7 +6300,7 @@ All critical migration tasks completed. Application is now fully async and produ
 
 ---
 
-## [2.2.2] - 2025-01-07 - Adaptive Sizing & Canvas Improvements
+## [2.5.5] - 2025-01-07 - Adaptive Sizing & Canvas Improvements
 
 ### Added
 - **Adaptive Canvas Sizing System**
@@ -6945,7 +6945,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.16] - 2025-10-05
+## [2.1.15] - 2025-10-05
 
 ### Added
 - **Learning Mode: Phase 4 - Multi-Angle Verification & Escalation System** 🎯
@@ -7001,7 +7001,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.15] - 2025-10-05
+## [2.1.14] - 2025-10-05
 
 ### Added
 - **Learning Mode: Phase 3 - Teaching Material Modal with Node Highlighting** 🎓
@@ -7040,7 +7040,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.14] - 2025-10-05
+## [2.1.13] - 2025-10-05
 
 ### Fixed
 - **Undo/Redo System**: Fixed completely broken undo/redo functionality
@@ -7114,7 +7114,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.13] - 2025-10-05
+## [2.1.12] - 2025-10-05
 
 ### Fixed
 - **Node Transparency Issues**: Fixed nodes showing connection lines through them when hovering
@@ -7152,7 +7152,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.12] - 2025-10-05
+## [2.1.11] - 2025-10-05
 
 ### Fixed
 - **CRITICAL: Z-Order Issues Across All Diagrams**: Connector lines appearing on top of nodes
@@ -7262,7 +7262,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.11] - 2025-10-05
+## [2.1.10] - 2025-10-05
 
 ### Added
 - **Brace Map Visual Enhancements**: Professional math-textbook style braces
@@ -7414,7 +7414,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.10] - 2025-10-05
+## [2.1.9] - 2025-10-05
 
 ### Added
 - **Complete Notification System Translation**: All editor notifications now fully support Chinese/English
@@ -7466,7 +7466,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.9] - 2025-10-04
+## [2.1.8] - 2025-10-04
 
 ### Added
 - **Complete Bilingual Support**: Full Chinese/English language support across entire editor
@@ -7568,7 +7568,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.8] - 2025-10-03
+## [2.1.7] - 2025-10-03
 
 ### Fixed
 - **Mind Map Layout Refresh**: Fixed issue where add/delete operations didn't update the canvas
@@ -7734,7 +7734,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.7] - 2025-10-03
+## [2.1.6] - 2025-10-03
 
 ### Added
 - **Scrollable Canvas**: Canvas now supports horizontal and vertical scrolling for large diagrams
@@ -7822,7 +7822,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.0.6] - 2025-10-03
+## [2.1.5] - 2025-10-03
 
 ### Added - Centralized Notification System
 
@@ -7906,7 +7906,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
   - Migration guide for future development
   - Testing checklist and future enhancement ideas
 
-## [2.0.5] - 2025-10-03
+## [2.1.4] - 2025-10-03
 
 ### Added - Language Consistency & Editor Enhancements
 
@@ -8062,7 +8062,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
   - BridgeMapAgent: Changed debug to info logging (lines 179-245)
   - BraceMapAgent: Parts/subparts structure logging (lines 1224-1239)
 
-## [2.0.4] - 2025-10-02
+## [2.1.17] - 2025-10-02
 
 ### Added - Advanced Canvas Editing Tools
 
@@ -8135,7 +8135,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
   - Added "Empty" / "清空" translations
   - Maintained consistent bilingual UX
 
-## [2.0.3] - 2025-10-01
+## [2.1.16] - 2025-10-01
 
 ### Added - Loading Spinner for AI Generation
 - **Professional Loading Indicator**: Full-screen loading overlay during AI diagram generation
@@ -8158,7 +8158,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Z-index 10000 to ensure visibility above all elements
 - Backdrop blur for modern aesthetic
 
-## [2.0.2] - 2025-10-01
+## [2.1.1] - 2025-10-01
 
 ### Added - Interactive Editing Tools
 - **Property Panel**: Right-side panel for editing selected nodes
@@ -8198,7 +8198,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Real-time color picker sync with hex inputs
 - Selection-based property loading
 
-## [2.0.1] - 2025-10-01
+## [2.1.0] - 2025-10-01
 
 ### Added - AI Prompt Generation Integration
 - **AI Diagram Generation**: Prompt input now generates actual diagrams using AI and transitions to the editor
@@ -8216,7 +8216,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Proper error handling for both API failures and rendering failures
 - Success notifications show after diagram is successfully rendered
 
-## [2.0.0] - 2025-10-01
+## [2.5.3] - 2025-10-01
 
 ### Added - MindGraph Professional Interactive Editor
 - **New Interactive Editor Interface** at `/editor` endpoint
@@ -8280,7 +8280,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [2.1.0] - 2025-10-01
+## [2.5.0] - 2025-10-01
 
 ### 🎓 **LEARNING SHEET FUNCTIONALITY**
 
@@ -8329,7 +8329,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [1.7.1] - 2025-01-30
+## [1.6.0] - 2025-01-30
 
 ### 🎯 **TOPIC EXTRACTION & RENDERING IMPROVEMENTS**
 
@@ -8376,7 +8376,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 - Minimal - LLM calls are fast and cached
 - Improved user experience with better topic extraction accuracy
 
-## [1.7.0] - 2025-01-30
+## [1.5.5] - 2025-01-30
 
 ### 🔍 **COMPREHENSIVE END-TO-END CODE REVIEW COMPLETE**
 
@@ -8457,7 +8457,7 @@ This release transforms MindGraph from a **diagram generation tool** into an **I
 
 ---
 
-## [1.6.9] - 2025-01-30
+## [1.5.4] - 2025-01-30
 
 ### 🧵 **CRITICAL THREADING & CONCURRENCY FIXES**
 
@@ -8555,7 +8555,7 @@ context = await browser.new_context(...)
 - **Maintainable Architecture**: Clean, well-documented threading implementation
 - **Future-Proof Design**: Solid foundation for further concurrency improvements
 
-## [1.6.8] - 2025-01-30
+## [1.5.3] - 2025-01-30
 
 ### 🎯 **MAJOR ACHIEVEMENTS SUMMARY**
 - **🧹 Production-Ready Debug Cleanup**: Eliminated ALL visual debug text from final PNG/JPG images
@@ -8703,7 +8703,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Performance**: 3.2s faster per request
 - **Code Quality**: Cleaner, more maintainable architecture
 
-## [1.6.6] - 2025-01-30
+## [1.5.2] - 2025-01-30
 
 ### 🎯 **MAJOR ACHIEVEMENTS SUMMARY**
 - **🎨 Theme System Consolidation**: Complete centralized theme control with 30% performance improvement
@@ -8788,7 +8788,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Updated**: Progress tracking to reflect completed optimizations
 - **Streamlined**: Implementation roadmap with realistic priorities
 
-## [1.6.5] - 2025-01-30
+## [1.5.1] - 2025-01-30
 
 ### 🎯 **MAJOR ACHIEVEMENTS SUMMARY**
 - **🚀 Bridge Map System**: Completely optimized with 51.6% prompt reduction and standardized JSON format
@@ -9039,7 +9039,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - ✅ **API Integration**: Full end-to-end functionality with 6.6KB PNG generation
 - ✅ **Educational Value**: Meaningful analogies with clear 1:1 correspondences
 
-## [1.6.3] - 2025-01-29
+## [1.5.0] - 2025-01-29
 
 ### 🧠 **SMART LLM CLASSIFICATION SYSTEM**
 
@@ -9114,7 +9114,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [1.6.2] - 2025-01-27
+## [1.4.6] - 2025-01-27
 
 ### 🎯 **BRIDGE MAP RENDERING COMPLETELY FIXED**
 
@@ -9183,7 +9183,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [1.6.1] - 2025-01-27
+## [1.4.5] - 2025-01-27
 
 ### 🎨 **COLOR SCHEME STANDARDIZATION**
 
@@ -9206,7 +9206,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [1.6.0] - 2025-01-27
+## [1.4.4] - 2025-01-27
 
 ### 🎯 **FLOW MAP RENDERING COMPLETELY FIXED**
 
@@ -9262,7 +9262,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [1.5.0] - 2025-01-27
+## [1.5.6] - 2025-01-27
 
 ### 🎉 Major Milestone: Complete Diagram System
 
@@ -9338,7 +9338,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Professional Quality**: Production-ready system suitable for enterprise use
 5. **No Breaking Changes**: All existing functionality enhanced while maintaining compatibility
 
-## [1.4.9] - 2025-01-27
+## [2.5.8] - 2025-01-27
 
 ### 🚀 Major Flow Map Enhancements
 
@@ -9421,7 +9421,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Canvas Optimization**: Better canvas sizing that perfectly fits content
 5. **No Breaking Changes**: All existing functionality preserved while adding enhancements
 
-## [2.3.9] - 2025-08-10
+## [2.5.4] - 2025-08-10
 
 ### 🎯 Enhanced: Concept Map Spacing and Text Improvements
 
@@ -9437,7 +9437,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Python Cache**: Cleaned up __pycache__ directories across the project structure.
 - **Version Updates**: Updated all inline comments and documentation to version 2.3.8 for consistency.
 
-## [2.3.7] - 2025-08-09
+## [2.5.2] - 2025-08-09
 
 ### 🌳 New: Tree Map Agent and Renderer Enhancements
 
@@ -9455,7 +9455,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 - Bumped to 2.3.7.
 
-## [2.3.6] - 2025-08-09
+## [2.5.1] - 2025-08-09
 
 ### 🎯 Brace Map Finalization and Canvas Tightening
 
@@ -9472,7 +9472,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 - Bumped to 2.3.6.
 
-## [1.4.5] - 2025-01-27
+## [1.4.3] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9540,7 +9540,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Documentation**: Updated all documentation to reflect new layout system
 5. **Testing**: Comprehensive test files for validation
 
-## [1.4.4] - 2025-01-27
+## [2.5.9] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9607,7 +9607,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Rendering Optimization**: Error-free rendering with proper text centering
 5. **Canvas Optimization**: Dynamic sizing with watermark space reservation
 
-## [1.4.3] - 2025-01-27
+## [2.5.10] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9682,7 +9682,7 @@ await page.wait_for_selector('svg', timeout=5000)
 4. **Canvas Optimization**: Better canvas utilization with reduced blank space
 5. **Documentation**: Updated architecture documentation with development guidelines
 
-## [1.4.2] - 2025-01-27
+## [2.5.11] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9809,7 +9809,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [1.4.1] - 2025-01-27
+## [2.5.12] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9891,7 +9891,7 @@ await page.wait_for_selector('svg', timeout=5000)
 
 ---
 
-## [1.4.0] - 2025-01-27
+## [2.5.13] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9913,7 +9913,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Bridge Map Guide**: Updated documentation to reflect the enhanced bridge map visualization
 - **Version Update**: Updated project version to 2.3.0 across all documentation files
 
-## [1.3.0] - 2025-01-27
+## [2.5.14] - 2025-01-27
 
 ### 🚀 Major Improvements
 
@@ -9980,7 +9980,7 @@ await page.wait_for_selector('svg', timeout=5000)
 - **Error Recovery**: Improved error handling and recovery for new diagram types
 - **Validation**: Enhanced validation ensures data integrity for all diagram specifications
 
-## [1.2.0] - 2025-01-27
+## [2.5.15] - 2025-01-27
 
 ### 🚀 Major Improvements
 

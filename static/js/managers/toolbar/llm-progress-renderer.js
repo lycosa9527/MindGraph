@@ -18,7 +18,7 @@ class LLMProgressRenderer {
     constructor(toolbarManager, logger) {
         this.toolbarManager = toolbarManager;
         this.logger = logger || console;
-        this.llmButtons = toolbarManager.llmButtons || [];
+        this.llmButtons = toolbarManager?.llmButtons || [];
         this.progressIndicator = document.getElementById('progress-indicator');
         
         this.logger.debug('LLMProgressRenderer', 'Progress renderer initialized');
@@ -101,13 +101,27 @@ class LLMProgressRenderer {
      * Set specific LLM button state
      */
     setLLMButtonState(modelName, state) {
+        // Safety check: buttons might be destroyed or null
+        if (!this.llmButtons || this.llmButtons.length === 0) {
+            this.logger.debug('LLMProgressRenderer', `Skipping button state update for ${modelName} - buttons not available`);
+            return;
+        }
+        
+        // Re-query buttons if they might have been replaced (e.g., during cleanup)
+        if (this.toolbarManager && this.toolbarManager.llmButtons) {
+            this.llmButtons = this.toolbarManager.llmButtons;
+        }
+        
         const button = this.llmButtons.find(btn => {
+            if (!btn || !btn.parentNode) {
+                return false; // Skip detached buttons
+            }
             const btnModel = btn.dataset?.llm || btn.id?.replace('llm-', '');
             return btnModel === modelName;
         });
         
-        if (!button) {
-            this.logger.warn('LLMProgressRenderer', `Button not found for model: ${modelName}`);
+        if (!button || !button.parentNode) {
+            this.logger.debug('LLMProgressRenderer', `Button not found or detached for model: ${modelName}`);
             return;
         }
         
@@ -143,6 +157,12 @@ class LLMProgressRenderer {
     updateButtonStates(llmResults) {
         if (!llmResults) return;
         
+        // Safety check: buttons might be destroyed or null
+        if (!this.llmButtons || this.llmButtons.length === 0) {
+            this.logger.debug('LLMProgressRenderer', 'Skipping button state update - buttons not available');
+            return;
+        }
+        
         Object.entries(llmResults).forEach(([modelName, result]) => {
             if (result.success) {
                 this.setLLMButtonState(modelName, 'ready');
@@ -162,7 +182,23 @@ class LLMProgressRenderer {
      * @param {Array<string>} models - Optional: specific models to set loading on (defaults to all)
      */
     setAllLLMButtonsLoading(isLoading, models = null) {
+        // Safety check: buttons might be destroyed or null
+        if (!this.llmButtons || this.llmButtons.length === 0) {
+            this.logger.debug('LLMProgressRenderer', 'Skipping button state update - buttons not available');
+            return;
+        }
+        
+        // Re-query buttons if they might have been replaced (e.g., during cleanup)
+        if (this.toolbarManager && this.toolbarManager.llmButtons) {
+            this.llmButtons = this.toolbarManager.llmButtons;
+        }
+        
         this.llmButtons.forEach(btn => {
+            // Additional safety check: button might be detached from DOM
+            if (!btn || !btn.parentNode) {
+                return;
+            }
+            
             const btnModel = btn.dataset?.llm || btn.id?.replace('llm-', '');
             
             // If models array is provided, only set loading for those specific models
@@ -187,7 +223,23 @@ class LLMProgressRenderer {
      * Highlight selected model button
      */
     highlightSelectedModel(modelName) {
+        // Safety check: buttons might be destroyed or null
+        if (!this.llmButtons || this.llmButtons.length === 0) {
+            this.logger.debug('LLMProgressRenderer', 'Skipping highlight - buttons not available');
+            return;
+        }
+        
+        // Re-query buttons if they might have been replaced (e.g., during cleanup)
+        if (this.toolbarManager && this.toolbarManager.llmButtons) {
+            this.llmButtons = this.toolbarManager.llmButtons;
+        }
+        
         this.llmButtons.forEach(btn => {
+            // Additional safety check: button might be detached from DOM
+            if (!btn || !btn.parentNode) {
+                return;
+            }
+            
             const btnModel = btn.dataset?.llm || btn.id?.replace('llm-', '');
             if (btnModel === modelName) {
                 btn.classList.add('selected');
@@ -201,7 +253,17 @@ class LLMProgressRenderer {
      * Clear all button states
      */
     clearAllStates() {
+        // Safety check: buttons might be destroyed or null
+        if (!this.llmButtons || this.llmButtons.length === 0) {
+            return;
+        }
+        
         this.llmButtons.forEach(btn => {
+            // Additional safety check: button might be detached from DOM
+            if (!btn || !btn.parentNode) {
+                return;
+            }
+            
             btn.classList.remove('loading', 'ready', 'error', 'idle', 'selected');
             btn.disabled = false;
         });

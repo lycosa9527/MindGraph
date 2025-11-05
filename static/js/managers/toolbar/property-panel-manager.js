@@ -20,6 +20,9 @@ class PropertyPanelManager {
         this.stateManager = stateManager;
         this.logger = logger || console;
         
+        // Owner ID for Event Bus Listener Registry
+        this.ownerId = 'PropertyPanelManager';
+        
         // Property panel elements
         this.panel = null;
         this.propText = null;
@@ -95,7 +98,7 @@ class PropertyPanelManager {
      */
     subscribeToEvents() {
         // Listen for node selection
-        this.eventBus.on('selection:changed', (data) => {
+        this.eventBus.onWithOwner('selection:changed', (data) => {
             if (data.selectedNodes.length === 1) {
                 this.loadNodeProperties(data.selectedNodes[0]);
                 // Auto-open panel if requested (not in assistant mode)
@@ -105,37 +108,37 @@ class PropertyPanelManager {
             } else {
                 this.clearPanel();
             }
-        });
+        }, this.ownerId);
         
         // Listen for selection cleared
-        this.eventBus.on('selection:cleared', (data) => {
+        this.eventBus.onWithOwner('selection:cleared', (data) => {
             if (data.shouldHidePanel) {
                 this.closePanel();
             }
             this.clearPanel();
-        });
+        }, this.ownerId);
         
         // Listen for property panel open requests
-        this.eventBus.on('property_panel:open_requested', (data) => {
+        this.eventBus.onWithOwner('property_panel:open_requested', (data) => {
             this.openPanel(data.nodeId);
-        });
+        }, this.ownerId);
         
         // Listen for property panel close requests
-        this.eventBus.on('property_panel:close_requested', () => {
+        this.eventBus.onWithOwner('property_panel:close_requested', () => {
             this.closePanel();
-        });
+        }, this.ownerId);
         
         // Listen for property panel clear requests
-        this.eventBus.on('property_panel:clear_requested', () => {
+        this.eventBus.onWithOwner('property_panel:clear_requested', () => {
             this.clearPanel();
-        });
+        }, this.ownerId);
         
         // Listen for property change requests
-        this.eventBus.on('property_panel:update_requested', (data) => {
+        this.eventBus.onWithOwner('property_panel:update_requested', (data) => {
             this.updateNodeProperties(data.nodeId, data.properties);
-        });
+        }, this.ownerId);
         
-        this.logger.debug('PropertyPanelManager', 'Subscribed to events');
+        this.logger.debug('PropertyPanelManager', 'Subscribed to events with owner tracking');
     }
     
     /**
@@ -446,6 +449,15 @@ class PropertyPanelManager {
      */
     destroy() {
         this.logger.info('PropertyPanelManager', 'Destroying Property Panel Manager');
+        
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('PropertyPanelManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
+        
         this.clearPanel();
         this.closePanel();
     }

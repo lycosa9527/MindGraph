@@ -21,6 +21,9 @@ class PanelManager {
         this.stateManager = stateManager;
         this.logger = logger;
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'PanelManager';
+        
         this.panels = {};
         this.currentPanel = null;
         
@@ -139,19 +142,19 @@ class PanelManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for panel open requests - use stored callback
-        this.eventBus.on('panel:open_requested', this.callbacks.panelOpen);
+        // Listen for panel open requests - use stored callback with owner tracking
+        this.eventBus.onWithOwner('panel:open_requested', this.callbacks.panelOpen, this.ownerId);
         
-        // Listen for panel close requests - use stored callback
-        this.eventBus.on('panel:close_requested', this.callbacks.panelClose);
+        // Listen for panel close requests - use stored callback with owner tracking
+        this.eventBus.onWithOwner('panel:close_requested', this.callbacks.panelClose, this.ownerId);
         
-        // Listen for panel toggle requests - use stored callback
-        this.eventBus.on('panel:toggle_requested', this.callbacks.panelToggle);
+        // Listen for panel toggle requests - use stored callback with owner tracking
+        this.eventBus.onWithOwner('panel:toggle_requested', this.callbacks.panelToggle, this.ownerId);
         
-        // Listen for close all requests - use stored callback
-        this.eventBus.on('panel:close_all_requested', this.callbacks.closeAll);
+        // Listen for close all requests - use stored callback with owner tracking
+        this.eventBus.onWithOwner('panel:close_all_requested', this.callbacks.closeAll, this.ownerId);
         
-        this.logger.debug('PanelManager', 'Event listeners registered');
+        this.logger.debug('PanelManager', 'Event listeners registered with owner tracking');
     }
     
     /**
@@ -517,13 +520,11 @@ class PanelManager {
     destroy() {
         this.logger.debug('PanelManager', 'Destroying');
         
-        // Remove Event Bus listeners using stored callback references
-        this.eventBus.off('panel:open_requested', this.callbacks.panelOpen);
-        this.eventBus.off('panel:close_requested', this.callbacks.panelClose);
-        this.eventBus.off('panel:toggle_requested', this.callbacks.panelToggle);
-        this.eventBus.off('panel:close_all_requested', this.callbacks.closeAll);
-        
-        this.logger.debug('PanelManager', 'Event listeners successfully removed');
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('PanelManager', 'Event listeners successfully removed');
+        }
         
         // Clear panel registry
         this.panels = {};

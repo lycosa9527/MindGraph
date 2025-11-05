@@ -20,6 +20,9 @@ class ExportManager {
         this.stateManager = stateManager;
         this.logger = logger || console;
         
+        // Owner ID for Event Bus Listener Registry
+        this.ownerId = 'ExportManager';
+        
         // Export configuration
         this.exportFormats = ['png', 'svg', 'json'];
         this.defaultFilename = 'diagram';
@@ -35,11 +38,11 @@ class ExportManager {
      */
     subscribeToEvents() {
         // Listen for export requests
-        this.eventBus.on('toolbar:export_requested', (data) => {
+        this.eventBus.onWithOwner('toolbar:export_requested', (data) => {
             this.handleExport(data.format, data.editor);
-        });
+        }, this.ownerId);
         
-        this.logger.debug('ExportManager', 'Subscribed to events');
+        this.logger.debug('ExportManager', 'Subscribed to events with owner tracking');
     }
     
     /**
@@ -458,7 +461,14 @@ class ExportManager {
      */
     destroy() {
         this.logger.info('ExportManager', 'Destroying Export Manager');
-        // Event Bus will handle cleanup
+        
+        // Remove all Event Bus listeners (using Listener Registry)
+        if (this.eventBus && this.ownerId) {
+            const removedCount = this.eventBus.removeAllListenersForOwner(this.ownerId);
+            if (removedCount > 0) {
+                this.logger.debug('ExportManager', `Removed ${removedCount} Event Bus listeners`);
+            }
+        }
     }
 }
 

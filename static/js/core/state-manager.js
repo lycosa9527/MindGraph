@@ -233,6 +233,12 @@ class StateManager {
      * Update diagram state
      */
     updateDiagram(updates) {
+        // Validate critical updates
+        if (!this.validateStateUpdate(updates, 'diagram')) {
+            this.logger.error('StateManager', 'Diagram update validation failed', updates);
+            return false;
+        }
+        
         this.state.diagram = {
             ...this.state.diagram,
             ...updates
@@ -251,7 +257,15 @@ class StateManager {
      * Set selected nodes
      */
     selectNodes(nodeIds) {
-        this.state.diagram.selectedNodes = Array.isArray(nodeIds) ? nodeIds : [nodeIds];
+        const selectedNodes = Array.isArray(nodeIds) ? nodeIds : [nodeIds];
+        
+        // Validate selection
+        if (!this.validateStateUpdate({ selectedNodes }, 'selection')) {
+            this.logger.error('StateManager', 'Selection update validation failed', { nodeIds });
+            return false;
+        }
+        
+        this.state.diagram.selectedNodes = selectedNodes;
         this.readOnlyState = this.createReadOnlyProxy(this.state);
         
         this.eventBus.emit('state:selection_changed', {
@@ -262,6 +276,8 @@ class StateManager {
             count: this.state.diagram.selectedNodes.length,
             nodeIds: this.state.diagram.selectedNodes
         });
+        
+        return true;
     }
     
     /**
@@ -356,9 +372,60 @@ class StateManager {
     
     /**
      * Validate state update
+     * ARCHITECTURE: Validates critical state updates to prevent invalid state transitions
      */
-    validateStateUpdate(updates) {
-        // Add validation logic as needed
+    validateStateUpdate(updates, updateType = 'diagram') {
+        // Valid diagram types (from DiagramType enum and diagram-selector.js)
+        const validDiagramTypes = [
+            'bubble_map', 'bridge_map', 'tree_map', 'circle_map',
+            'double_bubble_map', 'flow_map', 'brace_map', 'multi_flow_map',
+            'concept_map', 'mindmap', 'mind_map',
+            'factor_analysis', 'three_position_analysis', 'perspective_analysis',
+            'goal_analysis', 'possibility_analysis', 'result_analysis',
+            'five_w_one_h', 'whwm_analysis', 'four_quadrant', 'diagram'
+        ];
+        
+        // Validate diagram type
+        if (updateType === 'diagram' && updates.type) {
+            if (!validDiagramTypes.includes(updates.type)) {
+                this.logger.error('StateManager', 'Invalid diagram type', {
+                    type: updates.type,
+                    validTypes: validDiagramTypes
+                });
+                return false;
+            }
+        }
+        
+        // Validate session ID format (should be non-empty string)
+        if (updates.sessionId !== undefined) {
+            if (typeof updates.sessionId !== 'string' || updates.sessionId.trim() === '') {
+                this.logger.error('StateManager', 'Invalid session ID', {
+                    sessionId: updates.sessionId,
+                    type: typeof updates.sessionId
+                });
+                return false;
+            }
+        }
+        
+        // Validate selected nodes (should be array of strings)
+        if (updateType === 'selection' && updates.selectedNodes !== undefined) {
+            if (!Array.isArray(updates.selectedNodes)) {
+                this.logger.error('StateManager', 'Invalid selected nodes - must be array', {
+                    selectedNodes: updates.selectedNodes,
+                    type: typeof updates.selectedNodes
+                });
+                return false;
+            }
+            
+            // Check if all items in array are strings
+            if (updates.selectedNodes.some(id => typeof id !== 'string')) {
+                this.logger.error('StateManager', 'Invalid selected nodes - all IDs must be strings', {
+                    selectedNodes: updates.selectedNodes
+                });
+                return false;
+            }
+        }
+        
         return true;
     }
 }

@@ -23,6 +23,9 @@ class ThinkGuideManager {
         // Ensure logger is always valid - check multiple fallbacks
         this.logger = logger || window.logger || window.frontendLogger || console;
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'ThinkGuideManager';
+        
         // DOM elements
         this.panel = null;
         this.messagesContainer = null;
@@ -118,19 +121,19 @@ class ThinkGuideManager {
      * Subscribe to Event Bus events
      */
     subscribeToEvents() {
-        // Listen for panel open requests - use stored callback
-        this.eventBus.on('panel:open_requested', this.callbacks.panelOpen);
+        // Listen for panel open requests - use stored callback with owner tracking
+        this.eventBus.onWithOwner('panel:open_requested', this.callbacks.panelOpen, this.ownerId);
         
-        // Listen for panel close requests - use stored callback
-        this.eventBus.on('panel:close_requested', this.callbacks.panelClose);
+        // Listen for panel close requests - use stored callback with owner tracking
+        this.eventBus.onWithOwner('panel:close_requested', this.callbacks.panelClose, this.ownerId);
         
-        // Listen for message send requests (from voice agent) - use stored callback
-        this.eventBus.on('thinkguide:send_message', this.callbacks.sendMessage);
+        // Listen for message send requests (from voice agent) - use stored callback with owner tracking
+        this.eventBus.onWithOwner('thinkguide:send_message', this.callbacks.sendMessage, this.ownerId);
         
-        // Listen for explain requests (from voice agent) - use stored callback
-        this.eventBus.on('thinkguide:explain_requested', this.callbacks.explainRequested);
+        // Listen for explain requests (from voice agent) - use stored callback with owner tracking
+        this.eventBus.onWithOwner('thinkguide:explain_requested', this.callbacks.explainRequested, this.ownerId);
         
-        this.logger.debug('ThinkGuideManager', 'Event listeners registered');
+        this.logger.debug('ThinkGuideManager', 'Event listeners registered with owner tracking');
     }
     
     /**
@@ -903,13 +906,11 @@ class ThinkGuideManager {
             this.currentAbortController = null;
         }
         
-        // Remove Event Bus listeners using stored callback references
-        this.eventBus.off('panel:open_requested', this.callbacks.panelOpen);
-        this.eventBus.off('panel:close_requested', this.callbacks.panelClose);
-        this.eventBus.off('thinkguide:send_message', this.callbacks.sendMessage);
-        this.eventBus.off('thinkguide:explain_requested', this.callbacks.explainRequested);
-        
-        this.logger.debug('ThinkGuideManager', 'Event listeners successfully removed');
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('ThinkGuideManager', 'Event listeners successfully removed');
+        }
         
         // Clear session data
         this.sessionId = null;

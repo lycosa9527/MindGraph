@@ -23,6 +23,9 @@ class LLMValidationManager {
         this.validator = new DiagramValidator();
         this.llmResults = {}; // Store for consistency analysis
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'LLMValidationManager';
+        
         // Store callback references for cleanup
         this._eventCallbacks = {};
         
@@ -68,13 +71,13 @@ class LLMValidationManager {
             this.eventBus.emit('llm:consistency_analyzed', {});
         };
         
-        // Register listeners
-        this.eventBus.on('llm:identify_topic_requested', this._eventCallbacks.identifyTopic);
-        this.eventBus.on('llm:extract_nodes_requested', this._eventCallbacks.extractNodes);
-        this.eventBus.on('llm:validate_spec_requested', this._eventCallbacks.validateSpec);
-        this.eventBus.on('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency);
+        // Register listeners with owner tracking
+        this.eventBus.onWithOwner('llm:identify_topic_requested', this._eventCallbacks.identifyTopic, this.ownerId);
+        this.eventBus.onWithOwner('llm:extract_nodes_requested', this._eventCallbacks.extractNodes, this.ownerId);
+        this.eventBus.onWithOwner('llm:validate_spec_requested', this._eventCallbacks.validateSpec, this.ownerId);
+        this.eventBus.onWithOwner('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency, this.ownerId);
         
-        this.logger.debug('LLMValidationManager', 'Event Bus listeners registered');
+        this.logger.debug('LLMValidationManager', 'Event Bus listeners registered with owner tracking');
     }
     
     /**
@@ -724,12 +727,10 @@ class LLMValidationManager {
     destroy() {
         this.logger.debug('LLMValidationManager', 'Destroying manager and cleaning up listeners');
         
-        // Remove Event Bus listeners using stored callbacks
-        if (this._eventCallbacks) {
-            this.eventBus.off('llm:identify_topic_requested', this._eventCallbacks.identifyTopic);
-            this.eventBus.off('llm:extract_nodes_requested', this._eventCallbacks.extractNodes);
-            this.eventBus.off('llm:validate_spec_requested', this._eventCallbacks.validateSpec);
-            this.eventBus.off('llm:analyze_consistency_requested', this._eventCallbacks.analyzeConsistency);
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('LLMValidationManager', 'Event listeners successfully removed');
         }
         
         // Nullify references

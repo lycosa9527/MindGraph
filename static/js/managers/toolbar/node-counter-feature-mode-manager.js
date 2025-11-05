@@ -22,6 +22,9 @@ class NodeCounterFeatureModeManager {
         this.editor = editor;
         this.toolbarManager = toolbarManager; // Need access to UI elements and validator
         
+        // Add owner identifier for Event Bus Listener Registry
+        this.ownerId = 'NodeCounterFeatureModeManager';
+        
         // Store callback references for proper cleanup
         this.callbacks = {
             setupObserver: () => this.setupNodeCounterObserver(),
@@ -46,15 +49,15 @@ class NodeCounterFeatureModeManager {
      * Setup Event Bus listeners
      */
     setupEventListeners() {
-        // Register with stored callback references
-        this.eventBus.on('node_counter:setup_observer', this.callbacks.setupObserver);
-        this.eventBus.on('node_counter:update_requested', this.callbacks.updateCounter);
-        this.eventBus.on('session:validate_requested', this.callbacks.validateSession);
-        this.eventBus.on('learning_mode:validate', this.callbacks.validateLearningMode);
-        this.eventBus.on('learning_mode:start_requested', this.callbacks.startLearningMode);
-        this.eventBus.on('thinking_mode:toggle_requested', this.callbacks.toggleThinkingMode);
+        // Register with stored callback references with owner tracking
+        this.eventBus.onWithOwner('node_counter:setup_observer', this.callbacks.setupObserver, this.ownerId);
+        this.eventBus.onWithOwner('node_counter:update_requested', this.callbacks.updateCounter, this.ownerId);
+        this.eventBus.onWithOwner('session:validate_requested', this.callbacks.validateSession, this.ownerId);
+        this.eventBus.onWithOwner('learning_mode:validate', this.callbacks.validateLearningMode, this.ownerId);
+        this.eventBus.onWithOwner('learning_mode:start_requested', this.callbacks.startLearningMode, this.ownerId);
+        this.eventBus.onWithOwner('thinking_mode:toggle_requested', this.callbacks.toggleThinkingMode, this.ownerId);
         
-        this.logger.debug('NodeCounterFeatureModeManager', 'Event Bus listeners registered');
+        this.logger.debug('NodeCounterFeatureModeManager', 'Event Bus listeners registered with owner tracking');
     }
     
     /**
@@ -327,15 +330,11 @@ class NodeCounterFeatureModeManager {
     destroy() {
         this.logger.debug('NodeCounterFeatureModeManager', 'Destroying');
         
-        // Remove Event Bus listeners using stored callback references
-        this.eventBus.off('node_counter:setup_observer', this.callbacks.setupObserver);
-        this.eventBus.off('node_counter:update_requested', this.callbacks.updateCounter);
-        this.eventBus.off('session:validate_requested', this.callbacks.validateSession);
-        this.eventBus.off('learning_mode:validate', this.callbacks.validateLearningMode);
-        this.eventBus.off('learning_mode:start_requested', this.callbacks.startLearningMode);
-        this.eventBus.off('thinking_mode:toggle_requested', this.callbacks.toggleThinkingMode);
-        
-        this.logger.debug('NodeCounterFeatureModeManager', 'Event listeners successfully removed');
+        // Remove all Event Bus listeners using Listener Registry
+        if (this.eventBus && this.ownerId) {
+            this.eventBus.removeAllListenersForOwner(this.ownerId);
+            this.logger.debug('NodeCounterFeatureModeManager', 'Event listeners successfully removed');
+        }
         
         // Nullify references
         this.callbacks = null;
