@@ -8,15 +8,21 @@ JWT tokens, password hashing, rate limiting, and security functions.
 
 import os
 import time
+import json
+import hashlib
+import base64
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Tuple
 from collections import defaultdict
+from urllib.parse import unquote
 
 from jose import JWTError, jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from sqlalchemy.orm import Session
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
 from models.auth import User, Organization, APIKey
 from config.database import get_db
@@ -38,7 +44,7 @@ JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
 TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else []
 
 # Authentication Mode
-AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()  # standard, enterprise, demo
+AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()  # standard, enterprise, demo, bayi
 
 # Enterprise Mode Configuration
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
@@ -47,6 +53,10 @@ ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "ente
 # Demo Mode Configuration
 DEMO_PASSKEY = os.getenv("DEMO_PASSKEY", "888888").strip()
 ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999").strip()
+
+# Bayi Mode Configuration
+BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk").strip()
+BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 
 # Admin Configuration
 ADMIN_PHONES = os.getenv("ADMIN_PHONES", "").split(",")
@@ -253,12 +263,13 @@ def get_current_user(
     """
     Get current authenticated user from JWT token
     
-    Supports three authentication modes:
+    Supports four authentication modes:
     1. standard: Regular JWT authentication (phone/password login)
     2. enterprise: Skip JWT validation (for VPN/SSO deployments with network-level auth)
     3. demo: Regular JWT authentication (passkey login)
+    4. bayi: Regular JWT authentication (token-based login via /loginByXz)
     
-    IMPORTANT: Demo mode still requires valid JWT tokens!
+    IMPORTANT: Demo and bayi modes still require valid JWT tokens!
     Only enterprise mode bypasses authentication entirely.
     """
     # Enterprise Mode: Skip authentication, return enterprise user
@@ -292,8 +303,9 @@ def get_current_user(
         
         return user
     
-    # Standard AND Demo Mode: Validate JWT token
-    # Demo mode uses passkey for login, but still requires valid JWT tokens
+    # Standard, Demo, and Bayi Mode: Validate JWT token
+    # Demo mode uses passkey for login, bayi mode uses token decryption via /loginByXz
+    # Both still require valid JWT tokens for API access
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -401,6 +413,129 @@ def is_admin_demo_passkey(passkey: str) -> bool:
     # Strip whitespace from input passkey to handle client-side issues
     passkey = passkey.strip() if passkey else ""
     return passkey == ADMIN_DEMO_PASSKEY
+
+
+# ============================================================================
+# Bayi Mode Token Decryption
+# ============================================================================
+
+def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
+    """
+    Decrypt bayi token using AES-ECB mode (compatible with CryptoJS)
+    
+    Args:
+        encrypted_token: URL-encoded encrypted token string
+        key: Decryption key (will be hashed with SHA256)
+    
+    Returns:
+        Decrypted JSON object as dict
+    
+    Raises:
+        ValueError: If decryption fails or token is invalid
+    """
+    try:
+        # Decode URL encoding (FastAPI already decodes query params, but this is safe for double-encoding)
+        token = unquote(encrypted_token)
+        logger.debug(f"Decrypting bayi token - length: {len(token)}, ends with '==': {token.endswith('==')}")
+        
+        # Generate secret key using SHA256 (same as CryptoJS)
+        secret_key = hashlib.sha256(key.encode('utf-8')).digest()
+        
+        # Decode base64 token (CryptoJS uses base64 encoding)
+        try:
+            encrypted_bytes = base64.b64decode(token, validate=True)
+            logger.debug(f"Base64 decoded successfully - encrypted bytes length: {len(encrypted_bytes)}")
+        except Exception as e:
+            logger.error(f"Base64 decode failed: {e}, token preview: {token[:50]}")
+            raise ValueError(f"Invalid base64 token: {str(e)}")
+        
+        # Decrypt using AES-ECB mode
+        cipher = AES.new(secret_key, AES.MODE_ECB)
+        decrypted_bytes = cipher.decrypt(encrypted_bytes)
+        logger.debug(f"Decryption successful - decrypted bytes length: {len(decrypted_bytes)}")
+        
+        # Remove PKCS7 padding
+        try:
+            decrypted_text = unpad(decrypted_bytes, AES.block_size).decode('utf-8')
+            logger.debug(f"Unpadded successfully - decrypted text length: {len(decrypted_text)}")
+        except Exception as e:
+            logger.error(f"Unpad failed: {e}, decrypted bytes preview: {decrypted_bytes[:50]}")
+            raise ValueError(f"Padding removal failed: {str(e)}")
+        
+        # Parse JSON
+        try:
+            result = json.loads(decrypted_text)
+            logger.debug(f"JSON parsed successfully - keys: {list(result.keys())}")
+            return result
+        except Exception as e:
+            logger.error(f"JSON parse failed: {e}, decrypted text: {decrypted_text[:200]}")
+            raise ValueError(f"Invalid JSON in token: {str(e)}")
+    except ValueError:
+        # Re-raise ValueError as-is (these are our validation errors)
+        raise
+    except Exception as e:
+        logger.error(f"Bayi token decryption failed: {e}", exc_info=True)
+        raise ValueError(f"Invalid token: {str(e)}")
+
+
+def validate_bayi_token_body(body: dict) -> bool:
+    """
+    Validate decrypted bayi token body
+    
+    Checks:
+    - body.from === 'bayi'
+    - timestamp is within last 5 minutes
+    
+    Args:
+        body: Decrypted token body
+    
+    Returns:
+        True if valid, False otherwise
+    """
+    if not isinstance(body, dict):
+        return False
+    
+    # Check 'from' field
+    if body.get('from') != 'bayi':
+        logger.warning(f"Bayi token validation failed: 'from' field is '{body.get('from')}', expected 'bayi'")
+        return False
+    
+    # Check timestamp (must be within last 5 minutes)
+    timestamp = body.get('timestamp')
+    if not timestamp:
+        logger.warning("Bayi token validation failed: missing timestamp")
+        return False
+    
+    try:
+        # Convert timestamp to datetime (assuming Unix timestamp in seconds)
+        if isinstance(timestamp, (int, float)):
+            token_time = datetime.fromtimestamp(timestamp)
+        elif isinstance(timestamp, str):
+            # Try parsing as ISO format or Unix timestamp
+            try:
+                token_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            except ValueError:
+                token_time = datetime.fromtimestamp(float(timestamp))
+        else:
+            logger.warning(f"Bayi token validation failed: invalid timestamp type: {type(timestamp)}")
+            return False
+        
+        # Check if timestamp is within last 5 minutes
+        now = datetime.utcnow()
+        time_diff = (now - token_time).total_seconds()
+        
+        if time_diff < 0:
+            logger.warning(f"Bayi token validation failed: timestamp is in the future (diff: {time_diff}s)")
+            return False
+        
+        if time_diff > 300:  # 5 minutes = 300 seconds
+            logger.warning(f"Bayi token validation failed: timestamp expired (diff: {time_diff}s)")
+            return False
+        
+        return True
+    except Exception as e:
+        logger.error(f"Bayi token timestamp validation error: {e}")
+        return False
 
 
 # ============================================================================

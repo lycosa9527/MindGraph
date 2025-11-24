@@ -140,6 +140,10 @@ class AuthHelper {
         // Redirect based on mode: demo users go back to demo page
         if (mode === 'demo') {
             window.location.href = '/demo';
+        } else if (mode === 'bayi') {
+            // Bayi mode: redirect to root (which will redirect to editor)
+            // Users need to authenticate via /loginByXz
+            window.location.href = '/';
         } else {
             window.location.href = '/auth';
         }
@@ -153,10 +157,21 @@ class AuthHelper {
         if (!authenticated) {
             // If no redirect URL specified, use appropriate page based on mode
             if (!redirectUrl) {
-                const mode = this.getMode();
-                redirectUrl = (mode === 'demo') ? '/demo' : '/auth';
+                const mode = await this.detectMode();
+                if (mode === 'demo') {
+                    redirectUrl = '/demo';
+                } else if (mode === 'bayi') {
+                    // Bayi mode: users must authenticate via /loginByXz
+                    // Don't redirect, just return false (let the page handle it)
+                    console.warn('Bayi mode: Authentication required via /loginByXz endpoint');
+                    return false;
+                } else {
+                    redirectUrl = '/auth';
+                }
             }
-            window.location.href = redirectUrl;
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
             return false;
         }
         return true;
@@ -185,11 +200,18 @@ const auth = new AuthHelper();
 window.auth = auth;
 
 // Auto-redirect to appropriate auth page on 401
-window.addEventListener('unhandledrejection', event => {
+window.addEventListener('unhandledrejection', async event => {
     if (event.reason && event.reason.status === 401) {
-        const mode = auth.getMode();
+        const mode = await auth.detectMode();
         auth.clearAuth();
-        window.location.href = (mode === 'demo') ? '/demo' : '/auth';
+        if (mode === 'demo') {
+            window.location.href = '/demo';
+        } else if (mode === 'bayi') {
+            // Bayi mode: don't auto-redirect, let user authenticate via /loginByXz
+            console.warn('Bayi mode: 401 error - user needs to authenticate via /loginByXz');
+        } else {
+            window.location.href = '/auth';
+        }
     }
 });
 

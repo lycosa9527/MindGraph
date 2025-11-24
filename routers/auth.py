@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from captcha.image import ImageCaptcha
@@ -47,7 +48,11 @@ from utils.auth import (
     MAX_CAPTCHA_ATTEMPTS,
     AUTH_MODE,
     DEMO_PASSKEY,
-    ADMIN_DEMO_PASSKEY
+    ADMIN_DEMO_PASSKEY,
+    BAYI_DECRYPTION_KEY,
+    BAYI_DEFAULT_ORG_CODE,
+    decrypt_bayi_token,
+    validate_bayi_token_body
 )
 
 import logging
@@ -499,18 +504,19 @@ async def verify_demo(
     db: Session = Depends(get_db)
 ):
     """
-    Verify demo passkey and return JWT token
+    Verify demo/bayi passkey and return JWT token
     
-    Demo mode allows access with a 6-digit passkey.
+    Demo mode and Bayi mode allow access with a 6-digit passkey.
     Supports both regular demo access and admin demo access.
+    In bayi mode, creates bayi-specific users.
     """
     # Enhanced logging for debugging (without revealing actual passkeys)
     received_length = len(request.passkey) if request.passkey else 0
     expected_length = len(DEMO_PASSKEY)
-    logger.info(f"Demo passkey verification attempt - Received: {received_length} chars, Expected: {expected_length} chars")
+    logger.info(f"Passkey verification attempt ({AUTH_MODE} mode) - Received: {received_length} chars, Expected: {expected_length} chars")
     
     if not verify_demo_passkey(request.passkey):
-        logger.warning(f"Demo passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
+        logger.warning(f"Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid passkey"
@@ -519,50 +525,74 @@ async def verify_demo(
     # Check if this is admin demo access
     is_admin_access = is_admin_demo_passkey(request.passkey)
     
-    # Use different user for admin vs regular demo
-    demo_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
-    demo_name = "Demo Admin" if is_admin_access else "Demo User"
+    # Determine user phone and name based on mode
+    if AUTH_MODE == "bayi":
+        # Bayi mode: use bayi-specific users
+        user_phone = "bayi-admin@system.com" if is_admin_access else "bayi@system.com"
+        user_name = "Bayi Admin" if is_admin_access else "Bayi User"
+    else:
+        # Demo mode: use demo users
+        user_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
+        user_name = "Demo Admin" if is_admin_access else "Demo User"
     
-    # Get or create demo user
-    demo_user = db.query(User).filter(User.phone == demo_phone).first()
+    # Get or create user
+    auth_user = db.query(User).filter(User.phone == user_phone).first()
     
-    if not demo_user:
-        # Create demo user (regular or admin)
-        org = db.query(Organization).first()
-        if not org:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="No organizations available for demo"
-            )
+    if not auth_user:
+        # Get or create organization based on mode
+        if AUTH_MODE == "bayi":
+            org = db.query(Organization).filter(
+                Organization.code == BAYI_DEFAULT_ORG_CODE
+            ).first()
+            if not org:
+                # Create bayi organization if it doesn't exist
+                org = Organization(
+                    code=BAYI_DEFAULT_ORG_CODE,
+                    name="Bayi School",
+                    invitation_code="BAYI2024",
+                    created_at=datetime.utcnow()
+                )
+                db.add(org)
+                db.commit()
+                db.refresh(org)
+                logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+        else:
+            # Demo mode: use first available organization
+            org = db.query(Organization).first()
+            if not org:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="No organizations available"
+                )
         
         try:
-            # Use a short, simple password for demo users (bcrypt max is 72 bytes)
-            demo_user = User(
-                phone=demo_phone,
-                password_hash=hash_password("demo-no-pwd"),
-                name=demo_name,
+            # Use a short, simple password (bcrypt max is 72 bytes)
+            auth_user = User(
+                phone=user_phone,
+                password_hash=hash_password("passkey-no-pwd"),
+                name=user_name,
                 organization_id=org.id,
                 created_at=datetime.utcnow()
             )
-            db.add(demo_user)
+            db.add(auth_user)
             db.commit()
-            db.refresh(demo_user)
-            logger.info(f"Created new demo user: {demo_phone}")
+            db.refresh(auth_user)
+            logger.info(f"Created new {AUTH_MODE} user: {user_phone}")
         except Exception as e:
             # If creation fails, try to rollback and check if user was somehow created
             db.rollback()
-            logger.error(f"Failed to create demo user: {e}")
+            logger.error(f"Failed to create {AUTH_MODE} user: {e}")
             
             # Try to get the user again in case it was created by another request
-            demo_user = db.query(User).filter(User.phone == demo_phone).first()
-            if not demo_user:
+            auth_user = db.query(User).filter(User.phone == user_phone).first()
+            if not auth_user:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Demo user creation failed: {str(e)}. Please contact admin or delete existing demo users: DELETE FROM users WHERE phone LIKE 'demo%@system.com';"
+                    detail=f"User creation failed: {str(e)}"
                 )
     
     # Generate JWT token
-    token = create_access_token(demo_user)
+    token = create_access_token(auth_user)
     
     # Set token as HTTP-only cookie (prevents redirect loop between /demo and /editor)
     response.set_cookie(
@@ -574,19 +604,140 @@ async def verify_demo(
         max_age=7 * 24 * 60 * 60  # 7 days
     )
     
-    log_msg = "Demo ADMIN access granted" if is_admin_access else "Demo mode access granted"
+    log_msg = f"{AUTH_MODE.upper()} {'ADMIN' if is_admin_access else ''} access granted"
     logger.info(log_msg)
     
     return {
         "access_token": token,
         "token_type": "bearer",
         "user": {
-            "id": demo_user.id,
-            "phone": demo_user.phone,
-            "name": demo_user.name,
+            "id": auth_user.id,
+            "phone": auth_user.phone,
+            "name": auth_user.name,
             "is_admin": is_admin_access
         }
     }
+
+
+# ============================================================================
+# BAYI MODE
+# ============================================================================
+
+@router.get("/loginByXz")
+async def login_by_xz(
+    token: str,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Bayi mode authentication endpoint
+    
+    Accepts encrypted token from URL parameter, decrypts it, validates it,
+    and creates/retrieves user to grant access directly to editor.
+    
+    URL format: /loginByXz?token=...
+    
+    Token validation:
+    - Decrypts using BAYI_DECRYPTION_KEY (v8IT7XujLPsM7FYuDPRhPtZk)
+    - Validates body.from === 'bayi'
+    - Validates timestamp is within last 5 minutes
+    
+    Behavior:
+    - If token is valid: Redirects to /editor with JWT token set as cookie
+    - If token is invalid: Redirects to /demo (demo passkey page)
+    """
+    try:
+        # Log token receipt (without exposing full token in logs)
+        token_preview = token[:20] + "..." if len(token) > 20 else token
+        logger.info(f"Bayi authentication attempt - token length: {len(token)}, preview: {token_preview}")
+        
+        # Decrypt token
+        try:
+            body = decrypt_bayi_token(token, BAYI_DECRYPTION_KEY)
+            logger.debug(f"Bayi token decrypted successfully - body keys: {list(body.keys())}")
+        except ValueError as e:
+            logger.warning(f"Bayi token decryption failed: {e} - redirecting to /demo")
+            # Invalid token: redirect to demo passkey page
+            return RedirectResponse(url="/demo", status_code=303)
+        
+        # Validate token body
+        if not validate_bayi_token_body(body):
+            logger.warning(f"Bayi token validation failed for token body: {body} - redirecting to /demo")
+            # Invalid or expired token: redirect to demo passkey page
+            return RedirectResponse(url="/demo", status_code=303)
+        
+        # Get or create organization
+        org = db.query(Organization).filter(
+            Organization.code == BAYI_DEFAULT_ORG_CODE
+        ).first()
+        
+        if not org:
+            # Create bayi organization if it doesn't exist
+            org = Organization(
+                code=BAYI_DEFAULT_ORG_CODE,
+                name="Bayi School",
+                invitation_code="BAYI2024",
+                created_at=datetime.utcnow()
+            )
+            db.add(org)
+            db.commit()
+            db.refresh(org)
+            logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+        
+        # Extract user info from token body (if available)
+        # Default to a generic bayi user if not specified
+        user_phone = body.get('phone') or body.get('user') or "bayi@system.com"
+        user_name = body.get('name') or "Bayi User"
+        
+        # Get or create user
+        bayi_user = db.query(User).filter(User.phone == user_phone).first()
+        
+        if not bayi_user:
+            try:
+                bayi_user = User(
+                    phone=user_phone,
+                    password_hash=hash_password("bayi-no-pwd"),
+                    name=user_name,
+                    organization_id=org.id,
+                    created_at=datetime.utcnow()
+                )
+                db.add(bayi_user)
+                db.commit()
+                db.refresh(bayi_user)
+                logger.info(f"Created bayi user: {user_phone}")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to create bayi user: {e}")
+                # Try to get user again in case it was created by another request
+                bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                if not bayi_user:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Failed to create user: {str(e)}"
+                    )
+        
+        # Generate JWT token
+        jwt_token = create_access_token(bayi_user)
+        
+        # Set token as HTTP-only cookie
+        response.set_cookie(
+            key="access_token",
+            value=jwt_token,
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax",
+            max_age=7 * 24 * 60 * 60  # 7 days
+        )
+        
+        logger.info(f"Bayi mode authentication successful: {user_phone}")
+        
+        # Valid token: redirect to editor
+        return RedirectResponse(url="/editor", status_code=303)
+        
+    except Exception as e:
+        # Any other error: redirect to demo passkey page
+        logger.error(f"Bayi authentication error: {e} - redirecting to /demo", exc_info=True)
+        return RedirectResponse(url="/demo", status_code=303)
 
 
 # ============================================================================

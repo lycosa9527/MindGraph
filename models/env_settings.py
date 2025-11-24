@@ -39,6 +39,7 @@ class AuthMode(str, Enum):
     STANDARD = "standard"
     ENTERPRISE = "enterprise"
     DEMO = "demo"
+    BAYI = "bayi"
 
 
 class GraphLanguage(str, Enum):
@@ -318,7 +319,7 @@ class AuthSettings(BaseModel):
     )
     AUTH_MODE: AuthMode = Field(
         default=AuthMode.STANDARD,
-        description="Authentication mode (standard/enterprise/demo)"
+        description="Authentication mode (standard/enterprise/demo/bayi)"
     )
     ADMIN_PHONES: str = Field(
         default="",
@@ -343,6 +344,14 @@ class AuthSettings(BaseModel):
         min_length=6,
         max_length=6,
         description="Admin demo mode passkey (6 digits)"
+    )
+    BAYI_DECRYPTION_KEY: Optional[str] = Field(
+        default="v8IT7XujLPsM7FYuDPRhPtZk",
+        description="Decryption key for bayi mode token authentication"
+    )
+    BAYI_DEFAULT_ORG_CODE: Optional[str] = Field(
+        default="BAYI-001",
+        description="Default organization code for bayi mode"
     )
     INVITATION_CODES: str = Field(
         default="",

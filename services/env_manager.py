@@ -354,7 +354,7 @@ class EnvManager:
     
     def _validate_auth_mode(self, value: str, errors: List[str]):
         """Validate AUTH_MODE is valid"""
-        valid_modes = ['standard', 'enterprise', 'demo']
+        valid_modes = ['standard', 'enterprise', 'demo', 'bayi']
         if value.lower() not in valid_modes:
             errors.append(f"AUTH_MODE must be one of {valid_modes}, got '{value}'")
     

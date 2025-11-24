@@ -62,6 +62,11 @@ async def index(request: Request, db: Session = Depends(get_db)):
             logger.debug("Enterprise mode: Redirecting / to /editor")
             return RedirectResponse(url="/editor", status_code=303)
         
+        # Bayi mode: go directly to editor (token-based auth via /loginByXz)
+        elif AUTH_MODE == "bayi":
+            logger.debug("Bayi mode: Redirecting / to /editor")
+            return RedirectResponse(url="/editor", status_code=303)
+        
         # Fallback: show API docs (index.html)
         else:
             logger.warning(f"Unknown AUTH_MODE: {AUTH_MODE}, serving index.html")
@@ -94,6 +99,17 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                 return RedirectResponse(url="/demo", status_code=303)
             
             logger.debug(f"Demo mode: User {user.phone} accessing /editor")
+        
+        # Bayi mode: verify authentication (token via /loginByXz or passkey via /demo)
+        elif AUTH_MODE == "bayi":
+            auth_cookie = request.cookies.get("access_token")
+            user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
+            
+            if not user:
+                logger.debug("Bayi mode: Redirecting unauthenticated /editor access to /demo")
+                return RedirectResponse(url="/demo", status_code=303)
+            
+            logger.debug(f"Bayi mode: User {user.phone} accessing /editor")
         
         return templates.TemplateResponse(
             "editor.html",
@@ -212,10 +228,10 @@ async def auth_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/demo", response_class=HTMLResponse)
 async def demo_page(request: Request, db: Session = Depends(get_db)):
-    """Demo mode passkey page - only accessible in demo mode"""
+    """Demo/Bayi mode passkey page - accessible in demo and bayi modes"""
     try:
-        # Block access if not in demo mode
-        if AUTH_MODE != "demo":
+        # Allow access in demo mode or bayi mode
+        if AUTH_MODE not in ["demo", "bayi"]:
             logger.warning(f"/demo accessed in {AUTH_MODE} mode, redirecting to /auth")
             return RedirectResponse(url="/auth" if AUTH_MODE == "standard" else "/editor", status_code=303)
         
