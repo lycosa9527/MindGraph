@@ -10,16 +10,28 @@ Author: lycosa9527
 Made by: MindSpring Team
 """
 
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, Response, status
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 import logging
 import os
 from pathlib import Path
+from datetime import datetime
 
 from config.settings import config
 from config.database import get_db
-from utils.auth import AUTH_MODE, get_user_from_cookie, is_admin
+from utils.auth import (
+    AUTH_MODE, 
+    get_user_from_cookie, 
+    is_admin,
+    BAYI_DECRYPTION_KEY,
+    BAYI_DEFAULT_ORG_CODE,
+    decrypt_bayi_token,
+    validate_bayi_token_body,
+    create_access_token,
+    hash_password
+)
+from models.auth import User, Organization
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -225,6 +237,135 @@ async def auth_page(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"/auth route failed: {e}", exc_info=True)
         raise
+
+@router.get("/loginByXz")
+async def login_by_xz(
+    token: str,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Bayi mode authentication endpoint
+    
+    Accepts encrypted token from URL parameter, decrypts it, validates it,
+    and creates/retrieves user to grant access directly to editor.
+    
+    URL format: /loginByXz?token=...
+    
+    Token validation:
+    - Decrypts using BAYI_DECRYPTION_KEY (v8IT7XujLPsM7FYuDPRhPtZk)
+    - Validates body.from === 'bayi'
+    - Validates timestamp is within last 5 minutes
+    
+    Behavior:
+    - If token is valid: Redirects to /editor with JWT token set as cookie
+    - If token is invalid: Redirects to /demo (demo passkey page)
+    """
+    try:
+        # Verify AUTH_MODE is set to bayi
+        if AUTH_MODE != "bayi":
+            logger.warning(f"/loginByXz accessed but AUTH_MODE is '{AUTH_MODE}', not 'bayi' - redirecting to /demo")
+            return RedirectResponse(url="/demo", status_code=303)
+        
+        # Log token receipt (without exposing full token in logs)
+        token_preview = token[:20] + "..." if len(token) > 20 else token
+        logger.info(f"Bayi authentication attempt - AUTH_MODE: {AUTH_MODE}, token length: {len(token)}, preview: {token_preview}")
+        
+        # Decrypt token
+        try:
+            logger.info(f"Attempting to decrypt token with key length: {len(BAYI_DECRYPTION_KEY)}")
+            body = decrypt_bayi_token(token, BAYI_DECRYPTION_KEY)
+            logger.info(f"Bayi token decrypted successfully - body keys: {list(body.keys())}, body content: {body}")
+        except ValueError as e:
+            logger.error(f"Bayi token decryption failed: {e} - redirecting to /demo", exc_info=True)
+            # Invalid token: redirect to demo passkey page
+            return RedirectResponse(url="/demo", status_code=303)
+        except Exception as e:
+            logger.error(f"Unexpected error during token decryption: {e} - redirecting to /demo", exc_info=True)
+            return RedirectResponse(url="/demo", status_code=303)
+        
+        # Validate token body
+        logger.info(f"Validating token body - from: {body.get('from')}, timestamp: {body.get('timestamp')}")
+        validation_result = validate_bayi_token_body(body)
+        if not validation_result:
+            logger.error(f"Bayi token validation failed - body: {body}, from field: '{body.get('from')}', timestamp: {body.get('timestamp')} - redirecting to /demo")
+            # Invalid or expired token: redirect to demo passkey page
+            return RedirectResponse(url="/demo", status_code=303)
+        
+        logger.info(f"Token validation passed - proceeding with user creation/retrieval")
+        
+        # Get or create organization
+        org = db.query(Organization).filter(
+            Organization.code == BAYI_DEFAULT_ORG_CODE
+        ).first()
+        
+        if not org:
+            # Create bayi organization if it doesn't exist
+            org = Organization(
+                code=BAYI_DEFAULT_ORG_CODE,
+                name="Bayi School",
+                invitation_code="BAYI2024",
+                created_at=datetime.utcnow()
+            )
+            db.add(org)
+            db.commit()
+            db.refresh(org)
+            logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+        
+        # Extract user info from token body (if available)
+        # Default to a generic bayi user if not specified
+        user_phone = body.get('phone') or body.get('user') or "bayi@system.com"
+        user_name = body.get('name') or "Bayi User"
+        
+        # Get or create user
+        bayi_user = db.query(User).filter(User.phone == user_phone).first()
+        
+        if not bayi_user:
+            try:
+                bayi_user = User(
+                    phone=user_phone,
+                    password_hash=hash_password("bayi-no-pwd"),
+                    name=user_name,
+                    organization_id=org.id,
+                    created_at=datetime.utcnow()
+                )
+                db.add(bayi_user)
+                db.commit()
+                db.refresh(bayi_user)
+                logger.info(f"Created bayi user: {user_phone}")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to create bayi user: {e}")
+                # Try to get user again in case it was created by another request
+                bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                if not bayi_user:
+                    logger.error(f"Failed to create bayi user after retry: {e}")
+                    # Redirect to demo instead of showing error
+                    return RedirectResponse(url="/demo", status_code=303)
+        
+        # Generate JWT token
+        jwt_token = create_access_token(bayi_user)
+        
+        # Set token as HTTP-only cookie
+        response.set_cookie(
+            key="access_token",
+            value=jwt_token,
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax",
+            max_age=7 * 24 * 60 * 60  # 7 days
+        )
+        
+        logger.info(f"Bayi mode authentication successful: {user_phone}")
+        
+        # Valid token: redirect to editor
+        return RedirectResponse(url="/editor", status_code=303)
+        
+    except Exception as e:
+        # Any other error: redirect to demo passkey page
+        logger.error(f"Bayi authentication error: {e} - redirecting to /demo", exc_info=True)
+        return RedirectResponse(url="/demo", status_code=303)
+
 
 @router.get("/demo", response_class=HTMLResponse)
 async def demo_page(request: Request, db: Session = Depends(get_db)):

@@ -507,31 +507,38 @@ def validate_bayi_token_body(body: dict) -> bool:
         return False
     
     try:
-        # Convert timestamp to datetime (assuming Unix timestamp in seconds)
+        # Convert timestamp to datetime (Unix timestamps are always UTC)
         if isinstance(timestamp, (int, float)):
-            token_time = datetime.fromtimestamp(timestamp)
+            # Use utcfromtimestamp to ensure UTC comparison
+            token_time = datetime.utcfromtimestamp(timestamp)
         elif isinstance(timestamp, str):
             # Try parsing as ISO format or Unix timestamp
             try:
                 token_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                # If no timezone info, assume UTC
+                if token_time.tzinfo is None:
+                    token_time = token_time.replace(tzinfo=None)  # Treat as UTC naive datetime
             except ValueError:
-                token_time = datetime.fromtimestamp(float(timestamp))
+                token_time = datetime.utcfromtimestamp(float(timestamp))
         else:
             logger.warning(f"Bayi token validation failed: invalid timestamp type: {type(timestamp)}")
             return False
         
-        # Check if timestamp is within last 5 minutes
+        # Check if timestamp is within last 5 minutes (both in UTC)
         now = datetime.utcnow()
         time_diff = (now - token_time).total_seconds()
         
+        logger.debug(f"Timestamp validation - now (UTC): {now}, token_time (UTC): {token_time}, diff: {time_diff}s ({time_diff/60:.1f} minutes)")
+        
         if time_diff < 0:
-            logger.warning(f"Bayi token validation failed: timestamp is in the future (diff: {time_diff}s)")
+            logger.warning(f"Bayi token validation failed: timestamp is in the future (diff: {time_diff}s, now: {now}, token_time: {token_time})")
             return False
         
         if time_diff > 300:  # 5 minutes = 300 seconds
-            logger.warning(f"Bayi token validation failed: timestamp expired (diff: {time_diff}s)")
+            logger.warning(f"Bayi token validation failed: timestamp expired (diff: {time_diff}s = {time_diff/60:.1f} minutes, now: {now}, token_time: {token_time})")
             return False
         
+        logger.debug(f"Timestamp validation passed - diff: {time_diff}s")
         return True
     except Exception as e:
         logger.error(f"Bayi token timestamp validation error: {e}")
