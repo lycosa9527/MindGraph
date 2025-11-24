@@ -241,7 +241,6 @@ async def auth_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/loginByXz")
 async def login_by_xz(
     token: str,
-    response: Response,
     db: Session = Depends(get_db)
 ):
     """
@@ -346,8 +345,11 @@ async def login_by_xz(
         # Generate JWT token
         jwt_token = create_access_token(bayi_user)
         
-        # Set token as HTTP-only cookie
-        response.set_cookie(
+        logger.info(f"Bayi mode authentication successful: {user_phone}")
+        
+        # Valid token: redirect to editor with cookie set on redirect response
+        redirect_response = RedirectResponse(url="/editor", status_code=303)
+        redirect_response.set_cookie(
             key="access_token",
             value=jwt_token,
             httponly=True,
@@ -355,11 +357,7 @@ async def login_by_xz(
             samesite="lax",
             max_age=7 * 24 * 60 * 60  # 7 days
         )
-        
-        logger.info(f"Bayi mode authentication successful: {user_phone}")
-        
-        # Valid token: redirect to editor
-        return RedirectResponse(url="/editor", status_code=303)
+        return redirect_response
         
     except Exception as e:
         # Any other error: redirect to demo passkey page
