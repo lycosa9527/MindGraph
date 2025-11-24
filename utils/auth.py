@@ -257,11 +257,12 @@ def decode_access_token(token: str) -> dict:
 
 
 def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
     """
-    Get current authenticated user from JWT token
+    Get current authenticated user from JWT token (Authorization header or cookie)
     
     Supports four authentication modes:
     1. standard: Regular JWT authentication (phone/password login)
@@ -271,6 +272,10 @@ def get_current_user(
     
     IMPORTANT: Demo and bayi modes still require valid JWT tokens!
     Only enterprise mode bypasses authentication entirely.
+    
+    Authentication methods (in order of priority):
+    1. Authorization: Bearer <token> header
+    2. access_token cookie (for cookie-based authentication)
     """
     # Enterprise Mode: Skip authentication, return enterprise user
     # This is for deployments behind VPN/SSO where network auth is sufficient
@@ -306,13 +311,22 @@ def get_current_user(
     # Standard, Demo, and Bayi Mode: Validate JWT token
     # Demo mode uses passkey for login, bayi mode uses token decryption via /loginByXz
     # Both still require valid JWT tokens for API access
-    if not credentials:
+    
+    token = None
+    
+    # Priority 1: Check Authorization header
+    if credentials:
+        token = credentials.credentials
+    # Priority 2: Check cookie if no Authorization header
+    elif request:
+        token = request.cookies.get("access_token")
+    
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="JWT token required for this endpoint"
         )
     
-    token = credentials.credentials
     payload = decode_access_token(token)
     
     user_id = payload.get("sub")
@@ -783,6 +797,7 @@ def track_api_key_usage(api_key: str, db: Session):
 
 
 def get_current_user_or_api_key(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     api_key: str = Depends(api_key_header),
     db: Session = Depends(get_db)
@@ -791,7 +806,7 @@ def get_current_user_or_api_key(
     Get current user from JWT token OR validate API key
     
     Priority:
-    1. JWT token (authenticated teachers) - Returns User object
+    1. JWT token (Authorization header or cookie) - Returns User object
     2. API key (Dify, public API) - Returns None (but validates key)
     3. No auth - Raises 401 error
     
@@ -802,9 +817,17 @@ def get_current_user_or_api_key(
         HTTPException(401) if both invalid
     """
     # Priority 1: Try JWT token (for authenticated teachers)
+    token = None
+    
+    # Check Authorization header first
     if credentials:
+        token = credentials.credentials
+    # Check cookie if no Authorization header
+    elif request:
+        token = request.cookies.get("access_token")
+    
+    if token:
         try:
-            token = credentials.credentials
             payload = decode_access_token(token)
             user_id = payload.get("sub")
             
