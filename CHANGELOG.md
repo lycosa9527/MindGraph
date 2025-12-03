@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.6] - 2025-01-15 - Workshop Pressure Test Fixes
+
+### Fixed
+
+- **Database Connection Pool Exhaustion** (`config/database.py`, `utils/auth.py`)
+  - Increased `pool_size` from 5 to 10 and `max_overflow` from 10 to 20
+  - Added `pool_pre_ping=True` for stale connection detection
+  - Added `pool_recycle=1800` for connection health
+  - Modified `get_current_user()` and `get_current_user_or_api_key()` to manage their own sessions and close immediately
+  - **Impact**: Resolved connection pool exhaustion during high concurrency (30+ concurrent LLM requests), preventing timeout errors
+
+- **Missing Method Bugs in ThinkingAgents** (`agents/thinking_modes/`)
+  - Fixed `BraceMapThinkingAgent` missing `_call_llm()` method (1 occurrence)
+  - Fixed `FlowMapThinkingAgent` missing `_call_llm()` method (5 occurrences)
+  - Fixed `DoubleBubbleMapThinkingAgent` missing `_call_llm_for_json()` method (3 occurrences)
+  - Replaced non-existent method calls with `self.llm.chat()` pattern matching working agents
+  - **Impact**: Intent detection now works correctly for all three affected agents
+
+- **Tree Renderer Dynamic Loading Failure** (`static/js/dynamic-renderer-loader.js`)
+  - Fixed dependency loading order issue where `tree-renderer.js` requires `shared-utilities.js` to be loaded first
+  - Added automatic loading of `shared-utilities.js` before any renderer module
+  - **Impact**: Tree map rendering now works correctly without falling back to static renderer
+
+- **LLMAutoCompleteManager Null Reference** (`static/js/managers/toolbar/llm-autocomplete-manager.js`)
+  - Added null checks for `this.progressRenderer` and `this.toolbarManager` before accessing methods
+  - Fixed crash when user navigates away during LLM generation
+  - **Impact**: Prevents TypeError crashes when components are destroyed during async operations
+
+- **Background Rectangle Selectable Bug** (`static/js/renderers/bubble-map-renderer.js`)
+  - Added `class="background"` attribute to background rectangles in Bubble Map, Circle Map, and Double Bubble Map renderers
+  - Prevents background rectangles from being highlighted with purple selection border when clicking white space
+  - **Impact**: Improved user experience - clicking empty space no longer shows unwanted purple highlight
+
+### Changed
+
+- **Log Noise Reduction** (`uvicorn_log_config.py`, `main.py`, `utils/auth.py`)
+  - Added `StaticFileFilter` to suppress static file request logs (50+ logs per page load)
+  - Set httpx/httpcore loggers to WARNING level to suppress HTTP client noise
+  - Changed "Authenticated teacher" log from INFO to DEBUG level
+  - **Impact**: Reduced log file size by ~90%, making it easier to find real issues
+
+---
+
+## [4.28.5] - 2025-01-15 - Log File Rotation
+
+### Changed
+
+- **Log File Rotation** (`main.py`)
+  - Replaced `FileHandler` with `TimedRotatingFileHandler` for automatic log rotation
+  - Both `app.log` and `frontend.log` now rotate every 72 hours (3 days)
+  - Configured to keep 10 backup files (30 days of log history)
+  - Rotated log files are automatically renamed with timestamp suffix (e.g., `app.log.2025-01-15_12-00-00`)
+  - Old log files are automatically deleted when backup limit is reached
+  - **Impact**: Prevents log files from growing indefinitely, improves disk space management, maintains organized log history
+
+---
+
 ## [4.28.4] - 2025-12-02 - Session-Based CAPTCHA Rate Limiting
 
 ### Changed

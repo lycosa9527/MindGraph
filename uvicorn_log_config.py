@@ -12,6 +12,7 @@ This ensures ALL logs (including reload messages) use our clean format.
 import logging
 import sys
 
+
 # Copy of our UnifiedFormatter from main.py
 class UnifiedFormatter(logging.Formatter):
     """

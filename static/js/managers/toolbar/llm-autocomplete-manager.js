@@ -210,11 +210,15 @@ class LLMAutoCompleteManager {
             }
             
             // Show loading state ONLY for models that will actually run
+            if (this.toolbarManager) {
             this.toolbarManager.showNotification(
                 language === 'zh' ? '正在生成内容...' : 'Generating content...',
                 'info'
             );
+            }
+            if (this.progressRenderer) {
             this.progressRenderer.setAllLLMButtonsLoading(true, models);
+            }
             
             // Emit generation started event
             this.eventBus.emit('llm:generation_started', {

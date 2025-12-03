@@ -175,6 +175,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     
     // Add background rectangle to cover entire SVG area
     svg.append('rect')
+        .attr('class', 'background')
         .attr('x', minX)
         .attr('y', minY)
         .attr('width', width)
@@ -532,6 +533,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     // Add background rectangle to cover entire SVG area (consistency with other maps)
     // Use backgroundColor already declared at line 266
     svg.append('rect')
+        .attr('class', 'background')
         .attr('x', minX)
         .attr('y', minY)
         .attr('width', width)
@@ -775,6 +777,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     // Add background rect to cover entire SVG area (prevents white bar)
     const bgColor = (theme && theme.background) ? theme.background : '#f5f5f5';
     svg.append('rect')
+        .attr('class', 'background')
         .attr('width', width)
         .attr('height', height)
         .attr('fill', bgColor)

@@ -182,7 +182,7 @@ def run_uvicorn():
                 use_colors=False,  # Disable uvicorn colors (we use our own)
                 timeout_keep_alive=300,  # 5 minutes for SSE
                 timeout_graceful_shutdown=5,  # 5s for graceful shutdown
-                access_log=True,
+                access_log=False,  # Disable HTTP request logging (reduces noise)
                 limit_concurrency=1000 if not reload else None,
             )
         except KeyboardInterrupt:

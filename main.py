@@ -23,6 +23,7 @@ import os
 import sys
 import io
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import time
 import signal
 import asyncio
@@ -328,8 +329,12 @@ console_handler = logging.StreamHandler(
 )
 console_handler.setFormatter(unified_formatter)
 
-file_handler = logging.FileHandler(
+# Use TimedRotatingFileHandler to rotate logs every 72 hours
+file_handler = TimedRotatingFileHandler(
     os.path.join("logs", "app.log"),
+    when='H',  # Rotate by hours
+    interval=72,  # Every 72 hours (3 days)
+    backupCount=10,  # Keep 10 backup files (30 days of logs)
     encoding="utf-8"
 )
 file_handler.setFormatter(unified_formatter)
@@ -349,7 +354,8 @@ logging.basicConfig(
 )
 
 # Configure Uvicorn's loggers to use our custom formatter
-for uvicorn_logger_name in ['uvicorn', 'uvicorn.error', 'uvicorn.access']:
+# Note: uvicorn.access is excluded - access_log=False in run_server.py disables HTTP request logging
+for uvicorn_logger_name in ['uvicorn', 'uvicorn.error']:
     uvicorn_logger = logging.getLogger(uvicorn_logger_name)
     uvicorn_logger.handlers = []  # Remove default handlers
     uvicorn_logger.addHandler(console_handler)
@@ -360,8 +366,12 @@ for uvicorn_logger_name in ['uvicorn', 'uvicorn.error', 'uvicorn.access']:
 logger = logging.getLogger(__name__)
 
 # Configure dedicated frontend logger with separate file
-frontend_file_handler = logging.FileHandler(
+# Use TimedRotatingFileHandler to rotate logs every 72 hours
+frontend_file_handler = TimedRotatingFileHandler(
     os.path.join("logs", "frontend.log"),
+    when='H',  # Rotate by hours
+    interval=72,  # Every 72 hours (3 days)
+    backupCount=10,  # Keep 10 backup files (30 days of logs)
     encoding="utf-8"
 )
 frontend_file_handler.setFormatter(unified_formatter)
@@ -396,6 +406,10 @@ asyncio_logger.addFilter(CancelledErrorFilter())
 
 # Add filter to main logger
 logger.addFilter(CancelledErrorFilter())
+
+# Suppress verbose HTTP client logs (httpx/httpcore make many API calls)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 # Only log from main process, not each worker
 if os.getenv('UVICORN_WORKER_ID') is None:

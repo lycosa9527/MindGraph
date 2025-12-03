@@ -80,11 +80,35 @@ Return JSON:
         user_prompt = f"User message: {message}"
         
         try:
-            result = await self._call_llm(system_prompt, user_prompt, session)
-            intent = json.loads(result)
+            # Get user context from session for token tracking
+            user_id = session.get('user_id')
+            organization_id = session.get('organization_id')
+            
+            result_text = await self.llm.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                temperature=0.1,
+                max_tokens=500,
+                user_id=int(user_id) if user_id and str(user_id).isdigit() else None,
+                organization_id=organization_id,
+                request_type='thinkguide',
+                endpoint_path='/thinking_mode/stream',
+                conversation_id=session.get('session_id'),
+                diagram_type=self.diagram_type
+            )
+            
+            # Extract JSON from response
+            if '```json' in result_text:
+                result_text = result_text.split('```json')[1].split('```')[0].strip()
+            elif '```' in result_text:
+                result_text = result_text.split('```')[1].split('```')[0].strip()
+            
+            intent = json.loads(result_text)
+            logger.info(f"[FlowMapThinkingAgent] Detected intent: {intent}")
             return intent
         except Exception as e:
-            logger.error(f"Intent detection failed: {e}")
+            logger.error(f"[FlowMapThinkingAgent] Intent detection failed: {e}")
             return {'action': 'discuss'}
     
     async def _generate_greeting(self, session: Dict) -> AsyncGenerator[Dict, None]:
