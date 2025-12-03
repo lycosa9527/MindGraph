@@ -44,8 +44,11 @@ from utils.auth import (
     login_attempts,
     ip_attempts,
     captcha_attempts,
+    captcha_session_attempts,
     MAX_LOGIN_ATTEMPTS,
     MAX_CAPTCHA_ATTEMPTS,
+    CAPTCHA_SESSION_COOKIE_NAME,
+    RATE_LIMIT_WINDOW_MINUTES,
     AUTH_MODE,
     DEMO_PASSKEY,
     ADMIN_DEMO_PASSKEY,
@@ -356,7 +359,7 @@ async def login(
 # ============================================================================
 
 @router.get("/captcha/generate")
-async def generate_captcha(request: Request):
+async def generate_captcha(request: Request, response: Response):
     """
     Generate PIL image captcha using Inter fonts
     
@@ -364,7 +367,7 @@ async def generate_captcha(request: Request):
     - Uses existing Inter fonts from project
     - Generates distorted image to prevent OCR bots
     - 100% self-hosted (China-compatible)
-    - Rate limited: Max 30 requests per 15 minutes per IP (shared across login/register)
+    - Rate limited: Max 30 requests per 15 minutes per session (browser cookie)
     
     Returns:
         {
@@ -372,21 +375,39 @@ async def generate_captcha(request: Request):
             "captcha_image": "data:image/png;base64,..." 
         }
     """
-    # Rate limit captcha generation by IP (prevent abuse)
-    # Use get_client_ip to handle reverse proxy (nginx) correctly
-    client_ip = get_client_ip(request)
+    # Get or create session token for rate limiting
+    # Session-based rate limiting allows each browser/device its own limit
+    # This solves the issue of many users sharing the same IP (e.g., school network)
+    session_token = request.cookies.get(CAPTCHA_SESSION_COOKIE_NAME)
+    
+    if not session_token:
+        # New session - generate token
+        session_token = str(uuid.uuid4())
+        logger.debug(f"New captcha session created: {session_token[:8]}...")
+    
+    # Rate limit by session token (not IP)
     is_allowed, rate_limit_msg = check_rate_limit(
-        client_ip, captcha_attempts, MAX_CAPTCHA_ATTEMPTS
+        session_token, captcha_session_attempts, MAX_CAPTCHA_ATTEMPTS
     )
     if not is_allowed:
-        logger.warning(f"Captcha rate limit exceeded for IP: {client_ip}")
+        logger.warning(f"Captcha rate limit exceeded for session: {session_token[:8]}...")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=rate_limit_msg
         )
     
     # Record attempt
-    record_failed_attempt(client_ip, captcha_attempts)
+    record_failed_attempt(session_token, captcha_session_attempts)
+    
+    # Set session cookie (matches rate limit window duration)
+    response.set_cookie(
+        key=CAPTCHA_SESSION_COOKIE_NAME,
+        value=session_token,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=RATE_LIMIT_WINDOW_MINUTES * 60  # 15 minutes
+    )
     
     # Create captcha generator with Inter fonts
     image_captcha = ImageCaptcha(
@@ -421,7 +442,7 @@ async def generate_captcha(request: Request):
     for key in expired_keys:
         del captcha_store[key]
     
-    logger.info(f"Generated captcha: {session_id} for IP: {client_ip}")
+    logger.info(f"Generated captcha: {session_id} for session: {session_token[:8]}...")
     
     return {
         "captcha_id": session_id,

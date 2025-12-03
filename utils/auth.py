@@ -66,6 +66,7 @@ MAX_LOGIN_ATTEMPTS = 8
 MAX_CAPTCHA_ATTEMPTS = 30
 LOCKOUT_DURATION_MINUTES = 15
 RATE_LIMIT_WINDOW_MINUTES = 15
+CAPTCHA_SESSION_COOKIE_NAME = "captcha_session"
 
 # ============================================================================
 # Reverse Proxy Helpers
@@ -258,8 +259,7 @@ def decode_access_token(token: str) -> dict:
 
 def get_current_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> User:
     """
     Get current authenticated user from JWT token (Authorization header or cookie)
@@ -276,37 +276,50 @@ def get_current_user(
     Authentication methods (in order of priority):
     1. Authorization: Bearer <token> header
     2. access_token cookie (for cookie-based authentication)
+    
+    Note:
+        This function manages its own database session to avoid holding
+        connections during long-running LLM requests. The session is closed
+        immediately after auth check, before returning.
     """
+    from config.database import SessionLocal
+    
     # Enterprise Mode: Skip authentication, return enterprise user
     # This is for deployments behind VPN/SSO where network auth is sufficient
     if AUTH_MODE == "enterprise":
-        org = db.query(Organization).filter(
-            Organization.code == ENTERPRISE_DEFAULT_ORG_CODE
-        ).first()
-        
-        if not org:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found"
-            )
-        
-        user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
-        
-        if not user:
-            # Auto-create enterprise user (use short password for bcrypt compatibility)
-            user = User(
-                phone=ENTERPRISE_DEFAULT_USER_PHONE,
-                password_hash=hash_password("ent-no-pwd"),
-                name="Enterprise User",
-                organization_id=org.id,
-                created_at=datetime.utcnow()
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            logger.info("Created enterprise mode user")
-        
-        return user
+        db = SessionLocal()
+        try:
+            org = db.query(Organization).filter(
+                Organization.code == ENTERPRISE_DEFAULT_ORG_CODE
+            ).first()
+            
+            if not org:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found"
+                )
+            
+            user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
+            
+            if not user:
+                # Auto-create enterprise user (use short password for bcrypt compatibility)
+                user = User(
+                    phone=ENTERPRISE_DEFAULT_USER_PHONE,
+                    password_hash=hash_password("ent-no-pwd"),
+                    name="Enterprise User",
+                    organization_id=org.id,
+                    created_at=datetime.utcnow()
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+                logger.info("Created enterprise mode user")
+            
+            # Detach user from session so it can be used after close
+            db.expunge(user)
+            return user
+        finally:
+            db.close()  # Release connection immediately
     
     # Standard, Demo, and Bayi Mode: Validate JWT token
     # Demo mode uses passkey for login, bayi mode uses token decryption via /loginByXz
@@ -336,35 +349,42 @@ def get_current_user(
             detail="Invalid token payload"
         )
     
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
-    
-    # Check organization status (locked or expired)
-    if user.organization_id:
-        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-        if org:
-            # Check if organization is locked
-            is_active = org.is_active if hasattr(org, 'is_active') else True
-            if not is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Organization account is locked. Please contact support."
-                )
-            
-            # Check if organization subscription has expired
-            if hasattr(org, 'expires_at') and org.expires_at:
-                if org.expires_at < datetime.utcnow():
+    # Create session, query, and close immediately
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        
+        # Check organization status (locked or expired)
+        if user.organization_id:
+            org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+            if org:
+                # Check if organization is locked
+                is_active = org.is_active if hasattr(org, 'is_active') else True
+                if not is_active:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Organization subscription has expired. Please contact support."
+                        detail="Organization account is locked. Please contact support."
                     )
-    
-    return user
+                
+                # Check if organization subscription has expired
+                if hasattr(org, 'expires_at') and org.expires_at:
+                    if org.expires_at < datetime.utcnow():
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Organization subscription has expired. Please contact support."
+                        )
+        
+        # Detach user from session so it can be used after close
+        db.expunge(user)
+        return user
+    finally:
+        db.close()  # Release connection immediately
 
 
 def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
@@ -631,6 +651,7 @@ def validate_invitation_code(org_code: str, invitation_code: str) -> bool:
 login_attempts: Dict[str, list] = defaultdict(list)
 ip_attempts: Dict[str, list] = defaultdict(list)
 captcha_attempts: Dict[str, list] = defaultdict(list)
+captcha_session_attempts: Dict[str, list] = defaultdict(list)
 
 
 def check_rate_limit(
@@ -799,8 +820,7 @@ def track_api_key_usage(api_key: str, db: Session):
 def get_current_user_or_api_key(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    api_key: str = Depends(api_key_header),
-    db: Session = Depends(get_db)
+    api_key: str = Depends(api_key_header)
 ) -> Optional[User]:
     """
     Get current user from JWT token OR validate API key
@@ -815,7 +835,14 @@ def get_current_user_or_api_key(
     
     Raises:
         HTTPException(401) if both invalid
+    
+    Note:
+        This function manages its own database session to avoid holding
+        connections during long-running LLM requests. The session is closed
+        immediately after auth check, before returning.
     """
+    from config.database import SessionLocal
+    
     # Priority 1: Try JWT token (for authenticated teachers)
     token = None
     
@@ -832,20 +859,32 @@ def get_current_user_or_api_key(
             user_id = payload.get("sub")
             
             if user_id:
-                user = db.query(User).filter(User.id == int(user_id)).first()
-                if user:
-                    logger.info(f"Authenticated teacher: {user.name}")
-                    return user  # Authenticated teacher - full access
+                # Create session, query, and close immediately
+                db = SessionLocal()
+                try:
+                    user = db.query(User).filter(User.id == int(user_id)).first()
+                    if user:
+                        # Detach user from session so it can be used after close
+                        db.expunge(user)
+                        logger.info(f"Authenticated teacher: {user.name}")
+                        return user  # Authenticated teacher - full access
+                finally:
+                    db.close()  # Release connection immediately
         except HTTPException:
             # Invalid JWT, try API key instead
             pass
     
     # Priority 2: Try API key (for Dify, public API users)
     if api_key:
-        if validate_api_key(api_key, db):
-            track_api_key_usage(api_key, db)
-            logger.info(f"Valid API key access")
-            return None  # Valid API key, no user object
+        # Create session for API key validation
+        db = SessionLocal()
+        try:
+            if validate_api_key(api_key, db):
+                track_api_key_usage(api_key, db)
+                logger.info(f"Valid API key access")
+                return None  # Valid API key, no user object
+        finally:
+            db.close()  # Release connection immediately
     
     # No valid authentication
     raise HTTPException(

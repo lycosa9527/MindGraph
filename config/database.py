@@ -25,12 +25,31 @@ logger = logging.getLogger(__name__)
 # Database URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mindgraph.db")
 
-# Create SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
-    echo=False  # Set to True for SQL query logging
-)
+# Create SQLAlchemy engine with proper pool configuration
+# For SQLite: use check_same_thread=False
+# For PostgreSQL/MySQL: configure connection pool for production workloads
+if "sqlite" in DATABASE_URL:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        echo=False  # Set to True for SQL query logging
+    )
+else:
+    # Production database (PostgreSQL/MySQL) pool configuration
+    # - pool_size: Base number of connections to maintain
+    # - max_overflow: Additional connections allowed beyond pool_size
+    # - pool_timeout: Seconds to wait for a connection before timeout
+    # - pool_pre_ping: Check connection validity before using (handles stale connections)
+    # - pool_recycle: Recycle connections after N seconds (prevents stale connections)
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=10,        # Increased from default 5
+        max_overflow=20,     # Increased from default 10 (total max: 30)
+        pool_timeout=60,     # Increased from default 30 seconds
+        pool_pre_ping=True,  # Test connection before using
+        pool_recycle=1800,   # Recycle connections every 30 minutes
+        echo=False
+    )
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

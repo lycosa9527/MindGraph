@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.4] - 2025-12-02 - Session-Based CAPTCHA Rate Limiting
+
+### Changed
+
+- **CAPTCHA Rate Limiting** (`routers/auth.py`, `utils/auth.py`)
+  - Changed rate limiting from IP-based to session-based using browser cookies
+  - Each browser session now gets its own independent rate limit (30 requests per 15 minutes)
+  - Added `captcha_session` cookie with 15-minute expiry to track sessions
+  - Added `captcha_session_attempts` dictionary for session-based tracking
+  - Added `CAPTCHA_SESSION_COOKIE_NAME` constant for configuration
+  - **Impact**: Solves the issue where many users sharing the same IP (e.g., 50+ teachers in a school workshop) would quickly exhaust the shared IP rate limit. Each user now gets their own limit regardless of network topology.
+
+---
+
 ## [4.28.3] - 2025-01-02 - Major Editor Refactoring & Event Bus Integration
 
 ### Added
