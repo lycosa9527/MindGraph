@@ -66,6 +66,68 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Feedback Button - Rainbow Glow Animation */
+/* Animation name: rainbow-rotate-glow (for future reference) */
+#feedback-btn {
+    position: relative;
+    overflow: visible;
+    z-index: 1;
+    background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%) !important;
+    color: #000 !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3) !important;
+}
+
+#feedback-btn:hover {
+    background: linear-gradient(135deg, #FFC107 0%, #FFB300 100%) !important;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5) !important;
+}
+
+/* Rainbow glow border effect */
+#feedback-btn::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 11px;
+    padding: 3px;
+    background: linear-gradient(
+        45deg,
+        #ff0000, #ff7f00, #ffff00, #00ff00, 
+        #0000ff, #4b0082, #9400d3,
+        #ff0000
+    );
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, 
+                   linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, 
+          linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: rainbow-rotate-glow 3s linear infinite;
+    filter: blur(8px);
+    z-index: -1;
+    opacity: 1;
+}
+
+/* Hover makes rainbow glow more intense */
+#feedback-btn:hover::before {
+    filter: blur(10px);
+    opacity: 1;
+}
+
+/* Rainbow rotation animation - rainbow-rotate-glow */
+@keyframes rainbow-rotate-glow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
 .lang-text {
     font-weight: 700;
     font-size: 13px;
@@ -1110,7 +1172,8 @@ body {
     letter-spacing: 0.5px;
 }
 
-.prop-input {
+.prop-input,
+.prop-textarea {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #ddd;
@@ -1126,6 +1189,27 @@ body {
 }
 
 .prop-input::placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.prop-textarea {
+    resize: none;
+    min-height: 60px;
+    max-height: 300px;
+    line-height: 1.5;
+    font-family: 'Inter', sans-serif;
+    overflow-y: hidden;
+    transition: height 0.1s ease;
+}
+
+.prop-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.prop-textarea::placeholder {
     color: #999;
     font-style: italic;
     opacity: 0.8;

@@ -155,20 +155,42 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     }
 
     function wrapIntoLines(text, fontSize, maxWidth) {
-        const words = String(text).split(/\s+/);
+        const textStr = String(text);
         const lines = [];
-        let current = '';
-        for (const w of words) {
-            const candidate = current ? current + ' ' + w : w;
-            if (measureLineWidth(candidate, fontSize) <= maxWidth || current === '') {
-                current = candidate;
-            } else {
-                lines.push(current);
-                current = w;
+        
+        // First, split by explicit newlines (user-inserted line breaks)
+        const explicitLines = textStr.split(/\n/);
+        
+        // For each explicit line, wrap it if needed
+        explicitLines.forEach((line, lineIndex) => {
+            // Trim each line but preserve empty lines
+            const trimmedLine = line.trim();
+            if (trimmedLine === '' && lineIndex < explicitLines.length - 1) {
+                // Preserve empty lines (but not trailing ones)
+                lines.push('');
+                return;
             }
-        }
-        if (current) lines.push(current);
-        return lines;
+            
+            if (trimmedLine === '') {
+                return; // Skip trailing empty lines
+            }
+            
+            // Wrap this line if it exceeds maxWidth
+            const words = trimmedLine.split(/\s+/);
+            let current = '';
+            for (const w of words) {
+                const candidate = current ? current + ' ' + w : w;
+                if (measureLineWidth(candidate, fontSize) <= maxWidth || current === '') {
+                    current = candidate;
+                } else {
+                    lines.push(current);
+                    current = w;
+                }
+            }
+            if (current) lines.push(current);
+        });
+        
+        return lines.length > 0 ? lines : [''];
     }
 
     function drawBox(x, y, text, isTopic = false) {

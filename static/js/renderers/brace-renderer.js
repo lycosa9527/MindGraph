@@ -133,21 +133,34 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     
     function measureTextWidth(text, fontSpec, fontWeight = 'normal') {
         const { size, family } = parseFontSpec(fontSpec);
-        // Create a temporary hidden SVG for measurement
-        const tempSvg = d3.select('#d3-container')
-            .append('svg')
+        // Create a temporary hidden SVG for measurement - use body instead of container
+        const tempSvg = d3.select('body').append('svg')
             .attr('width', 0)
             .attr('height', 0)
             .style('position', 'absolute')
+            .style('left', '-9999px')
+            .style('top', '-9999px')
             .style('visibility', 'hidden');
         const tempText = tempSvg.append('text')
             .text(text || '')
             .attr('font-size', size)
             .attr('font-family', family)
             .style('font-weight', fontWeight);
-        const bbox = tempText.node().getBBox();
+        let width = 0;
+        try {
+            const bbox = tempText.node().getBBox();
+            width = Math.max(0, bbox?.width || 0);
+        } catch (error) {
+            logger.error('BraceRenderer', 'Error getting bbox for text measurement:', error);
+            // Fallback: estimate width based on character count
+            width = (text || '').length * size * 0.6;
+        }
         tempSvg.remove();
-        return Math.max(0, bbox?.width || 0);
+        return width;
+    }
+
+    function measureLineWidth(text, fontSpec, fontWeight = 'normal') {
+        return measureTextWidth(text, fontSpec, fontWeight);
     }
 
     // Helper to build a curly brace path opening to the left
@@ -213,18 +226,6 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         };
     }
 
-    // Measure content widths
-    const topicWidth = measureTextWidth(actualSpec.whole, THEME.fontTopic, 'bold');
-    const partWidths = (actualSpec.parts || []).map(p => measureTextWidth(p?.name || '', THEME.fontPart, 'bold'));
-    const maxPartWidth = Math.max(100, ...(partWidths.length ? partWidths : [0]));
-    const subpartWidths = [];
-    (actualSpec.parts || []).forEach(p => {
-        (p.subparts || []).forEach(sp => {
-            subpartWidths.push(measureTextWidth(sp?.name || '', THEME.fontSubpart));
-        });
-    });
-    const maxSubpartWidth = Math.max(100, ...(subpartWidths.length ? subpartWidths : [0]));
-
     // Define spacing and dimensions
     const topicPadding = 16;
     const partPadding = 12;
@@ -233,11 +234,43 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const braceSpacing = 30;
     const columnSpacing = 80;  // Increased from 45 to 80 to prevent overlap
     
-    // Calculate dimensions
-    const topicBoxWidth = topicWidth + topicPadding * 2;
-    const topicBoxHeight = parseFontSpec(THEME.fontTopic).size + topicPadding * 2;
-    const partBoxHeight = parseFontSpec(THEME.fontPart).size + partPadding * 2;
-    const subpartBoxHeight = parseFontSpec(THEME.fontSubpart).size + subpartPadding * 2;
+    // Font sizes
+    const topicFontSize = parseFontSpec(THEME.fontTopic).size;
+    const partFontSize = parseFontSpec(THEME.fontPart).size;
+    const subpartFontSize = parseFontSpec(THEME.fontSubpart).size;
+    
+    // Measure topic text (simple, no wrapping)
+    const topicText = actualSpec.whole || '';
+    const topicTextWidth = Math.max(measureLineWidth(topicText, THEME.fontTopic, 'bold'), 20);
+    const topicBoxWidth = topicTextWidth + topicPadding * 2;
+    const topicBoxHeight = topicFontSize + topicPadding * 2;
+    
+    // Measure part texts (simple, no wrapping)
+    const partData = (actualSpec.parts || []).map(p => {
+        const text = p?.name || '';
+        const textWidth = Math.max(measureLineWidth(text, THEME.fontPart, 'bold'), 20);
+        const boxWidth = textWidth + partPadding * 2;
+        const boxHeight = partFontSize + partPadding * 2;
+        return { part: p, text, boxWidth, boxHeight };
+    });
+    const maxPartBoxWidth = Math.max(100, ...partData.map(p => p.boxWidth));
+    
+    // Measure subpart texts (simple, no wrapping)
+    const subpartData = [];
+    (actualSpec.parts || []).forEach(p => {
+        (p.subparts || []).forEach(sp => {
+            const text = sp?.name || '';
+            const textWidth = Math.max(measureLineWidth(text, THEME.fontSubpart), 20);
+            const boxWidth = textWidth + subpartPadding * 2;
+            const boxHeight = subpartFontSize + subpartPadding * 2;
+            subpartData.push({ subpart: sp, text, boxWidth, boxHeight });
+        });
+    });
+    const maxSubpartBoxWidth = Math.max(100, ...subpartData.map(sp => sp.boxWidth));
+    
+    // Calculate dimensions (using wrapped heights)
+    const partBoxHeight = Math.max(...partData.map(p => p.boxHeight), partFontSize + partPadding * 2);
+    const subpartBoxHeight = Math.max(...subpartData.map(sp => sp.boxHeight), subpartFontSize + subpartPadding * 2);
     
     // Calculate total height needed
     const topPadding = 60; // Reduced from 100 - more reasonable top padding
@@ -275,8 +308,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     
     // Calculate total width needed - use adaptive dimensions if provided
     const topicSectionWidth = topicBoxWidth + 30; // Topic + padding
-    const partsSectionWidth = maxPartWidth + 30; // Parts + padding
-    const subpartsSectionWidth = maxSubpartWidth + 30; // Subparts + padding
+    const partsSectionWidth = maxPartBoxWidth + 30; // Parts + padding
+    const subpartsSectionWidth = maxSubpartBoxWidth + 30; // Subparts + padding
     const braceTipSpace = 100; // Extra space for brace tip extension
     const contentWidth = topicSectionWidth + columnSpacing + partsSectionWidth + columnSpacing + subpartsSectionWidth + braceTipSpace;
     
@@ -310,27 +343,40 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const partCenterYs = [];
 
     (actualSpec.parts || []).forEach((part, partIndex) => {
+        const partInfo = partData[partIndex];
         // Calculate the starting Y position for this part's section
         const partSectionStartY = currentY;
         
         // First, calculate the total height needed for this part's section (including subparts)
-        let partSectionHeight = partBoxHeight + 20; // Part height + spacing
+        let partSectionHeight = partInfo.boxHeight + 20; // Part height + spacing
         
-        if (part.subparts && part.subparts.length > 0) {
-            partSectionHeight += (part.subparts.length * (subpartBoxHeight + 10)) + 20; // Subparts + spacing
+        // Get subparts for this part
+        const thisPartSubparts = subpartData.filter((sp, idx) => {
+            let subpartIdx = 0;
+            for (let i = 0; i < partIndex; i++) {
+                subpartIdx += (actualSpec.parts[i].subparts || []).length;
+            }
+            return idx >= subpartIdx && idx < subpartIdx + (part.subparts || []).length;
+        });
+        
+        if (thisPartSubparts.length > 0) {
+            const subpartHeights = thisPartSubparts.map(sp => sp.boxHeight);
+            const maxSubpartH = Math.max(...subpartHeights, subpartBoxHeight);
+            partSectionHeight += (thisPartSubparts.length * (maxSubpartH + 10)) + 20; // Subparts + spacing
         }
         
         // Calculate subparts range center for part positioning
         let subpartsRangeCenterY = partSectionStartY + partSectionHeight / 2; // Default to section center
-        if (part.subparts && part.subparts.length > 0) {
-            const subpartsStartY = currentY + partBoxHeight + 20;
-            const subpartsEndY = subpartsStartY + (part.subparts.length * (subpartBoxHeight + 10)) - 10;
+        if (thisPartSubparts.length > 0) {
+            const subpartsStartY = currentY + partInfo.boxHeight + 20;
+            const maxSubpartH = Math.max(...thisPartSubparts.map(sp => sp.boxHeight), subpartBoxHeight);
+            const subpartsEndY = subpartsStartY + (thisPartSubparts.length * (maxSubpartH + 10)) - 10;
             subpartsRangeCenterY = (subpartsStartY + subpartsEndY) / 2;
         }
         
         // Position the part at subparts range center
         const partY = subpartsRangeCenterY;
-        const partBoxWidth = Math.max(maxPartWidth, measureTextWidth(part?.name || '', THEME.fontPart, 'bold')) + partPadding * 2;
+        const partBoxWidth = partInfo.boxWidth;
         
         // Track rightmost content
         maxContentRightX = Math.max(maxContentRightX, partsStartX + partBoxWidth);
@@ -355,20 +401,21 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('data-node-type', 'part')
             .attr('data-part-index', partIndex);
         
+        // Render part text (simple, no wrapping)
         svg.append('text')
             .attr('x', partsStartX + partBoxWidth / 2)
             .attr('y', partY)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.partText)
-            .attr('font-size', parseFontSpec(THEME.fontPart).size)
+            .attr('font-size', partFontSize)
             .attr('font-family', parseFontSpec(THEME.fontPart).family)
             .attr('font-weight', 'bold')
             .attr('data-node-id', `brace-part-${partIndex}`)
             .attr('data-node-type', 'part')
             .attr('data-part-index', partIndex)
             .attr('data-text-for', `part_${partIndex}`)
-            .text(part.name || '');
+            .text(partInfo.text || '\u00A0'); // Use non-breaking space if empty
 
         // Move to next position for subparts
         currentY += partBoxHeight + 20;
@@ -378,18 +425,25 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             const subpartsStartX = partsStartX + partBoxWidth + columnSpacing;
             const subpartsStartY = currentY;
             
+            // Get subpart data for this part
+            let subpartDataIdx = 0;
+            for (let i = 0; i < partIndex; i++) {
+                subpartDataIdx += (actualSpec.parts[i].subparts || []).length;
+            }
+            
             part.subparts.forEach((subpart, subpartIndex) => {
-                const subpartY = currentY + subpartBoxHeight / 2;
-                const subpartBoxWidth = Math.max(maxSubpartWidth, measureTextWidth(subpart?.name || '', THEME.fontSubpart)) + subpartPadding * 2;
+                const subpartInfo = subpartData[subpartDataIdx + subpartIndex];
+                const subpartY = currentY + subpartInfo.boxHeight / 2;
+                const subpartBoxWidth = subpartInfo.boxWidth;
                 
                 // Track rightmost content
                 maxContentRightX = Math.max(maxContentRightX, subpartsStartX + subpartBoxWidth);
                 
                 svg.append('rect')
                     .attr('x', subpartsStartX)
-                    .attr('y', subpartY - subpartBoxHeight / 2)
+                    .attr('y', subpartY - subpartInfo.boxHeight / 2)
                     .attr('width', subpartBoxWidth)
-                    .attr('height', subpartBoxHeight)
+                    .attr('height', subpartInfo.boxHeight)
                     .attr('rx', 3)
                     .attr('fill', THEME.subpartFill)
                     .attr('stroke', THEME.subpartStroke)
@@ -399,25 +453,26 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('data-part-index', partIndex)
                     .attr('data-subpart-index', subpartIndex);
                 
+                // Render subpart text (simple, no wrapping)
                 svg.append('text')
                     .attr('x', subpartsStartX + subpartBoxWidth / 2)
                     .attr('y', subpartY)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.subpartText)
-                    .attr('font-size', parseFontSpec(THEME.fontSubpart).size)
+                    .attr('font-size', subpartFontSize)
                     .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
                     .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
                     .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
                     .attr('data-node-type', 'subpart')
                     .attr('data-part-index', partIndex)
                     .attr('data-subpart-index', subpartIndex)
-                    .text(subpart.name || '');
+                    .text(subpartInfo.text || '\u00A0'); // Use non-breaking space if empty
 
-                currentY += subpartBoxHeight + 10;
+                currentY += subpartInfo.boxHeight + 10;
                 
                 // Track the actual bottom edge of this subpart
-                lastChildBottomY = Math.max(lastChildBottomY, subpartY + subpartBoxHeight / 2);
+                lastChildBottomY = Math.max(lastChildBottomY, subpartY + subpartInfo.boxHeight / 2);
             });
 
             // Draw small brace connecting part to subparts - with safety gap check
@@ -622,19 +677,20 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('data-node-id', 'topic_center')
             .attr('data-node-type', 'topic');
         
-        const topicText = svg.append('text')
+        // Render topic text (simple, no wrapping)
+        svg.append('text')
             .attr('x', topicX + topicBoxWidth / 2)
-            .attr('y', topicY)  // Text at center line
+            .attr('y', topicY)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', THEME.topicText)
-            .attr('font-size', parseFontSpec(THEME.fontTopic).size)
+            .attr('font-size', topicFontSize)
             .attr('font-family', parseFontSpec(THEME.fontTopic).family)
             .attr('font-weight', 'bold')
             .attr('data-text-for', 'topic_center')
             .attr('data-node-id', 'topic_center')
             .attr('data-node-type', 'topic')
-            .text(actualSpec.whole);
+            .text(topicText || '\u00A0'); // Use non-breaking space if empty
         
         // ALWAYS show dimension field (even if empty) so users can edit it
         // Only show if dimension field exists in spec (even if empty string)

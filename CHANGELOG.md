@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.8] - 2025-01-15 - Configuration File Consolidation
+
+### Changed
+
+- **Unified Uvicorn Configuration** (`uvicorn_config.py`, `run_server.py`, `setup.py`, `docker/Dockerfile`)
+  - Merged `uvicorn_log_config.py` and `uvicorn.conf.py` into single `uvicorn_config.py` file
+  - Consolidated server configuration and logging configuration into one unified file
+  - Updated `run_server.py` to import `LOGGING_CONFIG` from new unified file
+  - Updated `setup.py` and `docker/Dockerfile` to reference new file
+  - Removed old separate configuration files
+  - **Impact**: Simplified configuration management, easier to maintain single source of truth for uvicorn settings
+
+---
+
+## [Unresolved] - Known Issues
+
+### Text Wrapping and Placeholder Rendering Issue
+
+**Status**: Unsolved - Deferred for later resolution
+
+**Affected Diagrams**: Brace Map, Flow Map (and potentially other diagrams)
+
+**Problem**:
+- Text wrapping doesn't work in most diagrams - only flowchart and concept map have wrapping implemented
+- Properties panel works because it uses HTML textarea with CSS word-wrap (native browser wrapping)
+- When wrapping was attempted in brace/flow maps, placeholders stopped rendering
+- Currently using simple `.text()` rendering (no wrapping) which works for placeholders but doesn't handle long text
+
+**Root Cause Analysis** (from code review):
+- Measurement function signature mismatch: `splitAndWrapText` expects `measureFn(text, fontSize)` but brace renderer uses `measureLineWidth(text, fontSpec, fontWeight)`
+- Empty text handling: `splitAndWrapText('')` returns `['']` which doesn't render visibly in tspan elements
+- Implementation differences between working renderers (flowchart, concept map) and non-working ones
+
+**Documentation**: See `docs/WORD_WRAPPING_PLACEHOLDER_REVIEW.md` for complete analysis and solution options
+
+**Impact**: Long text may overflow in brace/flow maps. Placeholders render correctly with current simple text rendering approach.
+
+**Next Steps**: 
+- Fix measurement function signature mismatch
+- Fix empty text handling in `splitAndWrapText`
+- Restore wrapping code using flowchart pattern
+- Test across all diagram types
+
+---
+
+## [4.28.7] - 2025-01-15 - Feedback Button & UI Improvements
+
+### Added
+
+- **Feedback Button with WeChat QR Code Modal** (`templates/editor.html`, `static/js/editor/language-manager.js`, `routers/pages.py`, `config/settings.py`)
+  - Added "反馈" (Feedback) button in gallery top-right corner
+  - Button opens modal displaying WeChat group QR code for user feedback
+  - QR code image configurable via `WECHAT_QR_IMAGE` environment variable
+  - QR images stored in `static/qr/` directory
+  - Modal supports bilingual display (English/Chinese)
+  - Button only appears when `WECHAT_QR_IMAGE` is configured
+  - **Impact**: Users can easily join feedback group by scanning QR code
+
+- **Rainbow Glow Animation on Feedback Button** (`static/css/editor.css`)
+  - Applied same rainbow glow animation as learning mode button
+  - Animation named `rainbow-rotate-glow` for future reference
+  - Continuous rotating rainbow border effect (red → orange → yellow → green → blue → indigo → violet)
+  - 3-second linear infinite animation with blur effect
+  - **Impact**: Consistent visual styling with learning mode button, improved button visibility
+
+### Fixed
+
+- **Logout Button Translation** (`templates/editor.html`, `static/js/editor/language-manager.js`)
+  - Added logout button translation support (English: "Logout", Chinese: "退出")
+  - Button text now switches correctly when language is toggled
+  - Added `logout` and `logoutTooltip` translation keys
+  - **Impact**: Logout button displays correctly in both English and Chinese modes
+
+- **Windows Proactor Error Filtering** (`main.py`)
+  - Updated `CancelledErrorFilter` to never suppress WARNING or ERROR level logs
+  - Only suppresses DEBUG/INFO level logs for known harmless errors (CancelledError, ProactorBasePipeTransport)
+  - Added explicit check: `if record.levelno >= logging.WARNING: return True`
+  - Windows Proactor cleanup errors at ERROR level are now visible (as intended)
+  - **Impact**: Ensures all real warnings and errors are always visible in logs, prevents accidental suppression of important issues
+
+### Changed
+
+- **Animation Naming for Future Reference** (`static/css/editor-toolbar.css`, `static/css/editor.css`)
+  - Named rainbow glow animation as `rainbow-rotate-glow` in comments
+  - Updated learning mode button to use same animation name for consistency
+  - **Impact**: Easier to reference and maintain animation code in future
+
+---
+
 ## [4.28.6] - 2025-01-15 - Workshop Pressure Test Fixes
 
 ### Fixed

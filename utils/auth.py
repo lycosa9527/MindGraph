@@ -58,6 +58,32 @@ ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999").strip()
 BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk").strip()
 BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 
+# Bayi IP Whitelist Configuration (Option 1: Simple In-Memory Set)
+BAYI_IP_WHITELIST_STR = os.getenv("BAYI_IP_WHITELIST", "").strip()
+BAYI_IP_WHITELIST = set()  # Set of whitelisted IP addresses
+
+# Parse IP whitelist on startup
+if BAYI_IP_WHITELIST_STR:
+    for ip_entry in BAYI_IP_WHITELIST_STR.split(","):
+        ip_entry = ip_entry.strip()
+        if not ip_entry:
+            continue
+        try:
+            # Validate and normalize IP address
+            import ipaddress
+            ip_addr = ipaddress.ip_address(ip_entry)
+            BAYI_IP_WHITELIST.add(str(ip_addr))
+            logger.info(f"Added IP to bayi IP whitelist: {ip_entry}")
+        except ValueError as e:
+            logger.warning(f"Invalid IP entry in BAYI_IP_WHITELIST: {ip_entry} - {e}")
+    
+    if BAYI_IP_WHITELIST:
+        logger.info(f"Bayi IP whitelist loaded: {len(BAYI_IP_WHITELIST)} IP(s)")
+    else:
+        logger.info("Bayi IP whitelist configured but no valid IPs found")
+else:
+    logger.info("Bayi IP whitelist not configured - token authentication required for all IPs")
+
 # Admin Configuration
 ADMIN_PHONES = os.getenv("ADMIN_PHONES", "").split(",")
 
@@ -580,6 +606,43 @@ def validate_bayi_token_body(body: dict) -> bool:
 
 
 # ============================================================================
+# Bayi IP Whitelist Functions
+# ============================================================================
+
+def is_ip_whitelisted(client_ip: str) -> bool:
+    """
+    Check if client IP is in bayi IP whitelist.
+    
+    If IP is whitelisted, teachers from that IP can skip token authentication
+    and gain immediate access in bayi mode.
+    
+    Args:
+        client_ip: Client IP address string
+    
+    Returns:
+        True if IP is whitelisted, False otherwise
+    """
+    if not BAYI_IP_WHITELIST:
+        return False
+    
+    try:
+        import ipaddress
+        # Normalize IP address for comparison
+        ip_addr = ipaddress.ip_address(client_ip)
+        ip_str = str(ip_addr)
+        
+        # O(1) lookup in set
+        if ip_str in BAYI_IP_WHITELIST:
+            logger.debug(f"IP {client_ip} matched whitelist entry")
+            return True
+        
+        return False
+    except ValueError:
+        logger.warning(f"Invalid IP address format: {client_ip}")
+        return False
+
+
+# ============================================================================
 # Invitation Code Management
 # ============================================================================
 
@@ -866,7 +929,7 @@ def get_current_user_or_api_key(
                     if user:
                         # Detach user from session so it can be used after close
                         db.expunge(user)
-                        logger.debug(f"Authenticated teacher: {user.name}")
+                        logger.info(f"Authenticated teacher: {user.name} (ID: {user.id}, Phone: {user.phone})")
                         return user  # Authenticated teacher - full access
                 finally:
                     db.close()  # Release connection immediately

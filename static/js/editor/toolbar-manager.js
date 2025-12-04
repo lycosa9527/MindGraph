@@ -259,13 +259,36 @@ class ToolbarManager {
         });
         
         // Property inputs - prevent event bubbling to avoid accidental diagram switches
-        // Text input: Apply on Enter key
-        this.propText?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        // Text input: Apply on Enter key (but allow Ctrl+Enter for line breaks)
+        this.propText?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+                // Regular Enter: apply text
                 e.stopPropagation();
                 e.preventDefault();
                 this.applyText();
+            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                // Ctrl+Enter: insert line break
+                e.stopPropagation();
+                e.preventDefault();
+                const textarea = this.propText;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const value = textarea.value;
+                
+                // Insert newline at cursor position
+                textarea.value = value.substring(0, start) + '\n' + value.substring(end);
+                
+                // Restore cursor position after the newline
+                textarea.selectionStart = textarea.selectionEnd = start + 1;
+                
+                // Auto-resize after inserting newline
+                this.autoResizeTextarea(textarea);
             }
+        });
+        
+        // Auto-resize textarea on input
+        this.propText?.addEventListener('input', (e) => {
+            this.autoResizeTextarea(e.target);
         });
         
         // Text apply button - applies text changes
@@ -570,7 +593,13 @@ class ToolbarManager {
      */
     clearPropertyPanel() {
         // Clear text input
-        if (this.propText) this.propText.value = '';
+        if (this.propText) {
+            this.propText.value = '';
+            // Reset textarea height to minimum
+            if (this.propText.tagName === 'TEXTAREA') {
+                this.autoResizeTextarea(this.propText);
+            }
+        }
         
         // Reset font properties to defaults
         if (this.propFontSize) this.propFontSize.value = 14;
@@ -748,6 +777,10 @@ class ToolbarManager {
                 this.propText.value = text;
                 this.propText.placeholder = window.languageManager?.translate('nodeTextPlaceholder') || 'Node text';
             }
+            // Auto-resize textarea after setting value
+            if (this.propText.tagName === 'TEXTAREA') {
+                this.autoResizeTextarea(this.propText);
+            }
         }
         if (this.propFontSize) this.propFontSize.value = parseInt(fontSize);
         if (this.propFontFamily) this.propFontFamily.value = fontFamily;
@@ -772,6 +805,29 @@ class ToolbarManager {
         if (this.propUnderline) {
             this.propUnderline.classList.toggle('active', textDecoration === 'underline');
         }
+    }
+    
+    /**
+     * Auto-resize textarea based on content
+     * @param {HTMLTextAreaElement} textarea - Textarea element to resize
+     */
+    autoResizeTextarea(textarea) {
+        if (!textarea) return;
+        
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Calculate new height based on content (with min and max constraints)
+        const minHeight = 60; // Minimum height in pixels
+        const maxHeight = 300; // Maximum height in pixels
+        const lineHeight = 24; // Approximate line height in pixels
+        
+        // Calculate height based on scrollHeight
+        const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
+        
+        // Set the new height
+        textarea.style.height = `${newHeight}px`;
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
     }
     
     /**

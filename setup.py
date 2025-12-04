@@ -77,7 +77,7 @@ ESSENTIAL_FILES = [
     "main.py",
     "run_server.py",
     "requirements.txt",
-    "uvicorn.conf.py"
+    "uvicorn_config.py"
 ]
 
 ESSENTIAL_DIRECTORIES = [

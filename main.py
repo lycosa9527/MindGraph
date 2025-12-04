@@ -23,11 +23,12 @@ import os
 import sys
 import io
 import logging
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler, BaseRotatingHandler
 import time
 import signal
 import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from services.temp_image_cleaner import start_cleanup_scheduler
 
@@ -260,6 +261,122 @@ class ShutdownErrorFilter:
 log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
 log_level = getattr(logging, log_level_str, logging.INFO)
 
+
+class TimestampedRotatingFileHandler(BaseRotatingHandler):
+    """
+    Custom file handler that creates a new timestamped log file every 72 hours.
+    Each file is named with the start timestamp of its 72-hour period.
+    Example: app.2025-01-15_00-00-00.log
+    """
+    
+    def __init__(self, base_filename, interval_hours=72, backup_count=10, encoding='utf-8'):
+        """
+        Initialize the handler.
+        
+        Args:
+            base_filename: Base log file path (e.g., 'logs/app.log')
+            interval_hours: Hours between rotations (default: 72)
+            backup_count: Number of backup files to keep (default: 10)
+            encoding: File encoding (default: 'utf-8')
+        """
+        self.base_filename = base_filename
+        self.interval_hours = interval_hours
+        self.backup_count = backup_count
+        self.interval_seconds = interval_hours * 3600
+        
+        # Calculate the start of the current 72-hour period
+        self.current_period_start = self._get_period_start()
+        
+        # Generate the filename for the current period
+        current_filename = self._get_current_filename()
+        
+        # Ensure directory exists
+        log_dir = os.path.dirname(current_filename)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+        
+        # Initialize base handler with current filename
+        BaseRotatingHandler.__init__(self, current_filename, 'a', encoding=encoding, delay=False)
+        
+        # Schedule next rotation check
+        self.next_rotation_time = self.current_period_start + timedelta(hours=interval_hours)
+    
+    def _get_period_start(self):
+        """Calculate the start timestamp of the current 72-hour period."""
+        now = datetime.now()
+        # Calculate how many 72-hour periods have passed since epoch
+        seconds_since_epoch = (now - datetime(1970, 1, 1)).total_seconds()
+        periods_passed = int(seconds_since_epoch / self.interval_seconds)
+        period_start_seconds = periods_passed * self.interval_seconds
+        return datetime.fromtimestamp(period_start_seconds)
+    
+    def _get_current_filename(self):
+        """Generate filename for the current period."""
+        timestamp_str = self.current_period_start.strftime('%Y-%m-%d_%H-%M-%S')
+        base_dir = os.path.dirname(self.base_filename) or '.'
+        base_name = os.path.basename(self.base_filename)
+        # Remove .log extension if present, add timestamp, then add .log back
+        if base_name.endswith('.log'):
+            base_name = base_name[:-4]
+        return os.path.join(base_dir, f"{base_name}.{timestamp_str}.log")
+    
+    def shouldRollover(self, record):
+        """Check if we should rollover to a new file."""
+        now = datetime.now()
+        return now >= self.next_rotation_time
+    
+    def doRollover(self):
+        """Perform rollover to a new timestamped file."""
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+        
+        # Clean up old files
+        self._cleanup_old_files()
+        
+        # Calculate new period start
+        self.current_period_start = self._get_period_start()
+        self.next_rotation_time = self.current_period_start + timedelta(hours=self.interval_hours)
+        
+        # Open new file
+        new_filename = self._get_current_filename()
+        self.baseFilename = new_filename
+        self.stream = self._open()
+    
+    def _cleanup_old_files(self):
+        """Remove old log files beyond backup_count."""
+        base_dir = os.path.dirname(self.base_filename) or '.'
+        base_name = os.path.basename(self.base_filename)
+        if base_name.endswith('.log'):
+            base_name = base_name[:-4]
+        
+        # Find all matching log files
+        log_files = []
+        try:
+            for filename in os.listdir(base_dir):
+                if filename.startswith(base_name + '.') and filename.endswith('.log'):
+                    try:
+                        filepath = os.path.join(base_dir, filename)
+                        mtime = os.path.getmtime(filepath)
+                        log_files.append((mtime, filepath))
+                    except OSError:
+                        continue
+        except OSError:
+            # Directory doesn't exist or can't be read, skip cleanup
+            pass
+        
+        # Sort by modification time (oldest first)
+        log_files.sort()
+        
+        # Remove files beyond backup_count
+        if len(log_files) > self.backup_count:
+            for _, filepath in log_files[:-self.backup_count]:
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
+
+
 class UnifiedFormatter(logging.Formatter):
     """Unified logging formatter with ANSI color support."""
     
@@ -329,12 +446,12 @@ console_handler = logging.StreamHandler(
 )
 console_handler.setFormatter(unified_formatter)
 
-# Use TimedRotatingFileHandler to rotate logs every 72 hours
-file_handler = TimedRotatingFileHandler(
+# Use custom TimestampedRotatingFileHandler to create timestamped log files every 72 hours
+# Each file is named with the start timestamp: app.YYYY-MM-DD_HH-MM-SS.log
+file_handler = TimestampedRotatingFileHandler(
     os.path.join("logs", "app.log"),
-    when='H',  # Rotate by hours
-    interval=72,  # Every 72 hours (3 days)
-    backupCount=10,  # Keep 10 backup files (30 days of logs)
+    interval_hours=72,  # Every 72 hours (3 days)
+    backup_count=10,  # Keep 10 backup files (30 days of logs)
     encoding="utf-8"
 )
 file_handler.setFormatter(unified_formatter)
@@ -365,39 +482,48 @@ for uvicorn_logger_name in ['uvicorn', 'uvicorn.error']:
 # Create main logger early
 logger = logging.getLogger(__name__)
 
-# Configure dedicated frontend logger with separate file
-# Use TimedRotatingFileHandler to rotate logs every 72 hours
-frontend_file_handler = TimedRotatingFileHandler(
-    os.path.join("logs", "frontend.log"),
-    when='H',  # Rotate by hours
-    interval=72,  # Every 72 hours (3 days)
-    backupCount=10,  # Keep 10 backup files (30 days of logs)
-    encoding="utf-8"
-)
-frontend_file_handler.setFormatter(unified_formatter)
-
+# Configure frontend logger to use the same app.log file
+# Frontend logs are tagged with [FRNT] by UnifiedFormatter, so they can be filtered if needed
 frontend_logger = logging.getLogger('frontend')
 frontend_logger.setLevel(logging.DEBUG)  # Always accept all frontend logs
 frontend_logger.handlers = []  # Remove default handlers
 frontend_logger.addHandler(console_handler)  # Also show in console
-frontend_logger.addHandler(frontend_file_handler)  # Dedicated frontend log file
-frontend_logger.propagate = False  # Don't propagate to root logger
+frontend_logger.addHandler(file_handler)  # Write to same app.log file as backend logs
+frontend_logger.propagate = False  # Don't propagate to root logger to avoid double logging
 
 if os.getenv('UVICORN_WORKER_ID') is None:
-    logger.debug("Frontend logger configured with dedicated log file: logs/frontend.log")
+    logger.debug("Frontend logger configured to write to unified log file: logs/app.log")
 
-# Suppress asyncio CancelledError during shutdown
+# Suppress asyncio CancelledError and Windows Proactor errors during shutdown
+# IMPORTANT: Never suppress WARNING or ERROR level logs - only suppress DEBUG/INFO for harmless errors
 class CancelledErrorFilter(logging.Filter):
-    """Filter out CancelledError exceptions during graceful shutdown"""
+    """Filter out CancelledError and Windows Proactor errors during graceful shutdown.
+    
+    CRITICAL: This filter NEVER suppresses WARNING or ERROR level logs.
+    Only DEBUG and INFO level logs for known harmless errors are filtered.
+    """
     def filter(self, record):
+        # CRITICAL: NEVER suppress WARNING, ERROR, or CRITICAL level logs
+        # Always allow through any log at WARNING level or above
+        if record.levelno >= logging.WARNING:
+            return True
+        
+        # Only filter DEBUG and INFO level logs for known harmless errors
         if record.exc_info:
             exc_type = record.exc_info[0]
             if exc_type and issubclass(exc_type, asyncio.CancelledError):
                 return False
-        # Also filter out the multiprocess shutdown tracebacks
-        if 'asyncio.exceptions.CancelledError' in record.getMessage():
+        message = record.getMessage()
+        # Filter out CancelledError messages (only at DEBUG/INFO level)
+        if 'asyncio.exceptions.CancelledError' in message:
             return False
-        if 'Process SpawnProcess' in record.getMessage() and 'Traceback' in record.getMessage():
+        # Filter out Windows Proactor pipe transport errors (harmless cleanup errors, only at DEBUG/INFO)
+        if '_ProactorBasePipeTransport._call_connection_lost' in message:
+            return False
+        if 'Exception in callback _ProactorBasePipeTransport' in message:
+            return False
+        # Filter out multiprocess shutdown tracebacks (only at DEBUG/INFO level)
+        if 'Process SpawnProcess' in message and 'Traceback' in message:
             return False
         return True
 

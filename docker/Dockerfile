@@ -80,7 +80,7 @@ FROM playwright-deps AS app
 RUN groupadd -r mindgraph && useradd -r -g mindgraph mindgraph
 
 # Copy only essential application files (FastAPI structure)
-COPY --chown=mindgraph:mindgraph main.py run_server.py uvicorn.conf.py setup.py LICENSE ./
+COPY --chown=mindgraph:mindgraph main.py run_server.py uvicorn_config.py setup.py LICENSE ./
 COPY --chown=mindgraph:mindgraph agents/ ./agents/
 COPY --chown=mindgraph:mindgraph prompts/ ./prompts/
 COPY --chown=mindgraph:mindgraph static/ ./static/

@@ -616,6 +616,7 @@
 }
 
 /* Learning Mode Button - Rainbow Glow */
+/* Animation name: rainbow-rotate-glow (for future reference) */
 .btn-learning {
     position: relative;
     background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%) !important;
@@ -651,7 +652,7 @@
     mask: linear-gradient(#fff 0 0) content-box, 
           linear-gradient(#fff 0 0);
     mask-composite: exclude;
-    animation: rainbow-rotate 3s linear infinite;
+    animation: rainbow-rotate-glow 3s linear infinite;
     filter: blur(8px);
     z-index: -1;
     opacity: 1;
@@ -686,8 +687,8 @@
     display: none;
 }
 
-/* Rainbow rotation animation */
-@keyframes rainbow-rotate {
+/* Rainbow rotation animation - rainbow-rotate-glow */
+@keyframes rainbow-rotate-glow {
     0% {
         background-position: 0% 50%;
     }

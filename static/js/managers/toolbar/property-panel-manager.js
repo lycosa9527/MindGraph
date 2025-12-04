@@ -77,10 +77,39 @@ class PropertyPanelManager {
     }
     
     /**
+     * Auto-resize textarea based on content
+     * @param {HTMLTextAreaElement} textarea - Textarea element to resize
+     */
+    autoResizeTextarea(textarea) {
+        if (!textarea || textarea.tagName !== 'TEXTAREA') return;
+        
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Calculate new height based on content (with min and max constraints)
+        const minHeight = 60; // Minimum height in pixels
+        const maxHeight = 300; // Maximum height in pixels
+        
+        // Calculate height based on scrollHeight
+        const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
+        
+        // Set the new height
+        textarea.style.height = `${newHeight}px`;
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+    
+    /**
      * Attach event listeners to property panel controls
      */
     attachEventListeners() {
         if (!this.panel) return;
+        
+        // Auto-resize textarea on input
+        if (this.propText && this.propText.tagName === 'TEXTAREA') {
+            this.propText.addEventListener('input', (e) => {
+                this.autoResizeTextarea(e.target);
+            });
+        }
         
         // TODO: Extract event listener setup from toolbar-manager.js - Day 5
         // This includes:
@@ -274,6 +303,10 @@ class PropertyPanelManager {
                 // Set as actual value
                 this.propText.value = text;
                 this.propText.placeholder = window.languageManager?.translate('nodeTextPlaceholder') || 'Node text';
+            }
+            // Auto-resize textarea after setting value
+            if (this.propText.tagName === 'TEXTAREA') {
+                this.autoResizeTextarea(this.propText);
             }
         }
         if (this.propFontSize) this.propFontSize.value = parseInt(fontSize);

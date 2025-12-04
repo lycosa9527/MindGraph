@@ -49,14 +49,52 @@ class LogStreamer:
         self.log_dir = Path(log_dir)
         self.max_lines_per_second = max_lines_per_second
         
-        # Log file patterns
+        # Log file patterns (base names - will resolve to timestamped files)
         self.log_files = {
-            'app': 'app.log',
+            'app': 'app',
             'uvicorn': 'uvicorn.log',
             'error': 'error.log'
         }
         
         logger.info(f"LogStreamer initialized for directory: {self.log_dir}")
+    
+    def _find_latest_log_file(self, base_name: str) -> Optional[Path]:
+        """
+        Find the most recent timestamped log file for a given base name.
+        
+        Args:
+            base_name: Base log file name (e.g., 'app' or 'app.log')
+            
+        Returns:
+            Path to the most recent log file, or None if not found
+        """
+        # Handle both 'app' and 'app.log' formats
+        if base_name.endswith('.log'):
+            base_name = base_name[:-4]
+        
+        # Pattern: base_name.YYYY-MM-DD_HH-MM-SS.log
+        pattern = f"{base_name}.*.log"
+        matching_files = []
+        
+        try:
+            for filename in self.log_dir.iterdir():
+                if filename.is_file() and filename.name.startswith(base_name + '.') and filename.name.endswith('.log'):
+                    # Extract timestamp from filename: base_name.YYYY-MM-DD_HH-MM-SS.log
+                    try:
+                        # Get modification time as fallback, but prefer filename timestamp
+                        mtime = filename.stat().st_mtime
+                        matching_files.append((mtime, filename))
+                    except OSError:
+                        continue
+            
+            if matching_files:
+                # Sort by modification time (most recent first)
+                matching_files.sort(reverse=True)
+                return matching_files[0][1]
+        except OSError:
+            pass
+        
+        return None
     
     async def tail_logs(
         self,
@@ -81,15 +119,16 @@ class LogStreamer:
                 yield entry
         else:
             # Stream from single source
-            log_file = self.log_dir / self.log_files.get(source, 'app.log')
+            base_name = self.log_files.get(source, 'app')
+            log_file = self._find_latest_log_file(base_name)
             
-            if not log_file.exists():
-                logger.warning(f"Log file not found: {log_file}")
+            if log_file is None:
+                logger.warning(f"Log file not found for source '{source}' (base: {base_name})")
                 yield {
                     'timestamp': datetime.now().isoformat(),
                     'level': 'WARNING',
                     'module': 'LogStreamer',
-                    'message': f'Log file not found: {log_file}',
+                    'message': f'Log file not found for source: {source}',
                     'source': source
                 }
                 return
@@ -156,6 +195,7 @@ class LogStreamer:
                 # Follow mode: continuously read new lines
                 line_count = 0
                 last_yield_time = asyncio.get_event_loop().time()
+                check_rotation_counter = 0  # Check rotation every 10 iterations (1 second)
                 
                 while follow:
                     line = await f.readline()
@@ -177,17 +217,30 @@ class LogStreamer:
                         # No new lines, wait a bit
                         await asyncio.sleep(0.1)
                         
-                        # Check if file was rotated (size decreased)
-                        try:
-                            current_pos = await f.tell()
-                            file_size = log_file.stat().st_size
+                        # Check rotation periodically (every ~1 second) to avoid excessive checks
+                        check_rotation_counter += 1
+                        if check_rotation_counter >= 10:
+                            check_rotation_counter = 0
                             
-                            if current_pos > file_size:
-                                # File was rotated, reopen
-                                logger.info(f"Log rotation detected for {log_file}, reopening...")
-                                break  # Exit and let caller handle reconnection
-                        except Exception as e:
-                            logger.error(f"Error checking file rotation: {e}")
+                            # Check if file was rotated (size decreased) or new timestamped file created
+                            try:
+                                current_pos = await f.tell()
+                                file_size = log_file.stat().st_size
+                                
+                                if current_pos > file_size:
+                                    # File was rotated, reopen
+                                    logger.info(f"Log rotation detected for {log_file}, reopening...")
+                                    break  # Exit and let caller handle reconnection
+                                
+                                # Check if a newer timestamped file exists (for timestamped rotation)
+                                base_name = self.log_files.get(source, 'app')
+                                latest_file = self._find_latest_log_file(base_name)
+                                if latest_file and latest_file != log_file:
+                                    # New timestamped file created, switch to it
+                                    logger.info(f"New log file detected: {latest_file}, switching from {log_file}")
+                                    break  # Exit and let caller handle reconnection
+                            except Exception as e:
+                                logger.error(f"Error checking file rotation: {e}")
                             
         except Exception as e:
             logger.error(f"Error tailing log file {log_file}: {e}")
@@ -309,18 +362,31 @@ class LogStreamer:
         log_files = []
         
         try:
-            for name, filename in self.log_files.items():
-                log_path = self.log_dir / filename
-                
-                if log_path.exists():
-                    stat = log_path.stat()
-                    log_files.append({
-                        'name': name,
-                        'filename': filename,
-                        'path': str(log_path),
-                        'size_bytes': stat.st_size,
-                        'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                    })
+            for name, base_name in self.log_files.items():
+                # For timestamped files (like 'app'), find the latest one
+                if name == 'app':
+                    log_path = self._find_latest_log_file(base_name)
+                    if log_path:
+                        stat = log_path.stat()
+                        log_files.append({
+                            'name': name,
+                            'filename': log_path.name,
+                            'path': str(log_path),
+                            'size_bytes': stat.st_size,
+                            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                        })
+                else:
+                    # For non-timestamped files, use direct path
+                    log_path = self.log_dir / base_name
+                    if log_path.exists():
+                        stat = log_path.stat()
+                        log_files.append({
+                            'name': name,
+                            'filename': base_name,
+                            'path': str(log_path),
+                            'size_bytes': stat.st_size,
+                            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                        })
         except Exception as e:
             logger.error(f"Error listing log files: {e}")
         
@@ -343,9 +409,10 @@ class LogStreamer:
         Returns:
             List of parsed log entries
         """
-        log_file = self.log_dir / self.log_files.get(source, 'app.log')
+        base_name = self.log_files.get(source, 'app')
+        log_file = self._find_latest_log_file(base_name)
         
-        if not log_file.exists():
+        if log_file is None:
             return []
         
         entries = []

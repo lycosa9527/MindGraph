@@ -89,13 +89,20 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
     const vPad = 10;
     const stepSpacing = 40;
     const nodeRadius = 5;
+    const maxTextWidth = 280; // Max width before wrapping
+    const lineHeight = Math.round(THEME.fontNode * 1.2);
 
     const nodes = spec.steps.map(step => {
-        const txt = step.text || '';
-        const m = measureTextSize(txt, THEME.fontNode);
-        const w = Math.max(100, m.w + hPad * 2);
-        const h = Math.max(40, m.h + vPad * 2);
-        return { step, text: txt, w, h };
+        // Handle both string steps and object steps (for backward compatibility)
+        const txt = typeof step === 'string' ? step : (step.text || '');
+        // Split by newlines and wrap each line
+        const lines = window.splitAndWrapText(txt, THEME.fontNode, maxTextWidth, measureLineWidth);
+        // Calculate dimensions based on wrapped lines
+        const textWidth = Math.max(...lines.map(l => measureLineWidth(l, THEME.fontNode)), 20);
+        const textHeight = lines.length * lineHeight;
+        const w = Math.max(100, textWidth + hPad * 2);
+        const h = Math.max(40, textHeight + vPad * 2);
+        return { step, text: txt, lines, w, h };
     });
 
     // Compute required canvas from content
@@ -214,14 +221,21 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
                 .attr('stroke-width', strokeWidth);
         }
 
-        svg.append('text')
+        // Render multi-line text using tspan elements
+        const textEl = svg.append('text')
             .attr('x', n.x)
-            .attr('y', n.y)
+            .attr('y', n.y - (n.lines.length - 1) * lineHeight / 2)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('fill', textColor || '#fff')
-            .attr('font-size', THEME.fontNode)
-            .text(n.text);
+            .attr('font-size', THEME.fontNode);
+        
+        n.lines.forEach((line, i) => {
+            textEl.append('tspan')
+                .attr('x', n.x)
+                .attr('dy', i === 0 ? 0 : lineHeight)
+                .text(line);
+        });
     });
 
 }
@@ -234,7 +248,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         logger.error('FlowRenderer', 'Invalid spec for flow map');
         return;
     }
-
+    
     // Get orientation (default to 'vertical' for backward compatibility)
     const orientation = spec.orientation || 'vertical';
 
@@ -312,14 +326,28 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         return { w: Math.ceil(bbox.width), h: Math.ceil(bbox.height || fontSize) };
     }
 
+    function measureLineWidth(text, fontSize) {
+        const t = tempSvg.append('text')
+            .attr('x', -9999)
+            .attr('y', -9999)
+            .attr('font-size', fontSize)
+            .text(text || '');
+        const w = t.node().getBBox().width;
+        t.remove();
+        return w;
+    }
+
     // Measure title and steps to compute adaptive sizes (vertical layout)
     const titleSize = measureTextSize(spec.title, THEME.fontTitle);
     const stepSizes = spec.steps.map(s => {
-        const m = measureTextSize(s, THEME.fontStep);
+        // Handle both string steps and object steps (for backward compatibility)
+        const text = typeof s === 'string' ? s : (s.text || '');
+        // Calculate dimensions based on text (simple, no wrapping)
+        const textWidth = Math.max(measureLineWidth(text, THEME.fontStep), 20);
         return {
-            text: s,
-            w: Math.max(100, m.w + THEME.hPadStep * 2),
-            h: Math.max(42, m.h + THEME.vPadStep * 2)
+            text: text,
+            w: Math.max(100, textWidth + THEME.hPadStep * 2),
+            h: Math.max(42, THEME.fontStep + THEME.vPadStep * 2)
         };
     });
 
@@ -340,11 +368,13 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     const subNodesPerStep = stepSizes.map(stepObj => {
         const subs = stepToSubsteps[stepObj.text] || [];
         return subs.map(txt => {
-            const m = measureTextSize(txt, THEME.fontStep);
+            const text = txt || '';
+            // Calculate dimensions based on text (simple, no wrapping)
+            const textWidth = Math.max(measureLineWidth(text, THEME.fontStep), 20);
             return {
-                text: txt,
-                w: Math.max(80, m.w + THEME.hPadStep * 2),
-                h: Math.max(28, m.h + THEME.vPadStep * 2)
+                text: text,
+                w: Math.max(80, textWidth + THEME.hPadStep * 2),
+                h: Math.max(28, THEME.fontStep + THEME.vPadStep * 2)
             };
         });
     });
@@ -356,7 +386,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         return totalH + spacing;
     });
 
-    const maxStepWidth = stepSizes.reduce((mw, s) => Math.max(mw, s.w), 0);
+    const maxStepBoxWidth = stepSizes.reduce((mw, s) => Math.max(mw, s.w), 0);
     const maxSubGroupWidth = subGroupWidths.reduce((mw, w) => Math.max(mw, w), 0);
     const totalStepsHeight = stepSizes.reduce((sum, s) => sum + s.h, 0);
     
@@ -379,7 +409,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     // Calculate initial width estimate (will be refined after substep positioning)
     const rightSideWidth = maxSubGroupWidth > 0 ? (subOffsetX + maxSubGroupWidth) : 0;
     const extraPadding = 20; // Additional safety margin for text rendering
-    const initialWidth = Math.max(titleSize.w, maxStepWidth + rightSideWidth) + padding * 2 + extraPadding;
+    const initialWidth = Math.max(titleSize.w, maxStepBoxWidth + rightSideWidth) + padding * 2 + extraPadding;
     
     // Use agent recommendations as minimum for initial sizing
     let baseWidth, baseHeight;
@@ -580,7 +610,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-step-index', index)
             .attr('cursor', 'pointer');
 
-        // Text
+        // Text (simple, no wrapping)
         svg.append('text')
             .attr('x', stepXCenter)
             .attr('y', stepYCenter)
@@ -593,7 +623,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-node-type', 'step')
             .attr('data-step-index', index)
             .attr('cursor', 'pointer')
-            .text(s.text);
+            .text(s.text || '\u00A0'); // Use non-breaking space if empty
     });
 
     // Calculate accurate canvas dimensions based on actual content positions
@@ -657,7 +687,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('data-substep-index', nodeIdx)
                 .attr('cursor', 'pointer');
             
-            // Draw substep text
+            // Draw substep text (simple, no wrapping)
             svg.append('text')
                 .attr('x', substep.x + substep.w / 2)
                 .attr('y', substep.y + substep.h / 2)
@@ -671,7 +701,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('data-step-index', stepIdx)
                 .attr('data-substep-index', nodeIdx)
                 .attr('cursor', 'pointer')
-                .text(substep.text);
+                .text(substep.text || '\u00A0'); // Use non-breaking space if empty
             
             // L-shaped connectors already drawn earlier (Step 3b) for proper z-order
         });
@@ -702,7 +732,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         const maxSubGroupHeight = subGroupHeights.reduce((mx, h) => Math.max(mx, h), 0);
         const requiredHeight = Math.max(
             baseHeight,
-            maxSubGroupHeight + subOffsetY + maxStepWidth + padding * 2
+            maxSubGroupHeight + subOffsetY + maxStepBoxWidth + padding * 2
         );
         
         if (requiredHeight > baseHeight) {
@@ -856,7 +886,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('data-step-index', index)
                 .attr('cursor', 'pointer');
             
-            // Text
+            // Text (simple, no wrapping)
             svg.append('text')
                 .attr('x', stepXCenter)
                 .attr('y', stepYCenter)
@@ -869,7 +899,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('data-node-type', 'step')
                 .attr('data-step-index', index)
                 .attr('cursor', 'pointer')
-                .text(s.text);
+                .text(s.text || '\u00A0'); // Use non-breaking space if empty
         });
         
         // Draw substeps
@@ -891,7 +921,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                     .attr('data-substep-index', nodeIdx)
                     .attr('cursor', 'pointer');
                 
-                // Draw substep text
+                // Draw substep text (simple, no wrapping)
                 svg.append('text')
                     .attr('x', substep.x + substep.w / 2)
                     .attr('y', substep.y + substep.h / 2)
@@ -905,7 +935,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                     .attr('data-step-index', stepIdx)
                     .attr('data-substep-index', nodeIdx)
                     .attr('cursor', 'pointer')
-                    .text(substep.text);
+                    .text(substep.text || '\u00A0'); // Use non-breaking space if empty
             });
         });
         

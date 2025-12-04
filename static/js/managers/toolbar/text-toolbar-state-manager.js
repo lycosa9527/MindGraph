@@ -99,7 +99,12 @@ class TextToolbarStateManager {
             return;
         }
         
-        const newText = this.toolbarManager.propText.value.trim();
+        // Preserve newlines but trim leading/trailing whitespace
+        // Replace multiple consecutive newlines with single newline, then trim edges
+        let newText = this.toolbarManager.propText.value
+            .replace(/\n{3,}/g, '\n\n')  // Replace 3+ newlines with 2
+            .replace(/^\s+|\s+$/g, '');  // Trim leading/trailing whitespace (but preserve internal newlines)
+        
         if (!newText) {
             // If empty, no text to apply (user didn't type anything)
             this.showNotification(this.getNotif('textEmpty'), 'warning');

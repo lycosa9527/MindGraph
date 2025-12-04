@@ -17,6 +17,7 @@ import logging
 import os
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 from config.settings import config
 from config.database import get_db
@@ -24,15 +25,18 @@ from utils.auth import (
     AUTH_MODE, 
     get_user_from_cookie, 
     is_admin,
+    get_client_ip,
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
     decrypt_bayi_token,
     validate_bayi_token_body,
+    is_ip_whitelisted,
     create_access_token,
     hash_password
 )
 from models.auth import User, Organization
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +137,8 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                 "feature_voice_agent": config.FEATURE_VOICE_AGENT,
                 "verbose_logging": config.VERBOSE_LOGGING,
                 "ai_assistant_name": config.AI_ASSISTANT_NAME,
-                "default_language": config.DEFAULT_LANGUAGE
+                "default_language": config.DEFAULT_LANGUAGE,
+                "wechat_qr_image": config.WECHAT_QR_IMAGE
             }
         )
     except Exception as e:
@@ -240,25 +245,30 @@ async def auth_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/loginByXz")
 async def login_by_xz(
-    token: str,
+    request: Request,
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Bayi mode authentication endpoint
     
-    Accepts encrypted token from URL parameter, decrypts it, validates it,
-    and creates/retrieves user to grant access directly to editor.
+    Authentication methods (in priority order):
+    1. IP Whitelist: If client IP is whitelisted, grant immediate access
+       - No token required
+       - No session limits
+       - Simple IP check → grant access
+    2. Token Authentication: If IP not whitelisted, require encrypted token
+       - Token must be valid and within 5 minutes
+       - Full decryption and validation required
     
-    URL format: /loginByXz?token=...
-    
-    Token validation:
-    - Decrypts using BAYI_DECRYPTION_KEY (v8IT7XujLPsM7FYuDPRhPtZk)
-    - Validates body.from === 'bayi'
-    - Validates timestamp is within last 5 minutes
+    URL formats:
+    - IP Whitelist: /loginByXz (no token parameter)
+    - Token Auth: /loginByXz?token=...
     
     Behavior:
-    - If token is valid: Redirects to /editor with JWT token set as cookie
-    - If token is invalid: Redirects to /demo (demo passkey page)
+    - If IP whitelisted: Grant access immediately (no token needed)
+    - If token valid: Redirects to /editor with JWT token set as cookie
+    - If both fail: Redirects to /demo (demo passkey page)
     """
     try:
         # Verify AUTH_MODE is set to bayi
@@ -266,9 +276,120 @@ async def login_by_xz(
             logger.warning(f"/loginByXz accessed but AUTH_MODE is '{AUTH_MODE}', not 'bayi' - redirecting to /demo")
             return RedirectResponse(url="/demo", status_code=303)
         
+        # Extract client IP
+        client_ip = get_client_ip(request)
+        logger.info(f"Bayi authentication attempt from IP: {client_ip}")
+        
+        # Priority 1: Check IP whitelist (skip token if whitelisted)
+        if is_ip_whitelisted(client_ip):
+            # IP is whitelisted - grant immediate access, no token needed
+            logger.info(f"IP {client_ip} is whitelisted, granting immediate access (skipping token verification)")
+            
+            # Get or create organization (same as token flow)
+            org = db.query(Organization).filter(
+                Organization.code == BAYI_DEFAULT_ORG_CODE
+            ).first()
+            
+            if not org:
+                try:
+                    org = Organization(
+                        code=BAYI_DEFAULT_ORG_CODE,
+                        name="Bayi School",
+                        invitation_code="BAYI2024",
+                        created_at=datetime.utcnow()
+                    )
+                    db.add(org)
+                    db.commit()
+                    db.refresh(org)
+                    logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                except IntegrityError as e:
+                    # Organization created by another request (race condition)
+                    db.rollback()
+                    logger.debug(f"Organization creation race condition (expected): {e}")
+                    org = db.query(Organization).filter(
+                        Organization.code == BAYI_DEFAULT_ORG_CODE
+                    ).first()
+                    if not org:
+                        logger.error(f"Failed to create or retrieve bayi organization")
+                        return RedirectResponse(url="/demo", status_code=303)
+                except Exception as e:
+                    db.rollback()
+                    logger.error(f"Failed to create bayi organization: {e}")
+                    return RedirectResponse(url="/demo", status_code=303)
+            
+            # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
+            if org:
+                # Check if organization is locked
+                is_active = org.is_active if hasattr(org, 'is_active') else True
+                if not is_active:
+                    logger.warning(f"IP whitelist blocked: Organization {org.code} is locked")
+                    return RedirectResponse(url="/demo", status_code=303)
+                
+                # Check if organization subscription has expired
+                if hasattr(org, 'expires_at') and org.expires_at:
+                    if org.expires_at < datetime.utcnow():
+                        logger.warning(f"IP whitelist blocked: Organization {org.code} expired on {org.expires_at}")
+                        return RedirectResponse(url="/demo", status_code=303)
+            
+            # Use single shared user for all IP whitelist authentications
+            user_phone = "bayi-ip@system.com"
+            user_name = "Bayi IP User"
+            
+            bayi_user = db.query(User).filter(User.phone == user_phone).first()
+            
+            if not bayi_user:
+                try:
+                    bayi_user = User(
+                        phone=user_phone,
+                        password_hash=hash_password("bayi-no-pwd"),
+                        name=user_name,
+                        organization_id=org.id,
+                        created_at=datetime.utcnow()
+                    )
+                    db.add(bayi_user)
+                    db.commit()
+                    db.refresh(bayi_user)
+                    logger.info(f"Created shared bayi IP user: {user_phone}")
+                except IntegrityError as e:
+                    # Handle race condition: user created by another request
+                    db.rollback()
+                    logger.debug(f"User creation race condition (expected): {e}")
+                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                    if not bayi_user:
+                        logger.error(f"Failed to create or retrieve bayi IP user after race condition")
+                        return RedirectResponse(url="/demo", status_code=303)
+                except Exception as e:
+                    db.rollback()
+                    logger.error(f"Failed to create bayi IP user: {e}")
+                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                    if not bayi_user:
+                        return RedirectResponse(url="/demo", status_code=303)
+            
+            # Generate JWT token
+            jwt_token = create_access_token(bayi_user)
+            
+            logger.info(f"Bayi IP whitelist authentication successful: {client_ip}")
+            
+            # Redirect to editor with cookie
+            redirect_response = RedirectResponse(url="/editor", status_code=303)
+            redirect_response.set_cookie(
+                key="access_token",
+                value=jwt_token,
+                httponly=True,
+                secure=False,  # Set to True in production with HTTPS
+                samesite="lax",
+                max_age=7 * 24 * 60 * 60  # 7 days
+            )
+            return redirect_response
+        
+        # Priority 2: Token authentication (existing flow)
+        if not token:
+            logger.warning(f"IP {client_ip} not whitelisted and no token provided - redirecting to /demo")
+            return RedirectResponse(url="/demo", status_code=303)
+        
         # Log token receipt (without exposing full token in logs)
         token_preview = token[:20] + "..." if len(token) > 20 else token
-        logger.info(f"Bayi authentication attempt - AUTH_MODE: {AUTH_MODE}, token length: {len(token)}, preview: {token_preview}")
+        logger.info(f"Bayi token authentication attempt - IP: {client_ip}, token length: {len(token)}, preview: {token_preview}")
         
         # Decrypt token
         try:

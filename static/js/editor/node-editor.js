@@ -293,12 +293,17 @@ class NodeEditor {
      * Handle save action
      */
     handleSave() {
-        const newText = this.textInput.value.trim();
+        // Preserve newlines but trim leading/trailing whitespace
+        // Replace multiple consecutive newlines with single newline, then trim edges
+        let newText = this.textInput.value
+            .replace(/\n{3,}/g, '\n\n')  // Replace 3+ newlines with 2
+            .replace(/^\s+|\s+$/g, '');  // Trim leading/trailing whitespace (but preserve internal newlines)
         
         logger.debug('NodeEditor', 'Saving node', {
             nodeId: this.nodeData.id,
             textLength: newText?.length || 0,
-            changed: this.nodeData.text !== newText
+            changed: this.nodeData.text !== newText,
+            hasNewlines: newText.includes('\n')
         });
         
         if (newText === '') {

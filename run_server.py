@@ -47,9 +47,15 @@ class ShutdownErrorFilter:
             self.in_traceback = True
             self.suppress_current = False
             
-        # Check if this traceback is a CancelledError
-        if self.in_traceback and 'asyncio.exceptions.CancelledError' in self.buffer:
-            self.suppress_current = True
+        # Check if this traceback is a CancelledError or Windows Proactor error
+        if self.in_traceback:
+            if 'asyncio.exceptions.CancelledError' in self.buffer:
+                self.suppress_current = True
+            # Suppress Windows Proactor pipe transport errors (harmless cleanup errors)
+            if '_ProactorBasePipeTransport._call_connection_lost' in self.buffer:
+                self.suppress_current = True
+            if 'Exception in callback _ProactorBasePipeTransport' in self.buffer:
+                self.suppress_current = True
         
         # If we hit a blank line or new process line, decide whether to flush
         if text.strip() == '' or text.startswith('Process '):
@@ -168,7 +174,7 @@ def run_uvicorn():
         
         try:
             # Load custom uvicorn logging config for consistent formatting
-            from uvicorn_log_config import LOGGING_CONFIG
+            from uvicorn_config import LOGGING_CONFIG
             
             # Run uvicorn with proper shutdown configuration
             uvicorn.run(

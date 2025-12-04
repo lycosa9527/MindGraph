@@ -165,6 +165,8 @@ class LanguageManager {
                 switchLanguageTooltip: 'Switch Language',
                 share: 'Share',
                 shareTooltip: 'Share',
+                logout: 'Logout',
+                logoutTooltip: 'Logout',
                 feedback: 'Feedback',
                 feedbackTooltip: 'Send Feedback',
                 feedbackTitle: 'Send Feedback',
@@ -416,6 +418,8 @@ class LanguageManager {
                 switchLanguageTooltip: '切换语言',
                 share: '分享',
                 shareTooltip: '分享',
+                logout: '退出',
+                logoutTooltip: '退出登录',
                 feedback: '反馈',
                 feedbackTooltip: '发送反馈',
                 feedbackTitle: '发送反馈',
@@ -1030,6 +1034,19 @@ class LanguageManager {
             thinkingTitleText.textContent = t.thinkingModeTitle;
         }
         
+        // Update logout button text and language classes
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            const langEnSpan = logoutBtn.querySelector('.lang-en');
+            const langZhSpan = logoutBtn.querySelector('.lang-zh');
+            
+            if (langEnSpan && langZhSpan) {
+                langEnSpan.style.display = this.currentLanguage === 'en' ? 'inline' : 'none';
+                langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
+            }
+            logoutBtn.title = t.logoutTooltip;
+        }
+        
         // Update feedback button text and language classes
         const feedbackBtn = document.getElementById('feedback-btn');
         if (feedbackBtn) {
@@ -1365,7 +1382,12 @@ class LanguageManager {
      * Show Feedback Modal
      */
     showFeedbackModal() {
-        const t = this.translations[this.currentLanguage];
+        const qrImageName = window.WECHAT_QR_IMAGE || '';
+        
+        if (!qrImageName) {
+            logger.warn('LanguageManager', 'WeChat QR image not configured');
+            return;
+        }
         
         // Create modal overlay
         const overlay = document.createElement('div');
@@ -1389,16 +1411,15 @@ class LanguageManager {
         modal.style.background = 'white';
         modal.style.borderRadius = '20px';
         modal.style.padding = '40px';
-        modal.style.maxWidth = '480px';
+        modal.style.maxWidth = '500px';
         modal.style.width = '90%';
-        modal.style.maxHeight = '90vh';
-        modal.style.overflowY = 'auto';
         modal.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(102, 126, 234, 0.1)';
         modal.style.position = 'relative';
         modal.style.border = '2px solid transparent';
         modal.style.backgroundImage = 'linear-gradient(white, white), linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         modal.style.backgroundOrigin = 'border-box';
         modal.style.backgroundClip = 'padding-box, border-box';
+        modal.style.textAlign = 'center';
         
         // Close button
         const closeBtn = document.createElement('button');
@@ -1435,8 +1456,8 @@ class LanguageManager {
         
         // Title
         const title = document.createElement('h2');
-        title.textContent = t.feedbackTitle;
-        title.style.margin = '0 0 6px 0';
+        title.textContent = this.currentLanguage === 'en' ? 'Join Feedback Group' : '加入反馈群';
+        title.style.margin = '0 0 12px 0';
         title.style.color = '#1a1a1a';
         title.style.fontSize = '26px';
         title.style.fontWeight = '700';
@@ -1444,293 +1465,43 @@ class LanguageManager {
         
         // Subtitle
         const subtitle = document.createElement('p');
-        subtitle.textContent = t.feedbackSubtitle;
+        subtitle.textContent = this.currentLanguage === 'en' 
+            ? 'Scan the QR code to join our WeChat group for feedback' 
+            : '扫描二维码加入微信群，提供反馈和建议';
         subtitle.style.margin = '0 0 28px 0';
         subtitle.style.color = '#64748b';
         subtitle.style.fontSize = '14px';
         subtitle.style.lineHeight = '1.5';
         
-        // Message Label
-        const messageLabel = document.createElement('label');
-        messageLabel.textContent = t.feedbackMessage + ':';
-        messageLabel.style.display = 'block';
-        messageLabel.style.marginBottom = '10px';
-        messageLabel.style.color = '#1e293b';
-        messageLabel.style.fontWeight = '600';
-        messageLabel.style.fontSize = '14px';
+        // QR Code Image
+        const qrImage = document.createElement('img');
+        qrImage.src = `/static/qr/${qrImageName}`;
+        qrImage.alt = this.currentLanguage === 'en' ? 'WeChat Group QR Code' : '微信群二维码';
+        qrImage.style.width = '100%';
+        qrImage.style.maxWidth = '400px';
+        qrImage.style.height = 'auto';
+        qrImage.style.borderRadius = '12px';
+        qrImage.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+        qrImage.style.margin = '0 auto 20px';
+        qrImage.style.display = 'block';
         
-        // Message Textarea
-        const messageTextarea = document.createElement('textarea');
-        messageTextarea.id = 'feedback-message';
-        messageTextarea.placeholder = t.feedbackMessagePlaceholder;
-        messageTextarea.style.width = '100%';
-        messageTextarea.style.minHeight = '140px';
-        messageTextarea.style.padding = '14px';
-        messageTextarea.style.border = '2px solid #e2e8f0';
-        messageTextarea.style.borderRadius = '10px';
-        messageTextarea.style.fontSize = '14px';
-        messageTextarea.style.fontFamily = 'inherit';
-        messageTextarea.style.lineHeight = '1.6';
-        messageTextarea.style.resize = 'vertical';
-        messageTextarea.style.marginBottom = '24px';
-        messageTextarea.style.transition = 'all 0.2s ease';
-        messageTextarea.style.background = '#fafbfc';
-        messageTextarea.addEventListener('focus', () => {
-            messageTextarea.style.borderColor = '#667eea';
-            messageTextarea.style.background = 'white';
-            messageTextarea.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+        // Handle image load error
+        qrImage.addEventListener('error', () => {
+            qrImage.style.display = 'none';
+            const errorMsg = document.createElement('p');
+            errorMsg.textContent = this.currentLanguage === 'en' 
+                ? 'QR code image not found' 
+                : '二维码图片未找到';
+            errorMsg.style.color = '#dc2626';
+            errorMsg.style.marginTop = '20px';
+            modal.appendChild(errorMsg);
         });
-        messageTextarea.addEventListener('blur', () => {
-            messageTextarea.style.borderColor = '#e2e8f0';
-            messageTextarea.style.background = '#fafbfc';
-            messageTextarea.style.boxShadow = 'none';
-        });
-        
-        // Captcha Image - Fixed width, separate from input
-        const captchaImage = document.createElement('img');
-        captchaImage.id = 'feedback-captcha-image';
-        captchaImage.style.width = '140px';
-        captchaImage.style.height = '50px';
-        captchaImage.style.objectFit = 'contain';
-        captchaImage.style.border = '2px solid rgba(102, 126, 234, 0.3)';
-        captchaImage.style.borderRadius = '10px';
-        captchaImage.style.cursor = 'pointer';
-        captchaImage.style.background = '#f9f9f9';
-        captchaImage.style.flexShrink = '0';
-        captchaImage.style.transition = 'border-color 0.2s ease, transform 0.1s ease';
-        captchaImage.title = this.currentLanguage === 'en' ? 'Click to refresh' : '点击刷新';
-        captchaImage.addEventListener('click', () => {
-            refreshCaptcha();
-        });
-        captchaImage.addEventListener('mouseenter', () => {
-            captchaImage.style.borderColor = '#667eea';
-            captchaImage.style.transform = 'scale(1.02)';
-        });
-        captchaImage.addEventListener('mouseleave', () => {
-            captchaImage.style.borderColor = 'rgba(102, 126, 234, 0.3)';
-            captchaImage.style.transform = 'scale(1)';
-        });
-        
-        // Captcha Input - Exact same style as login page
-        const captchaInputWrapper = document.createElement('div');
-        captchaInputWrapper.style.flex = '1';
-        captchaInputWrapper.style.minWidth = '0';
-        
-        const captchaInput = document.createElement('input');
-        captchaInput.id = 'feedback-captcha-input';
-        captchaInput.type = 'text';
-        captchaInput.placeholder = this.currentLanguage === 'en' ? 'Code' : '输入验证码';
-        captchaInput.style.width = '100%';
-        captchaInput.style.padding = '12px 16px';
-        captchaInput.style.border = '2px solid #e2e8f0';
-        captchaInput.style.borderRadius = '10px';
-        captchaInput.style.fontSize = '15px';
-        captchaInput.style.fontWeight = '400';
-        captchaInput.style.fontFamily = 'inherit';
-        captchaInput.style.textAlign = 'left';
-        captchaInput.style.textTransform = 'none';
-        captchaInput.maxLength = 4;
-        captchaInput.style.transition = 'border-color 0.3s ease, box-shadow 0.3s ease';
-        captchaInput.style.boxSizing = 'border-box';
-        captchaInput.addEventListener('focus', () => {
-            captchaInput.style.borderColor = '#667eea';
-            captchaInput.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-        });
-        captchaInput.addEventListener('blur', () => {
-            captchaInput.style.borderColor = '#e2e8f0';
-            captchaInput.style.boxShadow = 'none';
-        });
-        captchaInput.addEventListener('input', (e) => {
-            // Allow normal input, no uppercase transform (matches login page behavior)
-            e.target.value = e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 4);
-        });
-        
-        captchaInputWrapper.appendChild(captchaInput);
-        
-        // Captcha ID (hidden)
-        const captchaIdInput = document.createElement('input');
-        captchaIdInput.id = 'feedback-captcha-id';
-        captchaIdInput.type = 'hidden';
-        
-        // Refresh Captcha function
-        const refreshCaptcha = async () => {
-            try {
-                const response = await fetch('/api/auth/captcha/generate');
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Failed to load captcha');
-                }
-                
-                captchaImage.src = data.captcha_image;
-                captchaIdInput.value = data.captcha_id;
-                captchaInput.value = '';
-            } catch (error) {
-                logger.error('LanguageManager', 'Failed to load captcha', error);
-                errorMsg.textContent = this.currentLanguage === 'en' 
-                    ? 'Failed to load captcha. Please try again.' 
-                    : '验证码加载失败，请重试。';
-                errorMsg.style.display = 'block';
-            }
-        };
-        
-        // Load initial captcha
-        refreshCaptcha();
-        
-        // Buttons container - captcha on left, submit button on right
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.style.display = 'flex';
-        buttonsContainer.style.gap = '12px';
-        buttonsContainer.style.alignItems = 'center';
-        buttonsContainer.style.justifyContent = 'space-between';
-        buttonsContainer.style.marginTop = '8px';
-        buttonsContainer.style.flexWrap = 'nowrap';
-        buttonsContainer.style.width = '100%';
-        
-        // Submit button (no cancel button - users can close via X or clicking outside)
-        const submitBtn = document.createElement('button');
-        submitBtn.textContent = t.feedbackSubmit;
-        submitBtn.style.padding = '12px 24px';
-        submitBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        submitBtn.style.color = 'white';
-        submitBtn.style.border = 'none';
-        submitBtn.style.borderRadius = '10px';
-        submitBtn.style.fontSize = '15px';
-        submitBtn.style.fontWeight = '600';
-        submitBtn.style.cursor = 'pointer';
-        submitBtn.style.transition = 'all 0.2s ease';
-        submitBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.25)';
-        submitBtn.style.whiteSpace = 'nowrap';
-        submitBtn.style.flexShrink = '0';
-        submitBtn.addEventListener('mouseover', () => {
-            submitBtn.style.transform = 'translateY(-2px)';
-            submitBtn.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-        });
-        submitBtn.addEventListener('mouseout', () => {
-            submitBtn.style.transform = 'translateY(0)';
-            submitBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.25)';
-        });
-        
-        // Error message
-        const errorMsg = document.createElement('div');
-        errorMsg.id = 'feedback-error';
-        errorMsg.style.display = 'none';
-        errorMsg.style.color = '#dc2626';
-        errorMsg.style.fontSize = '13px';
-        errorMsg.style.marginBottom = '16px';
-        errorMsg.style.padding = '12px 14px';
-        errorMsg.style.background = '#fef2f2';
-        errorMsg.style.border = '1px solid #fecaca';
-        errorMsg.style.borderRadius = '8px';
-        errorMsg.style.fontWeight = '500';
-        
-        // Submit handler
-        submitBtn.addEventListener('click', async () => {
-            const message = messageTextarea.value.trim();
-            const captcha = captchaInput.value.trim();
-            const captchaId = captchaIdInput.value;
-            
-            // Validation
-            if (!message) {
-                errorMsg.textContent = t.feedbackRequired;
-                errorMsg.style.display = 'block';
-                return;
-            }
-            
-            if (!captcha || captcha.length !== 4) {
-                errorMsg.textContent = this.currentLanguage === 'en' 
-                    ? 'Please enter the verification code' 
-                    : '请输入验证码';
-                errorMsg.style.display = 'block';
-                return;
-            }
-            
-            if (!captchaId) {
-                errorMsg.textContent = this.currentLanguage === 'en' 
-                    ? 'Please refresh the verification code' 
-                    : '请刷新验证码';
-                errorMsg.style.display = 'block';
-                refreshCaptcha();
-                return;
-            }
-            
-            errorMsg.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.textContent = this.currentLanguage === 'en' ? 'Sending...' : '发送中...';
-            
-            try {
-                // Get user info if available
-                const userId = window.auth?.user?.id || 'anonymous';
-                const userName = window.auth?.user?.name || 'Anonymous User';
-                
-                const response = await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        captcha_id: captchaId,
-                        captcha: captcha,
-                        user_id: userId,
-                        user_name: userName
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    // Handle captcha errors specifically
-                    if (response.status === 400 && (data.detail || '').includes('captcha')) {
-                        errorMsg.textContent = this.currentLanguage === 'en' 
-                            ? 'Invalid verification code. Please try again.' 
-                            : '验证码错误，请重试。';
-                        refreshCaptcha();
-                    } else {
-                        errorMsg.textContent = data.detail || t.feedbackError;
-                    }
-                    errorMsg.style.display = 'block';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = t.feedbackSubmit;
-                    return;
-                }
-                
-                // Success
-                this.showNotification(t.feedbackSuccess, 'success');
-                closeModal();
-                
-            } catch (error) {
-                logger.error('LanguageManager', 'Failed to send feedback', error);
-                errorMsg.textContent = t.feedbackError;
-                errorMsg.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = t.feedbackSubmit;
-            }
-        });
-        
-        // Captcha group on left, submit button on right
-        const captchaGroup = document.createElement('div');
-        captchaGroup.style.display = 'flex';
-        captchaGroup.style.gap = '10px';
-        captchaGroup.style.alignItems = 'center';
-        captchaGroup.style.flex = '1';
-        captchaGroup.style.minWidth = '0';
-        
-        captchaGroup.appendChild(captchaImage);
-        captchaGroup.appendChild(captchaInputWrapper);
-        
-        buttonsContainer.appendChild(captchaGroup);
-        buttonsContainer.appendChild(submitBtn);
         
         // Assemble modal
         modal.appendChild(closeBtn);
         modal.appendChild(title);
         modal.appendChild(subtitle);
-        modal.appendChild(messageLabel);
-        modal.appendChild(messageTextarea);
-        modal.appendChild(captchaIdInput);
-        modal.appendChild(errorMsg);
-        modal.appendChild(buttonsContainer);
+        modal.appendChild(qrImage);
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
         
@@ -1754,9 +1525,6 @@ class LanguageManager {
             }
         };
         document.addEventListener('keydown', escapeHandler);
-        
-        // Focus on textarea
-        setTimeout(() => messageTextarea.focus(), 100);
     }
     
     /**

@@ -24,7 +24,8 @@
     data-feature-thinkguide="{{ feature_thinkguide | tojson }}"
     data-feature-voice-agent="{{ feature_voice_agent | tojson }}"
     data-ai-assistant-name="{{ ai_assistant_name }}"
-    data-default-language="{{ default_language }}">
+    data-default-language="{{ default_language }}"
+    data-wechat-qr-image="{{ wechat_qr_image }}">
     <!-- Configuration from backend -->
     <script>
         // Load configuration from data attributes
@@ -35,6 +36,7 @@
         window.FEATURE_VOICE_AGENT = bodyElement.dataset.featureVoiceAgent === 'true';
         window.AI_ASSISTANT_NAME = bodyElement.dataset.aiAssistantName || 'MindMate AI';
         window.DEFAULT_LANGUAGE = bodyElement.dataset.defaultLanguage || 'zh';
+        window.WECHAT_QR_IMAGE = bodyElement.dataset.wechatQrImage || '';
     </script>
     <!-- Landing Page / Gallery -->
     <div class="editor-landing" id="editor-landing">
@@ -43,12 +45,15 @@
             <button id="language-toggle" class="control-btn" title="Switch Language">
                 <span class="lang-text">EN</span>
             </button>
-            <button id="feedback-btn" class="control-btn" title="Feedback" style="display: none;">
+            {% if wechat_qr_image %}
+            <button id="feedback-btn" class="control-btn" title="Feedback">
                 <span class="lang-en">Feedback</span>
                 <span class="lang-zh">反馈</span>
             </button>
+            {% endif %}
             <button id="logout-btn" class="control-btn" title="Logout">
-                <span>Logout</span>
+                <span class="lang-en">Logout</span>
+                <span class="lang-zh">退出</span>
             </button>
         </div>
         
@@ -513,7 +518,7 @@
                     <!-- Text Properties -->
                     <div class="property-group">
                         <label for="prop-text">Text</label>
-                        <input type="text" id="prop-text" name="prop-text" class="prop-input" placeholder="Node text" autocomplete="off">
+                        <textarea id="prop-text" name="prop-text" class="prop-input prop-textarea" placeholder="Node text" autocomplete="off" rows="3"></textarea>
                         <button id="prop-text-apply" class="prop-btn">Apply</button>
                     </div>
                     

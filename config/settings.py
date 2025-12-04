@@ -330,6 +330,11 @@ class Config:
         return lang
     
     @property
+    def WECHAT_QR_IMAGE(self):
+        """WeChat group QR code image filename (stored in static/qr/ folder)."""
+        return self._get_cached_value('WECHAT_QR_IMAGE', '')
+    
+    @property
     def GRAPH_LANGUAGE(self):
         """Language for graph generation (zh/en)."""
         return self._get_cached_value('GRAPH_LANGUAGE', 'zh')

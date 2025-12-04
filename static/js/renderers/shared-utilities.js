@@ -283,6 +283,58 @@ function wrapText(text, width) {
 }
 
 /**
+ * Split text by newlines and wrap each line if needed
+ * @param {string} text - Text to process
+ * @param {number} fontSize - Font size in pixels
+ * @param {number} maxWidth - Maximum width before wrapping
+ * @param {Function} measureFn - Function to measure text width: (text, fontSize) => number
+ * @returns {string[]} Array of lines (already wrapped)
+ */
+function splitAndWrapText(text, fontSize, maxWidth, measureFn) {
+    const textStr = String(text || '');
+    const allLines = [];
+    
+    // First, split by explicit newlines (user-inserted line breaks)
+    const explicitLines = textStr.split(/\n/);
+    
+    // For each explicit line, wrap it if needed
+    explicitLines.forEach((line, lineIndex) => {
+        // Trim each line but preserve empty lines
+        const trimmedLine = line.trim();
+        if (trimmedLine === '' && lineIndex < explicitLines.length - 1) {
+            // Preserve empty lines (but not trailing ones)
+            allLines.push('');
+            return;
+        }
+        
+        if (trimmedLine === '') {
+            return; // Skip trailing empty lines
+        }
+        
+        // Wrap this line if it exceeds maxWidth
+        const words = trimmedLine.split(/\s+/);
+        let current = '';
+        for (const w of words) {
+            const candidate = current ? current + ' ' + w : w;
+            const width = measureFn(candidate, fontSize);
+            if (width <= maxWidth || current === '') {
+                current = candidate;
+            } else {
+                if (current) {
+                    allLines.push(current);
+                }
+                current = w;
+            }
+        }
+        if (current) {
+            allLines.push(current);
+        }
+    });
+    
+    return allLines.length > 0 ? allLines : [''];
+}
+
+/**
  * Hide random text elements for learning sheet mode
  * @param {Object} svg - D3 SVG selection
  * @param {number} hiddenPercentage - Percentage of text elements to hide (0-1)
@@ -437,8 +489,14 @@ if (typeof window !== 'undefined') {
         createSVG,
         centerContent,
         wrapText,
+        splitAndWrapText,
         knockoutTextForLearningSheet
     };
+    
+    // Also expose splitAndWrapText globally for backward compatibility
+    if (typeof window.splitAndWrapText === 'undefined') {
+        window.splitAndWrapText = splitAndWrapText;
+    }
     
     // CRITICAL FIX: Also expose functions globally for backward compatibility
     // This prevents the "Identifier 'addWatermark' has already been declared" error
