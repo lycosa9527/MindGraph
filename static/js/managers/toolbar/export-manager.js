@@ -154,7 +154,10 @@ class ExportManager {
                 // Clone SVG for export (preserve original)
                 const svgClone = svg.cloneNode(true);
                 
-                // Use viewBox dimensions for accurate export
+                // Remove UI-only elements that should not appear in exports
+                this.removeExportExcludedElements(svgClone);
+                
+                // Get dimensions from viewBox (most reliable) or fallback to attributes/getBBox
                 const viewBox = svgClone.getAttribute('viewBox');
                 let width, height, viewBoxX = 0, viewBoxY = 0;
                 
@@ -165,11 +168,100 @@ class ExportManager {
                     viewBoxY = viewBoxParts[1];
                     width = viewBoxParts[2];
                     height = viewBoxParts[3];
+                    
+                    // Verify content actually fits within viewBox by checking getBBox
+                    // This catches cases where renderers update viewBox but content extends beyond
+                    try {
+                        const bbox = svgClone.getBBox();
+                        const contentMinX = bbox.x;
+                        const contentMinY = bbox.y;
+                        const contentMaxX = bbox.x + bbox.width;
+                        const contentMaxY = bbox.y + bbox.height;
+                        
+                        // Check if content extends beyond viewBox bounds
+                        const needsExpansion = 
+                            contentMinX < viewBoxX || 
+                            contentMinY < viewBoxY ||
+                            contentMaxX > (viewBoxX + width) ||
+                            contentMaxY > (viewBoxY + height);
+                        
+                        if (needsExpansion) {
+                            // Expand viewBox to include all content with padding
+                            const padding = 20;
+                            const newMinX = Math.min(viewBoxX, contentMinX - padding);
+                            const newMinY = Math.min(viewBoxY, contentMinY - padding);
+                            const newWidth = Math.max(width, (contentMaxX - newMinX) + padding);
+                            const newHeight = Math.max(height, (contentMaxY - newMinY) + padding);
+                            
+                            // Update viewBox to include all content
+                            svgClone.setAttribute('viewBox', `${newMinX} ${newMinY} ${newWidth} ${newHeight}`);
+                            width = newWidth;
+                            height = newHeight;
+                            viewBoxX = newMinX;
+                            viewBoxY = newMinY;
+                        }
+                    } catch (e) {
+                        // getBBox might fail if SVG is empty or not rendered, use viewBox as-is
+                        this.logger.warn('ExportManager', 'Could not verify content bounds, using viewBox as-is', e);
+                    }
+                    
+                    // For canvas export, normalize viewBox if it has offsets
+                    // Canvas.drawImage doesn't handle viewBox offsets well, so we need to normalize
+                    if (viewBoxX !== 0 || viewBoxY !== 0) {
+                        // Normalize by wrapping content in a group and translating
+                        const content = Array.from(svgClone.childNodes);
+                        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        group.setAttribute('transform', `translate(${-viewBoxX}, ${-viewBoxY})`);
+                        
+                        // Move all children to the group (preserve order - background should be first)
+                        content.forEach(child => {
+                            if (child.nodeType === 1) { // Element node
+                                group.appendChild(child);
+                            }
+                        });
+                        
+                        // Clear SVG and add the group
+                        svgClone.innerHTML = '';
+                        svgClone.appendChild(group);
+                        
+                        // Update viewBox to start at (0, 0)
+                        svgClone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                        svgClone.setAttribute('width', width);
+                        svgClone.setAttribute('height', height);
+                        
+                        // Reset offsets for watermark calculation
+                        viewBoxX = 0;
+                        viewBoxY = 0;
+                    } else {
+                        // Ensure width/height attributes match viewBox (some renderers don't set these)
+                        svgClone.setAttribute('width', width);
+                        svgClone.setAttribute('height', height);
+                    }
                 } else {
-                    // Fallback to getBoundingClientRect
-                    const rect = svg.getBoundingClientRect();
-                    width = rect.width;
-                    height = rect.height;
+                    // No viewBox - try to get from width/height attributes
+                    const attrWidth = parseFloat(svgClone.getAttribute('width'));
+                    const attrHeight = parseFloat(svgClone.getAttribute('height'));
+                    
+                    if (attrWidth && attrHeight && !isNaN(attrWidth) && !isNaN(attrHeight)) {
+                        width = attrWidth;
+                        height = attrHeight;
+                    } else {
+                        // Fallback to getBoundingClientRect or getBBox
+                        try {
+                            const bbox = svgClone.getBBox();
+                            width = bbox.width || svg.getBoundingClientRect().width || 800;
+                            height = bbox.height || svg.getBoundingClientRect().height || 600;
+                        } catch (e) {
+                            const rect = svg.getBoundingClientRect();
+                            width = rect.width || 800;
+                            height = rect.height || 600;
+                        }
+                        
+                        // Set viewBox and dimensions
+                        svgClone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                        svgClone.setAttribute('width', width);
+                        svgClone.setAttribute('height', height);
+                    }
                 }
                 
                 // Add watermark to clone
@@ -279,6 +371,9 @@ class ExportManager {
             
             // Clone SVG for export
             const svgClone = svg.cloneNode(true);
+            
+            // Remove UI-only elements that should not appear in exports
+            this.removeExportExcludedElements(svgClone);
             
             // Add watermark
             const viewBox = svgClone.getAttribute('viewBox');
@@ -454,6 +549,47 @@ class ExportManager {
         });
         
         return filename;
+    }
+    
+    /**
+     * Remove UI-only elements that should not appear in exports
+     * @param {SVGElement} svgClone - Cloned SVG element
+     */
+    removeExportExcludedElements(svgClone) {
+        if (!svgClone) return;
+        
+        const svgD3 = d3.select(svgClone);
+        
+        // Remove learning sheet answer key text (should not appear in exports)
+        svgD3.selectAll('.learning-sheet-answer-key').remove();
+        
+        // Remove selection highlights (class="selected" with stroke modifications)
+        // These are UI-only and should not appear in exports
+        svgD3.selectAll('.selected').each(function() {
+            const element = d3.select(this);
+            // Remove selection styling but keep the element
+            element.classed('selected', false);
+            // Remove selection-specific attributes if they exist
+            element.style('filter', null);
+        });
+        
+        // Ensure background rectangles don't have visible strokes
+        // Background rectangles should only provide fill color, not borders
+        svgD3.selectAll('.background, .background-rect').each(function() {
+            const element = d3.select(this);
+            // Ensure no stroke is visible
+            const stroke = element.attr('stroke');
+            if (stroke && stroke !== 'none' && stroke !== 'transparent') {
+                element.attr('stroke', 'none');
+            }
+            // Also check style attribute
+            const styleStroke = element.style('stroke');
+            if (styleStroke && styleStroke !== 'none' && styleStroke !== 'transparent') {
+                element.style('stroke', 'none');
+            }
+        });
+        
+        this.logger.debug('ExportManager', 'Removed export-excluded elements');
     }
     
     /**

@@ -83,6 +83,16 @@ function renderMindMap(spec, theme = null, dimensions = null) {
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .style('background-color', containerBackground, 'important');
     
+    // Add background rectangle to cover entire SVG area (ensures consistent background in PNG exports)
+    svg.append('rect')
+        .attr('class', 'background')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', width)
+        .attr('height', height)
+        .attr('fill', containerBackground)
+        .attr('stroke', 'none');
+    
     // Require Python agent layout data
     const centerX = width / 2;
     const centerY = height / 2;

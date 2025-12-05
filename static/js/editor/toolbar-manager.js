@@ -1058,6 +1058,25 @@ class ToolbarManager {
             // Clone SVG for export (preserve original)
             const svgClone = svg.cloneNode(true);
             
+            // Remove UI-only elements that should not appear in exports
+            // Remove learning sheet answer key text
+            const svgD3 = d3.select(svgClone);
+            svgD3.selectAll('.learning-sheet-answer-key').remove();
+            // Remove selection highlights
+            svgD3.selectAll('.selected').classed('selected', false).style('filter', null);
+            // Ensure background rectangles don't have visible strokes
+            svgD3.selectAll('.background, .background-rect').each(function() {
+                const element = d3.select(this);
+                const stroke = element.attr('stroke');
+                if (stroke && stroke !== 'none' && stroke !== 'transparent') {
+                    element.attr('stroke', 'none');
+                }
+                const styleStroke = element.style('stroke');
+                if (styleStroke && styleStroke !== 'none' && styleStroke !== 'transparent') {
+                    element.style('stroke', 'none');
+                }
+            });
+            
             // CRITICAL FIX: Use viewBox dimensions for accurate export
             // viewBox defines the actual coordinate system, not width/height attributes
             const viewBox = svgClone.getAttribute('viewBox');
@@ -1071,11 +1090,101 @@ class ToolbarManager {
                 viewBoxY = viewBoxParts[1];
                 width = viewBoxParts[2];
                 height = viewBoxParts[3];
+                
+                // Verify content actually fits within viewBox by checking getBBox
+                // This catches cases where renderers update viewBox but content extends beyond
+                try {
+                    const bbox = svgClone.getBBox();
+                    const contentMinX = bbox.x;
+                    const contentMinY = bbox.y;
+                    const contentMaxX = bbox.x + bbox.width;
+                    const contentMaxY = bbox.y + bbox.height;
+                    
+                    // Check if content extends beyond viewBox bounds
+                    const needsExpansion = 
+                        contentMinX < viewBoxX || 
+                        contentMinY < viewBoxY ||
+                        contentMaxX > (viewBoxX + width) ||
+                        contentMaxY > (viewBoxY + height);
+                    
+                    if (needsExpansion) {
+                        // Expand viewBox to include all content with padding
+                        const padding = 20;
+                        const newMinX = Math.min(viewBoxX, contentMinX - padding);
+                        const newMinY = Math.min(viewBoxY, contentMinY - padding);
+                        const newWidth = Math.max(width, (contentMaxX - newMinX) + padding);
+                        const newHeight = Math.max(height, (contentMaxY - newMinY) + padding);
+                        
+                        // Update viewBox to include all content
+                        svgClone.setAttribute('viewBox', `${newMinX} ${newMinY} ${newWidth} ${newHeight}`);
+                        width = newWidth;
+                        height = newHeight;
+                        viewBoxX = newMinX;
+                        viewBoxY = newMinY;
+                    }
+                } catch (e) {
+                    // getBBox might fail if SVG is empty or not rendered, use viewBox as-is
+                    logger.warn('ToolbarManager', 'Could not verify content bounds, using viewBox as-is', e);
+                }
+                
+                // Ensure SVG width/height match viewBox dimensions
+                // For canvas export, we need to normalize viewBox because canvas.drawImage doesn't handle viewBox offsets well
+                if (viewBoxX !== 0 || viewBoxY !== 0) {
+                    // Normalize viewBox by wrapping content in a group and translating
+                    // This ensures canvas export captures the full diagram correctly
+                    const content = Array.from(svgClone.childNodes);
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('transform', `translate(${-viewBoxX}, ${-viewBoxY})`);
+                    
+                    // Move all children to the group (preserve order - background should be first)
+                    content.forEach(child => {
+                        if (child.nodeType === 1) { // Element node
+                            group.appendChild(child);
+                        }
+                    });
+                    
+                    // Clear SVG and add the group
+                    svgClone.innerHTML = '';
+                    svgClone.appendChild(group);
+                    
+                    // Update viewBox to start at (0, 0)
+                    svgClone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                    svgClone.setAttribute('width', width);
+                    svgClone.setAttribute('height', height);
+                    
+                    // Reset offsets for watermark calculation
+                    viewBoxX = 0;
+                    viewBoxY = 0;
+                } else {
+                    // Even without offsets, ensure width/height match viewBox
+                    svgClone.setAttribute('width', width);
+                    svgClone.setAttribute('height', height);
+                }
             } else {
-                // Fallback to getBoundingClientRect for actual displayed size
-                const rect = svg.getBoundingClientRect();
-                width = rect.width;
-                height = rect.height;
+                // No viewBox - try to get from width/height attributes
+                const attrWidth = parseFloat(svgClone.getAttribute('width'));
+                const attrHeight = parseFloat(svgClone.getAttribute('height'));
+                
+                if (attrWidth && attrHeight && !isNaN(attrWidth) && !isNaN(attrHeight)) {
+                    width = attrWidth;
+                    height = attrHeight;
+                } else {
+                    // Fallback to getBoundingClientRect or getBBox
+                    try {
+                        const bbox = svgClone.getBBox();
+                        width = bbox.width || svg.getBoundingClientRect().width || 800;
+                        height = bbox.height || svg.getBoundingClientRect().height || 600;
+                    } catch (e) {
+                        const rect = svg.getBoundingClientRect();
+                        width = rect.width || 800;
+                        height = rect.height || 600;
+                    }
+                    
+                    // Set viewBox and dimensions
+                    svgClone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                    svgClone.setAttribute('width', width);
+                    svgClone.setAttribute('height', height);
+                }
             }
             
             // Calculate watermark position (bottom-right corner in viewBox coordinates)

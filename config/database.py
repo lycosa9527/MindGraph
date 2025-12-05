@@ -7,7 +7,7 @@ SQLAlchemy database setup and session management.
 """
 
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from models.auth import Base, Organization
 from datetime import datetime
@@ -32,8 +32,21 @@ if "sqlite" in DATABASE_URL:
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False},
+        pool_pre_ping=True,  # Verify connections before using
         echo=False  # Set to True for SQL query logging
     )
+    
+    # Enable WAL mode for better concurrent write performance
+    # WAL allows multiple readers and one writer simultaneously
+    # Without WAL: Only one writer at a time (database-level lock)
+    # With WAL: Better concurrency for high workload scenarios
+    @event.listens_for(engine, "connect")
+    def enable_wal_mode(dbapi_conn, connection_record):
+        """Enable WAL mode for SQLite to improve concurrent write performance"""
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=5000")  # Wait up to 5 seconds for locks
+        cursor.close()
 else:
     # Production database (PostgreSQL/MySQL) pool configuration
     # - pool_size: Base number of connections to maintain

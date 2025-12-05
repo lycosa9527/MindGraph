@@ -544,7 +544,7 @@ async def export_png(
             
             logger.debug("Rendering completed successfully, extracting dimensions")
             
-            # Extract actual SVG dimensions from viewBox
+            # Extract actual SVG dimensions from viewBox and verify content fits
             svg_dimensions = await page.evaluate("""
                 (() => {
                     const svg = document.querySelector('#d3-container svg');
@@ -553,11 +553,46 @@ async def export_png(
                     const viewBox = svg.getAttribute('viewBox');
                     if (viewBox) {
                         const parts = viewBox.split(' ').map(Number);
+                        let minX = parts[0];
+                        let minY = parts[1];
+                        let width = parts[2];
+                        let height = parts[3];
+                        
+                        // Verify content actually fits within viewBox by checking getBBox
+                        // This catches cases where renderers update viewBox but content extends beyond
+                        try {
+                            const bbox = svg.getBBox();
+                            const contentMinX = bbox.x;
+                            const contentMinY = bbox.y;
+                            const contentMaxX = bbox.x + bbox.width;
+                            const contentMaxY = bbox.y + bbox.height;
+                            
+                            // Check if content extends beyond viewBox bounds
+                            if (contentMinX < minX || contentMinY < minY ||
+                                contentMaxX > (minX + width) || contentMaxY > (minY + height)) {
+                                // Expand viewBox to include all content with padding
+                                const padding = 20;
+                                minX = Math.min(minX, contentMinX - padding);
+                                minY = Math.min(minY, contentMinY - padding);
+                                width = Math.max(width, (contentMaxX - minX) + padding);
+                                height = Math.max(height, (contentMaxY - minY) + padding);
+                                
+                                // Update SVG viewBox to include all content
+                                svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+                                svg.setAttribute('width', width);
+                                svg.setAttribute('height', height);
+                                console.log(`ViewBox expanded to include all content: ${minX} ${minY} ${width} ${height}`);
+                            }
+                        } catch (e) {
+                            // getBBox might fail if SVG is empty or not rendered, use viewBox as-is
+                            console.warn('Could not verify content bounds, using viewBox as-is:', e);
+                        }
+                        
                         return {
-                            x: parts[0],
-                            y: parts[1],
-                            width: parts[2],
-                            height: parts[3],
+                            x: minX,
+                            y: minY,
+                            width: width,
+                            height: height,
                             source: 'viewBox'
                         };
                     }
@@ -581,13 +616,42 @@ async def export_png(
             
             logger.info(f"SVG dimensions extracted: {svg_dimensions['width']}x{svg_dimensions['height']} (from {svg_dimensions['source']})")
             
-            # Resize container to match actual SVG dimensions
+            # Ensure SVG width/height attributes match viewBox dimensions (browser handles viewBox offset automatically)
+            # This fixes clipping issues without needing to translate elements
+            await page.evaluate("""
+                (() => {
+                    const svg = document.querySelector('#d3-container svg');
+                    if (!svg) return;
+                    
+                    const viewBox = svg.getAttribute('viewBox');
+                    if (viewBox) {
+                        const parts = viewBox.split(' ').map(Number);
+                        const width = parts[2];
+                        const height = parts[3];
+                        
+                        // Ensure SVG width/height match viewBox dimensions
+                        // Browser will automatically handle viewBox offset (minX, minY)
+                        const currentWidth = svg.getAttribute('width');
+                        const currentHeight = svg.getAttribute('height');
+                        
+                        if (currentWidth !== String(width) || currentHeight !== String(height)) {
+                            svg.setAttribute('width', width);
+                            svg.setAttribute('height', height);
+                            console.log(`SVG dimensions updated to match viewBox: ${width}x${height}`);
+                        }
+                    }
+                })()
+            """)
+            
+            # Resize container to match actual SVG dimensions and set background
             await page.evaluate(f"""
                 (() => {{
                     const container = document.getElementById('d3-container');
                     if (container) {{
                         container.style.width = '{svg_dimensions["width"]}px';
                         container.style.height = '{svg_dimensions["height"]}px';
+                        // Set background color to match SVG background (prevents black areas)
+                        container.style.backgroundColor = '#f5f5f5';
                         console.log('Container resized to:', '{svg_dimensions["width"]}x{svg_dimensions["height"]}');
                     }}
                 }})()

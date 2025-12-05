@@ -17,6 +17,9 @@ import signal
 import logging
 import importlib.util
 import multiprocessing
+import socket
+import subprocess
+import time
 
 # Suppress multiprocessing errors during shutdown on Windows
 import warnings
@@ -88,6 +91,138 @@ def check_package_installed(package_name):
     spec = importlib.util.find_spec(package_name)
     return spec is not None
 
+def _check_port_available(host: str, port: int):
+    """
+    Check if a port is available for binding.
+    
+    Args:
+        host: Host address to check
+        port: Port number to check
+        
+    Returns:
+        tuple: (is_available: bool, pid_using_port: Optional[int])
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind((host, port))
+        sock.close()
+        return (True, None)
+    except OSError as e:
+        # Port is in use - try to find the process
+        if e.errno in (10048, 98):  # Windows: 10048, Linux: 98 (EADDRINUSE)
+            pid = _find_process_on_port(port)
+            return (False, pid)
+        # Other error - re-raise
+        raise
+
+def _find_process_on_port(port: int):
+    """
+    Find the PID of the process using the specified port.
+    Cross-platform implementation.
+    
+    Args:
+        port: Port number to check
+        
+    Returns:
+        Optional[int]: PID of process using the port, or None if not found
+    """
+    try:
+        if sys.platform == 'win32':
+            # Windows: use netstat
+            result = subprocess.run(
+                ['netstat', '-ano'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            for line in result.stdout.split('\n'):
+                if f':{port}' in line and 'LISTENING' in line:
+                    parts = line.split()
+                    if len(parts) >= 5:
+                        return int(parts[-1])
+        else:
+            # Linux/Mac: use lsof
+            result = subprocess.run(
+                ['lsof', '-ti', f':{port}'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.stdout.strip():
+                # lsof can return multiple PIDs, get the first one
+                pids = result.stdout.strip().split('\n')
+                return int(pids[0]) if pids else None
+    except Exception as e:
+        print(f"[WARNING] Could not detect process on port {port}: {e}")
+    
+    return None
+
+def _cleanup_stale_process(pid: int, port: int) -> bool:
+    """
+    Attempt to gracefully terminate a stale server process.
+    
+    Args:
+        pid: Process ID to terminate
+        port: Port number (for logging)
+        
+    Returns:
+        bool: True if cleanup successful, False otherwise
+    """
+    print(f"[WARNING] Found process {pid} using port {port}")
+    print(f"[INFO] Attempting to terminate stale server process...")
+    
+    try:
+        if sys.platform == 'win32':
+            # Windows: taskkill
+            # First try graceful termination
+            subprocess.run(
+                ['taskkill', '/PID', str(pid)],
+                capture_output=True,
+                timeout=3
+            )
+            time.sleep(1)
+            
+            # Check if still running
+            check_result = subprocess.run(
+                ['tasklist', '/FI', f'PID eq {pid}'],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            if str(pid) in check_result.stdout:
+                # Force kill if graceful failed
+                print("[INFO] Process still running, forcing termination...")
+                subprocess.run(
+                    ['taskkill', '/F', '/PID', str(pid)],
+                    capture_output=True,
+                    timeout=2
+                )
+        else:
+            # Linux/Mac: kill
+            os.kill(pid, signal.SIGTERM)
+            time.sleep(0.5)
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # Process already terminated
+        
+        # Wait for port to be released
+        time.sleep(1)
+        is_available, _ = _check_port_available('0.0.0.0', port)
+        
+        if is_available:
+            print(f"[INFO] Successfully cleaned up stale process (PID: {pid})")
+            return True
+        else:
+            print(f"[ERROR] Port {port} still in use after cleanup attempt")
+            return False
+            
+    except Exception as e:
+        print(f"[ERROR] Failed to cleanup process {pid}: {e}")
+        return False
+
 def run_uvicorn():
     """Run MindGraph with Uvicorn (FastAPI async server)"""
     if not check_package_installed('uvicorn'):
@@ -111,6 +246,48 @@ def run_uvicorn():
         port = config.PORT
         debug = config.DEBUG
         log_level = config.LOG_LEVEL.lower()
+        
+        # Pre-flight port availability check
+        # NOTE: This check happens BEFORE uvicorn starts.
+        # When uvicorn runs with workers=N, the master process binds to the port
+        # and manages worker processes. All workers share the SAME port.
+        # This check prevents multiple SEPARATE uvicorn processes from starting.
+        print("[INFO] Checking port availability...")
+        is_available, pid_using_port = _check_port_available(host, port)
+        
+        if not is_available:
+            print(f"[WARNING] Port {port} is already in use")
+            
+            if pid_using_port:
+                print(f"[WARNING] Process {pid_using_port} is using the port")
+                print(f"[INFO] This might be:")
+                print(f"   - Another uvicorn server instance (will be cleaned up)")
+                print(f"   - Uvicorn master process (if restarting, this is expected)")
+                
+                # Attempt automatic cleanup
+                if _cleanup_stale_process(pid_using_port, port):
+                    print("[INFO] Port cleanup successful, proceeding with startup...")
+                    # Wait a bit for port to be fully released
+                    time.sleep(0.5)
+                else:
+                    print("=" * 80)
+                    print(f"[ERROR] Cannot start server - port {port} is still in use")
+                    print(f"[INFO] Manual cleanup required:")
+                    if sys.platform == 'win32':
+                        print(f"   Windows: taskkill /F /PID {pid_using_port}")
+                    else:
+                        print(f"   Linux/Mac: kill -9 {pid_using_port}")
+                    print("=" * 80)
+                    sys.exit(1)
+            else:
+                print("=" * 80)
+                print(f"[ERROR] Cannot start server - port {port} is in use")
+                print(f"[INFO] Could not detect the process using the port")
+                print(f"   Please check manually and free the port")
+                print("=" * 80)
+                sys.exit(1)
+        else:
+            print(f"[INFO] Port {port} is available")
         
         # Derive environment and reload from DEBUG setting
         environment = 'development' if debug else 'production'

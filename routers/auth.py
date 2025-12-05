@@ -57,6 +57,7 @@ from utils.auth import (
     decrypt_bayi_token,
     validate_bayi_token_body
 )
+from services.captcha_storage import get_captcha_storage
 
 import logging
 
@@ -64,8 +65,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Authentication"])
 
-# In-memory captcha storage (use Redis in production for multi-server)
-captcha_store = {}
+# File-based captcha storage (works across multiple server instances)
+captcha_storage = get_captcha_storage()
 
 # Path to Inter fonts (already in project)
 CAPTCHA_FONTS = [
@@ -128,31 +129,14 @@ async def register(
     Each invitation code is unique and belongs to one school.
     """
     # Validate captcha first (anti-bot protection)
-    if request.captcha_id not in captcha_store:
+    # Use verify_and_remove() for consistency with login and to prevent race conditions
+    captcha_valid = verify_captcha(request.captcha_id, request.captcha)
+    if not captcha_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Captcha expired or invalid. Please refresh."
+            detail="Captcha expired, invalid, or incorrect. Please refresh."
         )
     
-    stored_captcha = captcha_store[request.captcha_id]
-    
-    # Check expiration
-    if time.time() > stored_captcha["expires"]:
-        del captcha_store[request.captcha_id]
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Captcha expired. Please refresh."
-        )
-    
-    if stored_captcha['code'].upper() != request.captcha.upper():
-        # Don't delete captcha_id yet, allow retry
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect captcha code"
-        )
-    
-    # Captcha verified (case-insensitive), remove from store (one-time use)
-    del captcha_store[request.captcha_id]
     logger.debug(f"Captcha verified for registration: {request.phone}")
     
     # Check if phone already exists
@@ -238,8 +222,8 @@ async def login(
     
     Security features:
     - Captcha verification (bot protection)
-    - Rate limiting: 8 attempts per 15 minutes (per phone)
-    - Account lockout: 15 minutes after 8 failed attempts
+    - Rate limiting: 10 attempts per 15 minutes (per phone)
+    - Account lockout: 5 minutes after 10 failed attempts
     - Failed attempt tracking in database
     """
     # Check rate limit by phone
@@ -261,7 +245,7 @@ async def login(
         record_failed_attempt(request.phone, login_attempts)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid phone or password"
+            detail="Login failed. Invalid phone number or password."
         )
     
     # Check account lockout
@@ -277,10 +261,17 @@ async def login(
     if not captcha_valid:
         record_failed_attempt(request.phone, login_attempts)
         increment_failed_attempts(user, db)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid captcha code"
-        )
+        attempts_left = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
+        if attempts_left > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Login failed. Wrong captcha code. {attempts_left} attempts left."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail="Account locked due to too many failed attempts. Try again in 5 minutes."
+            )
     
     # Verify password
     if not verify_password(request.password, user.password_hash):
@@ -291,12 +282,12 @@ async def login(
         if attempts_left > 0:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Invalid password. {attempts_left} attempts remaining."
+                detail=f"Login failed. Wrong password. {attempts_left} attempts left."
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
-                detail="Account locked due to too many failed attempts. Try again in 15 minutes."
+                detail="Account locked due to too many failed attempts. Try again in 5 minutes."
             )
     
     # Successful login
@@ -431,16 +422,10 @@ async def generate_captcha(request: Request, response: Response):
     session_id = str(uuid.uuid4())
     
     # Store code with expiration (5 minutes)
-    captcha_store[session_id] = {
-        "code": code.upper(),
-        "expires": time.time() + 300
-    }
+    captcha_storage.store(session_id, code, expires_in_seconds=300)
     
     # Clean expired captchas (maintenance)
-    current_time = time.time()
-    expired_keys = [k for k, v in captcha_store.items() if v["expires"] < current_time]
-    for key in expired_keys:
-        del captcha_store[key]
+    captcha_storage.cleanup_expired()
     
     logger.info(f"Generated captcha: {session_id} for session: {session_token[:8]}...")
     
@@ -460,28 +445,7 @@ def verify_captcha(captcha_id: str, user_code: str) -> bool:
     Returns True if valid, False otherwise
     Removes captcha after verification (one-time use)
     """
-    if captcha_id not in captcha_store:
-        logger.warning(f"Captcha not found: {captcha_id}")
-        return False
-    
-    stored = captcha_store[captcha_id]
-    
-    # Check expiration
-    if time.time() > stored["expires"]:
-        del captcha_store[captcha_id]
-        logger.warning(f"Captcha expired: {captcha_id}")
-        return False
-    
-    # Verify code (CASE-INSENSITIVE comparison)
-    is_valid = stored["code"].upper() == user_code.upper()
-    
-    # Remove captcha (one-time use)
-    del captcha_store[captcha_id]
-    
-    if not is_valid:
-        logger.warning(f"Captcha verification failed: {captcha_id}")
-    
-    return is_valid
+    return captcha_storage.verify_and_remove(captcha_id, user_code)
 
 
 # ============================================================================

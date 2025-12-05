@@ -781,6 +781,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('width', width)
         .attr('height', height)
         .attr('fill', bgColor)
+        .attr('stroke', 'none')
         .attr('x', 0)
         .attr('y', 0);
     

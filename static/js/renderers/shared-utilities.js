@@ -456,7 +456,9 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
             }
             
             // Add answer key at the bottom
+            // Mark with class so it can be filtered out during export
             svg.append('text')
+                .attr('class', 'learning-sheet-answer-key')
                 .attr('x', answerX)
                 .attr('y', answerY)
                 .attr('font-family', 'Inter, Arial, sans-serif')
