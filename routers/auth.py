@@ -14,12 +14,14 @@ import random
 import string
 from datetime import datetime, timedelta
 from typing import Optional
+from io import BytesIO
+import math
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from captcha.image import ImageCaptcha
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from config.database import get_db
 from utils.invitations import normalize_or_generate, INVITE_PATTERN
@@ -72,6 +74,18 @@ captcha_storage = get_captcha_storage()
 CAPTCHA_FONTS = [
     os.path.join('static', 'fonts', 'inter-600.ttf'),  # Semi-bold
     os.path.join('static', 'fonts', 'inter-700.ttf'),  # Bold
+]
+
+# Color palette for captcha characters (vibrant colors for better visibility)
+CAPTCHA_COLORS = [
+    '#E74C3C',  # Red
+    '#F39C12',  # Orange
+    '#F1C40F',  # Yellow
+    '#27AE60',  # Green
+    '#3498DB',  # Blue
+    '#9B59B6',  # Purple
+    '#E91E63',  # Pink
+    '#16A085',  # Teal
 ]
 
 # ============================================================================
@@ -349,14 +363,162 @@ async def login(
 # CAPTCHA GENERATION
 # ============================================================================
 
+def _generate_custom_captcha(code: str) -> BytesIO:
+    """
+    Generate custom captcha image with larger letters and different colors per character.
+    
+    Args:
+        code: The captcha code string to render (4 characters)
+        
+    Returns:
+        BytesIO object containing PNG image data
+    """
+    # Image dimensions - match CSS display size (140x50)
+    width, height = 140, 50
+    
+    # Create image with white background
+    image = Image.new('RGB', (width, height), color='white')
+    draw = ImageDraw.Draw(image)
+    
+    # Load font (use bold font for better visibility)
+    font_path = CAPTCHA_FONTS[1] if os.path.exists(CAPTCHA_FONTS[1]) else CAPTCHA_FONTS[0]
+    try:
+        # Font size proportional to image height (70% of height for good visibility)
+        font_size = int(height * 0.7)  # 35px for 50px height
+        font = ImageFont.truetype(font_path, font_size)
+    except Exception:
+        # Fallback to default font if custom font fails
+        font = ImageFont.load_default()
+        font_size = 24
+    
+    # Measure all characters first to calculate proper spacing
+    char_widths = []
+    char_bboxes = []
+    
+    for char in code:
+        try:
+            # Pillow 8.0+ method
+            bbox = draw.textbbox((0, 0), char, font=font)
+            char_width = bbox[2] - bbox[0]
+            char_height = bbox[3] - bbox[1]
+            char_bboxes.append(bbox)
+        except AttributeError:
+            # Fallback for older Pillow versions
+            char_width, char_height = draw.textsize(char, font=font)
+            char_bboxes.append((0, 0, char_width, char_height))
+            char_width = char_width
+            char_height = char_height
+        
+        char_widths.append(char_width)
+    
+    # Calculate total width needed and spacing
+    total_char_width = sum(char_widths)
+    padding = width * 0.08  # 8% padding on each side
+    available_width = width - (padding * 2)
+    spacing = (available_width - total_char_width) / (len(code) - 1) if len(code) > 1 else 0
+    
+    # Starting X position (left padding)
+    current_x = padding
+    
+    # Vertical center of the image (where we want characters centered)
+    image_center_y = height / 2
+    
+    # Draw each character with different color and slight rotation
+    for i, char in enumerate(code):
+        # Select color for this character
+        color = CAPTCHA_COLORS[i % len(CAPTCHA_COLORS)]
+        
+        # Get character dimensions
+        bbox = char_bboxes[i]
+        char_width = char_widths[i]
+        char_height = bbox[3] - bbox[1]
+        
+        # Calculate character center X position
+        char_center_x = current_x + char_width / 2
+        
+        # Add slight random rotation for each character (-10 to +10 degrees)
+        rotation = random.uniform(-10, 10)
+        
+        # Create a temporary image for this character (with padding for rotation)
+        # Use sufficient padding to ensure rotation doesn't clip
+        padding_size = max(char_width, char_height) * 0.6
+        char_img_width = int(char_width + padding_size * 2)
+        char_img_height = int(char_height + padding_size * 2)
+        char_img = Image.new('RGBA', (char_img_width, char_img_height), (255, 255, 255, 0))
+        char_draw = ImageDraw.Draw(char_img)
+        
+        # Draw character so its visual center is at the center of char_img
+        # When drawing text at (x, y), the bbox top-left is at (x + bbox[0], y + bbox[1])
+        # The visual center of the character is at (x + bbox[0] + char_width/2, y + bbox[1] + char_height/2)
+        # To center: x + bbox[0] + char_width/2 = char_img_width/2
+        #            y + bbox[1] + char_height/2 = char_img_height/2
+        text_x = char_img_width / 2 - bbox[0] - char_width / 2
+        text_y = char_img_height / 2 - bbox[1] - char_height / 2
+        char_draw.text((text_x, text_y), char, fill=color, font=font)
+        
+        # Rotate character around its center (which is also the character's visual center)
+        rotated_char = char_img.rotate(rotation, center=(char_img_width/2, char_img_height/2), expand=False)
+        
+        # Calculate paste position so the character's visual center aligns with image center
+        # The character's visual center is still at the center of rotated_char
+        paste_x = int(char_center_x - rotated_char.width / 2)
+        paste_y = int(image_center_y - rotated_char.height / 2)
+        
+        # Ensure paste position is within image bounds (prevent cutoff)
+        # Clamp to bounds, but try to keep centered if possible
+        if paste_x < 0:
+            paste_x = 0
+        elif paste_x + rotated_char.width > width:
+            paste_x = width - rotated_char.width
+            
+        if paste_y < 0:
+            paste_y = 0
+        elif paste_y + rotated_char.height > height:
+            paste_y = height - rotated_char.height
+        
+        # Paste rotated character onto main image
+        image.paste(rotated_char, (paste_x, paste_y), rotated_char)
+        
+        # Move to next character position
+        current_x += char_width + spacing
+    
+    # Add subtle noise lines for security (prevent OCR)
+    for _ in range(5):
+        x1 = random.randint(0, width)
+        y1 = random.randint(0, height)
+        x2 = random.randint(0, width)
+        y2 = random.randint(0, height)
+        noise_color = random.choice(['#E0E0E0', '#E8E8E8', '#F0F0F0'])
+        draw.line([(x1, y1), (x2, y2)], fill=noise_color, width=1)
+    
+    # Add subtle random noise dots
+    for _ in range(15):
+        x = random.randint(0, width)
+        y = random.randint(0, height)
+        noise_color = random.choice(['#E0E0E0', '#E8E8E8'])
+        draw.ellipse([x-1, y-1, x+1, y+1], fill=noise_color)
+    
+    # Apply very slight blur filter for anti-OCR
+    image = image.filter(ImageFilter.SMOOTH)
+    
+    # Save to BytesIO
+    img_bytes = BytesIO()
+    image.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    return img_bytes
+
+
 @router.get("/captcha/generate")
 async def generate_captcha(request: Request, response: Response):
     """
-    Generate PIL image captcha using Inter fonts
+    Generate custom captcha image with larger letters and different colors per character
     
     Features:
     - Uses existing Inter fonts from project
-    - Generates distorted image to prevent OCR bots
+    - Large font size (90px) for better readability
+    - Each character has a different vibrant color
+    - Generates distorted image with noise to prevent OCR bots
     - 100% self-hosted (China-compatible)
     - Rate limited: Max 30 requests per 15 minutes per session (browser cookie)
     
@@ -400,20 +562,13 @@ async def generate_captcha(request: Request, response: Response):
         max_age=RATE_LIMIT_WINDOW_MINUTES * 60  # 15 minutes
     )
     
-    # Create captcha generator with Inter fonts
-    image_captcha = ImageCaptcha(
-        width=200, 
-        height=80,
-        fonts=CAPTCHA_FONTS
-    )
-    
     # Generate 4-character code
     # Excludes: I, O, 0, 1 (to avoid confusion)
     chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     code = ''.join(random.choices(chars, k=4))
     
-    # Generate distorted image
-    data = image_captcha.generate(code)
+    # Generate custom captcha image with larger letters and different colors
+    data = _generate_custom_captcha(code)
     
     # Convert to base64 for browser display
     img_base64 = base64.b64encode(data.getvalue()).decode()

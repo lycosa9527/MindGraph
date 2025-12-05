@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.19] - 2025-12-06 - Captcha Image Quality and Positioning Improvements
+
+### Fixed
+
+- **Captcha Image Resolution and Clarity** (`routers/auth.py`)
+  - Increased captcha image resolution from 200x80 to 140x50 pixels for better display quality
+  - Fixed font size to be proportional (70% of image height = 35px) for optimal readability
+  - **Impact**: Captcha images are now sharper and more readable on modern displays
+
+- **Captcha Character Positioning** (`routers/auth.py`)
+  - Fixed vertical positioning issue where characters appeared in top half of image
+  - Fixed character cutoff at bottom of image
+  - Properly centers characters vertically accounting for font baseline and bounding boxes
+  - **Impact**: Characters are now properly centered and fully visible within captcha image
+
+- **Character Spacing** (`routers/auth.py`)
+  - Improved character spacing calculation based on actual character widths
+  - Characters now have proper spacing with 8% padding on each side
+  - **Impact**: Better visual balance and readability of captcha codes
+
+### Changed
+
+- **Custom Captcha Generation** (`routers/auth.py`)
+  - Replaced `ImageCaptcha` library with custom PIL-based implementation
+  - Each character now has a different vibrant color from palette (red, orange, yellow, green, blue, purple, pink, teal)
+  - Added slight random rotation (-10 to +10 degrees) per character for security
+  - Reduced noise levels (5 lines, 15 dots) for better readability while maintaining security
+  - **Impact**: More visually appealing captcha with better user experience
+
+- **Captcha Color Palette** (`routers/auth.py`)
+  - Added 8-color palette for character coloring: Red, Orange, Yellow, Green, Blue, Purple, Pink, Teal
+  - Colors cycle through palette for each character
+  - **Impact**: Better character distinction and visibility
+
+### Technical Details
+
+**Captcha Generation Flow:**
+1. Generate 4-character code (excludes I, O, 0, 1 for clarity)
+2. Measure each character's actual width and height using font metrics
+3. Calculate proper spacing based on character widths with padding
+4. Draw each character in temporary image, centered properly
+5. Apply rotation around character center
+6. Paste rotated character onto main image at calculated position
+7. Add subtle noise lines and dots for anti-OCR security
+8. Apply light blur filter
+
+**Positioning Algorithm:**
+- Characters are drawn centered in temporary images before rotation
+- Visual center calculation accounts for font bounding box offsets
+- Vertical centering uses image center (height/2) as reference point
+- Bounds checking ensures characters don't get cut off
+
+**Files Changed:**
+- `routers/auth.py`: Complete rewrite of `_generate_custom_captcha()` function
+  - Added PIL imports (Image, ImageDraw, ImageFont, ImageFilter)
+  - Added CAPTCHA_COLORS palette constant
+  - Improved character measurement and positioning logic
+  - Better rotation handling with proper center calculation
+
+---
+
 ## [4.28.18] - 2025-01-XX - View Fitting Improvements for Node Selection
 
 ### Fixed
