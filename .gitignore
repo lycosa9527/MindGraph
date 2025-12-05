@@ -48,6 +48,10 @@ logs/*.log
 *.pid
 logs/*.pid
 
+# Runtime data directory (captcha storage, database files)
+data/
+captcha_store.json
+
 # Database files
 *.db
 *.sqlite

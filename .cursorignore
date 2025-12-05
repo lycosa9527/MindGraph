@@ -72,6 +72,14 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+
+# Runtime data directory (captcha storage, database files)
+data/
+captcha_store.json
 
 # Coverage reports
 htmlcov/
