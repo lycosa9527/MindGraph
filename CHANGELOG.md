@@ -7,6 +7,525 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.18] - 2025-01-XX - View Fitting Improvements for Node Selection
+
+### Fixed
+
+- **Brace Map Node Click View Reset** (`static/js/managers/editor/canvas-controller.js`, `static/js/managers/editor/view-manager.js`)
+  - Fixed issue where clicking a node in brace map (and other diagrams) reset view to whole canvas instead of preserving zoom/pan
+  - Now preserves current viewBox when property panel opens/closes
+  - **Impact**: Users can zoom/pan and click nodes without losing their view position
+  - CSS handles width adjustment automatically while preserving zoom level
+
+- **Incorrect Fit Method Called** (`static/js/managers/editor/canvas-controller.js`)
+  - Fixed issue where clicking nodes called `fitDiagramToWindow()` instead of `fitToCanvasWithPanel()`
+  - Now properly emits `view:fit_to_canvas_requested` event to use `ViewManager.fitToCanvasWithPanel()`
+  - **Impact**: Diagrams now correctly fit with panel space reserved when nodes are selected
+
+### Changed
+
+- **Smart View Fitting** (`static/js/managers/editor/view-manager.js`)
+  - Added `_isPanelVisible()` helper method to check actual panel state from DOM
+  - `fitToFullCanvas()` now skips fitting if already fitted to full canvas with no panels visible
+  - Prevents unnecessary view animations when state hasn't changed
+  - **Impact**: Smoother user experience, no unnecessary expand/contract animations
+
+- **Panel Change Handling** (`static/js/managers/editor/canvas-controller.js`)
+  - Updated `handlePanelChange()` to emit proper Event Bus events instead of calling internal methods
+  - Now emits `view:fit_to_canvas_requested` when property panel opens (node clicked)
+  - Now emits `view:fit_to_window_requested` when property panel closes
+  - Ensures `ViewManager` handles all view fitting operations consistently
+  - **Impact**: Consistent view fitting behavior across all diagram types
+
+- **Property Panel Show/Hide** (`static/js/editor/toolbar-manager.js`)
+  - Removed redundant fit request from `showPropertyPanel()` - now handled by `CanvasController`
+  - Updated `hidePropertyPanel()` to check if panel is already hidden before closing
+  - **Impact**: Prevents duplicate fit operations and unnecessary state changes
+
+### Technical Details
+
+**View Fitting Flow:**
+1. User clicks node → `interaction:selection_changed` event emitted
+2. `ToolbarManager` opens property panel → `panel:opened` event emitted
+3. `CanvasController.handlePanelChange()` receives event → emits `view:fit_to_canvas_requested`
+4. `ViewManager.fitToCanvasWithPanel()` handles fitting with panel space reserved
+5. ViewBox is calculated accounting for 320px property panel width
+
+**State Management:**
+- `CanvasController.isSizedForPanel` tracks whether canvas is sized for panel
+- `ViewManager.isSizedForPanel` tracks view fitting state
+- Both are synchronized via Event Bus events
+
+**Files Changed:**
+- `static/js/managers/editor/canvas-controller.js`: Updated `handlePanelChange()` to emit Event Bus events
+- `static/js/managers/editor/view-manager.js`: Added `_isPanelVisible()` helper, removed skip check from `fitToCanvasWithPanel()`, added skip check to `fitToFullCanvas()`
+- `static/js/editor/toolbar-manager.js`: Removed redundant fit logic from `showPropertyPanel()`, added state check to `hidePropertyPanel()`
+
+---
+
+## [4.28.17] - 2024-12-19 - Token Counting Accuracy Fix
+
+### Fixed
+
+- **CRITICAL: Token Counting Accuracy** (`services/token_tracker.py`, `services/llm_service.py`, `routers/voice.py`)
+  - Fixed issue where `total_tokens` was calculated as `input_tokens + output_tokens` instead of using API's authoritative value
+  - APIs provide `total_tokens` which may include overhead tokens (system messages, formatting) not captured in simple addition
+  - **Impact**: Token counts are now accurate, matching API billing values exactly
+  - Prevents undercounting of actual token usage
+  - Ensures admin dashboard shows correct totals for billing and reporting
+
+### Changed
+
+- **TokenTracker.track_usage()** (`services/token_tracker.py`)
+  - Added optional `total_tokens` parameter
+  - Now uses API's `total_tokens` when provided (authoritative billing value)
+  - Falls back to `input_tokens + output_tokens` calculation if API doesn't provide `total_tokens`
+  - Updated method documentation to explain preference for API value
+
+- **LLMService Token Tracking** (`services/llm_service.py`)
+  - `chat()` and `chat_stream()` methods now extract `total_tokens` from API usage data
+  - Passes API's `total_tokens` to `TokenTracker.track_usage()` for accurate counting
+  - Handles both streaming and non-streaming responses correctly
+
+- **Voice Router Token Tracking** (`routers/voice.py`)
+  - Updated Omni API token tracking to extract and pass `total_tokens`
+  - Ensures voice requests are counted accurately
+
+### Technical Details
+
+**Token Flow:**
+1. API responses include `usage` object with `prompt_tokens`, `completion_tokens`, and `total_tokens`
+2. `LLMService` extracts all three values from API response
+3. `TokenTracker` uses API's `total_tokens` when available (authoritative billing value)
+4. Database stores accurate token counts matching API billing
+
+**Why This Matters:**
+- API's `total_tokens` is the authoritative value used for billing
+- May include overhead tokens (system message formatting, API overhead) not in simple sum
+- Ensures our counts match exactly what providers charge for
+
+**Files Changed:**
+- `services/token_tracker.py`: Added `total_tokens` parameter, use API value when available
+- `services/llm_service.py`: Extract and pass `total_tokens` from API responses (2 locations)
+- `routers/voice.py`: Extract and pass `total_tokens` from Omni API
+
+**Documentation:**
+- Created `docs/TOKEN_COUNTING_ACCURACY_REVIEW.md` with comprehensive review findings
+
+---
+
+## [4.28.16] - 2025-01-16 - .env File Encoding Fix
+
+### Fixed
+
+- **.env File UTF-8 Encoding Issue** (`utils/env_utils.py`, `config/settings.py`, `main.py`)
+  - Fixed `UnicodeDecodeError` when `.env` file is saved with non-UTF-8 encoding (common on Windows)
+  - Added `ensure_utf8_env_file()` utility function that automatically detects and converts `.env` file encoding
+  - Function tries common encodings (UTF-16, UTF-16-LE, UTF-16-BE, CP1252, GBK, etc.) and converts to UTF-8
+  - Creates automatic backup (`.env.backup.before_utf8_conversion`) before conversion
+  - Integrated into `config/settings.py` and `main.py` to run before `load_dotenv()`
+  - **Impact**: Users no longer need to manually "Save As UTF-8" when editing `.env` file - conversion happens automatically
+  - Prevents `'utf-8' codec can't decode bytes` errors on application startup
+
+### Technical Details
+
+**Encoding Detection:**
+- First attempts to read `.env` file as UTF-8
+- If that fails, tries common encodings: UTF-16, UTF-16-LE, UTF-16-BE, UTF-8-SIG, Latin1, CP1252, GBK, GB2312
+- Falls back to UTF-8 with error replacement if detection fails
+- Automatically converts and saves file as UTF-8
+
+**Files Changed:**
+- `utils/env_utils.py`: New utility module with `ensure_utf8_env_file()` function
+- `config/settings.py`: Calls `ensure_utf8_env_file()` before `load_dotenv()`
+- `main.py`: Calls `ensure_utf8_env_file()` before `load_dotenv()`
+
+---
+
+## [4.28.15] - 2025-01-16 - Database Location Conflict Safety Check
+
+### Added
+
+- **CRITICAL: Database Location Conflict Detection** (`config/database.py`)
+  - Added `check_database_location_conflict()` function that detects if database files exist in both root directory and `data/` folder
+  - Application now refuses to start if both `mindgraph.db` files exist simultaneously
+  - Prevents data confusion and potential data loss scenarios
+  - Runs before database migration and engine creation to catch conflicts early
+  - Provides clear error message with step-by-step resolution instructions
+  - Shows current `DATABASE_URL` configuration and which database files exist in each location
+  - Detects WAL/SHM files to identify active database instances
+  - **Impact**: Prevents silent data corruption or confusion when database files exist in multiple locations
+
+### Changed
+
+- **Database Initialization Flow** (`config/database.py`)
+  - Safety check now runs before migration logic
+  - Migration function simplified - no longer handles "both exist" case (now caught by safety check)
+  - Error handling improved with `SystemExit(1)` to stop application startup immediately
+
+### Technical Details
+
+**Safety Check Logic:**
+- Checks for `mindgraph.db` in both root directory and `data/` folder
+- Also checks for WAL/SHM files to detect active database instances
+- Reads `DATABASE_URL` from environment to show current configuration
+- Provides detailed error message with file paths and resolution steps
+
+**Error Message Includes:**
+- Which database files exist in each location
+- Current `DATABASE_URL` configuration status
+- Step-by-step resolution instructions
+- Recommendation to use `data/mindgraph.db` (keeps root directory clean)
+
+**Resolution Steps Provided:**
+1. Determine which database contains actual data
+2. Update `DATABASE_URL` in `.env` file to correct location
+3. Delete database files from the other location
+4. Restart application
+
+**Files Modified:**
+- `config/database.py` - Added `check_database_location_conflict()` function, updated initialization order
+
+**Backward Compatibility:**
+- No breaking changes - only adds safety check
+- Existing single-location databases continue to work normally
+- Only affects cases where both locations have database files (which should not happen)
+
+---
+
+## [4.28.14] - 2025-01-16 - Reset Styles Fix & Code Refactoring
+
+### Fixed
+
+- **CRITICAL: Reset Styles Applying Wrong Defaults in Bubble Maps** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - **Root Cause**: `resetStyles()` method was using defaults from only the first selected node and applying them to all selected nodes
+  - **Impact**: 
+    - Children nodes (attributes) with fill color `#E3F2FD` incorrectly reset to `#2196F3` (topic color) when topic node was selected first
+    - Central node's font size and color changed incorrectly when attribute node was selected first
+    - Mixed selections (topic + attributes) caused all nodes to get the same incorrect defaults
+  - **Solution**: 
+    - Now gets defaults for each node individually based on its own `data-node-type` attribute
+    - Applies correct type-specific defaults to each node separately
+    - Topic nodes get topic defaults: `#1976D2` fill, `#FFFFFF` text, fontSize `20`
+    - Attribute nodes get attribute defaults: `#E3F2FD` fill, `#333333` text, fontSize `14`
+  - **Result**: Each node type now correctly resets to its own template defaults regardless of selection order
+
+### Changed
+
+- **Code Refactoring: Extracted Helper Method** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Created `applyPropertiesToNode()` helper method to eliminate code duplication
+  - Centralizes style application logic (text element finding, property application, color normalization)
+  - Refactored `resetStyles()`, `applyStylesRealtime()`, and `applyAllProperties()` to use the helper
+  - Eliminated ~60 lines of duplicated code
+  - **Impact**: Better maintainability, consistent behavior across all style operations
+
+- **Enhanced Reset Styles Implementation**
+  - Added proper color normalization using `normalizeColor()` helper
+  - Added null/undefined checks before applying properties
+  - Improved history tracking with detailed reset information
+  - UI updates show first selected node's defaults for consistency
+  - **Impact**: More robust and reliable reset functionality
+
+### Technical Details
+
+**Reset Styles Logic:**
+- Iterates through each selected node individually
+- Gets node type from `data-node-type` attribute (tries shape element first, then text element)
+- Calls `getTemplateDefaults(nodeId)` for each node to get type-specific defaults
+- Uses `mapThemeToProperties()` to map StyleManager theme to property panel format
+- Applies defaults using `applyPropertiesToNode()` helper method
+
+**Helper Method Architecture:**
+- `applyPropertiesToNode(nodeId, properties)` - Single source of truth for style application
+- Handles text element finding using multiple fallback methods
+- Normalizes colors consistently
+- Includes proper null checks for all properties
+- Reusable across `resetStyles()`, `applyStylesRealtime()`, and `applyAllProperties()`
+
+**Node Type Detection:**
+- Method 1: Try shape element `data-node-type` attribute
+- Method 2: Try text element `data-node-type` attribute (fallback)
+- Supports all diagram types: bubble_map, double_bubble_map, mindmap, concept_map, brace_map, tree_map, flow_map, etc.
+
+**Files Modified:**
+- `static/js/managers/toolbar/node-property-operations-manager.js` - Added `applyPropertiesToNode()` helper, refactored `resetStyles()`, `applyStylesRealtime()`, `applyAllProperties()`
+
+**Backward Compatibility:**
+- All existing functionality preserved
+- Reset button behavior unchanged except for correct type-specific defaults
+- No breaking changes to API or user interface
+
+---
+
+## [4.28.13] - 2025-01-16 - Empty Button Dimension Preservation & Property Panel Space Support
+
+### Added
+
+- **Empty Button Dimension Preservation** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Empty button now preserves node dimensions (width/height for rectangles, radius for circles) when clearing text
+  - Supports all diagram types: rectangles (Tree Map, Flow Map, Bridge Map, Brace Map, Concept Map) and circles (Bubble Map, Circle Map, Double Bubble Map, Mind Map)
+  - Dimensions stored in memory (Map) to survive re-render cycles
+  - Automatic restoration after diagram re-render completes
+  - Retry mechanism ensures dimensions are restored even if re-render takes time
+  - **Impact**: Users can create learning sheets with empty nodes that maintain their original size, making it easier to create fill-in-the-blank exercises
+
+- **Property Panel Space Preservation** (`static/js/managers/toolbar/text-toolbar-state-manager.js`)
+  - Property panel text input now preserves leading and trailing spaces
+  - Removed trim operation that was stripping whitespace
+  - Users can use spaces to control node length for learning sheets
+  - Still normalizes excessive newlines (3+ consecutive → 2)
+  - **Impact**: Users can create nodes with specific widths by adding spaces, essential for learning sheet formatting
+
+### Changed
+
+- **Dimension Preservation Logic** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Enhanced dimension detection to handle both rectangles and circles
+  - Uses `getBBox()` as fallback if attributes aren't available
+  - Stores node type (`rect` or `circle`) with dimensions for proper restoration
+  - Improved retry mechanism with verification that dimensions were actually restored
+  - Increased delay to 300ms to account for brace map rendering time
+  - **Impact**: More reliable dimension preservation across all diagram types
+
+### Technical Details
+
+**Dimension Preservation:**
+- Dimensions stored in `preservedDimensions` Map keyed by nodeId
+- Listens to `diagram:node_updated` event to trigger restoration
+- Handles rectangles: preserves `width`, `height`, `rx`, `ry` attributes
+- Handles circles: preserves `r` (radius), `cx`, `cy` attributes
+- Retry mechanism with max 5 retries and verification checks
+
+**Property Panel Text Processing:**
+- Removed `.replace(/^\s+|\s+$/g, '')` trim operation
+- Preserves all whitespace including leading/trailing spaces
+- Still normalizes excessive newlines for readability
+- Allows users to control node dimensions via space characters
+
+**Files Modified:**
+- `static/js/managers/toolbar/node-property-operations-manager.js` - Added dimension preservation logic, Map storage, restoration method
+- `static/js/managers/toolbar/text-toolbar-state-manager.js` - Removed trim operation from text processing
+
+**Backward Compatibility:**
+- All existing functionality preserved
+- Empty button behavior unchanged except for dimension preservation
+- Property panel behavior unchanged except for space preservation
+
+---
+
+## [4.28.12] - 2025-01-16 - Token Tracking Tab & Bayi Mode Admin Access
+
+### Added
+
+- **Token Tracking Tab in Admin Panel** (`templates/admin.html`, `routers/auth.py`)
+  - New "Tokens Tracking" tab positioned before "学校管理" (Schools) tab
+  - Displays token statistics in four time periods:
+    - Today: Token usage for current day
+    - Past Week: Token usage for last 7 days
+    - Past Month: Token usage for last 30 days
+    - Total: All-time token usage
+  - Top 10 Users Leaderboard showing users ranked by total token usage
+  - Medal rankings (🥇🥈🥉) for top 3 users
+  - Token counts displayed in "input+output" format with K/M/G/T suffixes
+  - Bilingual support (Chinese/English)
+  - **Impact**: Admins can now track token usage across different time periods and identify top users
+
+- **Token Statistics API Endpoint** (`routers/auth.py`)
+  - New `/api/auth/admin/token-stats` endpoint (ADMIN ONLY)
+  - Returns comprehensive token statistics:
+    - `today`: Today's token usage (input, output, total)
+    - `past_week`: Past week's token usage
+    - `past_month`: Past month's token usage
+    - `total`: All-time token usage
+    - `top_users`: Top 10 users by total token usage with user details
+  - Uses efficient SQL queries with date filtering
+  - Handles missing TokenUsage model gracefully
+  - **Impact**: Provides detailed token analytics for admin dashboard
+
+### Changed
+
+- **Dashboard Token Display** (`templates/admin.html`)
+  - Changed "本周Token" (This Week Tokens) to "总Token使用" (Total Tokens)
+  - Dashboard now displays all-time total token usage instead of just weekly usage
+  - Falls back to weekly stats if token-stats endpoint is unavailable
+  - **Impact**: Dashboard shows more comprehensive token usage overview
+
+- **Bayi Mode Admin Access** (`routers/pages.py`, `utils/auth.py`)
+  - Updated `/admin` route to support both demo and bayi modes
+  - Added `bayi-admin@system.com` user recognition in `is_admin()` function
+  - Admin demo passkey now grants admin panel access in bayi mode
+  - Updated log messages to reflect actual authentication mode
+  - **Impact**: Admins can now access admin panel using admin demo passkey in bayi mode
+
+- **Code Organization** (`templates/admin.html`)
+  - Made `formatNumber()` function global to avoid duplication
+  - Removed duplicate local `formatNumber()` functions from `loadSchools()` and `loadUsers()`
+  - All token formatting now uses consistent global function
+  - **Impact**: Cleaner code, easier maintenance
+
+### Technical Details
+
+**Token Statistics Endpoint:**
+- Endpoint: `GET /api/auth/admin/token-stats`
+- Authentication: JWT token required, admin role check
+- Returns JSON with token statistics for different time periods
+- Efficiently queries TokenUsage table with date filters
+- Groups by user for top users leaderboard
+
+**Token Tracking Tab:**
+- Tab ID: `tokens-tab`
+- Stats cards display input+output tokens in formatted format
+- Top 10 users leaderboard with rankings and user details
+- Consistent styling with dashboard tab
+- Auto-loads data when tab is switched to
+
+**Bayi Mode Admin:**
+- Admin passkey creates `bayi-admin@system.com` user in bayi mode
+- `is_admin()` function checks for `bayi-admin@system.com` when `AUTH_MODE == "bayi"`
+- Admin panel route handles authentication for both demo and bayi modes
+- Redirects unauthenticated users to `/demo` passkey page
+
+**Files Modified:**
+- `routers/auth.py` - Added `/admin/token-stats` endpoint
+- `routers/pages.py` - Updated `/admin` route for bayi mode, improved log messages
+- `utils/auth.py` - Added bayi-admin@system.com check in `is_admin()` function
+- `templates/admin.html` - Added Tokens Tracking tab, updated dashboard, added `loadTokenStats()` function
+
+**Backward Compatibility:**
+- All existing functionality preserved
+- Dashboard falls back to weekly stats if new endpoint unavailable
+- Token tracking tab gracefully handles missing data
+
+---
+
+## [4.28.11] - 2024-12-06 - Setup Script Organization & Directory Management
+
+### Added
+
+- **Application Directory Setup** (`scripts/setup.py`)
+  - Automatic creation of `static/images/` directory for uploaded images
+  - Automatic creation of `tests/images/` directory for test images
+  - Automatic creation of `temp_images/` directory for temporary PNG files
+  - New `setup_application_directories()` function to handle all runtime directories
+  - **Impact**: All required directories are now created during setup, preventing runtime errors
+
+- **Data Directory Setup** (`scripts/setup.py`)
+  - Automatic creation of `data/` directory for database files during setup
+  - Ensures database directory exists before application startup
+  - **Impact**: Prevents database initialization errors on fresh installations
+
+### Changed
+
+- **Setup Script Location** (`scripts/setup.py`, `README.md`, `docker/Dockerfile`)
+  - Moved `setup.py` from project root to `scripts/setup.py` for better organization
+  - Updated usage instructions to `python scripts/setup.py`
+  - Updated Dockerfile to copy setup script from new location
+  - Script now works correctly from both project root and scripts directory
+  - **Impact**: Cleaner project root, better organization of utility scripts
+
+- **Path Resolution Simplification** (`scripts/setup.py`)
+  - Simplified path resolution logic - script changes to project root at startup
+  - Removed redundant path calculations in individual functions
+  - Functions now use relative paths directly since working directory is set correctly
+  - **Impact**: Cleaner code, easier maintenance, fewer path-related bugs
+
+### Technical Details
+
+**Directory Setup:**
+- Setup script now creates all required directories:
+  - `logs/` - Logging system files
+  - `data/` - Database files
+  - `static/images/` - Uploaded images
+  - `tests/images/` - Test images
+  - `temp_images/` - Temporary PNG files
+
+**Path Resolution:**
+- Script detects if running from `scripts/` directory or project root
+- Automatically changes to project root at startup
+- All operations use relative paths from project root
+- Working directory restored on exit/error
+
+**Files Modified:**
+- `scripts/setup.py` - Moved from root, added directory setup, simplified paths
+- `README.md` - Updated setup instructions
+- `docker/Dockerfile` - Updated COPY command for new script location
+
+**Backward Compatibility:**
+- Script works when run as `python scripts/setup.py` from project root
+- Script also works when run as `python setup.py` from scripts directory
+- All existing functionality preserved
+
+---
+
+## [4.28.10] - 2025-01-15 - Database Path Migration & Organization
+
+### Added
+
+- **Automatic Database Migration** (`config/database.py`)
+  - Automatic migration of database from root directory to `data/` folder
+  - Detects old database location (`mindgraph.db` in root) and migrates to `data/mindgraph.db`
+  - Moves all SQLite files (db, wal, shm) during migration
+  - Safe to run multiple times - only migrates if old exists and new doesn't
+  - Respects custom `DATABASE_URL` configuration (skips migration if custom path set)
+  - **Impact**: Cleaner project root directory, better organization of database files
+
+- **Smart Database Path Detection** (`scripts/backup_database.py`)
+  - Backup script now reads database path from configuration instead of hardcoded value
+  - Respects `DATABASE_URL` environment variable
+  - Handles both relative (`sqlite:///./path`) and absolute (`sqlite:////path`) SQLite URLs
+  - Automatically backs up WAL/SHM files if they exist
+  - **Impact**: Backup script works correctly regardless of database location configuration
+
+### Changed
+
+- **Database Default Location** (`config/database.py`, `env.example`, `models/env_settings.py`)
+  - Default database path changed from `./mindgraph.db` to `./data/mindgraph.db`
+  - All three SQLite files (db, wal, shm) now stored in `data/` folder
+  - Updated `.gitignore` to explicitly ignore WAL/SHM files (`*.db-wal`, `*.db-shm`)
+  - **Impact**: Better project organization, database files grouped together
+
+- **Database Path Extraction** (`utils/db_migration.py`, `scripts/backup_database.py`)
+  - Improved SQLite URL parsing to handle 4-slash absolute paths correctly
+  - Better relative path handling for cross-platform compatibility
+  - **Impact**: Works correctly with any `DATABASE_URL` configuration format
+
+### Fixed
+
+- **Hardcoded Database Path in Backup Script** (`scripts/backup_database.py`)
+  - Fixed critical issue where backup script used hardcoded path `data/mindgraph.db`
+  - Now dynamically reads path from database configuration
+  - Prevents backup failures when custom `DATABASE_URL` is configured
+  - **Impact**: Backup script now works correctly with any database location
+
+### Technical Details
+
+**Migration Logic:**
+- Runs automatically on application startup before database engine creation
+- Only migrates if old database exists in root and new doesn't exist in `data/`
+- Handles partial migration failures gracefully with fallback to old location
+- Logs all migration actions for visibility and debugging
+
+**Safety Features:**
+- Migration happens before any database connections are established
+- Atomic file moves using `shutil.move()`
+- Error handling prevents data loss if migration fails
+- Respects user-configured `DATABASE_URL` (doesn't override custom paths)
+
+**Files Modified:**
+- `config/database.py` - Added migration function and updated default path
+- `scripts/backup_database.py` - Dynamic path detection from configuration
+- `utils/db_migration.py` - Improved SQLite URL path extraction
+- `env.example` - Updated default `DATABASE_URL`
+- `models/env_settings.py` - Updated default database URL
+- `.gitignore` - Added explicit WAL/SHM file patterns
+
+**Backward Compatibility:**
+- Existing databases in root directory are automatically migrated
+- Old `DATABASE_URL` values (`sqlite:///./mindgraph.db`) still work and trigger migration
+- Custom `DATABASE_URL` configurations are fully respected
+- No manual intervention required for existing deployments
+
+---
+
 ## [4.28.9] - 2025-01-15 - Captcha Storage Multi-Worker Fix & Code Review
 
 ### Fixed

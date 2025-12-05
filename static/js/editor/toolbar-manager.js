@@ -543,6 +543,7 @@ class ToolbarManager {
             logger.debug('ToolbarManager', 'Showing property panel');
             
             // Use centralized panel manager
+            // CanvasController will handle view adjustments without resetting zoom/pan
             if (window.panelManager) {
                 window.panelManager.openPanel('property');
             } else {
@@ -550,16 +551,8 @@ class ToolbarManager {
                 this.propertyPanel.style.display = 'block';
             }
             
-            // Only resize if diagram is currently at full width
-            // If already sized for panel, just show the panel without resizing
-            // ARCHITECTURE NOTE: Direct property access to isSizedForPanel is acceptable - this is UI state
-            // check, not application state that should be in State Manager
-            if (window.currentEditor && !window.currentEditor.isSizedForPanel) {
-                setTimeout(() => {
-                    // ARCHITECTURE: Use Event Bus for view operations
-                    window.eventBus.emit('view:fit_to_canvas_requested', { animate: true });
-                }, 50); // Small delay to ensure panel is visible
-            }
+            // Removed view reset logic - CanvasController.handlePanelChange now preserves
+            // the current viewBox when panels open/close, maintaining user's zoom/pan level
         } else {
             logger.warn('ToolbarManager', 'Property panel element not found');
         }
@@ -570,6 +563,15 @@ class ToolbarManager {
      */
     hidePropertyPanel() {
         if (this.propertyPanel) {
+            // Check if panel is already closed - skip if already hidden
+            const isAlreadyHidden = this.propertyPanel.style.display === 'none' || 
+                                   (window.panelManager && !window.panelManager.isPanelOpen('property'));
+            
+            if (isAlreadyHidden) {
+                logger.debug('ToolbarManager', 'Property panel already hidden - skipping close');
+                return;
+            }
+            
             // Use centralized panel manager
             if (window.panelManager) {
                 window.panelManager.closePanel('property');
@@ -578,12 +580,9 @@ class ToolbarManager {
                 this.propertyPanel.style.display = 'none';
             }
             
-            // Always resize to full width when panel is hidden
-            // This allows diagram to expand and use all available space
-            setTimeout(() => {
-                // ARCHITECTURE: Use Event Bus for view operations
-                window.eventBus.emit('view:fit_to_window_requested', { animate: true });
-            }, 50); // Small delay to ensure panel is hidden
+            // CanvasController.handlePanelChange will handle view adjustments
+            // ViewManager.fitToFullCanvas will check state and skip if already fitted
+            // No need to explicitly request fit here - let the panel close event handle it
         }
     }
     
@@ -1188,7 +1187,7 @@ class ToolbarManager {
             }
             
             // Calculate watermark position (bottom-right corner in viewBox coordinates)
-            const svgD3 = d3.select(svgClone);
+            // Reuse existing svgD3 variable (already declared at line 1063)
             const watermarkFontSize = Math.max(12, Math.min(20, Math.min(width, height) * 0.025));
             const wmPadding = Math.max(10, Math.min(20, Math.min(width, height) * 0.02));
             const watermarkX = viewBoxX + width - wmPadding;

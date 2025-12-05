@@ -7,6 +7,8 @@ SQLAlchemy database setup and session management.
 """
 
 import os
+import sys
+from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from models.auth import Base, Organization
@@ -22,8 +24,166 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Ensure data directory exists for database files
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+
+
+def check_database_location_conflict():
+    """
+    Safety check: Detect if database files exist in both root and data folder.
+    
+    This is a critical check to prevent data confusion. If both locations have
+    database files, the application will refuse to start and require manual resolution.
+    
+    Raises:
+        SystemExit: If database files exist in both locations, with clear error message
+    """
+    old_db = Path("mindgraph.db").resolve()
+    new_db = (DATA_DIR / "mindgraph.db").resolve()
+    
+    # Check if main database files exist in both locations
+    old_exists = old_db.exists()
+    new_exists = new_db.exists()
+    
+    if old_exists and new_exists:
+        # Check for WAL/SHM files too
+        old_wal = Path("mindgraph.db-wal").exists()
+        old_shm = Path("mindgraph.db-shm").exists()
+        new_wal = (DATA_DIR / "mindgraph.db-wal").exists()
+        new_shm = (DATA_DIR / "mindgraph.db-shm").exists()
+        
+        env_db_url = os.getenv("DATABASE_URL", "not set")
+        
+        error_msg = "\n" + "=" * 80 + "\n"
+        error_msg += "CRITICAL DATABASE CONFIGURATION ERROR\n"
+        error_msg += "=" * 80 + "\n\n"
+        error_msg += "Database files detected in BOTH locations:\n"
+        error_msg += f"  - Root directory: {old_db}\n"
+        error_msg += f"  - Data folder:    {new_db}\n\n"
+        
+        if old_wal or old_shm:
+            error_msg += "Root directory also contains WAL/SHM files (active database).\n"
+        if new_wal or new_shm:
+            error_msg += "Data folder also contains WAL/SHM files (active database).\n"
+        error_msg += "\n"
+        
+        error_msg += "Current DATABASE_URL configuration: "
+        if env_db_url == "not set":
+            error_msg += "not set (will default to data/mindgraph.db)\n"
+        else:
+            error_msg += f"{env_db_url}\n"
+        error_msg += "\n"
+        
+        error_msg += "This situation can cause data confusion and potential data loss.\n"
+        error_msg += "The application cannot start until this is resolved.\n\n"
+        error_msg += "RESOLUTION STEPS:\n"
+        error_msg += "1. Determine which database contains your actual data\n"
+        error_msg += "2. Update DATABASE_URL in .env file to point to the correct location:\n"
+        error_msg += "   - For root database: DATABASE_URL=sqlite:///./mindgraph.db\n"
+        error_msg += "   - For data folder:  DATABASE_URL=sqlite:///./data/mindgraph.db\n"
+        error_msg += "3. Delete database files from the OTHER location:\n"
+        error_msg += "   - If using root: delete data/mindgraph.db* files\n"
+        error_msg += "   - If using data folder: delete mindgraph.db* files from root\n"
+        error_msg += "4. Restart the application\n\n"
+        error_msg += "NOTE: The recommended location is data/mindgraph.db (keeps root clean).\n"
+        error_msg += "=" * 80 + "\n"
+        
+        logger.critical(error_msg)
+        print(error_msg, file=sys.stderr)
+        raise SystemExit(1)
+
+
+def migrate_old_database_if_needed():
+    """
+    Automatically migrate database from old location (root) to new location (data/).
+    
+    This handles the transition from mindgraph.db in root to data/mindgraph.db.
+    Moves the main database file and any associated WAL/SHM files if they exist.
+    
+    Note: WAL/SHM files are temporary and should be empty/absent if server was
+    stopped cleanly. We move them defensively in case of unclean shutdown.
+    
+    Returns:
+        bool: True if migration succeeded or wasn't needed, False if migration failed
+    """
+    import shutil
+    
+    # Check if user has explicitly set DATABASE_URL
+    env_db_url = os.getenv("DATABASE_URL")
+    
+    # If DATABASE_URL is set to the old default path, we should still migrate
+    # If it's set to something else (custom path), don't migrate
+    if env_db_url and env_db_url != "sqlite:///./mindgraph.db":
+        # User has custom DATABASE_URL (not old default), don't auto-migrate
+        return True
+    
+    old_db = Path("mindgraph.db").resolve()
+    new_db = (DATA_DIR / "mindgraph.db").resolve()
+    
+    # Only migrate if old exists and new doesn't
+    if old_db.exists() and not new_db.exists():
+        try:
+            logger.info("Detected database in old location, migrating to data/ folder...")
+            
+            # Ensure data directory exists
+            new_db.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Move main database file (this is the only critical file)
+            shutil.move(str(old_db), str(new_db))
+            logger.info(f"Migrated {old_db} -> {new_db}")
+            
+            # Move WAL/SHM files if they exist (defensive - should be empty if server stopped cleanly)
+            # These are temporary files, but we move them to be safe in case of unclean shutdown
+            for suffix in ["-wal", "-shm"]:
+                old_file = Path(f"mindgraph.db{suffix}").resolve()
+                new_file = (DATA_DIR / f"mindgraph.db{suffix}").resolve()
+                if old_file.exists():
+                    shutil.move(str(old_file), str(new_file))
+                    logger.debug(f"Migrated {old_file.name} -> {new_file}")
+            
+            logger.info("Database migration completed successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to migrate database: {e}", exc_info=True)
+            logger.error(
+                "CRITICAL: Database migration failed. "
+                "The old database remains in the root directory. "
+                "Please migrate manually or fix the issue before starting the server."
+            )
+            return False
+    
+    return True
+
+
+# CRITICAL SAFETY CHECK: Detect database files in both locations
+# This must run BEFORE migration to catch the conflict early
+check_database_location_conflict()
+
+# Migrate old database location before creating engine
+migration_success = migrate_old_database_if_needed()
+
 # Database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mindgraph.db")
+# Default location: data/mindgraph.db (keeps root directory clean)
+env_db_url = os.getenv("DATABASE_URL")
+if not env_db_url:
+    # Determine which database location to use
+    old_db = Path("mindgraph.db")
+    new_db = DATA_DIR / "mindgraph.db"
+    
+    # If new database exists (migration succeeded or already migrated), use it
+    if new_db.exists():
+        DATABASE_URL = "sqlite:///./data/mindgraph.db"
+    # If migration failed but old DB still exists, fall back to old location
+    elif not migration_success and old_db.exists():
+        logger.warning("Using old database location due to migration failure")
+        DATABASE_URL = "sqlite:///./mindgraph.db"
+    # Default to new location (will create new database if needed)
+    else:
+        DATABASE_URL = "sqlite:///./data/mindgraph.db"
+else:
+    DATABASE_URL = env_db_url
 
 # Create SQLAlchemy engine with proper pool configuration
 # For SQLite: use check_same_thread=False

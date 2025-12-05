@@ -288,7 +288,7 @@ class DatabaseSettings(BaseModel):
     __category__ = "Database Configuration"
     
     DATABASE_URL: str = Field(
-        default="sqlite:///./mindgraph.db",
+        default="sqlite:///./data/mindgraph.db",
         description="Database connection URL"
     )
     

@@ -11,16 +11,60 @@ Usage:
 
 import shutil
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Configuration
 BACKUP_DIR = Path("backups")
-DATABASE_FILE = Path("mindgraph.db")
 ENV_FILE = Path(".env")
+
+def get_database_path():
+    """
+    Get the actual database file path from DATABASE_URL configuration.
+    Respects DATABASE_URL environment variable or uses default.
+    
+    SQLite URL formats:
+    - sqlite:///./path/to/db (relative path)
+    - sqlite:////absolute/path/to/db (absolute path - note 4 slashes)
+    - sqlite:///path/to/db (relative path - 3 slashes)
+    """
+    # Import here to avoid circular imports
+    from config.database import engine
+    
+    db_url = str(engine.url)
+    
+    # Extract file path from SQLite URL
+    if db_url.startswith("sqlite:////"):
+        # Absolute path (4 slashes: sqlite:////absolute/path)
+        db_path = db_url.replace("sqlite:////", "/")
+    elif db_url.startswith("sqlite:///"):
+        # Relative path (3 slashes: sqlite:///./path or sqlite:///path)
+        db_path = db_url.replace("sqlite:///", "")
+        if db_path.startswith("./"):
+            db_path = db_path[2:]  # Remove "./"
+        # Convert to absolute path
+        if not os.path.isabs(db_path):
+            db_path = os.path.join(os.getcwd(), db_path)
+    else:
+        # Fallback: try to extract path
+        db_path = db_url.replace("sqlite:///", "")
+    
+    return Path(db_path).resolve()
 
 def create_backup():
     """Create timestamped backup of database and config"""
+    
+    # Get actual database path from configuration
+    try:
+        DATABASE_FILE = get_database_path()
+    except Exception as e:
+        print(f"❌ Failed to determine database path: {e}")
+        print("   Make sure the application is properly configured.")
+        return
     
     # Create backup directory if it doesn't exist
     BACKUP_DIR.mkdir(exist_ok=True)
@@ -31,14 +75,24 @@ def create_backup():
     backup_subdir.mkdir(exist_ok=True)
     
     print(f"📦 Creating backup: {backup_subdir}")
+    print(f"📁 Database location: {DATABASE_FILE}")
     
     # Backup database
     if DATABASE_FILE.exists():
         shutil.copy2(DATABASE_FILE, backup_subdir / DATABASE_FILE.name)
         size_mb = os.path.getsize(DATABASE_FILE) / (1024 * 1024)
-        print(f"✅ Database backed up: {DATABASE_FILE} ({size_mb:.2f} MB)")
+        print(f"✅ Database backed up: {DATABASE_FILE.name} ({size_mb:.2f} MB)")
+        
+        # Also backup WAL and SHM files if they exist
+        for suffix in ["-wal", "-shm"]:
+            wal_shm_file = Path(str(DATABASE_FILE) + suffix)
+            if wal_shm_file.exists():
+                shutil.copy2(wal_shm_file, backup_subdir / wal_shm_file.name)
+                print(f"✅ Also backed up: {wal_shm_file.name}")
     else:
         print(f"⚠️  Database not found: {DATABASE_FILE}")
+        print(f"   Expected location: {DATABASE_FILE}")
+        print(f"   Check your DATABASE_URL configuration.")
     
     # Backup .env file (contains JWT secret and API keys)
     if ENV_FILE.exists():

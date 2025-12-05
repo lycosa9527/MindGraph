@@ -52,6 +52,11 @@ logs/*.pid
 *.db
 *.sqlite
 *.sqlite3
+# SQLite WAL mode files (created automatically)
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
 
 # Database backups
 backups/

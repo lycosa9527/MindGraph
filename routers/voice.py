@@ -709,11 +709,14 @@ async def voice_conversation(
                                 token_tracker = get_token_tracker()
                                 input_tokens = usage.get('prompt_tokens', 0)
                                 output_tokens = usage.get('completion_tokens', 0)
+                                # Use API's total_tokens (authoritative billing value)
+                                total_tokens = usage.get('total_tokens') or None
                                 
                                 await token_tracker.track_usage(
                                     model_alias='qwen-omni',
                                     input_tokens=input_tokens,
                                     output_tokens=output_tokens,
+                                    total_tokens=total_tokens,
                                     request_type='voice_omni',
                                     user_id=user_id,
                                     organization_id=organization_id,

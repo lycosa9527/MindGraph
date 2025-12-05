@@ -24,8 +24,10 @@ class InteractionHandler {
         // NEW: Add owner identifier for Event Bus Listener Registry
         this.ownerId = 'InteractionHandler';
         
+        
         // Subscribe to events
         this.subscribeToEvents();
+        
         
         this.logger.info('InteractionHandler', 'Interaction Handler initialized');
     }
@@ -107,8 +109,14 @@ class InteractionHandler {
             const textNode = nodes[i].nextElementSibling;
             const textElement = (textNode && textNode.tagName === 'text') ? d3.select(textNode) : null;
             
-            // Add drag behavior (cursor style is set inside addDragBehavior based on diagram type)
+            // Determine which interaction method to use
+            if (diagramType === 'concept_map') {
+                // Keep existing drag for concept maps (they already have drag)
             self.addDragBehavior(element, textElement);
+            } else {
+                // Other types: just pointer cursor
+                element.style('cursor', 'pointer');
+            }
             
             // Add click handler for selection
             element
@@ -601,6 +609,10 @@ class InteractionHandler {
     }
     
     /**
+     * REMOVED: All drag-and-drop swap functionality has been removed
+     */
+    
+    /**
      * Cleanup on destroy
      */
     destroy() {
@@ -614,11 +626,7 @@ class InteractionHandler {
             }
         }
         
-        // Remove all interaction handlers (D3 will handle cleanup when elements are removed)
-        // No explicit cleanup needed as handlers are attached to DOM elements
-        
         // Clear references
         this.editor = null;
     }
 }
-

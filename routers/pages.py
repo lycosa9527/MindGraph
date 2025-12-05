@@ -502,10 +502,10 @@ async def demo_page(request: Request, db: Session = Depends(get_db)):
             if user:
                 # Redirect based on admin status
                 if is_admin(user):
-                    logger.debug(f"Demo mode: Admin {user.phone} already authenticated, redirecting to /admin")
+                    logger.debug(f"{AUTH_MODE.capitalize()} mode: Admin {user.phone} already authenticated, redirecting to /admin")
                     return RedirectResponse(url="/admin", status_code=303)
                 else:
-                    logger.debug(f"Demo mode: User {user.phone} already authenticated, redirecting to /editor")
+                    logger.debug(f"{AUTH_MODE.capitalize()} mode: User {user.phone} already authenticated, redirecting to /editor")
                     return RedirectResponse(url="/editor", status_code=303)
         
         return templates.TemplateResponse("demo-login.html", {"request": request})
@@ -526,21 +526,21 @@ async def favicon():
 async def admin_page(request: Request, db: Session = Depends(get_db)):
     """Admin management panel"""
     try:
-        # Demo mode: verify authentication and admin status
-        if AUTH_MODE == "demo":
+        # Demo mode and Bayi mode: verify authentication and admin status
+        if AUTH_MODE in ["demo", "bayi"]:
             auth_cookie = request.cookies.get("access_token")
             user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
             
             if not user:
-                logger.debug("Demo mode: Redirecting unauthenticated /admin access to /demo")
+                logger.debug(f"{AUTH_MODE.capitalize()} mode: Redirecting unauthenticated /admin access to /demo")
                 return RedirectResponse(url="/demo", status_code=303)
             
             # Check if user is admin
             if not is_admin(user):
-                logger.warning(f"Demo mode: Non-admin user {user.phone} attempted to access /admin, redirecting to /editor")
+                logger.warning(f"{AUTH_MODE.capitalize()} mode: Non-admin user {user.phone} attempted to access /admin, redirecting to /editor")
                 return RedirectResponse(url="/editor", status_code=303)
             
-            logger.debug(f"Demo mode: Admin {user.phone} accessing /admin")
+            logger.debug(f"{AUTH_MODE.capitalize()} mode: Admin {user.phone} accessing /admin")
         
         return templates.TemplateResponse("admin.html", {"request": request})
     except Exception as e:

@@ -811,8 +811,9 @@ def is_admin(current_user: User) -> bool:
     Admin access granted if:
     1. User phone in ADMIN_PHONES env variable (production admins)
     2. User is demo-admin@system.com AND server is in demo mode (demo admin)
+    3. User is bayi-admin@system.com AND server is in bayi mode (bayi admin)
     
-    This ensures demo admin passkey only works in demo mode for security.
+    This ensures demo/bayi admin passkey only works in their respective modes for security.
     """
     # Check ADMIN_PHONES list (production admins)
     admin_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
@@ -821,6 +822,10 @@ def is_admin(current_user: User) -> bool:
     
     # Check demo admin (only in demo mode for security)
     if AUTH_MODE == "demo" and current_user.phone == "demo-admin@system.com":
+        return True
+    
+    # Check bayi admin (only in bayi mode for security)
+    if AUTH_MODE == "bayi" and current_user.phone == "bayi-admin@system.com":
         return True
     
     return False

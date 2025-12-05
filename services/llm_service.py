@@ -216,12 +216,15 @@ class LLMService:
                     # Normalize token field names (API uses prompt_tokens/completion_tokens, we use input_tokens/output_tokens)
                     input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
                     output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                    # Use API's total_tokens (authoritative billing value) - may include overhead tokens
+                    total_tokens = usage_data.get('total_tokens') or None
                     
                     token_tracker = get_token_tracker()
                     await token_tracker.track_usage(
                         model_alias=model,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
+                        total_tokens=total_tokens,
                         request_type=request_type,
                         diagram_type=diagram_type,
                         user_id=user_id,
@@ -363,12 +366,15 @@ class LLMService:
                     # Normalize token field names
                     input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
                     output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                    # Use API's total_tokens (authoritative billing value) - may include overhead tokens
+                    total_tokens = usage_data.get('total_tokens') or None
                     
                     token_tracker = get_token_tracker()
                     await token_tracker.track_usage(
                         model_alias=model,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
+                        total_tokens=total_tokens,
                         request_type=request_type,
                         diagram_type=diagram_type,
                         user_id=user_id,

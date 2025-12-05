@@ -14,7 +14,9 @@ Requirements:
 - Internet connection for package downloads
 
 Usage:
-    python setup.py
+    python scripts/setup.py
+    # Or from scripts directory:
+    cd scripts && python setup.py
 
 Author: MindGraph Development Team
 Version: See VERSION file (centralized version management)
@@ -82,6 +84,7 @@ ESSENTIAL_FILES = [
 
 ESSENTIAL_DIRECTORIES = [
     "logs",
+    "data",
     "static",
     "templates",
     "routers",
@@ -390,6 +393,7 @@ def install_python_dependencies() -> bool:
         print("[INFO] Skipping Python dependency installation - already complete")
         return True
     
+    # Check requirements.txt (we're already in project root from main())
     if not os.path.exists("requirements.txt"):
         raise SetupError("requirements.txt not found")
     
@@ -671,7 +675,7 @@ def verify_file_structure() -> bool:
     """
     print("\n[INFO] Verifying file structure...")
     
-    # Check files
+    # Check files (we're already in project root from main())
     for file_path in ESSENTIAL_FILES:
         if os.path.exists(file_path):
             print(f"    [SUCCESS] {file_path}")
@@ -739,8 +743,8 @@ def check_logs_already_configured() -> bool:
     print("[INFO] Checking if logging system is already configured...")
     
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        logs_dir = os.path.join(script_dir, "logs")
+        # We're already in project root from main()
+        logs_dir = "logs"
         
         # Check if logs directory exists
         if not os.path.exists(logs_dir):
@@ -786,9 +790,8 @@ def setup_logs_directory() -> bool:
         return True
     
     try:
-        # Get the directory where this script is located
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        logs_dir = os.path.join(script_dir, "logs")
+        # We're already in project root from main()
+        logs_dir = "logs"
         
         # Create logs directory if it doesn't exist
         if not os.path.exists(logs_dir):
@@ -826,10 +829,85 @@ def setup_logs_directory() -> bool:
         raise SetupError(f"Failed to setup logging system: {e}")
 
 
+def setup_data_directory() -> bool:
+    """
+    Create data directory for database files.
+    
+    Returns:
+        True if setup succeeded
+        
+    Raises:
+        SetupError: If data directory setup fails
+    """
+    print("[INFO] Setting up data directory...")
+    
+    try:
+        # We're already in project root from main()
+        data_dir = "data"
+        
+        # Create data directory if it doesn't exist
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir, mode=0o755)
+            print("    [SUCCESS] Created data directory")
+        else:
+            print("    [INFO] Data directory already exists")
+        
+        # Set proper permissions (755 for directory)
+        os.chmod(data_dir, 0o755)
+        
+        print("[SUCCESS] Data directory configured")
+        return True
+        
+    except Exception as e:
+        raise SetupError(f"Failed to setup data directory: {e}")
+
+
+def setup_application_directories() -> bool:
+    """
+    Create application-specific directories needed at runtime.
+    
+    Creates:
+    - static/images/ - for uploaded images
+    - tests/images/ - for test images
+    - temp_images/ - for temporary PNG files
+    
+    Returns:
+        True if setup succeeded
+        
+    Raises:
+        SetupError: If directory setup fails
+    """
+    print("[INFO] Setting up application directories...")
+    
+    try:
+        # We're already in project root from main()
+        directories_to_create = [
+            ("static/images", "Static images"),
+            ("tests/images", "Test images"),
+            ("temp_images", "Temporary images")
+        ]
+        
+        for dir_path, description in directories_to_create:
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path, mode=0o755)
+                print(f"    [SUCCESS] Created {description} directory: {dir_path}/")
+            else:
+                print(f"    [INFO] {description} directory already exists: {dir_path}/")
+            
+            # Set proper permissions (755 for directory)
+            os.chmod(dir_path, 0o755)
+        
+        print("[SUCCESS] Application directories configured")
+        return True
+        
+    except Exception as e:
+        raise SetupError(f"Failed to setup application directories: {e}")
+
+
 def cleanup_temp_files() -> None:
     """Clean up any temporary files created during setup"""
     try:
-        # Remove debug script if it exists
+        # We're already in project root from main()
         debug_script = "debug_playwright.py"
         if os.path.exists(debug_script):
             os.remove(debug_script)
@@ -877,6 +955,17 @@ def main() -> None:
     """
     start_time = time.time()
     
+    # Get project root and change to it
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.basename(script_dir) == "scripts":
+        project_root = os.path.dirname(script_dir)
+    else:
+        project_root = script_dir
+    
+    # Change to project root directory for all operations
+    original_cwd = os.getcwd()
+    os.chdir(project_root)
+    
     # Display the MindGraph banner
     print_banner()
     print("[INFO] Starting MindGraph Complete Setup")
@@ -889,7 +978,7 @@ def main() -> None:
     if os_name != "windows":
         print("[INFO] Note: On Linux/macOS, system dependencies will be installed")
         print("    This may require sudo privileges for some packages")
-        print("    If you encounter permission errors, try: sudo python setup.py")
+        print("    If you encounter permission errors, try: sudo python scripts/setup.py")
         print()
     
     # Track what was actually performed vs skipped
@@ -917,10 +1006,12 @@ def main() -> None:
         if install_playwright():
             setup_summary['playwright'] = True
         
-        # Step 4: Setup logging (now integrated)
-        print(f"\n[STEP 4/{SETUP_STEPS}] Logging system...")
+        # Step 4: Setup logging and data directories
+        print(f"\n[STEP 4/{SETUP_STEPS}] Directory setup...")
         if setup_logs_directory():
             setup_summary['logs'] = True
+        setup_data_directory()
+        setup_application_directories()
         
         # Step 5: Comprehensive verification
         print(f"\n[STEP 5/{SETUP_STEPS}] System verification...")
@@ -943,6 +1034,8 @@ def main() -> None:
         print_next_steps()
         print("=" * 60)
         
+        # Restore original working directory
+        os.chdir(original_cwd)
         sys.exit(0)
         
     except SetupError as e:
@@ -952,10 +1045,12 @@ def main() -> None:
         print("    - Check your internet connection")
         print("    - Ensure you have sufficient disk space")
         print("    - Try running with administrator privileges if needed")
+        os.chdir(original_cwd)
         sys.exit(1)
     except KeyboardInterrupt:
         print("\n\n[WARNING] Setup interrupted by user")
         print(f"[INFO] Execution time: {time.time() - start_time:.1f} seconds")
+        os.chdir(original_cwd)
         sys.exit(1)
     except Exception as e:
         print(f"\n[ERROR] Unexpected error: {e}")
@@ -964,6 +1059,7 @@ def main() -> None:
         print("    - Python version:", sys.version)
         print("    - Platform:", platform.system(), platform.release())
         print("    - Error details:", str(e))
+        os.chdir(original_cwd)
         sys.exit(1)
 
 

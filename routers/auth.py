@@ -1336,6 +1336,143 @@ async def get_stats_admin(
     }
 
 
+@router.get("/admin/token-stats", dependencies=[Depends(get_current_user)])
+async def get_token_stats_admin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed token usage statistics (ADMIN ONLY)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+    
+    # Initialize default stats
+    today_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    week_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    month_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    total_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    top_users = []
+    
+    try:
+        from models.token_usage import TokenUsage
+        
+        # Today stats
+        today_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.created_at >= today_start,
+            TokenUsage.success == True
+        ).first()
+        
+        if today_token_stats:
+            today_stats = {
+                "input_tokens": int(today_token_stats.input_tokens or 0),
+                "output_tokens": int(today_token_stats.output_tokens or 0),
+                "total_tokens": int(today_token_stats.total_tokens or 0)
+            }
+        
+        # Past week stats
+        week_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.created_at >= week_ago,
+            TokenUsage.success == True
+        ).first()
+        
+        if week_token_stats:
+            week_stats = {
+                "input_tokens": int(week_token_stats.input_tokens or 0),
+                "output_tokens": int(week_token_stats.output_tokens or 0),
+                "total_tokens": int(week_token_stats.total_tokens or 0)
+            }
+        
+        # Past month stats
+        month_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.created_at >= month_ago,
+            TokenUsage.success == True
+        ).first()
+        
+        if month_token_stats:
+            month_stats = {
+                "input_tokens": int(month_token_stats.input_tokens or 0),
+                "output_tokens": int(month_token_stats.output_tokens or 0),
+                "total_tokens": int(month_token_stats.total_tokens or 0)
+            }
+        
+        # Total stats (all time)
+        total_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.success == True
+        ).first()
+        
+        if total_token_stats:
+            total_stats = {
+                "input_tokens": int(total_token_stats.input_tokens or 0),
+                "output_tokens": int(total_token_stats.output_tokens or 0),
+                "total_tokens": int(total_token_stats.total_tokens or 0)
+            }
+        
+        # Top 10 users by total tokens (all time)
+        top_users_query = db.query(
+            User.id,
+            User.phone,
+            User.name,
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
+            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
+            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens')
+        ).outerjoin(
+            TokenUsage,
+            and_(
+                User.id == TokenUsage.user_id,
+                TokenUsage.success == True
+            )
+        ).group_by(
+            User.id,
+            User.phone,
+            User.name
+        ).order_by(
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
+        ).limit(10).all()
+        
+        top_users = [
+            {
+                "id": user.id,
+                "phone": user.phone,
+                "name": user.name or user.phone,
+                "input_tokens": int(user.input_tokens or 0),
+                "output_tokens": int(user.output_tokens or 0),
+                "total_tokens": int(user.total_tokens or 0)
+            }
+            for user in top_users_query
+        ]
+        
+    except (ImportError, Exception) as e:
+        logger.debug(f"TokenUsage not available yet: {e}")
+    
+    return {
+        "today": today_stats,
+        "past_week": week_stats,
+        "past_month": month_stats,
+        "total": total_stats,
+        "top_users": top_users
+    }
+
+
 # ============================================================================
 # API Key Management Endpoints (ADMIN ONLY)
 # ============================================================================

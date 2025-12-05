@@ -188,14 +188,24 @@ class DatabaseMigrationManager:
         """Create backup for SQLite database by copying the file"""
         try:
             db_url = str(self.engine.url)
-            # Extract file path from SQLite URL (e.g., "sqlite:///./mindgraph.db")
-            if db_url.startswith("sqlite:///"):
+            # Extract file path from SQLite URL
+            # SQLite URL formats:
+            # - sqlite:///./path/to/db (relative path)
+            # - sqlite:////absolute/path/to/db (absolute path - note 4 slashes)
+            # - sqlite:///path/to/db (relative path - 3 slashes)
+            if db_url.startswith("sqlite:////"):
+                # Absolute path (4 slashes: sqlite:////absolute/path)
+                db_path = db_url.replace("sqlite:////", "/")
+            elif db_url.startswith("sqlite:///"):
+                # Relative path (3 slashes: sqlite:///./path or sqlite:///path)
                 db_path = db_url.replace("sqlite:///", "")
-                # Handle relative paths
                 if db_path.startswith("./"):
-                    db_path = os.path.join(os.getcwd(), db_path[2:])
+                    db_path = db_path[2:]  # Remove "./"
+                # Convert to absolute path
+                if not os.path.isabs(db_path):
+                    db_path = os.path.join(os.getcwd(), db_path)
             else:
-                # Absolute path or other format
+                # Fallback: try to extract path
                 db_path = db_url.replace("sqlite:///", "")
             
             if not os.path.exists(db_path):

@@ -206,3 +206,5 @@ Instead of sticky sessions, use shared storage:
 
 Sticky sessions are a workaround, not a solution. Shared storage is the proper fix.
 
+
+

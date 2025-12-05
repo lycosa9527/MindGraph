@@ -383,12 +383,37 @@ class ViewManager {
     }
 
     /**
+     * Check if a panel is currently visible
+     * @private
+     * @returns {boolean} True if any panel is visible
+     */
+    _isPanelVisible() {
+        const propertyPanel = document.getElementById('property-panel');
+        const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
+        
+        const aiPanel = document.getElementById('ai-assistant-panel');
+        const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
+        
+        const thinkingPanel = document.getElementById('thinking-panel');
+        const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
+        
+        return isPropertyPanelVisible || isAIPanelVisible || isThinkingPanelVisible;
+    }
+    
+    /**
      * Fit diagram to full canvas area (entire window width)
      * Used when properties panel is hidden - diagram expands to full width
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToFullCanvas(animate = true) {
         try {
+            // Smart check: Skip if already fitted to full canvas and no panel is visible
+            const isPanelVisible = this._isPanelVisible();
+            if (!this.isSizedForPanel && !isPanelVisible) {
+                this.logger.debug('ViewManager', 'Already fitted to full canvas with no panels - skipping fit');
+                return;
+            }
+            
             this.logger.debug('ViewManager', 'Fitting to full canvas width');
             this._fitToCanvas(animate, false);
             this.isSizedForPanel = false; // Update state
@@ -409,6 +434,7 @@ class ViewManager {
     /**
      * Fit diagram to canvas with properties panel space reserved
      * Used when properties panel is visible or will be visible - reserves 320px for panel
+     * Always fits when called (e.g., when node is clicked and property panel opens)
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToCanvasWithPanel(animate = true) {

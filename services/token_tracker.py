@@ -167,6 +167,7 @@ class TokenTracker:
         model_alias: str,
         input_tokens: int,
         output_tokens: int,
+        total_tokens: Optional[int] = None,
         request_type: str = 'diagram_generation',
         diagram_type: Optional[str] = None,
         user_id: Optional[int] = None,
@@ -188,6 +189,8 @@ class TokenTracker:
             model_alias: Model identifier ('qwen', 'deepseek', 'kimi', 'hunyuan')
             input_tokens: Number of input tokens (from API)
             output_tokens: Number of output tokens (from API)
+            total_tokens: Total tokens from API (authoritative billing value). 
+                         If None, will be calculated as input_tokens + output_tokens.
             request_type: Type of request ('diagram_generation', 'node_palette', 'thinkguide', 'autocomplete')
             diagram_type: Type of diagram if applicable
             user_id: User ID if authenticated
@@ -206,6 +209,12 @@ class TokenTracker:
             # Ensure worker is started
             self._ensure_worker_started()
             
+            # Use API's total_tokens if provided (authoritative billing value),
+            # otherwise calculate it. APIs may include overhead tokens in total_tokens
+            # that aren't in the simple sum, so we prefer the API value.
+            if total_tokens is None:
+                total_tokens = input_tokens + output_tokens
+            
             # Calculate cost
             pricing = self.MODEL_PRICING.get(model_alias, {
                 'input': 0.4,
@@ -220,7 +229,6 @@ class TokenTracker:
             input_cost = input_tokens * input_cost_per_token
             output_cost = output_tokens * output_cost_per_token
             total_cost = input_cost + output_cost
-            total_tokens = input_tokens + output_tokens
             
             # Determine model name from alias
             model_name_map = {

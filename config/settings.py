@@ -25,12 +25,16 @@ Usage:
 """
 
 from dotenv import load_dotenv
-load_dotenv()  # Load environment variables from .env file
 import os
 from typing import Optional
 import logging
+from utils.env_utils import ensure_utf8_env_file
 
 logger = logging.getLogger(__name__)
+
+# Ensure .env file is UTF-8 encoded before loading
+ensure_utf8_env_file()
+load_dotenv()  # Load environment variables from .env file
 
 class Config:
     """

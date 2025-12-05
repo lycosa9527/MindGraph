@@ -34,7 +34,7 @@ def test_password_portability():
     print(f"   Column: users.password_hash")
     
     # Simulate database backup
-    print(f"\n4. 📦 Database backed up (mindgraph.db copied)")
+    print(f"\n4. 📦 Database backed up (data/mindgraph.db copied)")
     print(f"   Hash is copied as-is (no decryption needed)")
     
     # Simulate database restore on different machine
@@ -65,7 +65,7 @@ def test_password_portability():
     print("=" * 60)
     print(f"✅ Bcrypt hashes are self-contained (include salt)")
     print(f"✅ No external keys needed for password verification")
-    print(f"✅ Simply copy mindgraph.db to new server and it works")
+    print(f"✅ Simply copy data/mindgraph.db to new server and it works")
     print(f"⚠️  Remember to also copy .env for JWT_SECRET_KEY")
     print(f"   (Otherwise users need to re-login, but passwords still work)")
 

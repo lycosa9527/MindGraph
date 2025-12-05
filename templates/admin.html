@@ -496,6 +496,7 @@
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" onclick="switchTab('dashboard')">📊 <span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
+            <button class="tab" onclick="switchTab('tokens')">🔢 <span class="lang-zh">Token统计</span><span class="lang-en">Tokens Tracking</span></button>
             <button class="tab" onclick="switchTab('schools')">🏫 <span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
             <button class="tab" onclick="switchTab('users')">👥 <span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
             <button class="tab" onclick="switchTab('apikeys')">🔑 <span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
@@ -519,7 +520,7 @@
                     <div class="value" id="stat-recent">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3><span class="lang-zh">本周Token</span><span class="lang-en">This Week Tokens</span></h3>
+                    <h3><span class="lang-zh">总Token使用</span><span class="lang-en">Total Tokens</span></h3>
                     <div class="value" id="stat-tokens">-</div>
                 </div>
             </div>
@@ -529,6 +530,35 @@
                     <h2 class="card-title">🏆 <span class="lang-zh">学校用户排行榜 (Top 10)</span><span class="lang-en">Top 10 Schools Leaderboard</span></h2>
                 </div>
                 <div id="org-distribution"></div>
+            </div>
+        </div>
+
+        <!-- Tokens Tracking Tab -->
+        <div id="tokens-tab" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3><span class="lang-zh">今日Token</span><span class="lang-en">Today</span></h3>
+                    <div class="value" id="token-today">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">过去一周</span><span class="lang-en">Past Week</span></h3>
+                    <div class="value" id="token-week">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">过去一月</span><span class="lang-en">Past Month</span></h3>
+                    <div class="value" id="token-month">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">总计</span><span class="lang-en">Total</span></h3>
+                    <div class="value" id="token-total">-</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🏆 <span class="lang-zh">用户Token排行榜 (Top 10)</span><span class="lang-en">Top 10 Users Token Leaderboard</span></h2>
+                </div>
+                <div id="token-users-list"></div>
             </div>
         </div>
 
@@ -1323,6 +1353,7 @@ curl -X POST http://your-server/api/generate_graph \
 
             // Load data
             if (tab === 'dashboard') loadDashboard();
+            if (tab === 'tokens') loadTokenStats();
             if (tab === 'schools') loadSchools();
             if (tab === 'users') {
                 loadUserFilters(); // Load filter dropdown options
@@ -1409,6 +1440,20 @@ curl -X POST http://your-server/api/generate_graph \
             autoGenerateSchoolCode();
         }
 
+        // Format numbers with K/M suffix for readability (shared function)
+        function formatNumber(num) {
+            if (num >= 1000000000000) {
+                return Math.round(num / 1000000000000) + 'T';
+            } else if (num >= 1000000000) {
+                return Math.round(num / 1000000000) + 'G';
+            } else if (num >= 1000000) {
+                return Math.round(num / 1000000) + 'M';
+            } else if (num >= 1000) {
+                return Math.round(num / 1000) + 'K';
+            }
+            return num.toString();
+        }
+
         // Dashboard
         async function loadDashboard() {
             try {
@@ -1419,28 +1464,27 @@ curl -X POST http://your-server/api/generate_graph \
                 document.getElementById('stat-orgs').textContent = stats.total_organizations;
                 document.getElementById('stat-recent').textContent = stats.recent_registrations;
                 
-                // Token stats in "XX+yy" format (input+output)
-                const tokenStats = stats.token_stats || { input_tokens: 0, output_tokens: 0 };
-                const inputTokens = tokenStats.input_tokens || 0;
-                const outputTokens = tokenStats.output_tokens || 0;
-                
-                // Format numbers with K/M suffix for readability
-                function formatNumber(num) {
-                    if (num >= 1000000000000) {
-                        return Math.round(num / 1000000000000) + 'T';
-                    } else if (num >= 1000000000) {
-                        return Math.round(num / 1000000000) + 'G';
-                    } else if (num >= 1000000) {
-                        return Math.round(num / 1000000) + 'M';
-                    } else if (num >= 1000) {
-                        return Math.round(num / 1000) + 'K';
-                    }
-                    return num.toString();
+                // Fetch total token stats
+                try {
+                    const tokenResponse = await auth.fetch('/api/auth/admin/token-stats');
+                    const tokenData = await tokenResponse.json();
+                    const totalStats = tokenData.total || { input_tokens: 0, output_tokens: 0 };
+                    const inputTokens = totalStats.input_tokens || 0;
+                    const outputTokens = totalStats.output_tokens || 0;
+                    
+                    const formattedInput = formatNumber(inputTokens);
+                    const formattedOutput = formatNumber(outputTokens);
+                    document.getElementById('stat-tokens').textContent = `${formattedInput}+${formattedOutput}`;
+                } catch (error) {
+                    // Fallback to week stats if token-stats endpoint fails
+                    const tokenStats = stats.token_stats || { input_tokens: 0, output_tokens: 0 };
+                    const inputTokens = tokenStats.input_tokens || 0;
+                    const outputTokens = tokenStats.output_tokens || 0;
+                    
+                    const formattedInput = formatNumber(inputTokens);
+                    const formattedOutput = formatNumber(outputTokens);
+                    document.getElementById('stat-tokens').textContent = `${formattedInput}+${formattedOutput}`;
                 }
-                
-                const formattedInput = formatNumber(inputTokens);
-                const formattedOutput = formatNumber(outputTokens);
-                document.getElementById('stat-tokens').textContent = `${formattedInput}+${formattedOutput}`;
 
                 // Organization distribution - Top 10 only with rankings
                 const dist = document.getElementById('org-distribution');
@@ -1504,6 +1548,96 @@ curl -X POST http://your-server/api/generate_graph \
             }
         }
 
+        // Token Statistics
+        async function loadTokenStats() {
+            try {
+                const response = await auth.fetch('/api/auth/admin/token-stats');
+                const data = await response.json();
+
+                // Display stats cards
+                const today = data.today || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                const week = data.past_week || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                const month = data.past_month || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                const total = data.total || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+
+                // Format and display today
+                const todayInput = formatNumber(today.input_tokens || 0);
+                const todayOutput = formatNumber(today.output_tokens || 0);
+                document.getElementById('token-today').textContent = `${todayInput}+${todayOutput}`;
+
+                // Format and display week
+                const weekInput = formatNumber(week.input_tokens || 0);
+                const weekOutput = formatNumber(week.output_tokens || 0);
+                document.getElementById('token-week').textContent = `${weekInput}+${weekOutput}`;
+
+                // Format and display month
+                const monthInput = formatNumber(month.input_tokens || 0);
+                const monthOutput = formatNumber(month.output_tokens || 0);
+                document.getElementById('token-month').textContent = `${monthInput}+${monthOutput}`;
+
+                // Format and display total
+                const totalInput = formatNumber(total.input_tokens || 0);
+                const totalOutput = formatNumber(total.output_tokens || 0);
+                document.getElementById('token-total').textContent = `${totalInput}+${totalOutput}`;
+
+                // Display top 10 users
+                const usersList = document.getElementById('token-users-list');
+                const topUsers = data.top_users || [];
+
+                if (topUsers.length === 0) {
+                    usersList.innerHTML = '<div style="color:#64748b;text-align:center;padding:2rem;"><span class="lang-zh">暂无用户数据</span><span class="lang-en">No user data yet</span></div>';
+                } else {
+                    usersList.innerHTML = topUsers.map((user, index) => {
+                        const rank = index + 1;
+                        let rankBadge = '';
+                        let rankStyle = '';
+                        
+                        if (rank === 1) {
+                            rankBadge = '🥇';
+                            rankStyle = 'background:linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);color:#000;';
+                        } else if (rank === 2) {
+                            rankBadge = '🥈';
+                            rankStyle = 'background:linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);color:#000;';
+                        } else if (rank === 3) {
+                            rankBadge = '🥉';
+                            rankStyle = 'background:linear-gradient(135deg, #cd7f32 0%, #d4a574 100%);color:#000;';
+                        } else {
+                            rankBadge = `#${rank}`;
+                            rankStyle = 'background:#f1f5f9;color:#64748b;';
+                        }
+                        
+                        const inputTokens = user.input_tokens || 0;
+                        const outputTokens = user.output_tokens || 0;
+                        const formattedInput = formatNumber(inputTokens);
+                        const formattedOutput = formatNumber(outputTokens);
+                        const tokenDisplay = inputTokens > 0 || outputTokens > 0 
+                            ? `${formattedInput}+${formattedOutput}` 
+                            : '0';
+                        
+                        return `
+                            <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border-bottom:1px solid #e2e8f0;transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <div style="min-width:50px;text-align:center;font-weight:700;padding:0.5rem;border-radius:8px;${rankStyle}">
+                                    ${rankBadge}
+                                </div>
+                                <div style="flex:1;font-weight:500;">
+                                    ${user.name || user.phone}
+                                </div>
+                                <div style="font-size:0.875rem;color:#64748b;min-width:200px;">
+                                    ${user.phone}
+                                </div>
+                                <div style="font-weight:700;color:#10b981;font-size:1.1rem;min-width:100px;text-align:right;">
+                                    ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                showAlert('加载Token统计失败 Failed to load token stats', 'error');
+                console.error('Token stats error:', error);
+            }
+        }
+
         // Schools
         async function loadSchools() {
             document.getElementById('schools-loading').style.display = 'block';
@@ -1525,16 +1659,7 @@ curl -X POST http://your-server/api/generate_graph \
                     const inputTokens = tokenStats.input_tokens || 0;
                     const outputTokens = tokenStats.output_tokens || 0;
                     
-                    // Format token numbers (reuse formatNumber from loadDashboard)
-                    function formatNumber(num) {
-                        if (num >= 1000000) {
-                            return Math.round(num / 1000000) + 'M';
-                        } else if (num >= 1000) {
-                            return Math.round(num / 1000) + 'K';
-                        }
-                        return num.toString();
-                    }
-                    
+                    // Format token numbers (using global formatNumber function)
                     const formattedInput = formatNumber(inputTokens);
                     const formattedOutput = formatNumber(outputTokens);
                     const tokenDisplay = inputTokens > 0 || outputTokens > 0 
@@ -1730,20 +1855,7 @@ curl -X POST http://your-server/api/generate_graph \
 
                 const tbody = document.getElementById('users-tbody');
                 
-                // Format number helper (reuse from dashboard)
-                function formatNumber(num) {
-                    if (num >= 1000000000000) {
-                        return Math.round(num / 1000000000000) + 'T';
-                    } else if (num >= 1000000000) {
-                        return Math.round(num / 1000000000) + 'G';
-                    } else if (num >= 1000000) {
-                        return Math.round(num / 1000000) + 'M';
-                    } else if (num >= 1000) {
-                        return Math.round(num / 1000) + 'K';
-                    }
-                    return num.toString();
-                }
-                
+                // Format number helper (using global formatNumber function)
                 tbody.innerHTML = users.map(user => {
                     const isLocked = user.locked_until && new Date(user.locked_until) > new Date();
                     

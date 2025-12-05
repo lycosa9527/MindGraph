@@ -31,7 +31,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from services.temp_image_cleaner import start_cleanup_scheduler
+from utils.env_utils import ensure_utf8_env_file
 
+# Ensure .env file is UTF-8 encoded before loading
+ensure_utf8_env_file()
 # Load environment variables
 load_dotenv()
 

@@ -78,7 +78,7 @@ git clone https://github.com/lycosa9527/MindGraph.git
 cd MindGraph
 
 # 2. Install dependencies
-python setup.py
+python scripts/setup.py
 
 # 3. Configure environment
 cp env.example .env
