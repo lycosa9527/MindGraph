@@ -410,7 +410,10 @@ class LLMValidationManager {
         // Find all text elements in the SVG
         d3.selectAll('#d3-container text').each(function() {
             const textElement = d3.select(this);
-            const text = textElement.text().trim();
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            const text = (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(textElement).trim() 
+                : textElement.text().trim();
             
             // Skip empty or placeholder text
             if (!text || text.length === 0) {

@@ -165,7 +165,10 @@ class LearningModeManager {
             const element = d3.select(this);
             const nodeId = element.attr('data-node-id');
             const nodeType = element.attr('data-node-type');
-            const text = element.text();
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            const text = (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(element) 
+                : element.text();
             
             allNodes.push({
                 id: nodeId,
@@ -943,7 +946,10 @@ class LearningModeManager {
         let mainTopic = 'the diagram';
         const topicElement = d3.select('#d3-container text[data-node-type="topic"]');
         if (!topicElement.empty()) {
-            mainTopic = topicElement.text().trim() || 'the diagram';
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            mainTopic = (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(topicElement).trim() 
+                : topicElement.text().trim() || 'the diagram';
         }
         
         // Build context based on node type and diagram type

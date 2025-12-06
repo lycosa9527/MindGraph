@@ -151,7 +151,10 @@ class InteractionHandler {
                     // Find associated text element
                     const textNode = element.node().nextElementSibling;
                     if (textNode && textNode.tagName === 'text') {
-                        const currentText = d3.select(textNode).text();
+                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                        const currentText = (typeof window.extractTextFromSVG === 'function') 
+                            ? window.extractTextFromSVG(d3.select(textNode)) 
+                            : d3.select(textNode).text();
                         self.openNodeEditor(nodeId, element.node(), textNode, currentText);
                     } else {
                         // Try to find text by position
@@ -217,7 +220,10 @@ class InteractionHandler {
                     })
                     .on('dblclick', (event) => {
                         event.stopPropagation();
-                        const currentText = element.text();
+                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                        const currentText = (typeof window.extractTextFromSVG === 'function') 
+                            ? window.extractTextFromSVG(element) 
+                            : element.text();
                         // For standalone text elements, the text element is both the shape and text
                         self.openNodeEditor(ownNodeId, textNode, textNode, currentText);
                     })
@@ -286,7 +292,10 @@ class InteractionHandler {
                     })
                     .on('dblclick', (event) => {
                         event.stopPropagation();
-                        const currentText = element.text();
+                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                        const currentText = (typeof window.extractTextFromSVG === 'function') 
+                            ? window.extractTextFromSVG(element) 
+                            : element.text();
                         // Find associated shape element
                         const shapeElement = d3.select(`[data-node-id="${associatedNodeId}"]`);
                         if (!shapeElement.empty()) {
@@ -489,7 +498,11 @@ class InteractionHandler {
         // Try sibling
         const nextSibling = shapeNode.nextElementSibling;
         if (nextSibling && nextSibling.tagName === 'text') {
-            return d3.select(nextSibling).text();
+            const textElement = d3.select(nextSibling);
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            return (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(textElement) 
+                : textElement.text();
         }
         
         // Try by proximity (find closest text element)
@@ -512,7 +525,14 @@ class InteractionHandler {
             }
         });
         
-        return closestText ? d3.select(closestText).text() : 'Edit me';
+        if (closestText) {
+            const textElement = d3.select(closestText);
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            return (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(textElement) 
+                : textElement.text();
+        }
+        return 'Edit me';
     }
     
     /**
@@ -565,7 +585,11 @@ class InteractionHandler {
         let currentText = 'Edit me';
         
         if (textNode && textNode.tagName === 'text') {
-            currentText = d3.select(textNode).text();
+            const textElement = d3.select(textNode);
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            currentText = (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(textElement) 
+                : textElement.text();
             this.editor.openNodeEditor(nodeId, shapeNode, textNode, currentText);
         } else {
             currentText = this.findTextForNode(shapeNode);

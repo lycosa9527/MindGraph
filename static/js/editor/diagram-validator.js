@@ -127,7 +127,10 @@ class DiagramValidator {
             const textElement = d3.select(this);
             const nodeId = textElement.attr('data-node-id');
             const nodeType = textElement.attr('data-node-type');
-            const textContent = textElement.text().trim();
+            // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            const textContent = (typeof window.extractTextFromSVG === 'function') 
+                ? window.extractTextFromSVG(textElement).trim() 
+                : textElement.text().trim();
             
             // CRITICAL FIX: Skip dimension nodes - they are OPTIONAL for all diagram types
             // Users can leave them blank and LLM will auto-select the best dimension

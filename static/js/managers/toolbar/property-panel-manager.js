@@ -29,16 +29,18 @@ class PropertyPanelManager {
         this.propFontSize = null;
         this.propFontFamily = null;
         this.propTextColor = null;
-        this.propTextColorHex = null;
         this.propFillColor = null;
-        this.propFillColorHex = null;
         this.propStrokeColor = null;
-        this.propStrokeColorHex = null;
         this.propStrokeWidth = null;
         this.propOpacity = null;
         this.propBold = null;
         this.propItalic = null;
         this.propUnderline = null;
+        
+        // Color button previews
+        this.previewTextColor = null;
+        this.previewFillColor = null;
+        this.previewStrokeColor = null;
         
         // Current selection
         this.currentNodeId = null;
@@ -60,16 +62,18 @@ class PropertyPanelManager {
         this.propFontSize = document.getElementById('prop-font-size');
         this.propFontFamily = document.getElementById('prop-font-family');
         this.propTextColor = document.getElementById('prop-text-color');
-        this.propTextColorHex = document.getElementById('prop-text-color-hex');
         this.propFillColor = document.getElementById('prop-fill-color');
-        this.propFillColorHex = document.getElementById('prop-fill-color-hex');
         this.propStrokeColor = document.getElementById('prop-stroke-color');
-        this.propStrokeColorHex = document.getElementById('prop-stroke-color-hex');
         this.propStrokeWidth = document.getElementById('prop-stroke-width');
         this.propOpacity = document.getElementById('prop-opacity');
         this.propBold = document.getElementById('prop-bold');
         this.propItalic = document.getElementById('prop-italic');
         this.propUnderline = document.getElementById('prop-underline');
+        
+        // Color button previews
+        this.previewTextColor = document.getElementById('preview-text-color');
+        this.previewFillColor = document.getElementById('preview-fill-color');
+        this.previewStrokeColor = document.getElementById('preview-stroke-color');
         
         if (!this.panel) {
             this.logger.warn('PropertyPanelManager', 'Property panel element not found');
@@ -83,19 +87,36 @@ class PropertyPanelManager {
     autoResizeTextarea(textarea) {
         if (!textarea || textarea.tagName !== 'TEXTAREA') return;
         
-        // Reset height to auto to get the correct scrollHeight
-        textarea.style.height = 'auto';
+        // Debounce: skip if already resizing (toolbar-manager.js handles it)
+        if (textarea._isResizing) return;
+        textarea._isResizing = true;
         
-        // Calculate new height based on content (with min and max constraints)
         const minHeight = 60; // Minimum height in pixels
         const maxHeight = 300; // Maximum height in pixels
         
-        // Calculate height based on scrollHeight
-        const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
+        // Save current scroll position to prevent jump
+        const scrollTop = textarea.scrollTop;
+        
+        // Temporarily set height to 0 to get accurate scrollHeight
+        textarea.style.height = '0px';
+        
+        // Get the actual content height needed
+        const contentHeight = textarea.scrollHeight;
+        
+        // Calculate new height with constraints
+        const newHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
         
         // Set the new height
         textarea.style.height = `${newHeight}px`;
-        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        textarea.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
+        
+        // Restore scroll position
+        textarea.scrollTop = scrollTop;
+        
+        // Clear the resizing flag after a short delay
+        requestAnimationFrame(() => {
+            textarea._isResizing = false;
+        });
     }
     
     /**
@@ -104,7 +125,8 @@ class PropertyPanelManager {
     attachEventListeners() {
         if (!this.panel) return;
         
-        // Auto-resize textarea on input
+        // NOTE: Ctrl+Enter handling is done in toolbar-manager.js
+        // Only attach input listener here for auto-resize
         if (this.propText && this.propText.tagName === 'TEXTAREA') {
             this.propText.addEventListener('input', (e) => {
                 this.autoResizeTextarea(e.target);
@@ -260,18 +282,27 @@ class PropertyPanelManager {
             // Method 1: Try as child
             textElement = nodeElement.select('text');
             if (!textElement.empty()) {
-                text = textElement.text() || '';
+                // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                text = (typeof window.extractTextFromSVG === 'function') 
+                    ? window.extractTextFromSVG(textElement) 
+                    : (textElement.text() || '');
             } else {
                 // Method 2: Try data-text-for attribute
                 textElement = d3.select(`[data-text-for="${nodeId}"]`);
                 if (!textElement.empty()) {
-                    text = textElement.text() || '';
+                    // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                    text = (typeof window.extractTextFromSVG === 'function') 
+                        ? window.extractTextFromSVG(textElement) 
+                        : (textElement.text() || '');
                 } else {
                     // Method 3: Try next sibling
                     const shapeNode = nodeElement.node();
                     if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
                         textElement = d3.select(shapeNode.nextElementSibling);
-                        text = textElement.text() || '';
+                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                        text = (typeof window.extractTextFromSVG === 'function') 
+                            ? window.extractTextFromSVG(textElement) 
+                            : (textElement.text() || '');
                     }
                 }
             }
@@ -312,15 +343,15 @@ class PropertyPanelManager {
         if (this.propFontSize) this.propFontSize.value = parseInt(fontSize);
         if (this.propFontFamily) this.propFontFamily.value = fontFamily;
         if (this.propTextColor) this.propTextColor.value = expandedTextColor;
-        if (this.propTextColorHex) this.propTextColorHex.value = expandedTextColor.toUpperCase();
         if (this.propFillColor) this.propFillColor.value = expandedFill;
-        if (this.propFillColorHex) this.propFillColorHex.value = expandedFill.toUpperCase();
         if (this.propStrokeColor) this.propStrokeColor.value = expandedStroke;
-        if (this.propStrokeColorHex) this.propStrokeColorHex.value = expandedStroke.toUpperCase();
         if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(strokeWidth);
         if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${strokeWidth}px`;
         if (this.propOpacity) this.propOpacity.value = parseFloat(opacity);
         if (this.opacityValue) this.opacityValue.textContent = `${Math.round(parseFloat(opacity) * 100)}%`;
+        
+        // Update color button previews
+        this.updateColorPreviews();
         
         // Update toggle buttons
         if (this.propBold) {
@@ -380,11 +411,8 @@ class PropertyPanelManager {
         if (this.propFontSize) this.propFontSize.value = 14;
         if (this.propFontFamily) this.propFontFamily.value = 'Inter, sans-serif';
         if (this.propTextColor) this.propTextColor.value = '#000000';
-        if (this.propTextColorHex) this.propTextColorHex.value = '#000000';
         if (this.propFillColor) this.propFillColor.value = '#2196f3';
-        if (this.propFillColorHex) this.propFillColorHex.value = '#2196F3';
         if (this.propStrokeColor) this.propStrokeColor.value = '#1976d2';
-        if (this.propStrokeColorHex) this.propStrokeColorHex.value = '#1976D2';
         if (this.propStrokeWidth) this.propStrokeWidth.value = 2;
         if (this.propOpacity) this.propOpacity.value = 1;
         
@@ -393,9 +421,27 @@ class PropertyPanelManager {
         if (this.propItalic) this.propItalic.classList.remove('active');
         if (this.propUnderline) this.propUnderline.classList.remove('active');
         
+        // Update color button previews
+        this.updateColorPreviews();
+        
         this.currentNodeId = null;
         
         this.logger.debug('PropertyPanelManager', 'Property panel cleared');
+    }
+    
+    /**
+     * Update color preview bars on buttons
+     */
+    updateColorPreviews() {
+        if (this.previewTextColor && this.propTextColor) {
+            this.previewTextColor.style.backgroundColor = this.propTextColor.value;
+        }
+        if (this.previewFillColor && this.propFillColor) {
+            this.previewFillColor.style.backgroundColor = this.propFillColor.value;
+        }
+        if (this.previewStrokeColor && this.propStrokeColor) {
+            this.previewStrokeColor.style.backgroundColor = this.propStrokeColor.value;
+        }
     }
     
     /**

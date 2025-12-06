@@ -290,6 +290,39 @@ function wrapText(text, width) {
  * @param {Function} measureFn - Function to measure text width: (text, fontSize) => number
  * @returns {string[]} Array of lines (already wrapped)
  */
+/**
+ * Render multi-line text using multiple text elements (workaround for tspan issues)
+ * @param {Object} svg - D3 SVG selection
+ * @param {string[]} lines - Array of text lines to render
+ * @param {number} x - X position (center)
+ * @param {number} startY - Starting Y position for first line
+ * @param {number} lineHeight - Height between lines
+ * @param {Object} attrs - Attributes to apply to each text element
+ */
+function renderMultiLineText(svg, lines, x, startY, lineHeight, attrs) {
+    const finalLines = (lines && lines.length > 0) ? lines : [''];
+    
+    finalLines.forEach((line, i) => {
+        const textEl = svg.append('text')
+            .attr('x', x)
+            .attr('y', startY + i * lineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .text(line);
+        
+        // Apply additional attributes
+        if (attrs) {
+            Object.entries(attrs).forEach(([key, value]) => {
+                if (key.startsWith('style-')) {
+                    textEl.style(key.substring(6), value);
+                } else {
+                    textEl.attr(key, value);
+                }
+            });
+        }
+    });
+}
+
 function splitAndWrapText(text, fontSize, maxWidth, measureFn) {
     const textStr = String(text || '');
     const allLines = [];
@@ -316,14 +349,19 @@ function splitAndWrapText(text, fontSize, maxWidth, measureFn) {
         let current = '';
         for (const w of words) {
             const candidate = current ? current + ' ' + w : w;
-            const width = measureFn(candidate, fontSize);
-            if (width <= maxWidth || current === '') {
-                current = candidate;
-            } else {
-                if (current) {
-                    allLines.push(current);
+            try {
+                const width = measureFn(candidate, fontSize);
+                if (width <= maxWidth || current === '') {
+                    current = candidate;
+                } else {
+                    if (current) {
+                        allLines.push(current);
+                    }
+                    current = w;
                 }
-                current = w;
+            } catch (e) {
+                // Fallback: just add the candidate
+                current = candidate;
             }
         }
         if (current) {
@@ -332,6 +370,102 @@ function splitAndWrapText(text, fontSize, maxWidth, measureFn) {
     });
     
     return allLines.length > 0 ? allLines : [''];
+}
+
+/**
+ * Split text by newline characters (from Ctrl+Enter in properties panel)
+ * Preserves explicit line breaks inserted by users
+ * @param {string} text - Text to split (may contain \n from Ctrl+Enter)
+ * @returns {string[]} Array of lines
+ */
+function splitTextLines(text) {
+    const textStr = String(text || '');
+    if (textStr === '') return ['']; // Return empty string array like wrapIntoLines does
+    
+    // Split by newlines (invisible \n character inserted via Ctrl+Enter)
+    const lines = textStr.split(/\n/);
+    
+    // Return lines array (empty lines are preserved, matching Concept Map behavior)
+    // Note: Can return [''] for empty text, matching wrapIntoLines pattern
+    // But ensure we always have at least one element
+    if (lines.length === 0) return [''];
+    
+    // Filter out trailing empty lines (like Concept Map does) but preserve non-trailing empty lines
+    const result = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+        if (trimmedLine === '' && i < lines.length - 1) {
+            // Preserve non-trailing empty lines
+            result.push('');
+        } else if (trimmedLine !== '') {
+            // Preserve non-empty lines
+            result.push(line);
+        }
+        // Skip trailing empty lines
+    }
+    
+    // Ensure at least one element (even if empty)
+    return result.length > 0 ? result : [''];
+}
+
+/**
+ * Extract text from SVG text element, handling multiple text elements for multi-line text
+ * This function supports three approaches:
+ * 1. Legacy tspan-based multi-line text (within single text element)
+ * 2. New multi-text approach (multiple text elements with same data-node-id)
+ * 3. Single text element with direct text content
+ * 
+ * @param {d3.Selection} textElement - D3 selection of text element
+ * @returns {string} Extracted text with \n for line breaks
+ */
+function extractTextFromSVG(textElement) {
+    if (!textElement || textElement.empty()) return '';
+    
+    const node = textElement.node();
+    if (!node) return '';
+    
+    // Check for legacy tspan children first (backward compatibility)
+    const tspans = textElement.selectAll('tspan');
+    if (!tspans.empty() && tspans.size() > 0) {
+        // Has tspan children - extract from tspans
+        const lines = [];
+        tspans.each(function() {
+            const tspanText = d3.select(this).text();
+            lines.push(tspanText);
+        });
+        if (lines.length > 0) {
+            return lines.join('\n');
+        }
+        return '';
+    }
+    
+    // Check if this is part of multi-text element approach (data-line-index attribute)
+    const lineIndex = textElement.attr('data-line-index');
+    const nodeId = textElement.attr('data-node-id');
+    
+    if (lineIndex !== null && nodeId) {
+        // This is part of a multi-text element set - find all text elements with same node ID
+        const svg = d3.select(node.ownerSVGElement || node.closest('svg'));
+        if (!svg.empty()) {
+            const allTextElements = svg.selectAll(`text[data-node-id="${nodeId}"]`);
+            if (allTextElements.size() > 1) {
+                // Multiple text elements - collect and sort by line index
+                const lineEntries = [];
+                allTextElements.each(function() {
+                    const el = d3.select(this);
+                    const idx = parseInt(el.attr('data-line-index') || '0', 10);
+                    const text = el.text() || '';
+                    lineEntries.push({ idx, text });
+                });
+                lineEntries.sort((a, b) => a.idx - b.idx);
+                return lineEntries.map(e => e.text).join('\n');
+            }
+        }
+    }
+    
+    // Fallback: direct text content (single-line or no special handling needed)
+    return textElement.text() || '';
 }
 
 /**
@@ -348,10 +482,22 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
         
         const textElements = allTextElements
             .filter(function() {
-                const text = d3.select(this).text();
-                const fontSize = parseFloat(d3.select(this).attr('font-size')) || 16;
-                const fontWeight = d3.select(this).attr('font-weight');
-                const fillColor = d3.select(this).attr('fill');
+                const textElement = d3.select(this);
+                
+                // For multi-text approach: only include first line (data-line-index=0 or no index)
+                // This prevents counting the same node multiple times
+                const lineIndex = textElement.attr('data-line-index');
+                if (lineIndex !== null && lineIndex !== '0') {
+                    return false; // Skip non-first lines of multi-text nodes
+                }
+                
+                // Use extractTextFromSVG to handle both single-line and multi-line text
+                const text = (typeof window.extractTextFromSVG === 'function') 
+                    ? window.extractTextFromSVG(textElement) 
+                    : textElement.text();
+                const fontSize = parseFloat(textElement.attr('font-size')) || 16;
+                const fontWeight = textElement.attr('font-weight');
+                const fillColor = textElement.attr('fill');
                 
                 // Exclude watermarks
                 const isWatermark = text === 'MindGraph';
@@ -361,15 +507,11 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 const isMainTopic = fontWeight === 'bold' || fontWeight === '600' || parseInt(fontWeight) >= 600;
                 
                 // Exclude empty text
-                const isEmpty = text.length === 0;
+                const isEmpty = !text || text.length === 0;
                 
                 // For flow maps and bridge maps: Exclude main step/example text (white text on blue background)
                 // Flow map main steps and bridge map first pair use white text (#ffffff)
                 const isMainStep = fillColor && fillColor.toLowerCase() === '#ffffff' && fontSize >= 14;
-                
-                // Debug logging for each text element
-                if (!isWatermark && !isMainTopic && !isEmpty) {
-                }
                 
                 return !isWatermark && !isMainTopic && !isEmpty && !isMainStep;
             });
@@ -398,14 +540,46 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
         const hiddenTexts = [];
         
         // Hide selected texts and collect their values
+        // Track already processed node IDs to avoid duplicates in answer key
+        const processedNodeIds = new Set();
+        
         textElements.each(function(d, i) {
             if (indicesToHide.includes(i)) {
-                const text = d3.select(this).text();
-                hiddenTexts.push(text);
+                const textElement = d3.select(this);
+                const nodeId = textElement.attr('data-node-id');
                 
+                // Use extractTextFromSVG to handle both single-line and multi-line text
+                const text = (typeof window.extractTextFromSVG === 'function') 
+                    ? window.extractTextFromSVG(textElement) 
+                    : textElement.text();
+                
+                // Only add to answer key once per node ID
+                if (!nodeId || !processedNodeIds.has(nodeId)) {
+                    hiddenTexts.push(text);
+                    if (nodeId) processedNodeIds.add(nodeId);
+                }
+                
+                // Hide the text element
                 d3.select(this)
                     .attr('opacity', 0)
                     .attr('fill', 'transparent');
+                    
+                // Also hide any tspan children (legacy support)
+                d3.select(this).selectAll('tspan')
+                    .attr('opacity', 0)
+                    .attr('fill', 'transparent');
+                
+                // For multi-text approach: hide all other text elements with same node ID
+                if (nodeId) {
+                    const svgEl = d3.select(this.ownerSVGElement || this.closest('svg'));
+                    if (!svgEl.empty()) {
+                        svgEl.selectAll(`text[data-node-id="${nodeId}"]`).each(function() {
+                            d3.select(this)
+                                .attr('opacity', 0)
+                                .attr('fill', 'transparent');
+                        });
+                    }
+                }
             }
         });
         
@@ -492,12 +666,29 @@ if (typeof window !== 'undefined') {
         centerContent,
         wrapText,
         splitAndWrapText,
+        splitTextLines,
+        extractTextFromSVG,
         knockoutTextForLearningSheet
     };
     
     // Also expose splitAndWrapText globally for backward compatibility
     if (typeof window.splitAndWrapText === 'undefined') {
         window.splitAndWrapText = splitAndWrapText;
+    }
+    
+    // Expose renderMultiLineText globally
+    if (typeof window.renderMultiLineText === 'undefined') {
+        window.renderMultiLineText = renderMultiLineText;
+    }
+    
+    // Expose splitTextLines globally for backward compatibility
+    if (typeof window.splitTextLines === 'undefined') {
+        window.splitTextLines = splitTextLines;
+    }
+    
+    // Expose extractTextFromSVG globally for backward compatibility
+    if (typeof window.extractTextFromSVG === 'undefined') {
+        window.extractTextFromSVG = extractTextFromSVG;
     }
     
     // CRITICAL FIX: Also expose functions globally for backward compatibility
@@ -529,6 +720,9 @@ if (typeof window !== 'undefined') {
         createSVG,
         centerContent,
         wrapText,
+        splitAndWrapText,
+        splitTextLines,
+        extractTextFromSVG,
         knockoutTextForLearningSheet
     };
 } else {

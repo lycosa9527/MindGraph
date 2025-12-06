@@ -210,14 +210,22 @@ class NodePropertyOperationsManager {
         const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
         if (nodeElement.empty()) return;
         
-        // Find text element using multiple methods (consistent with other methods)
-        let textElement = d3.select(`[data-text-for="${nodeId}"]`);
-        if (textElement.empty()) {
+        // Find ALL text elements for this node (multi-text approach uses multiple elements per node)
+        // Use selectAll to get all text elements with matching node ID
+        let textElements = d3.selectAll(`text[data-node-id="${nodeId}"]`);
+        
+        // Fallback: try data-text-for attribute
+        if (textElements.empty()) {
+            textElements = d3.selectAll(`[data-text-for="${nodeId}"]`);
+        }
+        
+        // Fallback: try next sibling or child
+        if (textElements.empty()) {
             const node = nodeElement.node();
             if (node && node.nextElementSibling && node.nextElementSibling.tagName === 'text') {
-                textElement = d3.select(node.nextElementSibling);
+                textElements = d3.select(node.nextElementSibling);
             } else {
-                textElement = nodeElement.select('text');
+                textElements = nodeElement.select('text');
             }
         }
         
@@ -236,37 +244,37 @@ class NodePropertyOperationsManager {
             nodeElement.attr('opacity', parseFloat(properties.opacity) || 1);
         }
         
-        // Apply text styling properties
-        if (!textElement.empty()) {
+        // Apply text styling properties to ALL text elements for this node
+        if (!textElements.empty()) {
             // Font size
             if (properties.fontSize) {
                 const fontSize = String(properties.fontSize).trim();
-                textElement.attr('font-size', fontSize);
+                textElements.attr('font-size', fontSize);
             }
             
             // Font family
             if (properties.fontFamily) {
-                textElement.attr('font-family', properties.fontFamily);
+                textElements.attr('font-family', properties.fontFamily);
             }
             
             // Text color (fill)
             if (properties.textColor) {
-                textElement.attr('fill', this.normalizeColor(properties.textColor));
+                textElements.attr('fill', this.normalizeColor(properties.textColor));
             }
             
             // Font weight (bold)
             if (properties.bold !== undefined) {
-                textElement.attr('font-weight', properties.bold ? 'bold' : 'normal');
+                textElements.attr('font-weight', properties.bold ? 'bold' : 'normal');
             }
             
             // Font style (italic)
             if (properties.italic !== undefined) {
-                textElement.attr('font-style', properties.italic ? 'italic' : 'normal');
+                textElements.attr('font-style', properties.italic ? 'italic' : 'normal');
             }
             
             // Text decoration (underline)
             if (properties.underline !== undefined) {
-                textElement.attr('text-decoration', properties.underline ? 'underline' : 'none');
+                textElements.attr('text-decoration', properties.underline ? 'underline' : 'none');
             }
         }
     }

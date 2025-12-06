@@ -162,6 +162,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     function measureLineWidth(text, fontSpec, fontWeight = 'normal') {
         return measureTextWidth(text, fontSpec, fontWeight);
     }
+    
+    // Helper for splitAndWrapText compatibility (takes text, fontSize, returns width)
+    function measureLineWidthForWrap(text, fontSize) {
+        return measureTextWidth(text, fontSize, 'normal');
+    }
 
     // Helper to build a curly brace path opening to the left
     // Based on HTML reference file kh4.html - sharp tip with decorative arcs
@@ -239,30 +244,42 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const partFontSize = parseFontSpec(THEME.fontPart).size;
     const subpartFontSize = parseFontSpec(THEME.fontSubpart).size;
     
-    // Measure topic text (simple, no wrapping)
+    // Measure topic text (with line break support)
     const topicText = actualSpec.whole || '';
-    const topicTextWidth = Math.max(measureLineWidth(topicText, THEME.fontTopic, 'bold'), 20);
+    const topicLines = (typeof window.splitTextLines === 'function') 
+        ? window.splitTextLines(topicText) 
+        : (topicText || '').split(/\n/);
+    const topicLineHeight = Math.round(topicFontSize * 1.2);
+    const topicTextWidth = Math.max(...topicLines.map(line => measureLineWidth(line, THEME.fontTopic, 'bold')), 20);
     const topicBoxWidth = topicTextWidth + topicPadding * 2;
-    const topicBoxHeight = topicFontSize + topicPadding * 2;
+    const topicBoxHeight = topicLines.length * topicLineHeight + topicPadding * 2;
     
-    // Measure part texts (simple, no wrapping)
+    // Measure part texts (with line break support)
     const partData = (actualSpec.parts || []).map(p => {
         const text = p?.name || '';
-        const textWidth = Math.max(measureLineWidth(text, THEME.fontPart, 'bold'), 20);
+        const partLines = (typeof window.splitTextLines === 'function') 
+            ? window.splitTextLines(text) 
+            : (text || '').split(/\n/);
+        const partLineHeight = Math.round(partFontSize * 1.2);
+        const textWidth = Math.max(...partLines.map(line => measureLineWidth(line, THEME.fontPart, 'bold')), 20);
         const boxWidth = textWidth + partPadding * 2;
-        const boxHeight = partFontSize + partPadding * 2;
+        const boxHeight = partLines.length * partLineHeight + partPadding * 2;
         return { part: p, text, boxWidth, boxHeight };
     });
     const maxPartBoxWidth = Math.max(100, ...partData.map(p => p.boxWidth));
     
-    // Measure subpart texts (simple, no wrapping)
+    // Measure subpart texts (with line break support)
     const subpartData = [];
     (actualSpec.parts || []).forEach(p => {
         (p.subparts || []).forEach(sp => {
             const text = sp?.name || '';
-            const textWidth = Math.max(measureLineWidth(text, THEME.fontSubpart), 20);
+            const subpartLines = (typeof window.splitTextLines === 'function') 
+                ? window.splitTextLines(text) 
+                : (text || '').split(/\n/);
+            const subpartLineHeight = Math.round(subpartFontSize * 1.2);
+            const textWidth = Math.max(...subpartLines.map(line => measureLineWidth(line, THEME.fontSubpart)), 20);
             const boxWidth = textWidth + subpartPadding * 2;
-            const boxHeight = subpartFontSize + subpartPadding * 2;
+            const boxHeight = subpartLines.length * subpartLineHeight + subpartPadding * 2;
             subpartData.push({ subpart: sp, text, boxWidth, boxHeight });
         });
     });
@@ -401,21 +418,38 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('data-node-type', 'part')
             .attr('data-part-index', partIndex);
         
-        // Render part text (simple, no wrapping)
-        svg.append('text')
-            .attr('x', partsStartX + partBoxWidth / 2)
-            .attr('y', partY)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.partText)
-            .attr('font-size', partFontSize)
-            .attr('font-family', parseFontSpec(THEME.fontPart).family)
-            .attr('font-weight', 'bold')
-            .attr('data-node-id', `brace-part-${partIndex}`)
-            .attr('data-node-type', 'part')
-            .attr('data-part-index', partIndex)
-            .attr('data-text-for', `part_${partIndex}`)
-            .text(partInfo.text || '\u00A0'); // Use non-breaking space if empty
+        // Render part text - use multiple text elements (tspan doesn't render)
+        const partText = partInfo.text || '';
+        const partMaxWidth = partBoxWidth * 0.9; // Max width based on box width
+        const partLineHeight = Math.round(partFontSize * 1.2);
+        
+        // Use splitAndWrapText for automatic word wrapping
+        const partLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(partText, partFontSize, partMaxWidth, measureLineWidthForWrap)
+            : (partText ? [partText] : ['']);
+        
+        // Ensure at least one line for placeholder
+        const finalPartLines = partLines.length > 0 ? partLines : [''];
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const partStartY = partY - (finalPartLines.length - 1) * partLineHeight / 2;
+        finalPartLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', partsStartX + partBoxWidth / 2)
+                .attr('y', partStartY + i * partLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.partText)
+                .attr('font-size', partFontSize)
+                .attr('font-family', parseFontSpec(THEME.fontPart).family)
+                .attr('font-weight', 'bold')
+                .attr('data-node-id', `brace-part-${partIndex}`)
+                .attr('data-node-type', 'part')
+                .attr('data-part-index', partIndex)
+                .attr('data-text-for', `part_${partIndex}`)
+                .attr('data-line-index', i)
+                .text(line);
+        });
 
         // Move to next position for subparts
         currentY += partBoxHeight + 20;
@@ -453,21 +487,38 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                     .attr('data-part-index', partIndex)
                     .attr('data-subpart-index', subpartIndex);
                 
-                // Render subpart text (simple, no wrapping)
-                svg.append('text')
-                    .attr('x', subpartsStartX + subpartBoxWidth / 2)
-                    .attr('y', subpartY)
-                    .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', THEME.subpartText)
-                    .attr('font-size', subpartFontSize)
-                    .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
-                    .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
-                    .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
-                    .attr('data-node-type', 'subpart')
-                    .attr('data-part-index', partIndex)
-                    .attr('data-subpart-index', subpartIndex)
-                    .text(subpartInfo.text || '\u00A0'); // Use non-breaking space if empty
+                // Render subpart text - use multiple text elements (tspan doesn't render)
+                const subpartText = subpartInfo.text || '';
+                const subpartMaxWidth = subpartBoxWidth * 0.9; // Max width based on box width
+                const subpartLineHeight = Math.round(subpartFontSize * 1.2);
+                
+                // Use splitAndWrapText for automatic word wrapping
+                const subpartLines = (typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(subpartText, subpartFontSize, subpartMaxWidth, measureLineWidthForWrap)
+                    : (subpartText ? [subpartText] : ['']);
+                
+                // Ensure at least one line for placeholder
+                const finalSubpartLines = subpartLines.length > 0 ? subpartLines : [''];
+                
+                // WORKAROUND: Use multiple text elements instead of tspan
+                const subpartStartY = subpartY - (finalSubpartLines.length - 1) * subpartLineHeight / 2;
+                finalSubpartLines.forEach((line, i) => {
+                    svg.append('text')
+                        .attr('x', subpartsStartX + subpartBoxWidth / 2)
+                        .attr('y', subpartStartY + i * subpartLineHeight)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', THEME.subpartText)
+                        .attr('font-size', subpartFontSize)
+                        .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
+                        .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
+                        .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
+                        .attr('data-node-type', 'subpart')
+                        .attr('data-part-index', partIndex)
+                        .attr('data-subpart-index', subpartIndex)
+                        .attr('data-line-index', i)
+                        .text(line);
+                });
 
                 currentY += subpartInfo.boxHeight + 10;
                 
@@ -677,20 +728,36 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('data-node-id', 'topic_center')
             .attr('data-node-type', 'topic');
         
-        // Render topic text (simple, no wrapping)
-        svg.append('text')
-            .attr('x', topicX + topicBoxWidth / 2)
-            .attr('y', topicY)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.topicText)
-            .attr('font-size', topicFontSize)
-            .attr('font-family', parseFontSpec(THEME.fontTopic).family)
-            .attr('font-weight', 'bold')
-            .attr('data-text-for', 'topic_center')
-            .attr('data-node-id', 'topic_center')
-            .attr('data-node-type', 'topic')
-            .text(topicText || '\u00A0'); // Use non-breaking space if empty
+        // Render topic text - use multiple text elements (tspan doesn't render)
+        const topicMaxWidth = topicBoxWidth * 0.9; // Max width based on box width
+        const topicLineHeight = Math.round(topicFontSize * 1.2);
+        
+        // Use splitAndWrapText for automatic word wrapping
+        const topicLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(topicText, topicFontSize, topicMaxWidth, measureLineWidthForWrap)
+            : (topicText ? [topicText] : ['']);
+        
+        // Ensure at least one line for placeholder
+        const finalTopicLines = topicLines.length > 0 ? topicLines : [''];
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const topicStartY = topicY - (finalTopicLines.length - 1) * topicLineHeight / 2;
+        finalTopicLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', topicX + topicBoxWidth / 2)
+                .attr('y', topicStartY + i * topicLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.topicText)
+                .attr('font-size', topicFontSize)
+                .attr('font-family', parseFontSpec(THEME.fontTopic).family)
+                .attr('font-weight', 'bold')
+                .attr('data-text-for', 'topic_center')
+                .attr('data-node-id', 'topic_center')
+                .attr('data-node-type', 'topic')
+                .attr('data-line-index', i)
+                .text(line);
+        });
         
         // ALWAYS show dimension field (even if empty) so users can edit it
         // Only show if dimension field exists in spec (even if empty string)

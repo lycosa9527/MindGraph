@@ -134,12 +134,24 @@ class ToolbarManager {
         this.propBold = document.getElementById('prop-bold');
         this.propItalic = document.getElementById('prop-italic');
         this.propUnderline = document.getElementById('prop-underline');
+        
+        // Color properties - hidden inputs for actual values
         this.propTextColor = document.getElementById('prop-text-color');
-        this.propTextColorHex = document.getElementById('prop-text-color-hex');
         this.propFillColor = document.getElementById('prop-fill-color');
-        this.propFillColorHex = document.getElementById('prop-fill-color-hex');
         this.propStrokeColor = document.getElementById('prop-stroke-color');
-        this.propStrokeColorHex = document.getElementById('prop-stroke-color-hex');
+        
+        // Color buttons and shared palette
+        this.btnTextColor = document.getElementById('btn-text-color');
+        this.btnFillColor = document.getElementById('btn-fill-color');
+        this.btnStrokeColor = document.getElementById('btn-stroke-color');
+        this.previewTextColor = document.getElementById('preview-text-color');
+        this.previewFillColor = document.getElementById('preview-fill-color');
+        this.previewStrokeColor = document.getElementById('preview-stroke-color');
+        this.colorPaletteDropdown = document.getElementById('color-palette-dropdown');
+        this.sharedColorPalette = document.getElementById('shared-color-palette');
+        this.propColorHex = document.getElementById('prop-color-hex');
+        this.activeColorType = null; // 'text', 'fill', or 'stroke'
+        
         this.propStrokeWidth = document.getElementById('prop-stroke-width');
         this.propOpacity = document.getElementById('prop-opacity');
         
@@ -330,37 +342,38 @@ class ToolbarManager {
         this.propStrokeWidth?.addEventListener('input', () => this.applyStylesRealtime());
         this.propOpacity?.addEventListener('input', () => this.applyStylesRealtime());
         
-        // Color pickers sync and real-time update
-        this.propTextColor?.addEventListener('input', (e) => {
-            this.propTextColorHex.value = e.target.value.toUpperCase();
-            this.applyStylesRealtime(); // Apply immediately
+        // Initialize shared color palette
+        this.initColorPalette();
+        
+        // Color button click handlers
+        this.btnTextColor?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleColorPalette('text');
         });
-        this.propTextColorHex?.addEventListener('input', (e) => {
+        this.btnFillColor?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleColorPalette('fill');
+        });
+        this.btnStrokeColor?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleColorPalette('stroke');
+        });
+        
+        // Hex input for custom colors
+        this.propColorHex?.addEventListener('input', (e) => {
             if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                this.propTextColor.value = e.target.value;
-                this.applyStylesRealtime(); // Apply immediately
+                this.applyColorFromHex(e.target.value);
             }
         });
         
-        this.propFillColor?.addEventListener('input', (e) => {
-            this.propFillColorHex.value = e.target.value.toUpperCase();
-            this.applyStylesRealtime(); // Apply immediately
-        });
-        this.propFillColorHex?.addEventListener('input', (e) => {
-            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                this.propFillColor.value = e.target.value;
-                this.applyStylesRealtime(); // Apply immediately
-            }
-        });
-        
-        this.propStrokeColor?.addEventListener('input', (e) => {
-            this.propStrokeColorHex.value = e.target.value.toUpperCase();
-            this.applyStylesRealtime(); // Apply immediately
-        });
-        this.propStrokeColorHex?.addEventListener('input', (e) => {
-            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                this.propStrokeColor.value = e.target.value;
-                this.applyStylesRealtime(); // Apply immediately
+        // Close palette when clicking outside
+        document.addEventListener('click', (e) => {
+            if (this.colorPaletteDropdown && 
+                !this.colorPaletteDropdown.contains(e.target) &&
+                !this.btnTextColor?.contains(e.target) &&
+                !this.btnFillColor?.contains(e.target) &&
+                !this.btnStrokeColor?.contains(e.target)) {
+                this.closeColorPalette();
             }
         });
         
@@ -606,11 +619,8 @@ class ToolbarManager {
         
         // Reset colors to defaults
         if (this.propTextColor) this.propTextColor.value = '#000000';
-        if (this.propTextColorHex) this.propTextColorHex.value = '#000000';
         if (this.propFillColor) this.propFillColor.value = '#2196f3';
-        if (this.propFillColorHex) this.propFillColorHex.value = '#2196F3';
         if (this.propStrokeColor) this.propStrokeColor.value = '#1976d2';
-        if (this.propStrokeColorHex) this.propStrokeColorHex.value = '#1976D2';
         
         // Reset stroke width and opacity to defaults
         if (this.propStrokeWidth) this.propStrokeWidth.value = 2;
@@ -623,6 +633,11 @@ class ToolbarManager {
         if (this.propItalic) this.propItalic.classList.remove('active');
         if (this.propUnderline) this.propUnderline.classList.remove('active');
         
+        // Update color button previews
+        this.updateColorPreviews();
+        
+        // Close color palette if open
+        this.closeColorPalette();
     }
     
     /**
@@ -661,18 +676,27 @@ class ToolbarManager {
             // Method 1: Try as child
             textElement = nodeElement.select('text');
             if (!textElement.empty()) {
-                text = textElement.text() || '';
+                // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                text = (typeof window.extractTextFromSVG === 'function') 
+                    ? window.extractTextFromSVG(textElement) 
+                    : (textElement.text() || '');
             } else {
                 // Method 2: Try data-text-for attribute
                 textElement = d3.select(`[data-text-for="${nodeId}"]`);
                 if (!textElement.empty()) {
-                    text = textElement.text() || '';
+                    // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                    text = (typeof window.extractTextFromSVG === 'function') 
+                        ? window.extractTextFromSVG(textElement) 
+                        : (textElement.text() || '');
                 } else {
                     // Method 3: Try next sibling
                     const shapeNode = nodeElement.node();
                     if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
                         textElement = d3.select(shapeNode.nextElementSibling);
-                        text = textElement.text() || '';
+                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                        text = (typeof window.extractTextFromSVG === 'function') 
+                            ? window.extractTextFromSVG(textElement) 
+                            : (textElement.text() || '');
                     }
                 }
             }
@@ -784,15 +808,15 @@ class ToolbarManager {
         if (this.propFontSize) this.propFontSize.value = parseInt(fontSize);
         if (this.propFontFamily) this.propFontFamily.value = fontFamily;
         if (this.propTextColor) this.propTextColor.value = expandedTextColor;
-        if (this.propTextColorHex) this.propTextColorHex.value = expandedTextColor.toUpperCase();
         if (this.propFillColor) this.propFillColor.value = expandedFill;
-        if (this.propFillColorHex) this.propFillColorHex.value = expandedFill.toUpperCase();
         if (this.propStrokeColor) this.propStrokeColor.value = expandedStroke;
-        if (this.propStrokeColorHex) this.propStrokeColorHex.value = expandedStroke.toUpperCase();
         if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(strokeWidth);
         if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${strokeWidth}px`;
         if (this.propOpacity) this.propOpacity.value = parseFloat(opacity);
         if (this.opacityValue) this.opacityValue.textContent = `${Math.round(parseFloat(opacity) * 100)}%`;
+        
+        // Update color button previews
+        this.updateColorPreviews();
         
         // Update toggle buttons
         if (this.propBold) {
@@ -813,25 +837,242 @@ class ToolbarManager {
     autoResizeTextarea(textarea) {
         if (!textarea) return;
         
-        // Reset height to auto to get the correct scrollHeight
-        textarea.style.height = 'auto';
+        // Debounce: skip if already resizing
+        if (textarea._isResizing) return;
+        textarea._isResizing = true;
         
-        // Calculate new height based on content (with min and max constraints)
         const minHeight = 60; // Minimum height in pixels
         const maxHeight = 300; // Maximum height in pixels
-        const lineHeight = 24; // Approximate line height in pixels
         
-        // Calculate height based on scrollHeight
-        const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
+        // Save current scroll position to prevent jump
+        const scrollTop = textarea.scrollTop;
+        
+        // Temporarily set height to 0 to get accurate scrollHeight
+        textarea.style.height = '0px';
+        
+        // Get the actual content height needed
+        const contentHeight = textarea.scrollHeight;
+        
+        // Calculate new height with constraints
+        const newHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
         
         // Set the new height
         textarea.style.height = `${newHeight}px`;
-        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        textarea.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
+        
+        // Restore scroll position
+        textarea.scrollTop = scrollTop;
+        
+        // Clear the resizing flag after a short delay
+        requestAnimationFrame(() => {
+            textarea._isResizing = false;
+        });
     }
     
     /**
-     * Apply text changes
+     * Initialize shared color palette
+     * Creates 32 predefined color swatches in the dropdown
      */
+    initColorPalette() {
+        // 32 carefully selected colors (4 rows x 8 columns)
+        this.paletteColors = [
+            // Row 1: Grayscale + Pure colors
+            '#000000', '#333333', '#666666', '#999999', '#CCCCCC', '#FFFFFF', '#FF0000', '#00FF00',
+            // Row 2: Blues and Purples
+            '#0000FF', '#1976D2', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A',
+            // Row 3: Warm colors
+            '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#F44336', '#E91E63', '#9C27B0',
+            // Row 4: Pastels and earth tones
+            '#673AB7', '#3F51B5', '#795548', '#607D8B', '#FFCDD2', '#C8E6C9', '#BBDEFB', '#FFE0B2'
+        ];
+        
+        if (!this.sharedColorPalette) return;
+        
+        this.sharedColorPalette.innerHTML = '';
+        
+        this.paletteColors.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = color;
+            swatch.dataset.color = color;
+            
+            // Add light-color class for light colors
+            const rgb = this.hexToRgb(color);
+            if (rgb && (rgb.r + rgb.g + rgb.b) > 600) {
+                swatch.classList.add('light-color');
+            }
+            
+            swatch.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.selectColor(color);
+            });
+            
+            this.sharedColorPalette.appendChild(swatch);
+        });
+        
+        // Initialize button previews
+        this.updateColorPreviews();
+    }
+    
+    /**
+     * Toggle color palette dropdown for a specific color type
+     */
+    toggleColorPalette(colorType) {
+        if (this.activeColorType === colorType && this.colorPaletteDropdown?.classList.contains('open')) {
+            this.closeColorPalette();
+        } else {
+            this.openColorPalette(colorType);
+        }
+    }
+    
+    /**
+     * Open color palette for a specific color type
+     */
+    openColorPalette(colorType) {
+        this.activeColorType = colorType;
+        
+        // Update button active states
+        this.btnTextColor?.classList.toggle('active', colorType === 'text');
+        this.btnFillColor?.classList.toggle('active', colorType === 'fill');
+        this.btnStrokeColor?.classList.toggle('active', colorType === 'stroke');
+        
+        // Get current color for this type
+        let currentColor = '#000000';
+        if (colorType === 'text' && this.propTextColor) {
+            currentColor = this.propTextColor.value;
+        } else if (colorType === 'fill' && this.propFillColor) {
+            currentColor = this.propFillColor.value;
+        } else if (colorType === 'stroke' && this.propStrokeColor) {
+            currentColor = this.propStrokeColor.value;
+        }
+        
+        // Update hex input
+        if (this.propColorHex) {
+            this.propColorHex.value = currentColor.toUpperCase();
+        }
+        
+        // Update palette selection
+        this.updatePaletteSelection(currentColor);
+        
+        // Show dropdown
+        this.colorPaletteDropdown?.classList.add('open');
+    }
+    
+    /**
+     * Close color palette dropdown
+     */
+    closeColorPalette() {
+        this.activeColorType = null;
+        this.colorPaletteDropdown?.classList.remove('open');
+        this.btnTextColor?.classList.remove('active');
+        this.btnFillColor?.classList.remove('active');
+        this.btnStrokeColor?.classList.remove('active');
+    }
+    
+    /**
+     * Select a color from the palette
+     */
+    selectColor(color) {
+        if (!this.activeColorType) return;
+        
+        const upperColor = color.toUpperCase();
+        
+        // Update the appropriate hidden input
+        if (this.activeColorType === 'text' && this.propTextColor) {
+            this.propTextColor.value = color;
+        } else if (this.activeColorType === 'fill' && this.propFillColor) {
+            this.propFillColor.value = color;
+        } else if (this.activeColorType === 'stroke' && this.propStrokeColor) {
+            this.propStrokeColor.value = color;
+        }
+        
+        // Update hex input
+        if (this.propColorHex) {
+            this.propColorHex.value = upperColor;
+        }
+        
+        // Update palette selection visual
+        this.updatePaletteSelection(color);
+        
+        // Update button previews
+        this.updateColorPreviews();
+        
+        // Apply styles in real-time
+        this.applyStylesRealtime();
+        
+        // Close palette after selection
+        this.closeColorPalette();
+    }
+    
+    /**
+     * Apply color from hex input
+     */
+    applyColorFromHex(color) {
+        if (!this.activeColorType) return;
+        
+        // Update the appropriate hidden input
+        if (this.activeColorType === 'text' && this.propTextColor) {
+            this.propTextColor.value = color;
+        } else if (this.activeColorType === 'fill' && this.propFillColor) {
+            this.propFillColor.value = color;
+        } else if (this.activeColorType === 'stroke' && this.propStrokeColor) {
+            this.propStrokeColor.value = color;
+        }
+        
+        // Update palette selection visual
+        this.updatePaletteSelection(color);
+        
+        // Update button previews
+        this.updateColorPreviews();
+        
+        // Apply styles in real-time
+        this.applyStylesRealtime();
+    }
+    
+    /**
+     * Update the selected state of the shared color palette
+     */
+    updatePaletteSelection(selectedColor) {
+        if (!this.sharedColorPalette) return;
+        
+        const normalizedColor = selectedColor.toUpperCase();
+        
+        this.sharedColorPalette.querySelectorAll('.color-swatch').forEach(swatch => {
+            if (swatch.dataset.color.toUpperCase() === normalizedColor) {
+                swatch.classList.add('selected');
+            } else {
+                swatch.classList.remove('selected');
+            }
+        });
+    }
+    
+    /**
+     * Update color preview bars on buttons
+     */
+    updateColorPreviews() {
+        if (this.previewTextColor && this.propTextColor) {
+            this.previewTextColor.style.backgroundColor = this.propTextColor.value;
+        }
+        if (this.previewFillColor && this.propFillColor) {
+            this.previewFillColor.style.backgroundColor = this.propFillColor.value;
+        }
+        if (this.previewStrokeColor && this.propStrokeColor) {
+            this.previewStrokeColor.style.backgroundColor = this.propStrokeColor.value;
+        }
+    }
+    
+    /**
+     * Convert hex color to RGB object
+     */
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+    
     /**
      * Apply text to selected nodes - EVENT BUS WRAPPER
      */

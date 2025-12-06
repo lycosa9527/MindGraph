@@ -50,6 +50,27 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         return;
     }
     
+    // Helper function to measure text width for wrapping
+    function getMeasurementContainer() {
+        let container = d3.select('#measurement-container');
+        if (container.empty()) {
+            container = d3.select('body').append('div')
+                .attr('id', 'measurement-container')
+                .style('position', 'absolute')
+                .style('visibility', 'hidden')
+                .style('pointer-events', 'none');
+        }
+        return container;
+    }
+    
+    function measureLineWidth(text, fontSize) {
+        const container = getMeasurementContainer();
+        const t = container.append('svg').append('text').attr('font-size', fontSize).text(text);
+        const w = t.node().getBBox().width;
+        t.remove();
+        return w;
+    }
+    
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let baseWidth, baseHeight, padding;
     
@@ -95,7 +116,11 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     const topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
     
     // Calculate uniform radius for all attribute nodes
-    const attributeRadii = spec.attributes.map(t => getTextRadius(t, THEME.fontAttribute, 10));
+    // Handle both string and object attributes (t can be "text" or {text: "text"})
+    const attributeRadii = spec.attributes.map(t => {
+        const textStr = typeof t === 'object' ? (t.text || '') : (t || '');
+        return getTextRadius(textStr, THEME.fontAttribute, 10);
+    });
     const uniformAttributeR = Math.max(...attributeRadii, 30);
     
     logger.info(`[BubbleMap-Renderer] Rendering ${spec.attributes.length} adjective nodes with uniform radius: ${uniformAttributeR}px`); // Use the largest required radius for all
@@ -114,9 +139,12 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         const targetX = centerX + targetDistance * Math.cos(angle * Math.PI / 180);
         const targetY = centerY + targetDistance * Math.sin(angle * Math.PI / 180);
         
+        // Handle both string and object attributes (attr can be "text" or {text: "text"})
+        const attrText = typeof attr === 'object' ? (attr.text || '') : (attr || '');
+        
         return {
             id: i,
-            text: attr,
+            text: attrText,
             radius: uniformAttributeR, // All nodes use the same radius
             targetX: targetX,
             targetY: targetY,
@@ -218,18 +246,32 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-id', 'topic_center')
         .attr('data-node-type', 'topic');
     
-    svg.append('text')
-        .attr('x', centerX)
-        .attr('y', centerY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.topicText)
-        .attr('font-size', THEME.fontTopic)
-        .attr('font-weight', 'bold')
-        .attr('data-text-for', 'topic_center')
-        .attr('data-node-id', 'topic_center')
-        .attr('data-node-type', 'topic')
-        .text(spec.topic);
+    // Render topic text with automatic wrapping and tspan (always use tspan)
+    const topicText = spec.topic || '';
+    const topicMaxWidth = topicR * 1.8; // Max width based on circle radius
+    const topicLines = (typeof window.splitAndWrapText === 'function')
+        ? window.splitAndWrapText(topicText, THEME.fontTopic, topicMaxWidth, measureLineWidth)
+        : (topicText ? topicText.split(/\n/) : ['']);
+    const finalTopicLines = topicLines.length > 0 ? topicLines : [''];
+    const topicLineHeight = Math.round(THEME.fontTopic * 1.2);
+    
+    // WORKAROUND: Use multiple text elements instead of tspan (tspan doesn't render)
+    const topicStartY = centerY - (finalTopicLines.length - 1) * topicLineHeight / 2;
+    finalTopicLines.forEach((line, i) => {
+        svg.append('text')
+            .attr('x', centerX)
+            .attr('y', topicStartY + i * topicLineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.topicText)
+            .attr('font-size', THEME.fontTopic)
+            .attr('font-weight', 'bold')
+            .attr('data-text-for', 'topic_center')
+            .attr('data-node-id', 'topic_center')
+            .attr('data-node-type', 'topic')
+            .attr('data-line-index', i)
+            .text(line);
+    });
     
     // Draw attribute circles
     nodes.forEach(node => {
@@ -244,17 +286,31 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
             .attr('data-node-type', 'attribute')
             .attr('data-array-index', node.id);
         
-        svg.append('text')
-            .attr('x', node.x)
-            .attr('y', node.y)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.attributeText)
-            .attr('font-size', THEME.fontAttribute)
-            .attr('data-text-for', `attribute_${node.id}`)
-            .attr('data-node-id', `attribute_${node.id}`)
-            .attr('data-node-type', 'attribute')
-            .text(node.text);
+        // Render attribute text - use multiple text elements (tspan doesn't render)
+        const attrText = node.text || '';
+        const attrMaxWidth = node.radius * 1.8; // Max width based on circle radius
+        const attrLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(attrText, THEME.fontAttribute, attrMaxWidth, measureLineWidth)
+            : (attrText ? attrText.split(/\n/) : ['']);
+        const finalAttrLines = attrLines.length > 0 ? attrLines : [''];
+        const attrLineHeight = Math.round(THEME.fontAttribute * 1.2);
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const attrStartY = node.y - (finalAttrLines.length - 1) * attrLineHeight / 2;
+        finalAttrLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', node.x)
+                .attr('y', attrStartY + i * attrLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.attributeText)
+                .attr('font-size', THEME.fontAttribute)
+                .attr('data-text-for', `attribute_${node.id}`)
+                .attr('data-node-id', `attribute_${node.id}`)
+                .attr('data-node-type', 'attribute')
+                .attr('data-line-index', i)
+                .text(line);
+        });
     });
     
     // Apply learning sheet text knockout if needed
@@ -318,6 +374,27 @@ function recalculateTightViewBox(svg, padding = 40) {
 }
 
 function renderCircleMap(spec, theme = null, dimensions = null) {
+    // Helper functions for text measurement
+    function getMeasurementContainer() {
+        let container = d3.select('#measurement-container');
+        if (container.empty()) {
+            container = d3.select('body').append('div')
+                .attr('id', 'measurement-container')
+                .style('position', 'absolute')
+                .style('visibility', 'hidden')
+                .style('pointer-events', 'none');
+        }
+        return container;
+    }
+    
+    function measureLineWidth(text, fontSize) {
+        const container = getMeasurementContainer();
+        const t = container.append('svg').append('text').attr('font-size', fontSize).text(text);
+        const w = t.node().getBBox().width;
+        t.remove();
+        return w;
+    }
+    
     // VERBOSE LOGGING: Template receiving spec
     logger.info('[CircleMap-Renderer] ========================================');
     logger.info('[CircleMap-Renderer] RECEIVING SPEC FOR RENDERING');
@@ -386,8 +463,10 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     
     // Calculate uniform radius for all context nodes
     const contextRadii = spec.context.map((t, idx) => {
-        const radius = getTextRadius(t, THEME.fontContext, 10);
-        return { index: idx, text: t, radius };
+        // Handle both string and object context items (t can be "text" or {text: "text"})
+        const textStr = typeof t === 'object' ? (t.text || '') : (t || '');
+        const radius = getTextRadius(textStr, THEME.fontContext, 10);
+        return { index: idx, text: textStr, radius };
     });
     const uniformContextR = Math.max(...contextRadii.map(n => n.radius), 30); // Use the largest required radius for all
     
@@ -407,7 +486,9 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     });
     
     // Calculate topic circle size (made smaller like original)
-    const topicTextRadius = getTextRadius(spec.topic, THEME.fontTopic, 15);
+    // Handle both string and object topic (spec.topic can be "text" or {text: "text"})
+    const topicForRadius = typeof spec.topic === 'object' ? (spec.topic.text || '') : (spec.topic || '');
+    const topicTextRadius = getTextRadius(topicForRadius, THEME.fontTopic, 15);
     const topicR = Math.max(topicTextRadius + 15, 45); // Smaller topic circle at center
     
     // Calculate layout
@@ -478,9 +559,12 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         const targetX = centerX + childrenRadius * Math.cos(angle * Math.PI / 180);
         const targetY = centerY + childrenRadius * Math.sin(angle * Math.PI / 180);
         
+        // Handle both string and object context items (ctx can be "text" or {text: "text"})
+        const contextItemText = typeof ctx === 'object' ? (ctx.text || '') : (ctx || '');
+        
         return {
             id: i,
-            text: ctx,
+            text: contextItemText,
             radius: uniformContextR,
             x: targetX,
             y: targetY
@@ -566,18 +650,37 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             .attr('data-array-index', node.id)
             .style('cursor', 'pointer');
         
-        svg.append('text')
-            .attr('x', node.x)
-            .attr('y', node.y)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.contextText)
-            .attr('font-size', THEME.fontContext)
-            .attr('data-text-for', `context_${node.id}`)
-            .attr('data-node-id', `context_${node.id}`)
-            .attr('data-node-type', 'context')
-            .style('cursor', 'pointer')
-            .text(node.text);
+        // Render context text with automatic wrapping and tspan (always use tspan)
+        const contextText = node.text || '';
+        const contextMaxWidth = node.radius * 1.8; // Max width based on circle radius
+        const contextLineHeight = Math.round(THEME.fontContext * 1.2);
+        
+        // Use splitAndWrapText for automatic word wrapping
+        const contextLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(contextText, THEME.fontContext, contextMaxWidth, measureLineWidth)
+            : (contextText ? [contextText] : ['']);
+        
+        // Ensure at least one line for placeholder
+        const finalContextLines = contextLines.length > 0 ? contextLines : [''];
+        
+        // WORKAROUND: Since tspan doesn't render, use multiple text elements
+        const contextStartY = node.y - (finalContextLines.length - 1) * contextLineHeight / 2;
+        
+        finalContextLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', node.x)
+                .attr('y', contextStartY + i * contextLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.contextText)
+                .attr('font-size', THEME.fontContext)
+                .attr('data-text-for', `context_${node.id}`)
+                .attr('data-node-id', `context_${node.id}`)
+                .attr('data-node-type', 'context')
+                .attr('data-line-index', i)
+                .style('cursor', 'pointer')
+                .text(line);
+        });
     });
     
     // Draw topic circle at center
@@ -592,20 +695,51 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-type', 'center')
         .style('cursor', 'pointer');
     
-    // Draw topic text on top
-    svg.append('text')
-        .attr('x', actualCenterX)
-        .attr('y', actualCenterY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.topicText)
-        .attr('font-size', THEME.fontTopic)
-        .attr('font-weight', 'bold')
-        .attr('data-text-for', 'center_topic')
-        .attr('data-node-id', 'center_topic')
-        .attr('data-node-type', 'center')
-        .style('cursor', 'pointer')
-        .text(spec.topic);
+    // Render topic text with automatic wrapping and tspan (always use tspan)
+    // Handle both string and object topic (spec.topic can be "text" or {text: "text"})
+    const topicTextStr = typeof spec.topic === 'object' ? (spec.topic.text || '') : (spec.topic || '');
+    const topicMaxWidth = topicR * 1.8; // Max width based on circle radius
+    const topicLineHeight = Math.round(THEME.fontTopic * 1.2);
+    
+    // Use splitAndWrapText for automatic word wrapping
+    const topicLines = (typeof window.splitAndWrapText === 'function')
+        ? window.splitAndWrapText(topicTextStr, THEME.fontTopic, topicMaxWidth, measureLineWidth)
+        : (topicTextStr ? [topicTextStr] : ['']);
+    
+    // Ensure at least one line for placeholder
+    const finalTopicLines = topicLines.length > 0 ? topicLines : [''];
+    
+    // DEBUG: Log actual center position and styling
+    console.log('[CircleMap-Renderer] Topic text positioning:', {
+        x: actualCenterX,
+        y: actualCenterY - (finalTopicLines.length - 1) * topicLineHeight / 2,
+        fill: THEME.topicText,
+        fontSize: THEME.fontTopic,
+        lineCount: finalTopicLines.length,
+        lineHeight: topicLineHeight
+    });
+    
+    // WORKAROUND: Since tspan doesn't render in this environment,
+    // use multiple text elements for multi-line text
+    const topicStartY = actualCenterY - (finalTopicLines.length - 1) * topicLineHeight / 2;
+    
+    finalTopicLines.forEach((line, i) => {
+        svg.append('text')
+            .attr('x', actualCenterX)
+            .attr('y', topicStartY + i * topicLineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.topicText)
+            .attr('font-size', THEME.fontTopic)
+            .attr('font-weight', 'bold')
+            .attr('data-text-for', 'center_topic')
+            .attr('data-node-id', 'center_topic')
+            .attr('data-node-type', 'center')
+            .attr('data-line-index', i)
+            .style('cursor', 'pointer')
+            .text(line);
+    });
+    
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
@@ -622,6 +756,26 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
 }
 
 function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
+    // Helper function to measure text width for wrapping
+    function getMeasurementContainer() {
+        let container = d3.select('#measurement-container');
+        if (container.empty()) {
+            container = d3.select('body').append('div')
+                .attr('id', 'measurement-container')
+                .style('position', 'absolute')
+                .style('visibility', 'hidden')
+                .style('pointer-events', 'none');
+        }
+        return container;
+    }
+    
+    function measureLineWidth(text, fontSize) {
+        const container = getMeasurementContainer();
+        const t = container.append('svg').append('text').attr('font-size', fontSize).text(text);
+        const w = t.node().getBBox().width;
+        t.remove();
+        return w;
+    }
     d3.select('#d3-container').html('');
     
     // Enhanced validation with detailed error messages
@@ -702,16 +856,19 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         ...theme
     };
     
+    // Helper to extract text from string or object
+    const extractText = (item) => typeof item === 'object' ? (item.text || '') : (item || '');
+    
     // Calculate text sizes and radii
-    const leftTopicR = getTextRadius(spec.left, THEME.fontTopic, 20);
-    const rightTopicR = getTextRadius(spec.right, THEME.fontTopic, 20);
+    const leftTopicR = getTextRadius(extractText(spec.left), THEME.fontTopic, 20);
+    const rightTopicR = getTextRadius(extractText(spec.right), THEME.fontTopic, 20);
     const topicR = Math.max(leftTopicR, rightTopicR, 60);
     
-    const simR = Math.max(...spec.similarities.map(t => getTextRadius(t, THEME.fontSim, 10)), 28);
+    const simR = Math.max(...spec.similarities.map(t => getTextRadius(extractText(t), THEME.fontSim, 10)), 28);
     
     // Calculate uniform radius for ALL difference circles (both left and right)
     const allDiffTexts = [...spec.left_differences, ...spec.right_differences];
-    const uniformDiffR = Math.max(...allDiffTexts.map(t => getTextRadius(t, THEME.fontDiff, 8)), 24);
+    const uniformDiffR = Math.max(...allDiffTexts.map(t => getTextRadius(extractText(t), THEME.fontDiff, 8)), 24);
     const leftDiffR = uniformDiffR;
     const rightDiffR = uniformDiffR;
     
@@ -901,17 +1058,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-id', 'topic_left')
         .attr('data-node-type', 'left');
     
-    svg.append('text')
-        .attr('x', leftTopicX)
-        .attr('y', topicY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.topicText)
-        .attr('font-size', THEME.fontTopic)
-        .attr('font-weight', 600)
-        .text(spec.left)
-        .attr('data-node-id', 'topic_left')
-        .attr('data-node-type', 'left');
+    // Render left topic text - use multiple text elements (tspan doesn't render)
+    const leftText = extractText(spec.left);
+    const leftMaxWidth = topicR * 1.8; // Max width based on circle radius
+    const leftLines = (typeof window.splitAndWrapText === 'function')
+        ? window.splitAndWrapText(leftText, THEME.fontTopic, leftMaxWidth, measureLineWidth)
+        : (leftText ? leftText.split(/\n/) : ['']);
+    const finalLeftLines = leftLines.length > 0 ? leftLines : [''];
+    const leftLineHeight = Math.round(THEME.fontTopic * 1.2);
+    
+    // WORKAROUND: Use multiple text elements instead of tspan
+    const leftStartY = topicY - (finalLeftLines.length - 1) * leftLineHeight / 2;
+    finalLeftLines.forEach((line, i) => {
+        svg.append('text')
+            .attr('x', leftTopicX)
+            .attr('y', leftStartY + i * leftLineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.topicText)
+            .attr('font-size', THEME.fontTopic)
+            .attr('font-weight', 600)
+            .attr('data-node-id', 'topic_left')
+            .attr('data-node-type', 'left')
+            .attr('data-line-index', i)
+            .text(line);
+    });
     
     // Draw right topic
     svg.append('circle')
@@ -924,17 +1095,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-id', 'topic_right')
         .attr('data-node-type', 'right');
     
-    svg.append('text')
-        .attr('x', rightTopicX)
-        .attr('y', topicY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.topicText)
-        .attr('font-size', THEME.fontTopic)
-        .attr('font-weight', 600)
-        .text(spec.right)
-        .attr('data-node-id', 'topic_right')
-        .attr('data-node-type', 'right');
+    // Render right topic text - use multiple text elements (tspan doesn't render)
+    const rightText = extractText(spec.right);
+    const rightMaxWidth = topicR * 1.8; // Max width based on circle radius
+    const rightLines = (typeof window.splitAndWrapText === 'function')
+        ? window.splitAndWrapText(rightText, THEME.fontTopic, rightMaxWidth, measureLineWidth)
+        : (rightText ? rightText.split(/\n/) : ['']);
+    const finalRightLines = rightLines.length > 0 ? rightLines : [''];
+    const rightLineHeight = Math.round(THEME.fontTopic * 1.2);
+    
+    // WORKAROUND: Use multiple text elements instead of tspan
+    const rightStartY = topicY - (finalRightLines.length - 1) * rightLineHeight / 2;
+    finalRightLines.forEach((line, i) => {
+        svg.append('text')
+            .attr('x', rightTopicX)
+            .attr('y', rightStartY + i * rightLineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.topicText)
+            .attr('font-size', THEME.fontTopic)
+            .attr('font-weight', 600)
+            .attr('data-node-id', 'topic_right')
+            .attr('data-node-type', 'right')
+            .attr('data-line-index', i)
+            .text(line);
+    });
     
     // Draw similarities in center column
     if (spec.similarities && Array.isArray(spec.similarities)) {
@@ -953,17 +1138,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('data-node-type', 'similarity')
                 .attr('data-array-index', i);
             
-            svg.append('text')
-                .attr('x', simX)
-                .attr('y', y)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.simText)
-                .attr('font-size', THEME.fontSim)
-                .text(item)
-                .attr('data-node-id', `similarity_${i}`)
-                .attr('data-node-type', 'similarity')
-                .attr('data-array-index', i);
+            // Render similarity text - use multiple text elements (tspan doesn't render)
+            const simText = typeof item === 'string' ? item : (item?.text || item?.content || String(item || ''));
+            const simMaxWidth = simR * 1.8; // Max width based on circle radius
+            const simLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(simText, THEME.fontSim, simMaxWidth, measureLineWidth)
+                : (simText ? simText.split(/\n/) : ['']);
+            const finalSimLines = simLines.length > 0 ? simLines : [''];
+            const simLineHeight = Math.round(THEME.fontSim * 1.2);
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const simTextStartY = y - (finalSimLines.length - 1) * simLineHeight / 2;
+            finalSimLines.forEach((line, idx) => {
+                svg.append('text')
+                    .attr('x', simX)
+                    .attr('y', simTextStartY + idx * simLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', THEME.simText)
+                    .attr('font-size', THEME.fontSim)
+                    .attr('data-node-id', `similarity_${i}`)
+                    .attr('data-node-type', 'similarity')
+                    .attr('data-array-index', i)
+                    .attr('data-line-index', idx)
+                    .text(line);
+            });
         });
     }
     
@@ -984,17 +1183,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('data-node-type', 'left_difference')
                 .attr('data-array-index', i);
             
-            svg.append('text')
-                .attr('x', leftDiffX)
-                .attr('y', y)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.diffText)
-                .attr('font-size', THEME.fontDiff)
-                .text(item)
-                .attr('data-node-id', `left_diff_${i}`)
-                .attr('data-node-type', 'left_difference')
-                .attr('data-array-index', i);
+            // Render left difference text - use multiple text elements (tspan doesn't render)
+            const itemText = typeof item === 'string' ? item : (item?.text || item?.content || String(item || ''));
+            const leftDiffMaxWidth = leftDiffR * 1.8; // Max width based on circle radius
+            const leftDiffLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(itemText, THEME.fontDiff, leftDiffMaxWidth, measureLineWidth)
+                : (itemText ? itemText.split(/\n/) : ['']);
+            const finalLeftDiffLines = leftDiffLines.length > 0 ? leftDiffLines : [''];
+            const leftDiffLineHeight = Math.round(THEME.fontDiff * 1.2);
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const leftDiffTextStartY = y - (finalLeftDiffLines.length - 1) * leftDiffLineHeight / 2;
+            finalLeftDiffLines.forEach((line, idx) => {
+                svg.append('text')
+                    .attr('x', leftDiffX)
+                    .attr('y', leftDiffTextStartY + idx * leftDiffLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', THEME.diffText)
+                    .attr('font-size', THEME.fontDiff)
+                    .attr('data-node-id', `left_diff_${i}`)
+                    .attr('data-node-type', 'left_difference')
+                    .attr('data-array-index', i)
+                    .attr('data-line-index', idx)
+                    .text(line);
+            });
         });
     }
     
@@ -1015,17 +1228,31 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('data-node-type', 'right_difference')
                 .attr('data-array-index', i);
             
-            svg.append('text')
-                .attr('x', rightDiffX)
-                .attr('y', y)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.diffText)
-                .attr('font-size', THEME.fontDiff)
-                .text(item)
-                .attr('data-node-id', `right_diff_${i}`)
-                .attr('data-node-type', 'right_difference')
-                .attr('data-array-index', i);
+            // Render right difference text - use multiple text elements (tspan doesn't render)
+            const itemText = typeof item === 'string' ? item : (item?.text || item?.content || String(item || ''));
+            const rightDiffMaxWidth = rightDiffR * 1.8; // Max width based on circle radius
+            const rightDiffLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(itemText, THEME.fontDiff, rightDiffMaxWidth, measureLineWidth)
+                : (itemText ? itemText.split(/\n/) : ['']);
+            const finalRightDiffLines = rightDiffLines.length > 0 ? rightDiffLines : [''];
+            const rightDiffLineHeight = Math.round(THEME.fontDiff * 1.2);
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const rightDiffTextStartY = y - (finalRightDiffLines.length - 1) * rightDiffLineHeight / 2;
+            finalRightDiffLines.forEach((line, idx) => {
+                svg.append('text')
+                    .attr('x', rightDiffX)
+                    .attr('y', rightDiffTextStartY + idx * rightDiffLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', THEME.diffText)
+                    .attr('font-size', THEME.fontDiff)
+                    .attr('data-node-id', `right_diff_${i}`)
+                    .attr('data-node-type', 'right_difference')
+                    .attr('data-array-index', i)
+                    .attr('data-line-index', idx)
+                    .text(line);
+            });
         });
     }
     

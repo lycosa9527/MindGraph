@@ -546,32 +546,32 @@
                         </div>
                     </div>
                     
-                    <!-- Color Properties -->
+                    <!-- Color Properties - Compact Button Style -->
                     <div class="property-group">
-                        <label for="prop-text-color">Text Color</label>
-                        <div class="color-picker-group">
-                            <input type="color" id="prop-text-color" name="prop-text-color" value="#000000">
-                            <label for="prop-text-color-hex" style="display:none;">Text Color Hex Value</label>
-                            <input type="text" id="prop-text-color-hex" name="prop-text-color-hex" class="color-hex-input" value="#000000" autocomplete="off">
+                        <label>颜色</label>
+                        <div class="color-buttons-row">
+                            <button type="button" class="color-btn" id="btn-text-color" data-color-type="text" title="Text Color">
+                                <span class="color-btn-label">文字</span>
+                                <span class="color-btn-preview" id="preview-text-color"></span>
+                            </button>
+                            <button type="button" class="color-btn" id="btn-fill-color" data-color-type="fill" title="Fill Color">
+                                <span class="color-btn-label">填充</span>
+                                <span class="color-btn-preview" id="preview-fill-color"></span>
+                            </button>
+                            <button type="button" class="color-btn" id="btn-stroke-color" data-color-type="stroke" title="Stroke Color">
+                                <span class="color-btn-label">边框</span>
+                                <span class="color-btn-preview" id="preview-stroke-color"></span>
+                            </button>
                         </div>
-                    </div>
-                    
-                    <div class="property-group">
-                        <label for="prop-fill-color">Fill Color</label>
-                        <div class="color-picker-group">
-                            <input type="color" id="prop-fill-color" name="prop-fill-color" value="#2196f3">
-                            <label for="prop-fill-color-hex" style="display:none;">Fill Color Hex Value</label>
-                            <input type="text" id="prop-fill-color-hex" name="prop-fill-color-hex" class="color-hex-input" value="#2196f3" autocomplete="off">
+                        <!-- Shared Color Palette Dropdown -->
+                        <div class="color-palette-dropdown" id="color-palette-dropdown">
+                            <div class="color-palette" id="shared-color-palette"></div>
+                            <input type="text" id="prop-color-hex" class="color-hex-input" value="#000000" placeholder="#000000" autocomplete="off">
                         </div>
-                    </div>
-                    
-                    <div class="property-group">
-                        <label for="prop-stroke-color">Stroke Color</label>
-                        <div class="color-picker-group">
-                            <input type="color" id="prop-stroke-color" name="prop-stroke-color" value="#1976d2">
-                            <label for="prop-stroke-color-hex" style="display:none;">Stroke Color Hex Value</label>
-                            <input type="text" id="prop-stroke-color-hex" name="prop-stroke-color-hex" class="color-hex-input" value="#1976d2" autocomplete="off">
-                        </div>
+                        <!-- Hidden inputs to store actual values -->
+                        <input type="hidden" id="prop-text-color" value="#000000">
+                        <input type="hidden" id="prop-fill-color" value="#2196f3">
+                        <input type="hidden" id="prop-stroke-color" value="#1976d2">
                     </div>
                     
                     <!-- Stroke Width -->

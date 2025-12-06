@@ -221,19 +221,17 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
                 .attr('stroke-width', strokeWidth);
         }
 
-        // Render multi-line text using tspan elements
-        const textEl = svg.append('text')
-            .attr('x', n.x)
-            .attr('y', n.y - (n.lines.length - 1) * lineHeight / 2)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', textColor || '#fff')
-            .attr('font-size', THEME.fontNode);
-        
+        // Render multi-line text using multiple text elements (tspan doesn't render)
+        const textStartY = n.y - (n.lines.length - 1) * lineHeight / 2;
         n.lines.forEach((line, i) => {
-            textEl.append('tspan')
+            svg.append('text')
                 .attr('x', n.x)
-                .attr('dy', i === 0 ? 0 : lineHeight)
+                .attr('y', textStartY + i * lineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', textColor || '#fff')
+                .attr('font-size', THEME.fontNode)
+                .attr('data-line-index', i)
                 .text(line);
         });
     });
@@ -342,12 +340,19 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     const stepSizes = spec.steps.map(s => {
         // Handle both string steps and object steps (for backward compatibility)
         const text = typeof s === 'string' ? s : (s.text || '');
-        // Calculate dimensions based on text (simple, no wrapping)
-        const textWidth = Math.max(measureLineWidth(text, THEME.fontStep), 20);
+        // Split by newlines to handle multi-line text (Ctrl+Enter)
+        const lines = (typeof window.splitTextLines === 'function') 
+            ? window.splitTextLines(text) 
+            : (text || '').split(/\n/);
+        const lineHeight = Math.round(THEME.fontStep * 1.2);
+        // Calculate width based on longest line
+        const textWidth = Math.max(...lines.map(line => measureLineWidth(line, THEME.fontStep)), 20);
+        // Calculate height based on number of lines
+        const textHeight = lines.length * lineHeight;
         return {
             text: text,
             w: Math.max(100, textWidth + THEME.hPadStep * 2),
-            h: Math.max(42, THEME.fontStep + THEME.vPadStep * 2)
+            h: Math.max(42, textHeight + THEME.vPadStep * 2)
         };
     });
 
@@ -365,16 +370,28 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     }
     const subSpacing = 30; // Increased further to prevent overlap
     const subOffsetX = 40; // gap between step rect and substeps group
+    const substepFontSize = Math.max(12, THEME.fontStep - 1);
+    const substepLineHeight = Math.round(substepFontSize * 1.2);
     const subNodesPerStep = stepSizes.map(stepObj => {
         const subs = stepToSubsteps[stepObj.text] || [];
         return subs.map(txt => {
             const text = txt || '';
-            // Calculate dimensions based on text (simple, no wrapping)
-            const textWidth = Math.max(measureLineWidth(text, THEME.fontStep), 20);
+            // Split by newlines to handle multi-line text (Ctrl+Enter)
+            const lines = (typeof window.splitTextLines === 'function') 
+                ? window.splitTextLines(text) 
+                : text.split(/\n/);
+            // Calculate max line width
+            let maxLineWidth = 20;
+            lines.forEach(line => {
+                const w = measureLineWidth(line, substepFontSize);
+                if (w > maxLineWidth) maxLineWidth = w;
+            });
+            // Calculate height based on number of lines
+            const textHeight = lines.length * substepLineHeight;
             return {
                 text: text,
-                w: Math.max(80, textWidth + THEME.hPadStep * 2),
-                h: Math.max(28, THEME.fontStep + THEME.vPadStep * 2)
+                w: Math.max(80, maxLineWidth + THEME.hPadStep * 2),
+                h: Math.max(28, textHeight + THEME.vPadStep * 2)
             };
         });
     });
@@ -610,20 +627,37 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-step-index', index)
             .attr('cursor', 'pointer');
 
-        // Text (simple, no wrapping)
-        svg.append('text')
-            .attr('x', stepXCenter)
-            .attr('y', stepYCenter)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.stepText)        // White text
-            .attr('font-size', THEME.fontStep)
-            .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
-            .attr('data-node-id', `flow-step-${index}`)
-            .attr('data-node-type', 'step')
-            .attr('data-step-index', index)
-            .attr('cursor', 'pointer')
-            .text(s.text || '\u00A0'); // Use non-breaking space if empty
+        // Render step text with automatic wrapping and tspan (always use tspan)
+        const stepText = s.text || '';
+        const stepMaxWidth = s.w * 0.9; // Max width based on box width
+        const stepLineHeight = Math.round(THEME.fontStep * 1.2);
+        
+        // Use splitAndWrapText for automatic word wrapping
+        const stepLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(stepText, THEME.fontStep, stepMaxWidth, measureLineWidth)
+            : (stepText ? [stepText] : ['']);
+        
+        // Ensure at least one line for placeholder
+        const finalStepLines = stepLines.length > 0 ? stepLines : [''];
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const stepStartY = stepYCenter - (finalStepLines.length - 1) * stepLineHeight / 2;
+        finalStepLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', stepXCenter)
+                .attr('y', stepStartY + i * stepLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.stepText)        // White text
+                .attr('font-size', THEME.fontStep)
+                .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
+                .attr('data-node-id', `flow-step-${index}`)
+                .attr('data-node-type', 'step')
+                .attr('data-step-index', index)
+                .attr('cursor', 'pointer')
+                .attr('data-line-index', i)
+                .text(line);
+        });
     });
 
     // Calculate accurate canvas dimensions based on actual content positions
@@ -687,21 +721,39 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('data-substep-index', nodeIdx)
                 .attr('cursor', 'pointer');
             
-            // Draw substep text (simple, no wrapping)
-            svg.append('text')
-                .attr('x', substep.x + substep.w / 2)
-                .attr('y', substep.y + substep.h / 2)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.substepText)        // Dark text for readability
-                .attr('font-size', Math.max(12, THEME.fontStep - 1))
-                .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
-                .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
-                .attr('data-node-type', 'substep')
-                .attr('data-step-index', stepIdx)
-                .attr('data-substep-index', nodeIdx)
-                .attr('cursor', 'pointer')
-                .text(substep.text || '\u00A0'); // Use non-breaking space if empty
+            // Render substep text with automatic wrapping and tspan (always use tspan)
+            const substepText = substep.text || '';
+            const substepMaxWidth = substep.w * 0.9; // Max width based on box width
+            const substepFontSize = Math.max(12, THEME.fontStep - 1);
+            const substepLineHeight = Math.round(substepFontSize * 1.2);
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const substepLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(substepText, substepFontSize, substepMaxWidth, measureLineWidth)
+                : (substepText ? [substepText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalSubstepLines = substepLines.length > 0 ? substepLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const substepStartY = substep.y + substep.h / 2 - (finalSubstepLines.length - 1) * substepLineHeight / 2;
+            finalSubstepLines.forEach((line, i) => {
+                svg.append('text')
+                    .attr('x', substep.x + substep.w / 2)
+                    .attr('y', substepStartY + i * substepLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', THEME.substepText)        // Dark text for readability
+                    .attr('font-size', substepFontSize)
+                    .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
+                    .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                    .attr('data-node-type', 'substep')
+                    .attr('data-step-index', stepIdx)
+                    .attr('data-substep-index', nodeIdx)
+                    .attr('cursor', 'pointer')
+                    .attr('data-line-index', i)
+                    .text(line);
+            });
             
             // L-shaped connectors already drawn earlier (Step 3b) for proper z-order
         });
@@ -886,20 +938,37 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('data-step-index', index)
                 .attr('cursor', 'pointer');
             
-            // Text (simple, no wrapping)
-            svg.append('text')
-                .attr('x', stepXCenter)
-                .attr('y', stepYCenter)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.stepText)
-                .attr('font-size', THEME.fontStep)
-                .attr('font-family', THEME.fontFamily)
-                .attr('data-node-id', `flow-step-${index}`)
-                .attr('data-node-type', 'step')
-                .attr('data-step-index', index)
-                .attr('cursor', 'pointer')
-                .text(s.text || '\u00A0'); // Use non-breaking space if empty
+            // Render step text with automatic wrapping and tspan (always use tspan)
+            const hStepText = s.text || '';
+            const hStepMaxWidth = s.w * 0.9; // Max width based on box width
+            const hStepLineHeight = Math.round(THEME.fontStep * 1.2);
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const hStepLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(hStepText, THEME.fontStep, hStepMaxWidth, measureLineWidth)
+                : (hStepText ? [hStepText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalHStepLines = hStepLines.length > 0 ? hStepLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const hStepStartY = stepYCenter - (finalHStepLines.length - 1) * hStepLineHeight / 2;
+            finalHStepLines.forEach((line, i) => {
+                svg.append('text')
+                    .attr('x', stepXCenter)
+                    .attr('y', hStepStartY + i * hStepLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', THEME.stepText)
+                    .attr('font-size', THEME.fontStep)
+                    .attr('font-family', THEME.fontFamily)
+                    .attr('data-node-id', `flow-step-${index}`)
+                    .attr('data-node-type', 'step')
+                    .attr('data-step-index', index)
+                    .attr('cursor', 'pointer')
+                    .attr('data-line-index', i)
+                    .text(line);
+            });
         });
         
         // Draw substeps
@@ -921,21 +990,39 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                     .attr('data-substep-index', nodeIdx)
                     .attr('cursor', 'pointer');
                 
-                // Draw substep text (simple, no wrapping)
-                svg.append('text')
-                    .attr('x', substep.x + substep.w / 2)
-                    .attr('y', substep.y + substep.h / 2)
-                    .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', THEME.substepText)
-                    .attr('font-size', Math.max(12, THEME.fontStep - 1))
-                    .attr('font-family', THEME.fontFamily)
-                    .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
-                    .attr('data-node-type', 'substep')
-                    .attr('data-step-index', stepIdx)
-                    .attr('data-substep-index', nodeIdx)
-                    .attr('cursor', 'pointer')
-                    .text(substep.text || '\u00A0'); // Use non-breaking space if empty
+                // Render substep text with automatic wrapping and tspan (always use tspan)
+                const hSubstepText = substep.text || '';
+                const hSubstepMaxWidth = substep.w * 0.9; // Max width based on box width
+                const hSubstepFontSize = Math.max(12, THEME.fontStep - 1);
+                const hSubstepLineHeight = Math.round(hSubstepFontSize * 1.2);
+                
+                // Use splitAndWrapText for automatic word wrapping
+                const hSubstepLines = (typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(hSubstepText, hSubstepFontSize, hSubstepMaxWidth, measureLineWidth)
+                    : (hSubstepText ? [hSubstepText] : ['']);
+                
+                // Ensure at least one line for placeholder
+                const finalHSubstepLines = hSubstepLines.length > 0 ? hSubstepLines : [''];
+                
+                // WORKAROUND: Use multiple text elements instead of tspan
+                const hSubstepStartY = substep.y + substep.h / 2 - (finalHSubstepLines.length - 1) * hSubstepLineHeight / 2;
+                finalHSubstepLines.forEach((line, i) => {
+                    svg.append('text')
+                        .attr('x', substep.x + substep.w / 2)
+                        .attr('y', hSubstepStartY + i * hSubstepLineHeight)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', THEME.substepText)
+                        .attr('font-size', hSubstepFontSize)
+                        .attr('font-family', THEME.fontFamily)
+                        .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                        .attr('data-node-type', 'substep')
+                        .attr('data-step-index', stepIdx)
+                        .attr('data-substep-index', nodeIdx)
+                        .attr('cursor', 'pointer')
+                        .attr('data-line-index', i)
+                        .text(line);
+                });
             });
         });
         
@@ -1018,10 +1105,11 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     const optimalWidth = Math.max(contentWidth + leftPadding + rightPadding, dimensions?.baseWidth || 600);
     
     // Calculate optimal height: enough space for text + vertical lines + padding + alternative dimensions
-    const textHeight = 40; // Height for text elements
+    // Text height is adaptive based on content (will be calculated per analogy pair)
     const lineHeight = 50; // Height for vertical connection lines
     const altDimensionsHeight = 80; // Always reserve space for alternative dimensions section (even if empty)
-    const optimalHeight = Math.max(textHeight + lineHeight + (2 * topBottomPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
+    const baseTextHeight = 40; // Base height for single-line text
+    const optimalHeight = Math.max(baseTextHeight + lineHeight + (2 * topBottomPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
     
     // Use calculated dimensions or fall back to provided dimensions
     const width = optimalWidth;
@@ -1070,8 +1158,21 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         // 3.1 Add upstream item (left) - above the main line
         if (isFirstPair) {
             // First pair gets rectangle borders with deep blue background and white text
+            // Calculate adaptive height based on text lines
+            const leftText = analogy.left || '';
+            const leftMaxWidth = 90; // Max width for analogy text
+            const leftLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const leftLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(leftText, parseFloat(THEME.analogyFontSize), leftMaxWidth, measureLineWidth)
+                : (leftText ? [leftText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalLeftLines = leftLines.length > 0 ? leftLines : [''];
+            
             const rectWidth = 100;
-            const rectHeight = 30;
+            const rectHeight = Math.max(30, finalLeftLines.length * leftLineHeight + 10); // Adaptive height
             
             // Draw rectangle background
             svg.append("rect")
@@ -1088,39 +1189,77 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .attr("data-pair-index", i)
                 .attr("cursor", "pointer");
             
-            // Draw text in white
-            svg.append("text")
-                .attr("x", xPos)
-                .attr("y", height/2 - 30)
-                .attr("text-anchor", "middle")
-                .attr("dominant-baseline", "middle")
-                .text(analogy.left)
-                .style("font-size", THEME.analogyFontSize)
-                .style("fill", "#ffffff") // White text
-                .style("font-weight", "bold")
-                .attr("data-text-for", `bridge-left-${i}`)
-                .attr("cursor", "pointer");
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const leftStartY = height/2 - 30 - (finalLeftLines.length - 1) * leftLineHeight / 2;
+            finalLeftLines.forEach((line, idx) => {
+                svg.append("text")
+                    .attr("x", xPos)
+                    .attr("y", leftStartY + idx * leftLineHeight)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .style("font-size", THEME.analogyFontSize)
+                    .style("fill", "#ffffff") // White text
+                    .style("font-weight", "bold")
+                    .attr("data-text-for", `bridge-left-${i}`)
+                    .attr("data-node-id", `bridge-left-${i}`)
+                    .attr("data-node-type", "left")
+                    .attr("data-pair-index", i)
+                    .attr("cursor", "pointer")
+                    .attr("data-line-index", idx)
+                    .text(line);
+            });
         } else {
-            // Regular pairs get normal text styling
-            svg.append("text")
-                .attr("x", xPos)
-                .attr("y", height/2 - 30)
-                .attr("text-anchor", "middle")
-                .text(analogy.left)
-                .style("font-size", THEME.analogyFontSize)
-                .style("fill", THEME.analogyTextColor)
-                .style("font-weight", "bold")
-                .attr("data-node-id", `bridge-left-${i}`)
-                .attr("data-node-type", "left")
-                .attr("data-pair-index", i)
-                .attr("cursor", "pointer");
+            // Render left analogy text - regular pairs - use multiple text elements
+            const regLeftText = analogy.left || '';
+            const regLeftMaxWidth = 90; // Max width for analogy text
+            const regLeftLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const regLeftLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(regLeftText, parseFloat(THEME.analogyFontSize), regLeftMaxWidth, measureLineWidth)
+                : (regLeftText ? [regLeftText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalRegLeftLines = regLeftLines.length > 0 ? regLeftLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const regLeftStartY = height/2 - 30 - (finalRegLeftLines.length - 1) * regLeftLineHeight / 2;
+            finalRegLeftLines.forEach((line, idx) => {
+                svg.append("text")
+                    .attr("x", xPos)
+                    .attr("y", regLeftStartY + idx * regLeftLineHeight)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .style("font-size", THEME.analogyFontSize)
+                    .style("fill", THEME.analogyTextColor)
+                    .style("font-weight", "bold")
+                    .attr("data-node-id", `bridge-left-${i}`)
+                    .attr("data-node-type", "left")
+                    .attr("data-pair-index", i)
+                    .attr("cursor", "pointer")
+                    .attr("data-line-index", idx)
+                    .text(line);
+            });
         }
         
         // 3.2 Add downstream item (right) - below the main line
         if (isFirstPair) {
             // First pair gets rectangle borders with deep blue background and white text
+            // Calculate adaptive rectangle height based on text content
+            const rightText = analogy.right || '';
+            const rightMaxWidth = 90; // Max width for analogy text
+            const rightLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const rightLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(rightText, parseFloat(THEME.analogyFontSize), rightMaxWidth, measureLineWidth)
+                : (rightText ? [rightText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalRightLines = rightLines.length > 0 ? rightLines : [''];
+            
             const rectWidth = 100;
-            const rectHeight = 30;
+            const rectHeight = Math.max(30, finalRightLines.length * rightLineHeight + 10); // Adaptive height
             
             // Draw rectangle background
             svg.append("rect")
@@ -1137,32 +1276,57 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .attr("data-pair-index", i)
                 .attr("cursor", "pointer");
             
-            // Draw text in white
-            svg.append("text")
-                .attr("x", xPos)
-                .attr("y", height/2 + 40)
-                .attr("text-anchor", "middle")
-                .attr("dominant-baseline", "middle")
-                .text(analogy.right)
-                .style("font-size", THEME.analogyFontSize)
-                .style("fill", "#ffffff") // White text
-                .style("font-weight", "bold")
-                .attr("data-text-for", `bridge-right-${i}`)
-                .attr("cursor", "pointer");
+            // Render right analogy text - first pair (white) - use multiple text elements
+            const rightStartY = height/2 + 40 - (finalRightLines.length - 1) * rightLineHeight / 2;
+            finalRightLines.forEach((line, idx) => {
+                svg.append("text")
+                    .attr("x", xPos)
+                    .attr("y", rightStartY + idx * rightLineHeight)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .style("font-size", THEME.analogyFontSize)
+                    .style("fill", "#ffffff") // White text
+                    .style("font-weight", "bold")
+                    .attr("data-text-for", `bridge-right-${i}`)
+                    .attr("data-node-id", `bridge-right-${i}`)
+                    .attr("data-node-type", "right")
+                    .attr("data-pair-index", i)
+                    .attr("cursor", "pointer")
+                    .attr("data-line-index", idx)
+                    .text(line);
+            });
         } else {
-            // Regular pairs get normal text styling
-            svg.append("text")
-                .attr("x", xPos)
-                .attr("y", height/2 + 40)
-                .attr("text-anchor", "middle")
-                .text(analogy.right)
-                .style("font-size", THEME.analogyFontSize)
-                .style("fill", THEME.analogyTextColor)
-                .style("font-weight", "bold")
-                .attr("data-node-id", `bridge-right-${i}`)
-                .attr("data-node-type", "right")
-                .attr("data-pair-index", i)
-                .attr("cursor", "pointer");
+            // Render right analogy text - regular pairs - use multiple text elements
+            const regRightText = analogy.right || '';
+            const regRightMaxWidth = 90; // Max width for analogy text
+            const regRightLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const regRightLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(regRightText, parseFloat(THEME.analogyFontSize), regRightMaxWidth, measureLineWidth)
+                : (regRightText ? [regRightText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalRegRightLines = regRightLines.length > 0 ? regRightLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const regRightStartY = height/2 + 40 - (finalRegRightLines.length - 1) * regRightLineHeight / 2;
+            finalRegRightLines.forEach((line, idx) => {
+                svg.append("text")
+                    .attr("x", xPos)
+                    .attr("y", regRightStartY + idx * regRightLineHeight)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .style("font-size", THEME.analogyFontSize)
+                    .style("fill", THEME.analogyTextColor)
+                    .style("font-weight", "bold")
+                    .attr("data-node-id", `bridge-right-${i}`)
+                    .attr("data-node-type", "right")
+                    .attr("data-pair-index", i)
+                    .attr("cursor", "pointer")
+                    .attr("data-line-index", idx)
+                    .text(line);
+            });
         }
         
         // 3.3 Add vertical connection line (made invisible) - EXACTLY as in old renderer
@@ -1414,16 +1578,42 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .style('left', '-9999px')
         .style('top', '-9999px');
 
-    function measureTextSize(text, fontSize) {
+    // Measure single line width
+    function measureLineWidth(text, fontSize) {
         const t = tempSvg.append('text')
             .attr('x', -9999)
             .attr('y', -9999)
             .attr('font-size', fontSize)
-            .attr('dominant-baseline', 'hanging')
             .text(text || '');
-        const bbox = t.node().getBBox();
+        const w = t.node().getBBox().width;
         t.remove();
-        return { w: Math.ceil(bbox.width), h: Math.ceil(bbox.height || fontSize) };
+        return w;
+    }
+    
+    // Measure text size with multi-line support
+    function measureTextSize(text, fontSize) {
+        // Split by newlines to handle multi-line text (Ctrl+Enter)
+        const lines = (typeof window.splitTextLines === 'function') 
+            ? window.splitTextLines(text || '') 
+            : (text || '').split(/\n/);
+        const lineHeight = Math.round(fontSize * 1.2);
+        
+        // Calculate max width across all lines
+        let maxWidth = 0;
+        lines.forEach(line => {
+            const w = measureLineWidth(line, fontSize);
+            if (w > maxWidth) maxWidth = w;
+        });
+        
+        // Height is number of lines * line height
+        const totalHeight = lines.length * lineHeight;
+        
+        return { 
+            w: Math.ceil(maxWidth), 
+            h: Math.ceil(totalHeight || fontSize),
+            lines: lines,
+            lineHeight: lineHeight
+        };
     }
     
     function sideCenterPoint(cx, cy, w, h, side) {
@@ -1579,19 +1769,30 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-cause-index', idx)
             .attr('cursor', 'pointer');
         
-        svg.append('text')
-            .attr('x', n.cx)
-            .attr('y', n.cy)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.causeText)
-            .attr('font-size', THEME.fontCause)
-            .attr('data-node-id', `multi-flow-cause-${idx}`)
-            .attr('data-node-type', 'cause')
-            .attr('data-cause-index', idx)
-            .attr('data-text-for', `multi-flow-cause-${idx}`)
-            .attr('cursor', 'pointer')
-            .text(n.text);
+        // Render cause text - use multiple text elements (tspan doesn't render)
+        const causeLines = (typeof window.splitTextLines === 'function') 
+            ? window.splitTextLines(n.text) 
+            : (n.text || '').split(/\n/);
+        const causeLineHeight = Math.round(THEME.fontCause * 1.2);
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const causeStartY = n.cy - (causeLines.length - 1) * causeLineHeight / 2;
+        causeLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', n.cx)
+                .attr('y', causeStartY + i * causeLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.causeText)
+                .attr('font-size', THEME.fontCause)
+                .attr('data-node-id', `multi-flow-cause-${idx}`)
+                .attr('data-node-type', 'cause')
+                .attr('data-cause-index', idx)
+                .attr('data-text-for', `multi-flow-cause-${idx}`)
+                .attr('cursor', 'pointer')
+                .attr('data-line-index', i)
+                .text(line);
+        });
     });
     
     // Draw effect nodes
@@ -1611,19 +1812,30 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('data-effect-index', idx)
             .attr('cursor', 'pointer');
         
-        svg.append('text')
-            .attr('x', n.cx)
-            .attr('y', n.cy)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.effectText)
-            .attr('font-size', THEME.fontEffect)
-            .attr('data-node-id', `multi-flow-effect-${idx}`)
-            .attr('data-node-type', 'effect')
-            .attr('data-effect-index', idx)
-            .attr('data-text-for', `multi-flow-effect-${idx}`)
-            .attr('cursor', 'pointer')
-            .text(n.text);
+        // Render effect text - use multiple text elements (tspan doesn't render)
+        const effectLines = (typeof window.splitTextLines === 'function') 
+            ? window.splitTextLines(n.text) 
+            : (n.text || '').split(/\n/);
+        const effectLineHeight = Math.round(THEME.fontEffect * 1.2);
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const effectStartY = n.cy - (effectLines.length - 1) * effectLineHeight / 2;
+        effectLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', n.cx)
+                .attr('y', effectStartY + i * effectLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.effectText)
+                .attr('font-size', THEME.fontEffect)
+                .attr('data-node-id', `multi-flow-effect-${idx}`)
+                .attr('data-node-type', 'effect')
+                .attr('data-effect-index', idx)
+                .attr('data-text-for', `multi-flow-effect-${idx}`)
+                .attr('cursor', 'pointer')
+                .attr('data-line-index', i)
+                .text(line);
+        });
     });
     
     // Draw central event node (on top of everything)
@@ -1641,19 +1853,30 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('data-node-type', 'event')
         .attr('cursor', 'pointer');
     
-    svg.append('text')
-        .attr('x', centerX)
-        .attr('y', centerY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.eventText)
-        .attr('font-size', THEME.fontEvent)
-        .attr('font-weight', 'bold')
-        .attr('data-node-id', 'multi-flow-event')
-        .attr('data-node-type', 'event')
-        .attr('data-text-for', 'multi-flow-event')
-        .attr('cursor', 'pointer')
-        .text(spec.event);
+    // Render event text - use multiple text elements (tspan doesn't render)
+    const eventLines = (typeof window.splitTextLines === 'function') 
+        ? window.splitTextLines(spec.event) 
+        : (spec.event || '').split(/\n/);
+    const eventLineHeight = Math.round(THEME.fontEvent * 1.2);
+    
+    // WORKAROUND: Use multiple text elements instead of tspan
+    const eventStartY = centerY - (eventLines.length - 1) * eventLineHeight / 2;
+    eventLines.forEach((line, i) => {
+        svg.append('text')
+            .attr('x', centerX)
+            .attr('y', eventStartY + i * eventLineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.eventText)
+            .attr('font-size', THEME.fontEvent)
+            .attr('font-weight', 'bold')
+            .attr('data-node-id', 'multi-flow-event')
+            .attr('data-node-type', 'event')
+            .attr('data-text-for', 'multi-flow-event')
+            .attr('cursor', 'pointer')
+            .attr('data-line-index', i)
+            .text(line || '\u00A0');
+    });
     
     // Apply learning sheet text knockout if needed
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {

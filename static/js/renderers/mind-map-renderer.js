@@ -24,6 +24,28 @@ if (typeof window.MindGraphUtils === 'undefined') {
 
 // Note: getTextRadius and addWatermark are available globally from shared-utilities.js
 
+// Helper for text measurement (for splitAndWrapText compatibility)
+function createMeasureLineWidth() {
+    // Create a temporary SVG for text measurement
+    let measureSvg = d3.select('#mind-map-measure-svg');
+    if (measureSvg.empty()) {
+        measureSvg = d3.select('body').append('svg')
+            .attr('id', 'mind-map-measure-svg')
+            .style('position', 'absolute')
+            .style('visibility', 'hidden')
+            .style('pointer-events', 'none');
+    }
+    
+    return function(text, fontSize) {
+        const t = measureSvg.append('text')
+            .attr('font-size', fontSize)
+            .text(text || '');
+        const width = t.node().getBBox().width;
+        t.remove();
+        return width;
+    };
+}
+
 function renderMindMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     if (!spec || !spec.topic || !Array.isArray(spec.children)) {
@@ -185,27 +207,55 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-node-id', 'topic_center')
                 .attr('data-node-type', 'topic');
             
-            // Draw text
-            svg.append('text')
-                .attr('x', topicX)
-                .attr('y', topicY)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', finalTextColor)
-                .attr('font-size', THEME.fontTopic || '16px')
-                .attr('font-weight', 'bold')
-                .attr('data-text-for', 'topic_center')
-                .attr('data-node-id', 'topic_center')
-                .attr('data-node-type', 'topic')
-                .text(pos.text || 'Topic');
+            // Render topic text - use multiple text elements (tspan doesn't render)
+            const topicText = pos.text || 'Topic';
+            const topicFontSize = parseFloat(THEME.fontTopic || '16px');
+            const topicMaxWidth = topicRadius * 1.8; // Max width based on circle radius
+            const topicLineHeight = Math.round(topicFontSize * 1.2);
+            const measureLineWidth = createMeasureLineWidth();
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const topicLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(topicText, topicFontSize, topicMaxWidth, measureLineWidth)
+                : (topicText ? [topicText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalTopicLines = topicLines.length > 0 ? topicLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const topicStartY = topicY - (finalTopicLines.length - 1) * topicLineHeight / 2;
+            finalTopicLines.forEach((line, i) => {
+                svg.append('text')
+                    .attr('x', topicX)
+                    .attr('y', topicStartY + i * topicLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', finalTextColor)
+                    .attr('font-size', THEME.fontTopic || '16px')
+                    .attr('font-weight', 'bold')
+                    .attr('data-text-for', 'topic_center')
+                    .attr('data-node-id', 'topic_center')
+                    .attr('data-node-type', 'topic')
+                    .attr('data-line-index', i)
+                    .text(line);
+            });
                 
         } else if (pos.node_type === 'branch') {
             // Branch (rectangle)
             const branchX = centerX + pos.x;
             const branchY = centerY + pos.y;
 
+            // Calculate adaptive width and height for multi-line text
+            const branchText = pos.text || 'Branch';
+            const branchFontSize = parseFloat(THEME.fontBranch || '16px');
+            const branchLineHeight = Math.round(branchFontSize * 1.2);
+            const branchLines = (typeof window.splitTextLines === 'function') 
+                ? window.splitTextLines(branchText) 
+                : branchText.split(/\n/);
+            const branchTextHeight = branchLines.length * branchLineHeight;
+            
             const branchWidth = pos.width || (pos.text ? Math.max(100, pos.text.length * 10) : 100);
-            const branchHeight = pos.height || 50;
+            const branchHeight = pos.height || Math.max(50, branchTextHeight + 20);
             
             const finalBranchFill = pos.fill || THEME.branchFill || '#e3f2fd';
             const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
@@ -231,26 +281,54 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-branch-index', pos.branch_index)
                 .attr('data-array-index', pos.branch_index);
             
-            // Draw text
-            svg.append('text')
-                .attr('x', branchX)
-                .attr('y', branchY)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', finalBranchTextColor)
-                .attr('font-size', THEME.fontBranch || '16px')
-                .attr('data-text-for', branchNodeId)
-                .attr('data-node-id', branchNodeId)
-                .attr('data-node-type', 'branch')
-                .text(pos.text || 'Branch');
+            // Render branch text - use multiple text elements (tspan doesn't render)
+            const branchText = pos.text || 'Branch';
+            const branchFontSize = parseFloat(THEME.fontBranch || '16px');
+            const branchMaxWidth = branchWidth * 0.9; // Max width based on box width
+            const branchLineHeight = Math.round(branchFontSize * 1.2);
+            const measureLineWidth = createMeasureLineWidth();
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const branchLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(branchText, branchFontSize, branchMaxWidth, measureLineWidth)
+                : (branchText ? [branchText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalBranchLines = branchLines.length > 0 ? branchLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const branchStartY = branchY - (finalBranchLines.length - 1) * branchLineHeight / 2;
+            finalBranchLines.forEach((line, i) => {
+                svg.append('text')
+                    .attr('x', branchX)
+                    .attr('y', branchStartY + i * branchLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', finalBranchTextColor)
+                    .attr('font-size', THEME.fontBranch || '16px')
+                    .attr('data-text-for', branchNodeId)
+                    .attr('data-node-id', branchNodeId)
+                    .attr('data-node-type', 'branch')
+                    .attr('data-line-index', i)
+                    .text(line);
+            });
                 
         } else if (pos.node_type === 'child') {
             // Child (rectangle)
             const childX = centerX + pos.x;
             const childY = centerY + pos.y;
 
+            // Calculate adaptive width and height for multi-line text
+            const childText = pos.text || 'Child';
+            const childFontSize = parseFloat(THEME.fontChild || '14px');
+            const childLineHeight = Math.round(childFontSize * 1.2);
+            const childLines = (typeof window.splitTextLines === 'function') 
+                ? window.splitTextLines(childText) 
+                : childText.split(/\n/);
+            const childTextHeight = childLines.length * childLineHeight;
+            
             const childWidth = pos.width || (pos.text ? Math.max(80, pos.text.length * 8) : 100);
-            const childHeight = pos.height || 40;
+            const childHeight = pos.height || Math.max(40, childTextHeight + 16);
             
             const finalChildFill = pos.fill || THEME.childFill || '#f8f9fa';
             const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';
@@ -277,18 +355,39 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-child-index', pos.child_index)
                 .attr('data-array-index', pos.child_index);
             
-            // Draw text
-            svg.append('text')
-                .attr('x', childX)
-                .attr('y', childY)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', finalChildTextColor)
-                .attr('font-size', THEME.fontChild || '14px')
-                .attr('data-text-for', childNodeId)
-                .attr('data-node-id', childNodeId)
-                .attr('data-node-type', 'child')
-                .text(pos.text || 'Child');
+            // Render child text - use multiple text elements (tspan doesn't render)
+            const childText = pos.text || 'Child';
+            const childFontSize = parseFloat(THEME.fontChild || '14px');
+            const childMaxWidth = childWidth * 0.9; // Max width based on box width
+            const childLineHeight = Math.round(childFontSize * 1.2);
+            const measureLineWidth = createMeasureLineWidth();
+            
+            // Use splitAndWrapText for automatic word wrapping
+            const childLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(childText, childFontSize, childMaxWidth, measureLineWidth)
+                : (childText ? [childText] : ['']);
+            
+            // Ensure at least one line for placeholder
+            const finalChildLines = childLines.length > 0 ? childLines : [''];
+            
+            // WORKAROUND: Use multiple text elements instead of tspan
+            const childStartY = childY - (finalChildLines.length - 1) * childLineHeight / 2;
+            finalChildLines.forEach((line, i) => {
+                svg.append('text')
+                    .attr('x', childX)
+                    .attr('y', childStartY + i * childLineHeight)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('fill', finalChildTextColor)
+                    .attr('font-size', THEME.fontChild || '14px')
+                    .attr('data-text-for', childNodeId)
+                    .attr('data-node-id', childNodeId)
+                    .attr('data-node-type', 'child')
+                    .attr('data-branch-index', pos.branch_index)
+                    .attr('data-child-index', pos.child_index)
+                    .attr('data-line-index', i)
+                    .text(line);
+            });
         }
     });
 }

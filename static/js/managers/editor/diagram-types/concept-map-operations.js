@@ -87,12 +87,18 @@ class ConceptMapOperations {
                 if (parentGroup && parentGroup.tagName === 'g') {
                     const textElement = d3.select(parentGroup).select('text');
                     if (!textElement.empty()) {
-                        nodeText = textElement.text();
+                        // Use extractTextFromSVG to properly read tspan content
+                        nodeText = (typeof window.extractTextFromSVG === 'function')
+                            ? window.extractTextFromSVG(textElement)
+                            : textElement.text();
                     }
                 } else {
                     const textElement = d3.select(`[data-text-for="${nodeId}"]`);
                     if (!textElement.empty()) {
-                        nodeText = textElement.text();
+                        // Use extractTextFromSVG to properly read tspan content
+                        nodeText = (typeof window.extractTextFromSVG === 'function')
+                            ? window.extractTextFromSVG(textElement)
+                            : textElement.text();
                     }
                 }
                 
@@ -161,12 +167,18 @@ class ConceptMapOperations {
         if (parentGroup && parentGroup.tagName === 'g') {
             const textElement = d3.select(parentGroup).select('text');
             if (!textElement.empty()) {
-                nodeText = textElement.text();
+                // Use extractTextFromSVG to properly read tspan content
+                nodeText = (typeof window.extractTextFromSVG === 'function')
+                    ? window.extractTextFromSVG(textElement)
+                    : textElement.text();
             }
         } else {
             const textElement = d3.select(`[data-text-for="${nodeId}"]`);
             if (!textElement.empty()) {
-                nodeText = textElement.text();
+                // Use extractTextFromSVG to properly read tspan content
+                nodeText = (typeof window.extractTextFromSVG === 'function')
+                    ? window.extractTextFromSVG(textElement)
+                    : textElement.text();
             }
         }
         

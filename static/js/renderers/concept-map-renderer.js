@@ -217,16 +217,19 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
             .attr('stroke', isTopic ? THEME.topicStroke : THEME.conceptStroke)
             .attr('stroke-width', isTopic ? THEME.topicStrokeWidth : THEME.conceptStrokeWidth);
 
-        const textEl = group.append('text')
-            .attr('x', x)
-            .attr('y', y - (lines.length - 1) * lineHeight / 2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-            .attr('fill', isTopic ? THEME.topicText : THEME.conceptText)
-            .attr('font-size', fontSize)
-            .attr('font-weight', isTopic ? '600' : '400');
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const textStartY = y - (lines.length - 1) * lineHeight / 2;
         lines.forEach((ln, i) => {
-            textEl.append('tspan').attr('x', x).attr('dy', i === 0 ? 0 : lineHeight).text(ln);
+            group.append('text')
+                .attr('x', x)
+                .attr('y', textStartY + i * lineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', isTopic ? THEME.topicText : THEME.conceptText)
+                .attr('font-size', fontSize)
+                .attr('font-weight', isTopic ? '600' : '400')
+                .attr('data-line-index', i)
+                .text(ln);
         });
 
         return { x, y, width: boxW, height: boxH, group };

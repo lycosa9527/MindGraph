@@ -109,25 +109,64 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         const th = Math.max(1, fontPx * 1.2);
         return { w: Math.ceil(tw + hPad * 2), h: Math.ceil(th + vPad * 2) };
     }
-    function measureSvgTextBox(svg, text, fontPx, hPad = 14, vPad = 10) {
+    
+    // Helper for splitAndWrapText compatibility (takes text, fontSize, returns width)
+    function measureLineWidthForWrap(text, fontSize) {
         try {
             const temp = svg.append('text')
                 .attr('x', -10000)
                 .attr('y', -10000)
-                .attr('font-size', fontPx)
+                .attr('font-size', fontSize)
                 .attr('font-family', 'Inter, Segoe UI, sans-serif')
                 .attr('visibility', 'hidden')
                 .text(text || '');
             const node = temp.node();
-            let textWidth = 0;
+            let width = 0;
             if (node && node.getComputedTextLength) {
-                textWidth = node.getComputedTextLength();
+                width = node.getComputedTextLength();
             } else if (node && node.getBBox) {
-                textWidth = node.getBBox().width || 0;
+                width = node.getBBox().width || 0;
             }
             temp.remove();
-            const textHeight = Math.max(1, fontPx * 1.2);
-            return { w: Math.ceil(textWidth + hPad * 2), h: Math.ceil(textHeight + vPad * 2) };
+            return width;
+        } catch (e) {
+            // Fallback approximation
+            return (text ? text.length : 0) * fontSize * avgCharPx;
+        }
+    }
+    
+    function measureSvgTextBox(svg, text, fontPx, hPad = 14, vPad = 10) {
+        try {
+            // Split text by newlines to handle multi-line text (Ctrl+Enter)
+            const lines = (typeof window.splitTextLines === 'function') 
+                ? window.splitTextLines(text) 
+                : (text || '').split(/\n/);
+            const lineHeight = Math.round(fontPx * 1.2);
+            
+            // Measure width of longest line
+            let maxTextWidth = 0;
+            lines.forEach(line => {
+                const temp = svg.append('text')
+                    .attr('x', -10000)
+                    .attr('y', -10000)
+                    .attr('font-size', fontPx)
+                    .attr('font-family', 'Inter, Segoe UI, sans-serif')
+                    .attr('visibility', 'hidden')
+                    .text(line || '');
+                const node = temp.node();
+                let lineWidth = 0;
+                if (node && node.getComputedTextLength) {
+                    lineWidth = node.getComputedTextLength();
+                } else if (node && node.getBBox) {
+                    lineWidth = node.getBBox().width || 0;
+                }
+                temp.remove();
+                maxTextWidth = Math.max(maxTextWidth, lineWidth);
+            });
+            
+            // Calculate height based on number of lines
+            const textHeight = Math.max(1, lines.length * lineHeight);
+            return { w: Math.ceil(maxTextWidth + hPad * 2), h: Math.ceil(textHeight + vPad * 2) };
         } catch (e) {
             // Fallback to approximation if DOM measurement fails
             return measureTextApprox(text, fontPx, hPad, vPad);
@@ -278,19 +317,37 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('stroke-width', THEME.rootStrokeWidth)
         .attr('data-node-id', 'tree-topic')
         .attr('data-node-type', 'topic');
-    svg.append('text')
-        .attr('x', rootX)
-        .attr('y', rootY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', THEME.rootText)
-        .attr('font-size', rootFont)
-        .attr('font-weight', 'bold')
-        .attr('data-text-for', 'tree-topic')
-        .attr('data-node-id', 'tree-topic')
-        .attr('data-node-type', 'topic')
-        .attr('cursor', 'pointer')
-        .text(spec.topic);
+    // Render root topic text - use multiple text elements (tspan doesn't render)
+    const rootText = spec.topic || '';
+    const rootMaxWidth = rootBox.w * 0.9; // Max width based on box width
+    const rootLineHeight = Math.round(rootFont * 1.2);
+    
+    // Use splitAndWrapText for automatic word wrapping
+    const rootLines = (typeof window.splitAndWrapText === 'function')
+        ? window.splitAndWrapText(rootText, rootFont, rootMaxWidth, measureLineWidthForWrap)
+        : (rootText ? [rootText] : ['']);
+    
+    // Ensure at least one line for placeholder
+    const finalRootLines = rootLines.length > 0 ? rootLines : [''];
+    
+    // WORKAROUND: Use multiple text elements instead of tspan
+    const rootStartY = rootY - (finalRootLines.length - 1) * rootLineHeight / 2;
+    finalRootLines.forEach((line, i) => {
+        svg.append('text')
+            .attr('x', rootX)
+            .attr('y', rootStartY + i * rootLineHeight)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', THEME.rootText)
+            .attr('font-size', rootFont)
+            .attr('font-weight', 'bold')
+            .attr('data-text-for', 'tree-topic')
+            .attr('data-node-id', 'tree-topic')
+            .attr('data-node-type', 'topic')
+            .attr('cursor', 'pointer')
+            .attr('data-line-index', i)
+            .text(line);
+    });
     
     // ALWAYS show dimension label (even for old diagrams without dimension field)
     // This allows users to click and add/edit the classification dimension
@@ -351,18 +408,36 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('data-node-type', 'category')
             .attr('data-category-index', branchIndex);
 
-        svg.append('text')
-            .attr('x', branchX)
-            .attr('y', branchY)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.branchText)
-            .attr('font-size', branchFont)
-            .attr('data-text-for', `tree-category-${branchIndex}`)
-            .attr('data-node-id', `tree-category-${branchIndex}`)
-            .attr('data-node-type', 'category')
-            .attr('cursor', 'pointer')
-            .text(childText);
+        // Render branch text - use multiple text elements (tspan doesn't render)
+        const branchText = childText || '';
+        const branchMaxWidth = branchBox.w * 0.9; // Max width based on box width
+        const branchLineHeight = Math.round(branchFont * 1.2);
+        
+        // Use splitAndWrapText for automatic word wrapping
+        const branchLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(branchText, branchFont, branchMaxWidth, measureLineWidthForWrap)
+            : (branchText ? [branchText] : ['']);
+        
+        // Ensure at least one line for placeholder
+        const finalBranchLines = branchLines.length > 0 ? branchLines : [''];
+        
+        // WORKAROUND: Use multiple text elements instead of tspan
+        const branchStartY = branchY - (finalBranchLines.length - 1) * branchLineHeight / 2;
+        finalBranchLines.forEach((line, i) => {
+            svg.append('text')
+                .attr('x', branchX)
+                .attr('y', branchStartY + i * branchLineHeight)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', THEME.branchText)
+                .attr('font-size', branchFont)
+                .attr('data-text-for', `tree-category-${branchIndex}`)
+                .attr('data-node-id', `tree-category-${branchIndex}`)
+                .attr('data-node-type', 'category')
+                .attr('cursor', 'pointer')
+                .attr('data-line-index', i)
+                .text(line);
+        });
 
         // T形连线将在所有子节点绘制完成后统一绘制
 
@@ -408,18 +483,36 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                     .attr('data-category-index', branchIndex)
                     .attr('data-leaf-index', j);
 
-                svg.append('text')
-                    .attr('x', branchX)
-                    .attr('y', leafY)
-                    .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', THEME.leafText)
-                    .attr('font-size', leafFont)
-                    .attr('data-text-for', `tree-leaf-${branchIndex}-${j}`)
-                    .attr('data-node-id', `tree-leaf-${branchIndex}-${j}`)
-                    .attr('data-node-type', 'leaf')
-                    .attr('cursor', 'pointer')
-                    .text(leafText);
+                // Render leaf text - use multiple text elements (tspan doesn't render)
+                const leafTextContent = leafText || '';
+                const leafMaxWidth = rectW * 0.9; // Max width based on box width
+                const leafLineHeight = Math.round(leafFont * 1.2);
+                
+                // Use splitAndWrapText for automatic word wrapping
+                const leafLines = (typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(leafTextContent, leafFont, leafMaxWidth, measureLineWidthForWrap)
+                    : (leafTextContent ? [leafTextContent] : ['']);
+                
+                // Ensure at least one line for placeholder
+                const finalLeafLines = leafLines.length > 0 ? leafLines : [''];
+                
+                // WORKAROUND: Use multiple text elements instead of tspan
+                const leafStartY = leafY - (finalLeafLines.length - 1) * leafLineHeight / 2;
+                finalLeafLines.forEach((line, idx) => {
+                    svg.append('text')
+                        .attr('x', branchX)
+                        .attr('y', leafStartY + idx * leafLineHeight)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', THEME.leafText)
+                        .attr('font-size', leafFont)
+                        .attr('data-text-for', `tree-leaf-${branchIndex}-${j}`)
+                        .attr('data-node-id', `tree-leaf-${branchIndex}-${j}`)
+                        .attr('data-node-type', 'leaf')
+                        .attr('cursor', 'pointer')
+                        .attr('data-line-index', idx)
+                        .text(line);
+                });
             });
 
             // Draw straight vertical connectors: branch -> first child, then between consecutive children

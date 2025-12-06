@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.20] - 2025-12-06 - Color Palette UI Redesign and Multi-line Text Styling Fix
+
+### Fixed
+
+- **Multi-line Text Font Styling** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Fixed issue where changing font properties (size, family, color, bold, italic, underline) only affected the first line of multi-line text
+  - Changed `d3.select` to `d3.selectAll` to apply styles to ALL text elements for a node
+  - **Impact**: Font changes now apply to all lines of wrapped text consistently
+
+### Changed
+
+- **Compact Color Palette UI** (`templates/editor.html`, `static/css/editor.css`, `static/js/editor/toolbar-manager.js`)
+  - Replaced three separate color pickers with compact button-based design
+  - Three buttons with Chinese labels: 文字 (Text), 填充 (Fill), 边框 (Stroke)
+  - Each button shows a color preview bar indicating current color
+  - Clicking a button opens a shared dropdown with 32 preset colors
+  - Hex input field for custom colors
+  - Palette closes on color selection or clicking outside
+  - **Impact**: Cleaner UI, saves vertical space in property panel
+
+- **Color Palette Colors** (32 carefully selected colors)
+  - Row 1: Grayscale (black to white) + red, green
+  - Row 2: Blues and teals
+  - Row 3: Warm colors (yellow, orange, red, pink, purple)
+  - Row 4: Deep purples, earth tones, and pastels
+
+### Technical Details
+
+**Files Changed:**
+- `templates/editor.html`: New button layout with shared palette dropdown
+- `static/css/editor.css`: Styles for `.color-btn`, `.color-btn-label`, `.color-btn-preview`, `.color-palette-dropdown`
+- `static/js/editor/toolbar-manager.js`: New methods `initColorPalette()`, `toggleColorPalette()`, `openColorPalette()`, `closeColorPalette()`, `selectColor()`, `applyColorFromHex()`, `updateColorPreviews()`
+- `static/js/managers/toolbar/property-panel-manager.js`: Updated to sync with new color system
+- `static/js/managers/toolbar/node-property-operations-manager.js`: Fixed `applyPropertiesToNode()` to use `selectAll`
+
+---
+
 ## [4.28.19] - 2025-12-06 - Captcha Image Quality and Positioning Improvements
 
 ### Fixed
