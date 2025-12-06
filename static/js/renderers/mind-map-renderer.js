@@ -245,16 +245,24 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const branchX = centerX + pos.x;
             const branchY = centerY + pos.y;
 
+            // Create measureLineWidth function FIRST for accurate text measurement
+            const measureLineWidth = createMeasureLineWidth();
+            
             // Calculate adaptive width and height for multi-line text
             const branchText = pos.text || 'Branch';
             const branchFontSize = parseFloat(THEME.fontBranch || '16px');
             const branchLineHeight = Math.round(branchFontSize * 1.2);
-            const branchLines = (typeof window.splitTextLines === 'function') 
-                ? window.splitTextLines(branchText) 
+            const branchMaxTextWidth = 200; // Max width before wrapping
+            
+            // Split by newlines first, then wrap if needed
+            const branchLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(branchText, branchFontSize, branchMaxTextWidth, measureLineWidth)
                 : branchText.split(/\n/);
             const branchTextHeight = branchLines.length * branchLineHeight;
             
-            const branchWidth = pos.width || (pos.text ? Math.max(100, pos.text.length * 10) : 100);
+            // Calculate width based on actual text measurement
+            const branchMeasuredWidth = Math.max(...branchLines.map(l => measureLineWidth(l, branchFontSize)), 20);
+            const branchWidth = pos.width || Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
             const branchHeight = pos.height || Math.max(50, branchTextHeight + 20);
             
             const finalBranchFill = pos.fill || THEME.branchFill || '#e3f2fd';
@@ -281,18 +289,6 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-branch-index', pos.branch_index)
                 .attr('data-array-index', pos.branch_index);
             
-            // Render branch text - use multiple text elements (tspan doesn't render)
-            const branchText = pos.text || 'Branch';
-            const branchFontSize = parseFloat(THEME.fontBranch || '16px');
-            const branchMaxWidth = branchWidth * 0.9; // Max width based on box width
-            const branchLineHeight = Math.round(branchFontSize * 1.2);
-            const measureLineWidth = createMeasureLineWidth();
-            
-            // Use splitAndWrapText for automatic word wrapping
-            const branchLines = (typeof window.splitAndWrapText === 'function')
-                ? window.splitAndWrapText(branchText, branchFontSize, branchMaxWidth, measureLineWidth)
-                : (branchText ? [branchText] : ['']);
-            
             // Ensure at least one line for placeholder
             const finalBranchLines = branchLines.length > 0 ? branchLines : [''];
             
@@ -318,16 +314,24 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const childX = centerX + pos.x;
             const childY = centerY + pos.y;
 
+            // Create measureLineWidth function FIRST for accurate text measurement
+            const measureLineWidth = createMeasureLineWidth();
+            
             // Calculate adaptive width and height for multi-line text
             const childText = pos.text || 'Child';
             const childFontSize = parseFloat(THEME.fontChild || '14px');
             const childLineHeight = Math.round(childFontSize * 1.2);
-            const childLines = (typeof window.splitTextLines === 'function') 
-                ? window.splitTextLines(childText) 
+            const childMaxTextWidth = 180; // Max width before wrapping
+            
+            // Split by newlines first, then wrap if needed
+            const childLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(childText, childFontSize, childMaxTextWidth, measureLineWidth)
                 : childText.split(/\n/);
             const childTextHeight = childLines.length * childLineHeight;
             
-            const childWidth = pos.width || (pos.text ? Math.max(80, pos.text.length * 8) : 100);
+            // Calculate width based on actual text measurement
+            const childMeasuredWidth = Math.max(...childLines.map(l => measureLineWidth(l, childFontSize)), 20);
+            const childWidth = pos.width || Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
             const childHeight = pos.height || Math.max(40, childTextHeight + 16);
             
             const finalChildFill = pos.fill || THEME.childFill || '#f8f9fa';
@@ -354,18 +358,6 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-branch-index', pos.branch_index)
                 .attr('data-child-index', pos.child_index)
                 .attr('data-array-index', pos.child_index);
-            
-            // Render child text - use multiple text elements (tspan doesn't render)
-            const childText = pos.text || 'Child';
-            const childFontSize = parseFloat(THEME.fontChild || '14px');
-            const childMaxWidth = childWidth * 0.9; // Max width based on box width
-            const childLineHeight = Math.round(childFontSize * 1.2);
-            const measureLineWidth = createMeasureLineWidth();
-            
-            // Use splitAndWrapText for automatic word wrapping
-            const childLines = (typeof window.splitAndWrapText === 'function')
-                ? window.splitAndWrapText(childText, childFontSize, childMaxWidth, measureLineWidth)
-                : (childText ? [childText] : ['']);
             
             // Ensure at least one line for placeholder
             const finalChildLines = childLines.length > 0 ? childLines : [''];

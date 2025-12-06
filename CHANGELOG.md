@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.21] - 2025-12-06 - Opacity Zero Bug Fix and Multi-line Text SelectAll Fix
+
+### Fixed
+
+- **Opacity Zero Bug** (`node-property-operations-manager.js`, `property-panel-manager.js`, `toolbar-manager.js`)
+  - Fixed issue where setting node opacity to 0 (fully transparent) was converted to 1 (fully opaque)
+  - Root cause: Using `parseFloat(value) || 1` or `nodeElement.attr('opacity') || '1'` as fallback treats `0` as falsy
+  - Solution: Changed to explicit null/undefined checks instead of relying on falsy evaluation
+  - **Impact**: Users can now set nodes to fully transparent (opacity 0)
+
+- **Multi-line Text Fallback Selection** (`node-property-operations-manager.js`)
+  - Fixed inconsistent use of `d3.select()` vs `d3.selectAll()` in text element selection
+  - `applyAllProperties()` and `applyStylesRealtime()` now use `d3.selectAll()` for all text element lookups
+  - **Impact**: Style changes (font size, color, bold, italic, underline) now apply to ALL lines of multi-line text
+
+- **Reset Styles Font Family Inconsistency** (`node-property-operations-manager.js`)
+  - Fixed `getTemplateDefaults()` returning `'Inter, sans-serif'` instead of `"'Microsoft YaHei', sans-serif"`
+  - Other UI components were updated to use Microsoft YaHei as default, but this function was missed
+  - **Impact**: Reset styles now correctly applies the same default font as other property panel operations
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/managers/toolbar/node-property-operations-manager.js`:
+  - Lines 146-149, 226-229: Changed `if (properties.opacity)` to explicit null/undefined check
+  - Lines 126-135, 235-240: Changed `d3.select()` to `d3.selectAll()` for text elements
+  - Renamed `textElement` to `textElements` for clarity
+  - Line 320: Changed default fontFamily from `'Inter, sans-serif'` to `"'Microsoft YaHei', sans-serif"`
+- `static/js/managers/toolbar/property-panel-manager.js`:
+  - Lines 262-264: Changed `|| '1'` fallback to explicit null check with intermediate variable
+- `static/js/editor/toolbar-manager.js`:
+  - Lines 655-657: Same opacity fix pattern as property-panel-manager.js
+
+**Code Pattern (Before):**
+```javascript
+// Bug: 0 is falsy, so opacity 0 becomes 1
+if (properties.opacity) { nodeElement.attr('opacity', properties.opacity); }
+const opacity = nodeElement.attr('opacity') || '1';
+```
+
+**Code Pattern (After):**
+```javascript
+// Fix: Explicit null/undefined check preserves opacity 0
+if (properties.opacity !== null && properties.opacity !== undefined && properties.opacity !== '') {
+    nodeElement.attr('opacity', properties.opacity);
+}
+const opacityAttr = nodeElement.attr('opacity');
+const opacity = (opacityAttr !== null && opacityAttr !== undefined) ? opacityAttr : '1';
+```
+
+---
+
 ## [4.28.20] - 2025-12-06 - Color Palette UI Redesign and Multi-line Text Styling Fix
 
 ### Fixed

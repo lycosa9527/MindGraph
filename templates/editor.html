@@ -524,21 +524,36 @@
                     
                     <!-- Font Properties -->
                     <div class="property-group">
-                        <label for="prop-font-size">Font Size</label>
-                        <input type="number" id="prop-font-size" name="prop-font-size" class="prop-input" min="8" max="72" value="14" autocomplete="off">
-                        <label for="prop-font-family" style="display:none;">Font Family</label>
+                        <label for="prop-font-family">字体</label>
                         <select id="prop-font-family" name="prop-font-family" class="prop-select">
-                            <option value="Inter, sans-serif">Inter</option>
-                            <option value="Arial, sans-serif">Arial</option>
-                            <option value="Georgia, serif">Georgia</option>
-                            <option value="Courier New, monospace">Courier</option>
-                            <option value="Comic Sans MS, cursive">Comic Sans</option>
+                            <optgroup label="中文字体">
+                                <option value="'Microsoft YaHei', sans-serif">微软雅黑</option>
+                                <option value="'Source Han Sans SC', 'Noto Sans SC', sans-serif">思源黑体</option>
+                                <option value="'Source Han Serif SC', 'Noto Serif SC', serif">思源宋体</option>
+                                <option value="'Alibaba PuHuiTi', sans-serif">阿里巴巴普惠体</option>
+                                <option value="'SimSun', serif">宋体</option>
+                                <option value="'SimHei', sans-serif">黑体</option>
+                                <option value="'KaiTi', serif">楷体</option>
+                                <option value="'FangSong', serif">仿宋</option>
+                            </optgroup>
+                            <optgroup label="英文字体">
+                                <option value="Inter, sans-serif">Inter</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                            </optgroup>
                         </select>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label for="prop-font-size">字号</label>
+                        <input type="number" id="prop-font-size" name="prop-font-size" class="prop-input" min="8" max="72" value="14" autocomplete="off">
                     </div>
                     
                     <!-- Font Style -->
                     <div class="property-group">
-                        <label>Text Style</label>
+                        <label>文字样式</label>
                         <div class="btn-group">
                             <button id="prop-bold" class="prop-toggle-btn" title="Bold"><strong>B</strong></button>
                             <button id="prop-italic" class="prop-toggle-btn" title="Italic"><em>I</em></button>

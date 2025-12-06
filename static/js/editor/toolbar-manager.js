@@ -615,7 +615,7 @@ class ToolbarManager {
         
         // Reset font properties to defaults
         if (this.propFontSize) this.propFontSize.value = 14;
-        if (this.propFontFamily) this.propFontFamily.value = 'Inter, sans-serif';
+        if (this.propFontFamily) this.propFontFamily.value = "'Microsoft YaHei', sans-serif";
         
         // Reset colors to defaults
         if (this.propTextColor) this.propTextColor.value = '#000000';
@@ -652,7 +652,9 @@ class ToolbarManager {
         const fill = nodeElement.attr('fill') || '#2196f3';
         const stroke = nodeElement.attr('stroke') || '#1976d2';
         const strokeWidth = nodeElement.attr('stroke-width') || '2';
-        const opacity = nodeElement.attr('opacity') || '1';
+        // Use explicit null check to preserve opacity 0 (fully transparent)
+        const opacityAttr = nodeElement.attr('opacity');
+        const opacity = (opacityAttr !== null && opacityAttr !== undefined) ? opacityAttr : '1';
         
         // Get text element - try multiple methods to find it
         let textElement = null;
@@ -673,30 +675,37 @@ class ToolbarManager {
             }
         } else {
             // Regular node handling - get display text
-            // Method 1: Try as child
-            textElement = nodeElement.select('text');
-            if (!textElement.empty()) {
-                // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+            // Method 1: Try finding text elements by data-node-id (for multi-line text)
+            let textElements = d3.selectAll(`text[data-node-id="${nodeId}"]`);
+            if (!textElements.empty()) {
+                textElement = d3.select(textElements.node()); // Get first for attributes
+                // Use extractTextFromSVG to handle multi-line text
                 text = (typeof window.extractTextFromSVG === 'function') 
                     ? window.extractTextFromSVG(textElement) 
                     : (textElement.text() || '');
             } else {
-                // Method 2: Try data-text-for attribute
-                textElement = d3.select(`[data-text-for="${nodeId}"]`);
+                // Method 2: Try as child
+                textElement = nodeElement.select('text');
                 if (!textElement.empty()) {
-                    // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
                     text = (typeof window.extractTextFromSVG === 'function') 
                         ? window.extractTextFromSVG(textElement) 
                         : (textElement.text() || '');
                 } else {
-                    // Method 3: Try next sibling
-                    const shapeNode = nodeElement.node();
-                    if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
-                        textElement = d3.select(shapeNode.nextElementSibling);
-                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
+                    // Method 3: Try data-text-for attribute
+                    textElement = d3.select(`[data-text-for="${nodeId}"]`);
+                    if (!textElement.empty()) {
                         text = (typeof window.extractTextFromSVG === 'function') 
                             ? window.extractTextFromSVG(textElement) 
                             : (textElement.text() || '');
+                    } else {
+                        // Method 4: Try next sibling
+                        const shapeNode = nodeElement.node();
+                        if (shapeNode && shapeNode.nextElementSibling && shapeNode.nextElementSibling.tagName === 'text') {
+                            textElement = d3.select(shapeNode.nextElementSibling);
+                            text = (typeof window.extractTextFromSVG === 'function') 
+                                ? window.extractTextFromSVG(textElement) 
+                                : (textElement.text() || '');
+                        }
                     }
                 }
             }
@@ -704,7 +713,7 @@ class ToolbarManager {
         
         // Get text attributes (with fallbacks if text element not found)
         const fontSize = textElement && !textElement.empty() ? (textElement.attr('font-size') || '14') : '14';
-        const fontFamily = textElement && !textElement.empty() ? (textElement.attr('font-family') || 'Inter, sans-serif') : 'Inter, sans-serif';
+        const fontFamily = textElement && !textElement.empty() ? (textElement.attr('font-family') || "'Microsoft YaHei', sans-serif") : "'Microsoft YaHei', sans-serif";
         const textColor = textElement && !textElement.empty() ? (textElement.attr('fill') || '#000000') : '#000000';
         const fontWeight = textElement && !textElement.empty() ? (textElement.attr('font-weight') || 'normal') : 'normal';
         const fontStyle = textElement && !textElement.empty() ? (textElement.attr('font-style') || 'normal') : 'normal';

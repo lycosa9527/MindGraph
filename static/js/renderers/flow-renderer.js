@@ -1135,6 +1135,27 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         fontFamily: 'Inter, Segoe UI, sans-serif' // Changed back to Inter
     };
     
+    // Create temporary SVG for text measurement (adaptive node sizing)
+    const tempSvg = d3.select('body').append('svg')
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('position', 'absolute')
+        .style('left', '-9999px')
+        .style('top', '-9999px');
+    
+    // Measure single line width for adaptive node sizing
+    function measureLineWidth(text, fontSize) {
+        const t = tempSvg.append('text')
+            .attr('x', -9999)
+            .attr('y', -9999)
+            .attr('font-size', fontSize)
+            .attr('font-family', THEME.fontFamily)
+            .text(text || '');
+        const w = t.node().getBBox().width;
+        t.remove();
+        return w;
+    }
+    
     // 1. Create horizontal main line (ensure it's visible) - EXACTLY as in old renderer
     const mainLine = svg.append("line")
         .attr("x1", leftPadding)
@@ -1171,7 +1192,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // Ensure at least one line for placeholder
             const finalLeftLines = leftLines.length > 0 ? leftLines : [''];
             
-            const rectWidth = 100;
+            // Calculate adaptive width based on actual text measurement
+            const leftTextWidth = Math.max(...finalLeftLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+            const rectWidth = Math.max(60, leftTextWidth + 20); // Min 60px, add 20px padding
             const rectHeight = Math.max(30, finalLeftLines.length * leftLineHeight + 10); // Adaptive height
             
             // Draw rectangle background
@@ -1258,14 +1281,16 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // Ensure at least one line for placeholder
             const finalRightLines = rightLines.length > 0 ? rightLines : [''];
             
-            const rectWidth = 100;
+            // Calculate adaptive width based on actual text measurement
+            const rightTextWidth = Math.max(...finalRightLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+            const rightRectWidth = Math.max(60, rightTextWidth + 20); // Min 60px, add 20px padding
             const rectHeight = Math.max(30, finalRightLines.length * rightLineHeight + 10); // Adaptive height
             
             // Draw rectangle background
             svg.append("rect")
-                .attr("x", xPos - rectWidth/2)
+                .attr("x", xPos - rightRectWidth/2)
                 .attr("y", height/2 + 40 - rectHeight/2)
-                .attr("width", rectWidth)
+                .attr("width", rightRectWidth)
                 .attr("height", rectHeight)
                 .attr("rx", 4)
                 .attr("fill", "#1976d2") // Deep blue from mind map
@@ -1489,6 +1514,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .style('opacity', 0.4)
             .text(placeholderText);
     }
+    
+    // Clean up temporary SVG used for text measurement
+    tempSvg.remove();
     
     // Watermark removed from canvas display - will be added during PNG export only
     
