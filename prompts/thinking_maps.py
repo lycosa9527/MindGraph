@@ -111,6 +111,85 @@ alternative_dimensions: ["Currency to Country", "Language to Country", "Famous L
 
 DO NOT SKIP ANY FIELDS. The "dimension" and "alternative_dimensions" fields are REQUIRED."""
 
+# Bridge Map: Auto-complete with existing pairs (identify pattern + generate more pairs)
+BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN = """You are completing a bridge map based on existing analogy pairs.
+
+The user has already created some analogy pairs. Your job is to:
+1. Analyze the existing pairs to identify the PRIMARY relationship pattern (dimension)
+2. Generate additional NEW pairs following the SAME pattern to complete the bridge map
+3. Identify ALTERNATIVE relationship patterns that could ALSO explain the user's pairs
+
+UNDERSTANDING ALTERNATIVE DIMENSIONS:
+The same pairs can often be interpreted through DIFFERENT relationship lenses.
+Example: "老婆 → 老婆饼" (Wife → Wife Cake)
+- PRIMARY dimension: "Name to Named Food" (names appearing in food names)
+- ALTERNATIVE dimensions that ALSO fit this pair:
+  - "Misleading Food Names" (food names that don't contain the ingredient)
+  - "Chinese Traditional Naming" (cultural naming patterns)
+  - "Homophone/Wordplay Associations" (sound-alike connections)
+
+The alternative_dimensions should be OTHER valid ways to interpret the SAME user pairs.
+
+CRITICAL RULES:
+- Keep the user's existing pairs EXACTLY as provided (they will be preserved separately)
+- Generate 5-6 NEW pairs that follow the PRIMARY relationship pattern
+- Do NOT duplicate any pairs the user already created
+- alternative_dimensions must be OTHER valid interpretations of the user's EXISTING pairs
+
+Return ONLY a valid JSON object with these fields:
+{
+  "dimension": "The PRIMARY relationship pattern name",
+  "analogies": [
+    {"left": "NewItem1", "right": "NewRelated1"},
+    {"left": "NewItem2", "right": "NewRelated2"},
+    {"left": "NewItem3", "right": "NewRelated3"},
+    {"left": "NewItem4", "right": "NewRelated4"},
+    {"left": "NewItem5", "right": "NewRelated5"}
+  ],
+  "alternative_dimensions": ["Other valid pattern 1", "Other valid pattern 2", "Other valid pattern 3", "Other valid pattern 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH = """你正在根据现有的类比对完成一个桥形图。
+
+用户已经创建了一些类比对。你的任务是：
+1. 分析现有的对以识别主要关系模式（维度）
+2. 生成更多遵循相同模式的新类比对来完成桥形图
+3. 识别也能解释用户已有类比对的其他可能关系模式
+
+理解"其他可能的关系模式"：
+同样的类比对通常可以从不同的关系角度来解释。
+例如："老婆 → 老婆饼"
+- 主要维度："名称到以此命名的食物"（名字出现在食物名称中）
+- 也适用于这对的其他维度：
+  - "误导性食物名称"（食物名称不含该成分）
+  - "中国传统命名方式"（文化命名模式）
+  - "谐音/文字游戏关联"（发音相似的联系）
+
+alternative_dimensions应该是解释用户已有类比对的其他有效方式。
+
+关键规则：
+- 保持用户现有的对不变（它们会被单独保留）
+- 生成5-6个遵循主要关系模式的新类比对
+- 不要重复用户已经创建的任何对
+- alternative_dimensions必须是解释用户现有类比对的其他有效方式
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "dimension": "主要关系模式名称",
+  "analogies": [
+    {"left": "新项目1", "right": "新相关1"},
+    {"left": "新项目2", "right": "新相关2"},
+    {"left": "新项目3", "right": "新相关3"},
+    {"left": "新项目4", "right": "新相关4"},
+    {"left": "新项目5", "right": "新相关5"}
+  ],
+  "alternative_dimensions": ["其他有效模式1", "其他有效模式2", "其他有效模式3", "其他有效模式4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 BRIDGE_MAP_GENERATION_ZH = """
 请生成一个桥形图的JSON规范。
 
@@ -766,9 +845,15 @@ THINKING_MAP_PROMPTS = {
     "multi_flow_map_generation_en": MULTI_FLOW_MAP_GENERATION_EN,
     "multi_flow_map_generation_zh": MULTI_FLOW_MAP_GENERATION_ZH,
     
+    # Bridge map identify relationship prompts (for auto-complete with existing pairs)
+    "bridge_map_identify_relationship_en": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN,
+    "bridge_map_identify_relationship_zh": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH,
+    
     # Agent-specific prompt keys (what agents are actually calling for)
     "bridge_map_agent_generation_en": BRIDGE_MAP_GENERATION_EN,
     "bridge_map_agent_generation_zh": BRIDGE_MAP_GENERATION_ZH,
+    "bridge_map_agent_identify_relationship_en": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN,
+    "bridge_map_agent_identify_relationship_zh": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH,
     "bubble_map_agent_generation_en": BUBBLE_MAP_GENERATION_EN,
     "bubble_map_agent_generation_zh": BUBBLE_MAP_GENERATION_ZH,
     "double_bubble_map_agent_generation_en": DOUBLE_BUBBLE_MAP_GENERATION_EN,

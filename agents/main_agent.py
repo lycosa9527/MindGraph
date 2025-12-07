@@ -1426,7 +1426,9 @@ async def _generate_spec_with_agent(
     organization_id=None,
     request_type='diagram_generation',
     endpoint_path=None,
-    diagram_type_for_tracking=None
+    diagram_type_for_tracking=None,
+    # Bridge map specific
+    existing_analogies=None
 ) -> dict:
     """
     Generate specification using the appropriate specialized agent.
@@ -1437,6 +1439,7 @@ async def _generate_spec_with_agent(
         language: Language for processing
         dimension_preference: Optional dimension preference for brace maps (decomposition), tree maps (classification), and bridge maps (analogy pattern)
         model: LLM model to use ('qwen', 'deepseek', 'kimi'). Passed to agent for LLM client selection.
+        existing_analogies: For bridge map auto-complete - existing pairs to preserve [{left, right}, ...]
     
     Returns:
         dict: Generated specification
@@ -1513,8 +1516,23 @@ async def _generate_spec_with_agent(
         logger.debug(f"User prompt: {user_prompt}")
         logger.debug(f"Language: {language}")
         
-        # For brace maps, tree maps, and bridge maps, pass dimension_preference if available
-        if (diagram_type == 'brace_map' or diagram_type == 'tree_map' or diagram_type == 'bridge_map') and dimension_preference:
+        # Bridge map special handling: pass existing_analogies for auto-complete mode
+        if diagram_type == 'bridge_map' and existing_analogies:
+            logger.info(f"Bridge map auto-complete mode: preserving {len(existing_analogies)} existing pairs")
+            result = await agent.generate_graph(
+                user_prompt, 
+                language, 
+                dimension_preference,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                # Bridge map specific: existing pairs to preserve
+                existing_analogies=existing_analogies
+            )
+        # For brace maps, tree maps, and bridge maps (without existing pairs), pass dimension_preference if available
+        elif (diagram_type == 'brace_map' or diagram_type == 'tree_map' or diagram_type == 'bridge_map') and dimension_preference:
             if diagram_type == 'brace_map':
                 logger.info(f"Passing decomposition dimension preference to brace map agent: {dimension_preference}")
             elif diagram_type == 'tree_map':
@@ -1629,7 +1647,9 @@ async def agent_graph_workflow_with_styles(
     user_id=None,
     organization_id=None,
     request_type='diagram_generation',
-    endpoint_path=None
+    endpoint_path=None,
+    # Bridge map specific: existing pairs for auto-complete mode
+    existing_analogies=None
 ):
     """
     Simplified agent workflow that directly calls specialized agents.
@@ -1641,6 +1661,7 @@ async def agent_graph_workflow_with_styles(
                                             Used for auto-complete to preserve current diagram type.
         dimension_preference (str, optional): User-specified dimension for brace maps (decomposition) and tree maps (classification).
         model (str): LLM model to use ('qwen', 'deepseek', 'kimi'). Passed through call chain to avoid race conditions.
+        existing_analogies (list, optional): For bridge map auto-complete - existing pairs to preserve [{left, right}, ...]
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
@@ -1744,7 +1765,9 @@ async def agent_graph_workflow_with_styles(
             organization_id=organization_id,
             request_type=request_type,
             endpoint_path=endpoint_path,
-            diagram_type_for_tracking=diagram_type
+            diagram_type_for_tracking=diagram_type,
+            # Bridge map specific
+            existing_analogies=existing_analogies
         )
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):

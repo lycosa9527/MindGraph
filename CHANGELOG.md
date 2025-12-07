@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.29] - 2025-12-07 - Bridge Map Auto-Complete Enhancement
+
+### Improved
+
+- **Bridge Map Auto-Complete Logic** (`bridge_map_agent.py`, `thinking_maps.py`, `llm-autocomplete-manager.js`)
+  - Enhanced bridge map auto-complete to preserve user-entered pairs and intelligently generate new pairs
+  
+  - **New Behavior**:
+    1. User enters analogy pairs (e.g., "北京 → 中国")
+    2. LLM identifies the PRIMARY relationship pattern (dimension)
+    3. LLM generates 5-6 NEW pairs following the same pattern
+    4. User's original pairs are preserved and placed first
+    5. LLM suggests ALTERNATIVE dimensions (other valid interpretations of the same pairs)
+  
+  - **Prompt Improvements** (`prompts/thinking_maps.py`):
+    - Added new `BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN/ZH` prompts
+    - Clear explanation of what `alternative_dimensions` means: other valid ways to interpret the SAME user pairs
+    - Example: "老婆 → 老婆饼" can be interpreted as "Name to Named Food", "Misleading Food Names", or "Chinese Traditional Naming"
+  
+  - **Frontend Improvements** (`llm-autocomplete-manager.js`):
+    - Extracts all existing analogy pairs from bridge map
+    - Filters out placeholder text (e.g., "项目1", "New Left", "新左项")
+    - Sends `existing_analogies` array to backend
+
+### Fixed
+
+- **Hunyuan LLM Response Format Handling** (`bridge_map_agent.py`)
+  - Fixed issue where Hunyuan returned only the user's original pair without generated pairs
+  - **Root Cause**: Hunyuan returns malformed JSON format `{"left": "东京 → 日本"}` instead of `{"left": "东京", "right": "日本"}`
+  - **Solution**: Added format normalizer that detects and splits combined `left` field containing ` → `
+  - No fallback logic - proper parsing of variant LLM response formats
+
+### Technical Details
+
+**Files Changed:**
+- `prompts/thinking_maps.py`: New `BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN/ZH` prompts with clear explanation of alternative dimensions
+- `agents/thinking_maps/bridge_map_agent.py`: New `_identify_relationship_pattern()` method, Hunyuan format normalizer
+- `static/js/managers/toolbar/llm-autocomplete-manager.js`: Bridge map pair extraction with placeholder filtering
+- `models/requests.py`: Added `existing_analogies` field to `GenerateRequest`
+- `routers/api.py`: Pass `existing_analogies` to agent
+- `agents/main_agent.py`: Route `existing_analogies` to bridge map agent
+
+**Multi-LLM Response Format Variance:**
+| LLM | Format | Example |
+|-----|--------|---------|
+| Qwen | Correct | `{"left": "东京", "right": "日本"}` |
+| DeepSeek | Correct | `{"left": "东京", "right": "日本"}` |
+| Kimi | Correct | `{"left": "东京", "right": "日本"}` |
+| Hunyuan | Combined | `{"left": "东京 → 日本"}` → normalized |
+
+---
+
 ## [4.28.28] - 2025-12-07 - Flow Map Export Cut-off Fix
 
 ### Fixed

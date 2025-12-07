@@ -22,6 +22,8 @@ class GenerateRequest(BaseModel):
     models: Optional[List[str]] = Field(None, description="List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'hunyuan'])")
     dimension_preference: Optional[str] = Field(None, description="Optional dimension preference for certain diagrams")
     request_type: Optional[str] = Field('diagram_generation', description="Request type for token tracking: 'diagram_generation' or 'autocomplete'")
+    # Bridge map specific: existing analogy pairs for auto-complete (preserve user's pairs, only identify relationship)
+    existing_analogies: Optional[List[Dict[str, str]]] = Field(None, description="Existing bridge map analogy pairs [{left, right}, ...] for auto-complete mode")
     
     @field_validator('diagram_type', mode='before')
     @classmethod

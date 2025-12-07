@@ -192,6 +192,9 @@ async def generate_graph(
         # Determine request type for token tracking (default to 'diagram_generation')
         request_type = req.request_type if req.request_type else 'diagram_generation'
         
+        # Bridge map specific: pass existing analogies for auto-complete mode
+        existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None
+        
         result = await agent.agent_graph_workflow_with_styles(
             prompt,
             language=language,
@@ -202,7 +205,9 @@ async def generate_graph(
             user_id=user_id,
             organization_id=organization_id,
             request_type=request_type,
-            endpoint_path='/api/generate_graph'
+            endpoint_path='/api/generate_graph',
+            # Bridge map specific
+            existing_analogies=existing_analogies
         )
         
         logger.debug(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram with {llm_model}")

@@ -1102,7 +1102,8 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
 
     logger.debug('FlowRenderer', 'Rendering bridge map', {
         analogiesCount: spec?.analogies?.length || 0,
-        dimension: spec?.dimension
+        dimension: spec?.dimension,
+        alternativeDimensions: spec?.alternative_dimensions?.length || 0
     });
     
     d3.select(`#${containerId}`).html('');
@@ -1501,8 +1502,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     
     // 5. Add alternative dimensions section at the bottom (matching tree/brace map style)
     const hasAlternatives = spec.alternative_dimensions && Array.isArray(spec.alternative_dimensions) && spec.alternative_dimensions.length > 0;
-    if (hasAlternatives) {
-    }
     
     // Calculate the actual bottom of all analogy nodes
     // Lower nodes are positioned at height/2 + 40

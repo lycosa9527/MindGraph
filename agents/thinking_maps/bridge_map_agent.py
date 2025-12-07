@@ -29,7 +29,9 @@ class BridgeMapAgent(BaseAgent):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        # Bridge map auto-complete: existing pairs to preserve
+        existing_analogies: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, Any]:
         """
         Generate a bridge map from a prompt.
@@ -42,6 +44,8 @@ class BridgeMapAgent(BaseAgent):
             organization_id: Organization ID for token tracking
             request_type: Request type for token tracking
             endpoint_path: Endpoint path for token tracking
+            existing_analogies: For auto-complete mode - existing pairs to preserve [{left, right}, ...]
+                               When provided, LLM only identifies the relationship pattern, doesn't generate new pairs
             
         Returns:
             Dict containing success status and generated spec
@@ -49,16 +53,28 @@ class BridgeMapAgent(BaseAgent):
         try:
             logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
-            # Generate the bridge map specification
-            spec = await self._generate_bridge_map_spec(
-                prompt, 
-                language, 
-                dimension_preference,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
-            )
+            # Check for auto-complete mode with existing pairs
+            if existing_analogies and len(existing_analogies) > 0:
+                logger.info(f"BridgeMapAgent: Auto-complete mode - preserving {len(existing_analogies)} existing pairs")
+                spec = await self._identify_relationship_pattern(
+                    existing_analogies,
+                    language,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
+            else:
+                # Generate the bridge map specification (full generation mode)
+                spec = await self._generate_bridge_map_spec(
+                    prompt, 
+                    language, 
+                    dimension_preference,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
             
             if not spec:
                 return {
@@ -66,9 +82,10 @@ class BridgeMapAgent(BaseAgent):
                     'error': 'Failed to generate bridge map specification'
                 }
             
-            # Basic validation
+            # Basic validation - skip minimum count check in auto-complete mode
             logger.debug("Basic validation started")
-            is_valid, validation_msg = self._basic_validation(spec)
+            is_autocomplete_mode = existing_analogies and len(existing_analogies) > 0
+            is_valid, validation_msg = self._basic_validation(spec, skip_min_count=is_autocomplete_mode)
             if not is_valid:
                 logger.warning(f"BridgeMapAgent: Basic validation failed: {validation_msg}")
                 return {
@@ -99,9 +116,13 @@ class BridgeMapAgent(BaseAgent):
                 'error': f'Generation failed: {str(e)}'
             }
     
-    def _basic_validation(self, spec: Dict) -> Tuple[bool, str]:
+    def _basic_validation(self, spec: Dict, skip_min_count: bool = False) -> Tuple[bool, str]:
         """
         Basic validation: check if required fields exist and have basic structure.
+        
+        Args:
+            spec: The specification to validate
+            skip_min_count: If True, skip the minimum 5 analogies check (for auto-complete mode)
         """
         try:
             # Check if spec is a dictionary
@@ -125,9 +146,13 @@ class BridgeMapAgent(BaseAgent):
             if not analogies:
                 return False, "Analogies array is empty"
             
-            # Check if we have at least 5 analogies
-            if len(analogies) < 5:
+            # Check if we have at least 5 analogies (skip in auto-complete mode)
+            if not skip_min_count and len(analogies) < 5:
                 return False, f"Insufficient analogies: {len(analogies)}, need at least 5"
+            
+            # In auto-complete mode, just ensure at least 1 analogy exists
+            if skip_min_count and len(analogies) < 1:
+                return False, "At least 1 analogy required"
             
             # Validate each analogy has required fields
             for i, analogy in enumerate(analogies):
@@ -234,6 +259,167 @@ class BridgeMapAgent(BaseAgent):
         except Exception as e:
             logger.error(f"BridgeMapAgent: Error in spec generation: {e}")
             return None
+    
+    async def _identify_relationship_pattern(
+        self,
+        existing_analogies: List[Dict[str, str]],
+        language: str,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
+        """
+        Identify the relationship pattern from existing analogy pairs and generate more pairs.
+        Preserves user's pairs and adds new pairs following the same pattern.
+        
+        Args:
+            existing_analogies: List of existing pairs [{left, right}, ...]
+            language: Language for generation
+            
+        Returns:
+            Spec with user's pairs + new generated pairs + identified dimension
+        """
+        try:
+            logger.info(f"BridgeMapAgent: Auto-complete from {len(existing_analogies)} existing pairs")
+            
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get the relationship identification + generation prompt
+            system_prompt = get_prompt("bridge_map_agent", language, "identify_relationship")
+            
+            if not system_prompt:
+                logger.warning("BridgeMapAgent: No identify_relationship prompt found, using fallback")
+                # Fallback prompt
+                if language == "zh":
+                    system_prompt = """分析以下类比对，识别关系模式，并生成更多遵循相同模式的新对。
+返回JSON：{"dimension": "模式名", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
+                else:
+                    system_prompt = """Analyze these pairs, identify the pattern, and generate more pairs following the same pattern.
+Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
+            
+            # Format the existing pairs for the prompt
+            pairs_text = "\n".join([f"- {pair.get('left', '')} → {pair.get('right', '')}" for pair in existing_analogies])
+            
+            # Create a set of existing pairs for deduplication
+            existing_set = set()
+            for pair in existing_analogies:
+                existing_set.add((pair.get('left', '').strip().lower(), pair.get('right', '').strip().lower()))
+            
+            if language == "zh":
+                user_prompt = f"用户已创建的类比对：\n{pairs_text}\n\n请识别关系模式，并生成5-6个新的类比对（不要重复上面的对）。"
+            else:
+                user_prompt = f"User's existing pairs:\n{pairs_text}\n\nIdentify the pattern and generate 5-6 NEW pairs (do not duplicate the above)."
+            
+            logger.debug(f"User prompt: {user_prompt}")
+            
+            # Call LLM to identify relationship and generate new pairs
+            from services.llm_service import llm_service
+            from config.settings import config
+            
+            response = await llm_service.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=800,  # Increased for generating pairs
+                temperature=config.LLM_TEMPERATURE,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='bridge_map'
+            )
+            
+            logger.debug(f"LLM response: {response[:500] if response else 'None'}...")
+            
+            # Extract JSON from response
+            from ..core.agent_utils import extract_json_from_response
+            
+            if isinstance(response, dict):
+                result = response
+            else:
+                result = extract_json_from_response(str(response))
+            
+            if not result:
+                logger.warning("BridgeMapAgent: Failed to extract JSON, returning existing pairs only")
+                result = {}
+            
+            # Get new pairs from LLM response
+            llm_new_pairs = result.get('analogies', [])
+            logger.info(f"BridgeMapAgent: LLM generated {len(llm_new_pairs)} new pairs")
+            
+            # Build combined analogies: user's pairs first, then new unique pairs
+            combined_analogies = []
+            
+            # Add user's existing pairs first (with IDs starting from 0)
+            for i, pair in enumerate(existing_analogies):
+                combined_analogies.append({
+                    'left': pair.get('left', ''),
+                    'right': pair.get('right', ''),
+                    'id': i
+                })
+            
+            # Add new pairs from LLM (filter duplicates)
+            next_id = len(existing_analogies)
+            for pair in llm_new_pairs:
+                left = pair.get('left', '').strip()
+                right = pair.get('right', '').strip()
+                
+                # Fallback: Handle malformed format where both values are in 'left' field
+                # Some LLMs (e.g., Hunyuan) may return {"left": "东京 → 日本"} instead of {"left": "东京", "right": "日本"}
+                if left and not right and ' → ' in left:
+                    parts = left.split(' → ', 1)
+                    if len(parts) == 2:
+                        left = parts[0].strip()
+                        right = parts[1].strip()
+                        logger.debug(f"Fixed malformed pair: '{left}' → '{right}'")
+                
+                # Skip empty pairs
+                if not left or not right:
+                    continue
+                
+                # Skip duplicates (case-insensitive)
+                pair_key = (left.lower(), right.lower())
+                if pair_key in existing_set:
+                    logger.debug(f"Skipping duplicate pair: {left} → {right}")
+                    continue
+                
+                existing_set.add(pair_key)
+                combined_analogies.append({
+                    'left': left,
+                    'right': right,
+                    'id': next_id
+                })
+                next_id += 1
+            
+            logger.info(f"BridgeMapAgent: Combined total: {len(combined_analogies)} pairs ({len(existing_analogies)} user + {len(combined_analogies) - len(existing_analogies)} new)")
+            
+            # Build final spec
+            spec = {
+                'relating_factor': 'as',
+                'dimension': result.get('dimension', ''),
+                'analogies': combined_analogies,
+                'alternative_dimensions': result.get('alternative_dimensions', [])
+            }
+            
+            logger.info(f"BridgeMapAgent: Identified dimension: {spec.get('dimension', 'NOT IDENTIFIED')}")
+            
+            return spec
+            
+        except Exception as e:
+            logger.error(f"BridgeMapAgent: Error in auto-complete: {e}")
+            # Return spec with just the existing pairs
+            return {
+                'relating_factor': 'as',
+                'dimension': '',
+                'analogies': [
+                    {'left': pair.get('left', ''), 'right': pair.get('right', ''), 'id': i}
+                    for i, pair in enumerate(existing_analogies)
+                ],
+                'alternative_dimensions': []
+            }
     
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""

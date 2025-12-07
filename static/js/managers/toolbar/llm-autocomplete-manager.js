@@ -180,16 +180,67 @@ class LLMAutoCompleteManager {
             const language = this._detectLanguage(mainTopic);
             
             // Build request - always use continue mode (canvas already has minimal template)
-            const prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
-            this.logger.info('LLMAutoCompleteManager', `Enriching diagram: ${existingNodes.length} existing nodes`);
+            let prompt;
+            let requestBody;
             
-            const requestBody = {
-                prompt: prompt,
-                diagram_type: currentDiagramType,
-                language: language,
-                request_type: 'autocomplete'  // Distinguish from diagram_generation for token tracking
-                // Note: 'llm' parameter added per-model by LLMEngineManager
-            };
+            // BRIDGE MAP SPECIAL HANDLING: Send existing pairs for relationship identification
+            if (currentDiagramType === 'bridge_map' && this.editor.currentSpec?.analogies) {
+                // Placeholder patterns to filter out (match llm-validation-manager.js patterns)
+                const placeholderPatterns = [
+                    /^项目\d+$/i,        // 项目1, 项目2, etc.
+                    /^项目[A-Z]$/i,      // 项目A, 项目B, etc.
+                    /^Item\s*\d+$/i,     // Item 1, Item 2, etc.
+                    /^Item\s*[A-Z]$/i,   // Item A, Item B, etc.
+                    /^New\s*(Left|Right)$/i,  // New Left, New Right
+                    /^新左项$/,           // Chinese "New Left"
+                    /^新右项$/,           // Chinese "New Right"
+                    /^左项\d*$/,          // 左项, 左项1, etc.
+                    /^右项\d*$/,          // 右项, 右项1, etc.
+                ];
+                
+                const isPlaceholder = (text) => {
+                    if (!text || !text.trim()) return true;
+                    return placeholderPatterns.some(pattern => pattern.test(text.trim()));
+                };
+                
+                const existingAnalogies = this.editor.currentSpec.analogies
+                    .filter(pair => pair.left && pair.right && !isPlaceholder(pair.left) && !isPlaceholder(pair.right))  // Filter out placeholders
+                    .map(pair => ({ left: pair.left, right: pair.right }));
+                
+                if (existingAnalogies.length > 0) {
+                    prompt = `Analyze these bridge map analogy pairs and identify the relationship pattern (dimension). Preserve all existing pairs exactly as provided.`;
+                    this.logger.info('LLMAutoCompleteManager', `Bridge map: ${existingAnalogies.length} existing pairs to preserve`, existingAnalogies);
+                    
+                    requestBody = {
+                        prompt: prompt,
+                        diagram_type: currentDiagramType,
+                        language: language,
+                        request_type: 'autocomplete',
+                        existing_analogies: existingAnalogies  // Send existing pairs to backend
+                    };
+                } else {
+                    // No valid pairs, use standard generation
+                    prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
+                    requestBody = {
+                        prompt: prompt,
+                        diagram_type: currentDiagramType,
+                        language: language,
+                        request_type: 'autocomplete'
+                    };
+                }
+            } else {
+                // Standard prompt for other diagram types
+                prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
+                this.logger.info('LLMAutoCompleteManager', `Enriching diagram: ${existingNodes.length} existing nodes`);
+                
+                requestBody = {
+                    prompt: prompt,
+                    diagram_type: currentDiagramType,
+                    language: language,
+                    request_type: 'autocomplete'  // Distinguish from diagram_generation for token tracking
+                    // Note: 'llm' parameter added per-model by LLMEngineManager
+                };
+            }
             
             // Clear previous results
             this.resultCache.clear();
