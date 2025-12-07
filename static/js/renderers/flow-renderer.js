@@ -438,8 +438,8 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         baseHeight = 600; // Initial estimate, will be updated
     }
 
-    // Clean up temp svg (measurement SVG)
-    tempSvg.remove();
+    // NOTE: Keep tempSvg until after rendering for text measurement during drawing
+    // It will be removed after all elements are drawn
 
     // DON'T set explicit width/height on container - let CSS handle it (100% fill)
     // This allows the canvas to fill the viewport and auto-fit to work properly
@@ -661,23 +661,43 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     });
 
     // Calculate accurate canvas dimensions based on actual content positions
+    // Track ALL bounds: top, bottom, left, right
+    let contentTop = Infinity;
     let contentBottom = 0;
+    let contentLeft = Infinity;
     let contentRight = 0;
     
     // Account for stroke width - half extends beyond the rect dimensions
     const stepStrokeOffset = Math.ceil(THEME.stepStrokeWidth / 2);
     
-    // Find the bottom of main steps
+    // Include title in bounds calculation (title was drawn with titleY as baseline)
+    // Text baseline is at titleY, so actual top is approximately titleY - titleSize.h
+    if (titleY !== undefined) {
+        const titleTop = titleY - titleSize.h;
+        const titleBottom = titleY + 5; // Small descent allowance
+        const titleLeft = centerX - titleSize.w / 2;
+        const titleRight = centerX + titleSize.w / 2;
+        contentTop = Math.min(contentTop, titleTop);
+        contentBottom = Math.max(contentBottom, titleBottom);
+        contentLeft = Math.min(contentLeft, titleLeft);
+        contentRight = Math.max(contentRight, titleRight);
+    }
+    
+    // Find bounds of main steps
     if (stepCenters.length > 0) {
         for (let i = 0; i < stepCenters.length; i++) {
+            const stepTop = stepCenters[i] - stepSizes[i].h / 2 - stepStrokeOffset;
             const stepBottom = stepCenters[i] + stepSizes[i].h / 2 + stepStrokeOffset;
+            const stepLeft = centerX - stepSizes[i].w / 2 - stepStrokeOffset;
             const stepRight = centerX + stepSizes[i].w / 2 + stepStrokeOffset;
+            contentTop = Math.min(contentTop, stepTop);
             contentBottom = Math.max(contentBottom, stepBottom);
+            contentLeft = Math.min(contentLeft, stepLeft);
             contentRight = Math.max(contentRight, stepRight);
         }
     }
     
-    // Find the bottom and right edge of substeps (which now control the layout)
+    // Find bounds of substeps (which now control the layout)
     // Account for stroke width - half extends beyond the rect dimensions
     const substepStrokeWidth = Math.max(1, THEME.stepStrokeWidth - 1);
     const strokeOffset = Math.ceil(substepStrokeWidth / 2);
@@ -686,16 +706,22 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         const stepPositions = allSubstepPositions[stepIdx];
         for (let nodeIdx = 0; nodeIdx < stepPositions.length; nodeIdx++) {
             const substep = stepPositions[nodeIdx];
-            const substepBottom = substep.y + substep.h + strokeOffset; // Add stroke offset
-            const substepRight = substep.x + substep.w + strokeOffset;   // Add stroke offset
+            const substepTop = substep.y - strokeOffset;
+            const substepBottom = substep.y + substep.h + strokeOffset;
+            const substepLeft = substep.x - strokeOffset;
+            const substepRight = substep.x + substep.w + strokeOffset;
+            contentTop = Math.min(contentTop, substepTop);
             contentBottom = Math.max(contentBottom, substepBottom);
+            contentLeft = Math.min(contentLeft, substepLeft);
             contentRight = Math.max(contentRight, substepRight);
         }
     }
     
-    // Calculate final dimensions with padding
-    const calculatedHeight = contentBottom + padding;
-    const calculatedWidth = contentRight + padding;
+    // Calculate final dimensions with padding on ALL sides
+    // Ensure minimum padding from content to edge
+    const minPaddingFromEdge = padding;
+    const calculatedWidth = Math.max(baseWidth, contentRight + minPaddingFromEdge, (contentRight - contentLeft) + minPaddingFromEdge * 2);
+    const calculatedHeight = Math.max(baseHeight, contentBottom + minPaddingFromEdge, (contentBottom - contentTop) + minPaddingFromEdge * 2);
     const ch = __round1(calculatedHeight);
     const cw = __round1(calculatedWidth);
     
@@ -759,14 +785,13 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         });
     });
     
-        // Update SVG dimensions to match calculated content
-        if (cw > baseWidth || ch > baseHeight) {
-            svg.attr('width', cw)
-               .attr('viewBox', `0 0 ${cw} ${ch}`)
-               .attr('preserveAspectRatio', 'xMidYMid meet');
-            
-            // DON'T set explicit width/height on container - let CSS handle it (100% fill)
-        }
+        // Always update SVG dimensions to match calculated content
+        // This ensures the viewBox captures ALL content, not just initial estimates
+        svg.attr('viewBox', `0 0 ${cw} ${ch}`)
+           .attr('preserveAspectRatio', 'xMidYMid meet');
+        
+        // Clean up temp svg now that all rendering is complete
+        tempSvg.remove();
         
     } else {
         // HORIZONTAL LAYOUT (new code)
@@ -1054,16 +1079,17 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         }
         
         // Update SVG dimensions
-        const calculatedHeight = contentBottom + padding;
-        const calculatedWidth = Math.max(contentRight + padding, totalStepsWidth + padding * 2);
+        const calculatedHeight = Math.max(baseHeight, contentBottom + padding);
+        const calculatedWidth = Math.max(baseWidth, contentRight + padding, totalStepsWidth + padding * 2);
         const ch = __round1(calculatedHeight);
         const cw = __round1(calculatedWidth);
         
-        if (cw > baseWidth || ch > baseHeight) {
-            svg.attr('width', cw)
-               .attr('viewBox', `0 0 ${cw} ${ch}`)
-               .attr('preserveAspectRatio', 'xMidYMid meet');
-        }
+        // Always update viewBox to ensure all content is captured
+        svg.attr('viewBox', `0 0 ${cw} ${ch}`)
+           .attr('preserveAspectRatio', 'xMidYMid meet');
+        
+        // Clean up temp svg now that all rendering is complete
+        tempSvg.remove();
     }
     
     // Apply learning sheet text knockout if needed

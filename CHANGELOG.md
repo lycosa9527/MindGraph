@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.28] - 2025-12-07 - Flow Map Export Cut-off Fix
+
+### Fixed
+
+- **Flow Map PNG Export Cutting Off Content** (`flow-renderer.js`, `export-manager.js`, `interactive-editor.js`)
+  - Fixed issue where flow map PNG exports were cutting off content at step 2 and substep 2.2
+  - **Root Cause Analysis**:
+    1. `getBBox()` method doesn't include stroke width in bounds calculation
+    2. Flow map dimension calculation only tracked `contentBottom` and `contentRight`, missing `contentTop` and `contentLeft`
+    3. Measurement SVG (`tempSvg`) was removed before text wrapping functions were called during rendering
+    4. ViewBox was only updated when calculated dimensions were larger than initial estimates
+  
+  - **Solution - Flow Renderer** (`flow-renderer.js`):
+    - Track ALL content bounds: `contentTop`, `contentBottom`, `contentLeft`, `contentRight`
+    - Include title position in bounds calculation
+    - Keep measurement SVG (`tempSvg`) available until after all rendering completes
+    - Always update viewBox with calculated dimensions (not just when larger)
+  
+  - **Solution - Export Manager** (`export-manager.js`):
+    - Account for stroke width when calculating element bounds (`strokeOffset = strokeWidth / 2`)
+    - Use SVG's viewBox as secondary bounds check to catch any missed content
+    - Increased base padding from 30px to 40px for better margins
+  
+  - **Solution - Interactive Editor** (`interactive-editor.js`):
+    - `fitDiagramForExport()` now accounts for stroke width in bounds calculation
+    - Uses minimum 40px padding + stroke width for export fitting
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/renderers/flow-renderer.js`: Comprehensive bounds tracking, proper tempSvg lifecycle
+- `static/js/managers/toolbar/export-manager.js`: Stroke-aware bounds, viewBox fallback check
+- `static/js/editor/interactive-editor.js`: Stroke-aware fitDiagramForExport
+
+**Code Review Summary:**
+- Bubble map: Uses force simulation bounds - OK
+- Tree map: Has dynamic viewBox updates - OK
+- Brace map: Pre-calculates dimensions - OK
+- Mind map: Uses Python agent layout - OK
+- Concept map: Uses pre-calculated layout - OK
+
+---
+
 ## [4.28.27] - 2025-12-07 - Gallery SVG Icons Redesign
 
 ### Improved

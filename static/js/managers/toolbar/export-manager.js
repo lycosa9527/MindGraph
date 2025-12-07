@@ -164,17 +164,28 @@ class ExportManager {
                 let contentMinX = Infinity, contentMinY = Infinity;
                 let contentMaxX = -Infinity, contentMaxY = -Infinity;
                 let hasContent = false;
+                let maxStrokeWidth = 0;
                 
                 const allElements = d3.select(svg).selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
                 allElements.each(function() {
                     try {
                         const bbox = this.getBBox();
                         if (bbox.width > 0 && bbox.height > 0) {
-                            contentMinX = Math.min(contentMinX, bbox.x);
-                            contentMinY = Math.min(contentMinY, bbox.y);
-                            contentMaxX = Math.max(contentMaxX, bbox.x + bbox.width);
-                            contentMaxY = Math.max(contentMaxY, bbox.y + bbox.height);
+                            // Get stroke width to account for visual extent beyond getBBox
+                            // getBBox() returns geometric bounds, not including stroke
+                            const strokeWidth = parseFloat(d3.select(this).attr('stroke-width')) || 0;
+                            const strokeOffset = strokeWidth / 2;
+                            
+                            contentMinX = Math.min(contentMinX, bbox.x - strokeOffset);
+                            contentMinY = Math.min(contentMinY, bbox.y - strokeOffset);
+                            contentMaxX = Math.max(contentMaxX, bbox.x + bbox.width + strokeOffset);
+                            contentMaxY = Math.max(contentMaxY, bbox.y + bbox.height + strokeOffset);
                             hasContent = true;
+                            
+                            // Track max stroke width for additional safety margin
+                            if (strokeWidth > maxStrokeWidth) {
+                                maxStrokeWidth = strokeWidth;
+                            }
                         }
                     } catch (e) {
                         // Skip elements without getBBox
@@ -187,6 +198,21 @@ class ExportManager {
                     return;
                 }
                 
+                // STEP 1b: Secondary check - use SVG's current viewBox as reference
+                // This ensures we don't miss content that the renderer already calculated
+                const currentViewBox = svg.getAttribute('viewBox');
+                if (currentViewBox) {
+                    const vbParts = currentViewBox.split(' ').map(Number);
+                    if (vbParts.length === 4) {
+                        const [vbX, vbY, vbWidth, vbHeight] = vbParts;
+                        // Expand bounds to include viewBox if it's larger
+                        contentMinX = Math.min(contentMinX, vbX);
+                        contentMinY = Math.min(contentMinY, vbY);
+                        contentMaxX = Math.max(contentMaxX, vbX + vbWidth);
+                        contentMaxY = Math.max(contentMaxY, vbY + vbHeight);
+                    }
+                }
+                
                 // STEP 2: Clone SVG for export (preserve original)
                 const svgClone = svg.cloneNode(true);
                 
@@ -195,7 +221,10 @@ class ExportManager {
                 
                 // STEP 3: Calculate optimal viewBox with proper padding
                 // Add padding around the actual content (not viewBox-relative)
-                const padding = 30; // Fixed padding for consistent exports
+                // Base padding + additional safety margin for strokes and text rendering
+                const basePadding = 40; // Increased from 30 for better margins
+                const strokeSafetyMargin = Math.ceil(maxStrokeWidth);
+                const padding = basePadding + strokeSafetyMargin;
                 const exportViewBoxX = contentMinX - padding;
                 const exportViewBoxY = contentMinY - padding;
                 const exportWidth = (contentMaxX - contentMinX) + (padding * 2);

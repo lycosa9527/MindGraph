@@ -1395,18 +1395,28 @@ class InteractiveEditor {
             }
             
             // Calculate the bounding box of all SVG content
+            // Note: getBBox() returns geometric bounds, not including stroke width
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             let hasContent = false;
+            let maxStrokeWidth = 0;
             
             allElements.each(function() {
                 try {
                     const bbox = this.getBBox();
                     if (bbox.width > 0 && bbox.height > 0) {
-                        minX = Math.min(minX, bbox.x);
-                        minY = Math.min(minY, bbox.y);
-                        maxX = Math.max(maxX, bbox.x + bbox.width);
-                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        // Account for stroke width extending beyond geometric bounds
+                        const strokeWidth = parseFloat(d3.select(this).attr('stroke-width')) || 0;
+                        const strokeOffset = strokeWidth / 2;
+                        
+                        minX = Math.min(minX, bbox.x - strokeOffset);
+                        minY = Math.min(minY, bbox.y - strokeOffset);
+                        maxX = Math.max(maxX, bbox.x + bbox.width + strokeOffset);
+                        maxY = Math.max(maxY, bbox.y + bbox.height + strokeOffset);
                         hasContent = true;
+                        
+                        if (strokeWidth > maxStrokeWidth) {
+                            maxStrokeWidth = strokeWidth;
+                        }
                     }
                 } catch (e) {
                     // Some elements might not have getBBox, skip them
@@ -1421,10 +1431,12 @@ class InteractiveEditor {
             const contentWidth = maxX - minX;
             const contentHeight = maxY - minY;
             
-            // Add padding around the content (5% on each side)
+            // Add padding around the content
+            // Use larger of 5% ratio or minimum 40px for better export margins
             const paddingRatio = 0.05;
-            const paddingX = contentWidth * paddingRatio;
-            const paddingY = contentHeight * paddingRatio;
+            const minPadding = 40 + Math.ceil(maxStrokeWidth);
+            const paddingX = Math.max(contentWidth * paddingRatio, minPadding);
+            const paddingY = Math.max(contentHeight * paddingRatio, minPadding);
             
             // Calculate optimal viewBox for export
             const viewBoxX = minX - paddingX;
