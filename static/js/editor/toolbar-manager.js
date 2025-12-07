@@ -116,8 +116,10 @@ class ToolbarManager {
         this.flowMapOrientationBtn = document.getElementById('flow-map-orientation-btn');
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
-        this.resetBtn = document.getElementById('reset-btn');
         this.exportBtn = document.getElementById('export-btn');
+        this.saveBtn = document.getElementById('save-btn');
+        this.importBtn = document.getElementById('import-btn');
+        this.importFileInput = document.getElementById('import-file-input');
         
         // Line mode state
         this.isLineMode = false;
@@ -251,13 +253,25 @@ class ToolbarManager {
             e.stopPropagation();
             this.handleRedo();
         });
-        this.resetBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.handleReset();
-        });
         this.exportBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.handleExport();
+        });
+        this.saveBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleSave();
+        });
+        this.importBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleImport();
+        });
+        this.importFileInput?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleFileSelected(file);
+            }
+            // Reset input so same file can be selected again
+            this.importFileInput.value = '';
         });
         // Note: Back button handled by DiagramSelector.backToGallery()
         // which properly calls cancelAllLLMRequests() before cleanup
@@ -471,21 +485,16 @@ class ToolbarManager {
             // Update toolbar button states
             this.updateToolbarState(hasSelection);
             
-            // Check if ThinkGuide or MindMate AI panels are currently open
-            // If so, don't auto-open the property panel (user is in a different mode)
             const currentPanel = window.panelManager?.getCurrentPanel();
-            const isInAssistantMode = currentPanel === 'thinkguide' || currentPanel === 'mindmate';
             
-            // Show/hide property panel based on selection (unless in assistant mode)
+            // Show/hide property panel based on selection
+            // NOTE: Previously blocked property panel when MindMate/ThinkGuide were open
+            // This caused confusion as users couldn't edit nodes while chatting.
+            // Now property panel always opens when a node is selected, which will
+            // close MindMate/ThinkGuide automatically (panel manager single-panel rule).
             if (hasSelection && this.currentSelection.length > 0) {
-                // Only auto-open property panel if not in ThinkGuide/MindMate mode
-                if (!isInAssistantMode) {
-                    this.showPropertyPanel();
-                    this.loadNodeProperties(this.currentSelection[0]);
-                } else {
-                    // In assistant mode: just load properties without showing panel
-                    this.loadNodeProperties(this.currentSelection[0]);
-                }
+                this.showPropertyPanel();
+                this.loadNodeProperties(this.currentSelection[0]);
             } else {
                 // Hide property panel when no selection (only if it's currently open)
                 if (currentPanel === 'property') {
@@ -1304,17 +1313,42 @@ class ToolbarManager {
         }
         
         try {
-            // Clone SVG for export (preserve original)
+            // STEP 1: Calculate accurate content bounds from ORIGINAL SVG (before cloning)
+            // Using original SVG ensures getBBox works correctly (element is in DOM)
+            let contentMinX = Infinity, contentMinY = Infinity;
+            let contentMaxX = -Infinity, contentMaxY = -Infinity;
+            let hasContent = false;
+            
+            const allElements = d3.select(svg).selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            allElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox.width > 0 && bbox.height > 0) {
+                        contentMinX = Math.min(contentMinX, bbox.x);
+                        contentMinY = Math.min(contentMinY, bbox.y);
+                        contentMaxX = Math.max(contentMaxX, bbox.x + bbox.width);
+                        contentMaxY = Math.max(contentMaxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Skip elements without getBBox
+                }
+            });
+            
+            if (!hasContent) {
+                logger.warn('ToolbarManager', 'No content found for PNG export');
+                this.showNotification(this.getNotif('noDiagramToExport'), 'error');
+                return;
+            }
+            
+            // STEP 2: Clone SVG for export (preserve original)
             const svgClone = svg.cloneNode(true);
             
             // Remove UI-only elements that should not appear in exports
-            // Remove learning sheet answer key text
-            const svgD3 = d3.select(svgClone);
-            svgD3.selectAll('.learning-sheet-answer-key').remove();
-            // Remove selection highlights
-            svgD3.selectAll('.selected').classed('selected', false).style('filter', null);
-            // Ensure background rectangles don't have visible strokes
-            svgD3.selectAll('.background, .background-rect').each(function() {
+            const svgD3Clone = d3.select(svgClone);
+            svgD3Clone.selectAll('.learning-sheet-answer-key').remove();
+            svgD3Clone.selectAll('.selected').classed('selected', false).style('filter', null);
+            svgD3Clone.selectAll('.background, .background-rect').each(function() {
                 const element = d3.select(this);
                 const stroke = element.attr('stroke');
                 if (stroke && stroke !== 'none' && stroke !== 'transparent') {
@@ -1326,124 +1360,62 @@ class ToolbarManager {
                 }
             });
             
-            // CRITICAL FIX: Use viewBox dimensions for accurate export
-            // viewBox defines the actual coordinate system, not width/height attributes
-            const viewBox = svgClone.getAttribute('viewBox');
-            let width, height, viewBoxX = 0, viewBoxY = 0;
+            // STEP 3: Calculate optimal viewBox with proper padding
+            const padding = 30; // Fixed padding for consistent exports
+            const exportViewBoxX = contentMinX - padding;
+            const exportViewBoxY = contentMinY - padding;
+            const exportWidth = (contentMaxX - contentMinX) + (padding * 2);
+            const exportHeight = (contentMaxY - contentMinY) + (padding * 2);
             
-            if (viewBox) {
-                // Use viewBox dimensions (the actual content coordinate system)
-                // viewBox format: "minX minY width height"
-                const viewBoxParts = viewBox.split(' ').map(Number);
-                viewBoxX = viewBoxParts[0];
-                viewBoxY = viewBoxParts[1];
-                width = viewBoxParts[2];
-                height = viewBoxParts[3];
-                
-                // Verify content actually fits within viewBox by checking getBBox
-                // This catches cases where renderers update viewBox but content extends beyond
-                try {
-                    const bbox = svgClone.getBBox();
-                    const contentMinX = bbox.x;
-                    const contentMinY = bbox.y;
-                    const contentMaxX = bbox.x + bbox.width;
-                    const contentMaxY = bbox.y + bbox.height;
-                    
-                    // Check if content extends beyond viewBox bounds
-                    const needsExpansion = 
-                        contentMinX < viewBoxX || 
-                        contentMinY < viewBoxY ||
-                        contentMaxX > (viewBoxX + width) ||
-                        contentMaxY > (viewBoxY + height);
-                    
-                    if (needsExpansion) {
-                        // Expand viewBox to include all content with padding
-                        const padding = 20;
-                        const newMinX = Math.min(viewBoxX, contentMinX - padding);
-                        const newMinY = Math.min(viewBoxY, contentMinY - padding);
-                        const newWidth = Math.max(width, (contentMaxX - newMinX) + padding);
-                        const newHeight = Math.max(height, (contentMaxY - newMinY) + padding);
-                        
-                        // Update viewBox to include all content
-                        svgClone.setAttribute('viewBox', `${newMinX} ${newMinY} ${newWidth} ${newHeight}`);
-                        width = newWidth;
-                        height = newHeight;
-                        viewBoxX = newMinX;
-                        viewBoxY = newMinY;
-                    }
-                } catch (e) {
-                    // getBBox might fail if SVG is empty or not rendered, use viewBox as-is
-                    logger.warn('ToolbarManager', 'Could not verify content bounds, using viewBox as-is', e);
-                }
-                
-                // Ensure SVG width/height match viewBox dimensions
-                // For canvas export, we need to normalize viewBox because canvas.drawImage doesn't handle viewBox offsets well
-                if (viewBoxX !== 0 || viewBoxY !== 0) {
-                    // Normalize viewBox by wrapping content in a group and translating
-                    // This ensures canvas export captures the full diagram correctly
-                    const content = Array.from(svgClone.childNodes);
-                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    group.setAttribute('transform', `translate(${-viewBoxX}, ${-viewBoxY})`);
-                    
-                    // Move all children to the group (preserve order - background should be first)
-                    content.forEach(child => {
-                        if (child.nodeType === 1) { // Element node
-                            group.appendChild(child);
-                        }
-                    });
-                    
-                    // Clear SVG and add the group
-                    svgClone.innerHTML = '';
-                    svgClone.appendChild(group);
-                    
-                    // Update viewBox to start at (0, 0)
-                    svgClone.setAttribute('viewBox', `0 0 ${width} ${height}`);
-                    svgClone.setAttribute('width', width);
-                    svgClone.setAttribute('height', height);
-                    
-                    // Reset offsets for watermark calculation
-                    viewBoxX = 0;
-                    viewBoxY = 0;
-                } else {
-                    // Even without offsets, ensure width/height match viewBox
-                    svgClone.setAttribute('width', width);
-                    svgClone.setAttribute('height', height);
-                }
-            } else {
-                // No viewBox - try to get from width/height attributes
-                const attrWidth = parseFloat(svgClone.getAttribute('width'));
-                const attrHeight = parseFloat(svgClone.getAttribute('height'));
-                
-                if (attrWidth && attrHeight && !isNaN(attrWidth) && !isNaN(attrHeight)) {
-                    width = attrWidth;
-                    height = attrHeight;
-                } else {
-                    // Fallback to getBoundingClientRect or getBBox
-                    try {
-                        const bbox = svgClone.getBBox();
-                        width = bbox.width || svg.getBoundingClientRect().width || 800;
-                        height = bbox.height || svg.getBoundingClientRect().height || 600;
-                    } catch (e) {
-                        const rect = svg.getBoundingClientRect();
-                        width = rect.width || 800;
-                        height = rect.height || 600;
-                    }
-                    
-                    // Set viewBox and dimensions
-                    svgClone.setAttribute('viewBox', `0 0 ${width} ${height}`);
-                    svgClone.setAttribute('width', width);
-                    svgClone.setAttribute('height', height);
-                }
-            }
+            logger.debug('ToolbarManager', 'Export dimensions calculated', {
+                contentBounds: { contentMinX, contentMinY, contentMaxX, contentMaxY },
+                exportViewBox: { x: exportViewBoxX, y: exportViewBoxY, width: exportWidth, height: exportHeight }
+            });
             
-            // Calculate watermark position (bottom-right corner in viewBox coordinates)
-            // Reuse existing svgD3 variable (already declared at line 1063)
-            const watermarkFontSize = Math.max(12, Math.min(20, Math.min(width, height) * 0.025));
-            const wmPadding = Math.max(10, Math.min(20, Math.min(width, height) * 0.02));
-            const watermarkX = viewBoxX + width - wmPadding;
-            const watermarkY = viewBoxY + height - wmPadding;
+            // STEP 4: Normalize viewBox to start at (0, 0) for canvas compatibility
+            const normalizedWidth = exportWidth;
+            const normalizedHeight = exportHeight;
             
-            // Add watermark to clone
+            // Wrap all content in a group with translation to normalize coordinates
+            const content = Array.from(svgClone.childNodes);
+            const contentGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            contentGroup.setAttribute('transform', `translate(${-exportViewBoxX}, ${-exportViewBoxY})`);
+            
+            // Move all element nodes to the group
+            content.forEach(child => {
+                if (child.nodeType === 1) { // Element node
+                    contentGroup.appendChild(child);
+                }
+            });
+            
+            // Clear SVG and rebuild with proper structure
+            svgClone.innerHTML = '';
+            
+            // Add background rect FIRST (underneath everything)
+            const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bgRect.setAttribute('x', '0');
+            bgRect.setAttribute('y', '0');
+            bgRect.setAttribute('width', normalizedWidth);
+            bgRect.setAttribute('height', normalizedHeight);
+            bgRect.setAttribute('fill', '#f5f5f5');
+            bgRect.setAttribute('class', 'export-background');
+            svgClone.appendChild(bgRect);
+            
+            // Add content group
+            svgClone.appendChild(contentGroup);
+            
+            // Update viewBox and dimensions
+            svgClone.setAttribute('viewBox', `0 0 ${normalizedWidth} ${normalizedHeight}`);
+            svgClone.setAttribute('width', normalizedWidth);
+            svgClone.setAttribute('height', normalizedHeight);
+            
+            // STEP 5: Add watermark (positioned in normalized coordinates)
+            const svgD3 = d3.select(svgClone);
+            const watermarkFontSize = Math.max(12, Math.min(20, Math.min(normalizedWidth, normalizedHeight) * 0.025));
+            const wmPadding = Math.max(10, Math.min(20, Math.min(normalizedWidth, normalizedHeight) * 0.02));
+            const watermarkX = normalizedWidth - wmPadding;
+            const watermarkY = normalizedHeight - wmPadding;
+            
             svgD3.append('text')
                 .attr('x', watermarkX)
                 .attr('y', watermarkY)
@@ -1456,31 +1428,29 @@ class ToolbarManager {
                 .attr('opacity', 0.8)
                 .text('MindGraph');
             
-            // Use DingTalk quality (3x scale for Retina displays)
+            // STEP 6: Create high-quality canvas (3x scale for Retina displays)
             const scale = 3;
-            
-            // Create high-quality canvas
             const canvas = document.createElement('canvas');
-            canvas.width = width * scale;
-            canvas.height = height * scale;
+            canvas.width = normalizedWidth * scale;
+            canvas.height = normalizedHeight * scale;
             const ctx = canvas.getContext('2d');
             
             ctx.scale(scale, scale);
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             
-            // Fill white background
+            // Fill white background (fallback in case SVG background fails)
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, normalizedWidth, normalizedHeight);
             
-            // Convert SVG to PNG
+            // STEP 7: Convert SVG to PNG
             const svgData = new XMLSerializer().serializeToString(svgClone);
             const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(svgBlob);
             
             const img = new Image();
             img.onload = () => {
-                ctx.drawImage(img, 0, 0, width, height);
+                ctx.drawImage(img, 0, 0, normalizedWidth, normalizedHeight);
                 
                 canvas.toBlob((blob) => {
                     const pngUrl = URL.createObjectURL(blob);
@@ -1488,7 +1458,6 @@ class ToolbarManager {
                     link.href = pngUrl;
                     
                     // Generate filename with diagram type and LLM model
-                    // ARCHITECTURE: Use State Manager as source of truth for diagram type
                     const diagramType = window.stateManager?.getDiagramState()?.type || this.editor?.diagramType || 'diagram';
                     const llmModel = this.selectedLLM || 'qwen';
                     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
@@ -1499,6 +1468,9 @@ class ToolbarManager {
                     URL.revokeObjectURL(pngUrl);
                     URL.revokeObjectURL(url);
                     
+                    logger.info('ToolbarManager', 'PNG export successful', {
+                        dimensions: { width: normalizedWidth, height: normalizedHeight }
+                    });
                     this.showNotification(this.getNotif('diagramExported'), 'success');
                 }, 'image/png');
             };
@@ -1514,6 +1486,72 @@ class ToolbarManager {
         } catch (error) {
             logger.error('ToolbarManager', 'Error exporting diagram', error);
             this.showNotification(this.getNotif('exportFailed'), 'error');
+        }
+    }
+    
+    /**
+     * Handle save to .mg format
+     */
+    handleSave() {
+        if (!this.editor || !this.editor.currentSpec) {
+            this.showNotification(this.getNotif('noDiagramToSave'), 'error');
+            return;
+        }
+        
+        // Emit event for ExportManager to handle
+        if (window.eventBus) {
+            window.eventBus.emit('toolbar:export_requested', {
+                format: 'mg',
+                editor: this.editor
+            });
+            this.showNotification(this.getNotif('diagramSaved'), 'success');
+        }
+    }
+    
+    /**
+     * Handle import button click
+     */
+    handleImport() {
+        this.importFileInput?.click();
+    }
+    
+    /**
+     * Handle selected file for import
+     * @param {File} file - Selected .mg file
+     */
+    async handleFileSelected(file) {
+        logger.info('ToolbarManager', 'File selected for import', {
+            name: file.name,
+            size: file.size
+        });
+        
+        // Warn if file is very large (> 1MB)
+        if (file.size > 1024 * 1024) {
+            logger.warn('ToolbarManager', 'Large file detected', { size: file.size });
+        }
+        
+        try {
+            // Read file contents
+            const text = await file.text();
+            
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (parseError) {
+                // JSON parse error - show specific message
+                logger.error('ToolbarManager', 'JSON parse error', parseError);
+                this.showNotification(this.getNotif('invalidFileFormat'), 'error');
+                return;
+            }
+            
+            // Validate and import via ExportManager
+            if (window.eventBus) {
+                window.eventBus.emit('toolbar:import_file', { data, filename: file.name });
+            }
+        } catch (error) {
+            // File read error (rare)
+            logger.error('ToolbarManager', 'Error reading import file', error);
+            this.showNotification(this.getNotif('importFailed'), 'error');
         }
     }
     

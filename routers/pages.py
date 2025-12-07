@@ -21,6 +21,13 @@ from typing import Optional
 
 from config.settings import config
 from config.database import get_db
+
+def get_app_version():
+    """Read version from VERSION file for .mg export metadata"""
+    version_file = Path(__file__).parent.parent / "VERSION"
+    if version_file.exists():
+        return version_file.read_text().strip()
+    return "unknown"
 from utils.auth import (
     AUTH_MODE, 
     get_user_from_cookie, 
@@ -131,6 +138,7 @@ async def editor(request: Request, db: Session = Depends(get_db)):
             "editor.html",
             {
                 "request": request,
+                "version": get_app_version(),
                 "feature_learning_mode": config.FEATURE_LEARNING_MODE,
                 "feature_thinkguide": config.FEATURE_THINKGUIDE,
                 "feature_mindmate": config.FEATURE_MINDMATE,

@@ -9,7 +9,7 @@
 
 /* Additional button styles for specific toolbar elements */
 
-/* Tooltip styles */
+/* Tooltip styles - Default (above element) */
 [title] {
     position: relative;
 }
@@ -29,6 +29,21 @@
     z-index: 1000;
     margin-bottom: 5px;
     pointer-events: none;
+}
+
+/* Ensure toolbar creates proper stacking context for tooltips */
+.editor-toolbar {
+    position: relative;
+    z-index: 100;
+}
+
+/* Tooltip for top toolbar - Show BELOW to avoid browser cutoff */
+.editor-toolbar [title]:hover::after {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 5px;
+    z-index: 10000;  /* Higher than canvas to appear on top */
 }
 
 /* Active states for selected elements */
@@ -95,6 +110,22 @@
 
 .editor-toolbar.toolbar-minimal .toolbar-right {
     order: 3;
+}
+
+/* ============================================
+   FILE OPERATIONS GROUP (Export/Save/Import)
+   Inherits from .toolbar-group in editor.css
+   ============================================ */
+
+/* Export Button - Green accent for primary action */
+.btn-export {
+    background: linear-gradient(135deg, #4caf50, #43a047) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.btn-export:hover {
+    background: linear-gradient(135deg, #66bb6a, #4caf50) !important;
 }
 
 /* Mobile mode */

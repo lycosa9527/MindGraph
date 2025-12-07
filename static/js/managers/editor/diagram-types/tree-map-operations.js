@@ -276,8 +276,15 @@ class TreeMapOperations {
             return null;
         }
         
-        // Find the node
-        const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+        // CRITICAL FIX: Explicitly select rect element first to get proper attributes
+        // Text elements don't have data-category-index or data-leaf-index attributes
+        let shapeElement = d3.select(`rect[data-node-id="${nodeId}"]`);
+        
+        // Fallback: If no rect found (e.g., dimension label is text-only), try any element
+        if (shapeElement.empty()) {
+            shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+        }
+        
         if (shapeElement.empty()) {
             this.logger.warn('TreeMapOperations', `Node not found: ${nodeId}`);
             return spec;
@@ -285,45 +292,108 @@ class TreeMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        this.logger.debug('TreeMapOperations', 'Updating node', {
+            nodeId,
+            nodeType,
+            elementTag: shapeElement.node()?.tagName,
+            hasCategoryIndex: shapeElement.attr('data-category-index') !== null,
+            hasLeafIndex: shapeElement.attr('data-leaf-index') !== null
+        });
+        
         if (nodeType === 'topic') {
             // Update the root topic
             if (updates.text !== undefined) {
                 spec.topic = updates.text;
+                this.logger.debug('TreeMapOperations', 'Updated topic', { newText: updates.text });
             }
         } else if (nodeType === 'dimension') {
             // Update the classification dimension
             if (updates.text !== undefined) {
                 spec.dimension = updates.text;
+                this.logger.debug('TreeMapOperations', 'Updated dimension', { newText: updates.text });
             }
         } else if (nodeType === 'category') {
             // Update category text in children array
             const categoryIndex = parseInt(shapeElement.attr('data-category-index'));
-            if (!isNaN(categoryIndex) && spec.children && categoryIndex < spec.children.length) {
-                if (updates.text !== undefined) {
-                    spec.children[categoryIndex].text = updates.text;
-                }
+            
+            if (isNaN(categoryIndex)) {
+                this.logger.error('TreeMapOperations', 'Category index is NaN - element may be missing data-category-index attribute', {
+                    nodeId,
+                    elementTag: shapeElement.node()?.tagName,
+                    categoryIndexAttr: shapeElement.attr('data-category-index')
+                });
+                return spec;
+            }
+            
+            if (!spec.children || categoryIndex >= spec.children.length) {
+                this.logger.error('TreeMapOperations', 'Category index out of bounds', {
+                    nodeId,
+                    categoryIndex,
+                    childrenLength: spec.children?.length
+                });
+                return spec;
+            }
+            
+            if (updates.text !== undefined) {
+                spec.children[categoryIndex].text = updates.text;
+                this.logger.debug('TreeMapOperations', 'Updated category', { 
+                    categoryIndex, 
+                    newText: updates.text 
+                });
             }
         } else if (nodeType === 'leaf') {
             // Update leaf text within its category
             const categoryIndex = parseInt(shapeElement.attr('data-category-index'));
             const leafIndex = parseInt(shapeElement.attr('data-leaf-index'));
-            if (!isNaN(categoryIndex) && !isNaN(leafIndex) && 
-                spec.children && categoryIndex < spec.children.length) {
-                const category = spec.children[categoryIndex];
-                if (Array.isArray(category.children) && leafIndex < category.children.length) {
-                    if (updates.text !== undefined) {
-                        // Handle both object and string formats
-                        if (typeof category.children[leafIndex] === 'object') {
-                            category.children[leafIndex].text = updates.text;
-                        } else {
-                            category.children[leafIndex] = updates.text;
-                        }
-                    }
-                }
+            
+            if (isNaN(categoryIndex) || isNaN(leafIndex)) {
+                this.logger.error('TreeMapOperations', 'Leaf indices are NaN - element may be missing attributes', {
+                    nodeId,
+                    elementTag: shapeElement.node()?.tagName,
+                    categoryIndexAttr: shapeElement.attr('data-category-index'),
+                    leafIndexAttr: shapeElement.attr('data-leaf-index')
+                });
+                return spec;
             }
+            
+            if (!spec.children || categoryIndex >= spec.children.length) {
+                this.logger.error('TreeMapOperations', 'Category index out of bounds for leaf', {
+                    nodeId,
+                    categoryIndex,
+                    childrenLength: spec.children?.length
+                });
+                return spec;
+            }
+            
+            const category = spec.children[categoryIndex];
+            if (!Array.isArray(category.children) || leafIndex >= category.children.length) {
+                this.logger.error('TreeMapOperations', 'Leaf index out of bounds', {
+                    nodeId,
+                    categoryIndex,
+                    leafIndex,
+                    leafChildrenLength: category.children?.length
+                });
+                return spec;
+            }
+            
+            if (updates.text !== undefined) {
+                // Handle both object and string formats
+                if (typeof category.children[leafIndex] === 'object') {
+                    category.children[leafIndex].text = updates.text;
+                } else {
+                    category.children[leafIndex] = updates.text;
+                }
+                this.logger.debug('TreeMapOperations', 'Updated leaf', { 
+                    categoryIndex, 
+                    leafIndex, 
+                    newText: updates.text 
+                });
+            }
+        } else {
+            this.logger.warn('TreeMapOperations', 'Unknown node type', { nodeId, nodeType });
         }
         
-        this.logger.debug('TreeMapOperations', 'Updated node', {
+        this.logger.debug('TreeMapOperations', 'Node update completed', {
             nodeId,
             nodeType,
             updates

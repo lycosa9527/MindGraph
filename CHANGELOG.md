@@ -7,6 +7,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.24] - 2025-12-07 - MindMate Panel Editing Fix
+
+### Fixed
+
+- **Cannot Edit Diagram When MindMate Panel is Open** (`toolbar-manager.js`)
+  - Fixed issue where users could not edit nodes while the MindMate AI panel was open
+  - **Root Cause**: "Assistant mode" logic intentionally blocked the property panel from opening when MindMate or ThinkGuide panels were active, preventing users from accessing node editing controls
+  - **Solution**: Removed the assistant mode restriction; property panel now always opens when a node is selected, which automatically closes MindMate/ThinkGuide via the panel manager's single-panel rule
+  - **Impact**: Users can now seamlessly switch between chatting with MindMate and editing nodes - clicking on a node will close MindMate and open the property panel
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/editor/toolbar-manager.js`:
+  - Removed `isInAssistantMode` check that blocked property panel when MindMate/ThinkGuide were open
+  - Property panel now opens on node selection regardless of which panel was previously active
+
+**Code Pattern (Before - Problematic):**
+```javascript
+// Check if ThinkGuide or MindMate AI panels are currently open
+// If so, don't auto-open the property panel (user is in a different mode)
+const isInAssistantMode = currentPanel === 'thinkguide' || currentPanel === 'mindmate';
+
+if (hasSelection && this.currentSelection.length > 0) {
+    if (!isInAssistantMode) {
+        this.showPropertyPanel();  // Only when MindMate is closed
+        this.loadNodeProperties(this.currentSelection[0]);
+    } else {
+        this.loadNodeProperties(this.currentSelection[0]);  // Load but don't show
+    }
+}
+```
+
+**Code Pattern (After - Fixed):**
+```javascript
+// Property panel always opens when a node is selected, which will
+// close MindMate/ThinkGuide automatically (panel manager single-panel rule).
+if (hasSelection && this.currentSelection.length > 0) {
+    this.showPropertyPanel();  // Always show when node is selected
+    this.loadNodeProperties(this.currentSelection[0]);
+}
+```
+
+**User Flow (After Fix):**
+1. User opens MindMate panel and chats with AI
+2. User clicks on a diagram node to edit it
+3. MindMate panel closes automatically (panel manager rule)
+4. Property panel opens with node editing controls
+5. User can edit text, colors, fonts, etc.
+6. User can reopen MindMate later; conversation is preserved within the session
+
+---
+
+## [4.28.23] - 2025-12-07 - Properties Panel Translation Fix
+
+### Fixed
+
+- **Font Family Label Not Translated to Chinese** (`language-manager.js`)
+  - Fixed issue where "FONT FAMILY" label in properties panel was displayed in English instead of Chinese
+  - **Root Cause**: The `fontFamily` translation key was missing from both English and Chinese translation objects
+  - **Solution**: Added `fontFamily: 'Font Family'` to English translations and `fontFamily: '字体'` to Chinese translations
+  - **Impact**: Properties panel now correctly displays "字体" in Chinese mode and "Font Family" in English mode
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/editor/language-manager.js`:
+  - Added `fontFamily: 'Font Family',` after `fontSize` in English translations (line ~208)
+  - Added `fontFamily: '字体',` after `fontSize` in Chinese translations (line ~473)
+
+---
+
+## [4.28.22] - 2025-12-07 - Tree Map Node Editing Fix
+
+### Fixed
+
+- **Tree Map Node Editing Not Saving** (`tree-map-operations.js`, `tree-renderer.js`)
+  - Fixed critical bug where editing tree map nodes (categories and leaves) would not save changes to the diagram
+  - **Root Cause 1**: `d3.select()` could return a text element instead of the rect element, and text elements lacked `data-category-index` and `data-leaf-index` attributes
+  - **Root Cause 2**: When invalid children were filtered out during rendering, the loop index didn't match the original `spec.children` index
+  - **Solution**: 
+    - Modified `updateNode()` to explicitly select `rect` elements first to ensure proper attributes are available
+    - Added `specIndex` tracking in renderer to preserve original array positions
+    - Added comprehensive debug logging for silent failure conditions
+  - **Impact**: Tree map node editing now works correctly for all node types (topic, dimension, category, leaf)
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/managers/editor/diagram-types/tree-map-operations.js`:
+  - Changed `d3.select('[data-node-id="..."]')` to `d3.select('rect[data-node-id="..."]')` with fallback
+  - Added detailed error logging when `data-category-index` or `data-leaf-index` attributes are missing or NaN
+  - Added success logging for each node type update
+
+- `static/js/renderers/tree-renderer.js`:
+  - Added `specIndex` to branch layout objects to track original position in `spec.children`
+  - Changed `data-category-index` from `branchIndex` (loop index) to `categoryDataIndex` (original spec index)
+  - Updated leaf rendering to use `categoryDataIndex` for proper parent category reference
+
+**Code Pattern (Before - tree-map-operations.js):**
+```javascript
+// Bug: Could select text element which lacks data-category-index
+const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
+const categoryIndex = parseInt(shapeElement.attr('data-category-index'));
+// categoryIndex would be NaN if text element selected, update silently fails
+```
+
+**Code Pattern (After - tree-map-operations.js):**
+```javascript
+// Fix: Explicitly select rect element which has all required attributes
+let shapeElement = d3.select(`rect[data-node-id="${nodeId}"]`);
+if (shapeElement.empty()) {
+    shapeElement = d3.select(`[data-node-id="${nodeId}"]`); // Fallback for text-only nodes
+}
+// Added error logging for NaN indices
+```
+
+**Code Pattern (Before - tree-renderer.js):**
+```javascript
+// Bug: branchIndex is loop index in filtered array, not spec.children index
+branchLayouts.forEach((layout, branchIndex) => {
+    .attr('data-category-index', branchIndex); // Wrong if items were filtered
+});
+```
+
+**Code Pattern (After - tree-renderer.js):**
+```javascript
+// Fix: Track and use original spec.children index
+const branchLayouts = spec.children.map((child, specIndex) => {
+    return { ...layout, specIndex }; // Preserve original index
+}).filter(layout => layout !== null);
+
+branchLayouts.forEach((layout, branchIndex) => {
+    const categoryDataIndex = layout.specIndex; // Use original index
+    .attr('data-category-index', categoryDataIndex);
+});
+```
+
+### Notes
+
+- This fix is specific to Tree Map; other diagram types already include index attributes on both shape AND text elements
+- Tree Map was the only renderer that filtered invalid children, causing potential index mismatches
+
+---
+
 ## [4.28.21] - 2025-12-06 - Opacity Zero Bug Fix and Multi-line Text SelectAll Fix
 
 ### Fixed

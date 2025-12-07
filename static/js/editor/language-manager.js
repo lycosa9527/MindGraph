@@ -76,6 +76,12 @@ class LanguageManager {
                 backToGallery: 'Back to Gallery',
                 reset: 'Reset',
                 export: 'Export',
+                exportTooltip: 'Export as PNG',
+                save: 'Save',
+                import: 'Import',
+                fileGroup: 'File:',
+                saveTooltip: 'Save as .mg file',
+                importTooltip: 'Import .mg file',
                 nodes: 'Nodes',
                 add: 'Add',
                 delete: 'Delete',
@@ -199,6 +205,7 @@ class LanguageManager {
                 apply: 'Apply',
                 resetStyles: 'Reset Styles',
                 fontSize: 'Font Size',
+                fontFamily: 'Font Family',
                 textStyle: 'Text Style',
                 textColor: 'Text Color',
                 fillColor: 'Fill Color',
@@ -241,6 +248,12 @@ class LanguageManager {
                     noDiagramToExport: 'No diagram to export!',
                     diagramExported: 'Diagram exported as PNG!',
                     exportFailed: 'Failed to export diagram',
+                    noDiagramToSave: 'No diagram to save!',
+                    diagramSaved: 'Diagram saved as .mg file!',
+                    saveFailed: 'Failed to save diagram',
+                    importSuccess: 'Diagram imported successfully!',
+                    importFailed: 'Failed to import diagram',
+                    invalidFileFormat: 'Invalid file format',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: 'Could not determine node type. Please try again.',
                     cannotAddMainTopics: 'Cannot add main topics. Please select a similarity or difference node.',
@@ -329,6 +342,12 @@ class LanguageManager {
                 backToGallery: '返回图库',
                 reset: '重置',
                 export: '导出',
+                exportTooltip: '导出为 PNG',
+                save: '保存',
+                import: '导入',
+                fileGroup: '文件:',
+                saveTooltip: '保存为 .mg 文件',
+                importTooltip: '导入 .mg 文件',
                 nodes: '节点',
                 add: '添加',
                 delete: '删除',
@@ -452,7 +471,8 @@ class LanguageManager {
                 apply: '应用',
                 resetStyles: '重置样式',
                 fontSize: '字体大小',
-                textStyle: '文本样式',
+                fontFamily: '字体',
+                textStyle: '文字样式',
                 textColor: '文本颜色',
                 fillColor: '填充颜色',
                 strokeColor: '边框颜色',
@@ -494,6 +514,12 @@ class LanguageManager {
                     noDiagramToExport: '没有可导出的图示！',
                     diagramExported: '图示已导出为PNG！',
                     exportFailed: '导出图示失败',
+                    noDiagramToSave: '没有可保存的图示！',
+                    diagramSaved: '图表已保存为 .mg 文件！',
+                    saveFailed: '保存图表失败',
+                    importSuccess: '图表导入成功！',
+                    importFailed: '图表导入失败',
+                    invalidFileFormat: '无效的文件格式',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: '无法确定节点类型。请重试。',
                     cannotAddMainTopics: '无法添加主主题。请选择相似或差异节点。',
@@ -582,6 +608,12 @@ class LanguageManager {
                 backToGallery: 'Qalereyaya Qayıt',
                 reset: 'Sıfırla',
                 export: 'İxrac Et',
+                exportTooltip: 'PNG kimi ixrac et',
+                save: 'Saxla',
+                import: 'İdxal',
+                fileGroup: 'Fayl:',
+                saveTooltip: '.mg faylı kimi saxla',
+                importTooltip: '.mg faylı idxal et',
                 nodes: 'Düyünlər',
                 add: 'Əlavə Et',
                 delete: 'Sil',
@@ -745,6 +777,12 @@ class LanguageManager {
                     noDiagramToExport: 'İxrac ediləcək diaqram yoxdur!',
                     diagramExported: 'Diaqram PNG kimi ixrac edildi!',
                     exportFailed: 'Diaqramı ixrac etmək mümkün olmadı',
+                    noDiagramToSave: 'Saxlanılacaq diaqram yoxdur!',
+                    diagramSaved: 'Diaqram .mg faylı kimi saxlanıldı!',
+                    saveFailed: 'Diaqramı saxlamaq mümkün olmadı',
+                    importSuccess: 'Diaqram uğurla idxal edildi!',
+                    importFailed: 'Diaqramı idxal etmək mümkün olmadı',
+                    invalidFileFormat: 'Yanlış fayl formatı',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: 'Düyün növünü müəyyən etmək mümkün olmadı. Xahiş edirik yenidən cəhd edin.',
                     cannotAddMainTopics: 'Əsas mövzular əlavə edilə bilməz. Xahiş edirik oxşar və ya fərq düyünü seçin.',
@@ -961,7 +999,6 @@ class LanguageManager {
         
         // Update toolbar buttons (if in editor view)
         const backBtn = document.getElementById('back-to-gallery');
-        const resetBtn = document.getElementById('reset-btn');
         const exportBtn = document.getElementById('export-btn');
         const addBtn = document.getElementById('add-node-btn');
         const deleteBtn = document.getElementById('delete-node-btn');
@@ -973,8 +1010,27 @@ class LanguageManager {
         const redoBtn = document.getElementById('redo-btn');
         
         if (backBtn) backBtn.textContent = t.backToGallery;
-        if (resetBtn) resetBtn.textContent = t.reset;
-        if (exportBtn) exportBtn.textContent = t.export;
+        if (exportBtn) {
+            exportBtn.textContent = t.export;
+            exportBtn.title = t.exportTooltip;
+        }
+        
+        // File operations group
+        const saveBtn = document.getElementById('save-btn');
+        const importBtn = document.getElementById('import-btn');
+        const fileGroupLabel = document.getElementById('file-group-label');
+        
+        if (saveBtn) {
+            saveBtn.textContent = t.save;
+            saveBtn.title = t.saveTooltip;
+        }
+        if (importBtn) {
+            importBtn.textContent = t.import;
+            importBtn.title = t.importTooltip;
+        }
+        if (fileGroupLabel) {
+            fileGroupLabel.textContent = t.fileGroup;
+        }
         if (addBtn) {
             addBtn.textContent = t.add;
             addBtn.title = t.addNodeTooltip;

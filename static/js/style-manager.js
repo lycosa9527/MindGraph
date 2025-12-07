@@ -453,6 +453,38 @@ class StyleManager {
     getDefaultTheme(diagramType) {
         return { ...this.defaultThemes[diagramType] } || {};
     }
+    
+    /**
+     * Store imported theme for use during diagram render
+     * Used by .mg file import to restore saved styles
+     * @param {string} diagramType - Type of diagram
+     * @param {object} theme - Theme object with colors and fonts
+     */
+    setImportedTheme(diagramType, theme) {
+        if (!this.importedThemes) {
+            this.importedThemes = {};
+        }
+        this.importedThemes[diagramType] = theme;
+        console.log('[StyleManager] Stored imported theme for', diagramType);
+    }
+    
+    /**
+     * Get theme for a diagram type (checks imported first, then default)
+     * @param {string} diagramType - Type of diagram
+     * @returns {object} Theme object
+     */
+    getTheme(diagramType) {
+        // Check for imported theme first
+        if (this.importedThemes && this.importedThemes[diagramType]) {
+            const imported = this.importedThemes[diagramType];
+            // Clear after use (one-time import)
+            delete this.importedThemes[diagramType];
+            console.log('[StyleManager] Using imported theme for', diagramType);
+            return imported;
+        }
+        // Fall back to default
+        return this.getDefaultTheme(diagramType);
+    }
 
     /**
      * Validate a theme object

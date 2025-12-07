@@ -1375,6 +1375,78 @@ class InteractiveEditor {
     }
     
     /**
+     * Fit diagram for export - calculates optimal viewBox to capture entire diagram
+     * This ensures the exported PNG contains the complete diagram properly centered
+     */
+    fitDiagramForExport() {
+        try {
+            const svg = d3.select('#d3-container svg');
+            if (svg.empty()) {
+                logger.warn('Editor', 'No SVG found for export fitting');
+                return;
+            }
+            
+            // Get all visual elements (excluding defs)
+            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            
+            if (allElements.empty()) {
+                logger.warn('Editor', 'No content found for export fitting');
+                return;
+            }
+            
+            // Calculate the bounding box of all SVG content
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let hasContent = false;
+            
+            allElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox.width > 0 && bbox.height > 0) {
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Some elements might not have getBBox, skip them
+                }
+            });
+            
+            if (!hasContent || minX === Infinity) {
+                logger.warn('Editor', 'No valid content bounds found for export');
+                return;
+            }
+            
+            const contentWidth = maxX - minX;
+            const contentHeight = maxY - minY;
+            
+            // Add padding around the content (5% on each side)
+            const paddingRatio = 0.05;
+            const paddingX = contentWidth * paddingRatio;
+            const paddingY = contentHeight * paddingRatio;
+            
+            // Calculate optimal viewBox for export
+            const viewBoxX = minX - paddingX;
+            const viewBoxY = minY - paddingY;
+            const viewBoxWidth = contentWidth + (paddingX * 2);
+            const viewBoxHeight = contentHeight + (paddingY * 2);
+            
+            // Apply the optimized viewBox (no animation for export)
+            svg.attr('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`)
+               .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            logger.debug('Editor', 'Fitted diagram for export:', {
+                contentBounds: { minX, minY, maxX, maxY },
+                viewBox: `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`
+            });
+            
+        } catch (error) {
+            logger.error('Editor', 'Error fitting diagram for export:', error);
+        }
+    }
+    
+    /**
      * Get current diagram data
      */
     getCurrentDiagramData() {

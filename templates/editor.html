@@ -37,6 +37,9 @@
         window.AI_ASSISTANT_NAME = bodyElement.dataset.aiAssistantName || 'MindMate AI';
         window.DEFAULT_LANGUAGE = bodyElement.dataset.defaultLanguage || 'zh';
         window.WECHAT_QR_IMAGE = bodyElement.dataset.wechatQrImage || '';
+        
+        // App version for .mg file exports
+        window.MINDGRAPH_VERSION = '{{ version }}';
     </script>
     <!-- Landing Page / Gallery -->
     <div class="editor-landing" id="editor-landing">
@@ -425,8 +428,21 @@
             <!-- Left Section: Navigation & File Operations -->
             <div class="toolbar-section toolbar-left">
                 <button id="back-to-gallery" class="btn-secondary">Back to Gallery</button>
-                <button id="export-btn" class="btn-success">Export</button>
-                <button id="reset-btn" class="btn-warning">Reset</button>
+                
+                <!-- File Operations Group: Export | Save | Import -->
+                <div class="toolbar-group file-operations-group">
+                    <span class="toolbar-group-label" id="file-group-label">File:</span>
+                    
+                    <!-- Export Button (PNG - primary action for teachers) -->
+                    <button id="export-btn" class="btn-tool btn-export" title="Export as PNG">Export</button>
+                    
+                    <!-- Save Button (.mg file) -->
+                    <button id="save-btn" class="btn-tool" title="Save as .mg file">Save</button>
+                    
+                    <!-- Import Button (.mg file) -->
+                    <button id="import-btn" class="btn-tool" title="Import .mg file">Import</button>
+                    <input type="file" id="import-file-input" accept=".mg" style="display: none;">
+                </div>
             </div>
             
             <!-- Nodes Section: Node Management (节点) -->

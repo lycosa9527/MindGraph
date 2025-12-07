@@ -183,7 +183,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     let requiredBottomY = branchY + 40;
 
     // First pass: measure branches and leaves, compute per-column width
-    const branchLayouts = spec.children.map((child) => {
+    // CRITICAL FIX: Track original index in spec.children to ensure data-category-index matches spec structure
+    const branchLayouts = spec.children.map((child, specIndex) => {
         // Validate child structure - accept both 'text' and 'label' properties
         const childText = child?.text || child?.label;
         if (!child || typeof childText !== 'string') {
@@ -195,7 +196,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         const branchBox = measureSvgTextBox(svg, childText, branchFont, 14, 10);
         const leafFont = THEME.fontLeaf || 14;
         let maxLeafW = 0;
-        const leafBoxes = (Array.isArray(child.children) ? child.children : []).map(leaf => {
+        const leafBoxes = (Array.isArray(child.children) ? child.children : []).map((leaf, leafSpecIndex) => {
             const leafText = leaf?.text || leaf?.label;
             if (!leaf || typeof leafText !== 'string') {
                 logger.warn('TreeRenderer', 'Invalid leaf structure', leaf);
@@ -203,12 +204,14 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             }
             const b = measureSvgTextBox(svg, leafText, leafFont, 12, 8);
             if (b.w > maxLeafW) maxLeafW = b.w;
-            return { ...b, text: leafText };
+            // CRITICAL FIX: Include original leaf index in spec.children[x].children
+            return { ...b, text: leafText, specLeafIndex: leafSpecIndex };
         }).filter(box => box !== null); // Filter out invalid leaves
         
         const columnContentW = Math.max(branchBox.w, maxLeafW);
         const columnWidth = columnContentW + 60; // padding within column to avoid overlap
-        return { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW, columnWidth };
+        // CRITICAL FIX: Include specIndex to ensure data-category-index matches spec.children index
+        return { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW, columnWidth, specIndex };
     }).filter(layout => layout !== null); // Filter out invalid layouts
 
     // Second pass: assign x positions cumulatively to prevent overlap
@@ -390,8 +393,13 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
 
     // Render branches and children stacked vertically with straight connectors
     branchLayouts.forEach((layout, branchIndex) => {
-        const { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW } = layout;
+        const { child, childText, branchFont, branchBox, leafFont, leafBoxes, maxLeafW, specIndex } = layout;
         const branchX = layout.branchX;
+        
+        // CRITICAL FIX: Use specIndex (original index in spec.children) for data-category-index
+        // instead of branchIndex (loop index in filtered branchLayouts)
+        // This ensures updateNode() can correctly find the child in spec.children
+        const categoryDataIndex = specIndex;
 
         // Draw branch rectangle and label with width adaptive to characters
         svg.append('rect')
@@ -404,9 +412,9 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('fill', THEME.branchFill)
             .attr('stroke', THEME.branchStroke)
             .attr('stroke-width', THEME.branchStrokeWidth)
-            .attr('data-node-id', `tree-category-${branchIndex}`)
+            .attr('data-node-id', `tree-category-${categoryDataIndex}`)
             .attr('data-node-type', 'category')
-            .attr('data-category-index', branchIndex);
+            .attr('data-category-index', categoryDataIndex);
 
         // Render branch text - use multiple text elements (tspan doesn't render)
         const branchText = childText || '';
@@ -431,8 +439,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                 .attr('dominant-baseline', 'middle')
                 .attr('fill', THEME.branchText)
                 .attr('font-size', branchFont)
-                .attr('data-text-for', `tree-category-${branchIndex}`)
-                .attr('data-node-id', `tree-category-${branchIndex}`)
+                .attr('data-text-for', `tree-category-${categoryDataIndex}`)
+                .attr('data-node-id', `tree-category-${categoryDataIndex}`)
                 .attr('data-node-type', 'category')
                 .attr('cursor', 'pointer')
                 .attr('data-line-index', i)
@@ -462,12 +470,17 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             });
 
             // Draw child rectangles and labels centered at branchX
+            // Note: j is the loop index through original child.children array,
+            // which matches the index used in spec.children[categoryDataIndex].children[j]
             leaves.forEach((leaf, j) => {
                 const leafText = leaf?.text || leaf?.label;
                 const box = leafBoxes[j] || measureSvgTextBox(svg, leafText, leafFont, 12, 8);
                 const leafY = centersY[j];
                 // Width adaptive to characters for each node
                 const rectW = box.w;
+                
+                // Use categoryDataIndex (specIndex) for data-category-index to ensure
+                // correct mapping back to spec.children
                 svg.append('rect')
                     .attr('x', branchX - rectW / 2)
                     .attr('y', leafY - box.h / 2)
@@ -478,9 +491,9 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                     .attr('fill', THEME.leafFill || '#ffffff')
                     .attr('stroke', THEME.leafStroke || '#c8d6e5')
                     .attr('stroke-width', THEME.leafStrokeWidth != null ? THEME.leafStrokeWidth : 1)
-                    .attr('data-node-id', `tree-leaf-${branchIndex}-${j}`)
+                    .attr('data-node-id', `tree-leaf-${categoryDataIndex}-${j}`)
                     .attr('data-node-type', 'leaf')
-                    .attr('data-category-index', branchIndex)
+                    .attr('data-category-index', categoryDataIndex)
                     .attr('data-leaf-index', j);
 
                 // Render leaf text - use multiple text elements (tspan doesn't render)
@@ -506,8 +519,8 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                         .attr('dominant-baseline', 'middle')
                         .attr('fill', THEME.leafText)
                         .attr('font-size', leafFont)
-                        .attr('data-text-for', `tree-leaf-${branchIndex}-${j}`)
-                        .attr('data-node-id', `tree-leaf-${branchIndex}-${j}`)
+                        .attr('data-text-for', `tree-leaf-${categoryDataIndex}-${j}`)
+                        .attr('data-node-id', `tree-leaf-${categoryDataIndex}-${j}`)
                         .attr('data-node-type', 'leaf')
                         .attr('cursor', 'pointer')
                         .attr('data-line-index', idx)
