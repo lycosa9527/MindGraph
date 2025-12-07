@@ -1015,7 +1015,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                     .attr('y1', y1)
                     .attr('x2', x2)
                     .attr('y2', y2)
-                    .attr('stroke', '#bbb')
+                    .attr('stroke', '#888')
                     .attr('stroke-width', 2);
             }
         });
@@ -1041,7 +1041,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                     .attr('y1', y1)
                     .attr('x2', x2)
                     .attr('y2', y2)
-                    .attr('stroke', '#bbb')
+                    .attr('stroke', '#888')
                     .attr('stroke-width', 2);
                 }
         });

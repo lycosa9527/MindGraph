@@ -177,9 +177,6 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const topicX = centerX + pos.x;
             const topicY = centerY + pos.y;
             
-            const topicWidth = pos.width || 120;
-            const topicHeight = pos.height || 60;
-            
             // Calculate adaptive radius based on actual text dimensions
             let topicRadius;
             if (typeof getTextRadius === 'function') {
@@ -261,9 +258,11 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const branchTextHeight = branchLines.length * branchLineHeight;
             
             // Calculate width based on actual text measurement
+            // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
+            // This ensures node width adapts correctly when text is edited
             const branchMeasuredWidth = Math.max(...branchLines.map(l => measureLineWidth(l, branchFontSize)), 20);
-            const branchWidth = pos.width || Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
-            const branchHeight = pos.height || Math.max(50, branchTextHeight + 20);
+            const branchWidth = Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
+            const branchHeight = Math.max(50, branchTextHeight + 20);
             
             const finalBranchFill = pos.fill || THEME.branchFill || '#e3f2fd';
             const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
@@ -330,9 +329,11 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const childTextHeight = childLines.length * childLineHeight;
             
             // Calculate width based on actual text measurement
+            // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
+            // This ensures node width adapts correctly when text is edited
             const childMeasuredWidth = Math.max(...childLines.map(l => measureLineWidth(l, childFontSize)), 20);
-            const childWidth = pos.width || Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
-            const childHeight = pos.height || Math.max(40, childTextHeight + 16);
+            const childWidth = Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
+            const childHeight = Math.max(40, childTextHeight + 16);
             
             const finalChildFill = pos.fill || THEME.childFill || '#f8f9fa';
             const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';

@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.27] - 2025-12-07 - Gallery SVG Icons Redesign
+
+### Improved
+
+- **Diagram Gallery SVG Icons** (`templates/editor.html`)
+  - Redesigned all diagram type preview icons for better visual representation
+  
+  - **Circle Map**: Removed topic text, added 5 bubbles around the circle, enlarged to fill 95% height
+  - **Bubble Map**: Changed to 5 bubbles with connecting lines, proper center alignment
+  - **Double Bubble Map**: Added difference bubbles on both sides, aligned at same height, proper connecting lines
+  - **Tree Map**: Changed to rectangles with T-shaped connection lines, purple-themed colors
+  - **Brace Map**: Proper curly brace shape facing left, removed extra lines
+  - **Flow Map**: Larger rectangles with proper arrow lines and triangle arrowheads, orange theme
+  - **Multi-Flow Map**: Simplified with diagonal lines only (no arrows), compact height, aligned nodes
+  - **Bridge Map**: Removed vertical connector lines, clean horizontal layout
+  - **Mind Map**: Curved branches from center, round center circle, pill-shaped branch nodes, blue connections
+  - **Concept Map**: Changed to circles, red-themed connection lines, center-to-center connections
+
+### Technical Details
+
+**Files Changed:**
+- `templates/editor.html`: Updated all diagram preview SVG elements in the gallery
+
+**Design Principles Applied:**
+- Icons fill more of the preview space (better use of viewBox)
+- Connection lines match each diagram's color theme (not generic grey)
+- Proper geometric alignment and centering
+- Simpler, cleaner representations that better convey each diagram type's purpose
+
+---
+
+## [4.28.26] - 2025-12-07 - Bridge Map Adaptive Layout
+
+### Fixed
+
+- **Bridge Map Nodes Overlapping With Long Text** (`flow-renderer.js`)
+  - Fixed issue where bridge map nodes would overlap when containing very long text
+  - **Root Cause**: Node widths were calculated after SVG creation, and positions were based on fixed section widths rather than actual content
+  - **Solution**: Implemented two-phase layout calculation:
+    1. **Phase 1 - Measure**: Measure all text to calculate actual node widths before creating SVG
+    2. **Phase 2 - Layout**: Calculate diagram width based on actual node widths, then position nodes with proper spacing
+  - **Key Changes**:
+    - Text wraps at `maxTextWidthLimit = 200px`
+    - Node padding: 24px, Gap between nodes: 60px
+    - Diagram width expands automatically to fit all nodes without overlap
+    - Nodes and separators positioned based on calculated widths
+  - **Impact**: Bridge map now correctly handles any text length, expanding the diagram as needed
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/renderers/flow-renderer.js`:
+  - Moved THEME and text measurement setup before dimension calculation
+  - Added Phase 1: Measure all analogy text to get `nodeWidths` array
+  - Added Phase 2: Calculate `requiredWidth` based on actual node widths
+  - Calculate `nodePositions` array based on actual widths + gaps
+  - Updated node drawing to use `nodePositions[i]` instead of fixed formula
+  - Updated separator positioning to use midpoint between adjacent nodes
+
+**Layout Algorithm:**
+```javascript
+// Phase 1: Measure
+nodeWidths = analogies.map(a => max(leftWidth, rightWidth) + padding);
+
+// Phase 2: Calculate
+requiredWidth = sum(nodeWidths) + gaps + padding;
+width = max(requiredWidth, baseWidth);
+
+// Phase 3: Position
+nodePositions[i] = startX + sum(nodeWidths[0..i-1]) + gaps + nodeWidth/2;
+```
+
+---
+
+## [4.28.25] - 2025-12-07 - MindMap Node Width Adaptive Fix
+
+### Fixed
+
+- **MindMap Nodes Not Adapting Width After Text Edit** (`mind-map-renderer.js`, `mindmap-operations.js`, `mind_map_agent.py`)
+  - Fixed issue where mindmap node widths would not adapt correctly after editing text in the properties panel
+  - **Root Cause**: The renderer was using `pos.width || calculated_width` which preferred pre-calculated widths from Python backend over JavaScript's accurate text measurement. When text wrapped to multiple lines, the node width should be based on the widest wrapped line, not the original width.
+  - **Solution**: Changed renderer to always calculate width based on wrapped text lines, ignoring Python-provided widths. Also added layout recalculation for proper y-spacing.
+  - **Impact**: Node widths now correctly adapt when text is edited, whether the text becomes shorter, longer, or wraps to multiple lines
+
+### Technical Details
+
+**Files Changed:**
+
+1. `static/js/renderers/mind-map-renderer.js`:
+   - Changed branch width calculation from `pos.width || Math.max(100, branchMeasuredWidth + 24)` to always use `Math.max(100, branchMeasuredWidth + 24)`
+   - Changed child width calculation from `pos.width || Math.max(80, childMeasuredWidth + 20)` to always use `Math.max(80, childMeasuredWidth + 20)`
+   - Removed unused `topicWidth` and `topicHeight` variables
+   - Width is now always calculated from `splitAndWrapText` wrapped lines using actual SVG text measurement
+
+2. `static/js/managers/editor/diagram-types/mindmap-operations.js`:
+   - Added width/height clearing from positions when text is updated (forces renderer to recalculate)
+   - Added `mindmap:layout_recalculation_requested` event emission for text changes (ensures proper y-spacing)
+
+3. `agents/mind_maps/mind_map_agent.py`:
+   - Added `MAX_BRANCH_TEXT_WIDTH = 200` and `MAX_CHILD_TEXT_WIDTH = 180` constants (matching JavaScript)
+   - Added `_get_capped_node_width()` method that calculates width based on longest line, capped at max width
+   - Updated all node width calculations to use the new method for consistency
+
+**Width Calculation Flow (After Fix):**
+1. User edits text in properties panel and clicks Apply
+2. `updateNode()` clears width/height from positions
+3. Renderer uses `splitAndWrapText()` to wrap text into lines fitting within maxWidth (200px for branch, 180px for child)
+4. Each wrapped line is measured using actual SVG text measurement
+5. Node width = widest line width + padding (24px for branch, 20px for child)
+6. Backend layout recalculation updates y-positions for proper spacing
+
+**Other Diagrams Verified:**
+- Concept Map: Already correct (uses `wrapIntoLines` + `measureLineWidth`)
+- Tree Map: Already correct (uses `measureSvgTextBox`)
+- Flow Map: Already correct (uses `splitTextLines`)
+- Bubble Map: Already correct (uses `getTextRadius`)
+- Brace Map: Already correct (measures text directly)
+
+---
+
 ## [4.28.24] - 2025-12-07 - MindMate Panel Editing Fix
 
 ### Fixed

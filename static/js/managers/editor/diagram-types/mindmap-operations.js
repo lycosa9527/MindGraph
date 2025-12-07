@@ -353,14 +353,24 @@ class MindMapOperations {
         }
         
         // Update the text in positions as well (if layout exists)
+        // IMPORTANT: Also delete width/height so renderer recalculates based on new text
         if (spec._layout && spec._layout.positions && updates.text !== undefined) {
             const positions = spec._layout.positions;
             if (nodeType === 'topic' && positions.topic) {
                 positions.topic.text = updates.text;
+                // Clear dimensions so renderer recalculates based on new text
+                delete positions.topic.width;
+                delete positions.topic.height;
             } else if (nodeType === 'branch' && !isNaN(branchIndex) && positions[`branch_${branchIndex}`]) {
                 positions[`branch_${branchIndex}`].text = updates.text;
+                // Clear dimensions so renderer recalculates based on new text
+                delete positions[`branch_${branchIndex}`].width;
+                delete positions[`branch_${branchIndex}`].height;
             } else if (nodeType === 'child' && !isNaN(branchIndex) && !isNaN(childIndex) && positions[`child_${branchIndex}_${childIndex}`]) {
                 positions[`child_${branchIndex}_${childIndex}`].text = updates.text;
+                // Clear dimensions so renderer recalculates based on new text
+                delete positions[`child_${branchIndex}_${childIndex}`].width;
+                delete positions[`child_${branchIndex}_${childIndex}`].height;
             }
         }
         
@@ -384,6 +394,15 @@ class MindMapOperations {
             operation: 'update_node',
             snapshot: JSON.parse(JSON.stringify(spec))
         });
+        
+        // For mind maps, text changes may affect node heights (due to text wrapping)
+        // which requires recalculating y-positions to maintain proper spacing
+        // Emit event to request layout recalculation from backend
+        if (updates.text !== undefined) {
+            this.eventBus.emit('mindmap:layout_recalculation_requested', {
+                spec
+            });
+        }
         
         // Emit event to request selection restoration after re-render
         this.eventBus.emit('mindmap:selection_restore_requested', {

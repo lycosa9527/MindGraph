@@ -1093,37 +1093,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         return;
     }
     
-    // Calculate optimal dimensions based on content (exactly as in old renderer)
-    const numAnalogies = spec.analogies.length;
-    const minWidthPerAnalogy = 120; // Minimum width needed per analogy pair
-    const leftPadding = 110; // Extra left padding for dimension label (text extends leftward with text-anchor: end)
-    const rightPadding = 40; // Right padding
-    const topBottomPadding = 40; // Top and bottom padding
-    
-    // Calculate optimal width: enough space for all analogies + separators + padding
-    const contentWidth = (numAnalogies * minWidthPerAnalogy) + ((numAnalogies - 1) * 60); // 60px for separator spacing
-    const optimalWidth = Math.max(contentWidth + leftPadding + rightPadding, dimensions?.baseWidth || 600);
-    
-    // Calculate optimal height: enough space for text + vertical lines + padding + alternative dimensions
-    // Text height is adaptive based on content (will be calculated per analogy pair)
-    const lineHeight = 50; // Height for vertical connection lines
-    const altDimensionsHeight = 80; // Always reserve space for alternative dimensions section (even if empty)
-    const baseTextHeight = 40; // Base height for single-line text
-    const optimalHeight = Math.max(baseTextHeight + lineHeight + (2 * topBottomPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
-    
-    // Use calculated dimensions or fall back to provided dimensions
-    const width = optimalWidth;
-    const height = optimalHeight;
-    
-    // Create SVG
-    const svg = d3.select(`#${containerId}`)
-        .append('svg')
-        .attr('width', width)
-        .attr('height', height)
-        .attr('viewBox', `0 0 ${width} ${height}`)
-        .style('background-color', '#f8f8f8'); // Light background to see boundaries
-    
-    // Apply theme (exactly as in old renderer)
+    // Apply theme first (needed for text measurement)
     const THEME = {
         backgroundColor: '#ffffff',
         analogyTextColor: '#2c3e50',
@@ -1135,7 +1105,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         fontFamily: 'Inter, Segoe UI, sans-serif' // Changed back to Inter
     };
     
-    // Create temporary SVG for text measurement (adaptive node sizing)
+    // Create temporary SVG for text measurement FIRST (needed to calculate optimal dimensions)
     const tempSvg = d3.select('body').append('svg')
         .attr('width', 0)
         .attr('height', 0)
@@ -1156,24 +1126,97 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         return w;
     }
     
-    // 1. Create horizontal main line (ensure it's visible) - EXACTLY as in old renderer
-    const mainLine = svg.append("line")
+    // PHASE 1: Measure all text to calculate actual node widths
+    const maxTextWidthLimit = 200; // Max width before text wraps
+    const nodePadding = 24; // Padding inside each node
+    const nodeGap = 60; // Minimum gap between nodes
+    
+    const nodeWidths = spec.analogies.map(analogy => {
+        // Measure left text
+        const leftText = analogy.left || '';
+        const leftLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(leftText, parseFloat(THEME.analogyFontSize), maxTextWidthLimit, measureLineWidth)
+            : (leftText ? [leftText] : ['']);
+        const leftWidth = Math.max(...leftLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+        
+        // Measure right text
+        const rightText = analogy.right || '';
+        const rightLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(rightText, parseFloat(THEME.analogyFontSize), maxTextWidthLimit, measureLineWidth)
+            : (rightText ? [rightText] : ['']);
+        const rightWidth = Math.max(...rightLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+        
+        // Node width is the max of left/right text widths + padding
+        const nodeWidth = Math.max(leftWidth, rightWidth) + nodePadding;
+        return Math.max(60, nodeWidth); // Minimum 60px
+    });
+    
+    // PHASE 2: Calculate optimal dimensions based on actual content
+    const numAnalogies = spec.analogies.length;
+    const leftPadding = 110; // Extra left padding for dimension label
+    const rightPadding = 40; // Right padding
+    const topBottomPadding = 40; // Top and bottom padding
+    
+    // Calculate section width based on the widest node
+    // Each node should fit within its section with margin for separators
+    const maxNodeWidth = Math.max(...nodeWidths);
+    const separatorMargin = 30; // Margin on each side of separator
+    const sectionWidth = maxNodeWidth + separatorMargin * 2; // Space for one node + margins
+    
+    // Calculate required width: all sections + padding
+    const requiredWidth = numAnalogies * sectionWidth + leftPadding + rightPadding;
+    
+    // Use the larger of required width or provided dimensions
+    const width = Math.max(requiredWidth, dimensions?.baseWidth || 600);
+    
+    // Recalculate section width based on actual available width (might be larger than required)
+    const availableWidth = width - leftPadding - rightPadding;
+    const actualSectionWidth = availableWidth / numAnalogies;
+    
+    // Calculate optimal height
+    const lineHeight = 50;
+    const altDimensionsHeight = 80;
+    const baseTextHeight = 40;
+    const height = Math.max(baseTextHeight + lineHeight + (2 * topBottomPadding) + altDimensionsHeight, dimensions?.baseHeight || 200);
+    
+    // Create SVG with calculated dimensions
+    const svg = d3.select(`#${containerId}`)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .style('background-color', '#f8f8f8');
+    
+    // 1. Create horizontal main line
+    svg.append("line")
         .attr("x1", leftPadding)
         .attr("y1", height/2)
         .attr("x2", width - rightPadding)
         .attr("y2", height/2)
-        .attr("stroke", "#666666") // Changed to grey
-        .attr("stroke-width", 4); // Use attr instead of style
+        .attr("stroke", "#666666")
+        .attr("stroke-width", 4);
     
-    // 2. Calculate separator positions with better spacing - EXACTLY as in old renderer
-    const availableWidth = width - leftPadding - rightPadding;
-    const sectionWidth = availableWidth / (spec.analogies.length + 1);
+    // 2. Calculate separator positions (at section boundaries)
+    // Separators are between sections, so at positions: leftPadding + sectionWidth, leftPadding + 2*sectionWidth, etc.
+    const separatorPositions = [];
+    for (let i = 1; i < numAnalogies; i++) {
+        separatorPositions.push(leftPadding + i * actualSectionWidth);
+    }
     
-    // 3. Draw analogy pairs first - EXACTLY as in old renderer
+    // 3. Calculate node positions (centered in each section)
+    // Node i is centered in section i, so at: leftPadding + (i + 0.5) * sectionWidth
+    const nodePositions = [];
+    for (let i = 0; i < numAnalogies; i++) {
+        nodePositions.push(leftPadding + (i + 0.5) * actualSectionWidth);
+    }
+    
+    // Use the max text width limit for wrapping (same as measurement phase)
+    const adaptiveMaxTextWidth = maxTextWidthLimit;
+    
+    // 3. Draw analogy pairs with calculated positions
     spec.analogies.forEach((analogy, i) => {
-
         
-        const xPos = leftPadding + (sectionWidth * (i + 1));
+        const xPos = nodePositions[i]; // Use pre-calculated position based on actual node widths
         const isFirstPair = i === 0; // Check if this is the first pair
         
         // 3.1 Add upstream item (left) - above the main line
@@ -1181,7 +1224,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // First pair gets rectangle borders with deep blue background and white text
             // Calculate adaptive height based on text lines
             const leftText = analogy.left || '';
-            const leftMaxWidth = 90; // Max width for analogy text
+            const leftMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
             const leftLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
             
             // Use splitAndWrapText for automatic word wrapping
@@ -1234,7 +1277,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         } else {
             // Render left analogy text - regular pairs - use multiple text elements
             const regLeftText = analogy.left || '';
-            const regLeftMaxWidth = 90; // Max width for analogy text
+            const regLeftMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
             const regLeftLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
             
             // Use splitAndWrapText for automatic word wrapping
@@ -1270,7 +1313,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // First pair gets rectangle borders with deep blue background and white text
             // Calculate adaptive rectangle height based on text content
             const rightText = analogy.right || '';
-            const rightMaxWidth = 90; // Max width for analogy text
+            const rightMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
             const rightLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
             
             // Use splitAndWrapText for automatic word wrapping
@@ -1323,7 +1366,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         } else {
             // Render right analogy text - regular pairs - use multiple text elements
             const regRightText = analogy.right || '';
-            const regRightMaxWidth = 90; // Max width for analogy text
+            const regRightMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
             const regRightLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
             
             // Use splitAndWrapText for automatic word wrapping
@@ -1404,11 +1447,10 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .attr("cursor", "pointer");
     }
     
-    // 4. Draw "as" separators (one less than analogy pairs) - positioned to the right of analogy pairs
-    // EXACTLY as in old renderer
+    // 4. Draw "as" separators (one less than analogy pairs) - at section boundaries
     for (let i = 0; i < spec.analogies.length - 1; i++) {
-        // Position separator between analogy pairs (to the right of current pair)
-        const xPos = leftPadding + (sectionWidth * (i + 1.5)); // Position between pairs
+        // Position separator at section boundary (nodes are contained within their sections)
+        const xPos = separatorPositions[i];
         
         // 4.1 Add little triangle separator on the main line - pointing UPWARD
         const triangleSize = 8; // Back to normal size

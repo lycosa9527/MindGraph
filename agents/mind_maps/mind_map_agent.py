@@ -60,6 +60,14 @@ class MindMapAgent(BaseAgent):
     - Enterprise-grade positioning algorithms
     """
     
+    # Maximum text widths before wrapping (must match JavaScript renderer)
+    # JavaScript: branchMaxTextWidth = 200, childMaxTextWidth = 180
+    MAX_BRANCH_TEXT_WIDTH = 200
+    MAX_CHILD_TEXT_WIDTH = 180
+    # Padding values (must match JavaScript renderer)
+    BRANCH_PADDING = 24  # JavaScript uses 24px padding for branches
+    CHILD_PADDING = 20   # JavaScript uses 20px padding for children
+    
     def __init__(self, model='qwen'):
         super().__init__(model=model)
         self.config = Config()
@@ -439,13 +447,13 @@ class MindMapAgent(BaseAgent):
         max_child_width = 0
         
         for branch in children:
-            branch_font_size = self._get_adaptive_font_size(branch['label'], 'branch')
-            branch_width = self._calculate_text_width(branch['label'], branch_font_size) + self._get_adaptive_padding(branch['label'])
+            # Use capped width to prevent excessively wide nodes for long text
+            branch_width = self._get_capped_node_width(branch['label'], 'branch')
             max_branch_width = max(max_branch_width, branch_width)
             
             for child in branch.get('children', []):
-                child_font_size = self._get_adaptive_font_size(child['label'], 'child')
-                child_width = self._calculate_text_width(child['label'], child_font_size) + self._get_adaptive_padding(child['label'])
+                # Use capped width to prevent excessively wide nodes for long text
+                child_width = self._get_capped_node_width(child['label'], 'child')
                 max_child_width = max(max_child_width, child_width)
         
         # Column positions
@@ -463,8 +471,7 @@ class MindMapAgent(BaseAgent):
         positions = layout_result['positions'].copy()
         
         # Add central topic at Y=0 (two-stage system positions everything relative to Y=0)
-        topic_font_size = self._get_adaptive_font_size(topic, 'topic')
-        topic_width = self._calculate_text_width(topic, topic_font_size) + 40  # Extra padding for circles
+        topic_width = self._get_capped_node_width(topic, 'topic')
         topic_height = self._get_adaptive_node_height(topic, 'topic')
         
         positions['topic'] = {
@@ -624,7 +631,8 @@ class MindMapAgent(BaseAgent):
         # Calculate dimensions and positions for all children
         for i, child_info in enumerate(all_children):
             child_data = child_info['data']
-            child_width = self._calculate_text_width(child_data['label'], self._get_adaptive_font_size(child_data['label'], 'child')) + self._get_adaptive_padding(child_data['label'])
+            # Use capped width to prevent excessively wide nodes for long text
+            child_width = self._get_capped_node_width(child_data['label'], 'child')
             child_height = self._get_adaptive_node_height(child_data['label'], 'child')
             
             child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
@@ -743,9 +751,8 @@ class MindMapAgent(BaseAgent):
         for branch_idx, branch in enumerate(children):
             branch_text = branch['label']
             
-            # Calculate branch dimensions
-            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
-            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            # Calculate branch dimensions (use capped width for text wrapping)
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
             branch_height = self._get_adaptive_node_height(branch_text, 'branch')
             
             # Determine side and column
@@ -911,7 +918,8 @@ class MindMapAgent(BaseAgent):
         for child_info in side_children:
             child_data = child_info['data']
             child_info['height'] = self._get_adaptive_node_height(child_data['label'], 'child')
-            child_info['width'] = self._calculate_text_width(child_data['label'], self._get_adaptive_font_size(child_data['label'], 'child')) + self._get_adaptive_padding(child_data['label'])
+            # Use capped width for text wrapping
+            child_info['width'] = self._get_capped_node_width(child_data['label'], 'child')
         
         # Calculate dynamic center-to-center spacings
         spacings = []
@@ -963,9 +971,8 @@ class MindMapAgent(BaseAgent):
         for branch_idx, branch in enumerate(children):
             branch_text = branch['label']
             
-            # Calculate branch dimensions
-            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
-            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            # Calculate branch dimensions (use capped width for text wrapping)
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
             branch_height = self._get_adaptive_node_height(branch_text, 'branch')
             
             # Determine side and column
@@ -1344,8 +1351,8 @@ class MindMapAgent(BaseAgent):
                 if not child_info['is_phantom']:
                     # Real child - create position
                     child_data = child_info['data']
-                    child_font_size = self._get_adaptive_font_size(child_data['label'], 'child')
-                    child_width = self._calculate_text_width(child_data['label'], child_font_size) + self._get_adaptive_padding(child_data['label'])
+                    # Use capped width for text wrapping
+                    child_width = self._get_capped_node_width(child_data['label'], 'child')
                     child_height = self._get_adaptive_node_height(child_data['label'], 'child')
                     
                     child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
@@ -1374,8 +1381,8 @@ class MindMapAgent(BaseAgent):
                 if not child_info['is_phantom']:
                     # Real child - create position
                     child_data = child_info['data']
-                    child_font_size = self._get_adaptive_font_size(child_data['label'], 'child')
-                    child_width = self._calculate_text_width(child_data['label'], child_font_size) + self._get_adaptive_padding(child_data['label'])
+                    # Use capped width for text wrapping
+                    child_width = self._get_capped_node_width(child_data['label'], 'child')
                     child_height = self._get_adaptive_node_height(child_data['label'], 'child')
                     
                     child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
@@ -1416,9 +1423,8 @@ class MindMapAgent(BaseAgent):
             branch_data = children[branch_idx]
             branch_text = branch_data['label']
             
-            # Calculate branch dimensions
-            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
-            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            # Calculate branch dimensions (use capped width for text wrapping)
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
             branch_height = self._get_adaptive_node_height(branch_text, 'branch')
             
             # Determine side and column
@@ -1551,9 +1557,9 @@ class MindMapAgent(BaseAgent):
                     first_child_center_y = current_y + block_height / 2
                 
                 for j, child in enumerate(nested_children):
-                    child_font_size = self._get_adaptive_font_size(child['label'], 'child')
                     child_height = child_heights[j]  # Use pre-calculated height
-                    child_width = self._calculate_text_width(child['label'], child_font_size) + self._get_adaptive_padding(child['label'])
+                    # Use capped width for text wrapping
+                    child_width = self._get_capped_node_width(child['label'], 'child')
                     
                     # Calculate child center Y using center-to-center spacing
                     if len(nested_children) == 1:
@@ -1602,8 +1608,8 @@ class MindMapAgent(BaseAgent):
         # STEP 5: Position branch nodes using TARGETED MATHEMATICAL CENTER FIX
         for i, branch_data in enumerate(children):
             branch_text = branch_data['label']
-            branch_font_size = self._get_adaptive_font_size(branch_text, 'branch')
-            branch_width = self._calculate_text_width(branch_text, branch_font_size) + self._get_adaptive_padding(branch_text)
+            # Use capped width for text wrapping
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
             branch_height = self._get_adaptive_node_height(branch_text, 'branch')
             
             # Determine side
@@ -1756,8 +1762,7 @@ class MindMapAgent(BaseAgent):
             topic_y = 0
         
         # Calculate topic dimensions
-        topic_font_size = self._get_adaptive_font_size(topic, 'topic')
-        topic_width = self._calculate_text_width(topic, topic_font_size) + 40  # Extra padding for circles
+        topic_width = self._get_capped_node_width(topic, 'topic')
         topic_height = self._get_adaptive_node_height(topic, 'topic')
         
         # Store topic position
@@ -2169,6 +2174,51 @@ class MindMapAgent(BaseAgent):
         # Cache the result
         self._text_width_cache[cache_key] = total_width
         return total_width
+    
+    def _get_capped_node_width(self, text: str, node_type: str) -> float:
+        """
+        Calculate node width based on the longest line (matching JavaScript renderer).
+        
+        The JavaScript renderer wraps text at max width, so:
+        1. Split text by newlines to get individual lines
+        2. Calculate width of longest line
+        3. Cap at max_text_width (since JS will wrap longer lines)
+        4. Add padding
+        
+        This ensures node width matches what the JavaScript renderer expects.
+        """
+        if not text:
+            return 80 if node_type == 'child' else 100
+        
+        font_size = self._get_adaptive_font_size(text, node_type)
+        
+        if node_type == 'branch':
+            max_text_width = self.MAX_BRANCH_TEXT_WIDTH
+            padding = self.BRANCH_PADDING
+            min_width = 100
+        elif node_type == 'child':
+            max_text_width = self.MAX_CHILD_TEXT_WIDTH
+            padding = self.CHILD_PADDING
+            min_width = 80
+        elif node_type == 'topic':
+            # Topic uses circle, calculate based on raw width with extra padding
+            raw_text_width = self._calculate_text_width(text, font_size)
+            return raw_text_width + 40
+        else:
+            # Default: use raw width with adaptive padding
+            raw_text_width = self._calculate_text_width(text, font_size)
+            return raw_text_width + self._get_adaptive_padding(text)
+        
+        # Split by newlines and find the longest line's width
+        lines = text.split('\n')
+        line_widths = [self._calculate_text_width(line, font_size) for line in lines]
+        longest_line_width = max(line_widths) if line_widths else 0
+        
+        # Cap at max_text_width (since JavaScript will wrap longer lines)
+        capped_width = min(longest_line_width, max_text_width)
+        
+        # Return capped width + padding (with minimum width)
+        return max(min_width, capped_width + padding)
     
     def _get_adaptive_padding(self, text: str) -> int:
         """Get adaptive padding based on text length and content type."""
