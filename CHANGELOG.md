@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.32] - 2025-12-08 - ThinkGuide Intent Detection Fix
+
+### Fixed
+
+- **ThinkGuide Agent Intent Detection Error** (`agents/thinking_modes/base_thinking_agent.py`)
+  - Fixed `'MindMapThinkingAgent' object has no attribute '_call_llm'` error
+  - Error occurred when ThinkGuide agents tried to detect user intent
+  
+  - **Root Cause**: The `_call_llm` method was called in 4 agent files but was never defined in the `BaseThinkingAgent` base class. Only `_stream_llm_response` existed for streaming responses.
+  
+  - **Affected Agents** (all now fixed):
+    - `mindmap_agent_react.py`
+    - `bridge_map_agent_react.py`
+    - `tree_map_agent_react.py`
+    - `multi_flow_map_agent_react.py`
+  
+  - **Solution**: Added `_call_llm()` method to `BaseThinkingAgent` for non-streaming LLM calls used in intent detection
+
+**Files Changed:**
+- `agents/thinking_modes/base_thinking_agent.py` - Added `_call_llm()` method (lines 327-368)
+
+---
+
 ## [4.28.31] - 2025-12-08 - Bayi Mode IP Whitelist Fix
 
 ### Fixed
