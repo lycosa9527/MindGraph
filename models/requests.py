@@ -24,6 +24,8 @@ class GenerateRequest(BaseModel):
     request_type: Optional[str] = Field('diagram_generation', description="Request type for token tracking: 'diagram_generation' or 'autocomplete'")
     # Bridge map specific: existing analogy pairs for auto-complete (preserve user's pairs, only identify relationship)
     existing_analogies: Optional[List[Dict[str, str]]] = Field(None, description="Existing bridge map analogy pairs [{left, right}, ...] for auto-complete mode")
+    # Bridge map specific: fixed dimension/relationship that user has already specified (should not be changed by LLM)
+    fixed_dimension: Optional[str] = Field(None, description="User-specified relationship pattern for bridge map that should be preserved")
     
     @field_validator('diagram_type', mode='before')
     @classmethod

@@ -62,7 +62,7 @@ BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 BAYI_IP_WHITELIST_STR = os.getenv("BAYI_IP_WHITELIST", "").strip()
 BAYI_IP_WHITELIST = set()  # Set of whitelisted IP addresses
 
-# Parse IP whitelist on startup
+# Parse IP whitelist on startup (only log if in bayi mode)
 if BAYI_IP_WHITELIST_STR:
     for ip_entry in BAYI_IP_WHITELIST_STR.split(","):
         ip_entry = ip_entry.strip()
@@ -73,16 +73,18 @@ if BAYI_IP_WHITELIST_STR:
             import ipaddress
             ip_addr = ipaddress.ip_address(ip_entry)
             BAYI_IP_WHITELIST.add(str(ip_addr))
-            logger.info(f"Added IP to bayi IP whitelist: {ip_entry}")
+            # Only log in bayi mode to avoid noise in other modes
+            if AUTH_MODE == "bayi":
+                logger.info(f"Added IP to bayi IP whitelist: {ip_entry}")
         except ValueError as e:
-            logger.warning(f"Invalid IP entry in BAYI_IP_WHITELIST: {ip_entry} - {e}")
+            if AUTH_MODE == "bayi":
+                logger.warning(f"Invalid IP entry in BAYI_IP_WHITELIST: {ip_entry} - {e}")
     
-    if BAYI_IP_WHITELIST:
-        logger.info(f"Bayi IP whitelist loaded: {len(BAYI_IP_WHITELIST)} IP(s)")
-    else:
-        logger.info("Bayi IP whitelist configured but no valid IPs found")
-else:
-    logger.info("Bayi IP whitelist not configured - token authentication required for all IPs")
+    if AUTH_MODE == "bayi":
+        if BAYI_IP_WHITELIST:
+            logger.info(f"Bayi IP whitelist loaded: {len(BAYI_IP_WHITELIST)} IP(s)")
+        else:
+            logger.info("Bayi IP whitelist configured but no valid IPs found")
 
 # Admin Configuration
 ADMIN_PHONES = os.getenv("ADMIN_PHONES", "").split(",")

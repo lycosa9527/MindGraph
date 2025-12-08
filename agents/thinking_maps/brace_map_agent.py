@@ -1133,7 +1133,9 @@ class BraceMapAgent(BaseAgent):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        # Fixed dimension: user has already specified this, do NOT change it
+        fixed_dimension: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a brace map from a prompt."""
         try:
@@ -1145,7 +1147,8 @@ class BraceMapAgent(BaseAgent):
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
-                endpoint_path=endpoint_path
+                endpoint_path=endpoint_path,
+                fixed_dimension=fixed_dimension
             )
             if not spec:
                 return {
@@ -1192,29 +1195,61 @@ class BraceMapAgent(BaseAgent):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        # Fixed dimension: user has already specified this, do NOT change it
+        fixed_dimension: Optional[str] = None
     ) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         try:
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system
-            system_prompt = get_prompt("brace_map_agent", language, "generation")
-            
-            if not system_prompt:
-                logger.error(f"BraceMapAgent: No prompt found for language {language}")
-                return None
-            
-            # Build user prompt with dimension preference if specified
-            if dimension_preference:
+            # Choose prompt based on whether user has specified a fixed dimension
+            if fixed_dimension:
+                logger.info(f"BraceMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                system_prompt = get_prompt("brace_map_agent", language, "fixed_dimension")
+                
+                if not system_prompt:
+                    logger.warning("BraceMapAgent: No fixed_dimension prompt found, using fallback")
+                    # Fallback prompt for fixed dimension mode
+                    if language == "zh":
+                        system_prompt = f"""用户已经指定了拆解维度："{fixed_dimension}"
+你必须使用这个指定的拆解维度来生成括号图。不要改变或重新解释这个拆解维度。
+
+生成一个括号图，将主题按照指定的维度"{fixed_dimension}"进行拆解，包含3-5个部分，每个部分有2-4个子部分。
+返回JSON：{{"whole": "主题", "dimension": "{fixed_dimension}", "parts": [...], "alternative_dimensions": [...]}}
+
+重要：dimension字段必须完全保持为"{fixed_dimension}"，不要改变它！"""
+                    else:
+                        system_prompt = f"""The user has ALREADY SPECIFIED the decomposition dimension: "{fixed_dimension}"
+You MUST use this exact dimension to generate the brace map. Do NOT change or reinterpret it.
+
+Generate a brace map decomposing the topic according to the specified dimension "{fixed_dimension}", with 3-5 parts, each with 2-4 subparts.
+Return JSON: {{"whole": "Topic", "dimension": "{fixed_dimension}", "parts": [...], "alternative_dimensions": [...]}}
+
+CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT change it!"""
+                
                 if language == "zh":
-                    user_prompt = f"请为以下描述创建一个括号图，使用指定的拆解维度'{dimension_preference}'：{prompt}"
+                    user_prompt = f"主题：{prompt}\n\n请使用指定的拆解维度「{fixed_dimension}」生成括号图。"
                 else:
-                    user_prompt = f"Please create a brace map for the following description using the specified decomposition dimension '{dimension_preference}': {prompt}"
-                logger.info(f"BraceMapAgent: User specified dimension preference: {dimension_preference}")
+                    user_prompt = f"Topic: {prompt}\n\nGenerate a brace map using the EXACT decomposition dimension \"{fixed_dimension}\"."
             else:
-                user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
+                # No fixed dimension - use standard generation prompt
+                system_prompt = get_prompt("brace_map_agent", language, "generation")
+                
+                if not system_prompt:
+                    logger.error(f"BraceMapAgent: No prompt found for language {language}")
+                    return None
+                
+                # Build user prompt with dimension preference if specified
+                if dimension_preference:
+                    if language == "zh":
+                        user_prompt = f"请为以下描述创建一个括号图，使用指定的拆解维度'{dimension_preference}'：{prompt}"
+                    else:
+                        user_prompt = f"Please create a brace map for the following description using the specified decomposition dimension '{dimension_preference}': {prompt}"
+                    logger.info(f"BraceMapAgent: User specified dimension preference: {dimension_preference}")
+                else:
+                    user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
             
             # Call middleware directly - clean and efficient!
             from services.llm_service import llm_service
@@ -1251,6 +1286,11 @@ class BraceMapAgent(BaseAgent):
             if not spec:
                 logger.error("BraceMapAgent: Failed to extract JSON from LLM response")
                 return None
+            
+            # If fixed_dimension was provided, enforce it regardless of what LLM returned
+            if fixed_dimension:
+                spec['dimension'] = fixed_dimension
+                logger.info(f"BraceMapAgent: Enforced FIXED dimension: {fixed_dimension}")
             
             return spec
             

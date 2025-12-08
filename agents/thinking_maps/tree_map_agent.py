@@ -38,7 +38,9 @@ class TreeMapAgent(BaseAgent):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        # Fixed dimension: user has already specified this, do NOT change it
+        fixed_dimension: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a tree map from a prompt."""
         try:
@@ -50,7 +52,8 @@ class TreeMapAgent(BaseAgent):
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
-                endpoint_path=endpoint_path
+                endpoint_path=endpoint_path,
+                fixed_dimension=fixed_dimension
             )
             if not spec:
                 return {
@@ -99,29 +102,61 @@ class TreeMapAgent(BaseAgent):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        # Fixed dimension: user has already specified this, do NOT change it
+        fixed_dimension: Optional[str] = None
     ) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
             # Import centralized prompt system
             from prompts import get_prompt
             
-            # Get prompt from centralized system - use agent-specific format
-            system_prompt = get_prompt("tree_map_agent", language, "generation")
-            
-            if not system_prompt:
-                logger.error(f"TreeMapAgent: No prompt found for language {language}")
-                return None
-            
-            # Build user prompt with dimension preference if specified
-            if dimension_preference:
+            # Choose prompt based on whether user has specified a fixed dimension
+            if fixed_dimension:
+                logger.info(f"TreeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                system_prompt = get_prompt("tree_map_agent", language, "fixed_dimension")
+                
+                if not system_prompt:
+                    logger.warning("TreeMapAgent: No fixed_dimension prompt found, using fallback")
+                    # Fallback prompt for fixed dimension mode
+                    if language == "zh":
+                        system_prompt = f"""用户已经指定了分类维度："{fixed_dimension}"
+你必须使用这个指定的分类维度来生成树形图。不要改变或重新解释这个分类维度。
+
+生成一个树形图，包含3-5个分类（基于指定的维度"{fixed_dimension}"），每个分类有2-4个子项。
+返回JSON：{{"topic": "主题", "dimension": "{fixed_dimension}", "children": [...], "alternative_dimensions": [...]}}
+
+重要：dimension字段必须完全保持为"{fixed_dimension}"，不要改变它！"""
+                    else:
+                        system_prompt = f"""The user has ALREADY SPECIFIED the classification dimension: "{fixed_dimension}"
+You MUST use this exact dimension to generate the tree map. Do NOT change or reinterpret it.
+
+Generate a tree map with 3-5 categories (based on the specified dimension "{fixed_dimension}"), each with 2-4 items.
+Return JSON: {{"topic": "Topic", "dimension": "{fixed_dimension}", "children": [...], "alternative_dimensions": [...]}}
+
+CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT change it!"""
+                
                 if language == "zh":
-                    user_prompt = f"请为以下描述创建一个树形图，使用指定的分类维度'{dimension_preference}'：{prompt}"
+                    user_prompt = f"主题：{prompt}\n\n请使用指定的分类维度「{fixed_dimension}」生成树形图。"
                 else:
-                    user_prompt = f"Please create a tree map for the following description using the specified classification dimension '{dimension_preference}': {prompt}"
-                logger.info(f"TreeMapAgent: User specified dimension preference: {dimension_preference}")
+                    user_prompt = f"Topic: {prompt}\n\nGenerate a tree map using the EXACT classification dimension \"{fixed_dimension}\"."
             else:
-                user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
+                # No fixed dimension - use standard generation prompt
+                system_prompt = get_prompt("tree_map_agent", language, "generation")
+                
+                if not system_prompt:
+                    logger.error(f"TreeMapAgent: No prompt found for language {language}")
+                    return None
+                
+                # Build user prompt with dimension preference if specified
+                if dimension_preference:
+                    if language == "zh":
+                        user_prompt = f"请为以下描述创建一个树形图，使用指定的分类维度'{dimension_preference}'：{prompt}"
+                    else:
+                        user_prompt = f"Please create a tree map for the following description using the specified classification dimension '{dimension_preference}': {prompt}"
+                    logger.info(f"TreeMapAgent: User specified dimension preference: {dimension_preference}")
+                else:
+                    user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
             
             # Call middleware directly - clean and efficient!
             from services.llm_service import llm_service
@@ -160,6 +195,11 @@ class TreeMapAgent(BaseAgent):
                 logger.error("TreeMapAgent: Failed to extract JSON from LLM response")
                 logger.error(f"TreeMapAgent: Raw response was: {str(response)}")
                 return None
+            
+            # If fixed_dimension was provided, enforce it regardless of what LLM returned
+            if fixed_dimension:
+                spec['dimension'] = fixed_dimension
+                logger.info(f"TreeMapAgent: Enforced FIXED dimension: {fixed_dimension}")
             
             # Log the extracted spec for debugging
             logger.info(f"TreeMapAgent: Extracted spec: {spec}")

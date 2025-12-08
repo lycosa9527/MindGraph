@@ -208,15 +208,25 @@ class LLMAutoCompleteManager {
                     .map(pair => ({ left: pair.left, right: pair.right }));
                 
                 if (existingAnalogies.length > 0) {
-                    prompt = `Analyze these bridge map analogy pairs and identify the relationship pattern (dimension). Preserve all existing pairs exactly as provided.`;
-                    this.logger.info('LLMAutoCompleteManager', `Bridge map: ${existingAnalogies.length} existing pairs to preserve`, existingAnalogies);
+                    // Check if user has already specified a dimension (relationship pattern)
+                    const currentDimension = this.editor.currentSpec.dimension;
+                    const hasFixedDimension = currentDimension && currentDimension.trim() !== '';
+                    
+                    if (hasFixedDimension) {
+                        prompt = `Generate more analogy pairs using the FIXED relationship pattern: "${currentDimension}". Preserve all existing pairs exactly as provided.`;
+                        this.logger.info('LLMAutoCompleteManager', `Bridge map: using FIXED dimension "${currentDimension}" with ${existingAnalogies.length} existing pairs`);
+                    } else {
+                        prompt = `Analyze these bridge map analogy pairs and identify the relationship pattern (dimension). Preserve all existing pairs exactly as provided.`;
+                        this.logger.info('LLMAutoCompleteManager', `Bridge map: ${existingAnalogies.length} existing pairs to preserve (no fixed dimension)`);
+                    }
                     
                     requestBody = {
                         prompt: prompt,
                         diagram_type: currentDiagramType,
                         language: language,
                         request_type: 'autocomplete',
-                        existing_analogies: existingAnalogies  // Send existing pairs to backend
+                        existing_analogies: existingAnalogies,  // Send existing pairs to backend
+                        fixed_dimension: hasFixedDimension ? currentDimension : null  // Send fixed dimension if user specified one
                     };
                 } else {
                     // No valid pairs, use standard generation
@@ -228,6 +238,27 @@ class LLMAutoCompleteManager {
                         request_type: 'autocomplete'
                     };
                 }
+            } else if (currentDiagramType === 'tree_map' || currentDiagramType === 'brace_map') {
+                // Tree Map and Brace Map: Check if user has already specified a dimension
+                const currentDimension = this.editor.currentSpec?.dimension;
+                const hasFixedDimension = currentDimension && currentDimension.trim() !== '';
+                
+                if (hasFixedDimension) {
+                    const dimType = currentDiagramType === 'tree_map' ? 'classification' : 'decomposition';
+                    prompt = `Generate a ${currentDiagramType.replace('_', ' ')} for topic "${mainTopic}" using the FIXED ${dimType} dimension: "${currentDimension}". Do not change the dimension.`;
+                    this.logger.info('LLMAutoCompleteManager', `${currentDiagramType}: using FIXED dimension "${currentDimension}"`);
+                } else {
+                    prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
+                    this.logger.info('LLMAutoCompleteManager', `${currentDiagramType}: no fixed dimension, LLM will determine`);
+                }
+                
+                requestBody = {
+                    prompt: prompt,
+                    diagram_type: currentDiagramType,
+                    language: language,
+                    request_type: 'autocomplete',
+                    fixed_dimension: hasFixedDimension ? currentDimension : null
+                };
             } else {
                 // Standard prompt for other diagram types
                 prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;

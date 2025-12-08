@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.33] - 2025-12-08 - Admin Panel School Leaderboard Improvement
+
+### Changed
+
+- **Admin Panel School Leaderboard** (`templates/admin.html`, `routers/auth.py`)
+  - Changed "学校用户排行榜" to rank schools by **total token usage** instead of user count
+  - This provides a better indicator of active schools based on actual platform usage
+  
+  - **Changes**:
+    - Title updated to "活跃学校排行榜 (按总Token使用量)" / "Top Active Schools (by Total Tokens)"
+    - Leaderboard now sorts by total tokens used (all time) in descending order
+    - Token usage displayed prominently, user count shown as secondary info
+    - Only schools with actual token usage appear in the leaderboard
+
+**Files Changed:**
+- `templates/admin.html` - Updated leaderboard sorting logic and display format
+- `routers/auth.py` - Changed per-organization token stats to use all-time totals instead of past 7 days
+
+---
+
 ## [4.28.32] - 2025-12-08 - ThinkGuide Intent Detection Fix
 
 ### Fixed

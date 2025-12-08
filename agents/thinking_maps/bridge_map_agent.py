@@ -31,7 +31,9 @@ class BridgeMapAgent(BaseAgent):
         request_type: str = 'diagram_generation',
         endpoint_path: Optional[str] = None,
         # Bridge map auto-complete: existing pairs to preserve
-        existing_analogies: Optional[List[Dict[str, str]]] = None
+        existing_analogies: Optional[List[Dict[str, str]]] = None,
+        # Bridge map auto-complete: fixed dimension/relationship that user has already specified
+        fixed_dimension: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate a bridge map from a prompt.
@@ -46,6 +48,7 @@ class BridgeMapAgent(BaseAgent):
             endpoint_path: Endpoint path for token tracking
             existing_analogies: For auto-complete mode - existing pairs to preserve [{left, right}, ...]
                                When provided, LLM only identifies the relationship pattern, doesn't generate new pairs
+            fixed_dimension: For auto-complete mode - user-specified relationship pattern that should NOT be changed by LLM
             
         Returns:
             Dict containing success status and generated spec
@@ -55,14 +58,18 @@ class BridgeMapAgent(BaseAgent):
             
             # Check for auto-complete mode with existing pairs
             if existing_analogies and len(existing_analogies) > 0:
-                logger.info(f"BridgeMapAgent: Auto-complete mode - preserving {len(existing_analogies)} existing pairs")
+                if fixed_dimension:
+                    logger.info(f"BridgeMapAgent: Auto-complete mode with FIXED dimension '{fixed_dimension}' - preserving {len(existing_analogies)} existing pairs")
+                else:
+                    logger.info(f"BridgeMapAgent: Auto-complete mode - preserving {len(existing_analogies)} existing pairs (no fixed dimension)")
                 spec = await self._identify_relationship_pattern(
                     existing_analogies,
                     language,
                     user_id=user_id,
                     organization_id=organization_id,
                     request_type=request_type,
-                    endpoint_path=endpoint_path
+                    endpoint_path=endpoint_path,
+                    fixed_dimension=fixed_dimension
                 )
             else:
                 # Generate the bridge map specification (full generation mode)
@@ -268,7 +275,9 @@ class BridgeMapAgent(BaseAgent):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        # Fixed dimension: user has already specified this relationship, do NOT change it
+        fixed_dimension: Optional[str] = None
     ) -> Optional[Dict]:
         """
         Identify the relationship pattern from existing analogy pairs and generate more pairs.
@@ -277,28 +286,16 @@ class BridgeMapAgent(BaseAgent):
         Args:
             existing_analogies: List of existing pairs [{left, right}, ...]
             language: Language for generation
+            fixed_dimension: User-specified relationship pattern that should be preserved (not changed by LLM)
             
         Returns:
-            Spec with user's pairs + new generated pairs + identified dimension
+            Spec with user's pairs + new generated pairs + identified/fixed dimension
         """
         try:
             logger.info(f"BridgeMapAgent: Auto-complete from {len(existing_analogies)} existing pairs")
             
             # Import centralized prompt system
             from prompts import get_prompt
-            
-            # Get the relationship identification + generation prompt
-            system_prompt = get_prompt("bridge_map_agent", language, "identify_relationship")
-            
-            if not system_prompt:
-                logger.warning("BridgeMapAgent: No identify_relationship prompt found, using fallback")
-                # Fallback prompt
-                if language == "zh":
-                    system_prompt = """分析以下类比对，识别关系模式，并生成更多遵循相同模式的新对。
-返回JSON：{"dimension": "模式名", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
-                else:
-                    system_prompt = """Analyze these pairs, identify the pattern, and generate more pairs following the same pattern.
-Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
             
             # Format the existing pairs for the prompt
             pairs_text = "\n".join([f"- {pair.get('left', '')} → {pair.get('right', '')}" for pair in existing_analogies])
@@ -308,10 +305,54 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             for pair in existing_analogies:
                 existing_set.add((pair.get('left', '').strip().lower(), pair.get('right', '').strip().lower()))
             
-            if language == "zh":
-                user_prompt = f"用户已创建的类比对：\n{pairs_text}\n\n请识别关系模式，并生成5-6个新的类比对（不要重复上面的对）。"
+            # Choose prompt based on whether user has specified a fixed dimension
+            if fixed_dimension:
+                # User has already specified the relationship - use fixed dimension prompt
+                logger.info(f"BridgeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                system_prompt = get_prompt("bridge_map_agent", language, "fixed_dimension")
+                
+                if not system_prompt:
+                    logger.warning("BridgeMapAgent: No fixed_dimension prompt found, using fallback")
+                    # Fallback prompt for fixed dimension mode
+                    if language == "zh":
+                        system_prompt = f"""用户已经指定了类比关系模式："{fixed_dimension}"
+你必须使用这个指定的关系模式生成新的类比对。不要改变或重新解释这个关系模式。
+
+根据用户现有的类比对，生成5-6个遵循"{fixed_dimension}"关系模式的新类比对。
+返回JSON：{{"dimension": "{fixed_dimension}", "analogies": [{{"left": "X", "right": "Y"}}...], "alternative_dimensions": [...]}}
+
+重要：dimension字段必须完全保持为"{fixed_dimension}"，不要改变它！"""
+                    else:
+                        system_prompt = f"""The user has ALREADY SPECIFIED the analogy relationship pattern: "{fixed_dimension}"
+You MUST use this exact relationship pattern to generate new pairs. Do NOT change or reinterpret it.
+
+Based on the user's existing pairs, generate 5-6 NEW pairs that follow the "{fixed_dimension}" relationship pattern.
+Return JSON: {{"dimension": "{fixed_dimension}", "analogies": [{{"left": "X", "right": "Y"}}...], "alternative_dimensions": [...]}}
+
+CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT change it!"""
+                
+                if language == "zh":
+                    user_prompt = f"用户指定的关系模式：{fixed_dimension}\n\n用户已创建的类比对：\n{pairs_text}\n\n请使用指定的关系模式「{fixed_dimension}」生成5-6个新的类比对（不要重复上面的对）。"
+                else:
+                    user_prompt = f"User's specified relationship pattern: {fixed_dimension}\n\nUser's existing pairs:\n{pairs_text}\n\nGenerate 5-6 NEW pairs using the EXACT relationship pattern \"{fixed_dimension}\" (do not duplicate the above)."
             else:
-                user_prompt = f"User's existing pairs:\n{pairs_text}\n\nIdentify the pattern and generate 5-6 NEW pairs (do not duplicate the above)."
+                # No fixed dimension - identify the pattern from existing pairs
+                system_prompt = get_prompt("bridge_map_agent", language, "identify_relationship")
+                
+                if not system_prompt:
+                    logger.warning("BridgeMapAgent: No identify_relationship prompt found, using fallback")
+                    # Fallback prompt
+                    if language == "zh":
+                        system_prompt = """分析以下类比对，识别关系模式，并生成更多遵循相同模式的新对。
+返回JSON：{"dimension": "模式名", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
+                    else:
+                        system_prompt = """Analyze these pairs, identify the pattern, and generate more pairs following the same pattern.
+Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
+                
+                if language == "zh":
+                    user_prompt = f"用户已创建的类比对：\n{pairs_text}\n\n请识别关系模式，并生成5-6个新的类比对（不要重复上面的对）。"
+                else:
+                    user_prompt = f"User's existing pairs:\n{pairs_text}\n\nIdentify the pattern and generate 5-6 NEW pairs (do not duplicate the above)."
             
             logger.debug(f"User prompt: {user_prompt}")
             
@@ -396,24 +437,29 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             
             logger.info(f"BridgeMapAgent: Combined total: {len(combined_analogies)} pairs ({len(existing_analogies)} user + {len(combined_analogies) - len(existing_analogies)} new)")
             
-            # Build final spec
+            # Build final spec - use fixed_dimension if provided, otherwise use LLM-identified dimension
+            final_dimension = fixed_dimension if fixed_dimension else result.get('dimension', '')
+            
             spec = {
                 'relating_factor': 'as',
-                'dimension': result.get('dimension', ''),
+                'dimension': final_dimension,
                 'analogies': combined_analogies,
                 'alternative_dimensions': result.get('alternative_dimensions', [])
             }
             
-            logger.info(f"BridgeMapAgent: Identified dimension: {spec.get('dimension', 'NOT IDENTIFIED')}")
+            if fixed_dimension:
+                logger.info(f"BridgeMapAgent: Using FIXED dimension: {final_dimension}")
+            else:
+                logger.info(f"BridgeMapAgent: Identified dimension: {spec.get('dimension', 'NOT IDENTIFIED')}")
             
             return spec
             
         except Exception as e:
             logger.error(f"BridgeMapAgent: Error in auto-complete: {e}")
-            # Return spec with just the existing pairs
+            # Return spec with just the existing pairs, preserving fixed_dimension if provided
             return {
                 'relating_factor': 'as',
-                'dimension': '',
+                'dimension': fixed_dimension if fixed_dimension else '',
                 'analogies': [
                     {'left': pair.get('left', ''), 'right': pair.get('right', ''), 'id': i}
                     for i, pair in enumerate(existing_analogies)

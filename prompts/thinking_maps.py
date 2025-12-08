@@ -190,6 +190,69 @@ alternative_dimensions应该是解释用户已有类比对的其他有效方式�
 
 只输出有效的JSON（无代码块，无markdown，无解释）。"""
 
+# Bridge Map: Fixed dimension mode - user has already specified the relationship, generate pairs using it
+BRIDGE_MAP_FIXED_DIMENSION_EN = """You are completing a bridge map where the user has ALREADY SPECIFIED the analogy relationship pattern.
+
+CRITICAL: The relationship pattern is FIXED and must NOT be changed.
+The user has defined the dimension (relationship pattern), and you must generate new pairs that follow this EXACT pattern.
+
+Your tasks:
+1. Accept the user's specified relationship pattern as-is - DO NOT modify or reinterpret it
+2. Generate 5-6 NEW analogy pairs that strictly follow the specified relationship pattern
+3. Suggest alternative dimensions that could also be used for future bridge maps on this topic
+
+RULES:
+- The "dimension" field in your response MUST be EXACTLY what the user specified - copy it verbatim
+- All new pairs MUST follow the user's specified relationship pattern
+- Do NOT duplicate any pairs the user already created
+- Generate diverse, high-quality pairs that clearly demonstrate the specified relationship
+
+Return ONLY a valid JSON object with these fields:
+{
+  "dimension": "[COPY THE USER'S SPECIFIED DIMENSION EXACTLY]",
+  "analogies": [
+    {"left": "NewItem1", "right": "NewRelated1"},
+    {"left": "NewItem2", "right": "NewRelated2"},
+    {"left": "NewItem3", "right": "NewRelated3"},
+    {"left": "NewItem4", "right": "NewRelated4"},
+    {"left": "NewItem5", "right": "NewRelated5"}
+  ],
+  "alternative_dimensions": ["Alternative pattern 1", "Alternative pattern 2", "Alternative pattern 3", "Alternative pattern 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+BRIDGE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个桥形图，用户已经指定了类比关系模式。
+
+重要：关系模式已经固定，不能更改。
+用户已经定义了维度（关系模式），你必须生成遵循这个确切模式的新类比对。
+
+你的任务：
+1. 原样接受用户指定的关系模式 - 不要修改或重新解释它
+2. 生成5-6个严格遵循指定关系模式的新类比对
+3. 建议其他可用于此主题未来桥形图的替代维度
+
+规则：
+- 你返回的"dimension"字段必须与用户指定的完全相同 - 逐字复制
+- 所有新类比对必须遵循用户指定的关系模式
+- 不要重复用户已经创建的任何对
+- 生成多样化、高质量的对，清楚地展示指定的关系
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "dimension": "[完全复制用户指定的维度]",
+  "analogies": [
+    {"left": "新项目1", "right": "新相关1"},
+    {"left": "新项目2", "right": "新相关2"},
+    {"left": "新项目3", "right": "新相关3"},
+    {"left": "新项目4", "right": "新相关4"},
+    {"left": "新项目5", "right": "新相关5"}
+  ],
+  "alternative_dimensions": ["替代模式1", "替代模式2", "替代模式3", "替代模式4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 BRIDGE_MAP_GENERATION_ZH = """
 请生成一个桥形图的JSON规范。
 
@@ -571,6 +634,67 @@ alternative_dimensions: ["栖息地", "食性", "体型", "地理区域", "保�
 请确保JSON格式正确，不要包含任何代码块标记。
 """
 
+# Tree Map: Fixed dimension mode - user has already specified the classification dimension
+TREE_MAP_FIXED_DIMENSION_EN = """You are completing a tree map where the user has ALREADY SPECIFIED the classification dimension.
+
+CRITICAL: The classification dimension is FIXED and must NOT be changed.
+The user has defined the dimension, and you must generate categories and items using this EXACT dimension.
+
+Your tasks:
+1. Accept the user's specified classification dimension as-is - DO NOT modify or reinterpret it
+2. Generate 4-6 categories that follow the specified dimension
+3. Generate 2-4 items for each category
+4. Suggest alternative dimensions that could be used for future tree maps on this topic
+
+RULES:
+- The "dimension" field in your response MUST be EXACTLY what the user specified - copy it verbatim
+- All categories MUST follow the user's specified classification dimension
+- Generate meaningful, educational content - no placeholder text
+- Keep category and item names concise (1-4 words)
+
+Return ONLY a valid JSON object with these fields:
+{
+  "topic": "Main topic",
+  "dimension": "[COPY THE USER'S SPECIFIED DIMENSION EXACTLY]",
+  "children": [
+    {"text": "Category 1", "children": [{"text": "Item 1", "children": []}, {"text": "Item 2", "children": []}]},
+    {"text": "Category 2", "children": [{"text": "Item A", "children": []}, {"text": "Item B", "children": []}]}
+  ],
+  "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+TREE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个树形图，用户已经指定了分类维度。
+
+重要：分类维度已经固定，不能更改。
+用户已经定义了维度，你必须使用这个确切的维度来生成类别和条目。
+
+你的任务：
+1. 原样接受用户指定的分类维度 - 不要修改或重新解释它
+2. 生成4-6个遵循指定维度的类别
+3. 每个类别生成2-4个条目
+4. 建议其他可用于此主题未来树形图的替代维度
+
+规则：
+- 你返回的"dimension"字段必须与用户指定的完全相同 - 逐字复制
+- 所有类别必须遵循用户指定的分类维度
+- 生成有意义的、有教育意义的内容 - 不要使用占位符文本
+- 保持类别和条目名称简洁（1-4个词）
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "topic": "主题",
+  "dimension": "[完全复制用户指定的维度]",
+  "children": [
+    {"text": "类别1", "children": [{"text": "条目1", "children": []}, {"text": "条目2", "children": []}]},
+    {"text": "类别2", "children": [{"text": "条目甲", "children": []}, {"text": "条目乙", "children": []}]}
+  ],
+  "alternative_dimensions": ["替代维度1", "替代维度2", "替代维度3", "替代维度4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 # ============================================================================
 # FLOW MAP PROMPTS
 # ============================================================================
@@ -785,6 +909,67 @@ alternative_dimensions: ["功能模块", "生命周期", "用户体验", "制造
 请确保JSON格式正确，不要包含任何代码块标记。
 """
 
+# Brace Map: Fixed dimension mode - user has already specified the decomposition dimension
+BRACE_MAP_FIXED_DIMENSION_EN = """You are completing a brace map where the user has ALREADY SPECIFIED the decomposition dimension.
+
+CRITICAL: The decomposition dimension is FIXED and must NOT be changed.
+The user has defined the dimension, and you must generate parts and subparts using this EXACT dimension.
+
+Your tasks:
+1. Accept the user's specified decomposition dimension as-is - DO NOT modify or reinterpret it
+2. Generate 3-5 parts that follow the specified dimension
+3. Generate 2-4 subparts for each part
+4. Suggest alternative dimensions that could be used for future brace maps on this topic
+
+RULES:
+- The "dimension" field in your response MUST be EXACTLY what the user specified - copy it verbatim
+- All parts MUST follow the user's specified decomposition dimension
+- Generate meaningful, educational content - no placeholder text
+- Keep part and subpart names concise (1-4 words)
+
+Return ONLY a valid JSON object with these fields:
+{
+  "whole": "Main topic",
+  "dimension": "[COPY THE USER'S SPECIFIED DIMENSION EXACTLY]",
+  "parts": [
+    {"name": "Part 1", "subparts": [{"name": "Subpart A"}, {"name": "Subpart B"}]},
+    {"name": "Part 2", "subparts": [{"name": "Subpart X"}, {"name": "Subpart Y"}]}
+  ],
+  "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+BRACE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个括号图，用户已经指定了拆解维度。
+
+重要：拆解维度已经固定，不能更改。
+用户已经定义了维度，你必须使用这个确切的维度来生成部分和子部分。
+
+你的任务：
+1. 原样接受用户指定的拆解维度 - 不要修改或重新解释它
+2. 生成3-5个遵循指定维度的部分
+3. 每个部分生成2-4个子部分
+4. 建议其他可用于此主题未来括号图的替代维度
+
+规则：
+- 你返回的"dimension"字段必须与用户指定的完全相同 - 逐字复制
+- 所有部分必须遵循用户指定的拆解维度
+- 生成有意义的、有教育意义的内容 - 不要使用占位符文本
+- 保持部分和子部分名称简洁（1-4个词）
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "whole": "主题",
+  "dimension": "[完全复制用户指定的维度]",
+  "parts": [
+    {"name": "部分1", "subparts": [{"name": "子部分甲"}, {"name": "子部分乙"}]},
+    {"name": "部分2", "subparts": [{"name": "子部分A"}, {"name": "子部分B"}]}
+  ],
+  "alternative_dimensions": ["替代维度1", "替代维度2", "替代维度3", "替代维度4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 # ============================================================================
 # MULTI-FLOW MAP PROMPTS
 # ============================================================================
@@ -849,11 +1034,17 @@ THINKING_MAP_PROMPTS = {
     "bridge_map_identify_relationship_en": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN,
     "bridge_map_identify_relationship_zh": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH,
     
+    # Bridge map fixed dimension prompts (for auto-complete when user has already specified the relationship)
+    "bridge_map_fixed_dimension_en": BRIDGE_MAP_FIXED_DIMENSION_EN,
+    "bridge_map_fixed_dimension_zh": BRIDGE_MAP_FIXED_DIMENSION_ZH,
+    
     # Agent-specific prompt keys (what agents are actually calling for)
     "bridge_map_agent_generation_en": BRIDGE_MAP_GENERATION_EN,
     "bridge_map_agent_generation_zh": BRIDGE_MAP_GENERATION_ZH,
     "bridge_map_agent_identify_relationship_en": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN,
     "bridge_map_agent_identify_relationship_zh": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH,
+    "bridge_map_agent_fixed_dimension_en": BRIDGE_MAP_FIXED_DIMENSION_EN,
+    "bridge_map_agent_fixed_dimension_zh": BRIDGE_MAP_FIXED_DIMENSION_ZH,
     "bubble_map_agent_generation_en": BUBBLE_MAP_GENERATION_EN,
     "bubble_map_agent_generation_zh": BUBBLE_MAP_GENERATION_ZH,
     "double_bubble_map_agent_generation_en": DOUBLE_BUBBLE_MAP_GENERATION_EN,
@@ -862,10 +1053,14 @@ THINKING_MAP_PROMPTS = {
     "circle_map_agent_generation_zh": CIRCLE_MAP_GENERATION_ZH,
     "tree_map_agent_generation_en": TREE_MAP_GENERATION_EN,
     "tree_map_agent_generation_zh": TREE_MAP_GENERATION_ZH,
+    "tree_map_agent_fixed_dimension_en": TREE_MAP_FIXED_DIMENSION_EN,
+    "tree_map_agent_fixed_dimension_zh": TREE_MAP_FIXED_DIMENSION_ZH,
     "flow_map_agent_generation_en": FLOW_MAP_GENERATION_EN,
     "flow_map_agent_generation_zh": FLOW_MAP_GENERATION_ZH,
     "brace_map_agent_generation_en": BRACE_MAP_GENERATION_EN,
     "brace_map_agent_generation_zh": BRACE_MAP_GENERATION_ZH,
+    "brace_map_agent_fixed_dimension_en": BRACE_MAP_FIXED_DIMENSION_EN,
+    "brace_map_agent_fixed_dimension_zh": BRACE_MAP_FIXED_DIMENSION_ZH,
     "multi_flow_map_agent_generation_en": MULTI_FLOW_MAP_GENERATION_EN,
     "multi_flow_map_agent_generation_zh": MULTI_FLOW_MAP_GENERATION_ZH,
 } 
