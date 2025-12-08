@@ -56,12 +56,17 @@ class BridgeMapAgent(BaseAgent):
         try:
             logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
-            # Check for auto-complete mode with existing pairs
+            # Three-template system for bridge maps:
+            # 1. existing_analogies provided → identify relationship pattern
+            # 2. NO existing_analogies but fixed_dimension provided → relationship-only mode
+            # 3. Neither → full generation mode
+            
             if existing_analogies and len(existing_analogies) > 0:
+                # Case 1 & 2: Has existing pairs
                 if fixed_dimension:
-                    logger.info(f"BridgeMapAgent: Auto-complete mode with FIXED dimension '{fixed_dimension}' - preserving {len(existing_analogies)} existing pairs")
+                    logger.info(f"BridgeMapAgent: Mode 2 - Pairs + Relationship provided, FIXED dimension '{fixed_dimension}' - preserving {len(existing_analogies)} pairs")
                 else:
-                    logger.info(f"BridgeMapAgent: Auto-complete mode - preserving {len(existing_analogies)} existing pairs (no fixed dimension)")
+                    logger.info(f"BridgeMapAgent: Mode 1 - Only pairs provided, will identify relationship pattern from {len(existing_analogies)} pairs")
                 spec = await self._identify_relationship_pattern(
                     existing_analogies,
                     language,
@@ -71,8 +76,19 @@ class BridgeMapAgent(BaseAgent):
                     endpoint_path=endpoint_path,
                     fixed_dimension=fixed_dimension
                 )
+            elif fixed_dimension:
+                # Case 3: Relationship-only mode - user provided ONLY the relationship, no pairs
+                logger.info(f"BridgeMapAgent: Mode 3 - Relationship-only mode, generating pairs for '{fixed_dimension}'")
+                spec = await self._generate_from_relationship_only(
+                    fixed_dimension,
+                    language,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
             else:
-                # Generate the bridge map specification (full generation mode)
+                # Case 4: Full generation mode - no pairs, no fixed dimension
                 spec = await self._generate_bridge_map_spec(
                     prompt, 
                     language, 
@@ -466,6 +482,107 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
                 ],
                 'alternative_dimensions': []
             }
+    
+    async def _generate_from_relationship_only(
+        self,
+        relationship: str,
+        language: str,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
+        """
+        Generate bridge map pairs from a relationship pattern only (no existing pairs).
+        
+        This is Mode 3 of the three-template system:
+        - Mode 1: Only pairs provided → identify relationship
+        - Mode 2: Pairs + relationship provided → keep as-is
+        - Mode 3: Only relationship provided → generate pairs (this method)
+        
+        Args:
+            relationship: The relationship pattern specified by user (e.g., "货币到国家", "Author to Book")
+            language: Language for generation
+            
+        Returns:
+            Spec with generated pairs following the specified relationship
+        """
+        try:
+            logger.info(f"BridgeMapAgent: Relationship-only mode - generating pairs for '{relationship}'")
+            
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get the relationship-only prompt
+            system_prompt = get_prompt("bridge_map_agent", language, "relationship_only")
+            
+            if not system_prompt:
+                logger.warning("BridgeMapAgent: No relationship_only prompt found, using generation prompt as fallback")
+                system_prompt = get_prompt("bridge_map_agent", language, "generation")
+            
+            # Build user prompt with the relationship
+            if language == "zh":
+                user_prompt = f"用户指定的关系模式：{relationship}\n\n请根据这个关系模式生成6个类比对。"
+            else:
+                user_prompt = f"User's specified relationship pattern: {relationship}\n\nGenerate 6 analogy pairs following this relationship pattern."
+            
+            logger.debug(f"User prompt: {user_prompt}")
+            
+            # Call LLM
+            from services.llm_service import llm_service
+            from config.settings import config
+            
+            response = await llm_service.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=800,
+                temperature=config.LLM_TEMPERATURE,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='bridge_map'
+            )
+            
+            logger.debug(f"LLM response: {response[:500] if response else 'None'}...")
+            
+            # Extract JSON from response
+            from ..core.agent_utils import extract_json_from_response
+            
+            if isinstance(response, dict):
+                result = response
+            else:
+                result = extract_json_from_response(str(response))
+            
+            if not result:
+                logger.error("BridgeMapAgent: Failed to extract JSON from relationship-only response")
+                return None
+            
+            # Get pairs from LLM response
+            analogies = result.get('analogies', [])
+            logger.info(f"BridgeMapAgent: Generated {len(analogies)} pairs for relationship '{relationship}'")
+            
+            # Add IDs to analogies
+            for i, pair in enumerate(analogies):
+                pair['id'] = i
+            
+            # Build final spec - ALWAYS use the user's relationship as dimension
+            spec = {
+                'relating_factor': 'as',
+                'dimension': relationship,  # Keep user's relationship exactly
+                'analogies': analogies,
+                'alternative_dimensions': result.get('alternative_dimensions', [])
+            }
+            
+            logger.info(f"BridgeMapAgent: Relationship-only complete - dimension: '{relationship}', pairs: {len(analogies)}")
+            
+            return spec
+            
+        except Exception as e:
+            logger.error(f"BridgeMapAgent: Error in relationship-only mode: {e}")
+            return None
     
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""

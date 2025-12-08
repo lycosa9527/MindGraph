@@ -1581,14 +1581,18 @@ async def get_token_stats_admin(
                 "total_tokens": int(total_token_stats.total_tokens or 0)
             }
         
-        # Top 10 users by total tokens (all time)
+        # Top 10 users by total tokens (all time), including organization name
         top_users_query = db.query(
             User.id,
             User.phone,
             User.name,
+            Organization.name.label('organization_name'),
             func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
             func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
             func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens')
+        ).outerjoin(
+            Organization,
+            User.organization_id == Organization.id
         ).outerjoin(
             TokenUsage,
             and_(
@@ -1598,7 +1602,8 @@ async def get_token_stats_admin(
         ).group_by(
             User.id,
             User.phone,
-            User.name
+            User.name,
+            Organization.name
         ).order_by(
             func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
         ).limit(10).all()
@@ -1608,6 +1613,7 @@ async def get_token_stats_admin(
                 "id": user.id,
                 "phone": user.phone,
                 "name": user.name or user.phone,
+                "organization_name": user.organization_name or "",
                 "input_tokens": int(user.input_tokens or 0),
                 "output_tokens": int(user.output_tokens or 0),
                 "total_tokens": int(user.total_tokens or 0)

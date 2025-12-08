@@ -45,6 +45,42 @@ If the user explicitly specifies a relationship pattern in their request:
 ✓ All analogy pairs MUST follow that specific relationship type
 ✗ NEVER ignore or change the user's explicitly requested relationship pattern
 
+=== SPECIAL CASE: RELATIONSHIP-ONLY INPUT ===
+Sometimes users will ONLY provide a relationship pattern without any topic or example pairs.
+These inputs describe the TYPE of analogy they want, and you must generate pairs based on it.
+
+How to recognize relationship-only inputs:
+- Short phrases describing a relationship between two concepts
+- Format patterns like "X和Y", "X到Y", "X to Y", "X and Y"
+- Examples: "货币和国家", "首都到国家", "省会到省份", "Currency to Country", "Capital to Country"
+
+When you detect a relationship-only input:
+1. Use the input DIRECTLY as the dimension field (translate to proper format if needed)
+2. Understand what the relationship means (e.g., "货币和国家" = Currency belongs to Country)
+3. Generate 6 analogy pairs that follow this exact relationship
+4. Think of alternative relationship patterns related to the same domain
+
+Examples of relationship-only inputs and how to handle them:
+- "货币和国家" (Currency and Country):
+  → dimension: "货币到国家" or "Currency to Country"
+  → pairs: 美元→美国, 欧元→欧盟, 日元→日本, 英镑→英国, 人民币→中国, 卢布→俄罗斯
+  → alternatives: "首都到国家", "国旗到国家", "语言到国家"
+
+- "首都到国家" (Capital to Country):
+  → dimension: "首都到国家" or "Capital to Country"
+  → pairs: 北京→中国, 东京→日本, 巴黎→法国, 伦敦→英国, 柏林→德国, 罗马→意大利
+  → alternatives: "货币到国家", "最大城市到国家", "官方语言到国家"
+
+- "省会到省份" (Provincial Capital to Province):
+  → dimension: "省会到省份" or "Provincial Capital to Province"
+  → pairs: 南京→江苏, 杭州→浙江, 广州→广东, 成都→四川, 武汉→湖北, 长沙→湖南
+  → alternatives: "省份到所属区域", "著名景点到省份", "特产到省份"
+
+- "Author to Book":
+  → dimension: "Author to Book"
+  → pairs: Shakespeare→Hamlet, Tolkien→Lord of the Rings, Rowling→Harry Potter, etc.
+  → alternatives: "Genre to Example", "Publisher to Book", "Character to Story"
+
 === STEP 2: GENERATE ANALOGIES USING THAT PATTERN ===
 Now generate exactly 6 analogy pairs that ALL follow the SAME relationship pattern you identified.
 
@@ -253,6 +289,76 @@ BRIDGE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个桥形图，用户已经
 
 只输出有效的JSON（无代码块，无markdown，无解释）。"""
 
+# Bridge Map: Relationship-only mode - user provides ONLY the relationship pattern, no pairs
+BRIDGE_MAP_RELATIONSHIP_ONLY_EN = """You are generating a bridge map where the user has ONLY provided a relationship pattern.
+
+The user has specified a relationship type (like "Currency to Country", "Author to Book", "Capital to Country") but has NOT provided any analogy pairs. Your job is to:
+1. Keep the relationship pattern EXACTLY as the user specified - DO NOT modify it
+2. Generate 6 analogy pairs that demonstrate this relationship
+3. Suggest alternative relationship patterns in the same domain
+
+CRITICAL RULES:
+- The dimension field MUST be EXACTLY what the user specified - copy it verbatim
+- Generate 6 high-quality, diverse pairs that clearly demonstrate the relationship
+- Each element must appear only once (no duplicates)
+- Suggest 4-6 alternative relationship patterns that are related but different
+
+Examples of relationship-only inputs:
+- "Currency to Country" → Generate: USD→USA, EUR→EU, JPY→Japan, GBP→UK, CNY→China, RUB→Russia
+- "Capital to Country" → Generate: Paris→France, Tokyo→Japan, London→UK, Berlin→Germany, Rome→Italy, Madrid→Spain
+- "Author to Book" → Generate: Shakespeare→Hamlet, Tolkien→LOTR, Rowling→Harry Potter, etc.
+
+Return ONLY a valid JSON object with these fields:
+{
+  "dimension": "[COPY THE USER'S RELATIONSHIP PATTERN EXACTLY]",
+  "analogies": [
+    {"left": "Item1", "right": "Related1"},
+    {"left": "Item2", "right": "Related2"},
+    {"left": "Item3", "right": "Related3"},
+    {"left": "Item4", "right": "Related4"},
+    {"left": "Item5", "right": "Related5"},
+    {"left": "Item6", "right": "Related6"}
+  ],
+  "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+BRIDGE_MAP_RELATIONSHIP_ONLY_ZH = """你正在生成一个桥形图，用户只提供了关系模式。
+
+用户指定了一种关系类型（如"货币到国家"、"作者到作品"、"首都到国家"），但没有提供任何类比对。你的任务是：
+1. 完全保持用户指定的关系模式不变 - 不要修改它
+2. 生成6个展示这种关系的类比对
+3. 建议同一领域的替代关系模式
+
+关键规则：
+- dimension字段必须与用户指定的完全相同 - 逐字复制
+- 生成6个高质量、多样化的类比对，清楚地展示该关系
+- 每个元素只能出现一次（不允许重复）
+- 建议4-6个相关但不同的替代关系模式
+
+仅关系模式输入的示例：
+- "货币到国家" → 生成: 美元→美国, 欧元→欧盟, 日元→日本, 英镑→英国, 人民币→中国, 卢布→俄罗斯
+- "首都到国家" → 生成: 巴黎→法国, 东京→日本, 伦敦→英国, 柏林→德国, 罗马→意大利, 马德里→西班牙
+- "作者到作品" → 生成: 莎士比亚→哈姆雷特, 曹雪芹→红楼梦, 鲁迅→狂人日记, 金庸→射雕英雄传, 罗琳→哈利波特, 托尔金→魔戒
+- "省会到省份" → 生成: 南京→江苏, 杭州→浙江, 广州→广东, 成都→四川, 武汉→湖北, 长沙→湖南
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "dimension": "[完全复制用户指定的关系模式]",
+  "analogies": [
+    {"left": "项目1", "right": "相关1"},
+    {"left": "项目2", "right": "相关2"},
+    {"left": "项目3", "right": "相关3"},
+    {"left": "项目4", "right": "相关4"},
+    {"left": "项目5", "right": "相关5"},
+    {"left": "项目6", "right": "相关6"}
+  ],
+  "alternative_dimensions": ["替代模式1", "替代模式2", "替代模式3", "替代模式4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 BRIDGE_MAP_GENERATION_ZH = """
 请生成一个桥形图的JSON规范。
 
@@ -281,6 +387,42 @@ BRIDGE_MAP_GENERATION_ZH = """
 ✓ 您必须在dimension字段中使用该确切的关系模式
 ✓ 所有类比对必须遵循该特定关系类型
 ✗ 绝不忽略或更改用户明确请求的关系模式
+
+=== 特殊情况：仅提供关系模式 ===
+有时用户只会提供一个关系模式，而不提供任何主题或示例对。
+这些输入描述了他们想要的类比类型，您必须基于此生成类比对。
+
+如何识别"仅关系模式"输入：
+- 描述两个概念之间关系的短语
+- 格式模式如"X和Y"、"X到Y"、"X与Y"
+- 示例："货币和国家"、"首都到国家"、"省会到省份"、"作者与作品"
+
+当您检测到仅关系模式输入时：
+1. 直接使用输入作为dimension字段（如需要可调整格式）
+2. 理解这个关系的含义（例如："货币和国家" = 货币属于国家）
+3. 生成6个遵循此关系的类比对
+4. 思考与同一领域相关的替代关系模式
+
+仅关系模式输入的示例及处理方式：
+- "货币和国家"：
+  → dimension: "货币到国家"
+  → 类比对: 美元→美国, 欧元→欧盟, 日元→日本, 英镑→英国, 人民币→中国, 卢布→俄罗斯
+  → 替代模式: "首都到国家", "国旗到国家", "语言到国家"
+
+- "首都到国家"：
+  → dimension: "首都到国家"
+  → 类比对: 北京→中国, 东京→日本, 巴黎→法国, 伦敦→英国, 柏林→德国, 罗马→意大利
+  → 替代模式: "货币到国家", "最大城市到国家", "官方语言到国家"
+
+- "省会到省份"：
+  → dimension: "省会到省份"
+  → 类比对: 南京→江苏, 杭州→浙江, 广州→广东, 成都→四川, 武汉→湖北, 长沙→湖南
+  → 替代模式: "省份到所属区域", "著名景点到省份", "特产到省份"
+
+- "作者与作品"：
+  → dimension: "作者到作品"
+  → 类比对: 莎士比亚→哈姆雷特, 托尔金→魔戒, 罗琳→哈利波特, 曹雪芹→红楼梦, 鲁迅→狂人日记, 金庸→射雕英雄传
+  → 替代模式: "体裁到作品", "出版商到书籍", "角色到故事"
 
 === 步骤2：使用该模式生成类比 ===
 现在生成恰好6个类比对，所有类比对都遵循您识别的相同关系模式。
@@ -1038,6 +1180,10 @@ THINKING_MAP_PROMPTS = {
     "bridge_map_fixed_dimension_en": BRIDGE_MAP_FIXED_DIMENSION_EN,
     "bridge_map_fixed_dimension_zh": BRIDGE_MAP_FIXED_DIMENSION_ZH,
     
+    # Bridge map relationship-only prompts (user provides ONLY the relationship, no pairs)
+    "bridge_map_relationship_only_en": BRIDGE_MAP_RELATIONSHIP_ONLY_EN,
+    "bridge_map_relationship_only_zh": BRIDGE_MAP_RELATIONSHIP_ONLY_ZH,
+    
     # Agent-specific prompt keys (what agents are actually calling for)
     "bridge_map_agent_generation_en": BRIDGE_MAP_GENERATION_EN,
     "bridge_map_agent_generation_zh": BRIDGE_MAP_GENERATION_ZH,
@@ -1045,6 +1191,8 @@ THINKING_MAP_PROMPTS = {
     "bridge_map_agent_identify_relationship_zh": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH,
     "bridge_map_agent_fixed_dimension_en": BRIDGE_MAP_FIXED_DIMENSION_EN,
     "bridge_map_agent_fixed_dimension_zh": BRIDGE_MAP_FIXED_DIMENSION_ZH,
+    "bridge_map_agent_relationship_only_en": BRIDGE_MAP_RELATIONSHIP_ONLY_EN,
+    "bridge_map_agent_relationship_only_zh": BRIDGE_MAP_RELATIONSHIP_ONLY_ZH,
     "bubble_map_agent_generation_en": BUBBLE_MAP_GENERATION_EN,
     "bubble_map_agent_generation_zh": BUBBLE_MAP_GENERATION_ZH,
     "double_bubble_map_agent_generation_en": DOUBLE_BUBBLE_MAP_GENERATION_EN,

@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.35] - 2025-12-08 - Admin Token Leaderboard Enhancement
+
+### Added
+
+- **Phone Number Masking** (`templates/admin.html`)
+  - Added `maskPhone()` function to mask user phone numbers for privacy
+  - Format: `13812345678` → `138****5678`
+
+- **Reusable Language Switcher** (`templates/admin.html`)
+  - Created `applyCurrentLanguage()` function for dynamic content
+  - Fixes language switching on dynamically loaded content
+
+### Changed
+
+- **Token Tracking Leaderboard** (`templates/admin.html`, `routers/auth.py`)
+  - Updated title to "用户Token排行榜(按总Token使用量)" / "User Token Leaderboard (by Total Token Usage)"
+  - Changed layout from flex to proper table with dedicated columns:
+    - 排名 / Rank
+    - 姓名 / Name  
+    - 手机号 / Phone (masked)
+    - 学校 / School
+    - Token使用量 / Token Usage
+  - Added school/organization display for each user with styled badge
+  - Backend now joins with Organization table to return `organization_name`
+
+- **Language Switching Fix** (`templates/admin.html`)
+  - Fixed issue where dynamically injected content (token leaderboard, school list) didn't respect current language setting
+  - Added `applyCurrentLanguage()` calls after dynamic content injection in:
+    - `loadDashboard()` - organization distribution list
+    - `loadTokenStats()` - token leaderboard table
+    - `loadUserFilters()` - filter dropdown
+
+**Files Changed:**
+- `templates/admin.html` - Table layout, phone masking, language fix
+- `routers/auth.py` - Added Organization join for user's school name
+
+---
+
+## [4.28.34] - 2025-12-08 - Bridge Map Three-Template System
+
+### Added
+
+- **Bridge Map Three-Template System** - Complete restructure of bridge map generation modes
+  
+  Previously, bridge map generation had complex logic with multiple edge cases. Now it uses a clean three-template system:
+  
+  | Mode | User Input | LLM Behavior |
+  |------|------------|--------------|
+  | **Mode 1** | Only pairs provided | LLM identifies the relationship pattern |
+  | **Mode 2** | Pairs + relationship provided | Keep everything as-is, don't change |
+  | **Mode 3** | Only relationship provided | Use relationship as dimension, generate pairs |
+
+  - **Use Case for Mode 3**: Users can now input just a relationship pattern like:
+    - "货币和国家" (Currency to Country)
+    - "首都到国家" (Capital to Country)
+    - "省会到省份" (Provincial Capital to Province)
+    - "作者与作品" (Author to Book)
+  
+  - The LLM will understand the relationship and generate appropriate analogy pairs while keeping the user's relationship pattern EXACTLY as specified
+
+### Changed
+
+- **`prompts/thinking_maps.py`**
+  - Added `BRIDGE_MAP_RELATIONSHIP_ONLY_EN` prompt for English relationship-only mode
+  - Added `BRIDGE_MAP_RELATIONSHIP_ONLY_ZH` prompt for Chinese relationship-only mode
+  - Enhanced `BRIDGE_MAP_GENERATION_EN` and `BRIDGE_MAP_GENERATION_ZH` with relationship-only detection instructions
+  - Registered new prompts in `THINKING_MAP_PROMPTS` dictionary
+
+- **`agents/thinking_maps/bridge_map_agent.py`**
+  - Refactored `generate_graph()` to use three-template routing logic
+  - Added `_generate_from_relationship_only()` method for Mode 3 handling
+  - Improved logging to clearly indicate which mode is being used
+
+- **`agents/main_agent.py`**
+  - Added Mode 3 routing condition for relationship-only bridge maps
+  - Updated comments to document three-template system
+
+- **`static/js/managers/toolbar/llm-autocomplete-manager.js`**
+  - Added detection for relationship-only mode (dimension set but no valid pairs)
+  - Sends `fixed_dimension` with empty `existing_analogies` array for Mode 3
+
+**Files Changed:**
+- `prompts/thinking_maps.py` - Added relationship-only prompts and enhanced generation prompts
+- `agents/thinking_maps/bridge_map_agent.py` - Added `_generate_from_relationship_only()` method
+- `agents/main_agent.py` - Added Mode 3 routing
+- `static/js/managers/toolbar/llm-autocomplete-manager.js` - Added Mode 3 detection
+
+---
+
 ## [4.28.33] - 2025-12-08 - Admin Panel School Leaderboard Improvement
 
 ### Changed

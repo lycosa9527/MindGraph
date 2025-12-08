@@ -229,14 +229,32 @@ class LLMAutoCompleteManager {
                         fixed_dimension: hasFixedDimension ? currentDimension : null  // Send fixed dimension if user specified one
                     };
                 } else {
-                    // No valid pairs, use standard generation
-                    prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
-                    requestBody = {
-                        prompt: prompt,
-                        diagram_type: currentDiagramType,
-                        language: language,
-                        request_type: 'autocomplete'
-                    };
+                    // No valid pairs - check if user has specified a dimension (relationship-only mode)
+                    const currentDimension = this.editor.currentSpec?.dimension;
+                    const hasFixedDimension = currentDimension && currentDimension.trim() !== '';
+                    
+                    if (hasFixedDimension) {
+                        // Mode 3: Relationship-only mode - user has specified a dimension but no pairs
+                        prompt = `Generate bridge map analogy pairs using the relationship pattern: "${currentDimension}"`;
+                        this.logger.info('LLMAutoCompleteManager', `Bridge map: Relationship-only mode with dimension "${currentDimension}" (no pairs)`);
+                        requestBody = {
+                            prompt: prompt,
+                            diagram_type: currentDiagramType,
+                            language: language,
+                            request_type: 'autocomplete',
+                            existing_analogies: [],  // No existing pairs
+                            fixed_dimension: currentDimension  // Send the relationship pattern
+                        };
+                    } else {
+                        // No pairs and no dimension - use standard generation
+                        prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;
+                        requestBody = {
+                            prompt: prompt,
+                            diagram_type: currentDiagramType,
+                            language: language,
+                            request_type: 'autocomplete'
+                        };
+                    }
                 }
             } else if (currentDiagramType === 'tree_map' || currentDiagramType === 'brace_map') {
                 // Tree Map and Brace Map: Check if user has already specified a dimension

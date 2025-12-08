@@ -1518,12 +1518,16 @@ async def _generate_spec_with_agent(
         logger.debug(f"User prompt: {user_prompt}")
         logger.debug(f"Language: {language}")
         
-        # Bridge map special handling: pass existing_analogies for auto-complete mode
+        # Bridge map special handling - Three template system:
+        # Mode 1: Only pairs provided → identify relationship
+        # Mode 2: Pairs + relationship provided → keep as-is  
+        # Mode 3: Only relationship provided → generate pairs
         if diagram_type == 'bridge_map' and existing_analogies:
+            # Mode 1 or 2: Has existing pairs
             if fixed_dimension:
-                logger.info(f"Bridge map auto-complete mode: preserving {len(existing_analogies)} pairs with FIXED dimension '{fixed_dimension}'")
+                logger.info(f"Bridge map Mode 2: Pairs + Relationship - preserving {len(existing_analogies)} pairs with FIXED dimension '{fixed_dimension}'")
             else:
-                logger.info(f"Bridge map auto-complete mode: preserving {len(existing_analogies)} existing pairs (no fixed dimension)")
+                logger.info(f"Bridge map Mode 1: Only pairs - will identify relationship from {len(existing_analogies)} pairs")
             result = await agent.generate_graph(
                 user_prompt, 
                 language, 
@@ -1535,6 +1539,22 @@ async def _generate_spec_with_agent(
                 endpoint_path=endpoint_path,
                 # Bridge map specific: existing pairs to preserve and fixed dimension
                 existing_analogies=existing_analogies,
+                fixed_dimension=fixed_dimension
+            )
+        # Bridge map Mode 3: Relationship-only mode (no pairs, but has fixed dimension)
+        elif diagram_type == 'bridge_map' and fixed_dimension and not existing_analogies:
+            logger.info(f"Bridge map Mode 3: Relationship-only - generating pairs for '{fixed_dimension}'")
+            result = await agent.generate_graph(
+                user_prompt, 
+                language, 
+                dimension_preference,
+                # Token tracking parameters
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                # Bridge map specific: no existing pairs, but fixed dimension for relationship-only mode
+                existing_analogies=None,
                 fixed_dimension=fixed_dimension
             )
         # For tree maps with fixed dimension (auto-complete mode)
