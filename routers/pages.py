@@ -129,7 +129,111 @@ async def editor(request: Request, db: Session = Depends(get_db)):
             user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
             
             if not user:
-                logger.debug("Bayi mode: Redirecting unauthenticated /editor access to /demo")
+                # Check IP whitelist for passkey-free access
+                client_ip = get_client_ip(request)
+                if is_ip_whitelisted(client_ip):
+                    # IP is whitelisted - auto-login without passkey
+                    logger.info(f"Bayi mode: IP {client_ip} is whitelisted, granting passkey-free access")
+                    
+                    # Get or create bayi organization
+                    org = db.query(Organization).filter(
+                        Organization.code == BAYI_DEFAULT_ORG_CODE
+                    ).first()
+                    
+                    if not org:
+                        try:
+                            org = Organization(
+                                code=BAYI_DEFAULT_ORG_CODE,
+                                name="Bayi School",
+                                invitation_code="BAYI2024",
+                                created_at=datetime.utcnow()
+                            )
+                            db.add(org)
+                            db.commit()
+                            db.refresh(org)
+                            logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                        except IntegrityError:
+                            db.rollback()
+                            org = db.query(Organization).filter(
+                                Organization.code == BAYI_DEFAULT_ORG_CODE
+                            ).first()
+                        except Exception as e:
+                            db.rollback()
+                            logger.error(f"Failed to create bayi organization: {e}")
+                            return RedirectResponse(url="/demo", status_code=303)
+                    
+                    # Check organization status
+                    if org:
+                        is_active = org.is_active if hasattr(org, 'is_active') else True
+                        if not is_active:
+                            logger.warning(f"IP whitelist blocked: Organization {org.code} is locked")
+                            return RedirectResponse(url="/demo", status_code=303)
+                        if hasattr(org, 'expires_at') and org.expires_at:
+                            if org.expires_at < datetime.utcnow():
+                                logger.warning(f"IP whitelist blocked: Organization {org.code} expired")
+                                return RedirectResponse(url="/demo", status_code=303)
+                    
+                    # Get or create shared bayi IP user
+                    user_phone = "bayi-ip@system.com"
+                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                    
+                    if not bayi_user:
+                        try:
+                            bayi_user = User(
+                                phone=user_phone,
+                                password_hash=hash_password("bayi-no-pwd"),
+                                name="Bayi IP User",
+                                organization_id=org.id if org else None,
+                                created_at=datetime.utcnow()
+                            )
+                            db.add(bayi_user)
+                            db.commit()
+                            db.refresh(bayi_user)
+                            logger.info(f"Created shared bayi IP user: {user_phone}")
+                        except IntegrityError:
+                            db.rollback()
+                            bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                        except Exception as e:
+                            db.rollback()
+                            logger.error(f"Failed to create bayi IP user: {e}")
+                            return RedirectResponse(url="/demo", status_code=303)
+                    
+                    if not bayi_user:
+                        logger.error("Failed to get or create bayi IP user")
+                        return RedirectResponse(url="/demo", status_code=303)
+                    
+                    # Generate JWT token and set cookie
+                    jwt_token = create_access_token(bayi_user)
+                    logger.info(f"Bayi IP whitelist auto-login successful: {client_ip}")
+                    
+                    # Serve editor with JWT cookie
+                    response = templates.TemplateResponse(
+                        "editor.html",
+                        {
+                            "request": request,
+                            "version": get_app_version(),
+                            "feature_learning_mode": config.FEATURE_LEARNING_MODE,
+                            "feature_thinkguide": config.FEATURE_THINKGUIDE,
+                            "feature_mindmate": config.FEATURE_MINDMATE,
+                            "feature_voice_agent": config.FEATURE_VOICE_AGENT,
+                            "verbose_logging": config.VERBOSE_LOGGING,
+                            "ai_assistant_name": config.AI_ASSISTANT_NAME,
+                            "default_language": config.DEFAULT_LANGUAGE,
+                            "wechat_qr_image": config.WECHAT_QR_IMAGE
+                        }
+                    )
+                    response.set_cookie(
+                        key="access_token",
+                        value=jwt_token,
+                        httponly=True,
+                        secure=False,
+                        samesite="lax",
+                        max_age=86400
+                    )
+                    return response
+                
+                # IP not whitelisted, redirect to passkey page
+                logger.debug(f"Bayi mode: IP {client_ip} not whitelisted, redirecting to /demo")
                 return RedirectResponse(url="/demo", status_code=303)
             
             logger.debug(f"Bayi mode: User {user.phone} accessing /editor")

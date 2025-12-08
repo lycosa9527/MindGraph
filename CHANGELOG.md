@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.31] - 2025-12-08 - Bayi Mode IP Whitelist Fix
+
+### Fixed
+
+- **Bayi Mode IP Whitelist Passkey-Free Access** (`routers/pages.py`)
+  - Fixed issue where whitelisted IPs still required passkey authentication when accessing `/editor` directly
+  - IP whitelist check was only performed at `/loginByXz` endpoint (school platform redirect), not at `/editor`
+  
+  - **Root Cause**: The `/editor` route in bayi mode only checked for JWT cookie, redirecting to `/demo` if not found, without checking the IP whitelist
+  
+  - **Solution**: Added IP whitelist check directly to `/editor` route in bayi mode:
+    1. When no JWT cookie is found, check if client IP is whitelisted
+    2. If whitelisted: auto-login (create JWT, set cookie, serve editor)
+    3. If not whitelisted: redirect to `/demo` (passkey page)
+  
+  - **Scope**: IP whitelist feature only applies to bayi mode, not demo/standard/enterprise modes
+
+**Files Changed:**
+- `routers/pages.py` - Added IP whitelist auto-login logic to `/editor` route bayi mode block
+
+---
+
 ## [4.28.30] - 2025-12-08 - Fit View Centering Consistency Fix
 
 ### Fixed
