@@ -527,7 +527,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">🏆 <span class="lang-zh">学校用户排行榜 (Top 10)</span><span class="lang-en">Top 10 Schools Leaderboard</span></h2>
+                    <h2 class="card-title">🏆 <span class="lang-zh">活跃学校排行榜 (按总Token使用量)</span><span class="lang-en">Top Active Schools (by Total Tokens)</span></h2>
                 </div>
                 <div id="org-distribution"></div>
             </div>
@@ -1486,17 +1486,20 @@ curl -X POST http://your-server/api/generate_graph \
                     document.getElementById('stat-tokens').textContent = `${formattedInput}+${formattedOutput}`;
                 }
 
-                // Organization distribution - Top 10 only with rankings
+                // Organization distribution - Top 10 by token usage (active schools)
                 const dist = document.getElementById('org-distribution');
                 const tokenStatsByOrg = stats.token_stats_by_org || {};
-                const sortedOrgs = Object.entries(stats.users_by_org)
-                    .sort((a, b) => b[1] - a[1])  // Sort by count descending
+                const usersByOrg = stats.users_by_org || {};
+                
+                // Sort by total token usage (descending) to show most active schools
+                const sortedOrgs = Object.entries(tokenStatsByOrg)
+                    .sort((a, b) => (b[1].total_tokens || 0) - (a[1].total_tokens || 0))
                     .slice(0, 10);  // Take top 10 only
                 
                 if (sortedOrgs.length === 0) {
-                    dist.innerHTML = '<div style="color:#64748b;text-align:center;padding:2rem;">No schools yet</div>';
+                    dist.innerHTML = '<div style="color:#64748b;text-align:center;padding:2rem;"><span class="lang-zh">暂无活跃学校数据</span><span class="lang-en">No active schools yet</span></div>';
                 } else {
-                    dist.innerHTML = sortedOrgs.map(([org, count], index) => {
+                    dist.innerHTML = sortedOrgs.map(([org, orgTokenStats], index) => {
                         const rank = index + 1;
                         let rankBadge = '';
                         let rankStyle = '';
@@ -1515,8 +1518,10 @@ curl -X POST http://your-server/api/generate_graph \
                             rankStyle = 'background:#f1f5f9;color:#64748b;';
                         }
                         
-                        // Get token stats for this organization
-                        const orgTokenStats = tokenStatsByOrg[org] || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                        // Get user count for this organization
+                        const userCount = usersByOrg[org] || 0;
+                        
+                        // Get token stats
                         const inputTokens = orgTokenStats.input_tokens || 0;
                         const outputTokens = orgTokenStats.output_tokens || 0;
                         const formattedInput = formatNumber(inputTokens);
@@ -1533,11 +1538,11 @@ curl -X POST http://your-server/api/generate_graph \
                                 <div style="flex:1;font-weight:500;">
                                     ${org}
                                 </div>
-                                <div style="font-weight:700;color:#667eea;font-size:1.1rem;">
-                                    ${count} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">用户</span><span class="lang-en">users</span></span>
-                                </div>
-                                <div style="font-weight:700;color:#10b981;font-size:1.1rem;min-width:100px;text-align:right;">
+                                <div style="font-weight:700;color:#10b981;font-size:1.1rem;min-width:120px;text-align:right;">
                                     ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
+                                </div>
+                                <div style="font-weight:500;color:#64748b;font-size:0.95rem;min-width:80px;text-align:right;">
+                                    ${userCount} <span style="font-size:0.85rem;font-weight:400;"><span class="lang-zh">用户</span><span class="lang-en">users</span></span>
                                 </div>
                             </div>
                         `;

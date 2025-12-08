@@ -1444,7 +1444,7 @@ async def get_stats_admin(
                 "total_tokens": int(week_token_stats.total_tokens or 0)
             }
         
-        # Per-organization token usage (track every school's usage!)
+        # Per-organization TOTAL token usage (all time, for active school ranking)
         # Use LEFT JOIN to include organizations with no token usage
         org_token_stats = db.query(
             Organization.id,
@@ -1457,7 +1457,6 @@ async def get_stats_admin(
             TokenUsage, 
             and_(
                 Organization.id == TokenUsage.organization_id,
-                TokenUsage.created_at >= week_ago,
                 TokenUsage.success == True
             )
         ).group_by(
@@ -1487,7 +1486,7 @@ async def get_stats_admin(
         "users_by_org": users_by_org,
         "recent_registrations": recent_registrations,
         "token_stats": token_stats,  # Global token stats
-        "token_stats_by_org": token_stats_by_org  # Per-organization token stats (every school!)
+        "token_stats_by_org": token_stats_by_org  # Per-organization TOTAL token stats (all time)
     }
 
 
