@@ -199,7 +199,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `${minX} ${minY} ${width} ${height}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
     
     // Add background rectangle to cover entire SVG area
     svg.append('rect')
@@ -612,7 +612,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `${minX} ${minY} ${width} ${height}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
     
     // Add background rectangle to cover entire SVG area (consistency with other maps)
     // Use backgroundColor already declared at line 266
@@ -929,7 +929,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `0 0 ${width} ${height}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
     
     // Add background rect to cover entire SVG area (prevents white bar)
     const bgColor = (theme && theme.background) ? theme.background : '#f5f5f5';

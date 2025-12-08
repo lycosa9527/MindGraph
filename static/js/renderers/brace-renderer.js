@@ -338,6 +338,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .attr('width', totalWidth)
         .attr('height', finalHeight)
         .attr('viewBox', `0 0 ${totalWidth} ${finalHeight}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
         .style('display', 'block')
         .style('background-color', THEME.background || '#f8f9fa');
 
@@ -861,9 +862,54 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
     }
     
+    // Recalculate viewBox to tightly fit actual content and center it
+    recalculateTightViewBoxBrace(svg, 40);
+    
     } catch (error) {
         logger.error('BraceRenderer', 'Error during rendering', error);
 
+    }
+}
+
+/**
+ * Recalculate SVG viewBox to tightly fit actual content bounds.
+ * Eliminates excessive white padding and ensures proper centering with xMidYMid meet.
+ * 
+ * @param {d3.Selection} svg - D3 selection of the SVG element
+ * @param {number} padding - Desired padding around content (default: 40)
+ */
+function recalculateTightViewBoxBrace(svg, padding = 40) {
+    try {
+        const svgNode = svg.node();
+        if (!svgNode) {
+            logger.warn('BraceRenderer', 'SVG node not found for viewBox recalculation');
+            return;
+        }
+        
+        // Get bounding box of all rendered content
+        const bbox = svgNode.getBBox();
+        
+        if (bbox.width <= 0 || bbox.height <= 0) {
+            logger.warn('BraceRenderer', 'Invalid content bounds, skipping viewBox recalculation');
+            return;
+        }
+        
+        // Calculate new viewBox with padding on all sides
+        const newX = bbox.x - padding;
+        const newY = bbox.y - padding;
+        const newWidth = bbox.width + (padding * 2);
+        const newHeight = bbox.height + (padding * 2);
+        
+        // Update viewBox to tightly fit content - xMidYMid meet will center it
+        svg.attr('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`)
+           .attr('preserveAspectRatio', 'xMidYMid meet');
+        
+        logger.debug('BraceRenderer', 'ViewBox recalculated for proper centering:', {
+            viewBox: `${Math.round(newX)} ${Math.round(newY)} ${Math.round(newWidth)} ${Math.round(newHeight)}`
+        });
+        
+    } catch (error) {
+        logger.error('BraceRenderer', 'Error recalculating viewBox:', error);
     }
 }
 

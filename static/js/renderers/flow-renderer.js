@@ -1212,6 +1212,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
         .style('background-color', '#f8f8f8');
     
     // 1. Create horizontal main line
@@ -1805,7 +1806,7 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('width', fW)
         .attr('height', fH)
         .attr('viewBox', `0 0 ${fW} ${fH}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
     
     // STEP 3: Calculate layout positions
     const centerX = fW / 2;

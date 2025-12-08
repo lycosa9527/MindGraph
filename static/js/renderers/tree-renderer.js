@@ -99,7 +99,7 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `0 0 ${width} ${height}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet')
+        .attr('preserveAspectRatio', 'xMidYMid meet')
         .style('background-color', containerBackground); // Use the same background color
 
     // Helpers to measure text accurately for width-adaptive rectangles
@@ -635,9 +635,52 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     if (spec.is_learning_sheet && spec.hidden_node_percentage > 0) {
         knockoutTextForLearningSheet(svg, spec.hidden_node_percentage);
     }
+    
+    // Recalculate viewBox to tightly fit actual content and center it
+    recalculateTightViewBox(svg, padding);
 }
 
-
+/**
+ * Recalculate SVG viewBox to tightly fit actual content bounds.
+ * Eliminates excessive white padding and ensures proper centering with xMidYMid meet.
+ * 
+ * @param {d3.Selection} svg - D3 selection of the SVG element
+ * @param {number} padding - Desired padding around content (default: 40)
+ */
+function recalculateTightViewBox(svg, padding = 40) {
+    try {
+        const svgNode = svg.node();
+        if (!svgNode) {
+            logger.warn('TreeRenderer', 'SVG node not found for viewBox recalculation');
+            return;
+        }
+        
+        // Get bounding box of all rendered content
+        const bbox = svgNode.getBBox();
+        
+        if (bbox.width <= 0 || bbox.height <= 0) {
+            logger.warn('TreeRenderer', 'Invalid content bounds, skipping viewBox recalculation');
+            return;
+        }
+        
+        // Calculate new viewBox with padding on all sides
+        const newX = bbox.x - padding;
+        const newY = bbox.y - padding;
+        const newWidth = bbox.width + (padding * 2);
+        const newHeight = bbox.height + (padding * 2);
+        
+        // Update viewBox to tightly fit content - xMidYMid meet will center it
+        svg.attr('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`)
+           .attr('preserveAspectRatio', 'xMidYMid meet');
+        
+        logger.debug('TreeRenderer', 'ViewBox recalculated for proper centering:', {
+            viewBox: `${Math.round(newX)} ${Math.round(newY)} ${Math.round(newWidth)} ${Math.round(newHeight)}`
+        });
+        
+    } catch (error) {
+        logger.error('TreeRenderer', 'Error recalculating viewBox:', error);
+    }
+}
 
 // CRITICAL FIX: Export functions to global scope for dispatcher access
     // Starting function export

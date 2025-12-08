@@ -117,15 +117,15 @@
    Inherits from .toolbar-group in editor.css
    ============================================ */
 
-/* Export Button - Green accent for primary action */
+/* Export Button - Sky Blue accent for primary action */
 .btn-export {
-    background: linear-gradient(135deg, #4caf50, #43a047) !important;
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
     color: white !important;
     border: none !important;
 }
 
 .btn-export:hover {
-    background: linear-gradient(135deg, #66bb6a, #4caf50) !important;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9) !important;
 }
 
 /* Mobile mode */

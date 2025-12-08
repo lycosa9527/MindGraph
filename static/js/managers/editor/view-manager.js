@@ -564,31 +564,24 @@ class ViewManager {
             animate
         });
         
-        // Calculate scale to fit available space with padding
-        const padding = 0.12; // 12% padding around content for visual comfort
-        const scale = Math.min(
-            (availableCanvasWidth * (1 - 2 * padding)) / contentBounds.width,
-            (containerHeight * (1 - 2 * padding)) / contentBounds.height
-        );
+        // Calculate viewBox with equal padding on all sides
+        // This approach creates a viewBox around the content with uniform padding,
+        // then relies on preserveAspectRatio='xMidYMid meet' to center it in the viewport
+        const paddingPercent = 0.10; // 10% padding around content
+        const padding = Math.min(contentBounds.width, contentBounds.height) * paddingPercent;
         
-        // Don't shrink diagrams that are already reasonably sized
-        const minScale = Math.min(
-            (availableCanvasWidth * 0.6) / contentBounds.width,
-            (containerHeight * 0.6) / contentBounds.height
-        );
-        const finalScale = Math.max(scale, minScale);
-        
-        // Calculate viewBox to center content in available space
-        const viewBoxX = contentBounds.x - (availableCanvasWidth * padding) / finalScale;
-        const viewBoxY = contentBounds.y - (containerHeight * padding) / finalScale;
-        const viewBoxWidth = availableCanvasWidth / finalScale;
-        const viewBoxHeight = containerHeight / finalScale;
+        // Create viewBox that's content bounds plus equal padding on all sides
+        const viewBoxX = contentBounds.x - padding;
+        const viewBoxY = contentBounds.y - padding;
+        const viewBoxWidth = contentBounds.width + padding * 2;
+        const viewBoxHeight = contentBounds.height + padding * 2;
         
         const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
         
         this.logger.debug('ViewManager', 'Fit calculation result:', {
             availableCanvasWidth,
-            finalScale: finalScale,
+            contentBounds,
+            padding,
             viewBox: newViewBox
         });
         
@@ -844,9 +837,12 @@ class ViewManager {
                 this.logger.debug('ViewManager', 'Old viewBox:', viewBox);
                 this.logger.debug('ViewManager', 'New viewBox:', newViewBox);
                 
+                // CRITICAL: Always set preserveAspectRatio to ensure consistent centering
+                // Some renderers use xMinYMin which causes top-left alignment
                 svg.transition()
                     .duration(750)
-                    .attr('viewBox', newViewBox);
+                    .attr('viewBox', newViewBox)
+                    .attr('preserveAspectRatio', 'xMidYMid meet');
                     
                 this.logger.debug('ViewManager', 'Diagram fitted to window (existing viewBox)', {
                     bounds: contentBounds,

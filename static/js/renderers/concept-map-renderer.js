@@ -120,7 +120,7 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         .attr('width', width)
         .attr('height', height)
         .attr('viewBox', `0 0 ${width} ${height}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet');
 
     // Add background rectangle to cover entire canvas (from reference)
     svg.append('rect')

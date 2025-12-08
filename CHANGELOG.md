@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.30] - 2025-12-08 - Fit View Centering Consistency Fix
+
+### Fixed
+
+- **Diagram Fit View Centering Inconsistency** (`view-manager.js`, multiple renderers)
+  - Fixed issue where diagrams sometimes appeared at the top half of the canvas instead of centered in the middle
+  - All diagram types now consistently center when fit view is applied or when clicking a node
+  
+  - **Root Cause Analysis**:
+    1. Different renderers used different `preserveAspectRatio` values:
+       - Some used `xMidYMid meet` (centers content)
+       - Others used `xMinYMin meet` (aligns to top-left)
+    2. `ViewManager._applyViewBoxTransform()` only set `preserveAspectRatio` when no viewBox existed
+    3. `ViewManager._fitToCanvas()` calculated viewBox with padding only at top-left, not uniformly
+    4. Tree map and brace map lacked post-render viewBox recalculation
+  
+  - **Solution - ViewManager** (`view-manager.js`):
+    - `_applyViewBoxTransform()`: Always sets `preserveAspectRatio: 'xMidYMid meet'` even when updating existing viewBox
+    - `_fitToCanvas()`: Changed viewBox calculation to use equal padding on all sides, letting `xMidYMid meet` handle centering
+  
+  - **Solution - Renderers** (standardized to `xMidYMid meet`):
+    - `bubble-map-renderer.js`: Changed 3 instances from `xMinYMin` to `xMidYMid`
+    - `tree-renderer.js`: Changed from `xMinYMin` to `xMidYMid`, added `recalculateTightViewBox()` function
+    - `concept-map-renderer.js`: Changed from `xMinYMin` to `xMidYMid`
+    - `flow-renderer.js`: Changed `renderMindFlowMap` and added `preserveAspectRatio` to `renderBridgeMap`
+    - `brace-renderer.js`: Added `preserveAspectRatio: 'xMidYMid meet'` and `recalculateTightViewBoxBrace()` function
+
+### Technical Details
+
+**preserveAspectRatio Values:**
+| Value | Behavior |
+|-------|----------|
+| `xMinYMin meet` | Aligns content to top-left corner |
+| `xMidYMid meet` | Centers content both horizontally and vertically |
+
+**ViewBox Calculation Fix:**
+```javascript
+// OLD - padding only at top-left (caused misalignment)
+const viewBoxX = contentBounds.x - (availableCanvasWidth * padding) / finalScale;
+const viewBoxY = contentBounds.y - (containerHeight * padding) / finalScale;
+
+// NEW - equal padding on all sides (proper centering)
+const padding = Math.min(contentBounds.width, contentBounds.height) * 0.10;
+const viewBoxX = contentBounds.x - padding;
+const viewBoxY = contentBounds.y - padding;
+const viewBoxWidth = contentBounds.width + padding * 2;
+const viewBoxHeight = contentBounds.height + padding * 2;
+```
+
+**Files Changed:**
+- `static/js/managers/editor/view-manager.js`: Fixed `_fitToCanvas()` and `_applyViewBoxTransform()` methods
+- `static/js/renderers/bubble-map-renderer.js`: Standardized preserveAspectRatio
+- `static/js/renderers/tree-renderer.js`: Standardized preserveAspectRatio, added viewBox recalculation
+- `static/js/renderers/concept-map-renderer.js`: Standardized preserveAspectRatio
+- `static/js/renderers/flow-renderer.js`: Standardized preserveAspectRatio for all render functions
+- `static/js/renderers/brace-renderer.js`: Added preserveAspectRatio, added viewBox recalculation
+
+---
+
 ## [4.28.29] - 2025-12-07 - Bridge Map Auto-Complete Enhancement
 
 ### Improved
