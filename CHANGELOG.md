@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.38] - 2025-12-09 - Captcha Cleanup Scheduler
+
+### Added
+
+- **Background Captcha Cleanup Scheduler** - Automatic periodic cleanup of expired captchas
+  - New `start_captcha_cleanup_scheduler()` async function in `services/captcha_storage.py`
+  - Runs every 10 minutes to remove expired captchas from database
+  - Prevents table bloat from accumulated expired records
+
+### Changed
+
+- **Captcha Cleanup Strategy**
+  - Before: Cleanup on every captcha generation (synchronous, adds latency)
+  - After: Background scheduler (asynchronous, no request latency impact)
+  - Removed `cleanup_expired()` call from `generate_captcha` endpoint in `routers/auth.py`
+
+- **Application Lifecycle** (`main.py`)
+  - Added captcha cleanup task startup in lifespan handler
+  - Added proper graceful shutdown for captcha cleanup task
+  - Logs scheduler start/stop events for monitoring
+
+### Technical Details
+
+**Cleanup Strategy Change:**
+```
+Before:
+User requests captcha → generate → store → cleanup_expired() → respond
+(cleanup adds ~50ms latency per request)
+
+After:
+User requests captcha → generate → store → respond
+Background: every 10 min → cleanup_expired() → logs
+(zero latency impact on user requests)
+```
+
+**Files Changed:**
+- `main.py` - Added captcha cleanup scheduler startup and shutdown
+- `routers/auth.py` - Removed synchronous cleanup call from generate_captcha
+- `services/captcha_storage.py` - Added async cleanup scheduler function
+
+---
+
 ## [4.28.37] - 2025-12-09 - Update Notification System & Captcha SQLite Migration
 
 ### Added

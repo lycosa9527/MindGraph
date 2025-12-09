@@ -9,13 +9,14 @@ Features:
 - Uses existing mindgraph.db database
 - WAL mode for concurrent reads
 - Immediate visibility across all workers
-- Automatic expiration cleanup
+- Automatic expiration cleanup (scheduled every 10 minutes)
 - Thread-safe operations
 
 @author lycosa9527
 @made_by MindSpring Team
 """
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict
@@ -214,3 +215,30 @@ def get_captcha_storage() -> SQLiteCaptchaStorage:
     if _captcha_storage is None:
         _captcha_storage = SQLiteCaptchaStorage()
     return _captcha_storage
+
+
+async def start_captcha_cleanup_scheduler(interval_minutes: int = 10):
+    """
+    Run captcha cleanup task periodically in background.
+    
+    Removes expired captchas from the database to prevent table bloat.
+    Default interval: every 10 minutes.
+    
+    Args:
+        interval_minutes: How often to run cleanup (default: 10 minutes)
+    """
+    interval_seconds = interval_minutes * 60
+    storage = get_captcha_storage()
+    
+    logger.info(f"[CaptchaStorage] Starting cleanup scheduler (every {interval_minutes} min)")
+    
+    while True:
+        try:
+            await asyncio.sleep(interval_seconds)
+            # Run cleanup in thread pool to avoid blocking
+            await asyncio.to_thread(storage.cleanup_expired)
+        except asyncio.CancelledError:
+            logger.info("[CaptchaStorage] Cleanup scheduler stopped")
+            break
+        except Exception as e:
+            logger.error(f"[CaptchaStorage] Cleanup scheduler error: {e}", exc_info=True)

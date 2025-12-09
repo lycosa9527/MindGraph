@@ -579,9 +579,6 @@ async def generate_captcha(request: Request, response: Response):
     # Store code with expiration (5 minutes)
     captcha_storage.store(session_id, code, expires_in_seconds=300)
     
-    # Clean expired captchas (maintenance)
-    captcha_storage.cleanup_expired()
-    
     logger.info(f"Generated captcha: {session_id} for session: {session_token[:8]}...")
     
     return {

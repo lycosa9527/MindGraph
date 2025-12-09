@@ -31,6 +31,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from services.temp_image_cleaner import start_cleanup_scheduler
+from services.captcha_storage import start_captcha_cleanup_scheduler
 from utils.env_utils import ensure_utf8_env_file
 
 # Ensure .env file is UTF-8 encoded before loading
@@ -624,6 +625,16 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to start cleanup scheduler: {e}")
     
+    # Start captcha cleanup task (removes expired captchas every 10 minutes)
+    captcha_cleanup_task = None
+    try:
+        captcha_cleanup_task = asyncio.create_task(start_captcha_cleanup_scheduler(interval_minutes=10))
+        if worker_id == '0' or not worker_id:
+            logger.info("Captcha cleanup scheduler started")
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
+            logger.warning(f"Failed to start captcha cleanup scheduler: {e}")
+    
     # Yield control to application
     try:
         yield
@@ -634,7 +645,7 @@ async def lifespan(app: FastAPI):
         # Give ongoing requests a brief moment to complete
         await asyncio.sleep(0.1)
         
-        # Stop cleanup task
+        # Stop cleanup tasks
         if cleanup_task:
             cleanup_task.cancel()
             try:
@@ -643,6 +654,15 @@ async def lifespan(app: FastAPI):
                 pass
             if worker_id == '0' or not worker_id:
                 logger.info("Temp image cleanup scheduler stopped")
+        
+        if captcha_cleanup_task:
+            captcha_cleanup_task.cancel()
+            try:
+                await captcha_cleanup_task
+            except asyncio.CancelledError:
+                pass
+            if worker_id == '0' or not worker_id:
+                logger.info("Captcha cleanup scheduler stopped")
         
         # Cleanup LLM Service
         try:
