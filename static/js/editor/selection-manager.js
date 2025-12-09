@@ -92,19 +92,24 @@ class SelectionManager {
                 .attr('stroke-width', 4)
                 .style('filter', 'drop-shadow(0 0 12px rgba(102, 126, 234, 0.7))');
         } else {
-            // Restore original stroke attributes
-            const originalStroke = nodeElement.attr('data-original-stroke');
-            const originalStrokeWidth = nodeElement.attr('data-original-stroke-width');
+            // Get stored original stroke (if exists)
+            const storedOriginalStroke = nodeElement.attr('data-original-stroke');
+            const storedOriginalStrokeWidth = nodeElement.attr('data-original-stroke-width');
             
+            // Remove selection styling
             nodeElement
                 .classed('selected', false)
                 .style('filter', null);
             
-            // Restore original or remove stroke
-            if (originalStroke && originalStroke !== 'none') {
+            // Only restore stroke if we have stored original values
+            // This prevents destroying strokes on re-rendered elements that don't have
+            // the data-original-stroke attribute (they already have correct strokes from renderer)
+            if (storedOriginalStroke !== null) {
+                // Restore original stroke if it was a valid stroke, otherwise remove
+                if (storedOriginalStroke && storedOriginalStroke !== 'none') {
                 nodeElement
-                    .attr('stroke', originalStroke)
-                    .attr('stroke-width', originalStrokeWidth);
+                        .attr('stroke', storedOriginalStroke)
+                        .attr('stroke-width', storedOriginalStrokeWidth);
             } else {
                 nodeElement
                     .attr('stroke', null)
@@ -115,6 +120,9 @@ class SelectionManager {
             nodeElement
                 .attr('data-original-stroke', null)
                 .attr('data-original-stroke-width', null);
+            }
+            // If storedOriginalStroke is null (element was re-rendered and never had selection applied),
+            // don't touch the stroke at all - it's already correct from the renderer
         }
     }
     

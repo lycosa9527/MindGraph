@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.36] - 2025-12-09 - Double Bubble Map Stroke Fix
+
+### Fixed
+
+- **Double Bubble Map Stroke Disappearing After Text Edit** (`static/js/editor/selection-manager.js`)
+  - Fixed bug where the left topic circle's black border (stroke) would disappear after editing text and clicking Apply
+  - Root cause: When diagram re-renders after text update, the new DOM elements don't have the `data-original-stroke` attribute. When `clearSelection()` was called later, the code incorrectly set the stroke to `null`
+  - Fix: Modified `updateVisualSelection()` to only restore/modify stroke if `data-original-stroke` attribute exists. Re-rendered elements that never had selection applied keep their correct strokes from the renderer
+  - Verified other managers (`ui-state-llm-manager.js`, `node-indicator.js`) use safe patterns and don't have this issue
+
+**Files Changed:**
+- `static/js/editor/selection-manager.js` - Fixed stroke restoration logic in `updateVisualSelection()`
+
+---
+
 ## [4.28.35] - 2025-12-08 - Admin Token Leaderboard Enhancement
 
 ### Added
