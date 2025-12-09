@@ -7,7 +7,7 @@ Database models for User and Organization entities.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -99,4 +99,64 @@ class APIKey(Base):
     
     def __repr__(self):
         return f"<APIKey {self.name}: {self.key[:12]}...>"
+
+
+class UpdateNotification(Base):
+    """
+    Update Notification Configuration
+    
+    Stores the current announcement settings.
+    Only one active record should exist (id=1).
+    """
+    __tablename__ = "update_notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    enabled = Column(Boolean, default=False)
+    version = Column(String(50), default="")
+    title = Column(String(200), default="")
+    message = Column(String(10000), default="")  # Rich text content
+    
+    # Scheduling - optional start/end dates
+    start_date = Column(DateTime, nullable=True)  # Show after this date
+    end_date = Column(DateTime, nullable=True)    # Hide after this date
+    
+    # Targeting - optional organization filter
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UpdateNotificationDismissed(Base):
+    """
+    Tracks which users have dismissed which version of the notification.
+    
+    When user dismisses, their user_id + version is stored.
+    When version changes, old records can be cleaned up.
+    """
+    __tablename__ = "update_notification_dismissed"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    version = Column(String(50), nullable=False, index=True)
+    dismissed_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Unique constraint: one dismiss record per user per version (prevents duplicates)
+    __table_args__ = (
+        UniqueConstraint('user_id', 'version', name='uq_user_version_dismissed'),
+    )
+
+
+class Captcha(Base):
+    """
+    Temporary captcha storage for verification.
+    
+    Uses SQLite with WAL mode for multi-worker compatibility.
+    Captchas are one-time use and expire after 5 minutes.
+    """
+    __tablename__ = "captchas"
+    
+    id = Column(String(64), primary_key=True)  # UUID
+    code = Column(String(10), nullable=False)  # Captcha code (uppercase)
+    expires_at = Column(DateTime, nullable=False)  # Expiration timestamp
+    created_at = Column(DateTime, default=datetime.utcnow)
 

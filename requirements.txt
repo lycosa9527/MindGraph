@@ -1,5 +1,5 @@
 # MindGraph - AI-Powered Diagram Generation Platform
-# Version: 4.9.0 (see VERSION file for current version)
+# Version: 4.28.37 (see VERSION file for current version)
 # Python 3.8+ Required (3.13+ Recommended for Best Async Performance)
 #
 # INSTALLATION INSTRUCTIONS:

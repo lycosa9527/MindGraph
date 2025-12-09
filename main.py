@@ -654,6 +654,16 @@ async def lifespan(app: FastAPI):
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to cleanup LLM Service: {e}")
         
+        # Flush update notification dismiss buffer
+        try:
+            from services.update_notifier import update_notifier
+            update_notifier.shutdown()
+            if worker_id == '0' or not worker_id:
+                logger.info("Update notifier flushed")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to flush update notifier: {e}")
+        
         # Cleanup Database
         try:
             from config.database import close_db
@@ -872,7 +882,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, thinking, auth, admin_env, admin_logs, voice
+from routers import pages, cache, api, thinking, auth, admin_env, admin_logs, voice, update_notification
 # from routers import learning  # DISABLED - Will be redesigned later
 
 # Register routers
@@ -885,6 +895,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # 
 app.include_router(admin_env.router)  # Admin environment settings management
 app.include_router(admin_logs.router)  # Admin log streaming
 app.include_router(voice.router)  # VoiceAgent (real-time voice conversation)
+app.include_router(update_notification.router)  # Update notification system
 
 # ============================================================================
 # APPLICATION ENTRY POINT

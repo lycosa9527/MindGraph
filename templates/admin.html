@@ -466,6 +466,237 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: 0.3s;
+            border-radius: 28px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Rich Text Editor */
+        .rich-text-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-select {
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: white;
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 80px;
+        }
+
+        .toolbar-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .toolbar-btn:hover {
+            background: #e2e8f0;
+            border-color: #667eea;
+        }
+
+        .toolbar-btn:active {
+            background: #cbd5e1;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: #e2e8f0;
+            margin: 0 4px;
+        }
+
+        .toolbar-color {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 2px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .rich-text-editor {
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 0 8px 8px;
+            background: white;
+            font-size: 15px;
+            line-height: 1.6;
+            outline: none;
+        }
+
+        .rich-text-editor:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .rich-text-editor:empty:before {
+            content: attr(data-placeholder);
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .rich-text-editor ul, .rich-text-editor ol {
+            margin-left: 20px;
+            padding-left: 0;
+        }
+
+        .rich-text-editor li {
+            margin-bottom: 4px;
+        }
+
+        .rich-text-editor img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        /* Emoji Picker */
+        .emoji-picker-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 40px;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            width: 260px;
+        }
+
+        .emoji-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+
+        .emoji-tab {
+            flex: 1;
+            padding: 4px 6px;
+            font-size: 11px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .emoji-tab:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .emoji-tab.active {
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 500;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .emoji-grid span {
+            font-size: 20px;
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 4px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .emoji-grid span:hover {
+            background: #f1f5f9;
+        }
+
+        /* Danger Button */
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -495,13 +726,12 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('dashboard')">📊 <span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
-            <button class="tab" onclick="switchTab('tokens')">🔢 <span class="lang-zh">Token统计</span><span class="lang-en">Tokens Tracking</span></button>
-            <button class="tab" onclick="switchTab('schools')">🏫 <span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
-            <button class="tab" onclick="switchTab('users')">👥 <span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
-            <button class="tab" onclick="switchTab('apikeys')">🔑 <span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
-            <button class="tab" onclick="switchTab('settings')">⚙️ <span class="lang-zh">系统设置</span><span class="lang-en">Settings</span></button>
-            <button class="tab" onclick="switchTab('logs')">📋 <span class="lang-zh">调试日志</span><span class="lang-en">Debug Logs</span></button>
+            <button class="tab active" onclick="switchTab('dashboard')"><span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
+            <button class="tab" onclick="switchTab('tokens')"><span class="lang-zh">Token统计</span><span class="lang-en">Tokens</span></button>
+            <button class="tab" onclick="switchTab('schools')"><span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
+            <button class="tab" onclick="switchTab('users')"><span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
+            <button class="tab" onclick="switchTab('apikeys')"><span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
+            <button class="tab" onclick="switchTab('announcement')"><span class="lang-zh">更新公告</span><span class="lang-en">Announcement</span></button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -685,268 +915,255 @@
             </div>
         </div>
 
-        <!-- Settings Tab -->
-        <div id="settings-tab" class="tab-content">
-            <!-- Action Bar -->
-            <div class="card" style="margin-bottom:1rem;">
-                <div class="card-header">
-                    <h2 class="card-title"><span class="lang-zh">系统配置</span><span class="lang-en">System Settings</span></h2>
-                    <div style="display:flex;gap:0.5rem;">
-                        <button class="btn btn-secondary btn-sm" onclick="loadEnvSettings()">🔄 <span class="lang-zh">刷新</span><span class="lang-en">Refresh</span></button>
-                        <button class="btn btn-primary btn-sm" onclick="showBackupListModal()">📦 <span class="lang-zh">备份</span><span class="lang-en">Backups</span></button>
-                        <button class="btn btn-success btn-sm" onclick="validateEnvSettings()">✓ <span class="lang-zh">验证</span><span class="lang-en">Validate</span></button>
-                        <button class="btn btn-primary" onclick="saveEnvSettings()">💾 <span class="lang-zh">保存全部</span><span class="lang-en">Save All</span></button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="settings-loading" class="spinner"></div>
+        <!-- Update Announcement Tab -->
+        <div id="announcement-tab" class="tab-content">
+            <div id="announcement-loading" class="spinner"></div>
             
-            <div id="settings-form" style="display:none;">
-                <form id="env-settings-form" onsubmit="event.preventDefault(); saveEnvSettings(); return false;">
-                <!-- Category 1: Application Server -->
+            <div id="announcement-form" style="display:none;">
+                <!-- Enable/Disable Toggle -->
                 <div class="card">
-                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('app-settings')">
-                        <h3 class="card-title" style="font-size:1.1rem;">🖥️ Application Server</h3>
-                        <span id="app-settings-icon">▼</span>
+                    <div class="card-header">
+                        <h3 class="card-title" style="font-size:1.1rem;">公告开关</h3>
                     </div>
-                    <div id="app-settings-content" class="category-content">
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-HOST">HOST <span style="color:#94a3b8;font-size:0.85rem;">(Server host address)</span></label>
-                                <input type="text" id="env-HOST" name="env-HOST" class="form-input" placeholder="0.0.0.0" autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-PORT">PORT <span style="color:#94a3b8;font-size:0.85rem;">(1-65535)</span></label>
-                                <input type="number" id="env-PORT" name="env-PORT" class="form-input" min="1" max="65535" placeholder="9527" autocomplete="off">
-                            </div>
+                    <div style="padding:1rem;">
+                        <div class="form-group" style="display:flex;align-items:center;gap:1rem;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="announcement-enabled" name="announcement-enabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-weight:500;">启用更新公告</span>
                         </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-DEBUG">DEBUG <span style="color:#94a3b8;font-size:0.85rem;">(Enable debug mode)</span></label>
-                                <select id="env-DEBUG" name="env-DEBUG" class="form-select">
-                                    <option value="False">False</option>
-                                    <option value="True">True</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-EXTERNAL_HOST">EXTERNAL_HOST <span style="color:#94a3b8;font-size:0.85rem;">(Public IP, optional)</span></label>
-                                <input type="text" id="env-EXTERNAL_HOST" name="env-EXTERNAL_HOST" class="form-input" placeholder="Leave empty for auto-detect" autocomplete="off">
-                            </div>
+                        <div style="margin-top:0.5rem;color:#64748b;font-size:0.875rem;">
+                            开启后，用户登录时将看到公告弹窗（每个版本只显示一次）
                         </div>
                     </div>
                 </div>
 
-                <!-- Category 2: Qwen API -->
+                <!-- Version -->
                 <div class="card">
-                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('qwen-settings')">
-                        <h3 class="card-title" style="font-size:1.1rem;">🤖 Qwen API Configuration</h3>
-                        <span id="qwen-settings-icon">▼</span>
+                    <div class="card-header">
+                        <h3 class="card-title" style="font-size:1.1rem;">版本号</h3>
                     </div>
-                    <div id="qwen-settings-content" class="category-content">
+                    <div style="padding:1rem;">
                         <div class="form-group">
-                            <label class="form-label" for="env-QWEN_API_KEY">QWEN_API_KEY <span style="color:#ef4444;">*Required</span></label>
-                            <input type="password" id="env-QWEN_API_KEY" name="env-QWEN_API_KEY" class="form-input" placeholder="sk-..." autocomplete="current-password">
+                            <label class="form-label" for="announcement-version">版本号</label>
+                            <input type="text" id="announcement-version" name="announcement-version" class="form-input" placeholder="例如: 1.5.0" autocomplete="off">
+                            <small style="color:#64748b;">每个版本号只会显示一次公告。更改版本号后，所有用户将再次看到公告。</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" style="font-size:1.1rem;">公告内容</h3>
+                    </div>
+                    <div style="padding:1rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="announcement-title">标题</label>
+                            <input type="text" id="announcement-title" name="announcement-title" class="form-input" placeholder="例如: 系统更新" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="env-QWEN_API_URL">QWEN_API_URL</label>
-                            <input type="text" id="env-QWEN_API_URL" name="env-QWEN_API_URL" class="form-input" placeholder="https://dashscope.aliyuncs.com/..." autocomplete="off">
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-QWEN_MODEL_CLASSIFICATION">QWEN_MODEL_CLASSIFICATION <span style="color:#94a3b8;font-size:0.85rem;">(Fast/cheap)</span></label>
-                                <input type="text" id="env-QWEN_MODEL_CLASSIFICATION" name="env-QWEN_MODEL_CLASSIFICATION" class="form-input" placeholder="qwen-turbo" autocomplete="off">
+                            <label class="form-label">公告正文</label>
+                            <!-- Rich Text Toolbar -->
+                            <div class="rich-text-toolbar">
+                                <select id="font-family-zh" class="toolbar-select" onchange="announcementEditor.execCommand('fontName', this.value)" title="字体">
+                                    <option value="">字体</option>
+                                    <option value="Microsoft YaHei">微软雅黑</option>
+                                    <option value="SimSun">宋体</option>
+                                    <option value="SimHei">黑体</option>
+                                    <option value="KaiTi">楷体</option>
+                                    <option value="FangSong">仿宋</option>
+                                    <option value="Arial">Arial</option>
+                                </select>
+                                <select id="font-size-zh" class="toolbar-select" onchange="announcementEditor.execCommand('fontSize', this.value)" title="字号">
+                                    <option value="">字号</option>
+                                    <option value="1">12px</option>
+                                    <option value="2">14px</option>
+                                    <option value="3">16px</option>
+                                    <option value="4">18px</option>
+                                    <option value="5">24px</option>
+                                    <option value="6">32px</option>
+                                    <option value="7">48px</option>
+                                </select>
+                                <div class="toolbar-divider"></div>
+                                <button type="button" class="toolbar-btn" onclick="announcementEditor.execCommand('bold')" title="粗体"><b>B</b></button>
+                                <button type="button" class="toolbar-btn" onclick="announcementEditor.execCommand('italic')" title="斜体"><i>I</i></button>
+                                <button type="button" class="toolbar-btn" onclick="announcementEditor.execCommand('underline')" title="下划线"><u>U</u></button>
+                                <div class="toolbar-divider"></div>
+                                <button type="button" class="toolbar-btn" onclick="announcementEditor.execCommand('insertUnorderedList')" title="无序列表">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                                        <circle cx="4" cy="6" r="1" fill="currentColor"></circle>
+                                        <circle cx="4" cy="12" r="1" fill="currentColor"></circle>
+                                        <circle cx="4" cy="18" r="1" fill="currentColor"></circle>
+                                    </svg>
+                                </button>
+                                <button type="button" class="toolbar-btn" onclick="announcementEditor.execCommand('insertOrderedList')" title="有序列表">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="10" y1="6" x2="21" y2="6"></line>
+                                        <line x1="10" y1="12" x2="21" y2="12"></line>
+                                        <line x1="10" y1="18" x2="21" y2="18"></line>
+                                        <text x="4" y="8" fill="currentColor" font-size="8">1</text>
+                                        <text x="4" y="14" fill="currentColor" font-size="8">2</text>
+                                        <text x="4" y="20" fill="currentColor" font-size="8">3</text>
+                                    </svg>
+                                </button>
+                                <div class="toolbar-divider"></div>
+                                <input type="color" id="text-color-zh" class="toolbar-color" onchange="announcementEditor.execCommand('foreColor', this.value)" title="文字颜色" value="#000000">
+                                <div class="toolbar-divider"></div>
+                                <button type="button" class="toolbar-btn" onclick="announcementEditor.insertImage()" title="插入图片">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="emoji-picker-wrapper">
+                                    <button type="button" class="toolbar-btn" onclick="announcementEditor.toggleEmojiPicker()" title="插入表情">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                        </svg>
+                                    </button>
+                                    <div id="emoji-picker" class="emoji-picker" style="display:none;">
+                                        <div class="emoji-tabs">
+                                            <button type="button" class="emoji-tab active" onclick="announcementEditor.switchEmojiTab('common')">常用</button>
+                                            <button type="button" class="emoji-tab" onclick="announcementEditor.switchEmojiTab('faces')">表情</button>
+                                            <button type="button" class="emoji-tab" onclick="announcementEditor.switchEmojiTab('gestures')">手势</button>
+                                            <button type="button" class="emoji-tab" onclick="announcementEditor.switchEmojiTab('objects')">物品</button>
+                                            <button type="button" class="emoji-tab" onclick="announcementEditor.switchEmojiTab('symbols')">符号</button>
+                                        </div>
+                                        <div class="emoji-grid" id="emoji-grid-common">
+                                            <span onclick="announcementEditor.insertEmoji('🎉')">🎉</span>
+                                            <span onclick="announcementEditor.insertEmoji('✨')">✨</span>
+                                            <span onclick="announcementEditor.insertEmoji('🚀')">🚀</span>
+                                            <span onclick="announcementEditor.insertEmoji('💡')">💡</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔥')">🔥</span>
+                                            <span onclick="announcementEditor.insertEmoji('⭐')">⭐</span>
+                                            <span onclick="announcementEditor.insertEmoji('❤️')">❤️</span>
+                                            <span onclick="announcementEditor.insertEmoji('👍')">👍</span>
+                                            <span onclick="announcementEditor.insertEmoji('📢')">📢</span>
+                                            <span onclick="announcementEditor.insertEmoji('📌')">📌</span>
+                                            <span onclick="announcementEditor.insertEmoji('✅')">✅</span>
+                                            <span onclick="announcementEditor.insertEmoji('⚡')">⚡</span>
+                                            <span onclick="announcementEditor.insertEmoji('🎯')">🎯</span>
+                                            <span onclick="announcementEditor.insertEmoji('💪')">💪</span>
+                                            <span onclick="announcementEditor.insertEmoji('🌟')">🌟</span>
+                                            <span onclick="announcementEditor.insertEmoji('🎁')">🎁</span>
+                                            <span onclick="announcementEditor.insertEmoji('🆕')">🆕</span>
+                                            <span onclick="announcementEditor.insertEmoji('🆙')">🆙</span>
+                                            <span onclick="announcementEditor.insertEmoji('💯')">💯</span>
+                                            <span onclick="announcementEditor.insertEmoji('🏆')">🏆</span>
+                                        </div>
+                                        <div class="emoji-grid" id="emoji-grid-faces" style="display:none;">
+                                            <span onclick="announcementEditor.insertEmoji('😀')">😀</span>
+                                            <span onclick="announcementEditor.insertEmoji('😃')">😃</span>
+                                            <span onclick="announcementEditor.insertEmoji('😄')">😄</span>
+                                            <span onclick="announcementEditor.insertEmoji('😁')">😁</span>
+                                            <span onclick="announcementEditor.insertEmoji('😊')">😊</span>
+                                            <span onclick="announcementEditor.insertEmoji('🥰')">🥰</span>
+                                            <span onclick="announcementEditor.insertEmoji('😍')">😍</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤩')">🤩</span>
+                                            <span onclick="announcementEditor.insertEmoji('😎')">😎</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤔')">🤔</span>
+                                            <span onclick="announcementEditor.insertEmoji('🧐')">🧐</span>
+                                            <span onclick="announcementEditor.insertEmoji('😇')">😇</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤗')">🤗</span>
+                                            <span onclick="announcementEditor.insertEmoji('😮')">😮</span>
+                                            <span onclick="announcementEditor.insertEmoji('😲')">😲</span>
+                                            <span onclick="announcementEditor.insertEmoji('🥳')">🥳</span>
+                                            <span onclick="announcementEditor.insertEmoji('😴')">😴</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤯')">🤯</span>
+                                            <span onclick="announcementEditor.insertEmoji('😏')">😏</span>
+                                            <span onclick="announcementEditor.insertEmoji('🙄')">🙄</span>
+                                        </div>
+                                        <div class="emoji-grid" id="emoji-grid-gestures" style="display:none;">
+                                            <span onclick="announcementEditor.insertEmoji('👍')">👍</span>
+                                            <span onclick="announcementEditor.insertEmoji('👎')">👎</span>
+                                            <span onclick="announcementEditor.insertEmoji('👏')">👏</span>
+                                            <span onclick="announcementEditor.insertEmoji('🙌')">🙌</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤝')">🤝</span>
+                                            <span onclick="announcementEditor.insertEmoji('✋')">✋</span>
+                                            <span onclick="announcementEditor.insertEmoji('👋')">👋</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤞')">🤞</span>
+                                            <span onclick="announcementEditor.insertEmoji('✌️')">✌️</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤟')">🤟</span>
+                                            <span onclick="announcementEditor.insertEmoji('👌')">👌</span>
+                                            <span onclick="announcementEditor.insertEmoji('👆')">👆</span>
+                                            <span onclick="announcementEditor.insertEmoji('👇')">👇</span>
+                                            <span onclick="announcementEditor.insertEmoji('👈')">👈</span>
+                                            <span onclick="announcementEditor.insertEmoji('👉')">👉</span>
+                                            <span onclick="announcementEditor.insertEmoji('💪')">💪</span>
+                                            <span onclick="announcementEditor.insertEmoji('🙏')">🙏</span>
+                                            <span onclick="announcementEditor.insertEmoji('🤙')">🤙</span>
+                                            <span onclick="announcementEditor.insertEmoji('✍️')">✍️</span>
+                                            <span onclick="announcementEditor.insertEmoji('🖐️')">🖐️</span>
+                                        </div>
+                                        <div class="emoji-grid" id="emoji-grid-objects" style="display:none;">
+                                            <span onclick="announcementEditor.insertEmoji('📱')">📱</span>
+                                            <span onclick="announcementEditor.insertEmoji('💻')">💻</span>
+                                            <span onclick="announcementEditor.insertEmoji('🖥️')">🖥️</span>
+                                            <span onclick="announcementEditor.insertEmoji('📊')">📊</span>
+                                            <span onclick="announcementEditor.insertEmoji('📈')">📈</span>
+                                            <span onclick="announcementEditor.insertEmoji('📝')">📝</span>
+                                            <span onclick="announcementEditor.insertEmoji('📚')">📚</span>
+                                            <span onclick="announcementEditor.insertEmoji('📖')">📖</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔧')">🔧</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔨')">🔨</span>
+                                            <span onclick="announcementEditor.insertEmoji('⚙️')">⚙️</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔑')">🔑</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔒')">🔒</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔓')">🔓</span>
+                                            <span onclick="announcementEditor.insertEmoji('💾')">💾</span>
+                                            <span onclick="announcementEditor.insertEmoji('📁')">📁</span>
+                                            <span onclick="announcementEditor.insertEmoji('🗂️')">🗂️</span>
+                                            <span onclick="announcementEditor.insertEmoji('📋')">📋</span>
+                                            <span onclick="announcementEditor.insertEmoji('🎵')">🎵</span>
+                                            <span onclick="announcementEditor.insertEmoji('🎬')">🎬</span>
+                                        </div>
+                                        <div class="emoji-grid" id="emoji-grid-symbols" style="display:none;">
+                                            <span onclick="announcementEditor.insertEmoji('✅')">✅</span>
+                                            <span onclick="announcementEditor.insertEmoji('❌')">❌</span>
+                                            <span onclick="announcementEditor.insertEmoji('⭕')">⭕</span>
+                                            <span onclick="announcementEditor.insertEmoji('❗')">❗</span>
+                                            <span onclick="announcementEditor.insertEmoji('❓')">❓</span>
+                                            <span onclick="announcementEditor.insertEmoji('⚠️')">⚠️</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔴')">🔴</span>
+                                            <span onclick="announcementEditor.insertEmoji('🟠')">🟠</span>
+                                            <span onclick="announcementEditor.insertEmoji('🟡')">🟡</span>
+                                            <span onclick="announcementEditor.insertEmoji('🟢')">🟢</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔵')">🔵</span>
+                                            <span onclick="announcementEditor.insertEmoji('🟣')">🟣</span>
+                                            <span onclick="announcementEditor.insertEmoji('⬆️')">⬆️</span>
+                                            <span onclick="announcementEditor.insertEmoji('⬇️')">⬇️</span>
+                                            <span onclick="announcementEditor.insertEmoji('➡️')">➡️</span>
+                                            <span onclick="announcementEditor.insertEmoji('⬅️')">⬅️</span>
+                                            <span onclick="announcementEditor.insertEmoji('↩️')">↩️</span>
+                                            <span onclick="announcementEditor.insertEmoji('🔄')">🔄</span>
+                                            <span onclick="announcementEditor.insertEmoji('➕')">➕</span>
+                                            <span onclick="announcementEditor.insertEmoji('➖')">➖</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden file input for image upload -->
+                                <input type="file" id="announcement-image-input" accept="image/*" style="display:none;" onchange="announcementEditor.handleImageUpload(this)">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-QWEN_MODEL_GENERATION">QWEN_MODEL_GENERATION <span style="color:#94a3b8;font-size:0.85rem;">(High quality)</span></label>
-                                <input type="text" id="env-QWEN_MODEL_GENERATION" name="env-QWEN_MODEL_GENERATION" class="form-input" placeholder="qwen-plus" autocomplete="off">
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-QWEN_TEMPERATURE">QWEN_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(0.0-2.0)</span></label>
-                                <input type="number" id="env-QWEN_TEMPERATURE" name="env-QWEN_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.7" autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-LLM_TEMPERATURE">LLM_TEMPERATURE <span style="color:#94a3b8;font-size:0.85rem;">(Diagram gen, 0.0-2.0)</span></label>
-                                <input type="number" id="env-LLM_TEMPERATURE" name="env-LLM_TEMPERATURE" class="form-input" step="0.1" min="0" max="2" placeholder="0.3" autocomplete="off">
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-QWEN_MAX_TOKENS">QWEN_MAX_TOKENS</label>
-                                <input type="number" id="env-QWEN_MAX_TOKENS" name="env-QWEN_MAX_TOKENS" class="form-input" min="1" placeholder="1000" autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-QWEN_TIMEOUT">QWEN_TIMEOUT <span style="color:#94a3b8;font-size:0.85rem;">(seconds, 5-120)</span></label>
-                                <input type="number" id="env-QWEN_TIMEOUT" name="env-QWEN_TIMEOUT" class="form-input" min="5" max="120" placeholder="40" autocomplete="off">
-                            </div>
+                            <!-- Editable Content Area -->
+                            <div id="announcement-message" class="rich-text-editor" contenteditable="true" data-placeholder="请输入公告内容..."></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Category 3: Logging & Features -->
-                <div class="card">
-                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('misc-settings')">
-                        <h3 class="card-title" style="font-size:1.1rem;">⚙️ Logging & Feature Flags</h3>
-                        <span id="misc-settings-icon">▼</span>
-                    </div>
-                    <div id="misc-settings-content" class="category-content">
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-LOG_LEVEL">LOG_LEVEL</label>
-                                <select id="env-LOG_LEVEL" name="env-LOG_LEVEL" class="form-select">
-                                    <option value="DEBUG">DEBUG</option>
-                                    <option value="INFO">INFO</option>
-                                    <option value="WARNING">WARNING</option>
-                                    <option value="ERROR">ERROR</option>
-                                    <option value="CRITICAL">CRITICAL</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-VERBOSE_LOGGING">VERBOSE_LOGGING</label>
-                                <select id="env-VERBOSE_LOGGING" name="env-VERBOSE_LOGGING" class="form-select">
-                                    <option value="False">False</option>
-                                    <option value="True">True</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-FEATURE_LEARNING_MODE">FEATURE_LEARNING_MODE</label>
-                                <select id="env-FEATURE_LEARNING_MODE" name="env-FEATURE_LEARNING_MODE" class="form-select">
-                                    <option value="False">Disabled</option>
-                                    <option value="True">Enabled</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-FEATURE_THINKGUIDE">FEATURE_THINKGUIDE</label>
-                                <select id="env-FEATURE_THINKGUIDE" name="env-FEATURE_THINKGUIDE" class="form-select">
-                                    <option value="False">Disabled</option>
-                                    <option value="True">Enabled</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-FEATURE_MINDMATE">FEATURE_MINDMATE</label>
-                                <select id="env-FEATURE_MINDMATE" name="env-FEATURE_MINDMATE" class="form-select">
-                                    <option value="False">Disabled</option>
-                                    <option value="True">Enabled</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-FEATURE_VOICE_AGENT">FEATURE_VOICE_AGENT</label>
-                                <select id="env-FEATURE_VOICE_AGENT" name="env-FEATURE_VOICE_AGENT" class="form-select">
-                                    <option value="False">Disabled</option>
-                                    <option value="True">Enabled</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Save Actions -->
+                <div style="display:flex;gap:1rem;margin-top:1rem;">
+                    <button class="btn btn-secondary" onclick="previewAnnouncement()">👁 <span class="lang-zh">预览</span><span class="lang-en">Preview</span></button>
+                    <button class="btn btn-primary" onclick="saveAnnouncementConfig()">💾 <span class="lang-zh">保存设置</span><span class="lang-en">Save Settings</span></button>
                 </div>
-
-                <!-- Category 4: Authentication -->
-                <div class="card">
-                    <div class="card-header" style="cursor:pointer;" onclick="toggleCategory('auth-settings')">
-                        <h3 class="card-title" style="font-size:1.1rem;">🔐 Authentication & Security</h3>
-                        <span id="auth-settings-icon">▼</span>
-                    </div>
-                    <div id="auth-settings-content" class="category-content">
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-AUTH_MODE">AUTH_MODE</label>
-                                <select id="env-AUTH_MODE" name="env-AUTH_MODE" class="form-select">
-                                    <option value="standard">Standard</option>
-                                    <option value="enterprise">Enterprise</option>
-                                    <option value="demo">Demo</option>
-                                    <option value="bayi">Bayi</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-JWT_EXPIRY_HOURS">JWT_EXPIRY_HOURS <span style="color:#94a3b8;font-size:0.85rem;">(hours)</span></label>
-                                <input type="number" id="env-JWT_EXPIRY_HOURS" name="env-JWT_EXPIRY_HOURS" class="form-input" min="1" max="168" placeholder="24" autocomplete="off">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="env-ADMIN_PHONES">ADMIN_PHONES <span style="color:#94a3b8;font-size:0.85rem;">(Comma-separated)</span></label>
-                            <input type="text" id="env-ADMIN_PHONES" name="env-ADMIN_PHONES" class="form-input" placeholder="13800000000,13900000000" autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="env-INVITATION_CODES">INVITATION_CODES <span style="color:#94a3b8;font-size:0.85rem;">(ORG:CODE:DATE,ORG2:CODE2:DATE2)</span></label>
-                            <textarea id="env-INVITATION_CODES" name="env-INVITATION_CODES" class="form-textarea" rows="3" placeholder="DEMO-001:DEMO2024:2025-12-31" autocomplete="off"></textarea>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label" for="env-DEMO_PASSKEY">DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
-                                <input type="text" id="env-DEMO_PASSKEY" name="env-DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="888888" autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="env-ADMIN_DEMO_PASSKEY">ADMIN_DEMO_PASSKEY <span style="color:#94a3b8;font-size:0.85rem;">(6 digits)</span></label>
-                                <input type="text" id="env-ADMIN_DEMO_PASSKEY" name="env-ADMIN_DEMO_PASSKEY" class="form-input" maxlength="6" placeholder="999999" autocomplete="off">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Warnings & Actions -->
-                <div class="alert alert-warning show">
-                    ⚠️ <strong>Important:</strong> Server restart required for changes to take effect!<br>
-                    修改配置后需要重启服务器才能生效！
-                </div>
-
-                <div style="display:flex;gap:1rem;">
-                    <button class="btn btn-primary" onclick="saveEnvSettings()">💾 Save All Settings</button>
-                    <button class="btn btn-secondary" onclick="loadEnvSettings()">↻ Reset to Current</button>
-                </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Debug Logs Tab -->
-        <div id="logs-tab" class="tab-content">
-            <div class="card" style="margin-bottom:1rem;">
-                <div class="card-header">
-                    <h2 class="card-title">📋 <span class="lang-zh">调试日志</span><span class="lang-en">Debug Logs</span></h2>
-                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                        <label for="log-source-select" style="display:none;">Log Source</label>
-                        <select id="log-source-select" name="log-source-select" class="form-select" style="width:auto;" onchange="logViewer.setSource(this.value)">
-                            <option value="app">Application</option>
-                            <option value="uvicorn">Uvicorn</option>
-                            <option value="error">Errors</option>
-                        </select>
-                        <label for="log-level-filter" style="display:none;">Log Level Filter</label>
-                        <select id="log-level-filter" name="log-level-filter" class="form-select" style="width:auto;" onchange="logViewer.setFilterLevel(this.value)">
-                            <option value="ALL">All Levels</option>
-                            <option value="DEBUG">DEBUG</option>
-                            <option value="INFO">INFO</option>
-                            <option value="WARNING">WARNING</option>
-                            <option value="ERROR">ERROR</option>
-                            <option value="CRITICAL">CRITICAL</option>
-                        </select>
-                        <button id="stream-toggle-btn" class="btn btn-success btn-sm" onclick="toggleLogStream()">▶ Start Stream</button>
-                        <button id="autoscroll-toggle-btn" class="btn btn-secondary btn-sm" onclick="logViewer.toggleAutoScroll()">📜 Auto-scroll: ON</button>
-                        <button class="btn btn-secondary btn-sm" onclick="logViewer.clearLogs()">🗑️ Clear</button>
-                        <button class="btn btn-primary btn-sm" onclick="logViewer.downloadLogs()">💾 Download</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div style="padding:1rem;border-bottom:1px solid #e2e8f0;">
-                    <div style="display:flex;gap:0.5rem;">
-                        <input type="text" id="log-search-input" name="log-search-input" class="form-input" 
-                               placeholder="Search logs (press Enter)..." 
-                               autocomplete="off"
-                               onkeypress="if(event.key==='Enter') performLogSearch()"
-                               style="flex:1;">
-                        <button class="btn btn-primary" onclick="performLogSearch()">🔍 Search</button>
-                        <button class="btn btn-secondary" onclick="clearLogSearch()">✕ Clear</button>
-                    </div>
-                    <div id="search-results-count" style="display:none;margin-top:0.5rem;color:#64748b;font-size:0.9rem;"></div>
-                </div>
-                
-                <div id="log-viewer-content" class="log-viewer"></div>
             </div>
         </div>
     </div>
@@ -1349,8 +1566,7 @@ curl -X POST http://your-server/api/generate_graph \
                 loadUsers(); // Load user list
             }
             if (tab === 'apikeys') loadAPIKeys();
-            if (tab === 'settings') loadEnvSettings();
-            if (tab === 'logs') initLogViewer();
+            if (tab === 'announcement') loadAnnouncementConfig();
         }
 
         // Show alert
@@ -2546,29 +2762,412 @@ curl -X POST http://your-server/api/generate_graph \
             }
         }
         
-        function performLogSearch() {
-            const query = document.getElementById('log-search-input').value;
-            if (query && query.trim() !== '') {
-                logViewer.searchLogs(query.trim());
+        // ============================================================================
+        // UPDATE ANNOUNCEMENT MANAGEMENT
+        // ============================================================================
+        
+        const announcementEditor = {
+            // Execute command on Chinese editor
+            execCommand(command, value = null) {
+                const editor = document.getElementById('announcement-message');
+                editor.focus();
+                document.execCommand(command, false, value);
+            },
+            
+            // Insert image - trigger file input
+            insertImage() {
+                document.getElementById('announcement-image-input').click();
+            },
+            
+            // Handle image upload
+            async handleImageUpload(input) {
+                if (!input.files || !input.files[0]) return;
+                
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    showAlert('正在上传图片...', 'success');
+                    
+                    const response = await fetch('/api/admin/update-notification/upload-image', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || '上传失败');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Insert image into editor
+                    const editor = document.getElementById('announcement-message');
+                    editor.focus();
+                    document.execCommand('insertHTML', false, `<img src="${data.url}" alt="公告图片" style="max-width:100%;">`);
+                    
+                    showAlert('图片上传成功', 'success');
+                    
+                } catch (error) {
+                    console.error('Image upload failed:', error);
+                    showAlert('图片上传失败: ' + error.message, 'error');
+                }
+                
+                // Clear input
+                input.value = '';
+            },
+            
+            // Toggle emoji picker
+            toggleEmojiPicker() {
+                const picker = document.getElementById('emoji-picker');
+                picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+            },
+            
+            // Insert emoji
+            insertEmoji(emoji) {
+                const editor = document.getElementById('announcement-message');
+                editor.focus();
+                document.execCommand('insertText', false, emoji);
+                document.getElementById('emoji-picker').style.display = 'none';
+            },
+            
+            // Switch emoji tab
+            switchEmojiTab(tab) {
+                // Hide all grids
+                document.querySelectorAll('.emoji-grid').forEach(g => g.style.display = 'none');
+                // Show selected grid
+                document.getElementById('emoji-grid-' + tab).style.display = 'grid';
+                // Update tab buttons
+                document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active'));
+                event.target.classList.add('active');
+            }
+        };
+        
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emoji-picker');
+            const wrapper = e.target.closest('.emoji-picker-wrapper');
+            if (!wrapper && picker) {
+                picker.style.display = 'none';
+            }
+        });
+        
+        async function loadAnnouncementConfig() {
+            const loading = document.getElementById('announcement-loading');
+            const form = document.getElementById('announcement-form');
+            
+            loading.style.display = 'block';
+            form.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/admin/update-notification', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('加载公告配置失败');
+                }
+                
+                const data = await response.json();
+                
+                // Populate form fields
+                document.getElementById('announcement-enabled').checked = data.enabled;
+                document.getElementById('announcement-version').value = data.version || '';
+                document.getElementById('announcement-title').value = data.title || '';
+                document.getElementById('announcement-message').innerHTML = data.message || '';
+                
+                loading.style.display = 'none';
+                form.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Failed to load announcement config:', error);
+                showAlert('加载公告配置失败: ' + error.message, 'error');
+                loading.style.display = 'none';
             }
         }
         
-        function clearLogSearch() {
-            document.getElementById('log-search-input').value = '';
-            const countEl = document.getElementById('search-results-count');
-            if (countEl) {
-                countEl.style.display = 'none';
-            }
-            logViewer.setSearchQuery('');
-            logViewer.loadInitialLogs();
+        // Preview announcement modal
+        function previewAnnouncement() {
+            const title = document.getElementById('announcement-title').value.trim() || '系统更新';
+            const version = document.getElementById('announcement-version').value.trim();
+            const message = document.getElementById('announcement-message').innerHTML.trim();
+            
+            // Create preview modal
+            const previewOverlay = document.createElement('div');
+            previewOverlay.id = 'announcement-preview-overlay';
+            previewOverlay.innerHTML = `
+                <style>
+                    #announcement-preview-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.7);
+                        backdrop-filter: blur(8px);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 10000;
+                        animation: fadeIn 0.3s ease;
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    .preview-modal {
+                        position: relative;
+                        background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+                        border-radius: 20px;
+                        padding: 32px;
+                        max-width: 500px;
+                        width: 90%;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                        animation: slideUp 0.3s ease;
+                    }
+                    @keyframes slideUp {
+                        from { transform: translateY(20px) scale(0.95); opacity: 0; }
+                        to { transform: translateY(0) scale(1); opacity: 1; }
+                    }
+                    .preview-badge {
+                        position: absolute;
+                        top: -12px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                        color: white;
+                        padding: 4px 16px;
+                        border-radius: 20px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+                    }
+                    .preview-close {
+                        position: absolute;
+                        top: 16px;
+                        right: 16px;
+                        width: 36px;
+                        height: 36px;
+                        border: none;
+                        background: rgba(255, 255, 255, 0.1);
+                        border-radius: 10px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s;
+                    }
+                    .preview-close:hover {
+                        background: rgba(255, 255, 255, 0.2);
+                        transform: scale(1.05);
+                    }
+                    .preview-close svg {
+                        stroke: #94a3b8;
+                    }
+                    .preview-close:hover svg {
+                        stroke: #ffffff;
+                    }
+                    .preview-header {
+                        text-align: center;
+                        margin-bottom: 24px;
+                        padding-top: 8px;
+                    }
+                    .preview-icon {
+                        width: 64px;
+                        height: 64px;
+                        margin: 0 auto 16px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 16px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+                    }
+                    .preview-icon svg {
+                        stroke: white;
+                    }
+                    .preview-title {
+                        color: #ffffff;
+                        font-size: 24px;
+                        font-weight: 700;
+                        margin: 0 0 8px 0;
+                    }
+                    .preview-version {
+                        display: inline-block;
+                        background: rgba(102, 126, 234, 0.2);
+                        color: #a5b4fc;
+                        padding: 4px 14px;
+                        border-radius: 20px;
+                        font-size: 13px;
+                        font-weight: 500;
+                    }
+                    .preview-content {
+                        color: #cbd5e1;
+                        font-size: 15px;
+                        line-height: 1.7;
+                        margin-bottom: 24px;
+                    }
+                    .preview-content img {
+                        max-width: 100%;
+                        border-radius: 8px;
+                        margin: 12px 0;
+                    }
+                    .preview-content ul, .preview-content ol {
+                        padding-left: 24px;
+                        margin: 12px 0;
+                    }
+                    .preview-content li {
+                        margin-bottom: 6px;
+                    }
+                    .preview-content b, .preview-content strong {
+                        color: #ffffff;
+                    }
+                    .preview-footer {
+                        display: flex;
+                        justify-content: center;
+                    }
+                    .preview-dismiss-btn {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        padding: 12px 48px;
+                        border-radius: 10px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+                    }
+                    .preview-dismiss-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+                    }
+                </style>
+                <div class="preview-modal">
+                    <span class="preview-badge">预览模式</span>
+                    <button class="preview-close" onclick="closeAnnouncementPreview()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="preview-header">
+                        <div class="preview-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                <path d="M2 17l10 5 10-5"></path>
+                                <path d="M2 12l10 5 10-5"></path>
+                            </svg>
+                        </div>
+                        <h2 class="preview-title">${escapeHtml(title)}</h2>
+                        ${version ? `<span class="preview-version">版本 ${escapeHtml(version)}</span>` : ''}
+                    </div>
+                    <div class="preview-content">
+                        ${message || '<p style="color:#64748b;text-align:center;">暂无内容</p>'}
+                    </div>
+                    <div class="preview-footer">
+                        <button class="preview-dismiss-btn" onclick="closeAnnouncementPreview()">关闭</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(previewOverlay);
+            
+            // Close on overlay click
+            previewOverlay.addEventListener('click', (e) => {
+                if (e.target === previewOverlay) {
+                    closeAnnouncementPreview();
+                }
+            });
+            
+            // Close on Escape
+            document.addEventListener('keydown', function escHandler(e) {
+                if (e.key === 'Escape') {
+                    closeAnnouncementPreview();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            });
         }
-
+        
+        function closeAnnouncementPreview() {
+            const overlay = document.getElementById('announcement-preview-overlay');
+            if (overlay) {
+                overlay.style.animation = 'fadeIn 0.2s ease reverse';
+                setTimeout(() => overlay.remove(), 200);
+            }
+        }
+        
+        // Helper function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function saveAnnouncementConfig() {
+            const enabled = document.getElementById('announcement-enabled').checked;
+            const version = document.getElementById('announcement-version').value.trim();
+            const title = document.getElementById('announcement-title').value.trim();
+            const message = document.getElementById('announcement-message').innerHTML.trim();
+            
+            // Validation only if enabled
+            if (enabled) {
+                if (!version) {
+                    showAlert('请输入版本号', 'error');
+                    return;
+                }
+                
+                if (!title) {
+                    showAlert('请输入标题', 'error');
+                    return;
+                }
+            }
+            
+            try {
+                const response = await fetch('/api/admin/update-notification', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        enabled: enabled,
+                        version: version,
+                        title: title,
+                        title_en: '',
+                        message: message,
+                        message_en: '',
+                        show_changelog: false,
+                        changelog_items: [],
+                        changelog_items_en: []
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '保存失败');
+                }
+                
+                if (enabled) {
+                    showAlert('公告已发布，用户登录时将看到此公告（每个版本只显示一次）', 'success');
+                } else {
+                    showAlert('公告设置已保存（当前已关闭）', 'success');
+                }
+                loadAnnouncementConfig(); // Reload to update status
+                
+            } catch (error) {
+                console.error('Failed to save announcement:', error);
+                showAlert('保存失败: ' + error.message, 'error');
+            }
+        }
+        
         // Initialize
         loadDashboard();
     </script>
-    
-    <!-- Admin Log Viewer Script -->
-    <script src="/static/js/admin-logs.js"></script>
 </body>
 </html>
 

@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.37] - 2025-12-09 - Update Notification System & Captcha SQLite Migration
+
+### Added
+
+- **Update Notification System** - Complete admin-to-user announcement system
+  - New database tables: `update_notifications` and `update_notification_dismissed`
+  - Admin panel "更新公告" tab with rich text editor
+  - Rich text toolbar: font family, font size, bold, italic, underline, lists, text color
+  - Image upload to `static/announcement_images/` folder (up to 5MB)
+  - Emoji picker with 5 categories (100 emojis total)
+  - Live preview button to see announcement before saving
+  - Per-version tracking: users see each announcement only once
+  - Automatic cleanup of old dismissed records when version changes
+
+- **Update Notification Modal** (`static/js/editor/update-notification.js`)
+  - Blur background overlay when notification shown
+  - Modern dark theme modal with gradient header icon
+  - Two close options: top-right X button and bottom "关闭" button
+  - Escape key and overlay click also dismiss
+  - HTML sanitization using DOMPurify for security
+
+- **Captcha SQLite Storage** - Migrated from JSON file to SQLite database
+  - New `captchas` table in `mindgraph.db`
+  - Uses WAL mode for immediate cross-worker visibility
+  - Solves multi-worker race condition (JSON had 5s sync delay)
+  - Simplified code: no threading, no file locks, no background sync
+
+### Changed
+
+- **Admin Panel** (`templates/admin.html`)
+  - Removed "系统设置" and "调试日志" tabs (consolidated elsewhere)
+  - Added "更新公告" tab for announcement management
+  - Toggle switch for enabling/disabling announcements
+  - Version field controls when users see announcement again
+
+- **Captcha Storage Architecture**
+  - Before: In-memory cache + JSON file + 5s background sync
+  - After: Direct SQLite writes with WAL mode
+  - Cross-worker visibility: 5 seconds → Immediate
+
+### Technical Details
+
+**Update Notification Flow:**
+1. Admin enables announcement in admin panel → saves to `update_notifications` table
+2. User logs in → frontend checks `GET /api/update-notification`
+3. Backend checks: enabled? + user dismissed this version?
+4. If should show → display modal with blur background
+5. User clicks close → `POST /api/update-notification/dismiss`
+6. Backend records (user_id, version) in `update_notification_dismissed`
+7. User won't see same version again
+
+**Captcha Multi-Worker Fix:**
+```
+Before (JSON):
+Worker 1: store() → cache → [5s delay] → file
+Worker 2: verify() → file not synced → FAIL ❌
+
+After (SQLite WAL):
+Worker 1: store() → DB (immediate)
+Worker 2: verify() → DB → SUCCESS ✅
+```
+
+**New API Endpoints:**
+- `GET /api/update-notification` - Get notification for current user
+- `POST /api/update-notification/dismiss` - Mark as read
+- `GET /api/admin/update-notification` - Admin get config
+- `PUT /api/admin/update-notification` - Admin save config
+- `POST /api/admin/update-notification/upload-image` - Upload image
+
+**Files Changed:**
+- `models/auth.py` - Added `UpdateNotification`, `UpdateNotificationDismissed`, `Captcha` models
+- `services/update_notifier.py` - New SQLite-based notification service
+- `services/captcha_storage.py` - Rewritten to use SQLite instead of JSON
+- `routers/update_notification.py` - New router for notification API
+- `templates/admin.html` - New "更新公告" tab with rich text editor
+- `static/js/editor/update-notification.js` - Frontend modal component
+- `templates/editor.html` - Added update-notification.js script
+- `main.py` - Registered update_notification router, added shutdown handler
+
+---
+
 ## [4.28.36] - 2025-12-09 - Double Bubble Map Stroke Fix
 
 ### Fixed
