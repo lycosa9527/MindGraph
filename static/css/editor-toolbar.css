@@ -292,17 +292,17 @@
         justify-content: center;
     }
     
-    /* ===== NODES SECTION (节点) - Individual Container ===== */
+    /* ===== EDIT SECTION - Node Operations and Diagram Features ===== */
     .toolbar-nodes-section {
         flex: 0 0 100%; /* Take full width row */
         order: 2;
         display: flex !important;
-        justify-content: center; /* Center the Nodes group */
+        justify-content: center; /* Center the Edit group */
         gap: 6px;
         width: 100%;
     }
     
-    /* ===== ROW 3: TOOLS SECTION (工具) - Left aligned ===== */
+    /* ===== ROW 3: ACTIONS SECTION - Editing Actions and History (Left aligned) ===== */
     .toolbar-tools-section {
         flex: 0 0 auto !important; /* Fit content, no grow/shrink */
         order: 3 !important; /* Row 3 */
@@ -361,7 +361,7 @@
         height: 100%;
     }
     
-    /* ===== NODES TOOLBAR (节点) - Individual Control ===== */
+    /* ===== EDIT TOOLBAR - Node Operations and Diagram Features ===== */
     .nodes-toolbar-group {
         background: rgba(255, 255, 255, 0.1);
         width: 100% !important; /* Take full width of container */
@@ -390,7 +390,7 @@
         justify-content: center !important;
     }
     
-    /* ===== TOOLS TOOLBAR (工具) - Individual Control with HIGH SPECIFICITY ===== */
+    /* ===== ACTIONS TOOLBAR - Editing Actions and History (HIGH SPECIFICITY) ===== */
     .toolbar-tools-section .tools-toolbar-group,
     .tools-toolbar-group.always-visible,
     .tools-toolbar-group {

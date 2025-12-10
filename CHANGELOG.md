@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.40] - 2025-12-10 - Toolbar Group Renaming & Translation Fix
+
+### Changed
+
+- **Toolbar Group Labels Renamed for Better Clarity**
+  - "Nodes:" → "Edit:" - More accurately describes node operations and diagram features (Add, Delete, Auto, Line, Learn, ThinkGuide)
+  - "Tools:" → "Actions:" - Better reflects editing actions and history (Flip, Empty, Undo, Redo)
+  - Updated translations in all supported languages:
+    - English: "Edit:" and "Actions:"
+    - Chinese: "编辑:" and "操作:"
+    - Azerbaijani: "Redaktə:" and "Əməliyyatlar:"
+
+### Fixed
+
+- **Actions Label Translation Bug** (`static/js/editor/language-manager.js`)
+  - Fixed bug where "Actions" label was not being translated to Chinese
+  - Root cause: Language manager was using array indices to update toolbar labels, but there are 3 labels (File, Edit, Actions), so it was updating the wrong ones
+  - Solution: Changed to use specific CSS selectors (`.nodes-toolbar-group .toolbar-group-label` and `.tools-toolbar-group .toolbar-group-label`) to target the correct labels
+  - Now all toolbar labels are properly translated when language changes
+
+### Technical Details
+
+**Files Changed:**
+- `static/js/editor/language-manager.js` - Updated translations and fixed label update logic to use CSS selectors instead of array indices
+- `templates/editor.html` - Updated default labels and comments to reflect new naming
+- `static/css/editor-toolbar.css` - Updated CSS comments to match new naming convention
+
+---
+
 ## [4.28.39] - 2025-12-10 - Line Mode Background Rectangle Fix
 
 ### Fixed

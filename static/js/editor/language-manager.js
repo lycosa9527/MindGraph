@@ -82,7 +82,7 @@ class LanguageManager {
                 fileGroup: 'File:',
                 saveTooltip: 'Save as .mg file',
                 importTooltip: 'Import .mg file',
-                nodes: 'Nodes',
+                nodes: 'Edit',
                 add: 'Add',
                 delete: 'Delete',
                 copy: 'Copy',
@@ -90,7 +90,7 @@ class LanguageManager {
                 line: 'Line',
                 learn: 'Learn',
                 thinking: 'ThinkGuide',
-                tools: 'Tools',
+                tools: 'Actions',
                 empty: 'Empty',
                 undo: 'Undo',
                 redo: 'Redo',
@@ -348,7 +348,7 @@ class LanguageManager {
                 fileGroup: '文件:',
                 saveTooltip: '保存为 .mg 文件',
                 importTooltip: '导入 .mg 文件',
-                nodes: '节点',
+                nodes: '编辑',
                 add: '添加',
                 delete: '删除',
                 copy: '复制',
@@ -356,7 +356,7 @@ class LanguageManager {
                 line: '线稿',
                 learn: '学习',
                 thinking: '思维向导',
-                tools: '工具',
+                tools: '操作',
                 empty: '清空',
                 undo: '撤销',
                 redo: '重做',
@@ -614,7 +614,7 @@ class LanguageManager {
                 fileGroup: 'Fayl:',
                 saveTooltip: '.mg faylı kimi saxla',
                 importTooltip: '.mg faylı idxal et',
-                nodes: 'Düyünlər',
+                nodes: 'Redaktə',
                 add: 'Əlavə Et',
                 delete: 'Sil',
                 copy: 'Kopyala',
@@ -622,7 +622,7 @@ class LanguageManager {
                 line: 'Xətt',
                 learn: 'Öyrən',
                 thinking: 'Düşüncə Bələdçisi',
-                tools: 'Alətlər',
+                tools: 'Əməliyyatlar',
                 empty: 'Boşalt',
                 undo: 'Geri Al',
                 redo: 'Təkrar Et',
@@ -1180,9 +1180,15 @@ class LanguageManager {
         if (aiCloseBtn) aiCloseBtn.title = t.closeTooltip;
         
         // Update toolbar labels (now using span instead of label)
-        const toolbarLabels = document.querySelectorAll('.toolbar-group .toolbar-group-label');
-        if (toolbarLabels.length >= 1) toolbarLabels[0].textContent = t.nodes + ':';
-        if (toolbarLabels.length >= 2) toolbarLabels[1].textContent = t.tools + ':';
+        // File group label is already updated above (around line 1021)
+        
+        // Edit group label (nodes-toolbar-group)
+        const editGroupLabel = document.querySelector('.nodes-toolbar-group .toolbar-group-label');
+        if (editGroupLabel) editGroupLabel.textContent = t.nodes + ':';
+        
+        // Actions group label (tools-toolbar-group)
+        const actionsGroupLabel = document.querySelector('.tools-toolbar-group .toolbar-group-label');
+        if (actionsGroupLabel) actionsGroupLabel.textContent = t.tools + ':';
         
         // Update status bar
         const editMode = document.getElementById('edit-mode');
