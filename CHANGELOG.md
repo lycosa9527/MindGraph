@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.43] - 2025-12-10 - Database Table Creation Fix & Migration Improvements
+
+### Fixed
+
+- **Database Table Creation Error** (`config/database.py`)
+  - Fixed `OperationalError: table update_notifications already exists` error on startup
+  - Error occurred when `update_notifications` table existed but SQLAlchemy's metadata check failed to detect it
+  - Application now handles existing tables gracefully without crashing
+  - Prevents startup failures when database tables already exist from previous migrations
+
+- **Model Registration** (`config/database.py`)
+  - Ensured all models (UpdateNotification, UpdateNotificationDismissed, Captcha) are properly registered with Base metadata
+  - Added explicit imports at module level to guarantee model registration before table creation
+  - Added defensive re-imports in `init_db()` as additional safety measure
+  - Prevents metadata sync issues that could cause table creation conflicts
+
+### Changed
+
+- **Database Initialization Logic** (`config/database.py`)
+  - Implemented proactive table existence checking using SQLAlchemy inspector
+  - Changed from reactive error handling to proactive table verification
+  - Now checks existing tables before attempting creation, avoiding errors entirely
+  - Uses inspector to compare expected tables (from Base.metadata) with existing tables
+  - Only creates tables that are actually missing, improving performance
+  - Added comprehensive error handling with fallback for edge cases (race conditions, metadata sync issues)
+  - Enhanced logging to show exactly which tables are being created
+
+- **Error Handling** (`config/database.py`)
+  - Improved error handling for database initialization
+  - Distinguishes between "table already exists" errors and genuine database errors
+  - Only catches and handles "already exists" errors gracefully
+  - Re-raises genuine errors (syntax errors, permissions, corruption) to prevent silent failures
+  - Added safety comments explaining the multi-layer protection approach
+
+### Technical Details
+
+**Root Cause Analysis:**
+- `Base.metadata.create_all()` was called without proper table existence verification
+- SQLAlchemy's `checkfirst=True` (default) should prevent this, but in some edge cases (metadata sync issues, tables created outside SQLAlchemy), it failed
+- UpdateNotification models weren't explicitly imported at module level, potentially causing metadata registration timing issues
+- Error occurred specifically with `update_notifications` table that was created in a previous migration
+
+**Solution:**
+1. **Proactive Table Checking**: Use SQLAlchemy inspector to check existing tables before attempting creation
+2. **Model Registration**: Explicitly import all models at module level to ensure Base.metadata has complete table definitions
+3. **Defensive Imports**: Re-import models in `init_db()` as additional safety measure
+4. **Multi-Layer Safety**: Inspector check → SQLAlchemy checkfirst → Error handling fallback
+5. **Enhanced Logging**: Clear logging at each step showing what tables are being created
+
+**Safety Guarantees:**
+- Inspector check is read-only (doesn't modify database)
+- `create_all()` with `checkfirst=True` provides SQLAlchemy's built-in safety
+- Error handling catches edge cases gracefully
+- Only creates tables, never modifies or deletes existing tables or data
+- Multiple layers of protection ensure database integrity
+
+**Files Modified:**
+- `config/database.py` - Enhanced `init_db()` function with proactive table checking and improved error handling
+
+---
+
 ## [4.28.42] - 2025-12-10 - Line Mode Fixes & Localization Improvements
 
 ### Fixed

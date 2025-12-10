@@ -9,11 +9,23 @@ SQLAlchemy database setup and session management.
 import os
 import sys
 from pathlib import Path
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.exc import OperationalError
 from models.auth import Base, Organization
 from datetime import datetime
 import logging
+
+# Import all models to ensure they're registered with Base metadata
+# This ensures UpdateNotification, UpdateNotificationDismissed, etc. are registered
+# when the module loads, so Base.metadata has complete table definitions
+try:
+    from models.auth import (
+        User, APIKey,
+        UpdateNotification, UpdateNotificationDismissed, Captcha
+    )
+except ImportError:
+    pass  # Models may not all exist yet
 
 # Import TokenUsage model so it's registered with Base
 try:
@@ -230,14 +242,78 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     """
-    Initialize database: create tables, run migrations, and seed demo data
+    Initialize database: create tables, run migrations, and seed demo data.
+    
+    This function:
+    1. Ensures all models are registered with Base metadata
+    2. Creates missing tables using inspector to avoid conflicts
+    3. Runs migrations to add missing columns
+    4. Seeds initial data if needed
     """
     # Import here to avoid circular dependency
     from utils.auth import load_invitation_codes
     
-    # Step 1: Create all tables (for new databases)
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created/verified")
+    # Ensure all models are imported and registered with Base
+    # This is critical for Base.metadata to have complete table definitions
+    try:
+        from models.auth import (
+            Organization, User, APIKey,
+            UpdateNotification, UpdateNotificationDismissed, Captcha
+        )
+    except ImportError:
+        pass  # Some models may not exist yet
+    
+    try:
+        from models.token_usage import TokenUsage
+    except ImportError:
+        pass  # TokenUsage may not exist yet
+    
+    # Step 1: Create missing tables (proactive approach)
+    # SAFETY: This approach is safe for existing databases:
+    # 1. Inspector check is read-only (doesn't modify database)
+    # 2. create_all() with checkfirst=True checks existence before creating (SQLAlchemy's built-in safety)
+    # 3. Error handling catches edge cases gracefully
+    # 4. Only creates tables, never modifies or deletes existing tables or data
+    try:
+        inspector = inspect(engine)
+        existing_tables = set(inspector.get_table_names())
+    except Exception as e:
+        # If inspector fails (e.g., database doesn't exist yet, connection issue),
+        # assume no tables exist. This is safe because create_all() with checkfirst=True
+        # will verify existence before creating, so no tables will be overwritten.
+        logger.debug(f"Inspector check failed (assuming new database): {e}")
+        existing_tables = set()
+    
+    # Get all tables that should exist from Base metadata
+    expected_tables = set(Base.metadata.tables.keys())
+    
+    # Determine which tables need to be created
+    missing_tables = expected_tables - existing_tables
+    
+    if missing_tables:
+        logger.info(f"Creating {len(missing_tables)} missing table(s): {', '.join(sorted(missing_tables))}")
+        try:
+            # Create missing tables
+            # SAFETY: checkfirst=True (default) ensures SQLAlchemy checks if each table exists
+            # before attempting to create it. This prevents "table already exists" errors
+            # and ensures we never overwrite existing tables or data.
+            Base.metadata.create_all(bind=engine, checkfirst=True)
+            logger.info("Database tables created/verified")
+        except OperationalError as e:
+            # Fallback: Handle edge cases where inspector and SQLAlchemy disagree
+            # This can happen if table was created between inspector check and create_all call
+            # SAFETY: We only catch "already exists" errors - genuine errors are re-raised
+            error_msg = str(e).lower()
+            if "already exists" in error_msg or ("table" in error_msg and "exists" in error_msg):
+                logger.debug(f"Table creation conflict resolved (table exists): {e}")
+                logger.info("Database tables verified (already exist)")
+            else:
+                # Re-raise genuine errors (syntax, permissions, corruption, etc.)
+                # This ensures we don't silently ignore real database problems
+                logger.error(f"Database initialization error: {e}")
+                raise
+    else:
+        logger.info("All database tables already exist - skipping creation")
     
     # Step 2: Run automatic migrations (add missing columns)
     try:
