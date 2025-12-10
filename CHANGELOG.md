@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.39] - 2025-12-10 - Line Mode Background Rectangle Fix
+
+### Fixed
+
+- **Line Mode Background Rectangle Issue** - Fixed background rectangles not adapting when nodes are added in line mode (线稿模式)
+  - Background rectangles now properly excluded from line mode styling (remain transparent instead of getting black stroke)
+  - Background rectangles automatically update to correct dimensions when diagram re-renders after adding nodes
+  - Affects all diagrams with background rectangles: Bubble Map, Circle Map, Double Bubble Map, Concept Map, and Mind Map
+
+### Changed
+
+- **Line Mode Implementation** (`static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Extracted line mode styling logic into reusable `applyLineModeStyles()` method
+  - Background rectangles (`.background` and `.background-rect` classes) are now excluded from line mode styling
+  - Added automatic re-application of line mode styles after diagram re-rendering via `diagram:rendered` event listener
+  - Background rectangles remain transparent in line mode instead of showing black stroke border
+
+### Technical Details
+
+**Problem:**
+- When line mode was enabled and nodes were added, background rectangles would get a black stroke
+- Background rectangles didn't adapt to new dimensions when diagram re-rendered
+- The rectangle size stayed fixed even after adding nodes
+
+**Solution:**
+- Exclude background rectangles from line mode styling (they remain transparent)
+- Re-apply line mode styles automatically after `diagram:rendered` event
+- Background rectangles now properly resize when diagram dimensions change
+
+**Files Changed:**
+- `static/js/managers/toolbar/ui-state-llm-manager.js` - Enhanced line mode to exclude background rectangles and auto-reapply after re-rendering
+
+---
+
 ## [4.28.38] - 2025-12-09 - Captcha Cleanup Scheduler
 
 ### Added

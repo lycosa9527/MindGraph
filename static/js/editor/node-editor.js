@@ -293,25 +293,24 @@ class NodeEditor {
      * Handle save action
      */
     handleSave() {
-        // Preserve newlines but trim leading/trailing whitespace
-        // Replace multiple consecutive newlines with single newline, then trim edges
+        // Preserve newlines and spaces (for learning sheets - users need spaces to control node length)
+        // Replace multiple consecutive newlines with single newline, but preserve leading/trailing spaces
         let newText = this.textInput.value
-            .replace(/\n{3,}/g, '\n\n')  // Replace 3+ newlines with 2
-            .replace(/^\s+|\s+$/g, '');  // Trim leading/trailing whitespace (but preserve internal newlines)
+            .replace(/\n{3,}/g, '\n\n');  // Replace 3+ newlines with 2
+        // Note: Removed trim operation to allow users to use spaces to control node length
+        // This is important for learning sheets where empty nodes need specific dimensions
+        // Also removed empty text validation to allow users to save blank nodes directly
         
         logger.debug('NodeEditor', 'Saving node', {
             nodeId: this.nodeData.id,
             textLength: newText?.length || 0,
             changed: this.nodeData.text !== newText,
-            hasNewlines: newText.includes('\n')
+            hasNewlines: newText.includes('\n'),
+            isEmpty: !newText || newText.length === 0
         });
         
-        if (newText === '') {
-            logger.warn('NodeEditor', 'Save blocked - text cannot be empty');
-            const lang = window.languageManager;
-            alert(lang?.getNotification('textEmpty') || 'Text cannot be empty');
-            return;
-        }
+        // Allow empty text - users can save blank nodes to control dimensions using spaces
+        // This is easier than using the Empty button and gives users more control
         
         if (this.onSave) {
             this.onSave(newText);

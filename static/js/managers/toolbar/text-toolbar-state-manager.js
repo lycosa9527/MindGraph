@@ -105,12 +105,8 @@ class TextToolbarStateManager {
             .replace(/\n{3,}/g, '\n\n');  // Replace 3+ newlines with 2
         // Note: Removed trim operation to allow users to use spaces to control node length
         // This is important for learning sheets where empty nodes need specific dimensions
-        
-        if (!newText) {
-            // If empty, no text to apply (user didn't type anything)
-            this.showNotification(this.getNotif('textEmpty'), 'warning');
-            return;
-        }
+        // Also removed empty text validation to allow users to apply blank nodes directly
+        // This is easier than using the Empty button and gives users more control
         
         if (this.logger && typeof this.logger.debug === 'function') {
             this.logger.debug('TextToolbarStateManager', 'Applying text to selected nodes', {

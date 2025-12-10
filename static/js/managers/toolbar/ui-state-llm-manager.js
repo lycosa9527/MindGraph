@@ -59,14 +59,103 @@ class UIStateLLMManager {
             this.handleLLMSelection(data.button);
         };
         
+        this._eventCallbacks.diagramRendered = () => {
+            // Re-apply line mode styles if line mode is active after diagram re-renders
+            if (this.isLineMode) {
+                // Use setTimeout to ensure SVG is fully rendered
+                setTimeout(() => {
+                    this.applyLineModeStyles();
+                }, 100);
+            }
+        };
+        
         // Register listeners with owner tracking
         this.eventBus.onWithOwner('ui:toggle_line_mode', this._eventCallbacks.toggleLineMode, this.ownerId);
         this.eventBus.onWithOwner('ui:set_auto_button_loading', this._eventCallbacks.setAutoButtonLoading, this.ownerId);
         this.eventBus.onWithOwner('ui:set_all_llm_buttons_loading', this._eventCallbacks.setAllLLMButtonsLoading, this.ownerId);
         this.eventBus.onWithOwner('ui:set_llm_button_state', this._eventCallbacks.setLLMButtonState, this.ownerId);
         this.eventBus.onWithOwner('llm:model_selection_clicked', this._eventCallbacks.modelSelectionClicked, this.ownerId);
+        this.eventBus.onWithOwner('diagram:rendered', this._eventCallbacks.diagramRendered, this.ownerId);
         
         this.logger.debug('UIStateLLMManager', 'Event Bus listeners registered with owner tracking');
+    }
+    
+    /**
+     * Apply line mode styles to the current SVG
+     * Extracted to separate method so it can be called after re-rendering
+     */
+    applyLineModeStyles() {
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty()) {
+            this.logger.debug('UIStateLLMManager', 'No SVG found for line mode application');
+            return;
+        }
+        
+        // Remove canvas background
+        svg.style('background-color', 'transparent');
+        
+        // Hide background rectangles (they should remain transparent in line mode)
+        svg.selectAll('rect.background, rect.background-rect')
+            .each(function() {
+                const element = d3.select(this);
+                // Store original fill for restoration
+                if (!element.attr('data-original-fill')) {
+                    element.attr('data-original-fill', element.style('fill') || element.attr('fill') || 'none');
+                }
+                // Make background transparent in line mode
+                element.style('fill', 'transparent');
+            });
+        
+        // Select all shapes (circles, rects, ellipses, polygons, paths) EXCEPT background rectangles
+        svg.selectAll('circle, rect:not(.background):not(.background-rect), ellipse, polygon, path')
+            .each(function() {
+                const element = d3.select(this);
+                
+                // Store original styles as data attributes (for restoration)
+                if (!element.attr('data-original-fill')) {
+                    element.attr('data-original-fill', element.style('fill') || element.attr('fill') || 'none');
+                }
+                if (!element.attr('data-original-stroke')) {
+                    element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || 'none');
+                }
+                if (!element.attr('data-original-stroke-width')) {
+                    element.attr('data-original-stroke-width', element.style('stroke-width') || element.attr('stroke-width') || '1');
+                }
+                
+                // Apply line mode: no fill, black stroke
+                element
+                    .style('fill', 'none')
+                    .style('stroke', '#000000')
+                    .style('stroke-width', '2px');
+            });
+        
+        // Make all text black
+        svg.selectAll('text')
+            .each(function() {
+                const element = d3.select(this);
+                
+                // Store original text color
+                if (!element.attr('data-original-fill')) {
+                    element.attr('data-original-fill', element.style('fill') || element.attr('fill') || '#000000');
+                }
+                
+                // Apply black text
+                element.style('fill', '#000000');
+            });
+        
+        // Make all lines/connections black
+        svg.selectAll('line')
+            .each(function() {
+                const element = d3.select(this);
+                
+                // Store original stroke
+                if (!element.attr('data-original-stroke')) {
+                    element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || '#000000');
+                }
+                
+                // Apply black stroke
+                element.style('stroke', '#000000');
+            });
     }
     
     /**
@@ -92,61 +181,7 @@ class UIStateLLMManager {
         
         if (this.isLineMode) {
             // Apply black and white line mode
-            
-            // Remove canvas background
-            svg.style('background-color', 'transparent');
-            
-            // Select all shapes (circles, rects, ellipses, polygons, paths)
-            svg.selectAll('circle, rect, ellipse, polygon, path')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    // Store original styles as data attributes (for restoration)
-                    if (!element.attr('data-original-fill')) {
-                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || 'none');
-                    }
-                    if (!element.attr('data-original-stroke')) {
-                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || 'none');
-                    }
-                    if (!element.attr('data-original-stroke-width')) {
-                        element.attr('data-original-stroke-width', element.style('stroke-width') || element.attr('stroke-width') || '1');
-                    }
-                    
-                    // Apply line mode: no fill, black stroke
-                    element
-                        .style('fill', 'none')
-                        .style('stroke', '#000000')
-                        .style('stroke-width', '2px');
-                });
-            
-            // Make all text black
-            svg.selectAll('text')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    // Store original text color
-                    if (!element.attr('data-original-fill')) {
-                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || '#000000');
-                    }
-                    
-                    // Apply black text
-                    element.style('fill', '#000000');
-                });
-            
-            // Make all lines/connections black
-            svg.selectAll('line')
-                .each(function() {
-                    const element = d3.select(this);
-                    
-                    // Store original stroke
-                    if (!element.attr('data-original-stroke')) {
-                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || '#000000');
-                    }
-                    
-                    // Apply black stroke
-                    element.style('stroke', '#000000');
-                });
-            
+            this.applyLineModeStyles();
             this.toolbarManager.showNotification(this.toolbarManager.getNotif('lineModeEnabled'), 'success');
             
         } else {
@@ -155,8 +190,19 @@ class UIStateLLMManager {
             // Restore canvas background (if it had one)
             svg.style('background-color', null);
             
-            // Restore shapes
-            svg.selectAll('circle, rect, ellipse, polygon, path')
+            // Restore background rectangles
+            svg.selectAll('rect.background, rect.background-rect')
+                .each(function() {
+                    const element = d3.select(this);
+                    const originalFill = element.attr('data-original-fill');
+                    if (originalFill) {
+                        element.style('fill', originalFill === 'none' ? 'none' : originalFill);
+                        element.attr('data-original-fill', null);
+                    }
+                });
+            
+            // Restore shapes (excluding background rectangles)
+            svg.selectAll('circle, rect:not(.background):not(.background-rect), ellipse, polygon, path')
                 .each(function() {
                     const element = d3.select(this);
                     
