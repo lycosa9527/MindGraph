@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.47] - 2025-12-10 - Reset Functionality History Management Fix
+
+### Fixed
+
+- **Reset Canvas Functionality** (`static/js/managers/toolbar/small-operations-manager.js`)
+  - Fixed reset operation not clearing HistoryManager's history
+  - Previously, `handleReset()` only cleared editor's local history but didn't notify HistoryManager
+  - This allowed users to undo back to pre-reset states, which was unexpected behavior
+  - Reset now properly clears both editor's local history and HistoryManager's centralized history
+  - Blank template is saved as initial state in HistoryManager after reset, allowing undo back to reset state only
+
+### Changed
+
+- **History Synchronization** (`static/js/managers/toolbar/small-operations-manager.js`)
+  - `handleReset()` now emits `history:clear_requested` event to clear HistoryManager's history
+  - After clearing, emits `diagram:operation_completed` to save blank template as initial state
+  - Ensures history stays synchronized between editor and HistoryManager after reset operations
+  - Added debug logging for history clearing and state saving operations
+
+### Technical Details
+
+**Problem:**
+- `handleReset()` cleared editor's local history (`this.editor.history`) but didn't notify HistoryManager
+- HistoryManager retained old history entries from before the reset
+- Users could click undo after reset and restore states from before the reset operation
+- This violated user expectations - reset should start with a clean slate
+
+**Solution:**
+1. Added `history:clear_requested` event emission to clear HistoryManager's history
+2. Added `diagram:operation_completed` event emission to save blank template as initial state
+3. Ensures both history systems are synchronized after reset
+4. Users can now only undo back to the reset state, not before it
+
+**Impact:**
+- Reset operation now properly clears all history
+- Prevents users from undoing back to pre-reset states
+- History systems stay synchronized
+- Better user experience - reset truly starts fresh
+
+**Files Modified:**
+- `static/js/managers/toolbar/small-operations-manager.js` - Added history clearing and state saving events
+
+---
+
 ## [4.28.46] - 2025-12-10 - Undo/Redo Button Functionality Fix
 
 ### Fixed

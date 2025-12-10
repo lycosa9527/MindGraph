@@ -36,10 +36,13 @@ class SmallOperationsManager {
             this.handleDuplicateNode();
         }, this.ownerId);
         
-        // NOTE: Undo/redo are now handled by HistoryManager directly
-        // HistoryManager listens to history:undo_requested and history:redo_requested
-        // and emits history:undo_completed/history:redo_completed which InteractiveEditor listens to
-        // No need for SmallOperationsManager to intercept these events
+        this.eventBus.onWithOwner('history:undo_requested', () => {
+            this.handleUndo();
+        }, this.ownerId);
+        
+        this.eventBus.onWithOwner('history:redo_requested', () => {
+            this.handleRedo();
+        }, this.ownerId);
         
         this.eventBus.onWithOwner('diagram:reset_requested', () => {
             this.handleReset();
@@ -58,24 +61,22 @@ class SmallOperationsManager {
     
     /**
      * Handle undo
-     * DEPRECATED: Undo/redo are now handled by HistoryManager via Event Bus
-     * HistoryManager listens to history:undo_requested and emits history:undo_completed
-     * InteractiveEditor listens to history:undo_completed and applies the changes
+     * EXTRACTED FROM: toolbar-manager.js lines 2667-2671
      */
     handleUndo() {
-        // No longer needed - HistoryManager handles this
-        this.logger.debug('SmallOperationsManager', 'Undo request - handled by HistoryManager');
+        if (this.editor) {
+            this.editor.undo();
+        }
     }
     
     /**
      * Handle redo
-     * DEPRECATED: Undo/redo are now handled by HistoryManager via Event Bus
-     * HistoryManager listens to history:redo_requested and emits history:redo_completed
-     * InteractiveEditor listens to history:redo_completed and applies the changes
+     * EXTRACTED FROM: toolbar-manager.js lines 2676-2680
      */
     handleRedo() {
-        // No longer needed - HistoryManager handles this
-        this.logger.debug('SmallOperationsManager', 'Redo request - handled by HistoryManager');
+        if (this.editor) {
+            this.editor.redo();
+        }
     }
     
     /**
@@ -112,10 +113,25 @@ class SmallOperationsManager {
         this.editor.currentSpec = blankTemplate;
         this.editor.renderDiagram();
         
-        // Clear history
+        // Clear editor's local history
         if (this.editor.history) {
             this.editor.history = [JSON.parse(JSON.stringify(blankTemplate))];
             this.editor.historyIndex = 0;
+        }
+        
+        // Clear HistoryManager's history via Event Bus
+        // This ensures HistoryManager doesn't retain old history entries that could be undone
+        if (this.eventBus) {
+            this.eventBus.emit('history:clear_requested', {});
+            this.logger.debug('SmallOperationsManager', 'Requested HistoryManager to clear history');
+            
+            // Save the blank template as initial state in HistoryManager
+            // This allows users to undo back to the reset state if needed
+            this.eventBus.emit('diagram:operation_completed', {
+                operation: 'reset',
+                snapshot: JSON.parse(JSON.stringify(blankTemplate))
+            });
+            this.logger.debug('SmallOperationsManager', 'Saved reset state to HistoryManager');
         }
         
         // Clear selection
@@ -153,4 +169,3 @@ class SmallOperationsManager {
 if (typeof window !== 'undefined') {
     window.SmallOperationsManager = SmallOperationsManager;
 }
-

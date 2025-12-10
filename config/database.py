@@ -574,4 +574,3 @@ def close_db():
     
     engine.dispose()
     logger.info("Database connections closed")
-
