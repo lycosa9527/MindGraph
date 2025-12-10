@@ -50,15 +50,17 @@ def get_database_path():
             if db_path.startswith("./"):
                 db_path = db_path[2:]
             if not os.path.isabs(db_path):
-                db_path = os.path.join(os.getcwd(), db_path)
+                # Resolve relative to project root (parent of scripts directory)
+                project_root = Path(__file__).parent.parent
+                db_path = os.path.join(project_root, db_path)
         else:
             db_path = db_url.replace("sqlite:///", "")
         
         return Path(db_path).resolve()
     except Exception as e:
         logger.error(f"Failed to determine database path: {e}")
-        # Fallback to default
-        return Path("data/mindgraph.db").resolve()
+        # Fallback to default absolute path /data/mindgraph.db
+        return Path("/data/mindgraph.db")
 
 
 def check_disk_space(db_path: Path, required_mb: int = 100):
