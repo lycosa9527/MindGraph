@@ -482,24 +482,57 @@ class MindMapAgent(BaseAgent):
         
         logger.debug(f"Two-stage system completed, topic added at (0, 0)")
         
-        # STEP 3: Generate connection data
-        connections = self._generate_connections(topic, children, positions)
-        
-        # STEP 4: Center all positions around (0,0) for proper D3 rendering
-        if positions:
-            # Calculate content center from all positioned elements
-            x_coords = [pos.get('x', 0) for pos in positions.values() if pos is not None]
-            y_coords = [pos.get('y', 0) for pos in positions.values() if pos is not None]
-            
-            if x_coords and y_coords:
-                content_center_x = (min(x_coords) + max(x_coords)) / 2
-                content_center_y = (min(y_coords) + max(y_coords)) / 2
+        # STEP 3: Center all positions around (0,0) for proper D3 rendering
+        # Keep topic fixed at (0, 0) as visual anchor, only center branches/children
+        content_center_x = 0
+        content_center_y = 0
+        try:
+            if positions:
+                # Calculate content center from all positioned elements EXCEPT topic
+                x_coords = [pos.get('x', 0) for pos in positions.values() if pos is not None]
+                y_coords = [pos.get('y', 0) for pos in positions.values() if pos is not None]
                 
-                # Adjust all positions to center around (0,0)
-                for key in positions:
-                    if positions[key] is not None:
-                        positions[key]['x'] -= content_center_x
-                        positions[key]['y'] -= content_center_y
+                if x_coords and y_coords:
+                    # For mind maps, keep topic fixed at (0, 0) and only center branches/children
+                    # Calculate center from all positions EXCEPT topic
+                    non_topic_x_coords = [pos.get('x', 0) for key, pos in positions.items() 
+                                         if pos is not None and key != 'topic']
+                    non_topic_y_coords = [pos.get('y', 0) for key, pos in positions.items() 
+                                         if pos is not None and key != 'topic']
+                    
+                    if non_topic_x_coords and non_topic_y_coords:
+                        content_center_x = (min(non_topic_x_coords) + max(non_topic_x_coords)) / 2
+                        content_center_y = (min(non_topic_y_coords) + max(non_topic_y_coords)) / 2
+                    else:
+                        # Fallback: use all coordinates if no non-topic positions
+                        content_center_x = (min(x_coords) + max(x_coords)) / 2
+                        content_center_y = (min(y_coords) + max(y_coords)) / 2
+                    
+                    # Adjust all positions EXCEPT topic to center around (0,0)
+                    # Topic stays fixed at (0, 0) as the visual anchor
+                    # CRITICAL: Modify positions dictionary in place so connections read updated values
+                    adjusted_count = 0
+                    for key in positions:
+                        if positions[key] is not None and key != 'topic':
+                            positions[key]['x'] -= content_center_x
+                            positions[key]['y'] -= content_center_y
+                            adjusted_count += 1
+                    
+                    logger.debug(f"Centered {adjusted_count} positions (topic kept at origin): offset X={content_center_x:.1f}, Y={content_center_y:.1f}")
+                else:
+                    logger.debug(f"Centering skipped: no valid coordinates")
+            else:
+                logger.warning(f"Positions dict is empty or None!")
+        except Exception as e:
+            logger.error(f"ERROR in centering step: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        # STEP 4: Generate connection data AFTER all positions are finalized and centered
+        # Since all node positions are now finalized, we can directly read coordinates from positions
+        # This ensures connections perfectly align with node positions
+        # IMPORTANT: positions dictionary has been modified in place, so connections will read centered coordinates
+        connections = self._generate_connections(topic, children, positions)
         
         # STEP 5: Compute recommended dimensions
         recommended_dimensions = self._compute_recommended_dimensions(positions, topic, children)
@@ -531,53 +564,57 @@ class MindMapAgent(BaseAgent):
     
     def _simple_balanced_layout(self, children: List[Dict], left_children_x: float, right_children_x: float, left_branches_x: float, right_branches_x: float) -> Dict:
         """
-        Simple balanced layout system with guaranteed perfect results.
+        Simple balanced layout system with parent nodes centered on children height centers.
         
-        WORKFLOW:
+        NEW WORKFLOW:
         1. Clean left/right split of branches
-        2. Stack children vertically with consistent spacing
-        3. Balance heights with padding to shorter side
-        4. Position branches at mathematical centers
+        2. Stack children vertically (no auto-centering)
+        3. Calculate branch positions at children height centers
+        4. Calculate left/right branch height centers and translate to origin
+        5. Translate all nodes (branches + children) together
         """
         logger.debug(f"📍 Simple balanced layout: Processing {len(children)} branches")
         
-        # Ensure even number of branches (LLM should provide this, but safety check)
         num_branches = len(children)
-        if num_branches % 2 != 0:
-            logger.warning(f"Odd number of branches ({num_branches}) detected! Adding empty branch for balance.")
-            children.append({
-                "id": f"balance_branch_{num_branches}",
-                "label": "Additional Aspect",
-                "children": [
-                    {"id": f"balance_item_1", "label": "Further details"},
-                    {"id": f"balance_item_2", "label": "Additional information"}
-                ]
-            })
-            num_branches += 1
+        is_odd = num_branches % 2 != 0
         
-        # STEP 1: Clean left/right split
-        mid_point = num_branches // 2
-        right_branches = children[:mid_point]      # First half → RIGHT side
-        left_branches = children[mid_point:]       # Second half → LEFT side
+        if is_odd:
+            logger.info(f"Odd number of branches ({num_branches}) detected - will handle uneven distribution")
         
-        logger.debug(f"Split: {len(right_branches)} right branches, {len(left_branches)} left branches")
+        # STEP 1: Clean left/right split with clockwise ordering
+        # For odd numbers: put more branches on the right side
+        # Example: 5 branches → right: 3, left: 2
+        mid_point = (num_branches + 1) // 2  # For odd: rounds up, so right gets more
+        right_branches = children[:mid_point]      # First half → RIGHT side (keep original order)
+        left_branches = children[mid_point:][::-1]  # Second half → LEFT side (reverse for clockwise)
         
-        # STEP 2: Stack children vertically on each side
-        right_positions = self._stack_children_vertically(right_branches, right_children_x, "right")
-        left_positions = self._stack_children_vertically(left_branches, left_children_x, "left") 
+        logger.debug(f"Split: {len(right_branches)} right branches, {len(left_branches)} left branches (clockwise layout)")
+        if is_odd:
+            logger.debug(f"  Note: Odd distribution - right side has {len(right_branches)}, left side has {len(left_branches)}")
         
-        # STEP 3: Balance heights with padding
-        balanced_positions = self._balance_side_heights(left_positions, right_positions)
+        # STEP 2: Stack children vertically on each side (no auto-centering)
+        right_positions = self._stack_children_vertically(right_branches, right_children_x, "right", num_branches)
+        left_positions = self._stack_children_vertically(left_branches, left_children_x, "left", num_branches)
         
-        # STEP 4: Position branches at mathematical centers
+        # Combine child positions
+        all_child_positions = {}
+        all_child_positions.update(left_positions)
+        all_child_positions.update(right_positions)
+        
+        # STEP 3: Calculate branch positions at children height centers
         branch_positions = self._position_branches_at_mathematical_centers(
-            children, balanced_positions, left_branches_x, right_branches_x
+            children, all_child_positions, left_branches_x, right_branches_x, mid_point
         )
         
-        # STEP 5: Combine all positions
+        # STEP 4: Calculate left/right branch height centers and translate to origin
         all_positions = {}
-        all_positions.update(balanced_positions)
+        all_positions.update(all_child_positions)
         all_positions.update(branch_positions)
+        
+        # Translate left and right sides to center at origin
+        all_positions = self._translate_sides_to_origin(
+            all_positions, children, left_branches_x, right_branches_x, mid_point
+        )
         
         logger.debug(f"Simple layout complete: {len(all_positions)} total positions")
         
@@ -586,29 +623,54 @@ class MindMapAgent(BaseAgent):
             'algorithm': 'simple_balanced_layout'
         }
     
-    def _stack_children_vertically(self, branches: List[Dict], column_x: float, side: str) -> Dict:
+    def _stack_children_vertically(self, branches: List[Dict], column_x: float, side: str, num_branches: int) -> Dict:
         """
         Stack all children from multiple branches vertically on one side.
+        Starts from a fixed position (not auto-centered).
+        
+        Args:
+            branches: List of branches on this side
+            column_x: X coordinate for this column
+            side: "right" or "left"
+            num_branches: Total number of branches (needed for clockwise index mapping)
         """
         positions = {}
+        # Start from a fixed position (will be translated later)
         current_y = 0
         
         logger.debug(f"Stacking children on {side} side at X={column_x}")
         
         # Collect all children from all branches on this side
+        # For clockwise ordering: right side children in original order, left side children reversed
         all_children = []
         for branch_idx, branch in enumerate(branches):
             branch_children = branch.get('children', [])
+            
+            # For clockwise reading: left side children should be reversed
+            # Right side: read top to bottom (original order)
+            # Left side: read bottom to top (reversed order) for clockwise flow
+            if side == "left":
+                branch_children = branch_children[::-1]  # Reverse for clockwise
+            
             for child_idx, child in enumerate(branch_children):
                 # Calculate actual branch index in original children list
                 if side == "right":
                     actual_branch_idx = branch_idx  # Right side: indices 0, 1, 2...
+                    # Child index matches original order
+                    original_child_idx = child_idx
                 else:
-                    actual_branch_idx = len(branches) + branch_idx  # Left side: indices continue
+                    # Left side: reversed list, so map back to original index
+                    # Formula: actual_branch_idx = num_branches - 1 - branch_idx
+                    # Example: 6 branches, branch_idx=0 → actual_branch_idx=5 (last branch)
+                    actual_branch_idx = num_branches - 1 - branch_idx
+                    # Map reversed child index back to original
+                    # If we reversed [c0, c1, c2] → [c2, c1, c0], then child_idx=0 maps to original_idx=2
+                    original_child_count = len(branch.get('children', []))
+                    original_child_idx = original_child_count - 1 - child_idx
                 
                 child_info = {
                     'branch_idx': actual_branch_idx,
-                    'child_idx': child_idx,
+                    'child_idx': original_child_idx,  # Use original index for key generation
                     'data': child,
                     'side': side
                 }
@@ -740,13 +802,19 @@ class MindMapAgent(BaseAgent):
         
         return balanced_positions
     
-    def _position_branches_at_mathematical_centers(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
+    def _position_branches_at_mathematical_centers(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float, mid_point: int) -> Dict:
         """
         Position branches at the exact mathematical centers of their children.
+        
+        Args:
+            children: List of branch data
+            child_positions: Dictionary of child node positions
+            left_branches_x: X coordinate for left branch column
+            right_branches_x: X coordinate for right branch column
+            mid_point: Index where left side starts (calculated in caller to handle odd numbers)
         """
         positions = {}
         num_branches = len(children)
-        mid_point = num_branches // 2
         
         for branch_idx, branch in enumerate(children):
             branch_text = branch['label']
@@ -788,6 +856,109 @@ class MindMapAgent(BaseAgent):
         
         logger.debug(f"Positioned {len(positions)} branches at mathematical centers")
         return positions
+    
+    def _translate_sides_to_origin(self, all_positions: Dict, children: List[Dict], left_branches_x: float, right_branches_x: float, mid_point: int) -> Dict:
+        """
+        Translate left and right side branch nodes (and their children) so that
+        each side's branch height center is at the origin (Y=0).
+        
+        Args:
+            all_positions: Dictionary containing all node positions (children + branches)
+            children: List of branch data
+            left_branches_x: X coordinate for left branch column
+            right_branches_x: X coordinate for right branch column
+            mid_point: Index where left side starts
+        
+        Returns:
+            Dictionary with translated positions
+        """
+        logger.debug("🔄 Translating sides to origin based on branch height centers")
+        logger.debug(f"Total branches: {len(children)}, mid_point: {mid_point}")
+        
+        # Separate left and right branch positions
+        left_branches = []
+        right_branches = []
+        
+        for branch_idx in range(len(children)):
+            branch_key = f'branch_{branch_idx}'
+            if branch_key in all_positions:
+                branch_pos = all_positions[branch_key]
+                if branch_idx >= mid_point:
+                    left_branches.append((branch_idx, branch_pos))
+                    logger.debug(f"  Left branch {branch_idx}: Y={branch_pos['y']:.1f}")
+                else:
+                    right_branches.append((branch_idx, branch_pos))
+                    logger.debug(f"  Right branch {branch_idx}: Y={branch_pos['y']:.1f}")
+            else:
+                logger.warning(f"Branch {branch_idx} not found in all_positions!")
+        
+        logger.debug(f"Found {len(left_branches)} left branches, {len(right_branches)} right branches")
+        
+        # Calculate height centers for each side
+        # Note: y coordinate is already the center of the node (as per renderer convention)
+        # So height center = average of y coordinates
+        def calculate_height_center(branches: List[Tuple[int, Dict]]) -> float:
+            if not branches:
+                logger.warning("No branches found for height center calculation!")
+                return 0.0
+            # y is already the center coordinate, so just average them
+            branch_centers = [pos['y'] for _, pos in branches]
+            height_center = sum(branch_centers) / len(branch_centers)
+            branch_y_str = ', '.join([f'{pos["y"]:.1f}' for _, pos in branches])
+            logger.debug(f"  Branch Y values: [{branch_y_str}]")
+            logger.debug(f"  Calculated height center: {height_center:.1f}")
+            return height_center
+        
+        left_center_y = calculate_height_center(left_branches)
+        right_center_y = calculate_height_center(right_branches)
+        
+        logger.debug(f"Left side branch height center: {left_center_y:.1f} (from {len(left_branches)} branches)")
+        logger.debug(f"Right side branch height center: {right_center_y:.1f} (from {len(right_branches)} branches)")
+        
+        # Calculate translation offsets (to move centers to Y=0)
+        left_offset = 0.0 - left_center_y
+        right_offset = 0.0 - right_center_y
+        
+        logger.debug(f"Left side translation offset: {left_offset:.1f}")
+        logger.debug(f"Right side translation offset: {right_offset:.1f}")
+        
+        # Apply translations
+        translated_positions = {}
+        left_translated_count = 0
+        right_translated_count = 0
+        
+        for key, pos in all_positions.items():
+            new_pos = pos.copy()
+            node_type = pos.get('node_type', '')
+            branch_index = pos.get('branch_index')
+            
+            # Determine which side this node belongs to
+            if node_type == 'branch':
+                # Branch node: translate based on its side
+                if branch_index is not None and branch_index >= mid_point:
+                    new_pos['y'] += left_offset
+                    left_translated_count += 1
+                    logger.debug(f"  Translated left branch {branch_index}: {pos['y']:.1f} → {new_pos['y']:.1f}")
+                elif branch_index is not None:
+                    new_pos['y'] += right_offset
+                    right_translated_count += 1
+                    logger.debug(f"  Translated right branch {branch_index}: {pos['y']:.1f} → {new_pos['y']:.1f}")
+            elif node_type == 'child':
+                # Child node: translate based on its parent branch's side
+                if branch_index is not None and branch_index >= mid_point:
+                    new_pos['y'] += left_offset
+                elif branch_index is not None:
+                    new_pos['y'] += right_offset
+            else:
+                # Other node types (like topic) - keep as is
+                pass
+            
+            translated_positions[key] = new_pos
+        
+        logger.debug(f"Translation applied: {left_translated_count} left branches, {right_translated_count} right branches")
+        logger.debug(f"Translation complete: {len(translated_positions)} total positions")
+        
+        return translated_positions
     
     def _two_stage_smart_positioning(self, children: List[Dict], left_children_x: float, right_children_x: float, left_branches_x: float, right_branches_x: float) -> Dict:
         """
@@ -1772,24 +1943,46 @@ class MindMapAgent(BaseAgent):
             'text': topic, 'node_type': 'topic', 'angle': 0
         }
         
-        # STEP 7: Generate connection data
-        connections = self._generate_connections(topic, children, positions)
-        
-        # STEP 8: Center all positions around (0,0) for proper D3 rendering
+        # STEP 7: Center all positions around (0,0) for proper D3 rendering
+        # Keep topic fixed at (0, 0) and only center branches/children
+        content_center_x = 0
+        content_center_y = 0
         if positions:
-            # Calculate content center from all positioned elements
-            x_coords = [pos.get('x', 0) for pos in positions.values() if pos is not None]
-            y_coords = [pos.get('y', 0) for pos in positions.values() if pos is not None]
+            # Calculate content center from all positioned elements EXCEPT topic
+            non_topic_x_coords = [pos.get('x', 0) for key, pos in positions.items() 
+                                 if pos is not None and key != 'topic']
+            non_topic_y_coords = [pos.get('y', 0) for key, pos in positions.items() 
+                                 if pos is not None and key != 'topic']
             
-            if x_coords and y_coords:
-                content_center_x = (min(x_coords) + max(x_coords)) / 2
-                content_center_y = (min(y_coords) + max(y_coords)) / 2
+            if non_topic_x_coords and non_topic_y_coords:
+                content_center_x = (min(non_topic_x_coords) + max(non_topic_x_coords)) / 2
+                content_center_y = (min(non_topic_y_coords) + max(non_topic_y_coords)) / 2
             
-            # Adjust all positions to center around (0,0)
+            # Adjust all positions EXCEPT topic to center around (0,0)
+            # Topic stays fixed at (0, 0) as the visual anchor
+            # CRITICAL: Modify positions dictionary in place so connections read updated values
+            adjusted_count = 0
             for key in positions:
-                if positions[key] is not None:
+                if positions[key] is not None and key != 'topic':
                     positions[key]['x'] -= content_center_x
                     positions[key]['y'] -= content_center_y
+                    adjusted_count += 1
+            
+            logger.debug(f"Centered {adjusted_count} positions (topic kept at origin): offset X={content_center_x:.1f}, Y={content_center_y:.1f}")
+            # Verify topic is still at (0, 0)
+            topic_pos = positions.get('topic', {})
+            if topic_pos:
+                topic_x, topic_y = topic_pos.get('x', 0), topic_pos.get('y', 0)
+                if abs(topic_x) > 0.01 or abs(topic_y) > 0.01:
+                    logger.warning(f"Topic position shifted to ({topic_x:.1f}, {topic_y:.1f}) - should be (0, 0)")
+                else:
+                    logger.debug(f"Topic position verified at (0, 0)")
+        
+        # STEP 8: Generate connection data AFTER all positions are finalized and centered
+        # Since all node positions are now finalized, we can directly read coordinates from positions
+        # This ensures connections perfectly align with node positions
+        # IMPORTANT: positions dictionary has been modified in place, so connections will read centered coordinates
+        connections = self._generate_connections(topic, children, positions)
         
         # STEP 9: Compute recommended dimensions AFTER all positioning and centering is complete
         recommended_dimensions = self._compute_recommended_dimensions(positions, topic, children)
@@ -1940,46 +2133,118 @@ class MindMapAgent(BaseAgent):
                 logger.debug(f"      Fixed intra-branch overlap: '{curr_child.get('text', 'child')}' {old_y:.1f} → {required_y:.1f}")
     
     def _generate_connections(self, topic: str, children: List[Dict], positions: Dict) -> List[Dict]:
-        """Generate connection data for lines between nodes."""
+        """
+        Generate connection data for lines between nodes.
+        
+        This method is called AFTER all node positions have been finalized and centered.
+        It directly reads coordinates from the positions dictionary, ensuring perfect alignment.
+        
+        Args:
+            topic: Central topic text
+            children: List of branch data (from spec)
+            positions: Dictionary of finalized node positions (already centered)
+            
+        Returns:
+            List of connection dictionaries with 'from' and 'to' coordinates
+        """
         connections = []
         
+        # Get topic position (should be at or near origin after centering)
         topic_pos = positions.get('topic', {})
-        topic_x, topic_y = topic_pos.get('x', 0), topic_pos.get('y', 0)
+        if not topic_pos:
+            logger.warning("Topic position not found in positions dictionary")
+            return connections
+            
+        topic_x = topic_pos.get('x', 0)
+        topic_y = topic_pos.get('y', 0)
+        
+        logger.debug(f"Generating connections: {len(children)} branches, {len(positions)} positions")
+        logger.debug(f"Topic position: ({topic_x:.1f}, {topic_y:.1f})")
         
         # Connections from topic to branches
-        for i, child in enumerate(children):
+        # Use array index i which matches branch_key = f'branch_{i}'
+        for i, branch_data in enumerate(children):
             branch_key = f'branch_{i}'
-            if branch_key in positions:
-                branch_pos = positions[branch_key]
-                branch_x, branch_y = branch_pos['x'], branch_pos['y']
+            
+            if branch_key not in positions:
+                logger.warning(f"Branch {i} not found in positions (key: {branch_key})")
+                continue
                 
+            branch_pos = positions[branch_key]
+            branch_x = branch_pos.get('x', 0)
+            branch_y = branch_pos.get('y', 0)
+            
+            # Create topic-to-branch connection
+            connections.append({
+                'type': 'topic_to_branch',
+                'from': {'x': topic_x, 'y': topic_y, 'type': 'topic'},
+                'to': {'x': branch_x, 'y': branch_y, 'type': 'branch'},
+                'branch_index': i,
+                'stroke_width': 3
+                # Removed hardcoded stroke_color - let frontend theme system handle colors
+            })
+            
+            # Connections from branch to children
+            # CRITICAL: Children are stored with branch_index matching array index i
+            # The actual_branch_idx in _stack_children_vertically maps back to original array index
+            # So we use i (array index) to find children, which matches how they're stored
+            nested_children = branch_data.get('children', [])
+            logger.debug(f"Branch {i} ('{branch_data.get('label', '')}'): {len(nested_children)} children in spec")
+            
+            for j, nested_child in enumerate(nested_children):
+                child_key = f'child_{i}_{j}'
+                
+                if child_key not in positions:
+                    # Child key not found - log for debugging
+                    available_keys = [k for k in positions.keys() if k.startswith('child_')]
+                    available_for_branch = [k for k in positions.keys() if k.startswith(f'child_{i}_')]
+                    logger.warning(f"Connection generation: Child key '{child_key}' not found for branch {i}, child {j}")
+                    logger.debug(f"  Branch {i} has {len(nested_children)} children in spec")
+                    logger.debug(f"  Available child keys for branch {i}: {available_for_branch}")
+                    logger.debug(f"  All child keys in positions: {sorted(available_keys)}")
+                    # Check by branch_index to see what's actually stored
+                    available_by_index = [(k, p.get('branch_index'), p.get('child_index'), p.get('text', '')[:20]) 
+                                         for k, p in positions.items() 
+                                         if p.get('branch_index') == i and p.get('node_type') == 'child']
+                    logger.debug(f"  Children with branch_index={i}: {available_by_index}")
+                    continue
+                
+                child_pos = positions[child_key]
+                child_x = child_pos.get('x', 0)
+                child_y = child_pos.get('y', 0)
+                
+                # Verify coordinates are valid
+                if not (isinstance(child_x, (int, float)) and isinstance(child_y, (int, float))):
+                    logger.warning(f"Invalid coordinates for child {child_key}: ({child_x}, {child_y})")
+                    continue
+                
+                logger.debug(f"  Connection {i}→{j}: branch({branch_x:.1f},{branch_y:.1f}) → child({child_x:.1f},{child_y:.1f})")
+                
+                # Create branch-to-child connection
+                # CRITICAL: Use the exact coordinates from positions dictionary (already centered)
                 connections.append({
-                    'type': 'topic_to_branch',
-                    'from': {'x': topic_x, 'y': topic_y, 'type': 'topic'},
-                    'to': {'x': branch_x, 'y': branch_y, 'type': 'branch'},
+                    'type': 'branch_to_child',
+                    'from': {'x': branch_x, 'y': branch_y, 'type': 'branch'},
+                    'to': {'x': child_x, 'y': child_y, 'type': 'child'},
                     'branch_index': i,
-                    'stroke_width': 3
+                    'child_index': j,
+                    'stroke_width': 2
                     # Removed hardcoded stroke_color - let frontend theme system handle colors
                 })
-                
-                # Connections from branch to children
-                nested_children = child.get('children', [])
-                for j, nested_child in enumerate(nested_children):
-                    child_key = f'child_{i}_{j}'
-                    if child_key in positions:
-                        child_pos = positions[child_key]
-                        child_x, child_y = child_pos['x'], child_pos['y']
-                        
-                        connections.append({
-                            'type': 'branch_to_child',
-                            'from': {'x': branch_x, 'y': branch_y, 'type': 'branch'},
-                            'to': {'x': child_x, 'y': child_y, 'type': 'child'},
-                            'branch_index': i,
-                            'child_index': j,
-                            'stroke_width': 2
-                            # Removed hardcoded stroke_color - let frontend theme system handle colors
-                        })
         
+        # Verify connections match node positions
+        if connections:
+            sample_conn = connections[0]
+            logger.debug(f"Sample connection coordinates: from({sample_conn['from']['x']:.1f}, {sample_conn['from']['y']:.1f}) to({sample_conn['to']['x']:.1f}, {sample_conn['to']['y']:.1f})")
+            # Verify the 'from' position matches a node position
+            if sample_conn['from']['type'] == 'topic':
+                topic_pos = positions.get('topic', {})
+                if topic_pos:
+                    expected_x, expected_y = topic_pos.get('x', 0), topic_pos.get('y', 0)
+                    if abs(sample_conn['from']['x'] - expected_x) > 0.1 or abs(sample_conn['from']['y'] - expected_y) > 0.1:
+                        logger.warning(f"Connection topic position mismatch! Expected ({expected_x:.1f}, {expected_y:.1f}), got ({sample_conn['from']['x']:.1f}, {sample_conn['from']['y']:.1f})")
+        
+        logger.debug(f"Generated {len(connections)} connections total")
         return connections
     
     def _compute_recommended_dimensions(self, positions: Dict, topic: str, children: List[Dict]) -> Dict:

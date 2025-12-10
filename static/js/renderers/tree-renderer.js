@@ -286,25 +286,61 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             .attr('stroke', '#bbb')
             .attr('stroke-width', 2);
         
-        // 水平线
-        svg.append('line')
-            .attr('x1', minX)
-            .attr('y1', tLineY)
-            .attr('x2', maxX)
-            .attr('y2', tLineY)
-            .attr('stroke', '#bbb')
-            .attr('stroke-width', 2);
+        // 水平线 - 分段绘制，避免穿过节点
+        // Horizontal line - draw in segments to avoid going through nodes
+        // Sort branches by X position
+        const sortedBranches = [...branchLayouts].sort((a, b) => a.branchX - b.branchX);
         
-        // 每个子节点竖线连接到水平线
-        branchLayouts.forEach(layout => {
-            svg.append('line')
-                .attr('x1', layout.branchX)
-                .attr('y1', tLineY)
-                .attr('x2', layout.branchX)
-                .attr('y2', branchY - layout.branchBox.h / 2)
-                .attr('stroke', '#bbb')
-                .attr('stroke-width', 2);
-        });
+        // Draw line segments between nodes
+        for (let i = 0; i < sortedBranches.length; i++) {
+            const branch = sortedBranches[i];
+            const nodeLeft = branch.branchX - branch.branchBox.w / 2;
+            const nodeRight = branch.branchX + branch.branchBox.w / 2;
+            
+            if (i === 0) {
+                // First segment: from minX to left edge of first node
+                if (minX < nodeLeft) {
+                    svg.append('line')
+                        .attr('x1', minX)
+                        .attr('y1', tLineY)
+                        .attr('x2', nodeLeft)
+                        .attr('y2', tLineY)
+                        .attr('stroke', '#bbb')
+                        .attr('stroke-width', 2);
+                }
+            }
+            
+            if (i < sortedBranches.length - 1) {
+                // Segment between current node and next node
+                const nextBranch = sortedBranches[i + 1];
+                const nextNodeLeft = nextBranch.branchX - nextBranch.branchBox.w / 2;
+                
+                if (nodeRight < nextNodeLeft) {
+                    svg.append('line')
+                        .attr('x1', nodeRight)
+                        .attr('y1', tLineY)
+                        .attr('x2', nextNodeLeft)
+                        .attr('y2', tLineY)
+                        .attr('stroke', '#bbb')
+                        .attr('stroke-width', 2);
+                }
+            } else {
+                // Last segment: from right edge of last node to maxX
+                if (nodeRight < maxX) {
+                    svg.append('line')
+                        .attr('x1', nodeRight)
+                        .attr('y1', tLineY)
+                        .attr('x2', maxX)
+                        .attr('y2', tLineY)
+                        .attr('stroke', '#bbb')
+                        .attr('stroke-width', 2);
+                }
+            }
+        }
+        
+        // 不绘制从水平线到类别节点的竖线 - 水平线已经通过竖线连接到节点中心，不需要额外的竖线
+        // Don't draw vertical lines from horizontal line to category nodes - horizontal line connects via vertical lines at node centers
+        // The vertical lines are not needed since the horizontal line segments already connect properly
     }
 
     // Draw root node as rectangle (AFTER T-connectors for proper z-order)

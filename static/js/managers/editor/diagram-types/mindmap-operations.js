@@ -83,32 +83,42 @@ class MindMapOperations {
                 return null;
             }
             
-            // Add new branch with 2 subitems (following the template pattern)
-            const newBranchIndex = spec.children.length;
+            // Add new branch - insert at end, then renumber for clockwise order
+            // The layout system handles clockwise positioning, we just need to ensure numbering follows clockwise
+            const numBranches = spec.children.length;
             const newBranchText = window.languageManager?.translate('newBranch') || 'New Branch';
             const newSubitemText = window.languageManager?.translate('newSubitem') || 'Sub-item';
-            spec.children.push({
-                id: `branch_${newBranchIndex}`,
-                label: `${newBranchText}${newBranchIndex + 1}`,
-                text: `${newBranchText}${newBranchIndex + 1}`,
+            
+            // Create new branch (will be numbered correctly after renumbering)
+            const newBranch = {
+                id: `branch_${numBranches}`,
+                label: `${newBranchText} ${numBranches + 1}`,
+                text: `${newBranchText} ${numBranches + 1}`,
                 children: [
                     {
-                        id: `sub_${newBranchIndex}_0`,
-                        label: `${newSubitemText}${newBranchIndex + 1}.1`,
-                        text: `${newSubitemText}${newBranchIndex + 1}.1`,
+                        id: `sub_${numBranches}_0`,
+                        label: `${newSubitemText} ${numBranches + 1}.1`,
+                        text: `${newSubitemText} ${numBranches + 1}.1`,
                         children: []
                     },
                     {
-                        id: `sub_${newBranchIndex}_1`,
-                        label: `${newSubitemText}${newBranchIndex + 1}.2`,
-                        text: `${newSubitemText}${newBranchIndex + 1}.2`,
+                        id: `sub_${numBranches}_1`,
+                        label: `${newSubitemText} ${numBranches + 1}.2`,
+                        text: `${newSubitemText} ${numBranches + 1}.2`,
                         children: []
                     }
                 ]
-            });
+            };
+            
+            // Add to end of array (layout system will position it correctly)
+            spec.children.push(newBranch);
+            
+            // Update all branch labels to reflect clockwise numbering order
+            this._updateBranchNumbersForClockwise(spec);
+            
             addedNodeType = 'branch';
             
-            this.logger.debug('MindMapOperations', `Added new branch with 2 subitems. Total branches: ${spec.children.length}`);
+            this.logger.debug('MindMapOperations', `Added new branch with clockwise numbering. Total branches: ${spec.children.length}`);
             
             const lang = window.languageManager?.getCurrentLanguage() || 'en';
             const message = lang === 'zh' ? '新分支及2个子项已添加！' : 'New branch with 2 sub-items added!';
@@ -135,20 +145,26 @@ class MindMapOperations {
                 return null;
             }
             
+            // Get translated text for sub-item
+            const newSubitemText = window.languageManager?.translate('newSubitem') || 'Sub-item';
+            
             // Add new sub-item to the branch
             const newChildIndex = branch.children.length;
             branch.children.push({
                 id: `sub_${branchIndex}_${newChildIndex}`,
-                label: `Sub-item ${branchIndex + 1}.${newChildIndex + 1}`,
-                text: `Sub-item ${branchIndex + 1}.${newChildIndex + 1}`,
+                label: `${newSubitemText} ${branchIndex + 1}.${newChildIndex + 1}`,
+                text: `${newSubitemText} ${branchIndex + 1}.${newChildIndex + 1}`,
                 children: []
             });
             addedNodeType = 'child';
             
             this.logger.debug('MindMapOperations', `Added new sub-item to branch ${branchIndex}. Total sub-items: ${branch.children.length}`);
             
+            // Get translated success message
+            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+            const message = lang === 'zh' ? '新子项已添加！' : 'New sub-item added!';
             this.eventBus.emit('diagram:operation_warning', {
-                message: 'New sub-item added!',
+                message: message,
                 type: 'success'
             });
         } else {
@@ -410,6 +426,63 @@ class MindMapOperations {
         });
         
         return spec;
+    }
+    
+    /**
+     * Update branch numbers to follow clockwise order
+     * Clockwise layout: Right side shows branches 0,1,2... (top to bottom)
+     *                   Left side shows branches ...5,4,3 (reversed, bottom to top)
+     * Clockwise reading order: 0, 1, 2, 3, 4, 5 (right top→bottom, then left bottom→top)
+     * So branch numbers should be: Branch 1 (index 0), Branch 2 (index 1), ..., Branch 6 (index 5)
+     * 
+     * @param {Object} spec - Mind map spec
+     * @private
+     */
+    _updateBranchNumbersForClockwise(spec) {
+        if (!spec || !Array.isArray(spec.children)) {
+            return;
+        }
+        
+        const numBranches = spec.children.length;
+        const newBranchText = window.languageManager?.translate('newBranch') || 'New Branch';
+        const newSubitemText = window.languageManager?.translate('newSubitem') || 'Sub-item';
+        
+        // Update branch labels to follow clockwise numbering
+        // Clockwise order: array index 0 = Branch 1, index 1 = Branch 2, etc.
+        // This matches the visual clockwise reading order
+        spec.children.forEach((branch, index) => {
+            // Clockwise number is simply index + 1 (array order matches clockwise reading order)
+            const clockwiseNumber = index + 1;
+            
+            // Update branch label (preserve user edits if label doesn't match pattern)
+            const currentLabel = branch.label || branch.text || '';
+            // Match patterns: "Branch 1", "分支1", "New Branch 1", "新分支1", etc.
+            // Include both short and full forms of translations
+            const branchPattern = /^(分支|新分支|Branch|New Branch)\s*\d+/i;
+            
+            // Only update if label matches the pattern (auto-generated)
+            if (branchPattern.test(currentLabel)) {
+                branch.label = `${newBranchText} ${clockwiseNumber}`;
+                branch.text = `${newBranchText} ${clockwiseNumber}`;
+            }
+            
+            // Update sub-item labels to match branch number
+            if (Array.isArray(branch.children)) {
+                branch.children.forEach((child, childIndex) => {
+                    const childLabel = child.label || child.text || '';
+                    // Match patterns: "Sub-item 1.1", "子项1.1", "New Subitem 1.1", "新子项1.1", etc.
+                    // Include both short and full forms of translations
+                    const childPattern = /^(子项|新子项|Sub-item|New Subitem)\s*\d+\.\d+/i;
+                    
+                    if (childPattern.test(childLabel)) {
+                        child.label = `${newSubitemText} ${clockwiseNumber}.${childIndex + 1}`;
+                        child.text = `${newSubitemText} ${clockwiseNumber}.${childIndex + 1}`;
+                    }
+                });
+            }
+        });
+        
+        this.logger.debug('MindMapOperations', `Updated branch numbers for clockwise order (${numBranches} branches)`);
     }
     
     /**

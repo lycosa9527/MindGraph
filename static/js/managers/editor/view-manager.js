@@ -681,24 +681,61 @@ class ViewManager {
                 return;
             }
             
-            // Get all visual elements (groups, circles, rects, paths, text, etc.)
-            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            // CRITICAL: Reset zoom transform first before calculating bounds
+            // This ensures bounds are calculated correctly regardless of current zoom/pan state
+            const zoomGroup = svg.select('g.zoom-group');
+            if (!zoomGroup.empty() && this.zoomBehavior) {
+                // Reset zoom transform to identity (no zoom, no pan)
+                svg.call(this.zoomBehavior.transform, d3.zoomIdentity);
+                this.zoomTransform = d3.zoomIdentity;
+                this.logger.debug('ViewManager', 'Reset zoom transform to identity');
+            }
+            
+            // Calculate bounds immediately (transform reset is synchronous)
+            this._calculateAndFitBounds(svg, container);
+            
+        } catch (error) {
+            this.logger.error('ViewManager', 'Error fitting diagram to window:', error);
+        }
+    }
+    
+    /**
+     * Calculate bounds and fit diagram (called after zoom reset)
+     * @private
+     */
+    _calculateAndFitBounds(svg, container) {
+        try {
+            // Get all visual elements - check both zoom-group and direct children
+            // For mindmaps, elements are direct children of SVG (no zoom-group)
+            const zoomGroup = svg.select('g.zoom-group');
+            let allElements;
+            
+            if (!zoomGroup.empty()) {
+                // Elements are in zoom-group (for other diagram types)
+                allElements = zoomGroup.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            } else {
+                // Elements are direct children of SVG (mindmaps)
+                // Include all visual elements, excluding background rect
+                allElements = svg.selectAll('g, circle, rect:not(.background), ellipse, path, line, text, polygon, polyline');
+            }
             
             if (allElements.empty()) {
                 this.logger.warn('ViewManager', 'No content found in SVG');
                 return;
             }
             
-            this.logger.debug('ViewManager', `Found ${allElements.size()} elements in SVG`);
+            this.logger.debug('ViewManager', `Found ${allElements.size()} elements in SVG (zoom-group: ${!zoomGroup.empty()})`);
             
             // Calculate the bounding box of all SVG content
+            // Use more comprehensive approach to ensure all content is included
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             let hasContent = false;
             
+            // First pass: get bounds from all elements
             allElements.each(function() {
                 try {
                     const bbox = this.getBBox();
-                    if (bbox.width > 0 && bbox.height > 0) {
+                    if (bbox && bbox.width > 0 && bbox.height > 0 && isFinite(bbox.x) && isFinite(bbox.y)) {
                         minX = Math.min(minX, bbox.x);
                         minY = Math.min(minY, bbox.y);
                         maxX = Math.max(maxX, bbox.x + bbox.width);
@@ -706,12 +743,57 @@ class ViewManager {
                         hasContent = true;
                     }
                 } catch (e) {
-                    // Some elements might not have getBBox, skip them
+                    // Skip elements without getBBox - try alternative methods
+                    try {
+                        // For elements without getBBox, try to get coordinates from attributes
+                        const x = parseFloat(this.getAttribute('x') || this.getAttribute('x1') || 0);
+                        const y = parseFloat(this.getAttribute('y') || this.getAttribute('y1') || 0);
+                        const width = parseFloat(this.getAttribute('width') || 0);
+                        const height = parseFloat(this.getAttribute('height') || 0);
+                        const x2 = parseFloat(this.getAttribute('x2') || x);
+                        const y2 = parseFloat(this.getAttribute('y2') || y);
+                        
+                        if (isFinite(x) && isFinite(y)) {
+                            minX = Math.min(minX, x, x2);
+                            minY = Math.min(minY, y, y2);
+                            maxX = Math.max(maxX, x + width, x2);
+                            maxY = Math.max(maxY, y + height, y2);
+                            hasContent = true;
+                        }
+                    } catch (e2) {
+                        // Skip this element
+                    }
                 }
             });
             
-            if (!hasContent || minX === Infinity) {
-                this.logger.warn('ViewManager', 'No valid content bounds found');
+            // Second pass: also check text elements which might extend beyond their bbox
+            const textElements = zoomGroup.empty() 
+                ? svg.selectAll('text')
+                : zoomGroup.selectAll('text');
+            
+            textElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox && isFinite(bbox.x) && isFinite(bbox.y)) {
+                        // Text elements might have negative coordinates or extend beyond
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Skip text elements without getBBox
+                }
+            });
+            
+            if (!hasContent || !isFinite(minX) || !isFinite(minY)) {
+                this.logger.warn('ViewManager', 'No valid content bounds found', {
+                    hasContent,
+                    minX,
+                    minY,
+                    elementCount: allElements.size()
+                });
                 return;
             }
             
@@ -780,7 +862,7 @@ class ViewManager {
                 mode: 'diagram_to_window'
             });
         } catch (error) {
-            this.logger.error('ViewManager', 'Error fitting diagram to window:', error);
+            this.logger.error('ViewManager', 'Error calculating and fitting bounds:', error);
         }
     }
     
@@ -804,15 +886,50 @@ class ViewManager {
             this.logger.debug('ViewManager', 'Applying transform:', { scale, translateX, translateY });
             
             // Make SVG responsive to fill container
+            // But preserve original dimensions for proper bounds calculation
+            const originalWidth = parseFloat(svg.attr('width')) || availableCanvasWidth;
+            const originalHeight = parseFloat(svg.attr('height')) || containerHeight;
+            
             svg.attr('width', '100%')
                .attr('height', '100%');
             
             // Get the current viewBox or create one
             const viewBox = svg.attr('viewBox');
             
+            // If content extends beyond original SVG dimensions, expand viewBox accordingly
+            const contentRight = contentBounds.x + contentBounds.width;
+            const contentBottom = contentBounds.y + contentBounds.height;
+            const needsExpansion = contentRight > originalWidth || contentBottom > originalHeight || 
+                                  contentBounds.x < 0 || contentBounds.y < 0;
+            
+            if (needsExpansion) {
+                this.logger.debug('ViewManager', 'Content extends beyond SVG bounds, expanding viewBox', {
+                    contentBounds,
+                    originalWidth,
+                    originalHeight,
+                    contentRight,
+                    contentBottom
+                });
+            }
+            
             // Calculate optimal viewBox with padding
-            const padding = Math.min(contentBounds.width, contentBounds.height) * 0.1; // 10% padding
+            // Use larger padding for better visibility, especially for larger diagrams
+            // Base padding on content size but ensure minimum padding
+            const minPadding = 50; // Minimum padding in pixels
+            const relativePadding = Math.max(
+                contentBounds.width * 0.15,  // 15% of width
+                contentBounds.height * 0.15, // 15% of height
+                minPadding                    // Minimum padding
+            );
+            const padding = Math.min(relativePadding, Math.max(contentBounds.width, contentBounds.height) * 0.2); // Cap at 20%
+            
             const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
+            
+            this.logger.debug('ViewManager', 'ViewBox calculation:', {
+                contentBounds,
+                padding,
+                newViewBox
+            });
             
             if (viewBox) {
                 this.logger.debug('ViewManager', 'Old viewBox:', viewBox);

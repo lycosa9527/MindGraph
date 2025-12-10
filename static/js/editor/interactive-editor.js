@@ -945,7 +945,15 @@ class InteractiveEditor {
             if (data.spec && data.spec._layout) {
                 this.currentSpec._layout = data.spec._layout;
                 this.currentSpec._recommended_dimensions = data.spec._recommended_dimensions;
-                logger.debug('Editor', 'Layout recalculated successfully');
+                
+                // Debug: Verify connections are included
+                const connectionCount = data.spec._layout.connections?.length || 0;
+                const positionCount = Object.keys(data.spec._layout.positions || {}).length;
+                logger.debug('Editor', `Layout recalculated: ${positionCount} positions, ${connectionCount} connections`);
+                
+                if (connectionCount === 0 && positionCount > 0) {
+                    logger.warn('Editor', 'WARNING: Layout has positions but no connections!');
+                }
                 
                 // Re-render with new layout
                 this.renderDiagram();

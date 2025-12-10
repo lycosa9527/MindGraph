@@ -151,7 +151,10 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
         .attr('orient', 'auto')
         .append('path')
         .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#666');
+        .attr('fill', '#666')
+        .attr('stroke', '#666')
+        .attr('stroke-width', '1')
+        .attr('class', 'arrowhead-marker');
 
     // Vertical layout - calculate positions first
     const centerX = rw / 2;
@@ -563,7 +566,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                     .attr('stroke-width', 2);
                 svg.append('polygon')
                     .attr('points', `${stepXCenter},${nextTop} ${stepXCenter - 5},${nextTop - 10} ${stepXCenter + 5},${nextTop - 10}`)
-                    .attr('fill', '#666');
+                    .attr('fill', '#666')
+                    .attr('stroke', '#666')
+                    .attr('stroke-width', '1')
+                    .attr('class', 'arrowhead-triangle');
             }
         }
     });
@@ -898,7 +904,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                         .attr('stroke-width', 2);
                     svg.append('polygon')
                         .attr('points', `${nextLeft},${stepYCenter} ${nextLeft - 10},${stepYCenter - 5} ${nextLeft - 10},${stepYCenter + 5}`)
-                        .attr('fill', '#666');
+                        .attr('fill', '#666')
+                        .attr('stroke', '#666')
+                        .attr('stroke-width', '1')
+                        .attr('class', 'arrowhead-triangle');
                 }
             }
         });
@@ -1426,13 +1435,17 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         }
         
         // 3.3 Add vertical connection line (made invisible) - EXACTLY as in old renderer
+        // These lines are for interaction purposes only and should never be visible
         svg.append("line")
             .attr("x1", xPos)
             .attr("y1", height/2 - 20) // Connect to upstream item
             .attr("x2", xPos)
             .attr("y2", height/2 + 30) // Connect to downstream item
             .attr("stroke", "transparent") // Make vertical lines invisible
-            .attr("stroke-width", 3); // Use attr instead of style
+            .attr("stroke-width", 3) // Use attr instead of style
+            .attr("class", "invisible-connection") // Mark as invisible connection
+            .style("stroke", "transparent") // Also set via style to override line mode
+            .style("opacity", "0"); // Ensure completely invisible
     });
     
     // 3.5 Add dimension label on the left side (two lines)
@@ -1486,9 +1499,12 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         
         svg.append("path")
             .attr("d", trianglePath)
-            .attr("fill", "#666666") // Changed to grey
-            .attr("stroke", "#666666") // Changed to grey
-            .attr("stroke-width", 2); // Use attr instead of style
+            .attr("fill", "#666666") // Solid fill
+            .attr("stroke", "#666666") // Solid stroke
+            .attr("stroke-width", 2)
+            .attr("class", "bridge-separator-triangle") // Mark as separator triangle
+            .style("fill", "#666666") // Ensure solid fill via style
+            .style("stroke", "#666666"); // Ensure solid stroke via style
         
         // 4.2 Add "as" text below the triangle - improved positioning
         svg.append("text")
@@ -1537,7 +1553,6 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         .attr('y2', separatorY)
         .attr('stroke', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
         .attr('stroke-width', 1)
-        .attr('stroke-dasharray', '4,4')  // Dotted line matching tree/brace map
         .style('opacity', 0.4);  // Match tree/brace map opacity
     
     // Add label centered on content
@@ -1761,7 +1776,10 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         const p2x = baseX - perpX * 4, p2y = baseY - perpY * 4;
         svg.append('polygon')
             .attr('points', `${p1x},${p1y} ${tipX},${tipY} ${p2x},${p2y}`)
-            .attr('fill', color);
+            .attr('fill', color)
+            .attr('stroke', color)
+            .attr('stroke-width', '1')
+            .attr('class', 'arrowhead-triangle');
     }
     
     // STEP 1: Measure all content to calculate optimal canvas dimensions

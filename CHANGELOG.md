@@ -7,6 +7,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.42] - 2025-12-10 - Line Mode Fixes & Localization Improvements
+
+### Fixed
+
+- **Mindmap Line Mode Connection Rendering** (`static/js/renderers/mind-map-renderer.js`, `static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Fixed connections crossing through nodes in line mode
+  - Implemented edge-to-edge connection rendering (matching double bubble map behavior)
+  - Connections now stop at node boundaries instead of going center-to-center
+  - Added helper functions `getCircleEdgePoint()` and `getRectangleEdgePoint()` for edge calculations
+  - Works correctly for all node types: topic circles, branch rectangles, and child rectangles
+  - Lines no longer visible through nodes in line mode
+  - Removed white fill color from mindmap nodes in line mode (no longer needed since connections are edge-to-edge)
+  - Nodes now render with `fill: none` in line mode for true line mode appearance
+
+- **Tree Map & Bridge Map Line Mode** (`static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Fixed connections crossing through nodes in tree map and bridge map line mode
+  - Nodes now preserve white fill in line mode to hide connections behind them
+  - Added special handling for nodes (elements with `data-node-id`) to maintain white fill
+  - Non-node decorative elements still render with no fill for true line mode appearance
+
+- **Bridge Map Invisible Connection Lines** (`static/js/renderers/flow-renderer.js`, `static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Fixed invisible vertical connection lines between analogy pairs becoming visible in line mode
+  - Added `invisible-connection` class to mark lines that should never be visible
+  - Line mode now excludes these lines from styling, keeping them transparent
+  - Lines remain invisible in both regular and line modes
+
+- **Bridge Map Separators & Triangles** (`static/js/renderers/flow-renderer.js`, `static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Changed separator line from dashed to solid
+  - Separator triangles now remain solid in line mode (black fill and stroke)
+  - Added `bridge-separator-triangle` class for proper identification
+  - Triangles stay visible and solid in both regular and line modes
+
+- **Flow Map & Multiflow Map Arrowheads** (`static/js/renderers/flow-renderer.js`, `static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Made all arrowhead triangles solid (filled) in both regular and line modes
+  - Added `arrowhead-triangle` class to polygon arrowheads
+  - Added `arrowhead-marker` class to SVG marker arrowheads
+  - Arrowheads now render with solid black fill and stroke in line mode
+  - Works for vertical flow map, horizontal flow map, and multiflow map
+
+- **Node Placeholder Text Localization** (`static/js/managers/editor/diagram-types/mindmap-operations.js`)
+  - Fixed English placeholder text appearing in Chinese mode when adding nodes
+  - Sub-items now use `window.languageManager?.translate('newSubitem')` instead of hardcoded "Sub-item"
+  - Updated pattern matching in `_updateBranchNumbersForClockwise()` to recognize both "子项" and "新子项" formats
+
+- **Tree Map Connection Lines** (`static/js/renderers/tree-renderer.js`)
+  - Fixed horizontal line going through category nodes (类别 1, 2, 3, 4)
+  - Horizontal line now drawn in segments: from minX to first node, between nodes, and from last node to maxX
+  - Lines no longer render inside category nodes
+  - Removed vertical lines that were connecting from horizontal line to category nodes (unnecessary since horizontal segments already connect properly)
+  - Vertical lines from category nodes down to their children remain unchanged
+  - Updated branch pattern matching to recognize both "分支" and "新分支" formats
+  - Success messages now properly translated (Chinese: "新子项已添加！")
+
+### Changed
+
+- **Mindmap Connection Rendering** (`static/js/renderers/mind-map-renderer.js`)
+  - Restructured rendering to store node dimensions first, then render connections
+  - Connections now calculated edge-to-edge instead of center-to-center
+  - Node dimensions stored in Map for efficient lookup during connection rendering
+  - Improved node matching algorithm with coordinate-based tolerance matching
+  - Graceful fallback to center-to-center if node dimensions not found
+
+- **Node Fill Colors** (`static/js/renderers/mind-map-renderer.js`)
+  - Changed default fill colors to white (`#ffffff`) for all node types
+  - Topic nodes: `#e3f2fd` → `#ffffff`
+  - Branch nodes: `#e3f2fd` → `#ffffff`
+  - Child nodes: `#f8f9fa` → `#ffffff`
+  - Ensures connections are properly hidden behind nodes in regular mode
+
+- **Line Mode Styling** (`static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Removed white fill preservation for mindmap nodes in line mode (edge-to-edge rendering makes it unnecessary)
+  - Preserved white fill for tree map and bridge map nodes in line mode (to hide connections behind them)
+  - Added special handling for bridge separator triangles and arrowhead triangles
+  - Added handling for invisible connection lines to keep them hidden
+  - Added handling for SVG marker arrowheads to ensure they remain solid
+
+### Technical Details
+
+**Root Cause Analysis:**
+- Mindmap connections were drawn center-to-center, causing lines to pass through nodes
+- In line mode, nodes have `fill: none`, making connections visible through them
+- Double bubble map already had correct edge-to-edge implementation
+- Placeholder text used hardcoded English strings instead of language manager
+- Tree map and bridge map had same issue - nodes lost fill in line mode
+- Bridge map had invisible connection lines that became visible when all lines were styled black
+- Arrowheads were hollow in line mode because decorative elements get `fill: none`
+
+**Solution:**
+1. **Edge-to-Edge Calculations**: Calculate connection endpoints at node edges using geometric intersection
+2. **Node Dimension Storage**: Store node dimensions (radius/width/height) during rendering for connection calculations
+3. **Coordinate Matching**: Use tolerance-based matching to find node dimensions from connection coordinates
+4. **Localization**: Use language manager for all placeholder text and update pattern matching
+5. **Line Mode Node Styling**: 
+   - Mindmap: Removed white fill (edge-to-edge rendering makes it unnecessary)
+   - Tree Map & Bridge Map: Preserved white fill (to hide connections behind nodes)
+6. **Invisible Line Exclusion**: Mark invisible lines with class and exclude from line mode styling
+7. **Solid Element Preservation**: Mark separator triangles and arrowheads with classes to preserve solid fill in line mode
+
+---
+
 ## [4.28.41] - 2025-12-10 - Database Corruption Prevention & Recovery
 
 ### Added

@@ -134,38 +134,86 @@ function renderMindMap(spec, theme = null, dimensions = null) {
     }
 }
 
+// Helper function to calculate edge intersection point for a circle
+function getCircleEdgePoint(centerX, centerY, radius, targetX, targetY) {
+    const dx = targetX - centerX;
+    const dy = targetY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist === 0) return { x: centerX + radius, y: centerY };
+    return {
+        x: centerX + (dx / dist) * radius,
+        y: centerY + (dy / dist) * radius
+    };
+}
+
+// Helper function to calculate edge intersection point for a rectangle
+function getRectangleEdgePoint(centerX, centerY, width, height, targetX, targetY) {
+    const dx = targetX - centerX;
+    const dy = targetY - centerY;
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
+    
+    // Calculate intersection with rectangle edge
+    // Use the side that the line intersects first
+    const slope = Math.abs(dy / dx);
+    const rectSlope = halfHeight / halfWidth;
+    
+    let edgeX, edgeY;
+    
+    if (slope <= rectSlope) {
+        // Intersects with left or right edge
+        edgeX = dx > 0 ? centerX + halfWidth : centerX - halfWidth;
+        edgeY = centerY + (dy / dx) * (edgeX - centerX);
+    } else {
+        // Intersects with top or bottom edge
+        edgeY = dy > 0 ? centerY + halfHeight : centerY - halfHeight;
+        edgeX = centerX + (dx / dy) * (edgeY - centerY);
+    }
+    
+    return { x: edgeX, y: edgeY };
+}
+
 function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
     const positions = spec.positions;
     const connections = spec.connections || [];
     
-    // Draw connections first (so they appear behind nodes)
-    connections.forEach(conn => {
-        // Handle the actual connection format from Python agent
-        // Connections have from: {x, y, type} and to: {x, y, type} format
-        if (conn.from && conn.to && typeof conn.from === 'object' && typeof conn.to === 'object') {
-            // Skip connections related to "Additional Aspect" branch
-            if (isAdditionalAspectConnection(conn, positions)) {
-                return; // Skip rendering this connection
-            }
-            
-            const fromX = centerX + conn.from.x;
-            const fromY = centerY + conn.from.y;
-            const toX = centerX + conn.to.x;
-            const toY = centerY + conn.to.y;
-            
-            // Draw connection line
-            svg.append('line')
-                .attr('x1', fromX)
-                .attr('y1', fromY)
-                .attr('x2', toX)
-                .attr('y2', toY)
-                .attr('stroke', conn.stroke_color || THEME?.connectionColor || '#666')
-                .attr('stroke-width', conn.stroke_width || THEME?.connectionWidth || 2)
-                .attr('opacity', 0.7);
-        }
-    });
+    // Debug: Log connection count and positions
+    logger.debug('MindMapRenderer', `Rendering ${connections.length} connections, ${Object.keys(positions).length} positions`);
+    if (connections.length > 0) {
+        const sampleConn = connections[0];
+        logger.debug('MindMapRenderer', `Sample connection: from(${sampleConn.from?.x}, ${sampleConn.from?.y}) to(${sampleConn.to?.x}, ${sampleConn.to?.y})`);
+    }
     
-    // Draw nodes
+    // Create SVG groups for proper layering: connections behind, nodes in front
+    // Remove existing groups if they exist (for re-rendering)
+    svg.selectAll('g.connections-layer, g.nodes-layer').remove();
+    
+    // Create connections layer (will be behind nodes, but after background)
+    // Insert after background rectangle to ensure it's visible in regular mode
+    const backgroundRect = svg.select('rect.background');
+    let connectionsLayer;
+    if (!backgroundRect.empty()) {
+        // Insert connections layer right after background rectangle
+        const bgNode = backgroundRect.node();
+        const newGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        newGroup.setAttribute('class', 'connections-layer');
+        // Insert after background node
+        bgNode.parentNode.insertBefore(newGroup, bgNode.nextSibling);
+        connectionsLayer = d3.select(newGroup);
+    } else {
+        // No background, just append (will be first element)
+        connectionsLayer = svg.append('g').attr('class', 'connections-layer');
+    }
+    
+    // Create nodes layer (will be in front of connections)
+    const nodesLayer = svg.append('g')
+        .attr('class', 'nodes-layer');
+    
+    // Store node dimensions for connection calculations
+    // Key: node position key (from positions object), Value: {type, centerX, centerY, radius/width/height}
+    const nodeDimensions = new Map();
+    
+    // Draw nodes first and store their dimensions
     Object.values(positions).forEach(pos => {
         // Skip "Additional Aspect" branch and its children
         if (isAdditionalAspectNode(pos, positions)) {
@@ -188,12 +236,23 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 topicRadius = Math.max(30, Math.min(60, (pos.text || 'Topic').length * 3));
             }
             
-            const finalFill = pos.fill || THEME.centralTopicFill || '#e3f2fd';
+            // Use white fill to hide connections behind nodes
+            const finalFill = pos.fill || THEME.centralTopicFill || '#ffffff';
             const finalStroke = pos.stroke || THEME.centralTopicStroke || '#35506b';
             const finalTextColor = pos.text_color || THEME.centralTopicText || '#333333';
             
-            // Draw circular node
-            svg.append('circle')
+            // Store node dimensions for connection calculations
+            const nodeKey = `${pos.x}_${pos.y}`;
+            nodeDimensions.set(nodeKey, {
+                type: 'circle',
+                centerX: topicX,
+                centerY: topicY,
+                radius: topicRadius,
+                nodeType: 'topic'
+            });
+            
+            // Draw circular node in nodes layer
+            nodesLayer.append('circle')
                 .attr('cx', topicX)
                 .attr('cy', topicY)
                 .attr('r', topicRadius)
@@ -222,7 +281,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             // WORKAROUND: Use multiple text elements instead of tspan
             const topicStartY = topicY - (finalTopicLines.length - 1) * topicLineHeight / 2;
             finalTopicLines.forEach((line, i) => {
-                svg.append('text')
+                nodesLayer.append('text')
                     .attr('x', topicX)
                     .attr('y', topicStartY + i * topicLineHeight)
                     .attr('text-anchor', 'middle')
@@ -264,15 +323,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const branchWidth = Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
             const branchHeight = Math.max(50, branchTextHeight + 20);
             
-            const finalBranchFill = pos.fill || THEME.branchFill || '#e3f2fd';
+            // Use white fill to hide connections behind nodes
+            const finalBranchFill = pos.fill || THEME.branchFill || '#ffffff';
             const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
             const finalBranchTextColor = pos.text_color || THEME.branchText || '#333333';
             
             // Generate node ID for branch
             const branchNodeId = `branch_${pos.branch_index}`;
             
-            // Draw rectangular node
-            svg.append('rect')
+            // Store node dimensions for connection calculations
+            const nodeKey = `${pos.x}_${pos.y}`;
+            nodeDimensions.set(nodeKey, {
+                type: 'rectangle',
+                centerX: branchX,
+                centerY: branchY,
+                width: branchWidth,
+                height: branchHeight,
+                nodeType: 'branch'
+            });
+            
+            // Draw rectangular node in nodes layer
+            nodesLayer.append('rect')
                 .attr('x', branchX - branchWidth / 2)
                 .attr('y', branchY - branchHeight / 2)
                 .attr('width', branchWidth)
@@ -294,7 +365,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             // WORKAROUND: Use multiple text elements instead of tspan
             const branchStartY = branchY - (finalBranchLines.length - 1) * branchLineHeight / 2;
             finalBranchLines.forEach((line, i) => {
-                svg.append('text')
+                nodesLayer.append('text')
                     .attr('x', branchX)
                     .attr('y', branchStartY + i * branchLineHeight)
                     .attr('text-anchor', 'middle')
@@ -335,15 +406,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const childWidth = Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
             const childHeight = Math.max(40, childTextHeight + 16);
             
-            const finalChildFill = pos.fill || THEME.childFill || '#f8f9fa';
+            // Use white fill to hide connections behind nodes
+            const finalChildFill = pos.fill || THEME.childFill || '#ffffff';
             const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';
             const finalChildTextColor = pos.text_color || THEME.childText || '#333333';
             
             // Generate node ID for child
             const childNodeId = `child_${pos.branch_index}_${pos.child_index}`;
             
-            // Draw rectangular node
-            svg.append('rect')
+            // Store node dimensions for connection calculations
+            const nodeKey = `${pos.x}_${pos.y}`;
+            nodeDimensions.set(nodeKey, {
+                type: 'rectangle',
+                centerX: childX,
+                centerY: childY,
+                width: childWidth,
+                height: childHeight,
+                nodeType: 'child'
+            });
+            
+            // Draw rectangular node in nodes layer
+            nodesLayer.append('rect')
                 .attr('x', childX - childWidth / 2)
                 .attr('y', childY - childHeight / 2)
                 .attr('width', childWidth)
@@ -366,7 +449,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             // WORKAROUND: Use multiple text elements instead of tspan
             const childStartY = childY - (finalChildLines.length - 1) * childLineHeight / 2;
             finalChildLines.forEach((line, i) => {
-                svg.append('text')
+                nodesLayer.append('text')
                     .attr('x', childX)
                     .attr('y', childStartY + i * childLineHeight)
                     .attr('text-anchor', 'middle')
@@ -381,6 +464,126 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                     .attr('data-line-index', i)
                     .text(line);
             });
+        }
+    });
+    
+    // Now render connections using edge-to-edge calculations
+    // Helper function to find node dimensions by matching coordinates
+    function findNodeDimensions(x, y) {
+        const tolerance = 0.5; // Small tolerance for coordinate matching (in pixels)
+        const nodeKey = `${x}_${y}`;
+        
+        // Try exact match first
+        if (nodeDimensions.has(nodeKey)) {
+            return nodeDimensions.get(nodeKey);
+        }
+        
+        // Try to find closest match within tolerance
+        let bestMatch = null;
+        let minDistance = Infinity;
+        
+        for (const [key, dims] of nodeDimensions.entries()) {
+            const keyParts = key.split('_');
+            const keyX = parseFloat(keyParts[0]);
+            const keyY = parseFloat(keyParts[1]);
+            
+            // Calculate distance from connection point to node center
+            const distance = Math.sqrt((keyX - x) * (keyX - x) + (keyY - y) * (keyY - y));
+            
+            if (distance < tolerance && distance < minDistance) {
+                bestMatch = dims;
+                minDistance = distance;
+            }
+        }
+        
+        return bestMatch;
+    }
+    
+    // Render connections with edge-to-edge calculations
+    connections.forEach(conn => {
+        // Handle the actual connection format from Python agent
+        // Connections have from: {x, y, type} and to: {x, y, type} format
+        if (conn.from && conn.to && typeof conn.from === 'object' && typeof conn.to === 'object') {
+            // Skip connections related to "Additional Aspect" branch
+            if (isAdditionalAspectConnection(conn, positions)) {
+                return; // Skip rendering this connection
+            }
+            
+            const fromCenterX = centerX + conn.from.x;
+            const fromCenterY = centerY + conn.from.y;
+            const toCenterX = centerX + conn.to.x;
+            const toCenterY = centerY + conn.to.y;
+            
+            // Find node dimensions for both endpoints
+            const fromDims = findNodeDimensions(conn.from.x, conn.from.y);
+            const toDims = findNodeDimensions(conn.to.x, conn.to.y);
+            
+            let fromX, fromY, toX, toY;
+            
+            if (fromDims) {
+                // Calculate edge point for source node
+                if (fromDims.type === 'circle') {
+                    const edgePoint = getCircleEdgePoint(
+                        fromDims.centerX, fromDims.centerY, fromDims.radius,
+                        toCenterX, toCenterY
+                    );
+                    fromX = edgePoint.x;
+                    fromY = edgePoint.y;
+                } else if (fromDims.type === 'rectangle') {
+                    const edgePoint = getRectangleEdgePoint(
+                        fromDims.centerX, fromDims.centerY, fromDims.width, fromDims.height,
+                        toCenterX, toCenterY
+                    );
+                    fromX = edgePoint.x;
+                    fromY = edgePoint.y;
+                } else {
+                    // Fallback to center
+                    fromX = fromCenterX;
+                    fromY = fromCenterY;
+                }
+            } else {
+                // Fallback to center if dimensions not found
+                fromX = fromCenterX;
+                fromY = fromCenterY;
+            }
+            
+            if (toDims) {
+                // Calculate edge point for target node
+                if (toDims.type === 'circle') {
+                    const edgePoint = getCircleEdgePoint(
+                        toDims.centerX, toDims.centerY, toDims.radius,
+                        fromCenterX, fromCenterY
+                    );
+                    toX = edgePoint.x;
+                    toY = edgePoint.y;
+                } else if (toDims.type === 'rectangle') {
+                    const edgePoint = getRectangleEdgePoint(
+                        toDims.centerX, toDims.centerY, toDims.width, toDims.height,
+                        fromCenterX, fromCenterY
+                    );
+                    toX = edgePoint.x;
+                    toY = edgePoint.y;
+                } else {
+                    // Fallback to center
+                    toX = toCenterX;
+                    toY = toCenterY;
+                }
+            } else {
+                // Fallback to center if dimensions not found
+                toX = toCenterX;
+                toY = toCenterY;
+            }
+            
+            // Draw connection line in connections layer (edge-to-edge)
+            connectionsLayer.append('line')
+                .attr('x1', fromX)
+                .attr('y1', fromY)
+                .attr('x2', toX)
+                .attr('y2', toY)
+                .attr('stroke', conn.stroke_color || THEME?.connectionColor || '#666')
+                .attr('stroke-width', conn.stroke_width || THEME?.connectionWidth || 2)
+                .attr('opacity', 0.7)
+                .attr('class', 'connection-line');
         }
     });
 }

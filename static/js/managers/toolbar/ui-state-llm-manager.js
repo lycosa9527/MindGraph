@@ -111,6 +111,12 @@ class UIStateLLMManager {
             .each(function() {
                 const element = d3.select(this);
                 
+                // Check if this is a bridge separator triangle (should remain solid)
+                const isBridgeTriangle = element.attr('class') && element.attr('class').includes('bridge-separator-triangle');
+                
+                // Check if this is an arrowhead triangle (should remain solid)
+                const isArrowheadTriangle = element.attr('class') && element.attr('class').includes('arrowhead-triangle');
+                
                 // Store original styles as data attributes (for restoration)
                 if (!element.attr('data-original-fill')) {
                     element.attr('data-original-fill', element.style('fill') || element.attr('fill') || 'none');
@@ -122,11 +128,26 @@ class UIStateLLMManager {
                     element.attr('data-original-stroke-width', element.style('stroke-width') || element.attr('stroke-width') || '1');
                 }
                 
-                // Apply line mode: no fill, black stroke
-                element
-                    .style('fill', 'none')
-                    .style('stroke', '#000000')
-                    .style('stroke-width', '2px');
+                if (isBridgeTriangle) {
+                    // For bridge separator triangles: keep solid fill and stroke
+                    element
+                        .style('fill', '#000000')
+                        .style('stroke', '#000000')
+                        .style('stroke-width', '2px');
+                } else if (isArrowheadTriangle) {
+                    // For arrowhead triangles: keep solid fill and stroke
+                    element
+                        .style('fill', '#000000')
+                        .style('stroke', '#000000')
+                        .style('stroke-width', '1px');
+                } else {
+                    // For all other shapes (including nodes): no fill, black stroke
+                    // Edge-to-edge connection rendering ensures connections don't go through nodes
+                    element
+                        .style('fill', 'none')
+                        .style('stroke', '#000000')
+                        .style('stroke-width', '2px');
+                }
             });
         
         // Make all text black
@@ -143,8 +164,8 @@ class UIStateLLMManager {
                 element.style('fill', '#000000');
             });
         
-        // Make all lines/connections black
-        svg.selectAll('line')
+        // Make all lines/connections black (except invisible connections)
+        svg.selectAll('line:not(.invisible-connection)')
             .each(function() {
                 const element = d3.select(this);
                 
@@ -155,6 +176,32 @@ class UIStateLLMManager {
                 
                 // Apply black stroke
                 element.style('stroke', '#000000');
+            });
+        
+        // Ensure invisible connections remain invisible in line mode
+        svg.selectAll('line.invisible-connection')
+            .style('stroke', 'transparent')
+            .style('opacity', '0');
+        
+        // Make arrowhead markers solid (black fill and stroke)
+        svg.selectAll('marker path.arrowhead-marker, marker path')
+            .each(function() {
+                const element = d3.select(this);
+                if (element.attr('class') && element.attr('class').includes('arrowhead-marker')) {
+                    element
+                        .style('fill', '#000000')
+                        .style('stroke', '#000000')
+                        .style('stroke-width', '1px');
+                } else {
+                    // Check if it's an arrowhead path (M0,-5L10,0L0,5 pattern)
+                    const d = element.attr('d');
+                    if (d && d.includes('M0,-5L10,0L0,5')) {
+                        element
+                            .style('fill', '#000000')
+                            .style('stroke', '#000000')
+                            .style('stroke-width', '1px');
+                    }
+                }
             });
     }
     
