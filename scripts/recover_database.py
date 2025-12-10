@@ -17,6 +17,7 @@ import sqlite3
 import shutil
 import os
 import sys
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -79,7 +80,9 @@ def check_disk_space(db_path: Path, required_mb: int = 100):
 
 def backup_database(db_path: Path) -> Path:
     """Create backup of database before recovery"""
-    backup_dir = Path("backups")
+    # Create backups directory relative to project root
+    project_root = Path(__file__).parent.parent
+    backup_dir = project_root / "backups"
     backup_dir.mkdir(exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -221,9 +224,60 @@ def recover_database(db_path: Path, force: bool = False) -> bool:
             return False
             
     except sqlite3.DatabaseError as e:
-        logger.error(f"Database recovery failed: {e}")
-        logger.error("Database may be severely corrupted. Manual recovery may be required.")
+        logger.error(f"Standard dump recovery failed: {e}")
+        logger.info("Attempting advanced recovery methods...")
+        
+        # Try advanced recovery methods
+        recovered_db = db_path.parent / f"{db_path.name}.recovered_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+        
+        # Method 1: Try SQLite .recover command
+        if recover_using_sqlite_recover(db_path, recovered_db):
+            if force:
+                # Remove WAL/SHM files
+                for suffix in ["-wal", "-shm"]:
+                    wal_shm_file = Path(str(db_path) + suffix)
+                    if wal_shm_file.exists():
+                        wal_shm_file.unlink()
+                        logger.info(f"Removed {wal_shm_file.name}")
+                
+                # Replace database
+                db_path.unlink()
+                shutil.move(str(recovered_db), str(db_path))
+                logger.info(f"Database recovered successfully using advanced method: {db_path}")
+                return True
+            else:
+                logger.info(f"Recovered database created: {recovered_db}")
+                logger.info("Use --force to replace original database")
+                return False
+        
+        # Method 2: Try table-by-table recovery
+        logger.info("Trying table-by-table recovery as last resort...")
+        recovered_db_table = db_path.parent / f"{db_path.name}.recovered_table_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+        if recover_using_table_scan(db_path, recovered_db_table):
+            if force:
+                # Remove WAL/SHM files
+                for suffix in ["-wal", "-shm"]:
+                    wal_shm_file = Path(str(db_path) + suffix)
+                    if wal_shm_file.exists():
+                        wal_shm_file.unlink()
+                        logger.info(f"Removed {wal_shm_file.name}")
+                
+                # Replace database
+                db_path.unlink()
+                shutil.move(str(recovered_db_table), str(db_path))
+                logger.info(f"Database partially recovered using table scan: {db_path}")
+                logger.warning("Some data may be missing - please verify recovered data")
+                return True
+            else:
+                logger.info(f"Partially recovered database created: {recovered_db_table}")
+                logger.info("Use --force to replace original database")
+                logger.warning("Some data may be missing - please verify recovered data")
+                return False
+        
+        logger.error("All recovery methods failed. Database may be severely corrupted.")
+        logger.error("Manual recovery may be required.")
         return False
+        
     except Exception as e:
         logger.error(f"Unexpected error during recovery: {e}", exc_info=True)
         return False
@@ -234,6 +288,204 @@ def recover_database(db_path: Path, force: bool = False) -> bool:
                 logger.info(f"Dump file saved: {dump_file}")
             else:
                 dump_file.unlink()
+
+
+def recover_using_sqlite_recover(db_path: Path, recovered_db: Path) -> bool:
+    """
+    Attempt recovery using SQLite's .recover command (SQLite 3.29+).
+    This can recover data from severely corrupted databases.
+    
+    Returns:
+        True if recovery succeeded, False otherwise
+    """
+    logger.info("Attempting advanced recovery using SQLite .recover command...")
+    
+    try:
+        # Check if sqlite3 command-line tool is available
+        result = subprocess.run(
+            ["sqlite3", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode != 0:
+            logger.warning("sqlite3 command-line tool not available, skipping .recover method")
+            return False
+        
+        # Get SQLite version
+        version_output = result.stdout.strip()
+        logger.info(f"SQLite version: {version_output}")
+        
+        # Use .recover to dump recoverable data
+        dump_file = db_path.parent / f"{db_path.name}.recover_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
+        
+        logger.info(f"Running sqlite3 .recover command...")
+        with open(dump_file, 'w', encoding='utf-8') as f:
+            result = subprocess.run(
+                ["sqlite3", str(db_path), ".recover"],
+                stdout=f,
+                stderr=subprocess.PIPE,
+                timeout=300,  # 5 minute timeout
+                text=True
+            )
+        
+        if result.returncode != 0:
+            logger.warning(f"sqlite3 .recover command failed: {result.stderr}")
+            if dump_file.exists() and dump_file.stat().st_size == 0:
+                dump_file.unlink()
+            return False
+        
+        if not dump_file.exists() or dump_file.stat().st_size == 0:
+            logger.warning("Recovery dump file is empty")
+            if dump_file.exists():
+                dump_file.unlink()
+            return False
+        
+        logger.info(f"Recovery dump created: {dump_file} ({dump_file.stat().st_size} bytes)")
+        
+        # Create new database from recovery dump
+        logger.info("Creating new database from recovery dump...")
+        if recovered_db.exists():
+            recovered_db.unlink()
+        
+        conn = sqlite3.connect(str(recovered_db))
+        try:
+            with open(dump_file, 'r', encoding='utf-8') as f:
+                # Read and execute SQL statements
+                sql_script = f.read()
+                # Split by semicolons and execute each statement
+                for statement in sql_script.split(';'):
+                    statement = statement.strip()
+                    if statement:
+                        try:
+                            conn.execute(statement)
+                        except sqlite3.Error as e:
+                            # Some statements might fail, but continue with others
+                            logger.debug(f"Skipping failed statement: {e}")
+                conn.commit()
+        finally:
+            conn.close()
+        
+        # Verify recovered database
+        if recovered_db.exists() and recovered_db.stat().st_size > 0:
+            if check_integrity(recovered_db):
+                logger.info("Advanced recovery succeeded - database integrity check passed")
+                dump_file.unlink()  # Clean up dump file
+                return True
+            else:
+                logger.warning("Recovered database created but integrity check failed")
+                logger.info(f"Recovery dump saved at: {dump_file}")
+                logger.info("You may need to manually review and fix the recovered data")
+                return False
+        else:
+            logger.error("Recovered database file was not created or is empty")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        logger.error("Recovery operation timed out (database may be too large)")
+        return False
+    except FileNotFoundError:
+        logger.warning("sqlite3 command-line tool not found, skipping .recover method")
+        return False
+    except Exception as e:
+        logger.error(f"Advanced recovery failed: {e}", exc_info=True)
+        return False
+
+
+def recover_using_table_scan(db_path: Path, recovered_db: Path) -> bool:
+    """
+    Attempt to recover data by scanning individual tables.
+    This method tries to read data from tables that might still be accessible.
+    
+    Returns:
+        True if any data was recovered, False otherwise
+    """
+    logger.info("Attempting table-by-table recovery...")
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        # Try to get list of tables
+        try:
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            logger.info(f"Found {len(tables)} tables to attempt recovery")
+        except Exception as e:
+            logger.error(f"Could not read table list: {e}")
+            conn.close()
+            return False
+        
+        if not tables:
+            logger.warning("No tables found in database")
+            conn.close()
+            return False
+        
+        # Create recovered database
+        if recovered_db.exists():
+            recovered_db.unlink()
+        recovered_conn = sqlite3.connect(str(recovered_db))
+        recovered_cursor = recovered_conn.cursor()
+        
+        recovered_tables = 0
+        total_rows = 0
+        
+        for table in tables:
+            try:
+                # Try to get table schema
+                cursor.execute(f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table}'")
+                schema_row = cursor.fetchone()
+                if schema_row and schema_row[0]:
+                    schema = schema_row[0]
+                    # Create table in recovered database
+                    recovered_cursor.execute(schema)
+                    logger.info(f"Created table: {table}")
+                    
+                    # Try to read data from table
+                    try:
+                        cursor.execute(f"SELECT * FROM {table}")
+                        rows = cursor.fetchall()
+                        
+                        if rows:
+                            # Get column names
+                            column_names = [description[0] for description in cursor.description]
+                            placeholders = ','.join(['?' for _ in column_names])
+                            insert_sql = f"INSERT INTO {table} ({','.join(column_names)}) VALUES ({placeholders})"
+                            
+                            # Insert rows into recovered database
+                            recovered_cursor.executemany(insert_sql, rows)
+                            recovered_tables += 1
+                            total_rows += len(rows)
+                            logger.info(f"Recovered {len(rows)} rows from table: {table}")
+                    except Exception as e:
+                        logger.warning(f"Could not recover data from table {table}: {e}")
+                        # Table structure recovered but no data
+                        recovered_tables += 1
+                        
+            except Exception as e:
+                logger.warning(f"Could not recover table {table}: {e}")
+                continue
+        
+        recovered_conn.commit()
+        recovered_conn.close()
+        conn.close()
+        
+        if recovered_tables > 0:
+            logger.info(f"Table recovery: {recovered_tables} tables recovered, {total_rows} total rows")
+            if check_integrity(recovered_db):
+                logger.info("Table recovery succeeded - database integrity check passed")
+                return True
+            else:
+                logger.warning("Table recovery created database but integrity check failed")
+                logger.info("Partial recovery may be possible - review recovered data")
+                return False
+        else:
+            logger.error("No tables could be recovered")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Table recovery failed: {e}", exc_info=True)
+        return False
 
 
 def remove_wal_files(db_path: Path) -> bool:
