@@ -36,13 +36,10 @@ class SmallOperationsManager {
             this.handleDuplicateNode();
         }, this.ownerId);
         
-        this.eventBus.onWithOwner('history:undo_requested', () => {
-            this.handleUndo();
-        }, this.ownerId);
-        
-        this.eventBus.onWithOwner('history:redo_requested', () => {
-            this.handleRedo();
-        }, this.ownerId);
+        // NOTE: Undo/redo are now handled by HistoryManager directly
+        // HistoryManager listens to history:undo_requested and history:redo_requested
+        // and emits history:undo_completed/history:redo_completed which InteractiveEditor listens to
+        // No need for SmallOperationsManager to intercept these events
         
         this.eventBus.onWithOwner('diagram:reset_requested', () => {
             this.handleReset();
@@ -61,22 +58,24 @@ class SmallOperationsManager {
     
     /**
      * Handle undo
-     * EXTRACTED FROM: toolbar-manager.js lines 2667-2671
+     * DEPRECATED: Undo/redo are now handled by HistoryManager via Event Bus
+     * HistoryManager listens to history:undo_requested and emits history:undo_completed
+     * InteractiveEditor listens to history:undo_completed and applies the changes
      */
     handleUndo() {
-        if (this.editor) {
-            this.editor.undo();
-        }
+        // No longer needed - HistoryManager handles this
+        this.logger.debug('SmallOperationsManager', 'Undo request - handled by HistoryManager');
     }
     
     /**
      * Handle redo
-     * EXTRACTED FROM: toolbar-manager.js lines 2676-2680
+     * DEPRECATED: Undo/redo are now handled by HistoryManager via Event Bus
+     * HistoryManager listens to history:redo_requested and emits history:redo_completed
+     * InteractiveEditor listens to history:redo_completed and applies the changes
      */
     handleRedo() {
-        if (this.editor) {
-            this.editor.redo();
-        }
+        // No longer needed - HistoryManager handles this
+        this.logger.debug('SmallOperationsManager', 'Redo request - handled by HistoryManager');
     }
     
     /**

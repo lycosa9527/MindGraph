@@ -46,12 +46,12 @@ class HistoryManager {
         }, this.ownerId);
         
         // Listen for undo requests
-        this.eventBus.onWithOwner('toolbar:undo_requested', () => {
+        this.eventBus.onWithOwner('history:undo_requested', () => {
             this.undo();
         }, this.ownerId);
         
         // Listen for redo requests
-        this.eventBus.onWithOwner('toolbar:redo_requested', () => {
+        this.eventBus.onWithOwner('history:redo_requested', () => {
             this.redo();
         }, this.ownerId);
         

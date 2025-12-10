@@ -646,6 +646,20 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to start captcha cleanup scheduler: {e}")
     
+    # Start WAL checkpoint scheduler (checkpoints SQLite WAL every 5 minutes)
+    # This is critical for database safety, especially when using kill -9 (SIGKILL)
+    # which bypasses graceful shutdown. Periodic checkpointing ensures WAL file
+    # doesn't grow too large and reduces corruption risk.
+    wal_checkpoint_task = None
+    try:
+        from config.database import start_wal_checkpoint_scheduler
+        wal_checkpoint_task = asyncio.create_task(start_wal_checkpoint_scheduler(interval_minutes=5))
+        if worker_id == '0' or not worker_id:
+            logger.info("WAL checkpoint scheduler started (every 5 min)")
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
+            logger.warning(f"Failed to start WAL checkpoint scheduler: {e}")
+    
     # Yield control to application
     try:
         yield
@@ -674,6 +688,16 @@ async def lifespan(app: FastAPI):
                 pass
             if worker_id == '0' or not worker_id:
                 logger.info("Captcha cleanup scheduler stopped")
+        
+        # Stop WAL checkpoint scheduler
+        if wal_checkpoint_task:
+            wal_checkpoint_task.cancel()
+            try:
+                await wal_checkpoint_task
+            except asyncio.CancelledError:
+                pass
+            if worker_id == '0' or not worker_id:
+                logger.info("WAL checkpoint scheduler stopped")
         
         # Cleanup LLM Service
         try:

@@ -321,6 +321,49 @@ class InteractiveEditor {
                 // This is just a notification that re-render may be needed
             };
             this.eventBus.onWithOwner('mindmap:selection_restore_requested', this.eventBusListeners.selectionRestoreRequested, this.ownerId);
+            
+            // Listen for history undo/redo completion events from HistoryManager
+            this.eventBusListeners.historyUndoCompleted = (data) => {
+                // CRITICAL: Check if editor is destroyed before proceeding
+                if (!this.selectionManager) {
+                    logger.debug('InteractiveEditor', 'Ignoring history:undo_completed - editor destroyed');
+                    return;
+                }
+                if (data.spec) {
+                    // Restore the spec from history
+                    this.currentSpec = JSON.parse(JSON.stringify(data.spec));
+                    
+                    // Clear selection (nodes may no longer exist)
+                    this.selectionManager.clearSelection();
+                    
+                    // Re-render diagram with restored state
+                    this.renderDiagram();
+                    
+                    logger.debug('InteractiveEditor', `Undo completed: ${data.action}`);
+                }
+            };
+            this.eventBus.onWithOwner('history:undo_completed', this.eventBusListeners.historyUndoCompleted, this.ownerId);
+            
+            this.eventBusListeners.historyRedoCompleted = (data) => {
+                // CRITICAL: Check if editor is destroyed before proceeding
+                if (!this.selectionManager) {
+                    logger.debug('InteractiveEditor', 'Ignoring history:redo_completed - editor destroyed');
+                    return;
+                }
+                if (data.spec) {
+                    // Restore the spec from history
+                    this.currentSpec = JSON.parse(JSON.stringify(data.spec));
+                    
+                    // Clear selection (nodes may no longer exist)
+                    this.selectionManager.clearSelection();
+                    
+                    // Re-render diagram with restored state
+                    this.renderDiagram();
+                    
+                    logger.debug('InteractiveEditor', `Redo completed: ${data.action}`);
+                }
+            };
+            this.eventBus.onWithOwner('history:redo_completed', this.eventBusListeners.historyRedoCompleted, this.ownerId);
         }
         
         // Update flow map orientation button visibility (via ViewManager)
@@ -641,19 +684,19 @@ class InteractiveEditor {
             }
         }
         
-        // Undo
+        // Undo - Use Event Bus for consistency
         if (event.ctrlKey && event.key === 'z') {
             if (!isTyping) {
                 event.preventDefault();
-                this.undo();
+                this.eventBus.emit('history:undo_requested', {});
             }
         }
         
-        // Redo
+        // Redo - Use Event Bus for consistency
         if (event.ctrlKey && event.key === 'y') {
             if (!isTyping) {
                 event.preventDefault();
-                this.redo();
+                this.eventBus.emit('history:redo_requested', {});
             }
         }
         

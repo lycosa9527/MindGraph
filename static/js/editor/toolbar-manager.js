@@ -400,6 +400,29 @@ class ToolbarManager {
             const percent = Math.round(e.target.value * 100);
             this.opacityValue.textContent = `${percent}%`;
         });
+        
+        // Listen to history state changes to update undo/redo button states
+        if (window.eventBus) {
+            window.eventBus.onWithOwner('history:state_changed', (data) => {
+                this.updateUndoRedoButtonStates(data.canUndo, data.canRedo);
+            }, this.ownerId);
+        }
+    }
+    
+    /**
+     * Update undo/redo button enabled/disabled states
+     * @param {boolean} canUndo - Whether undo is possible
+     * @param {boolean} canRedo - Whether redo is possible
+     */
+    updateUndoRedoButtonStates(canUndo, canRedo) {
+        if (this.undoBtn) {
+            this.undoBtn.disabled = !canUndo;
+            this.undoBtn.style.opacity = canUndo ? '1' : '0.5';
+        }
+        if (this.redoBtn) {
+            this.redoBtn.disabled = !canRedo;
+            this.redoBtn.style.opacity = canRedo ? '1' : '0.5';
+        }
     }
     
     /**

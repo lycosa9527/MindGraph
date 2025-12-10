@@ -562,7 +562,8 @@ class LLMAutoCompleteManager {
         if (this.progressRenderer) {
             this.progressRenderer.updateButtonStates(allResults);
             
-            if (this.selectedLLM) {
+            // Only highlight selected LLM if it has cached results (auto-complete has been used)
+            if (this.selectedLLM && allResults[this.selectedLLM]) {
                 this.progressRenderer.highlightSelectedModel(this.selectedLLM);
             }
         }

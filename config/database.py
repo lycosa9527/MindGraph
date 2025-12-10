@@ -8,6 +8,7 @@ SQLAlchemy database setup and session management.
 
 import os
 import sys
+import asyncio
 from pathlib import Path
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.orm import sessionmaker, Session
@@ -428,6 +429,47 @@ def checkpoint_wal():
     except Exception as e:
         logger.warning(f"[Database] WAL checkpoint failed: {e}")
         return False
+
+
+async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
+    """
+    Run periodic WAL checkpointing in background.
+    
+    This is critical for database safety, especially when using kill -9 (SIGKILL)
+    which bypasses graceful shutdown. Periodic checkpointing ensures:
+    - WAL file doesn't grow too large
+    - Changes are merged to main database regularly
+    - Faster recovery if process is force-killed
+    - Reduced corruption risk
+    
+    Args:
+        interval_minutes: How often to checkpoint WAL (default: 5 minutes)
+    """
+    if "sqlite" not in DATABASE_URL:
+        return  # Not SQLite, no checkpoint needed
+    
+    interval_seconds = interval_minutes * 60
+    logger.info(f"[Database] Starting WAL checkpoint scheduler (every {interval_minutes} min)")
+    
+    while True:
+        try:
+            await asyncio.sleep(interval_seconds)
+            # Run checkpoint in thread pool to avoid blocking event loop
+            # checkpoint_wal() handles its own exceptions and returns False on failure
+            success = await asyncio.to_thread(checkpoint_wal)
+            if success:
+                logger.debug("[Database] Periodic WAL checkpoint completed")
+            else:
+                logger.warning("[Database] Periodic WAL checkpoint failed (will retry at next interval)")
+        except asyncio.CancelledError:
+            logger.info("[Database] WAL checkpoint scheduler stopped")
+            break
+        except Exception as e:
+            # This catches unexpected errors (e.g., from asyncio.to_thread or asyncio.sleep)
+            logger.error(f"[Database] WAL checkpoint scheduler error: {e}", exc_info=True)
+            # Wait shorter time before retrying after unexpected errors
+            # This ensures we don't wait too long if there's a transient issue
+            await asyncio.sleep(60)  # Wait 1 minute before retrying
 
 
 def check_disk_space(required_mb: int = 100) -> bool:

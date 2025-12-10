@@ -125,8 +125,8 @@ class LLMProgressRenderer {
             return;
         }
         
-        // Remove all state classes
-        button.classList.remove('loading', 'ready', 'error', 'idle');
+        // Remove all state classes (including active/selected)
+        button.classList.remove('loading', 'ready', 'error', 'active', 'selected');
         
         // Add appropriate state class
         switch (state) {
@@ -140,10 +140,6 @@ class LLMProgressRenderer {
                 break;
             case 'error':
                 button.classList.add('error');
-                button.disabled = false;
-                break;
-            case 'idle':
-                button.classList.add('idle');
                 button.disabled = false;
                 break;
         }
@@ -163,13 +159,17 @@ class LLMProgressRenderer {
             return;
         }
         
+        // Re-query buttons if they might have been replaced (e.g., during cleanup)
+        if (this.toolbarManager && this.toolbarManager.llmButtons) {
+            this.llmButtons = this.toolbarManager.llmButtons;
+        }
+        
+        // Update buttons with cached results
         Object.entries(llmResults).forEach(([modelName, result]) => {
             if (result.success) {
                 this.setLLMButtonState(modelName, 'ready');
             } else if (result.error) {
                 this.setLLMButtonState(modelName, 'error');
-            } else {
-                this.setLLMButtonState(modelName, 'idle');
             }
         });
         
@@ -221,6 +221,7 @@ class LLMProgressRenderer {
     
     /**
      * Highlight selected model button
+     * Only adds 'active' class if button has cached results (ready/error state)
      */
     highlightSelectedModel(modelName) {
         // Safety check: buttons might be destroyed or null
@@ -242,9 +243,14 @@ class LLMProgressRenderer {
             
             const btnModel = btn.dataset?.llm || btn.id?.replace('llm-', '');
             if (btnModel === modelName) {
+                // Only add 'active' class if button has ready or error state (has cached results)
+                // This ensures blue fill only appears after auto-complete is used
+                if (btn.classList.contains('ready') || btn.classList.contains('error')) {
+                    btn.classList.add('active');
+                }
                 btn.classList.add('selected');
             } else {
-                btn.classList.remove('selected');
+                btn.classList.remove('active', 'selected');
             }
         });
     }
@@ -264,7 +270,7 @@ class LLMProgressRenderer {
                 return;
             }
             
-            btn.classList.remove('loading', 'ready', 'error', 'idle', 'selected');
+            btn.classList.remove('loading', 'ready', 'error', 'active', 'selected');
             btn.disabled = false;
         });
         

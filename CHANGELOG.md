@@ -7,6 +7,169 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.46] - 2025-12-10 - Undo/Redo Button Functionality Fix
+
+### Fixed
+
+- **Undo/Redo Buttons** (`static/js/managers/editor/history-manager.js`, `static/js/editor/interactive-editor.js`, `static/js/managers/toolbar/small-operations-manager.js`, `static/js/editor/toolbar-manager.js`)
+  - Fixed completely broken undo/redo functionality - buttons did nothing when clicked
+  - Fixed event name mismatch: HistoryManager was listening to wrong event names (`toolbar:undo_requested` instead of `history:undo_requested`)
+  - Added missing event listeners in InteractiveEditor for `history:undo_completed` and `history:redo_completed` events
+  - Undo/redo buttons now work correctly for all diagram operations (add node, delete node, edit text, etc.)
+  - Keyboard shortcuts (Ctrl+Z, Ctrl+Y) now work consistently with button clicks
+  - Undo/redo buttons now properly reflect enabled/disabled state based on history availability
+
+### Changed
+
+- **Event Bus Architecture** (`static/js/managers/editor/history-manager.js`)
+  - HistoryManager now listens to correct event names: `history:undo_requested` and `history:redo_requested`
+  - Ensures proper communication flow: ToolbarManager → HistoryManager → InteractiveEditor
+
+- **InteractiveEditor Event Handling** (`static/js/editor/interactive-editor.js`)
+  - Added listeners for `history:undo_completed` and `history:redo_completed` events
+  - When undo/redo completes, editor now restores spec, clears selection, and re-renders diagram
+  - Keyboard shortcuts (Ctrl+Z, Ctrl+Y) now emit events through Event Bus instead of calling methods directly
+  - Ensures consistency between button clicks and keyboard shortcuts
+
+- **SmallOperationsManager** (`static/js/managers/toolbar/small-operations-manager.js`)
+  - Removed duplicate undo/redo handlers that were bypassing HistoryManager
+  - Now lets HistoryManager handle undo/redo via Event Bus architecture
+  - Added deprecation comments explaining the new flow
+
+- **Toolbar Button States** (`static/js/editor/toolbar-manager.js`)
+  - Added listener for `history:state_changed` events
+  - Undo/redo buttons now update their enabled/disabled state based on `canUndo`/`canRedo` flags
+  - Buttons show visual feedback (opacity 0.5 when disabled, 1.0 when enabled)
+
+### Technical Details
+
+**Problem:**
+- HistoryManager was listening to `toolbar:undo_requested`/`toolbar:redo_requested` events
+- But ToolbarManager was emitting `history:undo_requested`/`history:redo_requested` events
+- Event name mismatch caused HistoryManager to never receive undo/redo requests
+- HistoryManager emitted `history:undo_completed`/`history:redo_completed` events but InteractiveEditor didn't listen
+- Even if HistoryManager processed undo/redo, changes were never applied to the diagram
+- SmallOperationsManager was calling `editor.undo()`/`redo()` directly, bypassing HistoryManager
+- Two separate history systems existed but weren't synchronized
+
+**Solution:**
+1. **Fixed Event Names**: Changed HistoryManager listeners from `toolbar:*` to `history:*` events
+2. **Added Event Consumers**: InteractiveEditor now listens to `history:undo_completed`/`history:redo_completed` and applies changes
+3. **Unified Event Flow**: All undo/redo requests go through Event Bus → HistoryManager → InteractiveEditor
+4. **Removed Duplicate Handlers**: SmallOperationsManager no longer intercepts undo/redo events
+5. **Updated Keyboard Shortcuts**: Ctrl+Z/Ctrl+Y now emit events instead of calling methods directly
+6. **Added Button State Updates**: ToolbarManager listens to history state changes and updates button states
+
+**Event Flow (Fixed):**
+1. User clicks undo button → ToolbarManager emits `history:undo_requested`
+2. HistoryManager receives event → Processes undo → Emits `history:undo_completed` with restored spec
+3. InteractiveEditor receives `history:undo_completed` → Restores spec → Clears selection → Re-renders diagram
+4. HistoryManager emits `history:state_changed` → ToolbarManager updates button states
+
+**Impact:**
+- Undo/redo buttons now work correctly for all users
+- Keyboard shortcuts work consistently with button clicks
+- Visual feedback shows when undo/redo is available
+- Architecture is cleaner with single source of truth (HistoryManager)
+
+**Files Modified:**
+- `static/js/managers/editor/history-manager.js` - Fixed event listener names
+- `static/js/editor/interactive-editor.js` - Added history completion listeners, updated keyboard shortcuts
+- `static/js/managers/toolbar/small-operations-manager.js` - Removed duplicate handlers
+- `static/js/editor/toolbar-manager.js` - Added button state update listener
+
+---
+
+## [4.28.45] - 2025-12-10 - LLM Button Highlighting Fix
+
+### Fixed
+
+- **LLM Button Active State** (`templates/editor.html`, `static/js/managers/toolbar/llm-progress-renderer.js`)
+  - Fixed Qwen button showing blue fill (active state) when entering canvas before auto-complete is used
+  - Removed hardcoded `active` class from Qwen button in HTML template
+  - Updated `highlightSelectedModel()` to only add `active` class when button has cached results (ready/error state)
+  - Updated `setLLMButtonState()` to remove `active` class when setting button states
+  - LLM buttons now only show blue fill after auto-complete has been used and results are cached
+
+### Changed
+
+- **Button State Management** (`static/js/managers/toolbar/llm-progress-renderer.js`)
+  - `highlightSelectedModel()` now conditionally adds `active` class based on button state
+  - Only buttons with `ready` or `error` state (indicating cached results) can have `active` class
+  - Ensures visual consistency: blue fill only appears after auto-complete generates results
+
+### Technical Details
+
+**Problem:**
+- Qwen button had `class="llm-btn active"` hardcoded in HTML template
+- This caused blue fill to appear immediately when entering canvas
+- Users expected blue fill to only appear after using auto-complete feature
+
+**Solution:**
+1. Removed hardcoded `active` class from HTML template
+2. Updated `highlightSelectedModel()` to check button state before adding `active` class
+3. Only adds `active` class if button has `ready` or `error` state (has cached results)
+4. Updated `setLLMButtonState()` to remove `active` class when setting new states
+
+**Files Modified:**
+- `templates/editor.html` - Removed hardcoded `active` class from Qwen button
+- `static/js/managers/toolbar/llm-progress-renderer.js` - Updated `highlightSelectedModel()` and `setLLMButtonState()`
+
+---
+
+## [4.28.44] - 2025-12-10 - Periodic WAL Checkpointing for Kill -9 Safety
+
+### Added
+
+- **Periodic WAL Checkpoint Scheduler** (`config/database.py`, `main.py`)
+  - New background task that checkpoints SQLite WAL file every 5 minutes
+  - Critical for database safety when using `kill -9` (SIGKILL) which bypasses graceful shutdown
+  - Prevents WAL file from growing too large
+  - Reduces corruption risk from force kills
+  - Automatically merges WAL changes into main database periodically
+  - Runs in background thread pool to avoid blocking event loop
+
+### Changed
+
+- **Database Safety Improvements** (`config/database.py`)
+  - Added `start_wal_checkpoint_scheduler()` function for periodic checkpointing
+  - WAL checkpointing now happens both on graceful shutdown AND periodically during runtime
+  - Enhanced database resilience to unexpected process termination
+
+### Technical Details
+
+**Problem:**
+- `kill -9` (SIGKILL) cannot be caught by signal handlers - it's a force kill
+- When using `kill -9`, graceful shutdown handlers never run
+- No WAL checkpoint happens, causing WAL file to grow
+- Large WAL files increase corruption risk and slow recovery
+- SQLite WAL mode is crash-resistant, but large WAL files are still risky
+
+**Solution:**
+1. **Periodic Checkpointing**: Checkpoint WAL every 5 minutes during runtime
+2. **Background Task**: Runs as async task, doesn't block main application
+3. **Thread Pool**: Uses `asyncio.to_thread()` to avoid blocking event loop
+4. **Graceful Shutdown**: Still checkpoints on graceful shutdown (SIGTERM/SIGINT)
+5. **Error Handling**: Continues running even if one checkpoint fails
+
+**Safety Guarantees:**
+- WAL file size stays manageable (checkpointed every 5 minutes)
+- Changes merged to main database regularly
+- Faster recovery if process is force-killed
+- Reduced corruption risk from large WAL files
+- Works alongside graceful shutdown checkpointing
+
+**Recommendation:**
+- Use `kill -15` (SIGTERM) or `kill -2` (SIGINT) for graceful shutdown when possible
+- `kill -9` (SIGKILL) is now safer but should still be avoided when possible
+- Periodic checkpointing ensures database safety even with force kills
+
+**Files Modified:**
+- `config/database.py` - Added `start_wal_checkpoint_scheduler()` function
+- `main.py` - Integrated WAL checkpoint scheduler into lifespan context
+
+---
+
 ## [4.28.43] - 2025-12-10 - Database Table Creation Fix & Migration Improvements
 
 ### Fixed
