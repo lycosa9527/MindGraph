@@ -53,6 +53,7 @@ logs/
 *.tmp
 *.temp
 *.pid
+temp_images/
 
 # Environment files (keep .env but ignore local variants)
 .env.local
@@ -80,6 +81,32 @@ logs/
 # Runtime data directory (captcha storage, database files)
 data/
 captcha_store.json
+
+# Database backups
+backups/
+*.backup_*
+*_backup_*.sql
+
+# API Keys and sensitive data
+*API_KEY*.txt
+*API_KEY*.json
+*_key.txt
+api_keys/
+keys/
+
+# Development temporary files
+development_prompts/
+
+# Test outputs
+tests/images/
+tests/results/
+tests/specs/
+tests/html_viewer/
+test/images/
+test/results/
+test/specs/
+test/html_viewer/
+temp_images/
 
 # Coverage reports
 htmlcov/

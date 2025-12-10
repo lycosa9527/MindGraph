@@ -1542,7 +1542,8 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // Calculate center position based on content width
     const contentCenterX = width / 2;
     
-    // Draw dotted separator line spanning full diagram width (matching tree/brace map)
+    // Draw dotted separator line spanning actual content width (adaptive to diagram width)
+    // The actual content spans from leftPadding to width - rightPadding (where the main line is drawn)
     const separatorLeftX = leftPadding;
     const separatorRightX = width - rightPadding;
     
@@ -1553,6 +1554,7 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         .attr('y2', separatorY)
         .attr('stroke', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
         .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '4,4')  // Dotted line matching tree/brace map
         .style('opacity', 0.4);  // Match tree/brace map opacity
     
     // Add label centered on content

@@ -610,9 +610,29 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         // Calculate center position based on content width
         const contentCenterX = rootX;  // Center on root node position
         
-        // Draw separator line spanning the full width of diagram (from left to right padding)
-        const separatorLeftX = padding;
-        const separatorRightX = width - padding;
+        // Calculate actual content bounds from branch layouts (adaptive to diagram width)
+        let separatorLeftX, separatorRightX;
+        if (branchLayouts.length > 0) {
+            // Calculate leftmost and rightmost edges of actual content
+            // Find the branch with minimum X (leftmost) and maximum X (rightmost)
+            let leftmostBranch = branchLayouts[0];
+            let rightmostBranch = branchLayouts[0];
+            branchLayouts.forEach(layout => {
+                if (layout.branchX < leftmostBranch.branchX) {
+                    leftmostBranch = layout;
+                }
+                if (layout.branchX > rightmostBranch.branchX) {
+                    rightmostBranch = layout;
+                }
+            });
+            // Calculate edges: branch center ± half column width
+            separatorLeftX = leftmostBranch.branchX - leftmostBranch.columnWidth / 2;
+            separatorRightX = rightmostBranch.branchX + rightmostBranch.columnWidth / 2;
+        } else {
+            // Fallback: use padding to width - padding if no branches
+            separatorLeftX = padding;
+            separatorRightX = width - padding;
+        }
         
         svg.append('line')
             .attr('x1', separatorLeftX)

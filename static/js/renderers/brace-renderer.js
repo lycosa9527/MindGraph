@@ -816,9 +816,10 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // Calculate center of actual content (not canvas) for proper alignment
         const contentCenterX = (topicX + maxContentRightX) / 2;
         
-        // Draw separator line spanning the full width of diagram (from left to right edge)
-        const separatorLeftX = padding;
-        const separatorRightX = totalWidth - padding;
+        // Draw separator line spanning the actual content width (adaptive to diagram width)
+        // Use actual content bounds: from topicX (left edge) to maxContentRightX (right edge)
+        const separatorLeftX = topicX;
+        const separatorRightX = maxContentRightX;
         
         svg.append('line')
             .attr('x1', separatorLeftX)

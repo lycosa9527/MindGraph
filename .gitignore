@@ -34,16 +34,27 @@ venv.bak/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Application specific
 test_output.jpg
 *.log
+*.tmp
+*.temp
 temp/
 tmp/
+temp_images/
 logs/*.log
 *.pid
 logs/*.pid
@@ -92,7 +103,64 @@ keys/
 development_prompts/*.md
 
 # Test outputs
+tests/images/
+tests/results/
+tests/specs/
+tests/html_viewer/
 test/images/
 test/results/
 test/specs/
-test/html_viewer/ 
+test/html_viewer/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso 

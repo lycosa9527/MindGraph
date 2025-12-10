@@ -7,6 +7,125 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.49] - 2025-12-10 - Project Configuration and Setup Improvements
+
+### Changed
+
+- **Ignore Files** (`.gitignore`, `.dockerignore`, `.cursorignore`)
+  - Expanded ignore patterns for comprehensive coverage
+  - Added OS-specific file patterns (`.DS_Store?`, `._*`, `.Spotlight-V100`, `.Trashes`, `ehthumbs.db`)
+  - Added IDE file patterns (`.project`, `.pydevproject`, `.settings/`)
+  - Added temporary file patterns (`*.tmp`, `*.temp`, `temp_images/`)
+  - Added coverage reports and pytest cache patterns
+  - Added Python tooling files (`.python-version`, `Pipfile.lock`, etc.)
+  - Added large binary file patterns (`*.zip`, `*.tar.gz`, `*.rar`, `*.7z`, `*.iso`)
+  - Updated test output paths to include both `tests/` and `test/` directories
+  - Added runtime data directories, database backups, API keys, and development prompts patterns
+  - All three ignore files now have consistent and comprehensive patterns
+
+- **Requirements File** (`requirements.txt`)
+  - Corrected version number from 4.28.37 to 4.28.36 to match VERSION file
+  - Verified all dependencies are present and correctly specified
+  - Ensured complete coverage of all imported packages across the codebase
+
+- **Setup Script** (`scripts/setup.py`)
+  - Expanded `CORE_DEPENDENCIES` dictionary from 13 to 30+ dependencies
+  - Added missing web framework dependencies: `starlette`, `pydantic`, `jinja2`
+  - Added missing HTTP & networking dependencies: `httpx`, `requests`, `websockets`
+  - Added missing AI & language processing dependencies: `langgraph`, `dashscope`
+  - Added database & authentication dependencies: `sqlalchemy`, `alembic`, `jose`, `passlib`, `bcrypt`, `captcha`, `Crypto` (pycryptodome)
+  - Added system utilities: `watchfiles`
+  - Added JSON serialization: `orjson`
+  - Updated import handling for special cases (`Crypto` → pycryptodome, `jose` → python-jose)
+  - Enhanced dependency verification to check all critical dependencies
+  - Improved setup script reliability and completeness
+
+### Technical Details
+
+**Problem:**
+- Ignore files had incomplete patterns, missing common temporary files, test outputs, and development artifacts
+- Requirements.txt version number didn't match VERSION file
+- Setup script only checked a subset of dependencies, potentially missing critical packages
+
+**Solution:**
+1. **Ignore Files**: Added comprehensive patterns covering OS files, IDE files, temporary files, test outputs, coverage reports, and development artifacts
+2. **Requirements.txt**: Synchronized version number with VERSION file and verified all dependencies
+3. **Setup Script**: Expanded dependency checking to include all 30+ critical packages from requirements.txt
+
+**Impact:**
+- Better Git repository hygiene - fewer accidental commits of temporary files and artifacts
+- Improved Docker build efficiency - smaller build context with better exclusions
+- Enhanced Cursor IDE performance - better file indexing by excluding unnecessary files
+- More reliable setup process - comprehensive dependency verification ensures complete installation
+- Better developer experience - setup script now properly validates all critical dependencies
+
+**Files Modified:**
+- `.gitignore` - Added comprehensive ignore patterns
+- `.dockerignore` - Added comprehensive ignore patterns and runtime data exclusions
+- `.cursorignore` - Added comprehensive ignore patterns
+- `requirements.txt` - Corrected version number
+- `scripts/setup.py` - Expanded CORE_DEPENDENCIES and improved dependency checking
+
+---
+
+## [4.28.48] - 2025-12-10 - Alternative Dimension Separator Line Width Fix
+
+### Fixed
+
+- **Alternative Dimension Separator Line** (`static/js/renderers/tree-renderer.js`, `static/js/renderers/brace-renderer.js`, `static/js/renderers/flow-renderer.js`)
+  - Fixed dotted separator line for alternative dimensions to adaptively match actual diagram content width
+  - Previously, separator line used fixed canvas width (padding to canvas width - padding)
+  - Now calculates actual content bounds and spans from leftmost to rightmost content edges
+  - Tree Map: Uses leftmost and rightmost branch column edges for accurate width
+  - Brace Map: Uses tracked content bounds (topicX to maxContentRightX) for accurate width
+  - Bridge Map: Uses actual content width (leftPadding to width - rightPadding) and added missing stroke-dasharray attribute
+  - Separator line now properly reflects the rendered diagram width instead of canvas dimensions
+
+### Changed
+
+- **Tree Map Renderer** (`static/js/renderers/tree-renderer.js`)
+  - Alternative dimension separator line now calculates actual content bounds from branch layouts
+  - Finds leftmost and rightmost branches and uses their column edges for separator endpoints
+  - Ensures separator matches the visual width of the rendered tree structure
+
+- **Brace Map Renderer** (`static/js/renderers/brace-renderer.js`)
+  - Alternative dimension separator line now uses tracked content bounds (topicX to maxContentRightX)
+  - Separator spans from the topic's left edge to the rightmost rendered content edge
+  - Ensures separator matches the visual width of the rendered brace structure
+
+- **Bridge Map Renderer** (`static/js/renderers/flow-renderer.js`)
+  - Alternative dimension separator line now uses actual content width boundaries
+  - Added missing `stroke-dasharray: '4,4'` attribute to match dotted style of tree/brace maps
+  - Separator spans from leftPadding to width - rightPadding (matching main bridge line)
+
+### Technical Details
+
+**Problem:**
+- Alternative dimension separator lines used fixed canvas dimensions (padding to width - padding)
+- This didn't adapt to actual rendered content width
+- For diagrams with content narrower than canvas, separator appeared too wide
+- For diagrams with content wider than canvas, separator didn't extend to content edges
+- Bridge map separator was missing dotted line styling
+
+**Solution:**
+1. **Tree Map**: Calculate actual content bounds from branch layouts (leftmost/rightmost branch edges)
+2. **Brace Map**: Use already-tracked content bounds (topicX to maxContentRightX)
+3. **Bridge Map**: Use actual content width (leftPadding to width - rightPadding) and add stroke-dasharray
+4. All separators now adaptively match the rendered diagram content width
+
+**Impact:**
+- Separator lines now accurately reflect the visual width of rendered diagrams
+- Better visual consistency - separator matches actual content bounds
+- Improved user experience - separator provides accurate visual reference for content width
+- Bridge map separator now matches visual style of tree/brace maps
+
+**Files Modified:**
+- `static/js/renderers/tree-renderer.js` - Calculate actual content bounds from branch layouts
+- `static/js/renderers/brace-renderer.js` - Use tracked content bounds for separator width
+- `static/js/renderers/flow-renderer.js` - Use actual content width and add stroke-dasharray attribute
+
+---
+
 ## [4.28.47] - 2025-12-10 - Reset Functionality History Management Fix
 
 ### Fixed

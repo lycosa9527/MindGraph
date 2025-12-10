@@ -36,16 +36,24 @@ CORE_DEPENDENCIES = {
     # Web framework (FastAPI)
     'fastapi': 'FastAPI',
     'uvicorn': 'Uvicorn',
+    'starlette': 'starlette',
+    'pydantic': 'pydantic',
+    'jinja2': 'jinja2',
     
     # HTTP and networking (async)
     'aiohttp': 'aiohttp',
+    'httpx': 'httpx',
+    'requests': 'requests',
     'openai': 'openai',
     'multipart': 'python-multipart',
+    'websockets': 'websockets',
     
     # AI and language processing
-    'langchain': 'LangChain',
+    'langchain': 'langchain',
     'langchain_community': 'langchain-community',
     'langchain_core': 'langchain-core',
+    'langgraph': 'langgraph',
+    'dashscope': 'dashscope',
     
     # Configuration and environment
     'yaml': 'PyYAML',
@@ -56,11 +64,24 @@ CORE_DEPENDENCIES = {
     'aiofiles': 'aiofiles',
     
     # Browser automation and image processing
-    'playwright': 'Playwright',
+    'playwright': 'playwright',
     'PIL': 'Pillow',
     
+    # Database and authentication
+    'sqlalchemy': 'SQLAlchemy',
+    'alembic': 'alembic',
+    'jose': 'python-jose',
+    'passlib': 'passlib',
+    'bcrypt': 'bcrypt',
+    'captcha': 'captcha',
+    'Crypto': 'pycryptodome',
+    
     # System utilities
-    'psutil': 'psutil'
+    'psutil': 'psutil',
+    'watchfiles': 'watchfiles',
+    
+    # JSON serialization
+    'orjson': 'orjson'
 }
 
 PROGRESS_BAR_LENGTH = 30
@@ -362,6 +383,10 @@ def check_dependencies_already_installed() -> bool:
                 import dotenv
             elif module_name == 'nest_asyncio':
                 import nest_asyncio
+            elif module_name == 'Crypto':
+                from Crypto import Cipher
+            elif module_name == 'jose':
+                from jose import jwt
             else:
                 importlib.import_module(module_name)
                 
@@ -569,6 +594,12 @@ def verify_dependencies() -> bool:
             elif module_name == 'nest_asyncio':
                 import nest_asyncio
                 version = get_package_version('nest-asyncio')
+            elif module_name == 'Crypto':
+                from Crypto import Cipher
+                version = get_package_version('pycryptodome')
+            elif module_name == 'jose':
+                from jose import jwt
+                version = get_package_version('python-jose')
             else:
                 module = importlib.import_module(module_name)
                 version = get_package_version(package_name)
