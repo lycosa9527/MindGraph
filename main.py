@@ -594,8 +594,19 @@ async def lifespan(app: FastAPI):
     
     # Initialize Database
     try:
-        from config.database import init_db
+        from config.database import init_db, check_integrity
         from utils.auth import display_demo_info
+        
+        # Check database integrity on startup
+        if worker_id == '0' or not worker_id:
+            if not check_integrity():
+                logger.error(
+                    "DATABASE INTEGRITY CHECK FAILED! "
+                    "Database may be corrupted. Please run: python scripts/recover_database.py"
+                )
+            else:
+                logger.info("Database integrity check passed")
+        
         init_db()
         if worker_id == '0' or not worker_id:
             logger.info("Database initialized successfully")
@@ -683,6 +694,17 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to flush update notifier: {e}")
+        
+        # Flush TokenTracker before closing database
+        try:
+            from services.token_tracker import get_token_tracker
+            token_tracker = get_token_tracker()
+            await token_tracker.flush()
+            if worker_id == '0' or not worker_id:
+                logger.info("TokenTracker flushed")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to flush TokenTracker: {e}")
         
         # Cleanup Database
         try:

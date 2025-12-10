@@ -22,6 +22,7 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import DatabaseError, OperationalError
 
 from models.token_usage import TokenUsage
 
@@ -69,6 +70,9 @@ class TokenTracker:
         self._batch_buffer: List[Dict[str, Any]] = []
         self._last_flush: float = asyncio.get_event_loop().time()
         self._initialized = False
+        self._corruption_detected = False
+        self._write_count = 0
+        self._checkpoint_interval = 50  # Checkpoint every N writes
     
     def _ensure_worker_started(self):
         """Start background worker if not already running"""
@@ -127,11 +131,29 @@ class TokenTracker:
         if not self._batch_buffer:
             return
         
+        # If corruption detected, skip writes to prevent further issues
+        if self._corruption_detected:
+            logger.warning(f"[TokenTracker] Skipping batch write - database corruption detected. {len(self._batch_buffer)} records dropped.")
+            self._batch_buffer.clear()
+            return
+        
+        # Check disk space BEFORE clearing buffer (prevent data loss)
+        try:
+            from config.database import check_disk_space
+            if not check_disk_space(required_mb=50):
+                logger.error("[TokenTracker] Insufficient disk space - skipping batch write")
+                # Don't clear buffer - records will be retried later
+                return
+        except Exception as e:
+            logger.warning(f"[TokenTracker] Disk space check failed: {e}, proceeding with write")
+        
+        # Now safe to clear buffer
         records = self._batch_buffer.copy()
         self._batch_buffer.clear()
         self._last_flush = asyncio.get_event_loop().time()
         
         try:
+            
             from config.database import SessionLocal
             db = SessionLocal()
             
@@ -145,9 +167,34 @@ class TokenTracker:
                 db.add_all(usage_objects)
                 db.commit()
                 
+                self._write_count += len(records)
                 total_tokens = sum(r['total_tokens'] for r in records)
                 logger.debug(f"[TokenTracker] Batch wrote {len(records)} records ({total_tokens} tokens)")
                 
+                # Periodic WAL checkpoint to prevent corruption
+                if self._write_count >= self._checkpoint_interval:
+                    try:
+                        from config.database import checkpoint_wal
+                        checkpoint_wal()
+                        self._write_count = 0
+                    except Exception as e:
+                        logger.warning(f"[TokenTracker] WAL checkpoint failed: {e}")
+                
+            except (DatabaseError, OperationalError) as e:
+                db.rollback()
+                error_msg = str(e).lower()
+                
+                # Detect corruption
+                if "malformed" in error_msg or "corrupt" in error_msg or "database disk image" in error_msg:
+                    self._corruption_detected = True
+                    logger.error(
+                        "[TokenTracker] DATABASE CORRUPTION DETECTED! "
+                        "Token tracking disabled to prevent further damage. "
+                        "Please run: python scripts/recover_database.py"
+                    )
+                else:
+                    logger.error(f"[TokenTracker] Database error during batch write: {e}", exc_info=True)
+                    
             except Exception as e:
                 db.rollback()
                 logger.error(f"[TokenTracker] Batch write failed: {e}", exc_info=True)
@@ -304,6 +351,13 @@ class TokenTracker:
                     break
         if self._batch_buffer:
             await self._flush_batch()
+        
+        # Final WAL checkpoint on shutdown
+        try:
+            from config.database import checkpoint_wal
+            checkpoint_wal()
+        except Exception as e:
+            logger.warning(f"[TokenTracker] Final WAL checkpoint failed: {e}")
 
 
 # Global token tracker instance (singleton)

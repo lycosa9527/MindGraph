@@ -7,6 +7,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.41] - 2025-12-10 - Database Corruption Prevention & Recovery
+
+### Added
+
+- **Database Recovery Script** (`scripts/recover_database.py`)
+  - Comprehensive SQLite database recovery tool for corrupted databases
+  - Attempts WAL checkpoint first (may fix minor corruption)
+  - Full dump-and-restore recovery for severe corruption
+  - Automatic backup creation before recovery attempts
+  - Integrity verification after recovery
+  - Command-line options: `--force` (replace original), `--backup-only`, `--remove-wal`
+  - Usage: `python scripts/recover_database.py [--force]`
+
+- **WAL Checkpointing System** (`config/database.py`)
+  - New `checkpoint_wal()` function to merge WAL changes into main database
+  - Prevents WAL file from growing indefinitely
+  - Automatic checkpointing every 50 writes in TokenTracker
+  - Checkpoint on graceful shutdown
+  - Reduces corruption risk significantly
+
+- **Database Integrity Checks** (`config/database.py`)
+  - New `check_integrity()` function using SQLite PRAGMA integrity_check
+  - Integrity check on application startup
+  - Handles non-existent database gracefully (for fresh installs)
+  - Logs clear error messages with recovery instructions
+
+- **Disk Space Monitoring** (`config/database.py`)
+  - New `check_disk_space()` function to verify available disk space
+  - Checks before database writes to prevent corruption from full disk
+  - Works on Unix/Linux (Windows skips check gracefully)
+  - Logs warnings when disk space is low
+
+- **Corruption Detection & Graceful Degradation** (`services/token_tracker.py`)
+  - Automatic detection of database corruption errors
+  - Detects "malformed", "corrupt", and "database disk image" errors
+  - Token tracking automatically disabled when corruption detected
+  - App continues operating normally (core features unaffected)
+  - Clear error messages with recovery instructions
+
+### Changed
+
+- **TokenTracker Error Handling** (`services/token_tracker.py`)
+  - Enhanced error handling with specific `DatabaseError` and `OperationalError` detection
+  - Disk space check moved before buffer clearing (prevents data loss)
+  - Periodic WAL checkpointing every 50 writes
+  - Corruption flag prevents further writes when corruption detected
+  - Better error messages with actionable recovery steps
+
+- **Application Shutdown** (`main.py`)
+  - TokenTracker flush added before database close
+  - Ensures all pending token records are saved on shutdown
+  - Final WAL checkpoint on shutdown
+  - Prevents data loss during graceful shutdown
+
+- **Database Configuration** (`config/database.py`)
+  - Added WAL checkpointing utilities
+  - Enhanced path parsing for absolute SQLite paths (`sqlite:////path`)
+  - Better error handling in all database utility functions
+  - All functions return safe defaults on error (fail-safe design)
+
+### Fixed
+
+- **Critical Data Loss Bug** (`services/token_tracker.py`)
+  - Fixed bug where records were cleared from buffer before disk space check
+  - If disk space check failed, records were lost
+  - Now checks disk space before clearing buffer
+  - Records preserved if disk space check fails
+
+- **WAL Checkpoint Implementation** (`config/database.py`)
+  - Removed unnecessary `conn.commit()` call (PRAGMA commands don't need commit)
+  - Prevents potential connection issues
+
+- **Path Parsing Issues** (`config/database.py`)
+  - Fixed `check_disk_space()` to handle absolute paths correctly
+  - Fixed `check_integrity()` path parsing
+  - Now handles all SQLite URL formats: relative (`sqlite:///./path`), absolute (`sqlite:////path`), and standard (`sqlite:///path`)
+
+### Technical Details
+
+**Root Cause Analysis:**
+- SQLite WAL files were growing indefinitely without checkpointing
+- Missing TokenTracker flush on shutdown caused interrupted writes
+- No corruption detection or recovery mechanisms
+- Disk space issues could cause corruption
+
+**Prevention Measures:**
+1. **WAL Checkpointing**: Periodic checkpointing prevents WAL file growth
+2. **Shutdown Flush**: Ensures all data written before database close
+3. **Disk Space Checks**: Prevents corruption from full disk
+4. **Integrity Checks**: Early detection of corruption issues
+
+**Recovery Mechanisms:**
+1. **Automatic Detection**: Corruption detected and tracked
+2. **Graceful Degradation**: App continues operating if token tracking fails
+3. **Recovery Script**: Comprehensive recovery tool for corrupted databases
+4. **Clear Instructions**: Error messages guide users to recovery
+
+**Files Changed:**
+- `config/database.py` - Added checkpoint_wal(), check_integrity(), check_disk_space() functions
+- `services/token_tracker.py` - Enhanced error handling, corruption detection, WAL checkpointing
+- `main.py` - Added TokenTracker flush on shutdown, integrity check on startup
+- `scripts/recover_database.py` - New recovery script
+
+**Backward Compatibility:**
+- All changes are backward compatible
+- No breaking changes to existing APIs
+- Fail-safe design: functions return safe defaults on error
+- App continues operating even if token tracking fails
+
+---
+
 ## [4.28.40] - 2025-12-10 - Toolbar Group Renaming & Translation Fix
 
 ### Changed

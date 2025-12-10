@@ -331,10 +331,129 @@ def get_db():
         db.close()
 
 
+def checkpoint_wal():
+    """
+    Checkpoint WAL file to merge changes into main database.
+    This prevents WAL file from growing indefinitely and reduces corruption risk.
+    
+    Returns:
+        bool: True if checkpoint succeeded, False otherwise
+    """
+    if "sqlite" not in DATABASE_URL:
+        return True  # Not SQLite, no checkpoint needed
+    
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            # PRAGMA commands don't need commit - they're immediate
+            result = conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
+        logger.debug("[Database] WAL checkpoint completed")
+        return True
+    except Exception as e:
+        logger.warning(f"[Database] WAL checkpoint failed: {e}")
+        return False
+
+
+def check_disk_space(required_mb: int = 100) -> bool:
+    """
+    Check if there's enough disk space for database operations.
+    
+    Args:
+        required_mb: Minimum required disk space in MB
+        
+    Returns:
+        bool: True if enough space available, False otherwise
+    """
+    try:
+        import os
+        # Extract file path from SQLite URL (same logic as recovery script)
+        db_url = DATABASE_URL
+        if db_url.startswith("sqlite:////"):
+            # Absolute path (4 slashes: sqlite:////absolute/path)
+            db_path = Path(db_url.replace("sqlite:////", "/"))
+        elif db_url.startswith("sqlite:///"):
+            # Relative path (3 slashes: sqlite:///./path or sqlite:///path)
+            db_path_str = db_url.replace("sqlite:///", "")
+            if db_path_str.startswith("./"):
+                db_path_str = db_path_str[2:]  # Remove "./"
+            if not os.path.isabs(db_path_str):
+                db_path = Path.cwd() / db_path_str
+            else:
+                db_path = Path(db_path_str)
+        else:
+            # Fallback
+            db_path = Path(db_url.replace("sqlite:///", ""))
+        
+        # Try to get disk space (Unix/Linux)
+        try:
+            stat = os.statvfs(db_path.parent)
+            free_mb = (stat.f_bavail * stat.f_frsize) / (1024 * 1024)
+            if free_mb < required_mb:
+                logger.warning(f"[Database] Low disk space: {free_mb:.1f} MB available, {required_mb} MB required")
+                return False
+            return True
+        except AttributeError:
+            # Windows doesn't have statvfs, skip check
+            return True
+    except Exception as e:
+        logger.warning(f"[Database] Disk space check failed: {e}")
+        return True  # Assume OK if check fails
+
+
+def check_integrity() -> bool:
+    """
+    Check database integrity using SQLite integrity_check.
+    
+    Returns:
+        bool: True if database is healthy, False if corrupted
+    """
+    if "sqlite" not in DATABASE_URL:
+        return True  # Not SQLite, skip check
+    
+    try:
+        import os
+        # Check if database file exists first
+        db_url = DATABASE_URL
+        if db_url.startswith("sqlite:////"):
+            db_path = Path(db_url.replace("sqlite:////", "/"))
+        elif db_url.startswith("sqlite:///"):
+            db_path_str = db_url.replace("sqlite:///", "")
+            if db_path_str.startswith("./"):
+                db_path_str = db_path_str[2:]
+            if not os.path.isabs(db_path_str):
+                db_path = Path.cwd() / db_path_str
+            else:
+                db_path = Path(db_path_str)
+        else:
+            db_path = Path(db_url.replace("sqlite:///", ""))
+        
+        # If database doesn't exist yet, it's fine (will be created)
+        if not db_path.exists():
+            return True
+        
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            result = conn.execute(text("PRAGMA integrity_check"))
+            row = result.fetchone()
+        
+        if row and row[0] == "ok":
+            return True
+        else:
+            logger.error(f"[Database] Integrity check failed: {row}")
+            return False
+    except Exception as e:
+        logger.error(f"[Database] Integrity check error: {e}")
+        return False
+
+
 def close_db():
     """
     Close database connections (call on shutdown)
     """
+    # Checkpoint WAL before closing
+    if "sqlite" in DATABASE_URL:
+        checkpoint_wal()
+    
     engine.dispose()
     logger.info("Database connections closed")
 
