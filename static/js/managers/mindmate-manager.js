@@ -540,6 +540,9 @@ class MindMateManager {
             const html = this.md.render(text);
             contentDiv.innerHTML = window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
             
+            // Enhance images after rendering
+            this.enhanceImages(contentDiv);
+            
             // Scroll to bottom
             this.scrollToBottom();
         }
@@ -569,12 +572,190 @@ class MindMateManager {
             // Render markdown and sanitize
             const html = this.md.render(content);
             contentDiv.innerHTML = window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
+            
+            // Enhance images after rendering
+            this.enhanceImages(contentDiv);
         } else {
             contentDiv.textContent = content;
         }
         
         messageDiv.appendChild(contentDiv);
         return messageDiv;
+    }
+    
+    /**
+     * Get translated text for save button
+     */
+    getSaveButtonText() {
+        const language = this.detectLanguage();
+        return language === 'zh' ? '保存图片' : 'Save';
+    }
+    
+    /**
+     * Enhance images with click-to-enlarge and save functionality
+     */
+    enhanceImages(container) {
+        if (!container) return;
+        
+        const images = container.querySelectorAll('img');
+        const saveText = this.getSaveButtonText();
+        
+        images.forEach(img => {
+            // Skip if already enhanced
+            if (img.dataset.enhanced === 'true') return;
+            
+            // Mark as enhanced
+            img.dataset.enhanced = 'true';
+            
+            // Wrap image in container
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-container';
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+            
+            // Add save button
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'image-save-btn';
+            saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${saveText}`;
+            saveBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.saveImage(img.src);
+            };
+            wrapper.appendChild(saveBtn);
+            
+            // Add click handler to enlarge
+            img.style.cursor = 'pointer';
+            img.onclick = () => {
+                this.showImageLightbox(img.src);
+            };
+        });
+    }
+    
+    /**
+     * Show image in lightbox modal
+     */
+    showImageLightbox(imageSrc) {
+        // Create or get lightbox
+        let lightbox = document.getElementById('image-lightbox');
+        if (!lightbox) {
+            lightbox = document.createElement('div');
+            lightbox.id = 'image-lightbox';
+            lightbox.className = 'image-lightbox';
+            
+            const content = document.createElement('div');
+            content.className = 'image-lightbox-content';
+            
+            const img = document.createElement('img');
+            img.src = '';
+            content.appendChild(img);
+            
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'image-lightbox-close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = () => {
+                lightbox.classList.remove('active');
+            };
+            content.appendChild(closeBtn);
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'image-lightbox-save';
+            const saveText = this.getSaveButtonText();
+            const saveImageText = this.detectLanguage() === 'zh' ? '保存图片' : 'Save Image';
+            saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${saveImageText}`;
+            saveBtn.onclick = () => {
+                this.saveImage(imageSrc);
+            };
+            content.appendChild(saveBtn);
+            
+            lightbox.appendChild(content);
+            document.body.appendChild(lightbox);
+            
+            // Close on background click
+            lightbox.onclick = (e) => {
+                if (e.target === lightbox) {
+                    lightbox.classList.remove('active');
+                }
+            };
+            
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                    lightbox.classList.remove('active');
+                }
+            });
+        }
+        
+        // Update image source
+        const img = lightbox.querySelector('.image-lightbox-content img');
+        if (img) {
+            img.src = imageSrc;
+        }
+        
+        // Update save button text and handler
+        const saveBtn = lightbox.querySelector('.image-lightbox-save');
+        if (saveBtn) {
+            const saveImageText = this.detectLanguage() === 'zh' ? '保存图片' : 'Save Image';
+            saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${saveImageText}`;
+            saveBtn.onclick = () => {
+                this.saveImage(imageSrc);
+            };
+        }
+        
+        // Show lightbox
+        lightbox.classList.add('active');
+    }
+    
+    /**
+     * Save image to downloads
+     */
+    async saveImage(imageSrc) {
+        try {
+            // For same-origin images or CORS-enabled images, try to download directly
+            if (imageSrc.startsWith('blob:') || imageSrc.startsWith('data:')) {
+                // Blob or data URL - can download directly
+                const link = document.createElement('a');
+                link.href = imageSrc;
+                link.download = `mindmate-image-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                this.logger.debug('MindMateManager', 'Image saved (blob/data)', { src: imageSrc });
+                return;
+            }
+            
+            // For external images, try to fetch and convert to blob
+            try {
+                const response = await fetch(imageSrc, { mode: 'cors' });
+                if (!response.ok) throw new Error('Failed to fetch image');
+                
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `mindmate-image-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up blob URL after a delay
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                
+                this.logger.debug('MindMateManager', 'Image saved (fetched)', { src: imageSrc });
+            } catch (fetchError) {
+                // If fetch fails (CORS issue), fallback to opening in new tab
+                this.logger.debug('MindMateManager', 'CORS blocked, opening in new tab', { src: imageSrc });
+                window.open(imageSrc, '_blank');
+            }
+        } catch (error) {
+            this.logger.error('MindMateManager', 'Failed to save image', {
+                error: error.message || String(error),
+                src: imageSrc
+            });
+            
+            // Final fallback: open in new tab
+            window.open(imageSrc, '_blank');
+        }
     }
     
     /**

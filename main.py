@@ -822,7 +822,7 @@ async def add_security_headers(request: Request, call_next):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
         "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data: https: blob:; "
+        "img-src 'self' data: http: https: blob:; "
         "font-src 'self' data:; "
         "connect-src 'self' ws: wss: blob:; "
         "frame-ancestors 'none'; "

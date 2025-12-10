@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.50] - 2025-12-19 - MindMate Image Display & CSP Fix
+
+### Fixed
+
+- **Content Security Policy for HTTP Images** (`main.py`)
+  - Fixed CSP violation when loading images from HTTP URLs (e.g., Dify server images)
+  - Added `http:` to `img-src` directive to allow HTTP images in addition to HTTPS
+  - Updated image URL generation to detect request protocol (http/https) dynamically
+  - Images from external servers (like Dify) now load correctly without CSP violations
+
+### Added
+
+- **MindMate Image Enhancement Features** (`static/js/managers/mindmate-manager.js`, `static/css/editor.css`)
+  - **Image Resizing**: Images in MindMate chat messages are automatically resized to fit the panel (max-width: 100%, max-height: 300px)
+  - **Click-to-Enlarge Lightbox**: Clicking on any image opens a full-screen lightbox modal with smooth animations
+  - **Save Image Functionality**: 
+    - Save button appears on hover over image thumbnails (top-right corner)
+    - Save button also available in the lightbox modal (bottom center)
+    - Handles CORS issues gracefully - downloads directly for same-origin/blob URLs, fetches and converts for CORS-enabled images, falls back to opening in new tab if CORS blocks
+  - **Keyboard Support**: Press Escape key to close the lightbox
+  - **Chinese Localization**: Save buttons display "保存图片" (Save Image) when interface language is Chinese
+
+### Changed
+
+- **Image URL Generation** (`routers/api.py`)
+  - Updated `generate_dingtalk_png()` endpoint to detect request protocol from request object
+  - Image URLs now use the same protocol (http/https) as the incoming request
+  - Prevents CSP violations when serving images over HTTP
+
+- **MindMate Image Rendering** (`static/js/managers/mindmate-manager.js`)
+  - Images are automatically enhanced after markdown rendering (both streaming and completed messages)
+  - Images are wrapped in containers with hover effects and save buttons
+  - Prevents duplicate enhancement with data attribute tracking
+
+### Technical Details
+
+**Problem:**
+- CSP policy blocked HTTP images, causing violations when loading images from Dify server
+- Images in MindMate chat were displayed at full size, taking up too much space
+- No way to view images in full size or save them
+- Save button text was hardcoded in English
+
+**Solution:**
+1. **CSP Fix**: Added `http:` to `img-src` directive and updated URL generation to detect protocol
+2. **Image Enhancement**: Added CSS for resizing and JavaScript for click-to-enlarge lightbox
+3. **Save Functionality**: Implemented save button with CORS handling and async blob conversion
+4. **Localization**: Added `getSaveButtonText()` method that detects language and returns appropriate text
+
+**Impact:**
+- Images from Dify server and other HTTP sources now load correctly
+- Better UX in MindMate chat - images are appropriately sized and interactive
+- Users can easily view full-size images and save them
+- Consistent Chinese/English localization for save buttons
+
+**Files Modified:**
+- `main.py` - Updated CSP policy to allow HTTP images
+- `routers/api.py` - Updated image URL generation to detect protocol
+- `static/js/managers/mindmate-manager.js` - Added image enhancement, lightbox, and save functionality with Chinese localization
+- `static/css/editor.css` - Added styles for image containers, lightbox modal, and save buttons
+
+---
+
 ## [4.28.49] - 2025-12-10 - Project Configuration and Setup Improvements
 
 ### Changed

@@ -773,6 +773,7 @@ async def generate_png_from_prompt(
 @router.post('/generate_dingtalk')
 async def generate_dingtalk_png(
     req: GenerateDingTalkRequest,
+    request: Request,
     x_language: str = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
@@ -837,9 +838,11 @@ async def generate_dingtalk_png(
         logger.debug(f"[generate_dingtalk] Saved to {temp_path}")
         
         # Step 4: Build plain text response in ![](url) format (empty alt text)
+        # Detect protocol from request (http or https)
+        protocol = request.url.scheme
         external_host = os.getenv('EXTERNAL_HOST', 'localhost')
         port = os.getenv('PORT', '9527')
-        image_url = f"http://{external_host}:{port}/api/temp_images/{filename}"
+        image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
         plain_text = f"![]({image_url})"
         
         logger.info(f"[generate_dingtalk] Success: {image_url}")
