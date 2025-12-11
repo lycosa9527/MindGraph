@@ -92,6 +92,9 @@ class CanvasManager {
         
         this.svg.call(this.zoom);
         
+        // CRITICAL: Disable double-click zoom - double-click should open edit modal, not zoom
+        this.svg.on('dblclick.zoom', null);
+        
         // Create content group
         const contentGroup = this.svg.append('g')
             .attr('class', 'canvas-content');

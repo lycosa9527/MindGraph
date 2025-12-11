@@ -148,6 +148,9 @@ class InteractionHandler {
                         diagramType: diagramType
                     });
                     
+                    // CRITICAL: Cancel pending property panel open - edit modal takes precedence
+                    self.eventBus.emit('node_editor:opening', { nodeId });
+                    
                     // Find associated text element
                     const textNode = element.node().nextElementSibling;
                     if (textNode && textNode.tagName === 'text') {
@@ -220,6 +223,10 @@ class InteractionHandler {
                     })
                     .on('dblclick', (event) => {
                         event.stopPropagation();
+                        
+                        // CRITICAL: Cancel pending property panel open - edit modal takes precedence
+                        self.eventBus.emit('node_editor:opening', { nodeId: ownNodeId });
+                        
                         // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
                         const currentText = (typeof window.extractTextFromSVG === 'function') 
                             ? window.extractTextFromSVG(element) 
@@ -292,6 +299,10 @@ class InteractionHandler {
                     })
                     .on('dblclick', (event) => {
                         event.stopPropagation();
+                        
+                        // CRITICAL: Cancel pending property panel open - edit modal takes precedence
+                        self.eventBus.emit('node_editor:opening', { nodeId: associatedNodeId });
+                        
                         // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
                         const currentText = (typeof window.extractTextFromSVG === 'function') 
                             ? window.extractTextFromSVG(element) 

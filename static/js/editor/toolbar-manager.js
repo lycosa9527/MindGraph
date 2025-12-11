@@ -515,15 +515,34 @@ class ToolbarManager {
             // This caused confusion as users couldn't edit nodes while chatting.
             // Now property panel always opens when a node is selected, which will
             // close MindMate/ThinkGuide automatically (panel manager single-panel rule).
+            // CRITICAL: Use delayed show to allow dblclick to cancel (prevents panel flash on edit)
             if (hasSelection && this.currentSelection.length > 0) {
-                this.showPropertyPanel();
-                this.loadNodeProperties(this.currentSelection[0]);
+                // Clear any pending property panel timeout
+                if (this._propertyPanelTimeout) {
+                    clearTimeout(this._propertyPanelTimeout);
+                }
+                // Delay showing property panel to detect if double-click (edit modal) follows
+                this._propertyPanelTimeout = setTimeout(() => {
+                    this._propertyPanelTimeout = null;
+                    this.showPropertyPanel();
+                    this.loadNodeProperties(this.currentSelection[0]);
+                }, 250); // 250ms delay - enough to detect double-click
             } else {
                 // Hide property panel when no selection (only if it's currently open)
                 if (currentPanel === 'property') {
                     this.hidePropertyPanel();
                     this.clearPropertyPanel();
                 }
+            }
+        }, this.ownerId);
+        
+        // Listen for node editor opening to cancel pending property panel show
+        window.eventBus.onWithOwner('node_editor:opening', () => {
+            // Cancel pending property panel timeout - edit modal takes precedence
+            if (this._propertyPanelTimeout) {
+                clearTimeout(this._propertyPanelTimeout);
+                this._propertyPanelTimeout = null;
+                logger.debug('ToolbarManager', 'Property panel show cancelled - edit modal opening');
             }
         }, this.ownerId);
     }

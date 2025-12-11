@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.53] - 2025-01-XX - Fit View, Panel, and Animation Coordination
+
+### Fixed
+
+- **Panel Opening Without Diagram Movement** (`static/js/managers/editor/canvas-controller.js`, `static/js/managers/panel-manager.js`)
+  - Fixed issue where clicking a node caused unnecessary view fitting animation
+  - Diagram now stays in place when property panel opens - only panel slides in
+  - Initial fit already reserves panel space, so no refitting needed when panel opens
+  - **Impact**: Smoother user experience, diagram position preserved when selecting nodes
+
+- **Multiple Node Clicks Animation** (`static/js/managers/panel-manager.js`)
+  - Fixed flicker when clicking different nodes while panel is already open
+  - Panel no longer closes and reopens when switching between nodes
+  - Early return check prevents unnecessary DOM manipulation and event emission
+  - **Impact**: Zero animation when clicking different nodes, only panel content updates
+
+- **Diagram Clipping After Panel Close** (`static/js/managers/editor/view-manager.js`)
+  - Fixed diagram being cut off at panel location when zooming after closing panel
+  - ViewBox calculation now uses actual container width after CSS class removal
+  - Force reflow before measurement to ensure correct container dimensions
+  - **Impact**: Zoom works correctly after closing panel, no content clipping
+
+- **Multi-Flow Map View Centering** (`static/js/managers/editor/view-manager.js`)
+  - Fixed viewBox calculation to properly center content instead of using contentBounds position
+  - Content is now centered regardless of its position in SVG coordinate space
+  - **Impact**: Multi-flow maps and other diagrams center correctly when fitting
+
+### Changed
+
+- **View Fitting Behavior** (`static/js/managers/editor/canvas-controller.js`)
+  - Panel opening no longer triggers view fitting - diagram stays in place
+  - Only panel closing (canvas click) triggers fit to full canvas
+  - Initial load fits with panel space reserved (even though panel is hidden)
+
+- **Panel Manager Event Emission** (`static/js/managers/panel-manager.js`)
+  - Panel already open check prevents unnecessary reopen logic
+  - Canvas panel classes updated before panel opens for smooth CSS transitions
+  - Event emission happens immediately without delays
+
+- **ViewBox Calculation Logic** (`static/js/managers/editor/view-manager.js`)
+  - `fitToCanvasWithPanel()`: Uses `windowWidth - reservedWidth` when reserving panel space
+  - `fitToFullCanvas()`: Uses actual `containerWidth` after CSS class removal for full canvas
+  - Force reflow before measuring container to ensure accurate dimensions
+  - Removed canvas panel classes before calculation to prevent constrained width measurements
+
+### Technical Details
+
+**Behavior Scenarios:**
+
+1. **Initial Load (Gallery → Canvas)**
+   - Diagram fitted with panel space reserved (windowWidth - 320px)
+   - Panel hidden, but space reserved for smooth panel opening
+   - No animation, instant fit
+
+2. **Click Node 1 (First Time)**
+   - Panel slides in (0.3s CSS animation)
+   - Canvas width transitions (0.4s CSS transition)
+   - Diagram stays in place (NO view fitting)
+
+3. **Click Node 2 (Panel Already Open)**
+   - Zero animation
+   - Only panel content refreshes
+   - Diagram unchanged
+
+4. **Click Canvas (Deselect)**
+   - Panel closes with animation
+   - Diagram fits to full canvas (0.5s viewBox animation)
+   - ViewBox calculated with full container width (no clipping on zoom)
+
+**Key Fixes:**
+- Smart check in `fitToCanvasWithPanel()` skips fitting when panel already open
+- Canvas panel classes removed BEFORE viewBox calculation in `fitToFullCanvas()`
+- Force reflow ensures container width is measured correctly after CSS changes
+- ViewBox width calculation uses correct method based on reserveForPanel parameter
+
+**Files Changed:**
+- `static/js/managers/editor/view-manager.js`: Fixed viewBox calculation, centering logic, and container width measurement
+- `static/js/managers/editor/canvas-controller.js`: Removed view fitting on panel open
+- `static/js/managers/panel-manager.js`: Added early return check, improved class management
+
+---
+
 ## [4.28.52] - 2025-12-11 - Standalone Database Backup Tool
 
 ### Added

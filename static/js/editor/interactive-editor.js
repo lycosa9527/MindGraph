@@ -1085,15 +1085,6 @@ class InteractiveEditor {
             this.eventBus.emit('interaction:attach_handlers_requested');
         }
         
-        // Legacy handlers for new nodes (will be replaced by InteractionHandler)
-        const self = this;
-        const newNodeText = window.languageManager?.translate('newNode') || 'New Node';
-        
-        text.on('dblclick', (event) => {
-            event.stopPropagation();
-            self.openNodeEditor(nodeId, circle.node(), text.node(), newNodeText);
-        });
-        
         // Select the new node
         this.selectionManager.clearSelection();
         this.selectionManager.selectNode(nodeId);

@@ -218,12 +218,29 @@ class PanelManager {
         }
         
         const elementId = panel.element.id;
-        this.logger.info('PanelManager', `Opening panel: ${name} (element: ${elementId})`);
+        const isAlreadyOpen = this.currentPanel === name && this.isPanelOpen(name);
         
-        // Close all other panels first
+        // Close all other panels first (always do this, even if panel is already open)
         this.closeAllExcept(name);
         
-        // Open the requested panel
+        // If panel is already open, skip the reopening logic to prevent flicker
+        // This happens when clicking different nodes while property panel is already open
+        if (isAlreadyOpen) {
+            this.logger.debug('PanelManager', `Panel "${name}" is already open - skipping reopen to prevent flicker`);
+            // Don't emit panel:opened event to prevent unnecessary view fitting
+            return true;
+        }
+        
+        this.logger.info('PanelManager', `Opening panel: ${name} (element: ${elementId})`);
+        
+        // Update canvas panel classes BEFORE opening to trigger CSS transition
+        // This ensures canvas width transition happens smoothly
+        const canvasPanel = document.querySelector('.canvas-panel');
+        if (canvasPanel && name === 'property') {
+            canvasPanel.classList.add('property-panel-visible');
+        }
+        
+        // Open the requested panel (triggers CSS slideInRight animation - 0.3s)
         if (panel.type === 'class') {
             panel.element.classList.remove('collapsed');
         } else if (panel.type === 'style') {
@@ -245,7 +262,9 @@ class PanelManager {
             }
         }
         
-        // Emit event
+        // Emit event immediately - diagram should NOT move when panel opens
+        // CanvasController will handle this event but won't trigger view fitting
+        // (diagram already fitted with panel space reserved on initial load)
         this.eventBus.emit('panel:opened', {
             panel: name,
             isOpen: true,

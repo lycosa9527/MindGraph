@@ -130,6 +130,9 @@ class ViewManager {
         const zoom = d3.zoom()
             .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
             .filter((event) => {
+                // CRITICAL: Block double-click entirely - should open edit modal, not zoom
+                if (event.type === 'dblclick') return false;
+                
                 // Allow mouse wheel for zooming
                 if (event.type === 'wheel') return true;
                 
@@ -388,13 +391,55 @@ class ViewManager {
     }
 
     /**
+     * Check if a panel is currently visible
+     * @private
+     * @returns {boolean} True if any panel is visible
+     */
+    _isPanelVisible() {
+        const propertyPanel = document.getElementById('property-panel');
+        const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
+        
+        const aiPanel = document.getElementById('ai-assistant-panel');
+        const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
+        
+        const thinkingPanel = document.getElementById('thinking-panel');
+        const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
+        
+        return isPropertyPanelVisible || isAIPanelVisible || isThinkingPanelVisible;
+    }
+
+    /**
      * Fit diagram to full canvas area (entire window width)
      * Used when properties panel is hidden - diagram expands to full width
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToFullCanvas(animate = true) {
         try {
+            // Smart check: Skip if already fitted to full canvas and no panel is visible
+            const isPanelVisible = this._isPanelVisible();
+            if (!this.isSizedForPanel && !isPanelVisible) {
+                this.logger.debug('ViewManager', 'Already fitted to full canvas with no panels - skipping fit');
+                return;
+            }
+            
+            // CRITICAL: Remove canvas panel classes BEFORE fitting to ensure correct width calculation
+            // This prevents viewBox from being calculated with constrained width during CSS transition
+            const canvasPanel = document.querySelector('.canvas-panel');
+            if (canvasPanel) {
+                canvasPanel.classList.remove('property-panel-visible', 'ai-panel-visible', 'thinking-panel-visible');
+            }
+            
+            // Force immediate layout recalculation before fitting
+            // This ensures container width is updated before viewBox calculation
+            // Even with CSS transitions, we need the container to report correct width
+            const containerNode = document.querySelector('#d3-container');
+            if (containerNode && containerNode.parentElement) {
+                // Force reflow by reading offsetHeight of parent
+                containerNode.parentElement.offsetHeight;
+            }
+            
             this.logger.debug('ViewManager', 'Fitting to full canvas width');
+            // Calculate immediately - reflow was forced above, container should report correct width
             this._fitToCanvas(animate, false);
             this.isSizedForPanel = false; // Update state
             
@@ -414,10 +459,19 @@ class ViewManager {
     /**
      * Fit diagram to canvas with properties panel space reserved
      * Used when properties panel is visible or will be visible - reserves 320px for panel
+     * Always fits when called (e.g., when node is clicked and property panel opens)
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToCanvasWithPanel(animate = true) {
         try {
+            // Smart check: Skip if already fitted with panel and panel is visible
+            // This prevents unnecessary animations when clicking different nodes while panel is already open
+            const isPanelVisible = this._isPanelVisible();
+            if (this.isSizedForPanel && isPanelVisible) {
+                this.logger.debug('ViewManager', 'Already fitted with panel visible - skipping fit');
+                return;
+            }
+            
             this.logger.debug('ViewManager', 'Fitting to canvas (panel space reserved)');
             this._fitToCanvas(animate, true);
             this.isSizedForPanel = true; // Update state
@@ -489,12 +543,6 @@ class ViewManager {
             height: maxY - minY
         };
         
-        // Get container dimensions
-        const containerNode = container.node();
-        const containerWidth = containerNode.clientWidth;
-        const containerHeight = containerNode.clientHeight;
-        const windowWidth = window.innerWidth;
-        
         // Check panel visibility for CSS class updates
         const propertyPanel = document.getElementById('property-panel');
         const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
@@ -506,15 +554,31 @@ class ViewManager {
         const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
         
         // Update canvas panel classes for dynamic width adjustment
+        // Note: Classes are already removed by fitToFullCanvas when reserveForPanel is false
+        // Only update classes when reserving panel space
         const canvasPanel = document.querySelector('.canvas-panel');
-        if (canvasPanel) {
+        if (canvasPanel && reserveForPanel) {
             canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
             canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
             canvasPanel.classList.toggle('thinking-panel-visible', isThinkingPanelVisible && !isPropertyPanelVisible);
         }
         
+        // Force a reflow to ensure CSS changes are applied before measuring container
+        // This is critical when transitioning from panel-constrained to full canvas
+        if (canvasPanel) {
+            canvasPanel.offsetHeight; // Force reflow
+        }
+        
+        // Get container dimensions AFTER CSS classes are updated and reflow is forced
+        // This ensures we get the actual current width, not a stale constrained width
+        const containerNode = container.node();
+        let containerWidth = containerNode.clientWidth;
+        const containerHeight = containerNode.clientHeight;
+        const windowWidth = window.innerWidth;
+        
         // Calculate available canvas width based on reserveForPanel parameter and active panels
-        // CRITICAL: Always use windowWidth as reference, not containerWidth (which may be CSS-constrained)
+        // CRITICAL: When reserveForPanel is false, use actual containerWidth (which should now be full width)
+        // When reserveForPanel is true, use windowWidth minus reserved space
         const propertyPanelWidth = 320;
         const thinkingPanelWidth = 400;  // ThinkGuide panel width
         const aiPanelWidth = 450;        // AI Assistant panel width
@@ -528,10 +592,15 @@ class ViewManager {
             reservedWidth = aiPanelWidth;
         }
         
-        const availableCanvasWidth = windowWidth - reservedWidth;
+        // When reserveForPanel is false, use actual containerWidth (should be full width after class removal)
+        // When reserveForPanel is true, use windowWidth minus reserved space (panel will constrain via CSS)
+        const availableCanvasWidth = reserveForPanel 
+            ? (windowWidth - reservedWidth)  // Panel space reserved: use windowWidth minus reserved
+            : containerWidth;                // Full canvas: use actual containerWidth after CSS class removal
         
         this.logger.debug('ViewManager', 'Canvas fit calculation:', {
             mode: reservedWidth > 0 ? `WITH ${reservedWidth}px panel reserved` : 'FULL width',
+            reserveForPanel: reserveForPanel,
             windowWidth,
             containerSize: { width: containerWidth, height: containerHeight },
             isPropertyPanelVisible,
@@ -539,6 +608,7 @@ class ViewManager {
             isAIPanelVisible,
             reservedWidth,
             availableCanvasWidth,
+            calculationMethod: reserveForPanel ? 'windowWidth - reserved' : 'containerWidth (after CSS update)',
             contentBounds,
             animate
         });
@@ -558,23 +628,41 @@ class ViewManager {
         const finalScale = Math.max(scale, minScale);
         
         // Calculate viewBox to center content in available space
-        const viewBoxX = contentBounds.x - (availableCanvasWidth * padding) / finalScale;
-        const viewBoxY = contentBounds.y - (containerHeight * padding) / finalScale;
+        // First, calculate content center point
+        const contentCenterX = contentBounds.x + contentBounds.width / 2;
+        const contentCenterY = contentBounds.y + contentBounds.height / 2;
+        
+        // Calculate viewBox dimensions in SVG coordinate space
+        // These dimensions represent how much SVG space is visible in the viewport
         const viewBoxWidth = availableCanvasWidth / finalScale;
         const viewBoxHeight = containerHeight / finalScale;
         
-        const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
-        
-        this.logger.debug('ViewManager', 'Fit calculation result:', {
-            availableCanvasWidth,
-            finalScale: finalScale,
-            viewBox: newViewBox
-        });
-        
-        // Apply viewBox with or without animation
+            // Calculate viewBox position to center content within the viewBox
+            // The viewBox should be positioned so that the content center aligns with viewBox center
+            // This ensures content is centered regardless of its position in SVG coordinate space
+            const viewBoxX = contentCenterX - viewBoxWidth / 2;
+            const viewBoxY = contentCenterY - viewBoxHeight / 2;
+            
+            const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
+            
+            this.logger.debug('ViewManager', 'Fit calculation result:', {
+                availableCanvasWidth,
+                finalScale: finalScale,
+                contentCenter: { x: contentCenterX, y: contentCenterY },
+                viewBox: newViewBox
+            });
+            
+            // Apply viewBox with or without animation
+            // Note: Canvas panel classes are updated by PanelManager when panel opens
+            // to trigger CSS width transitions that coordinate with this viewBox animation
+        // Coordinate animation duration with CSS transitions:
+        // - Panel slide animation: 0.3s
+        // - Canvas width transition: 0.4s (cubic-bezier)
+        // - ViewBox animation: 0.5s (slightly longer than canvas width for smooth feel)
         if (animate) {
             svg.transition()
-                .duration(750)
+                .duration(500) // Reduced from 750ms to coordinate with CSS transitions
+                .ease(d3.easeCubicOut) // Match the cubic-bezier easing of canvas width transition
                 .attr('viewBox', newViewBox)
                 .attr('preserveAspectRatio', 'xMidYMid meet');
         } else {
