@@ -612,13 +612,25 @@ class InteractiveEditor {
      * Setup global event handlers
      */
     setupGlobalEventHandlers() {
-        // Click on canvas to deselect all (delegate to InteractionHandler via Event Bus)
-        d3.select('#d3-container').on('click', () => {
-            if (this.eventBus) {
-                this.eventBus.emit('interaction:clear_selection_requested');
-            } else {
-                // Fallback if Event Bus not available
-            this.selectionManager.clearSelection();
+        // Click on canvas to deselect all - ONLY if clicking on empty space
+        // If clicking on a node, the node's click handler will handle selection
+        d3.select('#d3-container').on('click', (event) => {
+            // Check if click was on a node element (has data-node-id attribute)
+            const target = event.target;
+            const isNodeElement = target.hasAttribute && (
+                target.hasAttribute('data-node-id') || 
+                target.hasAttribute('data-text-for') ||
+                target.closest('[data-node-id]')
+            );
+            
+            // Only clear selection if clicking on empty space (not on a node)
+            if (!isNodeElement) {
+                if (this.eventBus) {
+                    this.eventBus.emit('interaction:clear_selection_requested');
+                } else {
+                    // Fallback if Event Bus not available
+                    this.selectionManager.clearSelection();
+                }
             }
         });
         

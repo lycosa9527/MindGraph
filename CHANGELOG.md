@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.57] - 2025-01-11 - Double-Click Edit Modal Fix & Zoom Behavior Cleanup
+
+### Fixed
+
+- **Double-Click to Edit Not Working in Some Diagram Types** (`static/js/editor/interactive-editor.js`)
+  - Root cause: The d3-container click handler was clearing selection on ALL clicks without checking if click was on a node
+  - When clicking a node, the container handler would fire and clear selection, causing the property panel to "flash" (open then close)
+  - Solution: Added check to only clear selection when clicking on empty space (not on nodes)
+  - Now properly detects clicks on elements with `data-node-id`, `data-text-for`, or parent elements with `data-node-id`
+
+- **Zoom Behavior Now Only Responds to Mouse Wheel** (`static/js/managers/editor/view-manager.js`, `static/js/editor/canvas-manager.js`)
+  - Changed D3 zoom filter to ONLY allow wheel events
+  - Double-click is completely disconnected from zoom functionality
+  - Removed middle mouse button panning (zoom is wheel-only now)
+  - Added `svg.on('dblclick.zoom', null)` as fallback safety
+
+- **Property Panel "Jump" on First Node Selection** (`static/js/managers/editor/canvas-controller.js`)
+  - Changed panel open animation from `animate: true` to `animate: false`
+  - Eliminates jarring viewBox animation when selecting a node for the first time
+
+### Changed
+
+- **Interaction Handler Double-Click Handlers** (`static/js/managers/editor/interaction-handler.js`)
+  - Added `event.preventDefault()` to all three dblclick handlers (shapes, standalone text, associated text)
+  - Ensures double-click events don't trigger any default browser behavior
+
+### Technical Details
+
+**Event Flow for Node Click (Before Fix):**
+1. Click on node → node's click handler fires (stopPropagation)
+2. BUT d3-container click handler also fired → cleared selection → panel closed
+
+**Event Flow for Node Click (After Fix):**
+1. Click on node → node's click handler fires
+2. d3-container click handler fires BUT checks target → sees node element → does NOT clear selection
+3. Selection maintained → panel stays open → double-click works
+
+---
+
 ## [4.28.56] - 2025-01-11 - Empty Button Node Dimension Preservation
 
 ### Fixed
