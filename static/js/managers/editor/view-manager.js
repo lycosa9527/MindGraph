@@ -161,25 +161,11 @@ class ViewManager {
         // Per D3.js documentation: https://d3js.org/d3-zoom#zoom
         svg.on('dblclick.zoom', null);
         
-        // EXTRA SAFEGUARD: Add a capture-phase listener to prevent any residual dblclick zoom
-        // This runs BEFORE bubbling-phase handlers and ensures dblclick doesn't trigger zoom
-        const svgNode = svg.node();
-        if (svgNode && !svgNode._dblclickGuardAdded) {
-            svgNode.addEventListener('dblclick', (event) => {
-                // Log but don't stop propagation - let the event reach node handlers
-                this.logger.debug('ViewManager', 'SVG dblclick intercepted (zoom blocked)', {
-                    target: event.target.tagName,
-                    nodeId: event.target.getAttribute?.('data-node-id')
-                });
-            }, true); // Use capture phase
-            svgNode._dblclickGuardAdded = true;
-        }
-        
         // Store zoom behavior for programmatic control
         this.zoomBehavior = zoom;
         this.zoomTransform = d3.zoomIdentity;
         
-        this.logger.debug('ViewManager', 'Zoom and pan enabled (mouse wheel + middle button, double-click disabled)');
+        this.logger.debug('ViewManager', 'Zoom enabled (mouse wheel only, double-click disabled)');
     }
     
     /**

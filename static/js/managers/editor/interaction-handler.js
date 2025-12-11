@@ -141,19 +141,15 @@ class InteractionHandler {
                     self.emitSelectionChanged();
                 })
                 .on('dblclick', (event) => {
-                    // CRITICAL: Stop event from bubbling to SVG (where D3 zoom might be listening)
                     event.stopPropagation();
-                    // CRITICAL: Prevent any default browser behavior
                     event.preventDefault();
-                    // CRITICAL: Stop immediate propagation to prevent any other handlers on this element
-                    event.stopImmediatePropagation();
                     
                     this.logger.debug('InteractionHandler', 'Double-Click for Edit', {
                         nodeId,
                         diagramType: diagramType
                     });
                     
-                    // CRITICAL: Cancel pending property panel open - edit modal takes precedence
+                    // Emit event to notify that edit modal is opening
                     self.eventBus.emit('node_editor:opening', { nodeId });
                     
                     // Find associated text element
@@ -227,14 +223,10 @@ class InteractionHandler {
                         self.emitSelectionChanged();
                     })
                     .on('dblclick', (event) => {
-                        // CRITICAL: Stop event from bubbling to SVG (where D3 zoom might be listening)
                         event.stopPropagation();
-                        // CRITICAL: Prevent any default browser behavior
                         event.preventDefault();
-                        // CRITICAL: Stop immediate propagation to prevent any other handlers on this element
-                        event.stopImmediatePropagation();
                         
-                        // CRITICAL: Cancel pending property panel open - edit modal takes precedence
+                        // Emit event to notify that edit modal is opening
                         self.eventBus.emit('node_editor:opening', { nodeId: ownNodeId });
                         
                         // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
@@ -308,14 +300,10 @@ class InteractionHandler {
                         self.emitSelectionChanged();
                     })
                     .on('dblclick', (event) => {
-                        // CRITICAL: Stop event from bubbling to SVG (where D3 zoom might be listening)
                         event.stopPropagation();
-                        // CRITICAL: Prevent any default browser behavior
                         event.preventDefault();
-                        // CRITICAL: Stop immediate propagation to prevent any other handlers on this element
-                        event.stopImmediatePropagation();
                         
-                        // CRITICAL: Cancel pending property panel open - edit modal takes precedence
+                        // Emit event to notify that edit modal is opening
                         self.eventBus.emit('node_editor:opening', { nodeId: associatedNodeId });
                         
                         // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
