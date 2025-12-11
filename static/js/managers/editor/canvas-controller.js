@@ -116,15 +116,13 @@ class CanvasController {
         
         if (panelName === 'property' || panelName === 'mindmate') {
             if (isOpen) {
-                // When property panel opens (e.g., node clicked), diagram should STAY in place
-                // DO NOT trigger view fitting - initial fit already reserves panel space
-                // Only the panel slides in, diagram position remains unchanged
-                this.logger.debug('CanvasController', 'Panel opened - diagram stays in place (no view fitting)');
-                // No view fitting needed - diagram already fitted with panel space reserved on initial load
+                // When property panel opens (e.g., node clicked), always fit with panel
+                // Use ViewManager via Event Bus to ensure proper fit with panel space
+                this.logger.debug('CanvasController', 'Panel opened - requesting fit to canvas with panel');
+                this.eventBus.emit('view:fit_to_canvas_requested', { animate: true });
             } else {
-                // When panel closes (click canvas to deselect), fit to full canvas
-                // This is the only time we refit when deselecting
-                this.logger.debug('CanvasController', 'Panel closed - fitting to full canvas');
+                // When panel closes, fit to full canvas
+                this.logger.debug('CanvasController', 'Panel closed - requesting fit to full canvas');
                 this.eventBus.emit('view:fit_to_window_requested', { animate: true });
             }
         }

@@ -7,6 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.54] - 2025-01-11 - View Clipping and Node Selection Jumping Fix
+
+### Fixed
+
+- **Diagram Clipping Issue** (`static/js/managers/editor/view-manager.js`)
+  - Fixed diagram content being clipped/cut off after panel operations
+  - Reverted viewBox calculation from complex scale-based approach to content-centric approach
+  - ViewBox now uses uniform 10% padding based on content bounds, not container dimensions
+  - `preserveAspectRatio='xMidYMid meet'` ensures proper centering in viewport
+  - **Root Cause**: Complex viewBox calculation using `availableCanvasWidth / finalScale` caused incorrect bounds
+  - **Solution**: Adopted 23dd3c8's simpler content-centric viewBox calculation
+
+- **Diagram Jumping When Switching Node Selection** (`static/js/managers/editor/view-manager.js`, `static/js/editor/toolbar-manager.js`)
+  - Fixed diagram enlarging then shrinking when clicking from Node A to Node B
+  - **Root Cause (ViewManager)**: Missing smart check in `fitToCanvasWithPanel()` caused unnecessary re-fitting
+  - **Root Cause (ToolbarManager)**: 250ms delay before showing property panel caused close→reopen sequence
+  - Added `_isPanelVisible()` helper method to check panel visibility state
+  - Added smart check in `fitToFullCanvas()`: Skip if already at full canvas with no panels visible
+  - Added smart check in `fitToCanvasWithPanel()`: Skip if already sized for panel and panel is visible
+  - Removed 250ms delay for showing property panel (matching 23dd3c8 behavior)
+  - **Impact**: Zero movement when switching between node selections
+
+- **Panel Close/Open Sequence on Node Switch** (`static/js/editor/toolbar-manager.js`)
+  - Fixed `clearSelection()` → `selectNode()` sequence triggering panel close then reopen
+  - Property panel now shows immediately without delay (matching 23dd3c8 approach)
+  - Removed `node_editor:opening` listener (no longer needed without delay)
+  - **Impact**: Panel stays open when switching nodes, only content updates
+
+### Changed
+
+- **ViewBox Calculation in `_fitToCanvas()`** (`static/js/managers/editor/view-manager.js`)
+  - Changed from complex scale-based calculation to content-centric approach
+  - Before: `viewBoxWidth = availableCanvasWidth / finalScale` (caused clipping)
+  - After: `viewBoxWidth = contentBounds.width + padding * 2` (stable positioning)
+  - Padding now calculated as 10% of min(width, height) for uniform margins
+
+- **Simplified `fitDiagramToWindow()`** (`static/js/managers/editor/view-manager.js`)
+  - Removed complex zoom reset logic with `_calculateAndFitBounds()`
+  - Uses simpler direct bound calculation matching 23dd3c8 approach
+
+- **Simplified `_applyViewBoxTransform()`** (`static/js/managers/editor/view-manager.js`)
+  - Removed complex expansion logic and variable padding (15-20% with min 50px)
+  - Changed to simple 10% of content size for consistent behavior
+  - Always sets `preserveAspectRatio='xMidYMid meet'` for consistent centering
+
+- **Property Panel Show Timing** (`static/js/editor/toolbar-manager.js`)
+  - Removed 250ms delay for showing property panel
+  - Panel now opens immediately on node selection (matching 23dd3c8)
+  - This prevents the close→reopen sequence that caused jumping
+
+### Technical Details
+
+**Smart Check Logic:**
+
+| Method | Condition to Skip | Purpose |
+|--------|-------------------|---------|
+| `fitToFullCanvas()` | `!isSizedForPanel && !isPanelVisible` | Skip if already at full canvas |
+| `fitToCanvasWithPanel()` | `isSizedForPanel && isPanelVisible` | Skip if already sized for panel |
+
+**Node Selection Flow (Fixed):**
+
+```
+Before (Broken):
+1. clearSelection() → hidePropertyPanel() immediate → panel:closed → fitToFullCanvas() → ENLARGE
+2. selectNode() → 250ms delay → showPropertyPanel() → panel:opened → fitToCanvasWithPanel() → SHRINK
+
+After (Fixed):
+1. clearSelection() → hidePropertyPanel() called
+2. selectNode() → showPropertyPanel() called immediately
+3. PanelManager sees panel already open → skips → no fitting triggered
+4. Result: Zero diagram movement, only panel content updates
+```
+
+**ViewBox Calculation (Fixed):**
+
+```javascript
+// Before (caused clipping):
+const viewBoxWidth = availableCanvasWidth / finalScale;
+const viewBoxHeight = containerHeight / finalScale;
+
+// After (content-centric, stable):
+const padding = Math.min(contentBounds.width, contentBounds.height) * 0.10;
+const viewBoxWidth = contentBounds.width + padding * 2;
+const viewBoxHeight = contentBounds.height + padding * 2;
+```
+
+---
+
 ## [4.28.53] - 2025-01-XX - Fit View, Panel, and Animation Coordination
 
 ### Fixed

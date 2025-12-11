@@ -407,7 +407,7 @@ class ViewManager {
         
         return isPropertyPanelVisible || isAIPanelVisible || isThinkingPanelVisible;
     }
-
+    
     /**
      * Fit diagram to full canvas area (entire window width)
      * Used when properties panel is hidden - diagram expands to full width
@@ -422,24 +422,7 @@ class ViewManager {
                 return;
             }
             
-            // CRITICAL: Remove canvas panel classes BEFORE fitting to ensure correct width calculation
-            // This prevents viewBox from being calculated with constrained width during CSS transition
-            const canvasPanel = document.querySelector('.canvas-panel');
-            if (canvasPanel) {
-                canvasPanel.classList.remove('property-panel-visible', 'ai-panel-visible', 'thinking-panel-visible');
-            }
-            
-            // Force immediate layout recalculation before fitting
-            // This ensures container width is updated before viewBox calculation
-            // Even with CSS transitions, we need the container to report correct width
-            const containerNode = document.querySelector('#d3-container');
-            if (containerNode && containerNode.parentElement) {
-                // Force reflow by reading offsetHeight of parent
-                containerNode.parentElement.offsetHeight;
-            }
-            
             this.logger.debug('ViewManager', 'Fitting to full canvas width');
-            // Calculate immediately - reflow was forced above, container should report correct width
             this._fitToCanvas(animate, false);
             this.isSizedForPanel = false; // Update state
             
@@ -459,16 +442,15 @@ class ViewManager {
     /**
      * Fit diagram to canvas with properties panel space reserved
      * Used when properties panel is visible or will be visible - reserves 320px for panel
-     * Always fits when called (e.g., when node is clicked and property panel opens)
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToCanvasWithPanel(animate = true) {
         try {
-            // Smart check: Skip if already fitted with panel and panel is visible
-            // This prevents unnecessary animations when clicking different nodes while panel is already open
+            // Smart check: Skip if already sized for panel and a panel is visible
+            // This prevents unnecessary re-fitting when switching between node selections
             const isPanelVisible = this._isPanelVisible();
             if (this.isSizedForPanel && isPanelVisible) {
-                this.logger.debug('ViewManager', 'Already fitted with panel visible - skipping fit');
+                this.logger.debug('ViewManager', 'Already sized for panel - skipping fit');
                 return;
             }
             
@@ -543,6 +525,12 @@ class ViewManager {
             height: maxY - minY
         };
         
+        // Get container dimensions
+        const containerNode = container.node();
+        const containerWidth = containerNode.clientWidth;
+        const containerHeight = containerNode.clientHeight;
+        const windowWidth = window.innerWidth;
+        
         // Check panel visibility for CSS class updates
         const propertyPanel = document.getElementById('property-panel');
         const isPropertyPanelVisible = propertyPanel && propertyPanel.style.display !== 'none';
@@ -554,31 +542,15 @@ class ViewManager {
         const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
         
         // Update canvas panel classes for dynamic width adjustment
-        // Note: Classes are already removed by fitToFullCanvas when reserveForPanel is false
-        // Only update classes when reserving panel space
         const canvasPanel = document.querySelector('.canvas-panel');
-        if (canvasPanel && reserveForPanel) {
+        if (canvasPanel) {
             canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
             canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
             canvasPanel.classList.toggle('thinking-panel-visible', isThinkingPanelVisible && !isPropertyPanelVisible);
         }
         
-        // Force a reflow to ensure CSS changes are applied before measuring container
-        // This is critical when transitioning from panel-constrained to full canvas
-        if (canvasPanel) {
-            canvasPanel.offsetHeight; // Force reflow
-        }
-        
-        // Get container dimensions AFTER CSS classes are updated and reflow is forced
-        // This ensures we get the actual current width, not a stale constrained width
-        const containerNode = container.node();
-        let containerWidth = containerNode.clientWidth;
-        const containerHeight = containerNode.clientHeight;
-        const windowWidth = window.innerWidth;
-        
         // Calculate available canvas width based on reserveForPanel parameter and active panels
-        // CRITICAL: When reserveForPanel is false, use actual containerWidth (which should now be full width)
-        // When reserveForPanel is true, use windowWidth minus reserved space
+        // CRITICAL: Always use windowWidth as reference, not containerWidth (which may be CSS-constrained)
         const propertyPanelWidth = 320;
         const thinkingPanelWidth = 400;  // ThinkGuide panel width
         const aiPanelWidth = 450;        // AI Assistant panel width
@@ -592,15 +564,10 @@ class ViewManager {
             reservedWidth = aiPanelWidth;
         }
         
-        // When reserveForPanel is false, use actual containerWidth (should be full width after class removal)
-        // When reserveForPanel is true, use windowWidth minus reserved space (panel will constrain via CSS)
-        const availableCanvasWidth = reserveForPanel 
-            ? (windowWidth - reservedWidth)  // Panel space reserved: use windowWidth minus reserved
-            : containerWidth;                // Full canvas: use actual containerWidth after CSS class removal
+        const availableCanvasWidth = windowWidth - reservedWidth;
         
         this.logger.debug('ViewManager', 'Canvas fit calculation:', {
             mode: reservedWidth > 0 ? `WITH ${reservedWidth}px panel reserved` : 'FULL width',
-            reserveForPanel: reserveForPanel,
             windowWidth,
             containerSize: { width: containerWidth, height: containerHeight },
             isPropertyPanelVisible,
@@ -608,61 +575,35 @@ class ViewManager {
             isAIPanelVisible,
             reservedWidth,
             availableCanvasWidth,
-            calculationMethod: reserveForPanel ? 'windowWidth - reserved' : 'containerWidth (after CSS update)',
             contentBounds,
             animate
         });
         
-        // Calculate scale to fit available space with padding
-        const padding = 0.12; // 12% padding around content for visual comfort
-        const scale = Math.min(
-            (availableCanvasWidth * (1 - 2 * padding)) / contentBounds.width,
-            (containerHeight * (1 - 2 * padding)) / contentBounds.height
-        );
+        // Calculate viewBox with equal padding on all sides
+        // This approach creates a viewBox around the content with uniform padding,
+        // then relies on preserveAspectRatio='xMidYMid meet' to center it in the viewport
+        const paddingPercent = 0.10; // 10% padding around content
+        const padding = Math.min(contentBounds.width, contentBounds.height) * paddingPercent;
         
-        // Don't shrink diagrams that are already reasonably sized
-        const minScale = Math.min(
-            (availableCanvasWidth * 0.6) / contentBounds.width,
-            (containerHeight * 0.6) / contentBounds.height
-        );
-        const finalScale = Math.max(scale, minScale);
+        // Create viewBox that's content bounds plus equal padding on all sides
+        const viewBoxX = contentBounds.x - padding;
+        const viewBoxY = contentBounds.y - padding;
+        const viewBoxWidth = contentBounds.width + padding * 2;
+        const viewBoxHeight = contentBounds.height + padding * 2;
         
-        // Calculate viewBox to center content in available space
-        // First, calculate content center point
-        const contentCenterX = contentBounds.x + contentBounds.width / 2;
-        const contentCenterY = contentBounds.y + contentBounds.height / 2;
+        const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
         
-        // Calculate viewBox dimensions in SVG coordinate space
-        // These dimensions represent how much SVG space is visible in the viewport
-        const viewBoxWidth = availableCanvasWidth / finalScale;
-        const viewBoxHeight = containerHeight / finalScale;
+        this.logger.debug('ViewManager', 'Fit calculation result:', {
+            availableCanvasWidth,
+            contentBounds,
+            padding,
+            viewBox: newViewBox
+        });
         
-            // Calculate viewBox position to center content within the viewBox
-            // The viewBox should be positioned so that the content center aligns with viewBox center
-            // This ensures content is centered regardless of its position in SVG coordinate space
-            const viewBoxX = contentCenterX - viewBoxWidth / 2;
-            const viewBoxY = contentCenterY - viewBoxHeight / 2;
-            
-            const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
-            
-            this.logger.debug('ViewManager', 'Fit calculation result:', {
-                availableCanvasWidth,
-                finalScale: finalScale,
-                contentCenter: { x: contentCenterX, y: contentCenterY },
-                viewBox: newViewBox
-            });
-            
-            // Apply viewBox with or without animation
-            // Note: Canvas panel classes are updated by PanelManager when panel opens
-            // to trigger CSS width transitions that coordinate with this viewBox animation
-        // Coordinate animation duration with CSS transitions:
-        // - Panel slide animation: 0.3s
-        // - Canvas width transition: 0.4s (cubic-bezier)
-        // - ViewBox animation: 0.5s (slightly longer than canvas width for smooth feel)
+        // Apply viewBox with or without animation
         if (animate) {
             svg.transition()
-                .duration(500) // Reduced from 750ms to coordinate with CSS transitions
-                .ease(d3.easeCubicOut) // Match the cubic-bezier easing of canvas width transition
+                .duration(750)
                 .attr('viewBox', newViewBox)
                 .attr('preserveAspectRatio', 'xMidYMid meet');
         } else {
@@ -774,61 +715,24 @@ class ViewManager {
                 return;
             }
             
-            // CRITICAL: Reset zoom transform first before calculating bounds
-            // This ensures bounds are calculated correctly regardless of current zoom/pan state
-            const zoomGroup = svg.select('g.zoom-group');
-            if (!zoomGroup.empty() && this.zoomBehavior) {
-                // Reset zoom transform to identity (no zoom, no pan)
-                svg.call(this.zoomBehavior.transform, d3.zoomIdentity);
-                this.zoomTransform = d3.zoomIdentity;
-                this.logger.debug('ViewManager', 'Reset zoom transform to identity');
-            }
-            
-            // Calculate bounds immediately (transform reset is synchronous)
-            this._calculateAndFitBounds(svg, container);
-            
-        } catch (error) {
-            this.logger.error('ViewManager', 'Error fitting diagram to window:', error);
-        }
-    }
-    
-    /**
-     * Calculate bounds and fit diagram (called after zoom reset)
-     * @private
-     */
-    _calculateAndFitBounds(svg, container) {
-        try {
-            // Get all visual elements - check both zoom-group and direct children
-            // For mindmaps, elements are direct children of SVG (no zoom-group)
-            const zoomGroup = svg.select('g.zoom-group');
-            let allElements;
-            
-            if (!zoomGroup.empty()) {
-                // Elements are in zoom-group (for other diagram types)
-                allElements = zoomGroup.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
-            } else {
-                // Elements are direct children of SVG (mindmaps)
-                // Include all visual elements, excluding background rect
-                allElements = svg.selectAll('g, circle, rect:not(.background), ellipse, path, line, text, polygon, polyline');
-            }
+            // Get all visual elements (groups, circles, rects, paths, text, etc.)
+            const allElements = svg.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
             
             if (allElements.empty()) {
                 this.logger.warn('ViewManager', 'No content found in SVG');
                 return;
             }
             
-            this.logger.debug('ViewManager', `Found ${allElements.size()} elements in SVG (zoom-group: ${!zoomGroup.empty()})`);
+            this.logger.debug('ViewManager', `Found ${allElements.size()} elements in SVG`);
             
             // Calculate the bounding box of all SVG content
-            // Use more comprehensive approach to ensure all content is included
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             let hasContent = false;
             
-            // First pass: get bounds from all elements
             allElements.each(function() {
                 try {
                     const bbox = this.getBBox();
-                    if (bbox && bbox.width > 0 && bbox.height > 0 && isFinite(bbox.x) && isFinite(bbox.y)) {
+                    if (bbox.width > 0 && bbox.height > 0) {
                         minX = Math.min(minX, bbox.x);
                         minY = Math.min(minY, bbox.y);
                         maxX = Math.max(maxX, bbox.x + bbox.width);
@@ -836,57 +740,12 @@ class ViewManager {
                         hasContent = true;
                     }
                 } catch (e) {
-                    // Skip elements without getBBox - try alternative methods
-                    try {
-                        // For elements without getBBox, try to get coordinates from attributes
-                        const x = parseFloat(this.getAttribute('x') || this.getAttribute('x1') || 0);
-                        const y = parseFloat(this.getAttribute('y') || this.getAttribute('y1') || 0);
-                        const width = parseFloat(this.getAttribute('width') || 0);
-                        const height = parseFloat(this.getAttribute('height') || 0);
-                        const x2 = parseFloat(this.getAttribute('x2') || x);
-                        const y2 = parseFloat(this.getAttribute('y2') || y);
-                        
-                        if (isFinite(x) && isFinite(y)) {
-                            minX = Math.min(minX, x, x2);
-                            minY = Math.min(minY, y, y2);
-                            maxX = Math.max(maxX, x + width, x2);
-                            maxY = Math.max(maxY, y + height, y2);
-                            hasContent = true;
-                        }
-                    } catch (e2) {
-                        // Skip this element
-                    }
+                    // Some elements might not have getBBox, skip them
                 }
             });
             
-            // Second pass: also check text elements which might extend beyond their bbox
-            const textElements = zoomGroup.empty() 
-                ? svg.selectAll('text')
-                : zoomGroup.selectAll('text');
-            
-            textElements.each(function() {
-                try {
-                    const bbox = this.getBBox();
-                    if (bbox && isFinite(bbox.x) && isFinite(bbox.y)) {
-                        // Text elements might have negative coordinates or extend beyond
-                        minX = Math.min(minX, bbox.x);
-                        minY = Math.min(minY, bbox.y);
-                        maxX = Math.max(maxX, bbox.x + bbox.width);
-                        maxY = Math.max(maxY, bbox.y + bbox.height);
-                        hasContent = true;
-                    }
-                } catch (e) {
-                    // Skip text elements without getBBox
-                }
-            });
-            
-            if (!hasContent || !isFinite(minX) || !isFinite(minY)) {
-                this.logger.warn('ViewManager', 'No valid content bounds found', {
-                    hasContent,
-                    minX,
-                    minY,
-                    elementCount: allElements.size()
-                });
+            if (!hasContent || minX === Infinity) {
+                this.logger.warn('ViewManager', 'No valid content bounds found');
                 return;
             }
             
@@ -955,7 +814,7 @@ class ViewManager {
                 mode: 'diagram_to_window'
             });
         } catch (error) {
-            this.logger.error('ViewManager', 'Error calculating and fitting bounds:', error);
+            this.logger.error('ViewManager', 'Error fitting diagram to window:', error);
         }
     }
     
@@ -979,58 +838,26 @@ class ViewManager {
             this.logger.debug('ViewManager', 'Applying transform:', { scale, translateX, translateY });
             
             // Make SVG responsive to fill container
-            // But preserve original dimensions for proper bounds calculation
-            const originalWidth = parseFloat(svg.attr('width')) || availableCanvasWidth;
-            const originalHeight = parseFloat(svg.attr('height')) || containerHeight;
-            
             svg.attr('width', '100%')
                .attr('height', '100%');
             
             // Get the current viewBox or create one
             const viewBox = svg.attr('viewBox');
             
-            // If content extends beyond original SVG dimensions, expand viewBox accordingly
-            const contentRight = contentBounds.x + contentBounds.width;
-            const contentBottom = contentBounds.y + contentBounds.height;
-            const needsExpansion = contentRight > originalWidth || contentBottom > originalHeight || 
-                                  contentBounds.x < 0 || contentBounds.y < 0;
-            
-            if (needsExpansion) {
-                this.logger.debug('ViewManager', 'Content extends beyond SVG bounds, expanding viewBox', {
-                    contentBounds,
-                    originalWidth,
-                    originalHeight,
-                    contentRight,
-                    contentBottom
-                });
-            }
-            
             // Calculate optimal viewBox with padding
-            // Use larger padding for better visibility, especially for larger diagrams
-            // Base padding on content size but ensure minimum padding
-            const minPadding = 50; // Minimum padding in pixels
-            const relativePadding = Math.max(
-                contentBounds.width * 0.15,  // 15% of width
-                contentBounds.height * 0.15, // 15% of height
-                minPadding                    // Minimum padding
-            );
-            const padding = Math.min(relativePadding, Math.max(contentBounds.width, contentBounds.height) * 0.2); // Cap at 20%
-            
+            const padding = Math.min(contentBounds.width, contentBounds.height) * 0.1; // 10% padding
             const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
-            
-            this.logger.debug('ViewManager', 'ViewBox calculation:', {
-                contentBounds,
-                padding,
-                newViewBox
-            });
             
             if (viewBox) {
                 this.logger.debug('ViewManager', 'Old viewBox:', viewBox);
                 this.logger.debug('ViewManager', 'New viewBox:', newViewBox);
                 
+                // CRITICAL: Always set preserveAspectRatio to ensure consistent centering
+                // Some renderers use xMinYMin which causes top-left alignment
                 svg.transition()
                     .duration(750)
-                    .attr('viewBox', newViewBox);
+                    .attr('viewBox', newViewBox)
+                    .attr('preserveAspectRatio', 'xMidYMid meet');
                     
                 this.logger.debug('ViewManager', 'Diagram fitted to window (existing viewBox)', {
                     bounds: contentBounds,

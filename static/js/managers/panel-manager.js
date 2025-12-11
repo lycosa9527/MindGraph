@@ -218,29 +218,12 @@ class PanelManager {
         }
         
         const elementId = panel.element.id;
-        const isAlreadyOpen = this.currentPanel === name && this.isPanelOpen(name);
-        
-        // Close all other panels first (always do this, even if panel is already open)
-        this.closeAllExcept(name);
-        
-        // If panel is already open, skip the reopening logic to prevent flicker
-        // This happens when clicking different nodes while property panel is already open
-        if (isAlreadyOpen) {
-            this.logger.debug('PanelManager', `Panel "${name}" is already open - skipping reopen to prevent flicker`);
-            // Don't emit panel:opened event to prevent unnecessary view fitting
-            return true;
-        }
-        
         this.logger.info('PanelManager', `Opening panel: ${name} (element: ${elementId})`);
         
-        // Update canvas panel classes BEFORE opening to trigger CSS transition
-        // This ensures canvas width transition happens smoothly
-        const canvasPanel = document.querySelector('.canvas-panel');
-        if (canvasPanel && name === 'property') {
-            canvasPanel.classList.add('property-panel-visible');
-        }
+        // Close all other panels first
+        this.closeAllExcept(name);
         
-        // Open the requested panel (triggers CSS slideInRight animation - 0.3s)
+        // Open the requested panel
         if (panel.type === 'class') {
             panel.element.classList.remove('collapsed');
         } else if (panel.type === 'style') {
@@ -262,9 +245,7 @@ class PanelManager {
             }
         }
         
-        // Emit event immediately - diagram should NOT move when panel opens
-        // CanvasController will handle this event but won't trigger view fitting
-        // (diagram already fitted with panel space reserved on initial load)
+        // Emit event
         this.eventBus.emit('panel:opened', {
             panel: name,
             isOpen: true,
