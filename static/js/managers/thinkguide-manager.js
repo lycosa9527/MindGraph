@@ -177,6 +177,14 @@ class ThinkGuideManager {
     async openPanel() {
         if (!this.panel) return;
         
+        // Mobile: Lock body scroll to prevent page shift
+        if (window.innerWidth <= 768) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = `-${window.scrollY}px`;
+        }
+        
         // Generate session ID if not already set
         if (!this.sessionId) {
             this.sessionId = this.generateSessionId();
@@ -223,6 +231,16 @@ class ThinkGuideManager {
         
         const source = options._internal ? 'panel_manager' : 'user';
         this.logger.info('ThinkGuideManager', 'Closing panel', { source });
+        
+        // Mobile: Unlock body scroll
+        if (window.innerWidth <= 768) {
+            const scrollY = document.body.style.top;
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
         
         // Stop any active streaming (always do this, regardless of source)
         if (this.currentAbortController) {

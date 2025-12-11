@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.72] - 2025-12-12 - Mobile Experience Improvements
+
+### Added
+
+- **Mobile Pinch-to-Zoom Support**
+  - Enabled two-finger pinch-to-zoom on touch devices for diagrams
+  - Two-finger pan/drag for moving around the canvas
+  - Single-finger tap still reserved for node selection
+
+- **Full-Screen Panels on Mobile**
+  - MindMate AI panel now takes full screen on mobile devices
+  - ThinkGuide panel now takes full screen on mobile devices
+  - Property panel now takes full screen on mobile devices
+  - All panels slide up from bottom with smooth animation
+  - Safe area support for iPhone notch and home bar
+
+- **Fixed Toolbar & Status Bar on Mobile**
+  - Toolbar stays fixed at top of screen while editing
+  - Status bar (LLM buttons) stays fixed at bottom
+  - Canvas area is scrollable/zoomable between them
+  - Touch-action: manipulation prevents accidental zoom on UI elements
+
+- **Mobile Status Bar Improvements**
+  - Hidden node count and edit mode text on mobile (cleaner UI)
+  - Hidden "AI Model:" label on mobile
+  - 4 LLM buttons (Qwen, DeepSeek, Hunyuan, Kimi) centered
+  - Compact button sizing for mobile screens
+
+- **Responsive Edit Modal**
+  - Edit modal adapts to mobile screen size (90% width)
+  - Smaller padding and border-radius on mobile
+  - Max height 80vh with scroll support
+  - 16px font size on inputs to prevent iOS auto-zoom
+
+- **Scroll Lock for Modals & Panels**
+  - Body scroll locked when panels/modals are open
+  - Prevents page shift when closing panels on iOS
+  - Scroll position preserved and restored correctly
+
+- **Translated Zoom Controls**
+  - Mobile zoom buttons show Chinese labels when in Chinese mode (放大/缩小/重置)
+  - English labels in English mode (+/−/⊙)
+  - Hidden on mobile since pinch-to-zoom is available
+
+### Fixed
+
+- **iOS Safari Height Issues**
+  - Used `-webkit-fill-available` for proper viewport height
+  - Used `100dvh` (dynamic viewport height) for mobile browsers
+  - Safe area insets for iPhone notch and home bar
+
+- **Page Shift on Panel Close (iOS)**
+  - Fixed body scroll lock/unlock to prevent page jumping
+  - Scroll position properly saved and restored
+
+- **Gallery Page Layout**
+  - Fixed toolbar/status bar appearing on gallery page
+  - Removed `!important` on display property to respect inline styles
+
+### Files Changed
+
+- `static/js/managers/editor/view-manager.js` - Mobile touch zoom support, translated buttons
+- `static/js/editor/node-editor.js` - Responsive modal, scroll lock
+- `static/js/managers/mindmate-manager.js` - Scroll lock for panel
+- `static/js/managers/thinkguide-manager.js` - Scroll lock for panel
+- `static/js/managers/toolbar/property-panel-manager.js` - Scroll lock for panel
+- `static/css/editor.css` - Comprehensive mobile styles for all components
+
+---
+
 ## [4.28.71] - 2025-12-12 - Auto-Complete Topic Extraction Fix for All 9 Diagram Types
 
 ### Fixed

@@ -1079,7 +1079,49 @@ body {
     line-height: 1;
 }
 
-/* ========== Mobile Zoom Controls (Removed - users can use finger gestures) ========== */
+/* ========== Mobile Zoom Controls ========== */
+/* Floating buttons for mobile zoom (bottom-right corner) */
+.mobile-zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.zoom-control-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #333;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.zoom-control-btn:hover {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.zoom-control-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.zoom-control-btn span {
+    line-height: 1;
+}
 
 /* Prevent text selection during pinch zoom */
 #d3-container svg {
@@ -1087,7 +1129,7 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    touch-action: none; /* Enable pinch-to-zoom gestures */
+    touch-action: pinch-zoom pan-x pan-y; /* Allow pinch-to-zoom and panning gestures */
 }
 
 /* ========== Selection Indicator ========== */
@@ -1483,13 +1525,143 @@ body {
     
     /* Toolbar mobile styles moved to editor-toolbar.css for better organization */
     
-    .property-panel {
-        width: 100%;
-        height: 50vh;
-        top: auto;
+    /* Editor interface layout on mobile */
+    /* Note: Don't use !important on display - let inline style="display:none" work for gallery */
+    .editor-interface {
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height for mobile browsers */
+        position: relative;
+        touch-action: manipulation; /* Prevent double-tap zoom on editor UI */
+    }
+    
+    /* Only allow pinch-zoom on the canvas, not the whole page */
+    .editor-interface .canvas-panel {
+        touch-action: none; /* Let D3 handle all touch events */
+    }
+    
+    /* Fixed toolbar at top on mobile - ONLY in editor interface (not gallery) */
+    .editor-interface .editor-toolbar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 500;
+        padding-top: max(8px, env(safe-area-inset-top)) !important;
+        touch-action: manipulation; /* Prevent pinch-to-zoom on toolbar */
+    }
+    
+    /* Fixed status bar at bottom on mobile - ONLY in editor interface */
+    .editor-interface .editor-status-bar {
+        position: fixed !important;
         bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 500;
+        padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+        touch-action: manipulation; /* Prevent pinch-to-zoom on status bar */
+    }
+    
+    /* Adjust main content to account for fixed header/footer - ONLY in editor */
+    .editor-interface .editor-main-content {
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: 0 !important;
+        padding-top: 100px; /* Space for fixed toolbar */
+        padding-bottom: 44px; /* Space for fixed status bar */
+        overflow: hidden;
+    }
+    
+    /* Property panel - Full screen on mobile */
+    .property-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        height: -webkit-fill-available;
         border-left: none;
-        border-top: 1px solid #e0e0e0;
+        border-radius: 0;
+        z-index: 1000;
+        overflow-y: auto;
+        animation: slideInFromBottom 0.3s ease;
+    }
+    
+    @keyframes slideInFromBottom {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+    
+    .property-header {
+        padding: 16px 20px;
+        padding-top: max(16px, env(safe-area-inset-top));
+        position: sticky;
+        top: 0;
+        background: #f9f9f9;
+        z-index: 10;
+    }
+    
+    .property-content {
+        padding: 20px;
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+    
+    /* Hide mobile zoom controls - pinch-to-zoom is available */
+    .mobile-zoom-controls {
+        display: none !important;
+    }
+    
+    /* Status bar mobile: Ensure visible, hide node count & edit mode, center LLM buttons */
+    .editor-status-bar {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        justify-content: center;
+        padding: 6px 12px;
+        min-height: 44px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 100;
+    }
+    
+    .editor-status-bar .status-left,
+    .editor-status-bar .status-right {
+        display: none !important;
+    }
+    
+    .editor-status-bar .status-center {
+        display: flex !important;
+        visibility: visible !important;
+        flex: 1;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    /* Hide "AI Model:" label on mobile */
+    .editor-status-bar .llm-label {
+        display: none !important;
+    }
+    
+    /* Make LLM buttons fit on mobile */
+    .llm-selector {
+        display: flex !important;
+        gap: 6px;
+    }
+    
+    .llm-btn {
+        display: inline-flex !important;
+        padding: 6px 12px;
+        font-size: 11px;
+        min-width: 50px;
     }
 }
 
@@ -2690,19 +2862,90 @@ body {
     }
 }
 
-/* Responsive AI Panel */
+/* Responsive AI Panel - Full screen on mobile */
 @media (max-width: 768px) {
     .ai-assistant-panel {
-        width: 100%;
-        height: 50vh;
-        top: auto;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
         bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        height: -webkit-fill-available; /* iOS Safari fix */
         border-left: none;
-        border-top: 1px solid #e0e0e0;
+        border-radius: 0;
+        z-index: 1000;
+        overflow: hidden;
     }
     
     .ai-assistant-panel.collapsed {
         transform: translateY(100%);
+        pointer-events: none;
+    }
+    
+    /* Larger header on mobile */
+    .ai-assistant-header {
+        padding: 16px 20px;
+        padding-top: max(16px, env(safe-area-inset-top));
+    }
+    
+    /* More space for messages */
+    .ai-chat-messages {
+        padding: 16px;
+    }
+    
+    /* Larger input area on mobile */
+    .ai-chat-input-container {
+        padding: 16px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    
+    .ai-input-wrapper {
+        padding: 10px;
+    }
+    
+    .ai-chat-input {
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+    
+    /* ThinkGuide panel - Full screen on mobile */
+    .thinking-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        height: -webkit-fill-available; /* iOS Safari fix */
+        border-left: none;
+        border-radius: 0;
+        z-index: 1000;
+        overflow: hidden;
+    }
+    
+    .thinking-panel.collapsed {
+        transform: translateY(100%);
+        pointer-events: none;
+    }
+    
+    .thinking-header {
+        padding: 16px 20px;
+        padding-top: max(16px, env(safe-area-inset-top));
+    }
+    
+    .thinking-messages {
+        padding: 16px;
+    }
+    
+    .thinking-input-area {
+        padding: 16px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    
+    .thinking-input {
+        font-size: 16px; /* Prevent iOS zoom on focus */
     }
 }
 

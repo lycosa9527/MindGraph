@@ -178,6 +178,14 @@ class MindMateManager {
         
         this.logger.info('MindMateManager', 'Opening panel');
         
+        // Mobile: Lock body scroll to prevent page shift
+        if (window.innerWidth <= 768) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = `-${window.scrollY}px`;
+        }
+        
         // Check if we're opening for a new diagram session
         const currentDiagramSessionId = window.currentEditor?.sessionId;
         const isNewDiagramSession = !this.diagramSessionId || this.diagramSessionId !== currentDiagramSessionId;
@@ -259,6 +267,16 @@ class MindMateManager {
         
         const source = options._internal ? 'panel_manager' : 'user';
         this.logger.info('MindMateManager', 'Closing panel', { source });
+        
+        // Mobile: Unlock body scroll
+        if (window.innerWidth <= 768) {
+            const scrollY = document.body.style.top;
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
         
         // If called from PanelManager, just do internal cleanup
         // Otherwise, ask PanelManager to close (which will call us back with _internal flag)

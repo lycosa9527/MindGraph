@@ -201,6 +201,14 @@ class PropertyPanelManager {
         
         this.logger.debug('PropertyPanelManager', 'Opening property panel', { nodeId });
         
+        // Mobile: Lock body scroll to prevent page shift
+        if (window.innerWidth <= 768) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = `-${window.scrollY}px`;
+        }
+        
         // Use centralized panel manager
         if (window.panelManager) {
             window.panelManager.openPanel('property');
@@ -225,6 +233,16 @@ class PropertyPanelManager {
         if (!this.panel) return;
         
         this.logger.debug('PropertyPanelManager', 'Closing property panel');
+        
+        // Mobile: Unlock body scroll
+        if (window.innerWidth <= 768) {
+            const scrollY = document.body.style.top;
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
         
         // Use centralized panel manager
         if (window.panelManager) {

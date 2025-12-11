@@ -28,6 +28,15 @@ class NodeEditor {
             textLength: this.nodeData.currentText?.length || 0
         });
         
+        // Mobile: Lock body scroll to prevent page shift
+        if (window.innerWidth <= 768) {
+            this._savedScrollY = window.scrollY;
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = `-${this._savedScrollY}px`;
+        }
+        
         this.createModal();
         this.attachEventListeners();
         
@@ -60,14 +69,18 @@ class NodeEditor {
             .style('backdrop-filter', 'blur(4px)')
             .style('animation', 'fadeIn 0.2s ease');
         
-        // Create modal content
+        // Create modal content - responsive for mobile
+        const isMobile = window.innerWidth <= 768;
         this.modal = overlay.append('div')
             .attr('class', 'node-editor-modal')
             .style('background', 'white')
-            .style('border-radius', '16px')
-            .style('padding', '28px 32px')
-            .style('min-width', '480px')
-            .style('max-width', '600px')
+            .style('border-radius', isMobile ? '12px' : '16px')
+            .style('padding', isMobile ? '20px' : '28px 32px')
+            .style('width', isMobile ? '90%' : 'auto')
+            .style('min-width', isMobile ? 'auto' : '480px')
+            .style('max-width', isMobile ? '90%' : '600px')
+            .style('max-height', isMobile ? '80vh' : 'auto')
+            .style('overflow-y', isMobile ? 'auto' : 'visible')
             .style('box-shadow', '0 12px 40px rgba(0, 0, 0, 0.25)')
             .style('animation', 'slideUp 0.3s ease');
         
@@ -336,6 +349,15 @@ class NodeEditor {
      * Close the modal
      */
     close() {
+        // Mobile: Unlock body scroll
+        if (window.innerWidth <= 768) {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            window.scrollTo(0, this._savedScrollY || 0);
+        }
+        
         d3.select('.node-editor-overlay').remove();
     }
 }

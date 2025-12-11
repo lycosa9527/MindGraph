@@ -143,22 +143,37 @@ class ViewManager {
         }
         
         // Configure zoom behavior
-        // Zoom: mouse wheel only
-        // Pan: middle mouse button drag only
+        // Zoom: mouse wheel + pinch-to-zoom on touch devices
+        // Pan: middle mouse button drag + two-finger drag on touch devices
         const zoom = d3.zoom()
             .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
             .filter((event) => {
-                // Allow wheel events for zooming
+                // Allow wheel events for zooming (desktop)
                 if (event.type === 'wheel') {
                     return true;
                 }
-                // Allow middle mouse button (button === 1) for panning
+                
+                // Allow middle mouse button (button === 1) for panning (desktop)
                 // This enables drag-to-pan when holding middle mouse button
                 if (event.type === 'mousedown' && event.button === 1) {
                     event.preventDefault(); // Prevent default middle-click behavior (auto-scroll)
                     return true;
                 }
-                // Block everything else: left click, right click, double-click, touch
+                
+                // MOBILE TOUCH SUPPORT: Allow multi-touch for pinch-to-zoom
+                // event.touches is available for touch events
+                if (event.type === 'touchstart' || event.type === 'touchmove' || event.type === 'touchend') {
+                    // Allow touch events with 2+ fingers (pinch-to-zoom / two-finger pan)
+                    // Block single-finger touch (reserved for node selection/tapping)
+                    const touchCount = event.touches ? event.touches.length : 0;
+                    if (touchCount >= 2) {
+                        return true;
+                    }
+                    // Single finger touch - block for node selection
+                    return false;
+                }
+                
+                // Block everything else: left click, right click, double-click
                 // Left click is reserved for node selection/interaction
                 // Double-click opens edit modal
                 return false;
@@ -239,16 +254,25 @@ class ViewManager {
             return;
         }
         
+        // Get current language for button labels
+        const isZh = window.languageManager?.currentLanguage === 'zh';
+        const zoomInLabel = isZh ? '放大' : '+';
+        const zoomOutLabel = isZh ? '缩小' : '−';
+        const resetLabel = isZh ? '重置' : '⊙';
+        const zoomInTitle = isZh ? '放大' : 'Zoom In';
+        const zoomOutTitle = isZh ? '缩小' : 'Zoom Out';
+        const resetTitle = isZh ? '重置视图' : 'Reset Zoom';
+        
         const controlsHtml = `
             <div id="mobile-zoom-controls" class="mobile-zoom-controls">
-                <button id="zoom-in-btn" class="zoom-control-btn" title="Zoom In">
-                    <span>+</span>
+                <button id="zoom-in-btn" class="zoom-control-btn" title="${zoomInTitle}">
+                    <span>${zoomInLabel}</span>
                 </button>
-                <button id="zoom-out-btn" class="zoom-control-btn" title="Zoom Out">
-                    <span>−</span>
+                <button id="zoom-out-btn" class="zoom-control-btn" title="${zoomOutTitle}">
+                    <span>${zoomOutLabel}</span>
                 </button>
-                <button id="zoom-reset-btn" class="zoom-control-btn" title="Reset Zoom">
-                    <span>⊙</span>
+                <button id="zoom-reset-btn" class="zoom-control-btn" title="${resetTitle}">
+                    <span>${resetLabel}</span>
                 </button>
             </div>
         `;
