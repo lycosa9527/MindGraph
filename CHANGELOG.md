@@ -7,7 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.28.57] - 2025-01-11 - Double-Click Edit Modal Fix & Zoom Behavior Cleanup
+## [4.28.59] - 2025-12-11 - Debounced Single-Click for Reliable Double-Click Detection
+
+### Fixed
+
+- **Double-Click Not Working on Central Topic and Some Nodes** (`static/js/managers/editor/interaction-handler.js`)
+  - Root cause: First click triggered `fitToCanvasWithPanel` animation, which blocked the browser from delivering the second click event promptly
+  - The DOM manipulation during panel animation caused ~800ms delay in second click delivery, exceeding the 400ms threshold
+  - This affected central topics in brace map and other nodes where the panel animation was heavier
+
+### Solution: Debounced Single-Click Pattern
+
+- **New Behavior:**
+  1. First click → records timestamp, starts 250ms timeout (NO immediate selection/panel)
+  2. If second click within 250ms → timeout cancelled, edit modal opens immediately
+  3. If no second click → timeout fires, selection + panel opens
+
+- **Key Insight:** By delaying the `fitToCanvasWithPanel` animation until AFTER the double-click detection window, the second click event is delivered promptly
+
+- **Added `singleClickTimeout` to clickTracker** for managing the delayed single-click action
+- **Added deduplication logic** to prevent multiple overlapping handlers from interfering
+- **Threshold set to 250ms** - balances snappy single-click response with comfortable double-click timing
+
+### Technical Details
+
+**Why Previous Solution Failed:**
+1. First click on central topic → selection → `fitToCanvasWithPanel` starts DOM manipulation
+2. User clicks again at T+150ms (within threshold)
+3. Browser delivers second click event at T+800ms (delayed by DOM changes)
+4. Double-click NOT detected because 800ms > 400ms threshold
+
+**How Debouncing Fixes This:**
+1. First click → record timestamp, start 250ms timeout (panel animation NOT started yet)
+2. User clicks again at T+150ms → timeout cancelled (panel animation never starts)
+3. Double-click detected immediately (150ms < 250ms) → edit modal opens
+4. If user doesn't click again, timeout fires at T+250ms → selection + panel opens
+
+---
+
+## [4.28.58] - 2025-12-11 - Double-Click Detection Fix for All Diagram Types
+
+### Fixed
+
+- **Double-Click to Edit Modal Not Working** (`static/js/managers/editor/interaction-handler.js`)
+  - Root cause: Native `dblclick` event was failing because viewBox shifts when panel opens between clicks
+  - When first click opens panel, the viewBox adjustment causes second click to land on a different element (zoom-group instead of node)
+  - Native dblclick event target becomes the zoom-group, bypassing node handlers completely
+  
+- **Solution: Implemented Custom Double-Click Detection Using Click Timing**
+  - Added shared `clickTracker` object at class level to track clicks by nodeId
+  - Tracks `lastClickTime` and `lastClickNodeId` across all click handlers
+  - Double-click detected when two clicks on same nodeId occur within threshold
+  - Works even when clicks hit different overlapping elements (text vs circle) due to viewBox shift
+  - Removed native `dblclick` event handlers - all detection now via timing
+
+### Technical Details
+
+**Why Native dblclick Failed:**
+1. First click on circle → selection → panel opens → viewBox shifts instantly
+2. Second click → mouse position now over different element (zoom-group) due to viewBox change
+3. Browser fires dblclick on zoom-group (no handler) instead of on the node
+
+**How Shared Click Tracker Fixes This:**
+1. First click on text element → `clickTracker.lastClickNodeId = 'context_1'`, records timestamp
+2. Panel opens → viewBox shifts
+3. Second click lands on circle (same node, different element) → checks `clickTracker.lastClickNodeId`
+4. Same nodeId + time < threshold → double-click detected → edit modal opens
+
+---
+
+## [4.28.57] - 2025-12-11 - Double-Click Edit Modal Fix & Zoom Behavior Cleanup
 
 ### Fixed
 

@@ -616,20 +616,31 @@ class InteractiveEditor {
         // If clicking on a node, the node's click handler will handle selection
         d3.select('#d3-container').on('click', (event) => {
             // Check if click was on a node element (has data-node-id attribute)
+            // Use multiple detection methods for robustness across all diagram types
             const target = event.target;
-            const isNodeElement = target.hasAttribute && (
-                target.hasAttribute('data-node-id') || 
-                target.hasAttribute('data-text-for') ||
-                target.closest('[data-node-id]')
-            );
+            
+            // Method 1: Direct attribute check using getAttribute (more reliable than hasAttribute)
+            const hasNodeId = target.getAttribute && target.getAttribute('data-node-id');
+            const hasTextFor = target.getAttribute && target.getAttribute('data-text-for');
+            
+            // Method 2: Check if target is a shape element (circle, rect, ellipse, text)
+            // These are the interactive elements in all diagram types
+            const tagName = target.tagName?.toLowerCase();
+            const isShapeElement = ['circle', 'rect', 'ellipse', 'text', 'tspan'].includes(tagName);
+            
+            // Method 3: Check parent chain for data-node-id (for nested elements)
+            const hasNodeIdParent = target.closest && target.closest('[data-node-id]');
+            
+            // Consider it a node element if any of these conditions are true
+            const isNodeElement = hasNodeId || hasTextFor || (isShapeElement && hasNodeIdParent);
             
             // Only clear selection if clicking on empty space (not on a node)
             if (!isNodeElement) {
-                if (this.eventBus) {
-                    this.eventBus.emit('interaction:clear_selection_requested');
-                } else {
-                    // Fallback if Event Bus not available
-                    this.selectionManager.clearSelection();
+            if (this.eventBus) {
+                this.eventBus.emit('interaction:clear_selection_requested');
+            } else {
+                // Fallback if Event Bus not available
+            this.selectionManager.clearSelection();
                 }
             }
         });

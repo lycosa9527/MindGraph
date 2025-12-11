@@ -24,6 +24,17 @@ class InteractionHandler {
         // NEW: Add owner identifier for Event Bus Listener Registry
         this.ownerId = 'InteractionHandler';
         
+        // GLOBAL double-click tracking by nodeId
+        // Uses debounced single-click to distinguish from double-click
+        // First click sets a timeout; second click within threshold cancels it and triggers double-click
+        this.clickTracker = {
+            lastClickTime: 0,
+            lastClickNodeId: null,
+            lastClickEventTime: 0,  // To dedupe multiple handlers firing for same physical click
+            singleClickTimeout: null,  // Timeout for delayed single-click action
+            THRESHOLD: 250, // ms for double-click detection
+            DEDUPE_THRESHOLD: 50  // ms to consider as same physical click
+        };
         
         // Subscribe to events
         this.subscribeToEvents();
@@ -89,7 +100,10 @@ class InteractionHandler {
         
         // Find all node elements (shapes) and add click handlers
         // Filter out background elements and decorative elements
-        d3.selectAll('circle, rect, ellipse').each((d, i, nodes) => {
+        const allShapes = d3.selectAll('circle, rect, ellipse');
+        let attachedCount = 0;
+        
+        allShapes.each((d, i, nodes) => {
             const element = d3.select(nodes[i]);
             
             // Skip background rectangles and other non-interactive elements
@@ -118,52 +132,89 @@ class InteractionHandler {
                 element.style('cursor', 'pointer');
             }
             
-            // Add click handler for selection
+            // Add click handler for selection AND double-click detection
+            // Uses DEBOUNCED single-click to prevent fitToCanvas from blocking double-click
+            // First click: record time, set timeout for selection
+            // Second click within threshold: cancel timeout, open edit modal
             element
                 .on('click', (event) => {
                     event.stopPropagation();
                     
-                    this.logger.debug('InteractionHandler', 'Mouse Click', {
-                        nodeId,
-                        ctrlKey: event.ctrlKey,
-                        metaKey: event.metaKey,
-                        diagramType: diagramType
-                    });
+                    const now = Date.now();
+                    const tracker = self.clickTracker;
+                    const timeSinceLastEvent = now - tracker.lastClickEventTime;
                     
-                    if (event.ctrlKey || event.metaKey) {
-                        selectionManager.toggleNodeSelection(nodeId);
-                    } else {
-                        selectionManager.clearSelection();
-                        selectionManager.selectNode(nodeId);
+                    // Dedupe: If this is the same physical click (multiple handlers firing), skip
+                    const isSamePhysicalClick = timeSinceLastEvent < tracker.DEDUPE_THRESHOLD;
+                    if (isSamePhysicalClick) {
+                        return; // Already handled by another handler for same physical click
                     }
                     
-                    // Emit selection changed event
-                    self.emitSelectionChanged();
-                })
-                .on('dblclick', (event) => {
-                    event.stopPropagation();
-                    event.preventDefault();
+                    const timeSinceLastClick = now - tracker.lastClickTime;
+                    const isDoubleClick = timeSinceLastClick < tracker.THRESHOLD && tracker.lastClickNodeId === nodeId;
                     
-                    this.logger.debug('InteractionHandler', 'Double-Click for Edit', {
-                        nodeId,
-                        diagramType: diagramType
-                    });
+                    // Update tracker immediately (before any async operations)
+                    tracker.lastClickEventTime = now;
                     
-                    // Emit event to notify that edit modal is opening
-                    self.eventBus.emit('node_editor:opening', { nodeId });
-                    
-                    // Find associated text element
-                    const textNode = element.node().nextElementSibling;
-                    if (textNode && textNode.tagName === 'text') {
-                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
-                        const currentText = (typeof window.extractTextFromSVG === 'function') 
-                            ? window.extractTextFromSVG(d3.select(textNode)) 
-                            : d3.select(textNode).text();
-                        self.openNodeEditor(nodeId, element.node(), textNode, currentText);
+                    if (isDoubleClick) {
+                        // DOUBLE-CLICK: Cancel pending single-click action and open edit modal
+                        if (tracker.singleClickTimeout) {
+                            clearTimeout(tracker.singleClickTimeout);
+                            tracker.singleClickTimeout = null;
+                        }
+                        
+                        event.preventDefault();
+                        tracker.lastClickTime = 0;
+                        tracker.lastClickNodeId = null;
+                        
+                        this.logger.debug('InteractionHandler', 'Double-click detected', {
+                            nodeId,
+                            diagramType: diagramType,
+                            timeSinceLastClick,
+                            source: 'shape'
+                        });
+                        
+                        // Emit event to notify that edit modal is opening
+                        self.eventBus.emit('node_editor:opening', { nodeId });
+                        
+                        // Find associated text element and open editor
+                        const textNode = element.node().nextElementSibling;
+                        if (textNode && textNode.tagName === 'text') {
+                            const currentText = (typeof window.extractTextFromSVG === 'function') 
+                                ? window.extractTextFromSVG(d3.select(textNode)) 
+                                : d3.select(textNode).text();
+                            self.openNodeEditor(nodeId, element.node(), textNode, currentText);
+                        } else {
+                            const currentText = self.findTextForNode(element.node());
+                            self.openNodeEditor(nodeId, element.node(), null, currentText);
+                        }
                     } else {
-                        // Try to find text by position
-                        const currentText = self.findTextForNode(element.node());
-                        self.openNodeEditor(nodeId, element.node(), null, currentText);
+                        // FIRST CLICK: Record time and set timeout for delayed selection
+                        // This prevents fitToCanvas from blocking the second click
+                        tracker.lastClickTime = now;
+                        tracker.lastClickNodeId = nodeId;
+                        
+                        // Cancel any pending timeout from previous click on different node
+                        if (tracker.singleClickTimeout) {
+                            clearTimeout(tracker.singleClickTimeout);
+                        }
+                        
+                        // Store event details for use in timeout (event object won't be valid later)
+                        const isMultiSelect = event.ctrlKey || event.metaKey;
+                        
+                        // Delay selection to allow double-click detection
+                        tracker.singleClickTimeout = setTimeout(() => {
+                            tracker.singleClickTimeout = null;
+                            
+                            // Execute single-click action (selection + panel)
+                            if (isMultiSelect) {
+                                selectionManager.toggleNodeSelection(nodeId);
+                            } else {
+                                selectionManager.clearSelection();
+                                selectionManager.selectNode(nodeId);
+                            }
+                            self.emitSelectionChanged();
+                        }, tracker.THRESHOLD);
                     }
                 })
                 .on('mouseover', function() {
@@ -187,6 +238,15 @@ class InteractionHandler {
                         d3.select(this).style('opacity', 1);
                     }
                 });
+            
+            attachedCount++;
+        });
+        
+        // Log how many shape handlers were attached
+        this.logger.debug('InteractionHandler', 'Shape handlers attached', {
+            totalShapes: allShapes.size(),
+            attachedCount: attachedCount,
+            diagramType: diagramType
         });
         
         // Add text click handlers - link to associated shape node
@@ -206,35 +266,80 @@ class InteractionHandler {
             
             if (ownNodeId && ownNodeType) {
                 // This is a standalone editable text element
+                // Uses DEBOUNCED single-click to prevent fitToCanvas from blocking double-click
                 element
                     .style('cursor', 'pointer')
                     .style('pointer-events', 'all')
                     .on('click', (event) => {
                         event.stopPropagation();
                         
-                        if (event.ctrlKey || event.metaKey) {
-                            selectionManager.toggleNodeSelection(ownNodeId);
-                        } else {
-                            selectionManager.clearSelection();
-                            selectionManager.selectNode(ownNodeId);
+                        const now = Date.now();
+                        const tracker = self.clickTracker;
+                        const timeSinceLastEvent = now - tracker.lastClickEventTime;
+                        
+                        // Dedupe: If this is the same physical click (multiple handlers firing), skip
+                        const isSamePhysicalClick = timeSinceLastEvent < tracker.DEDUPE_THRESHOLD;
+                        if (isSamePhysicalClick) {
+                            return; // Already handled by another handler for same physical click
                         }
                         
-                        // Emit selection changed event
-                        self.emitSelectionChanged();
-                    })
-                    .on('dblclick', (event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
+                        const timeSinceLastClick = now - tracker.lastClickTime;
+                        const isDoubleClick = timeSinceLastClick < tracker.THRESHOLD && tracker.lastClickNodeId === ownNodeId;
                         
-                        // Emit event to notify that edit modal is opening
-                        self.eventBus.emit('node_editor:opening', { nodeId: ownNodeId });
+                        // Update tracker immediately (before any async operations)
+                        tracker.lastClickEventTime = now;
                         
-                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
-                        const currentText = (typeof window.extractTextFromSVG === 'function') 
-                            ? window.extractTextFromSVG(element) 
-                            : element.text();
-                        // For standalone text elements, the text element is both the shape and text
-                        self.openNodeEditor(ownNodeId, textNode, textNode, currentText);
+                        if (isDoubleClick) {
+                            // DOUBLE-CLICK: Cancel pending single-click action and open edit modal
+                            if (tracker.singleClickTimeout) {
+                                clearTimeout(tracker.singleClickTimeout);
+                                tracker.singleClickTimeout = null;
+                            }
+                            
+                            event.preventDefault();
+                            tracker.lastClickTime = 0;
+                            tracker.lastClickNodeId = null;
+                            
+                            this.logger.debug('InteractionHandler', 'Double-click detected', {
+                                nodeId: ownNodeId,
+                                diagramType: diagramType,
+                                timeSinceLastClick,
+                                source: 'standalone-text'
+                            });
+                            
+                            // Emit event to notify that edit modal is opening
+                            self.eventBus.emit('node_editor:opening', { nodeId: ownNodeId });
+                            
+                            const currentText = (typeof window.extractTextFromSVG === 'function') 
+                                ? window.extractTextFromSVG(element) 
+                                : element.text();
+                            self.openNodeEditor(ownNodeId, textNode, textNode, currentText);
+                        } else {
+                            // FIRST CLICK: Record time and set timeout for delayed selection
+                            tracker.lastClickTime = now;
+                            tracker.lastClickNodeId = ownNodeId;
+                            
+                            // Cancel any pending timeout from previous click on different node
+                            if (tracker.singleClickTimeout) {
+                                clearTimeout(tracker.singleClickTimeout);
+                            }
+                            
+                            // Store event details for use in timeout
+                            const isMultiSelect = event.ctrlKey || event.metaKey;
+                            
+                            // Delay selection to allow double-click detection
+                            tracker.singleClickTimeout = setTimeout(() => {
+                                tracker.singleClickTimeout = null;
+                                
+                                if (isMultiSelect) {
+                                    selectionManager.toggleNodeSelection(ownNodeId);
+                                } else {
+                                    selectionManager.clearSelection();
+                                    selectionManager.selectNode(ownNodeId);
+                                }
+                                self.emitSelectionChanged();
+                            }, tracker.THRESHOLD);
+                        }
                     })
                     .on('mouseover', function() {
                         // Skip opacity animation for mindmap nodes
@@ -283,37 +388,82 @@ class InteractionHandler {
             
             // Only add handlers if we found an associated node
             if (associatedNodeId) {
+                // Uses DEBOUNCED single-click to prevent fitToCanvas from blocking double-click
                 element
                     .style('cursor', 'pointer')
                     .style('pointer-events', 'all')  // Enable pointer events on text
                     .on('click', (event) => {
                         event.stopPropagation();
                         
-                        if (event.ctrlKey || event.metaKey) {
-                            selectionManager.toggleNodeSelection(associatedNodeId);
-                        } else {
-                            selectionManager.clearSelection();
-                            selectionManager.selectNode(associatedNodeId);
+                        const now = Date.now();
+                        const tracker = self.clickTracker;
+                        const timeSinceLastEvent = now - tracker.lastClickEventTime;
+                        
+                        // Dedupe: If this is the same physical click (multiple handlers firing), skip
+                        const isSamePhysicalClick = timeSinceLastEvent < tracker.DEDUPE_THRESHOLD;
+                        if (isSamePhysicalClick) {
+                            return; // Already handled by another handler for same physical click
                         }
                         
-                        // Emit selection changed event
-                        self.emitSelectionChanged();
-                    })
-                    .on('dblclick', (event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
+                        const timeSinceLastClick = now - tracker.lastClickTime;
+                        const isDoubleClick = timeSinceLastClick < tracker.THRESHOLD && tracker.lastClickNodeId === associatedNodeId;
                         
-                        // Emit event to notify that edit modal is opening
-                        self.eventBus.emit('node_editor:opening', { nodeId: associatedNodeId });
+                        // Update tracker immediately (before any async operations)
+                        tracker.lastClickEventTime = now;
                         
-                        // Use extractTextFromSVG to handle both single-line and multi-line (tspan) text
-                        const currentText = (typeof window.extractTextFromSVG === 'function') 
-                            ? window.extractTextFromSVG(element) 
-                            : element.text();
-                        // Find associated shape element
-                        const shapeElement = d3.select(`[data-node-id="${associatedNodeId}"]`);
-                        if (!shapeElement.empty()) {
-                            self.openNodeEditor(associatedNodeId, shapeElement.node(), textNode, currentText);
+                        if (isDoubleClick) {
+                            // DOUBLE-CLICK: Cancel pending single-click action and open edit modal
+                            if (tracker.singleClickTimeout) {
+                                clearTimeout(tracker.singleClickTimeout);
+                                tracker.singleClickTimeout = null;
+                            }
+                            
+                            event.preventDefault();
+                            tracker.lastClickTime = 0;
+                            tracker.lastClickNodeId = null;
+                            
+                            this.logger.debug('InteractionHandler', 'Double-click detected', {
+                                nodeId: associatedNodeId,
+                                diagramType: diagramType,
+                                timeSinceLastClick,
+                                source: 'associated-text'
+                            });
+                            
+                            // Emit event to notify that edit modal is opening
+                            self.eventBus.emit('node_editor:opening', { nodeId: associatedNodeId });
+                            
+                            const currentText = (typeof window.extractTextFromSVG === 'function') 
+                                ? window.extractTextFromSVG(element) 
+                                : element.text();
+                            const shapeElement = d3.select(`[data-node-id="${associatedNodeId}"]`);
+                            if (!shapeElement.empty()) {
+                                self.openNodeEditor(associatedNodeId, shapeElement.node(), textNode, currentText);
+                            }
+                        } else {
+                            // FIRST CLICK: Record time and set timeout for delayed selection
+                            tracker.lastClickTime = now;
+                            tracker.lastClickNodeId = associatedNodeId;
+                            
+                            // Cancel any pending timeout from previous click on different node
+                            if (tracker.singleClickTimeout) {
+                                clearTimeout(tracker.singleClickTimeout);
+                            }
+                            
+                            // Store event details for use in timeout
+                            const isMultiSelect = event.ctrlKey || event.metaKey;
+                            
+                            // Delay selection to allow double-click detection
+                            tracker.singleClickTimeout = setTimeout(() => {
+                                tracker.singleClickTimeout = null;
+                                
+                                if (isMultiSelect) {
+                                    selectionManager.toggleNodeSelection(associatedNodeId);
+                                } else {
+                                    selectionManager.clearSelection();
+                                    selectionManager.selectNode(associatedNodeId);
+                                }
+                                self.emitSelectionChanged();
+                            }, tracker.THRESHOLD);
                         }
                     });
             }
