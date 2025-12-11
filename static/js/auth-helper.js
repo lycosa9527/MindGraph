@@ -247,17 +247,22 @@ class AuthHelper {
                     return true;
                 }
                 
-                // Show notification to user
+                // Show notification to user (with translation support)
+                const notifMessage = window.languageManager?.getNotification('newVersionAvailable', serverVersion) 
+                    || `New version available (${serverVersion}). Click here to refresh.`;
+                const confirmMessage = window.languageManager?.getNotification('newVersionConfirm', serverVersion)
+                    || `A new version (${serverVersion}) is available. Refresh now?`;
+                
                 if (window.NotificationManager && window.NotificationManager.show) {
                     window.NotificationManager.show(
-                        `New version available (${serverVersion}). Click here to refresh.`,
+                        notifMessage,
                         'info',
                         10000,
                         () => this.hardRefresh()
                     );
                 } else {
                     // Fallback: confirm dialog
-                    if (confirm(`A new version (${serverVersion}) is available. Refresh now?`)) {
+                    if (confirm(confirmMessage)) {
                         this.hardRefresh();
                     }
                 }

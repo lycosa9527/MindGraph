@@ -464,7 +464,9 @@ class MindMapOperations {
         // For mind maps, text changes may affect node heights (due to text wrapping)
         // which requires recalculating y-positions to maintain proper spacing
         // Emit event to request layout recalculation from backend
-        if (updates.text !== undefined) {
+        // SKIP recalculation for empty button updates - dimensions are already preserved
+        // and backend validation rejects empty topic
+        if (updates.text !== undefined && updates.text !== '') {
             this.eventBus.emit('mindmap:layout_recalculation_requested', {
                 spec
             });

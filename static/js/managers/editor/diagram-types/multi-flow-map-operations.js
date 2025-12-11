@@ -245,6 +245,22 @@ class MultiFlowMapOperations {
         if (nodeType === 'event') {
             // Update the central event
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    // Store preserved dimensions for event node
+                    spec._node_dimensions['event'] = {
+                        w: parseFloat(preservedWidth),
+                        h: parseFloat(preservedHeight)
+                    };
+                    this.logger.debug('MultiFlowMapOperations', 'Preserved dimensions for empty event node', {
+                        width: preservedWidth,
+                        height: preservedHeight
+                    });
+                }
+                
                 spec.event = updates.text;
             }
         } else if (nodeType === 'cause') {

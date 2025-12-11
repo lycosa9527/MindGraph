@@ -44,11 +44,14 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         });
     }
     
-    d3.select('#d3-container').html('');
-    if (!spec || !spec.topic || !Array.isArray(spec.attributes)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.topic !== 'string' || !Array.isArray(spec.attributes)) {
         logger.error('[BubbleMap-Renderer]', 'Invalid spec for bubble_map');
         return;
     }
+    
+    d3.select('#d3-container').html('');
     
     // Helper function to measure text width for wrapping
     function getMeasurementContainer() {
@@ -434,11 +437,16 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         });
     }
     
-    d3.select('#d3-container').html('');
-    if (!spec || !spec.topic || !Array.isArray(spec.context)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Circle map supports topic as string OR object {text: "..."} - allow both
+    // Use typeof check to allow empty string (for empty button functionality)
+    const topicValid = typeof spec?.topic === 'string' || (typeof spec?.topic === 'object' && spec?.topic !== null);
+    if (!spec || !topicValid || !Array.isArray(spec.context)) {
         logger.error('[CircleMap-Renderer] Invalid spec for circle_map');
         return;
     }
+    
+    d3.select('#d3-container').html('');
     
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let baseWidth, baseHeight, padding;
@@ -819,40 +827,35 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         t.remove();
         return w;
     }
-    d3.select('#d3-container').html('');
-    
-    // Enhanced validation with detailed error messages
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
     if (!spec) {
         logger.error('BubbleMapRenderer', 'spec is null or undefined');
-
         return;
     }
     
-    if (!spec.left || !spec.right) {
+    if (typeof spec.left !== 'string' || typeof spec.right !== 'string') {
         logger.error('BubbleMapRenderer', 'missing left or right topic', { left: spec.left, right: spec.right });
-
         return;
     }
     
     if (!Array.isArray(spec.similarities)) {
         logger.error('BubbleMapRenderer', 'similarities is not an array', spec.similarities);
-
         return;
     }
     
     if (!Array.isArray(spec.left_differences)) {
         logger.error('BubbleMapRenderer', 'left_differences is not an array', spec.left_differences);
-
         return;
     }
     
     if (!Array.isArray(spec.right_differences)) {
         logger.error('BubbleMapRenderer', 'right_differences is not an array', spec.right_differences);
-
         return;
     }
     
-    // Validation passed, proceeding with rendering
+    // Validation passed, clear container and proceed with rendering
+    d3.select('#d3-container').html('');
     
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let baseWidth, baseHeight, padding;

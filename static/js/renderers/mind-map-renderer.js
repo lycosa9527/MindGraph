@@ -47,11 +47,14 @@ function createMeasureLineWidth() {
 }
 
 function renderMindMap(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
-    if (!spec || !spec.topic || !Array.isArray(spec.children)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.topic !== 'string' || !Array.isArray(spec.children)) {
         logger.error('MindMapRenderer', 'Invalid spec for mindmap');
         return;
     }
+    
+    d3.select('#d3-container').html('');
     
     // Determine canvas dimensions - use adaptive dimensions if provided
     let baseWidth, baseHeight, padding;

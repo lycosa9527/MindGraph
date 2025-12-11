@@ -43,13 +43,12 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             throw new Error('D3.js not available');
         }
     
-    // Clear container and ensure it exists
+    // Validate BEFORE clearing container - defensive programming
     const container = d3.select('#d3-container');
     if (container.empty()) {
         logger.error('BraceRenderer', 'd3-container not found');
         return;
     }
-    container.html('');
     
     // Validate spec with comprehensive error handling
     if (!spec) {
@@ -61,11 +60,12 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     let actualSpec = spec;
     
     // Check for enhanced spec format (with agent data preserved)
-    if (spec.whole && Array.isArray(spec.parts) && spec._agent_result) {
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (typeof spec.whole === 'string' && Array.isArray(spec.parts) && spec._agent_result) {
         actualSpec = spec; // Use the original spec directly
     }
     // Check if we have the original spec structure directly
-    else if (spec.whole && Array.isArray(spec.parts)) {
+    else if (typeof spec.whole === 'string' && Array.isArray(spec.parts)) {
         actualSpec = spec;
     }
     // Legacy format handling for backward compatibility
@@ -88,7 +88,8 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         logger.warn('BraceRenderer', 'Unknown spec format');
     }
     
-    if (!actualSpec.whole) {
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (typeof actualSpec.whole !== 'string') {
         logger.error('BraceRenderer', 'Spec missing whole');
         return;
     }
@@ -97,6 +98,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         logger.error('BraceRenderer', 'Spec parts is not an array');
         return;
     }
+    
+    // Validation passed, clear container and proceed with rendering
+    container.html('');
     
     // Use provided adaptive dimensions - this ensures templates fit the window properly
     const padding = dimensions?.padding || 40;

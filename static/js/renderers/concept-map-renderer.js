@@ -54,12 +54,14 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         useSharedUtilities = true;
     }
     
-    d3.select('#d3-container').html('');
-    
-    if (!spec || !spec.topic || !Array.isArray(spec.concepts) || !Array.isArray(spec.relationships)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.topic !== 'string' || !Array.isArray(spec.concepts) || !Array.isArray(spec.relationships)) {
         logger.error('ConceptMapRenderer', 'Invalid spec for concept map');
         return;
     }
+    
+    d3.select('#d3-container').html('');
     
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let baseWidth, baseHeight, padding;

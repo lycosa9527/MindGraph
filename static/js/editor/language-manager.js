@@ -286,7 +286,10 @@ class LanguageManager {
                     // System errors
                     aiPanelNotFound: 'AI Assistant panel not found. Please reload the page.',
                     editorLoadError: 'Error loading editor. Please try again.',
-                    clearHistoryConfirm: 'Clear all history?'
+                    clearHistoryConfirm: 'Clear all history?',
+                    // Version update
+                    newVersionAvailable: (version) => `New version available (${version}). Click here to refresh.`,
+                    newVersionConfirm: (version) => `A new version (${version}) is available. Refresh now?`
                 }
             },
             zh: {
@@ -552,7 +555,10 @@ class LanguageManager {
                     // System errors
                     aiPanelNotFound: '未找到AI助手面板。请刷新页面。',
                     editorLoadError: '加载编辑器错误。请重试。',
-                    clearHistoryConfirm: '确定要清除所有历史记录吗？'
+                    clearHistoryConfirm: '确定要清除所有历史记录吗？',
+                    // Version update
+                    newVersionAvailable: (version) => `新版本已发布 (${version})。点击此处刷新。`,
+                    newVersionConfirm: (version) => `新版本 (${version}) 已发布，是否立即刷新？`
                 }
             },
             az: {
@@ -815,7 +821,10 @@ class LanguageManager {
                     // System errors
                     aiPanelNotFound: 'AI Köməkçi paneli tapılmadı. Xahiş edirik səhifəni yeniləyin.',
                     editorLoadError: 'Redaktor yüklənərkən xəta. Xahiş edirik yenidən cəhd edin.',
-                    clearHistoryConfirm: 'Bütün tarixçəni təmizləmək istəyirsiniz?'
+                    clearHistoryConfirm: 'Bütün tarixçəni təmizləmək istəyirsiniz?',
+                    // Version update
+                    newVersionAvailable: (version) => `Yeni versiya mövcuddur (${version}). Yeniləmək üçün bura klikləyin.`,
+                    newVersionConfirm: (version) => `Yeni versiya (${version}) mövcuddur. İndi yeniləmək istəyirsiniz?`
                 }
             }
         };

@@ -966,7 +966,8 @@ async def recalculate_mindmap_layout(
         spec = req.spec
         
         # Validate that it's a mindmap
-        if not spec.get('topic'):
+        # Use isinstance check to allow empty string (for empty button functionality)
+        if not isinstance(spec.get('topic'), str):
             raise HTTPException(
                 status_code=400,
                 detail="Invalid spec: 'topic' field is required for mindmaps"

@@ -36,13 +36,14 @@ if (typeof window.MindGraphUtils === 'undefined' || typeof window.MindGraphUtils
 
 // Main tree map rendering function - EXPOSE TO GLOBAL SCOPE
 function renderTreeMap(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
-    
-    // Validate spec
-    if (!spec || !spec.topic || !Array.isArray(spec.children)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.topic !== 'string' || !Array.isArray(spec.children)) {
         logger.error('TreeRenderer', 'Invalid spec for tree map');
         return;
     }
+    
+    d3.select('#d3-container').html('');
     
     // Handle empty children case
     if (spec.children.length === 0) {

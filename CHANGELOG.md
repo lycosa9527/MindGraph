@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.68] - 2025-12-12 - Auto-Complete Re-Generation Fix
+
+### Fixed
+
+- **Auto-Complete Not Re-Rendering After Topic Change**
+  - Root cause: `selectedLLM` was not reset when user triggered auto-complete again after changing the topic
+  - When auto-complete was triggered the second time:
+    - Cache was cleared correctly via `resultCache.clear()`
+    - 4 LLMs were fired correctly with the new topic
+    - BUT: `selectedLLM` still held the old value (e.g., 'qwen')
+    - The condition `if (!this.selectedLLM && ...)` was FALSE
+    - First successful result was NOT auto-rendered
+  - Fixed by resetting `this.selectedLLM = null` at the start of `handleAutoComplete()`
+  - Now matches the pattern from `AutoCompleteManager.startAutoComplete()`
+
+### Code Review Summary
+
+**Verified Working Correctly:**
+- Spec updates when user edits nodes (all operations modules)
+- Topic identification reads from spec first (source of truth)
+- Dimension handling for tree_map, brace_map, bridge_map
+- Backend agents properly receive and enforce `fixed_dimension`
+
+**Files Changed:**
+- `static/js/managers/toolbar/llm-autocomplete-manager.js` - Reset `selectedLLM` at start of auto-complete
+
+### Added
+
+- **Version Update Notification Translation Support**
+  - Added translation keys `newVersionAvailable` and `newVersionConfirm` for en/zh/az
+  - Updated `auth-helper.js` to use `languageManager.getNotification()` for version update messages
+  - Messages now display in user's selected language instead of always English
+
+### Removed
+
+- **Dead Code Cleanup: `autocomplete-manager.js`**
+  - Deleted `static/js/managers/toolbar/autocomplete-manager.js`
+  - This was a stub/scaffold from a planned refactoring that was never completed
+  - All methods had "TODO: implementation pending" comments
+  - `LLMAutoCompleteManager` is the active production implementation
+  - The file was never loaded in templates or instantiated anywhere
+
+---
+
+## [4.28.67] - 2025-12-12 - Empty Button Fix for All Diagram Types
+
+### Fixed
+
+- **Empty Button Deleting Entire Diagram Instead of Clearing Text**
+  - Root cause: Renderer validations used `!spec.topic` which fails for empty string `''`
+  - Container was cleared BEFORE validation, so if validation failed the diagram was already gone
+  - Fixed by moving validation before container clear (defensive programming)
+  - Changed validation from `!spec.topic` to `typeof spec.topic !== 'string'`
+
+### Affected Renderers
+
+| Renderer | Main Field | Fix Applied |
+|----------|------------|-------------|
+| `bubble-map-renderer.js` (Bubble Map) | `spec.topic` | `typeof !== 'string'` |
+| `bubble-map-renderer.js` (Circle Map) | `spec.topic` | Flexible check (string OR object) |
+| `bubble-map-renderer.js` (Double Bubble) | `spec.left`, `spec.right` | `typeof !== 'string'` |
+| `concept-map-renderer.js` | `spec.topic` | `typeof !== 'string'` |
+| `mind-map-renderer.js` | `spec.topic` | `typeof !== 'string'` |
+| `tree-renderer.js` | `spec.topic` | `typeof !== 'string'` |
+| `flow-renderer.js` (Flowchart) | `spec.title` | `typeof !== 'string'` |
+| `flow-renderer.js` (Flow Map) | `spec.title` | `typeof !== 'string'` |
+| `flow-renderer.js` (Multi-Flow Map) | `spec.event` | `typeof !== 'string'` |
+| `flow-renderer.js` (Bridge Map) | `analogy.left/right` | `typeof === 'string'` |
+| `brace-renderer.js` | `spec.whole` | `typeof !== 'string'` |
+
+### Additional Fixes
+
+- **Multi-Flow Map Event Node Dimension Preservation** (`multi-flow-map-operations.js`, `flow-renderer.js`)
+  - Event (main) node was not preserving dimensions when emptied
+  - Added dimension preservation logic matching cause/effect nodes
+  - Renderer now reads preserved dimensions for event node
+
+- **Mind Map Backend Layout Recalculation Error** (`mindmap-operations.js`, `routers/api.py`)
+  - Backend rejected empty topic with "topic field is required" error
+  - Fixed by skipping layout recalculation for empty button updates (dimensions already preserved)
+  - Also updated backend validation to use `isinstance(spec.get('topic'), str)` instead of `not spec.get('topic')`
+
+### Technical Details
+
+**Before (Buggy Pattern):**
+```javascript
+d3.select('#d3-container').html('');  // Clear first
+if (!spec || !spec.topic || ...) {    // Validate after (too late!)
+    return;
+}
+```
+
+**After (Fixed Pattern):**
+```javascript
+if (!spec || typeof spec.topic !== 'string' || ...) {  // Validate first
+    return;  // Early return, diagram preserved
+}
+d3.select('#d3-container').html('');  // Clear only after validation
+```
+
+---
+
 ## [4.28.66] - 2025-12-12 - Reset View Button Fix (D3 Named Transitions)
 
 ### Fixed

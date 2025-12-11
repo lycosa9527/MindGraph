@@ -160,6 +160,10 @@ class LLMAutoCompleteManager {
         
         this.isAutoCompleting = true;
         
+        // Reset selection for fresh generation (critical for re-generation after topic change)
+        // Without this, the first result won't auto-render because selectedLLM still holds old value
+        this.selectedLLM = null;
+        
         try {
             // Store context - normalize diagram type to match rendering logic
             let currentDiagramType = this.editor.diagramType;

@@ -24,13 +24,14 @@ if (typeof window.MindGraphUtils === 'undefined') {
 function __round1(n) { return Math.round(n * 10) / 10; }
 
 function renderFlowchart(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
-
-    // Validate spec
-    if (!spec || !spec.title || !Array.isArray(spec.steps)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.title !== 'string' || !Array.isArray(spec.steps)) {
         logger.error('FlowRenderer', 'Invalid spec for flowchart');
         return;
     }
+
+    d3.select('#d3-container').html('');
 
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let padding;
@@ -242,13 +243,14 @@ function renderFlowchart(spec, theme = null, dimensions = null) {
 }
 
 function renderFlowMap(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
-
-    // Validate spec
-    if (!spec || !spec.title || !Array.isArray(spec.steps)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.title !== 'string' || !Array.isArray(spec.steps)) {
         logger.error('FlowRenderer', 'Invalid spec for flow map');
         return;
     }
+
+    d3.select('#d3-container').html('');
     
     // Get orientation (default to 'vertical' for backward compatibility)
     const orientation = spec.orientation || 'vertical';
@@ -1144,19 +1146,20 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         alternativeDimensions: spec?.alternative_dimensions?.length || 0
     });
     
-    d3.select(`#${containerId}`).html('');
-    
-    // Validate spec
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
     if (!spec || !Array.isArray(spec.analogies) || spec.analogies.length === 0) {
         logger.error('FlowRenderer', 'Invalid spec for bridge map');
         return;
     }
     
-    // Validate that analogies have the correct structure
-    if (!spec.analogies.every(analogy => analogy.left && analogy.right)) {
+    // Validate that analogies have the correct structure (allow empty strings)
+    if (!spec.analogies.every(analogy => typeof analogy.left === 'string' && typeof analogy.right === 'string')) {
         logger.error('FlowRenderer', 'Invalid analogy structure');
         return;
     }
+    
+    d3.select(`#${containerId}`).html('');
     
     // Apply theme first (needed for text measurement)
     const THEME = {
@@ -1686,13 +1689,14 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
 }
 
 function renderMultiFlowMap(spec, theme = null, dimensions = null) {
-    d3.select('#d3-container').html('');
-    
-    // Validate spec - use the correct format that matches the working spec
-    if (!spec || !spec.event || !Array.isArray(spec.causes) || !Array.isArray(spec.effects)) {
+    // Validate BEFORE clearing container - defensive programming
+    // Use typeof check to allow empty string (for empty button functionality)
+    if (!spec || typeof spec.event !== 'string' || !Array.isArray(spec.causes) || !Array.isArray(spec.effects)) {
         logger.error('FlowRenderer', 'Invalid spec for multi-flow map');
         return;
     }
+    
+    d3.select('#d3-container').html('');
     
     // Use adaptive dimensions if provided, otherwise use fallback dimensions
     let baseWidth, baseHeight, padding;
@@ -1859,18 +1863,28 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     
     // STEP 1: Measure all content to calculate optimal canvas dimensions
     
-    // Measure central event size
-    const evSize = measureTextSize(spec.event, THEME.fontEvent);
-    const eventW = evSize.w + THEME.hPadEvent * 2;
-    const eventH = evSize.h + THEME.vPadEvent * 2;
+    // Check for preserved dimensions from empty button operation
+    const nodeDimensions = spec._node_dimensions || {};
+    
+    // Measure central event size - check for preserved dimensions first
+    let eventW, eventH;
+    const eventPreservedDims = nodeDimensions['event'];
+    if (eventPreservedDims && eventPreservedDims.w && eventPreservedDims.h && spec.event === '') {
+        // Use preserved dimensions for empty event node
+        eventW = eventPreservedDims.w;
+        eventH = eventPreservedDims.h;
+        logger.debug('MultiFlowMapRenderer', 'Using preserved event dimensions', { eventW, eventH });
+    } else {
+        const evSize = measureTextSize(spec.event, THEME.fontEvent);
+        eventW = evSize.w + THEME.hPadEvent * 2;
+        eventH = evSize.h + THEME.vPadEvent * 2;
+    }
     
     // Measure causes and effects
     // CRITICAL: Maintain minimum dimensions for empty nodes to prevent shrinking
     // Also preserve dimensions if they were stored when node was emptied
     const minNodeWidth = 100;  // Minimum width for cause/effect nodes
     const minNodeHeight = 42;  // Minimum height for cause/effect nodes
-    
-    const nodeDimensions = spec._node_dimensions || {};
     
     const causes = (spec.causes || []).map((text, idx) => {
         const nodeKey = `cause-${idx}`;
