@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.69] - 2025-12-12 - Node Counter Fix
+
+### Fixed
+
+- **Node Counter Over-Counting Multi-Line Text Nodes**
+  - Root cause: Multi-line text nodes create multiple `<text>` elements with the same `data-node-id`
+  - Example: A topic with 3 lines creates 3 text elements, all with `data-node-id="topic_center"`
+  - The counter was counting ALL text elements, so multi-line nodes were counted multiple times
+  - Fixed by using a Set to deduplicate node IDs before counting
+  - Now correctly shows the actual number of unique nodes
+
+**Before:** A diagram with 6 nodes but multi-line text showed "Nodes: 15"
+**After:** Same diagram correctly shows "Nodes: 6"
+
+**Files Changed:**
+- `static/js/managers/toolbar/node-counter-feature-mode-manager.js` - Use Set for unique node counting
+
+---
+
 ## [4.28.68] - 2025-12-12 - Auto-Complete Re-Generation Fix
 
 ### Fixed

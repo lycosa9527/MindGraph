@@ -117,20 +117,21 @@ class NodeCounterFeatureModeManager {
             return;
         }
         
-        // Count all text elements that have data-node-id (all actual diagram nodes)
-        let count = 0;
-        const nodeIds = [];
+        // Count unique nodes (multi-line text creates multiple text elements with same data-node-id)
+        // Use Set to deduplicate - each unique data-node-id = 1 node
+        const uniqueNodeIds = new Set();
         
         svg.selectAll('text').each(function() {
             const element = d3.select(this);
             const nodeId = element.attr('data-node-id');
             
-            // Count any text element with a node-id
+            // Only count text elements with a node-id
             if (nodeId) {
-                count++;
-                nodeIds.push(nodeId);
+                uniqueNodeIds.add(nodeId);
             }
         });
+        
+        const count = uniqueNodeIds.size;
         
         // Update the display
         const label = window.languageManager?.translate('nodeCount') || 'Nodes';
