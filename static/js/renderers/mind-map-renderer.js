@@ -121,7 +121,8 @@ function renderMindMap(spec, theme = null, dimensions = null) {
     
     if (spec._layout && spec._layout.positions) {
         // Render with positioned layout
-        renderMindMapWithLayout(spec._layout, svg, centerX, centerY, THEME);
+        // Pass _node_dimensions for empty button dimension preservation
+        renderMindMapWithLayout(spec._layout, svg, centerX, centerY, THEME, spec._node_dimensions);
     } else {
         // Error: No layout data
         logger.error('MindMapRenderer', 'Mindmap rendering failed: No layout data from Python agent');
@@ -173,9 +174,12 @@ function getRectangleEdgePoint(centerX, centerY, width, height, targetX, targetY
     return { x: edgeX, y: edgeY };
 }
 
-function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
+function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNodeDimensions = null) {
     const positions = spec.positions;
     const connections = spec.connections || [];
+    
+    // Check for preserved dimensions from empty button operation
+    const preservedDims = preservedNodeDimensions || {};
     
     // Debug: Log connection count and positions
     logger.debug('MindMapRenderer', `Rendering ${connections.length} connections, ${Object.keys(positions).length} positions`);
@@ -231,8 +235,13 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             
             // Calculate adaptive radius based on actual text dimensions
             // Use empty string for radius calculation if text is empty, but maintain minimum radius
+            // Check for preserved dimensions first (from empty button)
             let topicRadius;
-            if (typeof getTextRadius === 'function') {
+            if (preservedDims.topic && preservedDims.topic.r && topicText === '') {
+                // Use preserved radius for empty topic
+                topicRadius = preservedDims.topic.r;
+                logger.debug('MindMapRenderer', 'Using preserved topic radius', { topicRadius });
+            } else if (typeof getTextRadius === 'function') {
                 topicRadius = getTextRadius(topicText || '', THEME.fontTopic || '16px', 20);
             } else if (typeof window.MindGraphUtils !== 'undefined' && window.MindGraphUtils.getTextRadius) {
                 topicRadius = window.MindGraphUtils.getTextRadius(topicText || '', THEME.fontTopic || '16px', 20);
@@ -325,13 +334,25 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const branchTextHeight = branchLines.length > 0 ? branchLines.length * branchLineHeight : 0;
             
             // Calculate width based on actual text measurement
-            // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
-            // This ensures node width adapts correctly when text is edited
-            const branchMeasuredWidth = branchLines.length > 0
-                ? Math.max(...branchLines.map(l => measureLineWidth(l, branchFontSize)), 20)
-                : 20;
-            const branchWidth = Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
-            const branchHeight = Math.max(50, branchTextHeight + 20);
+            // Check for preserved dimensions first (from empty button)
+            const branchNodeKey = `branch-${pos.branch_index}`;
+            const branchPreserved = preservedDims[branchNodeKey];
+            
+            let branchWidth, branchHeight;
+            if (branchPreserved && branchPreserved.w && branchPreserved.h && branchText === '') {
+                // Use preserved dimensions for empty branch
+                branchWidth = branchPreserved.w;
+                branchHeight = branchPreserved.h;
+                logger.debug('MindMapRenderer', 'Using preserved branch dimensions', { branchNodeKey, branchWidth, branchHeight });
+            } else {
+                // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
+                // This ensures node width adapts correctly when text is edited
+                const branchMeasuredWidth = branchLines.length > 0
+                    ? Math.max(...branchLines.map(l => measureLineWidth(l, branchFontSize)), 20)
+                    : 20;
+                branchWidth = Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
+                branchHeight = Math.max(50, branchTextHeight + 20);
+            }
             
             // Use white fill to hide connections behind nodes
             const finalBranchFill = pos.fill || THEME.branchFill || '#ffffff';
@@ -413,13 +434,25 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const childTextHeight = childLines.length > 0 ? childLines.length * childLineHeight : 0;
             
             // Calculate width based on actual text measurement
-            // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
-            // This ensures node width adapts correctly when text is edited
-            const childMeasuredWidth = childLines.length > 0
-                ? Math.max(...childLines.map(l => measureLineWidth(l, childFontSize)), 20)
-                : 20;
-            const childWidth = Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
-            const childHeight = Math.max(40, childTextHeight + 16);
+            // Check for preserved dimensions first (from empty button)
+            const childNodeKey = `child-${pos.branch_index}-${pos.child_index}`;
+            const childPreserved = preservedDims[childNodeKey];
+            
+            let childWidth, childHeight;
+            if (childPreserved && childPreserved.w && childPreserved.h && childText === '') {
+                // Use preserved dimensions for empty child
+                childWidth = childPreserved.w;
+                childHeight = childPreserved.h;
+                logger.debug('MindMapRenderer', 'Using preserved child dimensions', { childNodeKey, childWidth, childHeight });
+            } else {
+                // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
+                // This ensures node width adapts correctly when text is edited
+                const childMeasuredWidth = childLines.length > 0
+                    ? Math.max(...childLines.map(l => measureLineWidth(l, childFontSize)), 20)
+                    : 20;
+                childWidth = Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
+                childHeight = Math.max(40, childTextHeight + 16);
+            }
             
             // Use white fill to hide connections behind nodes
             const finalChildFill = pos.fill || THEME.childFill || '#ffffff';

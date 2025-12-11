@@ -194,16 +194,28 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     // CRITICAL FIX: Track original index in spec.children to ensure data-category-index matches spec structure
     const branchLayouts = spec.children.map((child, specIndex) => {
         // Validate child structure - accept both 'text' and 'label' properties
-        const childText = child?.text || child?.label;
-        if (!child || typeof childText !== 'string') {
+        // Use nullish coalescing to properly handle empty strings
+        let childText;
+        if (typeof child === 'string') {
+            childText = child;
+        } else if (child && typeof child === 'object') {
+            // Use ?? instead of || to handle empty strings properly
+            childText = child.text ?? child.label ?? '';
+        } else {
             logger.warn('TreeRenderer', 'Invalid child structure', child);
             return null;
         }
         
-        // Filter out empty branches (after trimming whitespace)
-        const trimmedChildText = childText.trim();
-        if (trimmedChildText.length === 0) {
-            logger.debug('TreeRenderer', 'Skipping empty branch');
+        // Check for preserved dimensions for branch
+        const branchNodeKey = `category-${specIndex}`;
+        const hasPreservedDimensions = nodeDimensions[branchNodeKey] && 
+                                       nodeDimensions[branchNodeKey].w && 
+                                       nodeDimensions[branchNodeKey].h;
+        
+        // Filter out empty branches ONLY if they don't have preserved dimensions
+        const trimmedChildText = (childText || '').trim();
+        if (trimmedChildText.length === 0 && !hasPreservedDimensions) {
+            logger.debug('TreeRenderer', 'Skipping empty branch without preserved dimensions');
             return null;
         }
         
@@ -211,9 +223,9 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         
         // Check for preserved dimensions for branch
         let branchBox;
-        const branchNodeKey = `category-${specIndex}`;
-        if (nodeDimensions[branchNodeKey] && nodeDimensions[branchNodeKey].w && nodeDimensions[branchNodeKey].h) {
+        if (hasPreservedDimensions) {
             branchBox = { w: nodeDimensions[branchNodeKey].w, h: nodeDimensions[branchNodeKey].h };
+            logger.debug('TreeRenderer', 'Using preserved branch dimensions', { branchNodeKey, ...branchBox });
         } else {
             branchBox = measureSvgTextBox(svg, childText, branchFont, 14, 10);
         }
@@ -221,24 +233,37 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
         const leafFont = THEME.fontLeaf || 14;
         let maxLeafW = 0;
         const leafBoxes = (Array.isArray(child.children) ? child.children : []).map((leaf, leafSpecIndex) => {
-            const leafText = leaf?.text || leaf?.label;
-            if (!leaf || typeof leafText !== 'string') {
+            // Use nullish coalescing to properly handle empty strings
+            // leaf can be an object {text: "..."} or a string
+            let leafText;
+            if (typeof leaf === 'string') {
+                leafText = leaf;
+            } else if (leaf && typeof leaf === 'object') {
+                // Use ?? instead of || to handle empty strings properly
+                leafText = leaf.text ?? leaf.label ?? '';
+            } else {
                 logger.warn('TreeRenderer', 'Invalid leaf structure', leaf);
                 return null;
             }
             
-            // Filter out empty children/leaves (after trimming whitespace)
-            const trimmedLeafText = leafText.trim();
-            if (trimmedLeafText.length === 0) {
-                logger.debug('TreeRenderer', 'Skipping empty leaf');
+            // Check for preserved dimensions for this leaf
+            const leafNodeKey = `leaf-${specIndex}-${leafSpecIndex}`;
+            const hasPreservedDimensions = nodeDimensions[leafNodeKey] && 
+                                           nodeDimensions[leafNodeKey].w && 
+                                           nodeDimensions[leafNodeKey].h;
+            
+            // Filter out empty children/leaves ONLY if they don't have preserved dimensions
+            const trimmedLeafText = (leafText || '').trim();
+            if (trimmedLeafText.length === 0 && !hasPreservedDimensions) {
+                logger.debug('TreeRenderer', 'Skipping empty leaf without preserved dimensions');
                 return null;
             }
-            
+
             // Check for preserved dimensions for leaf
-            const leafNodeKey = `leaf-${specIndex}-${leafSpecIndex}`;
             let b;
-            if (nodeDimensions[leafNodeKey] && nodeDimensions[leafNodeKey].w && nodeDimensions[leafNodeKey].h) {
+            if (hasPreservedDimensions) {
                 b = { w: nodeDimensions[leafNodeKey].w, h: nodeDimensions[leafNodeKey].h };
+                logger.debug('TreeRenderer', 'Using preserved leaf dimensions', { leafNodeKey, ...b });
             } else {
                 b = measureSvgTextBox(svg, leafText, leafFont, 12, 8);
             }
@@ -549,7 +574,15 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             // Note: j is the loop index through original child.children array,
             // which matches the index used in spec.children[categoryDataIndex].children[j]
             leaves.forEach((leaf, j) => {
-                const leafText = leaf?.text || leaf?.label;
+                // Use nullish coalescing to properly handle empty strings
+                let leafText;
+                if (typeof leaf === 'string') {
+                    leafText = leaf;
+                } else if (leaf && typeof leaf === 'object') {
+                    leafText = leaf.text ?? leaf.label ?? '';
+                } else {
+                    leafText = '';
+                }
                 const box = leafBoxes[j] || measureSvgTextBox(svg, leafText, leafFont, 12, 8);
                 const leafY = centersY[j];
                 // Width adaptive to characters for each node

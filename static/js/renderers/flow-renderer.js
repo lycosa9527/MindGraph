@@ -944,44 +944,41 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             }
         });
         
-        // Draw L-shaped connectors from steps to substeps (down, then to substep)
+        // Draw connectors from steps to substeps (edge-to-edge, no lines through nodes)
         allSubstepPositions.forEach((stepPositions, stepIdx) => {
             const stepXCenter = stepCentersX[stepIdx];
             const stepYCenter = adjustedCenterY;
             const stepBottomY = stepYCenter + stepSizes[stepIdx].h / 2;
             
-            stepPositions.forEach((substep, nodeIdx) => {
-                const substepCenterX = substep.x + substep.w / 2;
-                const substepCenterY = substep.y + substep.h / 2;
-                const midY = stepBottomY + Math.max(8, subOffsetY / 2);
+            if (stepPositions.length === 0) return;
+            
+            // Draw vertical line from step bottom to first substep top
+            const firstSubstep = stepPositions[0];
+            const firstSubstepTopY = firstSubstep.y;
+            
+            svg.append('line')
+                .attr('x1', stepXCenter)
+                .attr('y1', stepBottomY)
+                .attr('x2', stepXCenter)
+                .attr('y2', firstSubstepTopY)
+                .attr('stroke', '#888')
+                .attr('stroke-width', 1.5);
+            
+            // For subsequent substeps, draw vertical lines from previous substep bottom to current top
+            for (let nodeIdx = 1; nodeIdx < stepPositions.length; nodeIdx++) {
+                const prevSubstep = stepPositions[nodeIdx - 1];
+                const currSubstep = stepPositions[nodeIdx];
+                const prevBottomY = prevSubstep.y + prevSubstep.h;
+                const currTopY = currSubstep.y;
                 
-                // Vertical line from step bottom
                 svg.append('line')
                     .attr('x1', stepXCenter)
-                    .attr('y1', stepBottomY)
+                    .attr('y1', prevBottomY)
                     .attr('x2', stepXCenter)
-                    .attr('y2', midY)
+                    .attr('y2', currTopY)
                     .attr('stroke', '#888')
                     .attr('stroke-width', 1.5);
-                
-                // Horizontal line to substep
-                svg.append('line')
-                    .attr('x1', stepXCenter)
-                    .attr('y1', midY)
-                    .attr('x2', substepCenterX)
-                    .attr('y2', midY)
-                    .attr('stroke', '#888')
-                    .attr('stroke-width', 1.5);
-                
-                // Vertical line down to substep
-                svg.append('line')
-                    .attr('x1', substepCenterX)
-                    .attr('y1', midY)
-                    .attr('x2', substepCenterX)
-                    .attr('y2', substepCenterY)
-                    .attr('stroke', '#888')
-                    .attr('stroke-width', 1.5);
-            });
+            }
         });
         
         // Draw main step nodes
@@ -1199,20 +1196,41 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     const nodePadding = 24; // Padding inside each node
     const nodeGap = 60; // Minimum gap between nodes
     
-    const nodeWidths = spec.analogies.map(analogy => {
-        // Measure left text
+    // Check for preserved dimensions from empty button operation
+    const nodeDimensions = spec._node_dimensions || {};
+    
+    const nodeWidths = spec.analogies.map((analogy, pairIndex) => {
+        // Measure left text - use preserved dimensions if available
         const leftText = analogy.left || '';
-        const leftLines = (typeof window.splitAndWrapText === 'function')
-            ? window.splitAndWrapText(leftText, parseFloat(THEME.analogyFontSize), maxTextWidthLimit, measureLineWidth)
-            : (leftText ? [leftText] : ['']);
-        const leftWidth = Math.max(...leftLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+        const leftNodeKey = `left-${pairIndex}`;
+        const leftPreserved = nodeDimensions[leftNodeKey];
         
-        // Measure right text
+        let leftWidth;
+        if (leftPreserved && leftPreserved.w && leftText === '') {
+            leftWidth = leftPreserved.w - nodePadding; // Subtract padding since we add it back
+            logger.debug('BridgeMapRenderer', 'Using preserved left width', { pairIndex, width: leftPreserved.w });
+        } else {
+            const leftLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(leftText, parseFloat(THEME.analogyFontSize), maxTextWidthLimit, measureLineWidth)
+                : (leftText ? [leftText] : ['']);
+            leftWidth = Math.max(...leftLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+        }
+        
+        // Measure right text - use preserved dimensions if available
         const rightText = analogy.right || '';
-        const rightLines = (typeof window.splitAndWrapText === 'function')
-            ? window.splitAndWrapText(rightText, parseFloat(THEME.analogyFontSize), maxTextWidthLimit, measureLineWidth)
-            : (rightText ? [rightText] : ['']);
-        const rightWidth = Math.max(...rightLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+        const rightNodeKey = `right-${pairIndex}`;
+        const rightPreserved = nodeDimensions[rightNodeKey];
+        
+        let rightWidth;
+        if (rightPreserved && rightPreserved.w && rightText === '') {
+            rightWidth = rightPreserved.w - nodePadding; // Subtract padding since we add it back
+            logger.debug('BridgeMapRenderer', 'Using preserved right width', { pairIndex, width: rightPreserved.w });
+        } else {
+            const rightLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(rightText, parseFloat(THEME.analogyFontSize), maxTextWidthLimit, measureLineWidth)
+                : (rightText ? [rightText] : ['']);
+            rightWidth = Math.max(...rightLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+        }
         
         // Node width is the max of left/right text widths + padding
         const nodeWidth = Math.max(leftWidth, rightWidth) + nodePadding;
@@ -1296,6 +1314,10 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             const leftMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
             const leftLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
             
+            // Check for preserved dimensions
+            const leftNodeKey = `left-${i}`;
+            const leftPreserved = nodeDimensions[leftNodeKey];
+            
             // Use splitAndWrapText for automatic word wrapping
             const leftLines = (typeof window.splitAndWrapText === 'function')
                 ? window.splitAndWrapText(leftText, parseFloat(THEME.analogyFontSize), leftMaxWidth, measureLineWidth)
@@ -1304,10 +1326,17 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // Ensure at least one line for placeholder
             const finalLeftLines = leftLines.length > 0 ? leftLines : [''];
             
-            // Calculate adaptive width based on actual text measurement
-            const leftTextWidth = Math.max(...finalLeftLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
-            const rectWidth = Math.max(60, leftTextWidth + 20); // Min 60px, add 20px padding
-            const rectHeight = Math.max(30, finalLeftLines.length * leftLineHeight + 10); // Adaptive height
+            // Calculate adaptive dimensions - use preserved dimensions if available for empty node
+            let rectWidth, rectHeight;
+            if (leftPreserved && leftPreserved.w && leftPreserved.h && leftText === '') {
+                rectWidth = leftPreserved.w;
+                rectHeight = leftPreserved.h;
+                logger.debug('BridgeMapRenderer', 'Using preserved left rect dimensions', { i, rectWidth, rectHeight });
+            } else {
+                const leftTextWidth = Math.max(...finalLeftLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+                rectWidth = Math.max(60, leftTextWidth + 20); // Min 60px, add 20px padding
+                rectHeight = Math.max(30, finalLeftLines.length * leftLineHeight + 10); // Adaptive height
+            }
             
             // Draw rectangle background
             svg.append("rect")
@@ -1385,6 +1414,10 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             const rightMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
             const rightLineHeight = Math.round(parseFloat(THEME.analogyFontSize) * 1.2);
             
+            // Check for preserved dimensions
+            const rightNodeKey = `right-${i}`;
+            const rightPreserved = nodeDimensions[rightNodeKey];
+            
             // Use splitAndWrapText for automatic word wrapping
             const rightLines = (typeof window.splitAndWrapText === 'function')
                 ? window.splitAndWrapText(rightText, parseFloat(THEME.analogyFontSize), rightMaxWidth, measureLineWidth)
@@ -1393,10 +1426,18 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // Ensure at least one line for placeholder
             const finalRightLines = rightLines.length > 0 ? rightLines : [''];
             
-            // Calculate adaptive width based on actual text measurement
-            const rightTextWidth = Math.max(...finalRightLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
-            const rightRectWidth = Math.max(60, rightTextWidth + 20); // Min 60px, add 20px padding
-            const rectHeight = Math.max(30, finalRightLines.length * rightLineHeight + 10); // Adaptive height
+            // Calculate adaptive dimensions - use preserved dimensions if available for empty node
+            let rightRectWidth, rightRectHeight;
+            if (rightPreserved && rightPreserved.w && rightPreserved.h && rightText === '') {
+                rightRectWidth = rightPreserved.w;
+                rightRectHeight = rightPreserved.h;
+                logger.debug('BridgeMapRenderer', 'Using preserved right rect dimensions', { i, rightRectWidth, rightRectHeight });
+            } else {
+                const rightTextWidth = Math.max(...finalRightLines.map(l => measureLineWidth(l, parseFloat(THEME.analogyFontSize))), 20);
+                rightRectWidth = Math.max(60, rightTextWidth + 20); // Min 60px, add 20px padding
+                rightRectHeight = Math.max(30, finalRightLines.length * rightLineHeight + 10); // Adaptive height
+            }
+            const rectHeight = rightRectHeight; // For backward compatibility with subsequent code
             
             // Draw rectangle background
             svg.append("rect")

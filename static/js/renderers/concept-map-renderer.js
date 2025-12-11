@@ -146,6 +146,9 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         .attr('d', 'M 0 0 L 10 4 L 0 8 z')
         .attr('fill', THEME.relationshipColor);
 
+    // Check for preserved dimensions from empty button operation
+    const nodeDimensions = spec._node_dimensions || {};
+
     // Helpers for text wrapping and box measurement
     function measureLineWidth(text, fontSize) {
         const container = getMeasurementContainer();
@@ -194,16 +197,31 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         return lines.length > 0 ? lines : [''];
     }
 
-    function drawBox(x, y, text, isTopic = false) {
+    function drawBox(x, y, text, isTopic = false, nodeKey = null) {
         const fontSize = isTopic ? THEME.fontTopic : THEME.fontConcept;
         const maxTextWidth = isTopic ? 350 : 300;
         const lines = wrapIntoLines(text, fontSize, maxTextWidth);
         const lineHeight = Math.round(fontSize * 1.2);
-        const textWidth = Math.max(...lines.map(l => measureLineWidth(l, fontSize)), 20);
         const paddingX = 16;
         const paddingY = 10;
-        const boxW = Math.ceil(textWidth + paddingX * 2);
-        const boxH = Math.ceil(lines.length * lineHeight + paddingY * 2);
+        
+        // Check for preserved dimensions (from empty button)
+        const preservedKey = nodeKey || (isTopic ? 'topic' : `concept-${text}`);
+        const preserved = nodeDimensions[preservedKey];
+        const textStr = String(text || '').trim();
+        
+        let boxW, boxH;
+        if (preserved && preserved.w && preserved.h && textStr === '') {
+            // Use preserved dimensions for empty node
+            boxW = preserved.w;
+            boxH = preserved.h;
+            logger.debug('ConceptMapRenderer', 'Using preserved dimensions', { nodeKey: preservedKey, boxW, boxH });
+        } else {
+            // Calculate from text
+            const textWidth = Math.max(...lines.map(l => measureLineWidth(l, fontSize)), 20);
+            boxW = Math.ceil(textWidth + paddingX * 2);
+            boxH = Math.ceil(lines.length * lineHeight + paddingY * 2);
+        }
 
         const group = svg.append('g');
         group.append('rect')

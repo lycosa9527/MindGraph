@@ -427,6 +427,22 @@ class TreeMapOperations {
             }
             
             if (updates.text !== undefined) {
+                // Preserve dimensions for empty leaves
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    const nodeKey = `leaf-${categoryIndex}-${leafIndex}`;
+                    spec._node_dimensions[nodeKey] = {
+                        w: parseFloat(preservedWidth),
+                        h: parseFloat(preservedHeight)
+                    };
+                    this.logger.debug('TreeMapOperations', 'Preserved dimensions for empty leaf node', {
+                        nodeKey,
+                        dimensions: spec._node_dimensions[nodeKey]
+                    });
+                }
+                
                 // Handle both object and string formats
                 if (typeof category.children[leafIndex] === 'object') {
                     category.children[leafIndex].text = updates.text;

@@ -564,18 +564,35 @@ class ExportManager {
             // Convert to JSON string (pretty printed for readability)
             const jsonString = JSON.stringify(mgData, null, 2);
             
-            // Create blob and download
+            // Create blob for download
             const blob = new Blob([jsonString], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
             
-            const filename = this.generateFilename(editor, 'mg');
-            this.downloadFile(url, filename, 'application/octet-stream');
+            const suggestedFilename = this.generateFilename(editor, 'mg');
             
-            URL.revokeObjectURL(url);
+            // Use Save As picker if available
+            const result = await this.downloadFileWithPicker(
+                blob,
+                suggestedFilename,
+                'mg',
+                'application/octet-stream',
+                'MindGraph Diagram'
+            );
+            
+            // Handle cancelled save
+            if (result.cancelled) {
+                this.logger.debug('ExportManager', 'MG export cancelled by user');
+                return {
+                    success: false,
+                    cancelled: true
+                };
+            }
+            
+            const filename = result.filename;
             
             this.logger.info('ExportManager', 'MG export successful', { 
                 filename,
-                diagramType: diagramType
+                diagramType: diagramType,
+                usedPicker: result.usedPicker
             });
             
             this.eventBus.emit('file:mg_export_completed', { filename });
@@ -873,6 +890,60 @@ class ExportManager {
             filename, 
             mimeType 
         });
+    }
+    
+    /**
+     * Download file with Save As picker dialog (File System Access API)
+     * Falls back to simple download if API is not supported
+     * @param {Blob} blob - File blob
+     * @param {string} suggestedName - Suggested filename
+     * @param {string} extension - File extension (e.g., 'mg', 'json')
+     * @param {string} mimeType - MIME type
+     * @param {string} description - File type description for the picker
+     * @returns {Promise<Object>} Result with success status and filename
+     */
+    async downloadFileWithPicker(blob, suggestedName, extension, mimeType, description) {
+        // Check if File System Access API is supported
+        if (typeof window.showSaveFilePicker === 'function') {
+            try {
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: suggestedName,
+                    types: [{
+                        description: description,
+                        accept: {
+                            [mimeType]: [`.${extension}`]
+                        }
+                    }]
+                });
+                
+                const writable = await fileHandle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                
+                const savedFilename = fileHandle.name;
+                this.logger.info('ExportManager', 'File saved via picker', { 
+                    filename: savedFilename
+                });
+                
+                return { success: true, filename: savedFilename, usedPicker: true };
+                
+            } catch (error) {
+                // User cancelled the picker
+                if (error.name === 'AbortError') {
+                    this.logger.debug('ExportManager', 'Save picker cancelled by user');
+                    return { success: false, cancelled: true };
+                }
+                // Other error - fall through to fallback
+                this.logger.warn('ExportManager', 'Save picker failed, using fallback', error);
+            }
+        }
+        
+        // Fallback: use simple download
+        const url = URL.createObjectURL(blob);
+        this.downloadFile(url, suggestedName, mimeType);
+        URL.revokeObjectURL(url);
+        
+        return { success: true, filename: suggestedName, usedPicker: false };
     }
     
     /**

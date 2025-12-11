@@ -481,11 +481,25 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         ...theme
     };
     
-    // Calculate uniform radius for all context nodes
+    // Check for preserved dimensions from empty button operation
+    const nodeDimensions = spec._node_dimensions || {};
+    
+    // Calculate uniform radius for all context nodes - use preserved dimensions if available
     const contextRadii = spec.context.map((t, idx) => {
         // Handle both string and object context items (t can be "text" or {text: "text"})
         const textStr = typeof t === 'object' ? (t.text || '') : (t || '');
-        const radius = getTextRadius(textStr, THEME.fontContext, 10);
+        const nodeKey = `context-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        let radius;
+        if (preservedDims && preservedDims.r && textStr === '') {
+            // Use preserved radius for empty node
+            radius = preservedDims.r;
+            logger.debug('CircleMapRenderer', 'Using preserved context radius', { idx, radius });
+        } else {
+            // Calculate from text
+            radius = getTextRadius(textStr, THEME.fontContext, 10);
+        }
         return { index: idx, text: textStr, radius };
     });
     const uniformContextR = Math.max(...contextRadii.map(n => n.radius), 30); // Use the largest required radius for all
@@ -508,8 +522,17 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     // Calculate topic circle size (made smaller like original)
     // Handle both string and object topic (spec.topic can be "text" or {text: "text"})
     const topicForRadius = typeof spec.topic === 'object' ? (spec.topic.text || '') : (spec.topic || '');
-    const topicTextRadius = getTextRadius(topicForRadius, THEME.fontTopic, 15);
-    const topicR = Math.max(topicTextRadius + 15, 45); // Smaller topic circle at center
+    
+    let topicR;
+    if (nodeDimensions.topic && nodeDimensions.topic.r && topicForRadius === '') {
+        // Use preserved radius for empty topic
+        topicR = nodeDimensions.topic.r;
+        logger.debug('CircleMapRenderer', 'Using preserved topic radius', { topicR });
+    } else {
+        // Calculate from text
+        const topicTextRadius = getTextRadius(topicForRadius, THEME.fontTopic, 15);
+        topicR = Math.max(topicTextRadius + 15, 45); // Smaller topic circle at center
+    }
     
     // Calculate layout
     const centerX = baseWidth / 2;
@@ -876,19 +899,72 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         ...theme
     };
     
+    // Check for preserved dimensions from empty button operation
+    const nodeDimensions = spec._node_dimensions || {};
+    
     // Helper to extract text from string or object
     const extractText = (item) => typeof item === 'object' ? (item.text || '') : (item || '');
     
-    // Calculate text sizes and radii
-    const leftTopicR = getTextRadius(extractText(spec.left), THEME.fontTopic, 20);
-    const rightTopicR = getTextRadius(extractText(spec.right), THEME.fontTopic, 20);
+    // Calculate text sizes and radii - use preserved dimensions if available
+    const leftText = extractText(spec.left);
+    const rightText = extractText(spec.right);
+    
+    let leftTopicR, rightTopicR;
+    if (nodeDimensions.left && nodeDimensions.left.r && leftText === '') {
+        leftTopicR = nodeDimensions.left.r;
+        logger.debug('DoubleBubbleMapRenderer', 'Using preserved left topic radius', { leftTopicR });
+    } else {
+        leftTopicR = getTextRadius(leftText, THEME.fontTopic, 20);
+    }
+    
+    if (nodeDimensions.right && nodeDimensions.right.r && rightText === '') {
+        rightTopicR = nodeDimensions.right.r;
+        logger.debug('DoubleBubbleMapRenderer', 'Using preserved right topic radius', { rightTopicR });
+    } else {
+        rightTopicR = getTextRadius(rightText, THEME.fontTopic, 20);
+    }
     const topicR = Math.max(leftTopicR, rightTopicR, 60);
     
-    const simR = Math.max(...spec.similarities.map(t => getTextRadius(extractText(t), THEME.fontSim, 10)), 28);
+    // Calculate similarity radii - use preserved dimensions if available
+    const simRadii = spec.similarities.map((t, idx) => {
+        const text = extractText(t);
+        const nodeKey = `similarity-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.r && text === '') {
+            logger.debug('DoubleBubbleMapRenderer', 'Using preserved similarity radius', { idx, r: preservedDims.r });
+            return preservedDims.r;
+        }
+        return getTextRadius(text, THEME.fontSim, 10);
+    });
+    const simR = Math.max(...simRadii, 28);
     
-    // Calculate uniform radius for ALL difference circles (both left and right)
-    const allDiffTexts = [...spec.left_differences, ...spec.right_differences];
-    const uniformDiffR = Math.max(...allDiffTexts.map(t => getTextRadius(extractText(t), THEME.fontDiff, 8)), 24);
+    // Calculate uniform radius for ALL difference circles (both left and right) - use preserved dimensions
+    const leftDiffRadii = spec.left_differences.map((t, idx) => {
+        const text = extractText(t);
+        const nodeKey = `left_difference-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.r && text === '') {
+            logger.debug('DoubleBubbleMapRenderer', 'Using preserved left_difference radius', { idx, r: preservedDims.r });
+            return preservedDims.r;
+        }
+        return getTextRadius(text, THEME.fontDiff, 8);
+    });
+    
+    const rightDiffRadii = spec.right_differences.map((t, idx) => {
+        const text = extractText(t);
+        const nodeKey = `right_difference-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.r && text === '') {
+            logger.debug('DoubleBubbleMapRenderer', 'Using preserved right_difference radius', { idx, r: preservedDims.r });
+            return preservedDims.r;
+        }
+        return getTextRadius(text, THEME.fontDiff, 8);
+    });
+    
+    const uniformDiffR = Math.max(...leftDiffRadii, ...rightDiffRadii, 24);
     const leftDiffR = uniformDiffR;
     const rightDiffR = uniformDiffR;
     
@@ -1079,7 +1155,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-type', 'left');
     
     // Render left topic text - use multiple text elements (tspan doesn't render)
-    const leftText = extractText(spec.left);
+    // leftText already extracted above for dimension calculations
     const leftMaxWidth = topicR * 1.8; // Max width based on circle radius
     const leftLines = (typeof window.splitAndWrapText === 'function')
         ? window.splitAndWrapText(leftText, THEME.fontTopic, leftMaxWidth, measureLineWidth)
@@ -1116,7 +1192,7 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
         .attr('data-node-type', 'right');
     
     // Render right topic text - use multiple text elements (tspan doesn't render)
-    const rightText = extractText(spec.right);
+    // rightText already extracted above for dimension calculations
     const rightMaxWidth = topicR * 1.8; // Max width based on circle radius
     const rightLines = (typeof window.splitAndWrapText === 'function')
         ? window.splitAndWrapText(rightText, THEME.fontTopic, rightMaxWidth, measureLineWidth)

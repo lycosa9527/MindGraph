@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.56] - 2025-01-11 - Empty Button Node Dimension Preservation
+
+### Fixed
+
+- **Empty Button Not Preserving Node Dimensions Across All Diagram Types**
+  - Fixed issue where clicking the Empty button would reset nodes to default size instead of preserving original dimensions
+  - Root cause: Renderers were not reading `_node_dimensions` metadata stored by operations modules
+
+- **Brace Map** (`static/js/renderers/brace-renderer.js`)
+  - Added `_node_dimensions` support for topic, part, and subpart nodes
+  - Empty nodes now maintain their original width and height
+
+- **Circle Map** (`static/js/renderers/bubble-map-renderer.js`)
+  - Added `_node_dimensions` support for topic and context nodes
+  - Uses preserved radius for empty nodes
+
+- **Double Bubble Map** (`static/js/renderers/bubble-map-renderer.js`)
+  - Added `_node_dimensions` support for left/right topics, similarities, and differences
+  - All node types now preserve radius when emptied
+
+- **Bridge Map** (`static/js/renderers/flow-renderer.js`)
+  - Added `_node_dimensions` support for left and right analogy pairs
+  - Rectangle dimensions preserved for empty nodes
+
+- **Mind Map** (`static/js/renderers/mind-map-renderer.js`)
+  - Added `_node_dimensions` support for topic, branch, and child nodes
+  - Modified `renderMindMapWithLayout()` to accept preserved dimensions parameter
+
+- **Concept Map** (`static/js/renderers/concept-map-renderer.js`)
+  - Added `_node_dimensions` support for topic and concept nodes
+  - Modified `drawBox()` function to use preserved dimensions for empty nodes
+
+- **Tree Map** (`static/js/renderers/tree-renderer.js`, `static/js/managers/editor/diagram-types/tree-map-operations.js`)
+  - Added missing leaf dimension preservation in operations module
+  - Fixed `||` operator failing on empty strings (used `??` nullish coalescing)
+  - Empty branches and leaves now render correctly with preserved dimensions
+  - Fixed "Invalid leaf structure" warning when emptying nodes
+
+- **Flow Map Horizontal Layout Connector Lines Through Nodes** (`static/js/renderers/flow-renderer.js`)
+  - Fixed connector lines passing through substep nodes when using flip/horizontal orientation
+  - Root cause: When multiple substeps existed, vertical connector lines were drawn from a single junction point (`midY`) all the way down to each substep, passing through substeps above
+  - Solution: Changed to edge-to-edge connector drawing:
+    - Line from step bottom to first substep top
+    - Lines from each substep bottom to next substep top
+  - No connector lines now pass through any nodes
+
+### Changed
+
+- **Text Extraction Pattern** (`static/js/renderers/tree-renderer.js`)
+  - Changed from `leaf?.text || leaf?.label` to `leaf.text ?? leaf.label ?? ''`
+  - Nullish coalescing (`??`) properly handles empty strings (doesn't treat `''` as falsy)
+  - Applied to branch and leaf text extraction in both measurement and rendering passes
+
+- **Skip Logic for Empty Nodes** (`static/js/renderers/tree-renderer.js`)
+  - Empty nodes are now only skipped if they DON'T have preserved dimensions
+  - Before: `if (text.length === 0) return null;`
+  - After: `if (text.length === 0 && !hasPreservedDimensions) return null;`
+
+### Technical Details
+
+**Node Key Patterns for `_node_dimensions`:**
+
+| Diagram Type | Node Keys |
+|--------------|-----------|
+| Brace Map | `topic`, `part-{index}`, `subpart-{partIndex}-{subpartIndex}` |
+| Circle Map | `topic`, `context-{index}` |
+| Double Bubble | `left`, `right`, `similarity-{index}`, `left_difference-{index}`, `right_difference-{index}` |
+| Bridge Map | `dimension`, `left-{pairIndex}`, `right-{pairIndex}` |
+| Mind Map | `topic`, `branch-{index}`, `child-{branchIndex}-{childIndex}` |
+| Concept Map | `topic`, `concept-{text}` |
+| Tree Map | `topic`, `category-{index}`, `leaf-{categoryIndex}-{leafIndex}` |
+
+**Empty Button Flow (Fixed):**
+
+```
+1. User clicks Empty button
+2. node-property-operations-manager.js stores current dimensions in data-preserved-* attributes
+3. operations module reads attributes and stores in spec._node_dimensions[nodeKey]
+4. Renderer checks _node_dimensions before calculating from text
+5. If preserved dimensions exist AND text is empty, use preserved dimensions
+6. Node renders at original size with empty text
+```
+
+---
+
+## [4.28.55] - 2025-01-11 - Save As Dialog for .mg Export
+
+### Added
+
+- **Save As Picker for .mg Export** (`static/js/managers/toolbar/export-manager.js`)
+  - Added `downloadFileWithPicker()` method using File System Access API
+  - Users can now choose save location and filename when exporting .mg files
+  - Native "Save As" dialog on supported browsers (Chrome, Edge)
+  - Graceful fallback to direct download on unsupported browsers (Firefox, Safari)
+  - User cancellation handled without showing error notification
+
+### Changed
+
+- **Export Notification Timing** (`static/js/editor/toolbar-manager.js`)
+  - Success notification now shown only after export completes (via event listener)
+  - Added listeners for `file:mg_export_completed` and `file:mg_export_error` events
+  - Removed premature notification from `handleSave()` method
+
+---
+
 ## [4.28.54] - 2025-01-11 - View Clipping and Node Selection Jumping Fix
 
 ### Fixed

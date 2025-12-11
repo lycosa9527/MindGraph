@@ -406,6 +406,15 @@ class ToolbarManager {
             window.eventBus.onWithOwner('history:state_changed', (data) => {
                 this.updateUndoRedoButtonStates(data.canUndo, data.canRedo);
             }, this.ownerId);
+            
+            // Listen to file export completion events for notifications
+            window.eventBus.onWithOwner('file:mg_export_completed', (data) => {
+                this.showNotification(this.getNotif('diagramSaved'), 'success');
+            }, this.ownerId);
+            
+            window.eventBus.onWithOwner('file:mg_export_error', (data) => {
+                this.showNotification(this.getNotif('saveFailed'), 'error');
+            }, this.ownerId);
         }
     }
     
@@ -1533,12 +1542,12 @@ class ToolbarManager {
         }
         
         // Emit event for ExportManager to handle
+        // Notification will be shown after export completes (via event handlers)
         if (window.eventBus) {
             window.eventBus.emit('toolbar:export_requested', {
                 format: 'mg',
                 editor: this.editor
             });
-            this.showNotification(this.getNotif('diagramSaved'), 'success');
         }
     }
     

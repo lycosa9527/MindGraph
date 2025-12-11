@@ -244,42 +244,79 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const partFontSize = parseFontSpec(THEME.fontPart).size;
     const subpartFontSize = parseFontSpec(THEME.fontSubpart).size;
     
-    // Measure topic text (with line break support)
+    // Check for preserved dimensions from empty button operation
+    const nodeDimensions = actualSpec._node_dimensions || {};
+    
+    // Measure topic text (with line break support) - use preserved dimensions if available
     const topicText = actualSpec.whole || '';
     const topicLines = (typeof window.splitTextLines === 'function') 
         ? window.splitTextLines(topicText) 
         : (topicText || '').split(/\n/);
     const topicLineHeight = Math.round(topicFontSize * 1.2);
-    const topicTextWidth = Math.max(...topicLines.map(line => measureLineWidth(line, THEME.fontTopic, 'bold')), 20);
-    const topicBoxWidth = topicTextWidth + topicPadding * 2;
-    const topicBoxHeight = topicLines.length * topicLineHeight + topicPadding * 2;
     
-    // Measure part texts (with line break support)
-    const partData = (actualSpec.parts || []).map(p => {
+    let topicBoxWidth, topicBoxHeight;
+    if (nodeDimensions.topic && nodeDimensions.topic.w && nodeDimensions.topic.h) {
+        // Use preserved dimensions for empty node
+        topicBoxWidth = nodeDimensions.topic.w;
+        topicBoxHeight = nodeDimensions.topic.h;
+        logger.debug('BraceRenderer', 'Using preserved topic dimensions', { topicBoxWidth, topicBoxHeight });
+    } else {
+        // Calculate from text
+        const topicTextWidth = Math.max(...topicLines.map(line => measureLineWidth(line, THEME.fontTopic, 'bold')), 20);
+        topicBoxWidth = topicTextWidth + topicPadding * 2;
+        topicBoxHeight = topicLines.length * topicLineHeight + topicPadding * 2;
+    }
+    
+    // Measure part texts (with line break support) - use preserved dimensions if available
+    const partData = (actualSpec.parts || []).map((p, partIndex) => {
         const text = p?.name || '';
-        const partLines = (typeof window.splitTextLines === 'function') 
-            ? window.splitTextLines(text) 
-            : (text || '').split(/\n/);
-        const partLineHeight = Math.round(partFontSize * 1.2);
-        const textWidth = Math.max(...partLines.map(line => measureLineWidth(line, THEME.fontPart, 'bold')), 20);
-        const boxWidth = textWidth + partPadding * 2;
-        const boxHeight = partLines.length * partLineHeight + partPadding * 2;
+        const nodeKey = `part-${partIndex}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        let boxWidth, boxHeight;
+        if (preservedDims && preservedDims.w && preservedDims.h && text === '') {
+            // Use preserved dimensions for empty node
+            boxWidth = preservedDims.w;
+            boxHeight = preservedDims.h;
+            logger.debug('BraceRenderer', 'Using preserved part dimensions', { partIndex, boxWidth, boxHeight });
+        } else {
+            // Calculate from text
+            const partLines = (typeof window.splitTextLines === 'function') 
+                ? window.splitTextLines(text) 
+                : (text || '').split(/\n/);
+            const partLineHeight = Math.round(partFontSize * 1.2);
+            const textWidth = Math.max(...partLines.map(line => measureLineWidth(line, THEME.fontPart, 'bold')), 20);
+            boxWidth = textWidth + partPadding * 2;
+            boxHeight = partLines.length * partLineHeight + partPadding * 2;
+        }
         return { part: p, text, boxWidth, boxHeight };
     });
     const maxPartBoxWidth = Math.max(100, ...partData.map(p => p.boxWidth));
     
-    // Measure subpart texts (with line break support)
+    // Measure subpart texts (with line break support) - use preserved dimensions if available
     const subpartData = [];
-    (actualSpec.parts || []).forEach(p => {
-        (p.subparts || []).forEach(sp => {
+    (actualSpec.parts || []).forEach((p, partIndex) => {
+        (p.subparts || []).forEach((sp, subpartIndex) => {
             const text = sp?.name || '';
-            const subpartLines = (typeof window.splitTextLines === 'function') 
-                ? window.splitTextLines(text) 
-                : (text || '').split(/\n/);
-            const subpartLineHeight = Math.round(subpartFontSize * 1.2);
-            const textWidth = Math.max(...subpartLines.map(line => measureLineWidth(line, THEME.fontSubpart)), 20);
-            const boxWidth = textWidth + subpartPadding * 2;
-            const boxHeight = subpartLines.length * subpartLineHeight + subpartPadding * 2;
+            const nodeKey = `subpart-${partIndex}-${subpartIndex}`;
+            const preservedDims = nodeDimensions[nodeKey];
+            
+            let boxWidth, boxHeight;
+            if (preservedDims && preservedDims.w && preservedDims.h && text === '') {
+                // Use preserved dimensions for empty node
+                boxWidth = preservedDims.w;
+                boxHeight = preservedDims.h;
+                logger.debug('BraceRenderer', 'Using preserved subpart dimensions', { partIndex, subpartIndex, boxWidth, boxHeight });
+            } else {
+                // Calculate from text
+                const subpartLines = (typeof window.splitTextLines === 'function') 
+                    ? window.splitTextLines(text) 
+                    : (text || '').split(/\n/);
+                const subpartLineHeight = Math.round(subpartFontSize * 1.2);
+                const textWidth = Math.max(...subpartLines.map(line => measureLineWidth(line, THEME.fontSubpart)), 20);
+                boxWidth = textWidth + subpartPadding * 2;
+                boxHeight = subpartLines.length * subpartLineHeight + subpartPadding * 2;
+            }
             subpartData.push({ subpart: sp, text, boxWidth, boxHeight });
         });
     });
