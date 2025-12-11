@@ -116,12 +116,15 @@ class CanvasController {
         
         if (panelName === 'property' || panelName === 'mindmate') {
             if (isOpen) {
-                // When property panel opens (e.g., node clicked), always fit with panel
+                // When property panel opens (e.g., node clicked), fit with panel space
                 // Use ViewManager via Event Bus to ensure proper fit with panel space
+                // CRITICAL: Use animate: false to prevent jarring "jump" on first node selection
+                // The ViewManager's smart check will skip if already sized for panel
                 this.logger.debug('CanvasController', 'Panel opened - requesting fit to canvas with panel');
-                this.eventBus.emit('view:fit_to_canvas_requested', { animate: true });
+                this.eventBus.emit('view:fit_to_canvas_requested', { animate: false });
             } else {
                 // When panel closes, fit to full canvas
+                // Use animation here since panel closing is a deliberate user action
                 this.logger.debug('CanvasController', 'Panel closed - requesting fit to full canvas');
                 this.eventBus.emit('view:fit_to_window_requested', { animate: true });
             }

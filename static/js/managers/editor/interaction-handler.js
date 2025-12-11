@@ -141,7 +141,12 @@ class InteractionHandler {
                     self.emitSelectionChanged();
                 })
                 .on('dblclick', (event) => {
+                    // CRITICAL: Stop event from bubbling to SVG (where D3 zoom might be listening)
                     event.stopPropagation();
+                    // CRITICAL: Prevent any default browser behavior
+                    event.preventDefault();
+                    // CRITICAL: Stop immediate propagation to prevent any other handlers on this element
+                    event.stopImmediatePropagation();
                     
                     this.logger.debug('InteractionHandler', 'Double-Click for Edit', {
                         nodeId,
@@ -222,7 +227,12 @@ class InteractionHandler {
                         self.emitSelectionChanged();
                     })
                     .on('dblclick', (event) => {
+                        // CRITICAL: Stop event from bubbling to SVG (where D3 zoom might be listening)
                         event.stopPropagation();
+                        // CRITICAL: Prevent any default browser behavior
+                        event.preventDefault();
+                        // CRITICAL: Stop immediate propagation to prevent any other handlers on this element
+                        event.stopImmediatePropagation();
                         
                         // CRITICAL: Cancel pending property panel open - edit modal takes precedence
                         self.eventBus.emit('node_editor:opening', { nodeId: ownNodeId });
@@ -298,7 +308,12 @@ class InteractionHandler {
                         self.emitSelectionChanged();
                     })
                     .on('dblclick', (event) => {
+                        // CRITICAL: Stop event from bubbling to SVG (where D3 zoom might be listening)
                         event.stopPropagation();
+                        // CRITICAL: Prevent any default browser behavior
+                        event.preventDefault();
+                        // CRITICAL: Stop immediate propagation to prevent any other handlers on this element
+                        event.stopImmediatePropagation();
                         
                         // CRITICAL: Cancel pending property panel open - edit modal takes precedence
                         self.eventBus.emit('node_editor:opening', { nodeId: associatedNodeId });

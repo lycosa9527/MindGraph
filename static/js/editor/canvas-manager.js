@@ -78,6 +78,12 @@ class CanvasManager {
         
         this.zoom = d3.zoom()
             .scaleExtent([minZoom, maxZoom])
+            // CRITICAL: Only mouse wheel controls zoom - nothing else
+            .filter((event) => {
+                // ONLY allow wheel events for zooming
+                // Block ALL other events: dblclick, mousedown, touchstart, etc.
+                return event.type === 'wheel';
+            })
             .on('zoom', (event) => {
                 this.currentZoom = event.transform.k;
                 this.currentPan = { x: event.transform.x, y: event.transform.y };
@@ -92,7 +98,8 @@ class CanvasManager {
         
         this.svg.call(this.zoom);
         
-        // CRITICAL: Disable double-click zoom - double-click should open edit modal, not zoom
+        // CRITICAL: Remove dblclick.zoom handler as extra safety
+        // The filter above already blocks dblclick, but this ensures it's completely gone
         this.svg.on('dblclick.zoom', null);
         
         // Create content group

@@ -127,23 +127,14 @@ class ViewManager {
         }
         
         // Configure zoom behavior
+        // CRITICAL: Zoom is ONLY controlled by mouse wheel - nothing else
         const zoom = d3.zoom()
             .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
             .filter((event) => {
-                // CRITICAL: Block double-click entirely - should open edit modal, not zoom
-                if (event.type === 'dblclick') return false;
-                
-                // Allow mouse wheel for zooming
-                if (event.type === 'wheel') return true;
-                
-                // For panning: ONLY allow middle mouse button (scroll wheel click)
-                // Block left mouse (button 0) and right mouse (button 2)
-                if (event.type === 'mousedown') {
-                    return event.button === 1; // Only middle mouse button for panning
-                }
-                
-                // Allow other event types (mousemove, mouseup, etc.)
-                return true;
+                // ONLY allow wheel events for zooming
+                // Block ALL other events: dblclick, mousedown, touchstart, etc.
+                // Double-click should NEVER trigger zoom - it opens edit modal
+                return event.type === 'wheel';
             })
             .on('zoom', (event) => {
                 contentGroup.attr('transform', event.transform);
@@ -169,6 +160,20 @@ class ViewManager {
         // This allows custom double-click handlers (e.g., edit modal) to work properly
         // Per D3.js documentation: https://d3js.org/d3-zoom#zoom
         svg.on('dblclick.zoom', null);
+        
+        // EXTRA SAFEGUARD: Add a capture-phase listener to prevent any residual dblclick zoom
+        // This runs BEFORE bubbling-phase handlers and ensures dblclick doesn't trigger zoom
+        const svgNode = svg.node();
+        if (svgNode && !svgNode._dblclickGuardAdded) {
+            svgNode.addEventListener('dblclick', (event) => {
+                // Log but don't stop propagation - let the event reach node handlers
+                this.logger.debug('ViewManager', 'SVG dblclick intercepted (zoom blocked)', {
+                    target: event.target.tagName,
+                    nodeId: event.target.getAttribute?.('data-node-id')
+                });
+            }, true); // Use capture phase
+            svgNode._dblclickGuardAdded = true;
+        }
         
         // Store zoom behavior for programmatic control
         this.zoomBehavior = zoom;
