@@ -150,6 +150,9 @@ def run_uvicorn():
         print(f"Press Ctrl+C to stop the server")
         print()
         
+        # Print configuration summary (same as main.py)
+        config.print_config_summary()
+        
         # Install stderr filter to suppress multiprocessing shutdown tracebacks
         original_stderr = sys.stderr
         sys.stderr = ShutdownErrorFilter(original_stderr)

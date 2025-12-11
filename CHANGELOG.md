@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.70] - 2025-12-12 - Version Logging Improvements
+
+### Added
+
+- **Version Logging in Configuration Summary**
+  - Added version to `print_config_summary()` in `config/settings.py`
+  - Both `main.py` and `run_server.py` now display version in startup logs
+  - Example: `Configuration Summary: Version: 4.28.70`
+
+- **JavaScript Cache Version Logging**
+  - Updated JavaScript cache initialization log to include version
+  - Example: `JavaScript cache initialized (version: 4.28.70)`
+  - Confirms the version used for cache busting in templates
+
+- **Static File Request Logging with Version Query**
+  - Request logs for static files now include the version query parameter
+  - Before: `Request: GET /static/js/editor.js from 127.0.0.1`
+  - After: `Request: GET /static/js/editor.js?v=4.28.70 from 127.0.0.1`
+  - Helps verify that cache busting is working correctly
+
+- **Unified Startup Logging for run_server.py**
+  - Added `config.print_config_summary()` call to `run_server.py`
+  - Both entry points now show the same configuration summary
+
+**Files Changed:**
+- `config/settings.py` - Added VERSION to print_config_summary()
+- `run_server.py` - Added config.print_config_summary() call
+- `main.py` - Added version to JS cache log, added query string to static file request logs
+
+---
+
 ## [4.28.69] - 2025-12-12 - Node Counter Fix
 
 ### Fixed

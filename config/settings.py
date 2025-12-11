@@ -542,12 +542,14 @@ class Config:
         Print a comprehensive configuration summary.
         
         Displays:
+        - Application version
         - FastAPI application settings
         - API configurations and availability
         - D3.js visualization settings
         - Theme and styling options
         """
         logger.info("Configuration Summary:")
+        logger.info(f"   Version: {self.VERSION}")
         logger.info(f"   FastAPI: {self.HOST}:{self.PORT} (Debug: {self.DEBUG})")
         logger.info(f"   Qwen: {self.QWEN_API_URL}")
         logger.info(f"     - Classification: {self.QWEN_MODEL_CLASSIFICATION} (fast/cheap)")

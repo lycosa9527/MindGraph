@@ -587,7 +587,7 @@ async def lifespan(app: FastAPI):
         if not lazy_js_cache.is_initialized():
             logger.error("JavaScript cache failed to initialize")
         elif worker_id == '0' or not worker_id:
-            logger.info("JavaScript cache initialized successfully")
+            logger.info(f"JavaScript cache initialized (version: {config.VERSION})")
     except Exception as e:
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to initialize JavaScript cache: {e}")
@@ -898,7 +898,12 @@ async def log_requests(request: Request, call_next):
             content={"error": "Access Denied: This file is deprecated and should not be accessed"}
         )
     
-    logger.debug(f"Request: {request.method} {request.url.path} from {request.client.host}")
+    # For static files, include version query param in log to verify cache busting
+    log_path = request.url.path
+    if request.url.path.startswith('/static/') and request.url.query:
+        log_path = f"{request.url.path}?{request.url.query}"
+    
+    logger.debug(f"Request: {request.method} {log_path} from {request.client.host}")
     
     # Process request
     response = await call_next(request)
