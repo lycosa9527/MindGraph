@@ -49,17 +49,33 @@ class ViewManager {
             this.zoomOut();
         }, this.ownerId);
         
-        // Listen for fit requests
+        // ===========================================
+        // FIT EVENTS - Simple, consistent behavior
+        // All fit events: reset zoom transform + apply viewBox fit
+        // NO smart checks - always perform the fit
+        // ===========================================
+        
+        // Fit to full canvas (no panel space reserved)
         this.eventBus.onWithOwner('view:fit_to_window_requested', (data) => {
-            this.fitToFullCanvas(data?.animate !== false);
+            const animate = data?.animate !== false;
+            this.fitToFullCanvas(animate);
         }, this.ownerId);
         
+        // Fit to canvas with panel space reserved
         this.eventBus.onWithOwner('view:fit_to_canvas_requested', (data) => {
-            this.fitToCanvasWithPanel(data?.animate !== false);
+            const animate = data?.animate !== false;
+            this.fitToCanvasWithPanel(animate);
         }, this.ownerId);
         
+        // Reset View button - smart fit based on panel visibility
         this.eventBus.onWithOwner('view:fit_diagram_requested', () => {
-            this.fitDiagramToWindow();
+            const isPanelVisible = this._isPanelVisible();
+            this.logger.debug('ViewManager', 'Reset View - panel visible:', isPanelVisible);
+            if (isPanelVisible) {
+                this.fitToCanvasWithPanel(true);
+            } else {
+                this.fitToFullCanvas(true);
+            }
         }, this.ownerId);
         
         // Listen for diagram rendered
@@ -127,20 +143,39 @@ class ViewManager {
         }
         
         // Configure zoom behavior
-        // CRITICAL: Zoom is ONLY controlled by mouse wheel - nothing else
+        // Zoom: mouse wheel only
+        // Pan: middle mouse button drag only
         const zoom = d3.zoom()
             .scaleExtent([0.1, 10]) // Allow 10x zoom in, 0.1x zoom out
             .filter((event) => {
-                // ONLY allow wheel events for zooming
-                // Block ALL other events: dblclick, mousedown, touchstart, etc.
-                // Double-click should NEVER trigger zoom - it opens edit modal
-                return event.type === 'wheel';
+                // Allow wheel events for zooming
+                if (event.type === 'wheel') {
+                    return true;
+                }
+                // Allow middle mouse button (button === 1) for panning
+                // This enables drag-to-pan when holding middle mouse button
+                if (event.type === 'mousedown' && event.button === 1) {
+                    event.preventDefault(); // Prevent default middle-click behavior (auto-scroll)
+                    return true;
+                }
+                // Block everything else: left click, right click, double-click, touch
+                // Left click is reserved for node selection/interaction
+                // Double-click opens edit modal
+                return false;
             })
             .on('zoom', (event) => {
                 contentGroup.attr('transform', event.transform);
                 // Update zoom level display if needed
                 if (this.currentZoomLevel) {
                     this.currentZoomLevel.textContent = `${Math.round(event.transform.k * 100)}%`;
+                }
+                
+                // CRITICAL: When user manually zooms/pans, invalidate the "sized for panel" flag
+                // This ensures the next node selection will trigger a proper fit
+                // Check if this is a user-initiated zoom (not identity transform)
+                const isIdentity = event.transform.k === 1 && event.transform.x === 0 && event.transform.y === 0;
+                if (!isIdentity) {
+                    this.isSizedForPanel = false;
                 }
                 
                 // Update state (use updateUI method for view state)
@@ -166,6 +201,33 @@ class ViewManager {
         this.zoomTransform = d3.zoomIdentity;
         
         this.logger.debug('ViewManager', 'Zoom enabled (mouse wheel only, double-click disabled)');
+    }
+    
+    /**
+     * Reset D3 zoom transform to identity (no zoom/pan)
+     * @private
+     * @param {boolean} animate - Whether to animate the transition
+     */
+    _resetZoomTransform(animate = true) {
+        const svg = d3.select('#d3-container svg');
+        if (svg.empty() || !this.zoomBehavior) {
+            this.logger.warn('ViewManager', 'Cannot reset zoom - no SVG or zoom behavior');
+            return;
+        }
+        
+        // Reset to identity transform (scale=1, translate=0,0)
+        // CRITICAL: Use named transition 'zoom-reset' to prevent interference with viewBox transition
+        // Without named transitions, calling .transition() twice on the same element cancels the first
+        if (animate) {
+            svg.transition('zoom-reset')
+                .duration(750)
+                .call(this.zoomBehavior.transform, d3.zoomIdentity);
+        } else {
+            svg.call(this.zoomBehavior.transform, d3.zoomIdentity);
+        }
+        
+        this.zoomTransform = d3.zoomIdentity;
+        this.logger.debug('ViewManager', 'Zoom transform reset to identity');
     }
     
     /**
@@ -401,65 +463,24 @@ class ViewManager {
     
     /**
      * Fit diagram to full canvas area (entire window width)
-     * Used when properties panel is hidden - diagram expands to full width
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToFullCanvas(animate = true) {
-        try {
-            // Smart check: Skip if already fitted to full canvas and no panel is visible
-            const isPanelVisible = this._isPanelVisible();
-            if (!this.isSizedForPanel && !isPanelVisible) {
-                this.logger.debug('ViewManager', 'Already fitted to full canvas with no panels - skipping fit');
-                return;
-            }
-            
-            this.logger.debug('ViewManager', 'Fitting to full canvas width');
-            this._fitToCanvas(animate, false);
-            this.isSizedForPanel = false; // Update state
-            
-            // Update state manager (view state tracking is optional)
-            // View state is managed by ViewManager, not StateManager
-            
-            // Emit event
-            this.eventBus.emit('view:fitted', {
-                mode: 'full_canvas',
-                animate: animate
-            });
-        } catch (error) {
-            this.logger.error('ViewManager', 'Failed to fit to full canvas', error);
-        }
+        this.logger.debug('ViewManager', 'Fit to full canvas', { animate });
+        this._resetZoomTransform(animate);
+        this._fitToCanvas(animate, false);
+        this.isSizedForPanel = false;
     }
 
     /**
      * Fit diagram to canvas with properties panel space reserved
-     * Used when properties panel is visible or will be visible - reserves 320px for panel
      * @param {boolean} animate - Whether to animate the transition (default: true)
      */
     fitToCanvasWithPanel(animate = true) {
-        try {
-            // Smart check: Skip if already sized for panel and a panel is visible
-            // This prevents unnecessary re-fitting when switching between node selections
-            const isPanelVisible = this._isPanelVisible();
-            if (this.isSizedForPanel && isPanelVisible) {
-                this.logger.debug('ViewManager', 'Already sized for panel - skipping fit');
-                return;
-            }
-            
-            this.logger.debug('ViewManager', 'Fitting to canvas (panel space reserved)');
-            this._fitToCanvas(animate, true);
-            this.isSizedForPanel = true; // Update state
-            
-            // Update state manager (view state tracking is optional)
-            // View state is managed by ViewManager, not StateManager
-            
-            // Emit event
-            this.eventBus.emit('view:fitted', {
-                mode: 'canvas_with_panel',
-                animate: animate
-            });
-        } catch (error) {
-            this.logger.error('ViewManager', 'Error fitting to canvas with panel:', error);
-        }
+        this.logger.debug('ViewManager', 'Fit to canvas with panel', { animate });
+        this._resetZoomTransform(animate);
+        this._fitToCanvas(animate, true);
+        this.isSizedForPanel = true;
     }
 
     /**
@@ -592,8 +613,10 @@ class ViewManager {
         });
         
         // Apply viewBox with or without animation
+        // CRITICAL: Use named transition 'viewbox-fit' to prevent interference with zoom-reset transition
+        // Without named transitions, calling .transition() twice on the same element cancels the first
         if (animate) {
-            svg.transition()
+            svg.transition('viewbox-fit')
                 .duration(750)
                 .attr('viewBox', newViewBox)
                 .attr('preserveAspectRatio', 'xMidYMid meet');
@@ -845,7 +868,8 @@ class ViewManager {
                 
                 // CRITICAL: Always set preserveAspectRatio to ensure consistent centering
                 // Some renderers use xMinYMin which causes top-left alignment
-                svg.transition()
+                // Use named transition 'viewbox-fit' to prevent interference with zoom-reset transition
+                svg.transition('viewbox-fit')
                     .duration(750)
                     .attr('viewBox', newViewBox)
                     .attr('preserveAspectRatio', 'xMidYMid meet');
@@ -859,7 +883,8 @@ class ViewManager {
                 // No viewBox exists - create one
                 this.logger.debug('ViewManager', 'No viewBox found, creating one:', newViewBox);
                 
-                svg.transition()
+                // Use named transition 'viewbox-fit' to prevent interference with zoom-reset transition
+                svg.transition('viewbox-fit')
                     .duration(750)
                     .attr('viewBox', newViewBox)
                     .attr('preserveAspectRatio', 'xMidYMid meet');
@@ -1004,11 +1029,12 @@ class ViewManager {
         }
         
         this.resizeTimeout = setTimeout(() => {
-            // Auto-fit if diagram is currently fitted
-            if (this.isSizedForPanel) {
-                this.fitToCanvasWithPanel(true);
+            // Refit diagram to new window size (no animation for snappy response)
+            const isPanelVisible = this._isPanelVisible();
+            if (isPanelVisible) {
+                this.fitToCanvasWithPanel(false);
             } else {
-                this.fitToFullCanvas(true);
+                this.fitToFullCanvas(false);
             }
         }, 150);
     }

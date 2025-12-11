@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindGraph - 用户登录/注册</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="stylesheet" href="/static/fonts/inter.css">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -444,7 +444,7 @@
         </div>
     </div>
 
-    <script src="/static/js/auth-helper.js"></script>
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
     <script>
         let currentTab = 'login';
         let currentLang = 'zh'; // Default to Chinese

@@ -78,11 +78,21 @@ class CanvasManager {
         
         this.zoom = d3.zoom()
             .scaleExtent([minZoom, maxZoom])
-            // CRITICAL: Only mouse wheel controls zoom - nothing else
+            // Zoom: mouse wheel only
+            // Pan: middle mouse button drag only
             .filter((event) => {
-                // ONLY allow wheel events for zooming
-                // Block ALL other events: dblclick, mousedown, touchstart, etc.
-                return event.type === 'wheel';
+                // Allow wheel events for zooming
+                if (event.type === 'wheel') {
+                    return true;
+                }
+                // Allow middle mouse button (button === 1) for panning
+                // This enables drag-to-pan when holding middle mouse button
+                if (event.type === 'mousedown' && event.button === 1) {
+                    event.preventDefault(); // Prevent default middle-click behavior (auto-scroll)
+                    return true;
+                }
+                // Block everything else: left click, right click, double-click, touch
+                return false;
             })
             .on('zoom', (event) => {
                 this.currentZoom = event.transform.k;

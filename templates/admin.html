@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindGraph 管理后台 | Admin Panel</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="stylesheet" href="/static/fonts/inter.css">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -1451,7 +1451,7 @@ curl -X POST http://your-server/api/generate_graph \
         </div>
     </div>
 
-    <script src="/static/js/auth-helper.js"></script>
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
     <script>
         // Check admin access without automatic redirect
         async function checkAdminAuth() {

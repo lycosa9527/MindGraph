@@ -7,6 +7,189 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.66] - 2025-12-12 - Reset View Button Fix (D3 Named Transitions)
+
+### Fixed
+
+- **Reset View Button Not Working** (`static/js/managers/editor/view-manager.js`)
+  - Root cause: When clicking reset view, two D3 transitions were started on the same SVG element
+  - The zoom reset transition (`_resetZoomTransform`) and viewBox transition (`_fitToCanvas`) interfered with each other
+  - In D3.js, unnamed transitions on the same element cancel each other - the second transition was cancelling the first
+  - Result: Zoom transform was never reset, diagram stayed zoomed in, appeared as if "nothing works"
+
+### Solution
+
+- Added named transitions to prevent interference:
+  - `'zoom-reset'` - For resetting the D3 zoom transform to identity
+  - `'viewbox-fit'` - For applying the viewBox to fit content
+- Named transitions run in parallel on the same element without cancelling each other
+- Applied fix to `_resetZoomTransform()`, `_fitToCanvas()`, and `_applyViewBoxTransform()` methods
+
+---
+
+## [4.28.65] - 2025-12-12 - Simplified View Fit Architecture
+
+### Refactored
+
+- **Removed smart checks from fit methods** - Smart checks were causing fits to be skipped incorrectly
+- **Event-driven architecture** - All fit operations now go through events with consistent behavior
+
+### Events
+
+| Event | Description |
+|-------|-------------|
+| `view:fit_to_canvas_requested` | Fit with panel space reserved (320px) |
+| `view:fit_to_window_requested` | Fit to full canvas width |
+| `view:fit_diagram_requested` | Smart fit based on panel visibility (Reset View) |
+
+### Implementation
+
+Each fit operation now:
+1. `_resetZoomTransform()` - Clear any user zoom/pan
+2. `_fitToCanvas()` - Apply viewBox to fit content
+3. Update `isSizedForPanel` state
+
+### Methods (Simplified)
+
+```javascript
+fitToCanvasWithPanel(animate) {
+    this._resetZoomTransform(animate);
+    this._fitToCanvas(animate, true);
+    this.isSizedForPanel = true;
+}
+
+fitToFullCanvas(animate) {
+    this._resetZoomTransform(animate);
+    this._fitToCanvas(animate, false);
+    this.isSizedForPanel = false;
+}
+```
+
+### Callers Updated
+
+- `diagram-selector.js` - Now emits `view:fit_to_canvas_requested` event
+
+---
+
+## [4.28.64] - 2025-12-12 - Node Selection Fit-to-Panel Fix (Incomplete)
+
+### Fixed
+
+- **Fit-to-Panel Not Working After Manual Zoom** (`static/js/managers/editor/view-manager.js`)
+  - Root cause 1: Smart check skipped fit when `isSizedForPanel=true`, but user had manually zoomed
+  - Root cause 2: `fitToCanvasWithPanel()` didn't reset zoom transform before fitting
+
+### Solution
+
+- **Invalidate flag on manual zoom**: When user zooms/pans with mouse, set `isSizedForPanel = false`
+  - This ensures the next node selection triggers a proper fit
+  - Added check in zoom handler: if transform is not identity, invalidate the flag
+
+- **Reset zoom transform in fit methods**: Both `fitToCanvasWithPanel()` and `fitToFullCanvas()` now call `_resetZoomTransform()` before `_fitToCanvas()`
+  - Ensures any manual zoom is cleared before applying the viewBox fit
+
+### Flow After Fix
+
+1. User zooms manually → `isSizedForPanel = false`
+2. User selects a node → panel opens
+3. `fitToCanvasWithPanel()` is called
+4. Smart check: `isSizedForPanel=false` → fit runs
+5. `_resetZoomTransform()` clears manual zoom
+6. `_fitToCanvas()` applies viewBox fit
+7. `isSizedForPanel = true` for subsequent node selections
+
+---
+
+## [4.28.63] - 2025-12-12 - Reset View Button Complete Fix
+
+### Fixed
+
+- **Reset View Button Not Working After Zoom** (`static/js/managers/editor/view-manager.js`)
+  - Root cause: D3 zoom applies transform to `g.zoom-group`, but `_fitToCanvas` only changes `viewBox`
+  - After manual zoom/pan, the zoom transform remained even after viewBox was reset
+
+### Solution
+
+- **Two-step reset**:
+  1. `_resetZoomTransform()` - Reset D3 zoom transform to identity (scale=1, translate=0,0)
+  2. `_fitToCanvas()` - Fit diagram to canvas by adjusting viewBox
+
+- **New method `_resetZoomTransform(animate)`**:
+  - Calls `svg.call(zoomBehavior.transform, d3.zoomIdentity)` to reset zoom
+  - Animated for Reset View button, instant for window resize
+
+- **Reset View behavior**:
+  - Check if any panel is open
+  - Reset zoom transform (animated)
+  - Fit to canvas with/without panel space reserved
+
+---
+
+## [4.28.62] - 2025-12-12 - Reset View Button Fix (Partial)
+
+### Note
+This version had incomplete fix - zoom transform was not being reset. See 4.28.63 for complete fix.
+
+---
+
+## [4.28.61] - 2025-12-12 - Middle Mouse Button Panning Restored
+
+### Fixed
+
+- **Middle Mouse Button Panning Not Working** (`static/js/managers/editor/view-manager.js`, `static/js/editor/canvas-manager.js`)
+  - Root cause: Zoom filter was blocking ALL mousedown events, including middle mouse button
+  - The filter `return event.type === 'wheel'` blocked panning entirely
+  - Updated filter to allow middle mouse button (button === 1) for panning while still blocking left/right click and double-click
+
+### Controls
+
+- **Mouse wheel** = Zoom in/out
+- **Middle mouse button + drag** = Pan the canvas
+- **Left click** = Select nodes
+- **Double-click** = Open edit modal
+
+---
+
+## [4.28.60] - 2025-12-12 - Cache Busting for Automatic Code Updates
+
+### Added
+
+- **Version-Based Cache Busting System** - Ensures users always get the latest code after deployments
+  - All static assets (CSS, JS) now include version query string: `?v=4.28.60`
+  - VERSION file is the single source of truth for cache busting
+
+- **Cache-Control Headers Middleware** (`main.py`)
+  - Versioned static files: Cached for 1 year (immutable)
+  - Unversioned static files: Cached for 1 hour with revalidation
+  - HTML pages: Never cached (always fresh)
+
+- **Automatic Version Check** (`static/js/auth-helper.js`)
+  - `hardRefresh()` - Force reload from server, bypassing all caches
+  - `checkVersionAndRefresh()` - Compare local vs server version, prompt user to refresh
+  - Auto-check when page becomes visible (tab switch)
+  - Periodic check every 5 minutes for long-running sessions
+
+- **Dynamic Renderer Version Support** (`static/js/dynamic-renderer-loader.js`)
+  - Dynamically loaded renderer scripts now include version query string
+
+### Modified
+
+- `templates/editor.html` - Added `?v={{ version }}` to ~70 static file references
+- `templates/auth.html` - Added version query strings
+- `templates/demo-login.html` - Added version query strings
+- `templates/admin.html` - Added version query strings
+- `templates/debug.html` - Added version query strings
+- `routers/pages.py` - Added `version` to all template contexts
+
+### Deployment Workflow
+
+1. Make code changes
+2. Update VERSION file (e.g., `4.28.60` → `4.28.61`)
+3. Restart server
+4. Users get fresh files automatically (URLs change)
+
+---
+
 ## [4.28.59] - 2025-12-11 - Debounced Single-Click for Reliable Double-Click Detection
 
 ### Fixed

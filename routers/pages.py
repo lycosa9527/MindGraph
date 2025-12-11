@@ -103,7 +103,7 @@ async def index(request: Request, db: Session = Depends(get_db)):
 async def debug(request: Request):
     """Debug page - debug.html"""
     try:
-        return templates.TemplateResponse("debug.html", {"request": request})
+        return templates.TemplateResponse("debug.html", {"request": request, "version": get_app_version()})
     except Exception as e:
         logger.error(f"/debug route failed: {e}", exc_info=True)
         raise
@@ -350,7 +350,7 @@ async def auth_page(request: Request, db: Session = Depends(get_db)):
                 logger.debug("User already authenticated, redirecting to /editor")
                 return RedirectResponse(url="/editor", status_code=303)
         
-        return templates.TemplateResponse("auth.html", {"request": request})
+        return templates.TemplateResponse("auth.html", {"request": request, "version": get_app_version()})
     except Exception as e:
         logger.error(f"/auth route failed: {e}", exc_info=True)
         raise
@@ -620,7 +620,7 @@ async def demo_page(request: Request, db: Session = Depends(get_db)):
                     logger.debug(f"{AUTH_MODE.capitalize()} mode: User {user.phone} already authenticated, redirecting to /editor")
                     return RedirectResponse(url="/editor", status_code=303)
         
-        return templates.TemplateResponse("demo-login.html", {"request": request})
+        return templates.TemplateResponse("demo-login.html", {"request": request, "version": get_app_version()})
     except Exception as e:
         logger.error(f"/demo route failed: {e}", exc_info=True)
         raise
@@ -654,7 +654,7 @@ async def admin_page(request: Request, db: Session = Depends(get_db)):
             
             logger.debug(f"{AUTH_MODE.capitalize()} mode: Admin {user.phone} accessing /admin")
         
-        return templates.TemplateResponse("admin.html", {"request": request})
+        return templates.TemplateResponse("admin.html", {"request": request, "version": get_app_version()})
     except Exception as e:
         logger.error(f"/admin route failed: {e}", exc_info=True)
         raise

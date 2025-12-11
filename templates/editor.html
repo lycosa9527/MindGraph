@@ -7,16 +7,16 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     
     <!-- Fonts -->
-    <link rel="stylesheet" href="/static/fonts/inter.css">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
     
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="/static/css/editor.css">
-    <link rel="stylesheet" href="/static/css/editor-toolbar.css">
-    <link rel="stylesheet" href="/static/css/node-palette.css">
-    <link rel="stylesheet" href="/static/css/comic-bubble.css">
+    <link rel="stylesheet" href="/static/css/editor.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/editor-toolbar.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/node-palette.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/comic-bubble.css?v={{ version }}">
     
     <!-- D3.js -->
-    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/d3.min.js?v={{ version }}"></script>
 </head>
 <body 
     data-verbose-logging="{{ verbose_logging | tojson }}"
@@ -883,104 +883,104 @@
     
     <!-- Load all required scripts -->
     <!-- Logger must load FIRST -->
-    <script src="/static/js/logger.js"></script>
+    <script src="/static/js/logger.js?v={{ version }}"></script>
     
     <!-- Event Bus Architecture (Core) - Load SECOND (after logger) -->
-    <script src="/static/js/core/event-bus.js"></script>
-    <script src="/static/js/core/state-manager.js"></script>
-    <script src="/static/js/core/session-lifecycle.js"></script>
-    <script src="/static/js/utils/sse-client.js"></script>
+    <script src="/static/js/core/event-bus.js?v={{ version }}"></script>
+    <script src="/static/js/core/state-manager.js?v={{ version }}"></script>
+    <script src="/static/js/core/session-lifecycle.js?v={{ version }}"></script>
+    <script src="/static/js/utils/sse-client.js?v={{ version }}"></script>
     
-    <script src="/static/js/theme-config.js"></script>
-    <script src="/static/js/style-manager.js"></script>
+    <script src="/static/js/theme-config.js?v={{ version }}"></script>
+    <script src="/static/js/style-manager.js?v={{ version }}"></script>
     
     <!-- Panel Manager - MUST load before other editors -->
-    <script src="/static/js/managers/panel-manager.js"></script>
+    <script src="/static/js/managers/panel-manager.js?v={{ version }}"></script>
     
     <!-- Node Indicator System - Visual feedback for node updates -->
-    <script src="/static/js/editor/node-indicator.js"></script>
+    <script src="/static/js/editor/node-indicator.js?v={{ version }}"></script>
     
     <!-- Editor scripts -->
-    <script src="/static/js/editor/notification-manager.js"></script>
-    <script src="/static/js/editor/modal-manager.js"></script>
-    <script src="/static/js/editor/language-manager.js"></script>
-    <script src="/static/js/editor/prompt-manager.js"></script>
-    <script src="/static/js/editor/selection-manager.js"></script>
-    <script src="/static/js/editor/canvas-manager.js"></script>
-    <script src="/static/js/editor/node-editor.js"></script>
-    <script src="/static/js/editor/diagram-validator.js"></script>
-    <script src="/static/js/editor/learning-mode-manager.js"></script>
+    <script src="/static/js/editor/notification-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/modal-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/language-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/prompt-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/selection-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/canvas-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/node-editor.js?v={{ version }}"></script>
+    <script src="/static/js/editor/diagram-validator.js?v={{ version }}"></script>
+    <script src="/static/js/editor/learning-mode-manager.js?v={{ version }}"></script>
     
     <!-- Phase 7: Extracted Modules (Load BEFORE toolbar-manager & interactive-editor) -->
     <!-- Toolbar Modules -->
-    <script src="/static/js/managers/toolbar/export-manager.js"></script>
-    <script src="/static/js/managers/toolbar/session-manager.js"></script>
-    <script src="/static/js/managers/toolbar/property-panel-manager.js"></script>
-    <script src="/static/js/managers/toolbar/llm-validation-manager.js"></script>
+    <script src="/static/js/managers/toolbar/export-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/session-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/property-panel-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-validation-manager.js?v={{ version }}"></script>
     <!-- LLM Auto-Complete Sub-Managers (Load in order) -->
-    <script src="/static/js/managers/toolbar/property-validator.js"></script>
-    <script src="/static/js/managers/toolbar/llm-result-cache.js"></script>
-    <script src="/static/js/managers/toolbar/llm-progress-renderer.js"></script>
-    <script src="/static/js/managers/toolbar/llm-engine-manager.js"></script>
-    <script src="/static/js/managers/toolbar/llm-autocomplete-manager.js"></script>
-    <script src="/static/js/managers/toolbar/node-property-operations-manager.js"></script>
-    <script src="/static/js/managers/toolbar/ui-state-llm-manager.js"></script>
-    <script src="/static/js/managers/toolbar/text-toolbar-state-manager.js"></script>
-    <script src="/static/js/managers/toolbar/node-counter-feature-mode-manager.js"></script>
-    <script src="/static/js/managers/toolbar/small-operations-manager.js"></script>
+    <script src="/static/js/managers/toolbar/property-validator.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-result-cache.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-progress-renderer.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-engine-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-autocomplete-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/node-property-operations-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/ui-state-llm-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/text-toolbar-state-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/node-counter-feature-mode-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/small-operations-manager.js?v={{ version }}"></script>
     <!-- Editor Modules -->
-    <script src="/static/js/managers/editor/history-manager.js"></script>
-    <script src="/static/js/managers/editor/canvas-controller.js"></script>
-    <script src="/static/js/managers/editor/view-manager.js"></script>
-    <script src="/static/js/managers/editor/interaction-handler.js"></script>
-    <script src="/static/js/managers/editor/diagram-operations-loader.js"></script>
+    <script src="/static/js/managers/editor/history-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/canvas-controller.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/view-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/interaction-handler.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-operations-loader.js?v={{ version }}"></script>
     <!-- Diagram Operations -->
-    <script src="/static/js/managers/editor/diagram-types/circle-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/bubble-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/double-bubble-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/brace-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/flow-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/multi-flow-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/tree-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/bridge-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/concept-map-operations.js"></script>
-    <script src="/static/js/managers/editor/diagram-types/mindmap-operations.js"></script>
+    <script src="/static/js/managers/editor/diagram-types/circle-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/bubble-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/double-bubble-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/brace-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/flow-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/multi-flow-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/tree-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/bridge-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/concept-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/mindmap-operations.js?v={{ version }}"></script>
     
-    <script src="/static/js/editor/toolbar-manager.js"></script>
-    <script src="/static/js/editor/toolbar-responsive.js"></script>
-    <script src="/static/js/editor/interactive-editor.js"></script>
-    <script src="/static/js/editor/diagram-selector.js"></script>
+    <script src="/static/js/editor/toolbar-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/toolbar-responsive.js?v={{ version }}"></script>
+    <script src="/static/js/editor/interactive-editor.js?v={{ version }}"></script>
+    <script src="/static/js/editor/diagram-selector.js?v={{ version }}"></script>
     
     <!-- Renderer system (Dynamic loading) -->
-    <script src="/static/js/dynamic-renderer-loader.js"></script>
-    <script src="/static/js/renderers/renderer-dispatcher.js"></script>
+    <script src="/static/js/dynamic-renderer-loader.js?v={{ version }}"></script>
+    <script src="/static/js/renderers/renderer-dispatcher.js?v={{ version }}"></script>
     
     <!-- Markdown Libraries for AI Assistant & ThinkGuide (Local copies) -->
-    <script src="/static/js/markdown-it.min.js"></script>
-    <script src="/static/js/purify.min.js"></script>
+    <script src="/static/js/markdown-it.min.js?v={{ version }}"></script>
+    <script src="/static/js/purify.min.js?v={{ version }}"></script>
     
     <!-- AI Assistant (MindMate) -->
-    <script src="/static/js/managers/mindmate-manager.js"></script>
+    <script src="/static/js/managers/mindmate-manager.js?v={{ version }}"></script>
     
     <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
-    <script src="/static/js/managers/thinkguide-manager.js"></script>
-    <script src="/static/js/editor/black-cat.js"></script>
-    <script src="/static/js/editor/comic-bubble.js"></script>
+    <script src="/static/js/managers/thinkguide-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/black-cat.js?v={{ version }}"></script>
+    <script src="/static/js/editor/comic-bubble.js?v={{ version }}"></script>
     <!-- Voice Agent -->
-    <script src="/static/js/managers/voice-agent-manager.js"></script>
+    <script src="/static/js/managers/voice-agent-manager.js?v={{ version }}"></script>
     
     <!-- Node Palette Manager - Must load AFTER other editor scripts -->
-    <script src="/static/js/editor/node-palette-manager.js"></script>
+    <script src="/static/js/editor/node-palette-manager.js?v={{ version }}"></script>
     
     <!-- Authentication Helper -->
-    <script src="/static/js/auth-helper.js"></script>
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
     <script>
         // Check authentication on page load
         auth.requireAuth();
     </script>
     
     <!-- Update Notification (shows modal after login if there's an update) -->
-    <script src="/static/js/editor/update-notification.js"></script>
+    <script src="/static/js/editor/update-notification.js?v={{ version }}"></script>
     
     <!-- Black Cat VoiceAgent Initialization -->
     <script>

@@ -619,8 +619,8 @@ class DiagramSelector {
             // - Reserves space for properties panel (windowWidth - 320px) even though panel is hidden
             // Result: Diagram appears at perfect size, ready for editing when user clicks a node
             setTimeout(() => {
-                if (window.currentEditor && typeof window.currentEditor.fitToCanvasWithPanel === 'function') {
-                    window.currentEditor.fitToCanvasWithPanel(false); // false = no animation
+                if (window.eventBus) {
+                    window.eventBus.emit('view:fit_to_canvas_requested', { animate: false });
                 }
             }, 250);
             

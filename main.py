@@ -844,6 +844,43 @@ async def add_security_headers(request: Request, call_next):
     
     return response
 
+# Static Files Cache Control Middleware
+@app.middleware("http")
+async def add_cache_control_headers(request: Request, call_next):
+    """
+    Add cache control headers for static files.
+    
+    Strategy:
+    - Static files with version query string (?v=x.x.x): Cache for 1 year
+    - Static files without version: Cache for 1 hour with revalidation
+    - HTML pages: No cache (always fetch fresh)
+    - API responses: No cache
+    
+    This ensures users always get the latest code when we update the VERSION file.
+    """
+    response = await call_next(request)
+    
+    path = request.url.path
+    query = str(request.url.query)
+    
+    # Static files
+    if path.startswith('/static/'):
+        # If version query parameter is present, cache aggressively
+        if 'v=' in query:
+            # Versioned assets can be cached for a long time (1 year)
+            # Browser will fetch new version when VERSION changes
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            # Unversioned static files: short cache with revalidation
+            response.headers["Cache-Control"] = "public, max-age=3600, must-revalidate"
+    # HTML pages: no cache
+    elif path.endswith('.html') or path in ['/', '/editor', '/debug', '/auth', '/admin', '/demo']:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    
+    return response
+
 # Custom Request/Response Logging Middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

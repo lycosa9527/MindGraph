@@ -193,11 +193,91 @@ class AuthHelper {
         }
         return null;
     }
+
+    /**
+     * Hard refresh the page to clear browser cache
+     * 
+     * This forces the browser to fetch all resources fresh from the server.
+     * Useful when users experience issues due to cached outdated code.
+     */
+    hardRefresh() {
+        // Clear service worker cache if present
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+            });
+        }
+        
+        // Force reload from server, bypassing cache
+        // true parameter tells browser to reload from server, not cache
+        window.location.reload(true);
+    }
+
+    /**
+     * Check if app version has changed and trigger refresh if needed
+     * 
+     * Compares current app version with server version.
+     * If different, prompts user to refresh or auto-refreshes.
+     * 
+     * @param {boolean} autoRefresh - If true, refresh without prompting
+     * @returns {Promise<boolean>} - True if version changed
+     */
+    async checkVersionAndRefresh(autoRefresh = false) {
+        try {
+            // Get current version from page (set during template render)
+            const currentVersion = window.MINDGRAPH_VERSION;
+            if (!currentVersion) {
+                return false;
+            }
+            
+            // Fetch latest version from server
+            const response = await fetch('/health');
+            if (!response.ok) {
+                return false;
+            }
+            
+            const data = await response.json();
+            const serverVersion = data.version;
+            
+            if (serverVersion && serverVersion !== currentVersion) {
+                console.log(`Version changed: ${currentVersion} -> ${serverVersion}`);
+                
+                if (autoRefresh) {
+                    this.hardRefresh();
+                    return true;
+                }
+                
+                // Show notification to user
+                if (window.NotificationManager && window.NotificationManager.show) {
+                    window.NotificationManager.show(
+                        `New version available (${serverVersion}). Click here to refresh.`,
+                        'info',
+                        10000,
+                        () => this.hardRefresh()
+                    );
+                } else {
+                    // Fallback: confirm dialog
+                    if (confirm(`A new version (${serverVersion}) is available. Refresh now?`)) {
+                        this.hardRefresh();
+                    }
+                }
+                return true;
+            }
+            
+            return false;
+        } catch (e) {
+            console.error('Version check failed:', e);
+            return false;
+        }
+    }
 }
 
 // Global instance (available both as 'auth' and 'window.auth')
 const auth = new AuthHelper();
 window.auth = auth;
+
+// Expose hardRefresh globally for easy access
+window.hardRefresh = () => auth.hardRefresh();
 
 // Auto-redirect to appropriate auth page on 401
 window.addEventListener('unhandledrejection', async event => {
@@ -214,4 +294,23 @@ window.addEventListener('unhandledrejection', async event => {
         }
     }
 });
+
+// Check for version updates when page becomes visible after being hidden
+// This helps users get the latest version when they switch back to the app
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        // Small delay to avoid checking immediately on every tab switch
+        setTimeout(() => {
+            auth.checkVersionAndRefresh(false);
+        }, 1000);
+    }
+});
+
+// Check for updates periodically (every 5 minutes) for long-running sessions
+setInterval(() => {
+    // Only check if page is visible
+    if (document.visibilityState === 'visible') {
+        auth.checkVersionAndRefresh(false);
+    }
+}, 5 * 60 * 1000);
 

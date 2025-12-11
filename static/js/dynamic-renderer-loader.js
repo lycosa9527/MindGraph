@@ -79,23 +79,33 @@ class DynamicRendererLoader {
     
     /**
      * Load a JavaScript file dynamically
+     * 
+     * Appends version query string for cache busting when MINDGRAPH_VERSION is available.
      */
     loadScript(src) {
         return new Promise((resolve, reject) => {
-            // Check if script is already loaded
-            const existingScript = document.querySelector(`script[src="${src}"]`);
+            // Append version query string for cache busting
+            let versionedSrc = src;
+            if (window.MINDGRAPH_VERSION) {
+                const separator = src.includes('?') ? '&' : '?';
+                versionedSrc = `${src}${separator}v=${window.MINDGRAPH_VERSION}`;
+            }
+            
+            // Check if script is already loaded (check both versioned and unversioned)
+            const existingScript = document.querySelector(`script[src="${versionedSrc}"]`) ||
+                                   document.querySelector(`script[src="${src}"]`);
             if (existingScript) {
                 resolve();
                 return;
             }
             
             const script = document.createElement('script');
-            script.src = src;
+            script.src = versionedSrc;
             script.type = 'text/javascript';
             script.async = true;
             
             script.onload = () => resolve();
-            script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+            script.onerror = () => reject(new Error(`Failed to load script: ${versionedSrc}`));
             
             document.head.appendChild(script);
         });
