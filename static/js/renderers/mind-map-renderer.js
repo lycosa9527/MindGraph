@@ -225,15 +225,22 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             const topicX = centerX + pos.x;
             const topicY = centerY + pos.y;
             
+            // Check if text is empty or whitespace - don't use placeholder text
+            const topicTextRaw = pos.text || '';
+            const topicText = topicTextRaw.trim();
+            
             // Calculate adaptive radius based on actual text dimensions
+            // Use empty string for radius calculation if text is empty, but maintain minimum radius
             let topicRadius;
             if (typeof getTextRadius === 'function') {
-                topicRadius = getTextRadius(pos.text || 'Topic', THEME.fontTopic || '16px', 20);
+                topicRadius = getTextRadius(topicText || '', THEME.fontTopic || '16px', 20);
             } else if (typeof window.MindGraphUtils !== 'undefined' && window.MindGraphUtils.getTextRadius) {
-                topicRadius = window.MindGraphUtils.getTextRadius(pos.text || 'Topic', THEME.fontTopic || '16px', 20);
+                topicRadius = window.MindGraphUtils.getTextRadius(topicText || '', THEME.fontTopic || '16px', 20);
             } else {
-                // Fallback calculation
-                topicRadius = Math.max(30, Math.min(60, (pos.text || 'Topic').length * 3));
+                // Fallback calculation - maintain minimum radius even for empty text
+                topicRadius = topicText.length > 0 
+                    ? Math.max(30, Math.min(60, topicText.length * 3))
+                    : 30; // Minimum radius for empty topic
             }
             
             // Use white fill to hide connections behind nodes
@@ -263,38 +270,36 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-node-id', 'topic_center')
                 .attr('data-node-type', 'topic');
             
-            // Render topic text - use multiple text elements (tspan doesn't render)
-            const topicText = pos.text || 'Topic';
-            const topicFontSize = parseFloat(THEME.fontTopic || '16px');
-            const topicMaxWidth = topicRadius * 1.8; // Max width based on circle radius
-            const topicLineHeight = Math.round(topicFontSize * 1.2);
-            const measureLineWidth = createMeasureLineWidth();
-            
-            // Use splitAndWrapText for automatic word wrapping
-            const topicLines = (typeof window.splitAndWrapText === 'function')
-                ? window.splitAndWrapText(topicText, topicFontSize, topicMaxWidth, measureLineWidth)
-                : (topicText ? [topicText] : ['']);
-            
-            // Ensure at least one line for placeholder
-            const finalTopicLines = topicLines.length > 0 ? topicLines : [''];
-            
-            // WORKAROUND: Use multiple text elements instead of tspan
-            const topicStartY = topicY - (finalTopicLines.length - 1) * topicLineHeight / 2;
-            finalTopicLines.forEach((line, i) => {
-                nodesLayer.append('text')
-                    .attr('x', topicX)
-                    .attr('y', topicStartY + i * topicLineHeight)
-                    .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', finalTextColor)
-                    .attr('font-size', THEME.fontTopic || '16px')
-                    .attr('font-weight', 'bold')
-                    .attr('data-text-for', 'topic_center')
-                    .attr('data-node-id', 'topic_center')
-                    .attr('data-node-type', 'topic')
-                    .attr('data-line-index', i)
-                    .text(line);
-            });
+            // Only render text if there's actual content
+            if (topicText.length > 0) {
+                const topicFontSize = parseFloat(THEME.fontTopic || '16px');
+                const topicMaxWidth = topicRadius * 1.8; // Max width based on circle radius
+                const topicLineHeight = Math.round(topicFontSize * 1.2);
+                const measureLineWidth = createMeasureLineWidth();
+                
+                // Use splitAndWrapText for automatic word wrapping
+                const topicLines = (typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(topicText, topicFontSize, topicMaxWidth, measureLineWidth)
+                    : [topicText];
+                
+                // WORKAROUND: Use multiple text elements instead of tspan
+                const topicStartY = topicY - (topicLines.length - 1) * topicLineHeight / 2;
+                topicLines.forEach((line, i) => {
+                    nodesLayer.append('text')
+                        .attr('x', topicX)
+                        .attr('y', topicStartY + i * topicLineHeight)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', finalTextColor)
+                        .attr('font-size', THEME.fontTopic || '16px')
+                        .attr('font-weight', 'bold')
+                        .attr('data-text-for', 'topic_center')
+                        .attr('data-node-id', 'topic_center')
+                        .attr('data-node-type', 'topic')
+                        .attr('data-line-index', i)
+                        .text(line);
+                });
+            }
                 
         } else if (pos.node_type === 'branch') {
             // Branch (rectangle)
@@ -304,22 +309,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             // Create measureLineWidth function FIRST for accurate text measurement
             const measureLineWidth = createMeasureLineWidth();
             
-            // Calculate adaptive width and height for multi-line text
-            const branchText = pos.text || 'Branch';
+            // Check if text is empty or whitespace - don't use placeholder text
+            const branchTextRaw = pos.text || '';
+            const branchText = branchTextRaw.trim();
             const branchFontSize = parseFloat(THEME.fontBranch || '16px');
             const branchLineHeight = Math.round(branchFontSize * 1.2);
             const branchMaxTextWidth = 200; // Max width before wrapping
             
             // Split by newlines first, then wrap if needed
-            const branchLines = (typeof window.splitAndWrapText === 'function')
-                ? window.splitAndWrapText(branchText, branchFontSize, branchMaxTextWidth, measureLineWidth)
-                : branchText.split(/\n/);
-            const branchTextHeight = branchLines.length * branchLineHeight;
+            const branchLines = branchText.length > 0
+                ? ((typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(branchText, branchFontSize, branchMaxTextWidth, measureLineWidth)
+                    : branchText.split(/\n/))
+                : [];
+            const branchTextHeight = branchLines.length > 0 ? branchLines.length * branchLineHeight : 0;
             
             // Calculate width based on actual text measurement
             // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
             // This ensures node width adapts correctly when text is edited
-            const branchMeasuredWidth = Math.max(...branchLines.map(l => measureLineWidth(l, branchFontSize)), 20);
+            const branchMeasuredWidth = branchLines.length > 0
+                ? Math.max(...branchLines.map(l => measureLineWidth(l, branchFontSize)), 20)
+                : 20;
             const branchWidth = Math.max(100, branchMeasuredWidth + 24); // Min 100px, add 24px padding
             const branchHeight = Math.max(50, branchTextHeight + 20);
             
@@ -359,25 +369,25 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-branch-index', pos.branch_index)
                 .attr('data-array-index', pos.branch_index);
             
-            // Ensure at least one line for placeholder
-            const finalBranchLines = branchLines.length > 0 ? branchLines : [''];
-            
-            // WORKAROUND: Use multiple text elements instead of tspan
-            const branchStartY = branchY - (finalBranchLines.length - 1) * branchLineHeight / 2;
-            finalBranchLines.forEach((line, i) => {
-                nodesLayer.append('text')
-                    .attr('x', branchX)
-                    .attr('y', branchStartY + i * branchLineHeight)
-                    .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', finalBranchTextColor)
-                    .attr('font-size', THEME.fontBranch || '16px')
-                    .attr('data-text-for', branchNodeId)
-                    .attr('data-node-id', branchNodeId)
-                    .attr('data-node-type', 'branch')
-                    .attr('data-line-index', i)
-                    .text(line);
-            });
+            // Only render text if there's actual content
+            if (branchLines.length > 0) {
+                // WORKAROUND: Use multiple text elements instead of tspan
+                const branchStartY = branchY - (branchLines.length - 1) * branchLineHeight / 2;
+                branchLines.forEach((line, i) => {
+                    nodesLayer.append('text')
+                        .attr('x', branchX)
+                        .attr('y', branchStartY + i * branchLineHeight)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', finalBranchTextColor)
+                        .attr('font-size', THEME.fontBranch || '16px')
+                        .attr('data-text-for', branchNodeId)
+                        .attr('data-node-id', branchNodeId)
+                        .attr('data-node-type', 'branch')
+                        .attr('data-line-index', i)
+                        .text(line);
+                });
+            }
                 
         } else if (pos.node_type === 'child') {
             // Child (rectangle)
@@ -387,22 +397,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
             // Create measureLineWidth function FIRST for accurate text measurement
             const measureLineWidth = createMeasureLineWidth();
             
-            // Calculate adaptive width and height for multi-line text
-            const childText = pos.text || 'Child';
+            // Check if text is empty or whitespace - don't use placeholder text
+            const childTextRaw = pos.text || '';
+            const childText = childTextRaw.trim();
             const childFontSize = parseFloat(THEME.fontChild || '14px');
             const childLineHeight = Math.round(childFontSize * 1.2);
             const childMaxTextWidth = 180; // Max width before wrapping
             
             // Split by newlines first, then wrap if needed
-            const childLines = (typeof window.splitAndWrapText === 'function')
-                ? window.splitAndWrapText(childText, childFontSize, childMaxTextWidth, measureLineWidth)
-                : childText.split(/\n/);
-            const childTextHeight = childLines.length * childLineHeight;
+            const childLines = childText.length > 0
+                ? ((typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(childText, childFontSize, childMaxTextWidth, measureLineWidth)
+                    : childText.split(/\n/))
+                : [];
+            const childTextHeight = childLines.length > 0 ? childLines.length * childLineHeight : 0;
             
             // Calculate width based on actual text measurement
             // ALWAYS recalculate based on wrapped lines - ignore pos.width from Python
             // This ensures node width adapts correctly when text is edited
-            const childMeasuredWidth = Math.max(...childLines.map(l => measureLineWidth(l, childFontSize)), 20);
+            const childMeasuredWidth = childLines.length > 0
+                ? Math.max(...childLines.map(l => measureLineWidth(l, childFontSize)), 20)
+                : 20;
             const childWidth = Math.max(80, childMeasuredWidth + 20); // Min 80px, add 20px padding
             const childHeight = Math.max(40, childTextHeight + 16);
             
@@ -443,27 +458,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME) {
                 .attr('data-child-index', pos.child_index)
                 .attr('data-array-index', pos.child_index);
             
-            // Ensure at least one line for placeholder
-            const finalChildLines = childLines.length > 0 ? childLines : [''];
-            
-            // WORKAROUND: Use multiple text elements instead of tspan
-            const childStartY = childY - (finalChildLines.length - 1) * childLineHeight / 2;
-            finalChildLines.forEach((line, i) => {
-                nodesLayer.append('text')
-                    .attr('x', childX)
-                    .attr('y', childStartY + i * childLineHeight)
-                    .attr('text-anchor', 'middle')
-                    .attr('dominant-baseline', 'middle')
-                    .attr('fill', finalChildTextColor)
-                    .attr('font-size', THEME.fontChild || '14px')
-                    .attr('data-text-for', childNodeId)
-                    .attr('data-node-id', childNodeId)
-                    .attr('data-node-type', 'child')
-                    .attr('data-branch-index', pos.branch_index)
-                    .attr('data-child-index', pos.child_index)
-                    .attr('data-line-index', i)
-                    .text(line);
-            });
+            // Only render text if there's actual content
+            if (childLines.length > 0) {
+                // WORKAROUND: Use multiple text elements instead of tspan
+                const childStartY = childY - (childLines.length - 1) * childLineHeight / 2;
+                childLines.forEach((line, i) => {
+                    nodesLayer.append('text')
+                        .attr('x', childX)
+                        .attr('y', childStartY + i * childLineHeight)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', finalChildTextColor)
+                        .attr('font-size', THEME.fontChild || '14px')
+                        .attr('data-text-for', childNodeId)
+                        .attr('data-node-id', childNodeId)
+                        .attr('data-node-type', 'child')
+                        .attr('data-branch-index', pos.branch_index)
+                        .attr('data-child-index', pos.child_index)
+                        .attr('data-line-index', i)
+                        .text(line);
+                });
+            }
         }
     });
     

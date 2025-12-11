@@ -168,20 +168,50 @@ class BridgeMapOperations {
         const nodeType = shapeElement.attr('data-node-type');
         const pairIndex = parseInt(shapeElement.attr('data-pair-index'));
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
+        // Helper function to preserve dimensions when emptying
+        const preserveDimensionsIfEmpty = (nodeKey, text) => {
+            const preservedWidth = shapeElement.attr('data-preserved-width');
+            const preservedHeight = shapeElement.attr('data-preserved-height');
+            const preservedRadius = shapeElement.attr('data-preserved-radius');
+            
+            if ((preservedWidth && preservedHeight || preservedRadius) && text === '') {
+                spec._node_dimensions[nodeKey] = {};
+                if (preservedWidth && preservedHeight) {
+                    spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                    spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                }
+                if (preservedRadius) {
+                    spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                }
+                this.logger.debug('BridgeMapOperations', 'Preserved dimensions for empty node', {
+                    nodeKey,
+                    dimensions: spec._node_dimensions[nodeKey]
+                });
+            }
+        };
+        
         if (nodeType === 'dimension') {
             // Update dimension label
             if (updates.text !== undefined) {
+                preserveDimensionsIfEmpty('dimension', updates.text);
                 spec.dimension = updates.text;
             }
         } else if (!isNaN(pairIndex) && pairIndex < spec.analogies.length) {
             if (nodeType === 'left') {
                 // Update left item in the pair
                 if (updates.text !== undefined) {
+                    preserveDimensionsIfEmpty(`left-${pairIndex}`, updates.text);
                     spec.analogies[pairIndex].left = updates.text;
                 }
             } else if (nodeType === 'right') {
                 // Update right item in the pair
                 if (updates.text !== undefined) {
+                    preserveDimensionsIfEmpty(`right-${pairIndex}`, updates.text);
                     spec.analogies[pairIndex].right = updates.text;
                 }
             }

@@ -113,13 +113,33 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     d3.select('#d3-container').style('padding', '0').style('margin', '0');
     
     // Calculate sizes
-    const topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
+    // Check for preserved dimensions first
+    const nodeDimensions = spec._node_dimensions || {};
+    
+    // Topic radius - use preserved if available
+    let topicR;
+    if (nodeDimensions.topic && nodeDimensions.topic.r) {
+        topicR = nodeDimensions.topic.r;
+    } else {
+        topicR = getTextRadius(spec.topic, THEME.fontTopic, 20);
+    }
     
     // Calculate uniform radius for all attribute nodes
     // Handle both string and object attributes (t can be "text" or {text: "text"})
-    const attributeRadii = spec.attributes.map(t => {
+    // Use preserved dimensions if available, otherwise calculate
+    const attributeRadii = spec.attributes.map((t, idx) => {
         const textStr = typeof t === 'object' ? (t.text || '') : (t || '');
-        return getTextRadius(textStr, THEME.fontAttribute, 10);
+        const nodeKey = `attribute-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.r) {
+            return preservedDims.r;
+        } else if (preservedDims && preservedDims.w && preservedDims.h) {
+            // Convert width/height to radius (use average)
+            return Math.max(preservedDims.w, preservedDims.h) / 2;
+        } else {
+            return getTextRadius(textStr, THEME.fontAttribute, 10);
+        }
     });
     const uniformAttributeR = Math.max(...attributeRadii, 30);
     

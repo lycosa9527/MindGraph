@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.52] - 2025-12-11 - Standalone Database Backup Tool
+
+### Added
+
+- **Standalone Database Backup Script** (`scripts/standalone_backup.py`)
+  - New independent backup tool that can be used on any server without the full MindGraph codebase
+  - Safely backs up SQLite databases using SQLite's native backup API
+  - Properly handles WAL mode by automatically checkpointing and copying all committed data
+  - Requires only Python 3.7+ with sqlite3 (no additional dependencies)
+  - Automatic backup directory creation if needed
+  - Clear success/error messages with file size reporting
+  - Automatic cleanup of partial backup files on failure
+
+### Technical Details
+
+**Features:**
+- Uses `sqlite3.Connection.backup()` API for safe, consistent backups
+- Handles WAL mode correctly - no need to copy .wal or .shm files
+- Timeout handling (30s) for database connections
+- Generates timestamped backup filenames when not specified
+
+**Usage:**
+```bash
+python3 standalone_backup.py /data/mindgraph.db
+python3 standalone_backup.py /data/mindgraph.db /backup/mindgraph.db.backup
+```
+
+**Impact:**
+- Enables safe database backups on production servers without deploying full codebase
+- Prevents data corruption issues when backing up databases in WAL mode
+- Provides clear feedback for automation and scripting
+
+**Files Added:**
+- `scripts/standalone_backup.py` - Standalone backup tool (167 lines)
+
+---
+
+## [4.28.51] - 2025-01-XX - Diagram Export Fix & Empty Node Dimension Preservation
+
+### Fixed
+
+- **Diagram Export View Fitting** (`static/js/managers/editor/view-manager.js`, `static/js/editor/interactive-editor.js`, `static/js/editor/diagram-selector.js`)
+  - Fixed `fitDiagramForExport not available` warning when exporting multiflow maps and other diagram types
+  - Root cause: `InteractiveEditor.modules` was not properly initialized when `ToolbarManager` accessed `fitDiagramForExport`
+  - Ensured `ViewManager.fitDiagramForExport()` is accessible through the editor instance
+  - Removed fallback logic to force proper initialization and better error detection
+  - Export now correctly fits diagram content to viewBox for all diagram types
+
+- **Empty Node Dimension Preservation** (All diagram operations modules and renderers)
+  - Fixed issue where emptying a node caused it to shrink to minimal size
+  - Empty node button now preserves node dimensions (width, height, radius) across all diagram types
+  - Dimensions are stored in `spec._node_dimensions` and persist across re-renders
+  - Applies to: multi-flow-map, bubble-map, circle-map, flow-map, tree-map, double-bubble-map, brace-map, bridge-map, concept-map, and mindmap
+
+### Added
+
+- **Node Dimension Preservation System**
+  - Added `_node_dimensions` property to diagram spec to store preserved dimensions per node
+  - Added dimension capture in `NodePropertyOperationsManager.handleEmptyNode()` for rect, circle, and ellipse elements
+  - Added dimension preservation logic in all diagram operations modules (`updateNode` methods)
+  - Added dimension restoration logic in all diagram renderers to use preserved dimensions when available
+
+### Changed
+
+- **ViewManager Export Fitting** (`static/js/managers/editor/view-manager.js`)
+  - Enhanced `fitDiagramForExport()` to handle both `zoom-group` and direct SVG children structures
+  - Improved bounds calculation to include all visual elements (shapes, paths, text)
+  - Added comprehensive error handling and logging for debugging export issues
+  - Export fitting now executes synchronously without animation for immediate effect
+
+- **Empty Node Handler** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Modified `handleEmptyNode()` to capture current node dimensions from DOM before clearing text
+  - Dimensions are passed to `updateNodeText` as `preservedWidth`, `preservedHeight`, and `preservedRadius`
+  - Supports all shape types: rectangles, circles, and ellipses
+
+- **Diagram Operations Modules** (All 10 diagram types)
+  - Updated `updateNode()` methods to detect empty text with preserved dimensions
+  - Store dimensions in `spec._node_dimensions` using unique node keys (e.g., `cause-0`, `attribute-1`)
+  - Clear preserved dimensions when text is no longer empty
+  - Modules updated: `multi-flow-map-operations.js`, `bubble-map-operations.js`, `circle-map-operations.js`, `flow-map-operations.js`, `tree-map-operations.js`, `double-bubble-map-operations.js`, `brace-map-operations.js`, `bridge-map-operations.js`, `concept-map-operations.js`, `mindmap-operations.js`
+
+- **Diagram Renderers** (All 10 diagram types)
+  - Updated renderers to check `spec._node_dimensions` before calculating node sizes
+  - Use preserved dimensions if available, fall back to calculated dimensions based on text content
+  - Renderers updated: `flow-renderer.js`, `bubble-map-renderer.js`, `circle-map-renderer.js`, `tree-renderer.js`, `double-bubble-map-renderer.js`, `brace-map-renderer.js`, `bridge-map-renderer.js`, `concept-map-renderer.js`, `mind-map-renderer.js`
+
+### Technical Details
+
+**Problem:**
+1. Export functionality showed warning `fitDiagramForExport not available` for multiflow maps, causing exports to use current zoom level instead of fitting all content
+2. Emptying a node caused it to shrink to minimal size because renderers recalculated dimensions based on empty text content
+
+**Solution:**
+1. **Export Fix**: 
+   - Ensured `InteractiveEditor.modules` is properly initialized in `DiagramSelector.transitionToEditor()`
+   - Enhanced `ViewManager.fitDiagramForExport()` to handle different SVG structures
+   - Removed fallback logic to ensure proper error detection and initialization
+
+2. **Dimension Preservation**:
+   - Capture dimensions from DOM when emptying node (via `getBBox()`)
+   - Store dimensions in `spec._node_dimensions` with unique keys per node
+   - Check preserved dimensions in renderers before calculating new sizes
+   - Clear preserved dimensions when text is restored
+
+**Impact:**
+- Export now works correctly for all diagram types, fitting content properly
+- Empty nodes maintain their visual size, improving UX and preventing accidental shrinking
+- Consistent behavior across all 10 diagram types
+- Better error detection and logging for future debugging
+
+**Files Modified:**
+- `static/js/managers/editor/view-manager.js` - Enhanced export fitting with better SVG structure handling
+- `static/js/editor/interactive-editor.js` - Added `fitDiagramForExport()` delegation method
+- `static/js/editor/diagram-selector.js` - Ensured proper module initialization
+- `static/js/managers/toolbar/node-property-operations-manager.js` - Added dimension capture for empty node
+- All 10 diagram operations modules - Added dimension preservation logic
+- All 10 diagram renderers - Added dimension restoration logic
+
+---
+
 ## [4.28.50] - 2025-12-19 - MindMate Image Display & CSP Fix
 
 ### Fixed

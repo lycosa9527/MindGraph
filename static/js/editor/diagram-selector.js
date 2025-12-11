@@ -475,6 +475,8 @@ class DiagramSelector {
             
             // Phase 7: Instantiate extracted modules
             // These modules use the existing Event Bus (window.eventBus) for decoupled communication
+            // CRITICAL: Assign to window.currentEditor.modules (which is the same as this.modules on the instance)
+            // This ensures fitDiagramForExport() can access modules via this.modules.view
             window.currentEditor.modules = {
                 export: window.sessionLifecycle.register(
                     new ExportManager(window.eventBus, window.stateManager, logger),
@@ -522,6 +524,13 @@ class DiagramSelector {
                     'llmValidation'
                 )
             };
+            
+            // CRITICAL: Ensure this.modules reference is set (window.currentEditor IS the instance, but be explicit)
+            // This ensures that when ToolbarManager calls this.editor.fitDiagramForExport(),
+            // the method can access this.modules.view correctly
+            if (window.currentEditor.modules && !window.currentEditor.modules.view) {
+                logger.error('DiagramSelector', 'ViewManager module not found after initialization');
+            }
             
             // Day 2: LLM Auto-Complete Module (needs reference to llmValidation for synchronous calls)
             window.currentEditor.modules.llmAutoComplete = window.sessionLifecycle.register(

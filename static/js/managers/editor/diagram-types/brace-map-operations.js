@@ -302,14 +302,43 @@ class BraceMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
+        // Helper function to preserve dimensions when emptying
+        const preserveDimensionsIfEmpty = (nodeKey, text) => {
+            const preservedWidth = shapeElement.attr('data-preserved-width');
+            const preservedHeight = shapeElement.attr('data-preserved-height');
+            const preservedRadius = shapeElement.attr('data-preserved-radius');
+            
+            if ((preservedWidth && preservedHeight || preservedRadius) && text === '') {
+                spec._node_dimensions[nodeKey] = {};
+                if (preservedWidth && preservedHeight) {
+                    spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                    spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                }
+                if (preservedRadius) {
+                    spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                }
+                this.logger.debug('BraceMapOperations', 'Preserved dimensions for empty node', {
+                    nodeKey,
+                    dimensions: spec._node_dimensions[nodeKey]
+                });
+            }
+        };
+        
         if (nodeType === 'topic') {
             // Update the main topic (whole in brace map terminology)
             if (updates.text !== undefined) {
+                preserveDimensionsIfEmpty('topic', updates.text);
                 spec.whole = updates.text;
             }
         } else if (nodeType === 'dimension') {
             // Update the decomposition dimension
             if (updates.text !== undefined) {
+                preserveDimensionsIfEmpty('dimension', updates.text);
                 spec.dimension = updates.text;
             }
         } else if (nodeType === 'part') {
@@ -317,6 +346,7 @@ class BraceMapOperations {
             const partIndex = parseInt(shapeElement.attr('data-part-index'));
             if (!isNaN(partIndex) && spec.parts && partIndex < spec.parts.length) {
                 if (updates.text !== undefined) {
+                    preserveDimensionsIfEmpty(`part-${partIndex}`, updates.text);
                     spec.parts[partIndex].name = updates.text;
                 }
             }
@@ -329,6 +359,7 @@ class BraceMapOperations {
                 const part = spec.parts[partIndex];
                 if (part.subparts && subpartIndex < part.subparts.length) {
                     if (updates.text !== undefined) {
+                        preserveDimensionsIfEmpty(`subpart-${partIndex}-${subpartIndex}`, updates.text);
                         part.subparts[subpartIndex].name = updates.text;
                     }
                 }

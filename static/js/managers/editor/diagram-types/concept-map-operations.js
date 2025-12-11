@@ -182,10 +182,39 @@ class ConceptMapOperations {
             }
         }
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         // Find the concept in spec and update it
         if (nodeText && updates.text !== undefined) {
             const concept = spec.concepts.find(c => c.text === nodeText);
             if (concept) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                const preservedRadius = shapeElement.attr('data-preserved-radius');
+                
+                if ((preservedWidth && preservedHeight || preservedRadius) && updates.text === '') {
+                    // Use the old text as key since we're updating it
+                    const nodeKey = `concept-${nodeText}`;
+                    spec._node_dimensions[nodeKey] = {};
+                    if (preservedWidth && preservedHeight) {
+                        spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                        spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                    }
+                    if (preservedRadius) {
+                        spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                    }
+                    // Also store with new (empty) text key for lookup after update
+                    spec._node_dimensions[`concept-${updates.text}`] = spec._node_dimensions[nodeKey];
+                    this.logger.debug('ConceptMapOperations', 'Preserved dimensions for empty concept node', {
+                        nodeKey,
+                        dimensions: spec._node_dimensions[nodeKey]
+                    });
+                }
+                
                 // Update the text in the concept
                 const oldText = concept.text;
                 concept.text = updates.text;

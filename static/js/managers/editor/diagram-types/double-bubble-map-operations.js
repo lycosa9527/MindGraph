@@ -262,10 +262,38 @@ class DoubleBubbleMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
+        // Helper function to preserve dimensions when emptying
+        const preserveDimensionsIfEmpty = (nodeKey, text) => {
+            const preservedWidth = shapeElement.attr('data-preserved-width');
+            const preservedHeight = shapeElement.attr('data-preserved-height');
+            const preservedRadius = shapeElement.attr('data-preserved-radius');
+            
+            if ((preservedWidth && preservedHeight || preservedRadius) && text === '') {
+                spec._node_dimensions[nodeKey] = {};
+                if (preservedWidth && preservedHeight) {
+                    spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                    spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                }
+                if (preservedRadius) {
+                    spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                }
+                this.logger.debug('DoubleBubbleMapOperations', 'Preserved dimensions for empty node', {
+                    nodeKey,
+                    dimensions: spec._node_dimensions[nodeKey]
+                });
+            }
+        };
+        
         switch(nodeType) {
             case 'left':
                 // Update left topic
                 if (updates.text !== undefined) {
+                    preserveDimensionsIfEmpty('left', updates.text);
                     spec.left = updates.text;
                 }
                 break;
@@ -273,6 +301,7 @@ class DoubleBubbleMapOperations {
             case 'right':
                 // Update right topic
                 if (updates.text !== undefined) {
+                    preserveDimensionsIfEmpty('right', updates.text);
                     spec.right = updates.text;
                 }
                 break;
@@ -282,6 +311,7 @@ class DoubleBubbleMapOperations {
                 const simIndex = parseInt(shapeElement.attr('data-array-index'));
                 if (!isNaN(simIndex) && Array.isArray(spec.similarities) && simIndex < spec.similarities.length) {
                     if (updates.text !== undefined) {
+                        preserveDimensionsIfEmpty(`similarity-${simIndex}`, updates.text);
                         spec.similarities[simIndex] = updates.text;
                     }
                 }
@@ -292,6 +322,7 @@ class DoubleBubbleMapOperations {
                 const leftDiffIndex = parseInt(shapeElement.attr('data-array-index'));
                 if (!isNaN(leftDiffIndex) && Array.isArray(spec.left_differences) && leftDiffIndex < spec.left_differences.length) {
                     if (updates.text !== undefined) {
+                        preserveDimensionsIfEmpty(`left_difference-${leftDiffIndex}`, updates.text);
                         spec.left_differences[leftDiffIndex] = updates.text;
                     }
                 }
@@ -302,6 +333,7 @@ class DoubleBubbleMapOperations {
                 const rightDiffIndex = parseInt(shapeElement.attr('data-array-index'));
                 if (!isNaN(rightDiffIndex) && Array.isArray(spec.right_differences) && rightDiffIndex < spec.right_differences.length) {
                     if (updates.text !== undefined) {
+                        preserveDimensionsIfEmpty(`right_difference-${rightDiffIndex}`, updates.text);
                         spec.right_differences[rightDiffIndex] = updates.text;
                     }
                 }

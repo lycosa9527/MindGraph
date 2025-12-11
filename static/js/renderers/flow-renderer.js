@@ -339,10 +339,31 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     }
 
     // Measure title and steps to compute adaptive sizes (vertical layout)
-    const titleSize = measureTextSize(spec.title, THEME.fontTitle);
-    const stepSizes = spec.steps.map(s => {
+    // Check for preserved dimensions first
+    const nodeDimensions = spec._node_dimensions || {};
+    
+    // Title size - use preserved if available
+    let titleSize;
+    if (nodeDimensions.title && nodeDimensions.title.w && nodeDimensions.title.h) {
+        titleSize = { w: nodeDimensions.title.w, h: nodeDimensions.title.h };
+    } else {
+        titleSize = measureTextSize(spec.title, THEME.fontTitle);
+    }
+    
+    const stepSizes = spec.steps.map((s, idx) => {
         // Handle both string steps and object steps (for backward compatibility)
         const text = typeof s === 'string' ? s : (s.text || '');
+        
+        // Check for preserved dimensions first
+        const nodeKey = `step-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.w && preservedDims.h) {
+            // Use preserved dimensions for empty nodes
+            return { text, w: preservedDims.w, h: preservedDims.h };
+        }
+        
+        // Calculate dimensions based on text
         // Split by newlines to handle multi-line text (Ctrl+Enter)
         const lines = (typeof window.splitTextLines === 'function') 
             ? window.splitTextLines(text) 
@@ -375,10 +396,21 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     const subOffsetX = 40; // gap between step rect and substeps group
     const substepFontSize = Math.max(12, THEME.fontStep - 1);
     const substepLineHeight = Math.round(substepFontSize * 1.2);
-    const subNodesPerStep = stepSizes.map(stepObj => {
+    const subNodesPerStep = stepSizes.map((stepObj, stepIdx) => {
         const subs = stepToSubsteps[stepObj.text] || [];
-        return subs.map(txt => {
+        return subs.map((txt, substepIdx) => {
             const text = txt || '';
+            
+            // Check for preserved dimensions first
+            const nodeKey = `substep-${stepIdx}-${substepIdx}`;
+            const preservedDims = nodeDimensions[nodeKey];
+            
+            if (preservedDims && preservedDims.w && preservedDims.h) {
+                // Use preserved dimensions for empty nodes
+                return { text, w: preservedDims.w, h: preservedDims.h };
+            }
+            
+            // Calculate dimensions based on text
             // Split by newlines to handle multi-line text (Ctrl+Enter)
             const lines = (typeof window.splitTextLines === 'function') 
                 ? window.splitTextLines(text) 
@@ -1792,13 +1824,44 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     const eventH = evSize.h + THEME.vPadEvent * 2;
     
     // Measure causes and effects
-    const causes = (spec.causes || []).map(text => {
+    // CRITICAL: Maintain minimum dimensions for empty nodes to prevent shrinking
+    // Also preserve dimensions if they were stored when node was emptied
+    const minNodeWidth = 100;  // Minimum width for cause/effect nodes
+    const minNodeHeight = 42;  // Minimum height for cause/effect nodes
+    
+    const nodeDimensions = spec._node_dimensions || {};
+    
+    const causes = (spec.causes || []).map((text, idx) => {
+        const nodeKey = `cause-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.w && preservedDims.h) {
+            // Use preserved dimensions for empty nodes
+            return { text, w: preservedDims.w, h: preservedDims.h };
+        }
+        
+        // Calculate dimensions based on text
         const s = measureTextSize(text, THEME.fontCause);
-        return { text, w: s.w + THEME.hPadNode * 2, h: s.h + THEME.vPadNode * 2 };
+        // Ensure minimum dimensions even for empty text
+        const w = Math.max(s.w + THEME.hPadNode * 2, minNodeWidth);
+        const h = Math.max(s.h + THEME.vPadNode * 2, minNodeHeight);
+        return { text, w, h };
     });
-    const effects = (spec.effects || []).map(text => {
+    const effects = (spec.effects || []).map((text, idx) => {
+        const nodeKey = `effect-${idx}`;
+        const preservedDims = nodeDimensions[nodeKey];
+        
+        if (preservedDims && preservedDims.w && preservedDims.h) {
+            // Use preserved dimensions for empty nodes
+            return { text, w: preservedDims.w, h: preservedDims.h };
+        }
+        
+        // Calculate dimensions based on text
         const s = measureTextSize(text, THEME.fontEffect);
-        return { text, w: s.w + THEME.hPadNode * 2, h: s.h + THEME.vPadNode * 2 };
+        // Ensure minimum dimensions even for empty text
+        const w = Math.max(s.w + THEME.hPadNode * 2, minNodeWidth);
+        const h = Math.max(s.h + THEME.vPadNode * 2, minNodeHeight);
+        return { text, w, h };
     });
     
     // Calculate required dimensions based on content

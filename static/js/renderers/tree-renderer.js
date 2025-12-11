@@ -176,7 +176,15 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
     // Calculate layout - rootX will be calculated after branch positions are determined
     const rootY = 80;
     const rootFont = THEME.fontRoot || 20;
-    const rootBox = measureSvgTextBox(svg, spec.topic, rootFont, 16, 12);
+    
+    // Check for preserved dimensions first
+    const nodeDimensions = spec._node_dimensions || {};
+    let rootBox;
+    if (nodeDimensions.topic && nodeDimensions.topic.w && nodeDimensions.topic.h) {
+        rootBox = { w: nodeDimensions.topic.w, h: nodeDimensions.topic.h };
+    } else {
+        rootBox = measureSvgTextBox(svg, spec.topic, rootFont, 16, 12);
+    }
     
     // Draw branches
     const branchY = rootY + rootBox.h / 2 + 60;
@@ -192,8 +200,24 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
             return null;
         }
         
+        // Filter out empty branches (after trimming whitespace)
+        const trimmedChildText = childText.trim();
+        if (trimmedChildText.length === 0) {
+            logger.debug('TreeRenderer', 'Skipping empty branch');
+            return null;
+        }
+        
         const branchFont = THEME.fontBranch || 16;
-        const branchBox = measureSvgTextBox(svg, childText, branchFont, 14, 10);
+        
+        // Check for preserved dimensions for branch
+        let branchBox;
+        const branchNodeKey = `category-${specIndex}`;
+        if (nodeDimensions[branchNodeKey] && nodeDimensions[branchNodeKey].w && nodeDimensions[branchNodeKey].h) {
+            branchBox = { w: nodeDimensions[branchNodeKey].w, h: nodeDimensions[branchNodeKey].h };
+        } else {
+            branchBox = measureSvgTextBox(svg, childText, branchFont, 14, 10);
+        }
+        
         const leafFont = THEME.fontLeaf || 14;
         let maxLeafW = 0;
         const leafBoxes = (Array.isArray(child.children) ? child.children : []).map((leaf, leafSpecIndex) => {
@@ -202,7 +226,23 @@ function renderTreeMap(spec, theme = null, dimensions = null) {
                 logger.warn('TreeRenderer', 'Invalid leaf structure', leaf);
                 return null;
             }
-            const b = measureSvgTextBox(svg, leafText, leafFont, 12, 8);
+            
+            // Filter out empty children/leaves (after trimming whitespace)
+            const trimmedLeafText = leafText.trim();
+            if (trimmedLeafText.length === 0) {
+                logger.debug('TreeRenderer', 'Skipping empty leaf');
+                return null;
+            }
+            
+            // Check for preserved dimensions for leaf
+            const leafNodeKey = `leaf-${specIndex}-${leafSpecIndex}`;
+            let b;
+            if (nodeDimensions[leafNodeKey] && nodeDimensions[leafNodeKey].w && nodeDimensions[leafNodeKey].h) {
+                b = { w: nodeDimensions[leafNodeKey].w, h: nodeDimensions[leafNodeKey].h };
+            } else {
+                b = measureSvgTextBox(svg, leafText, leafFont, 12, 8);
+            }
+            
             if (b.w > maxLeafW) maxLeafW = b.w;
             // CRITICAL FIX: Include original leaf index in spec.children[x].children
             return { ...b, text: leafText, specLeafIndex: leafSpecIndex };

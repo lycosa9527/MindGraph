@@ -337,13 +337,41 @@ class MindMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         // Declare branchIndex and childIndex at function scope
         let branchIndex = NaN;
         let childIndex = NaN;
         
+        // Helper function to preserve dimensions when emptying
+        const preserveDimensionsIfEmpty = (nodeKey, text) => {
+            const preservedWidth = shapeElement.attr('data-preserved-width');
+            const preservedHeight = shapeElement.attr('data-preserved-height');
+            const preservedRadius = shapeElement.attr('data-preserved-radius');
+            
+            if ((preservedWidth && preservedHeight || preservedRadius) && text === '') {
+                spec._node_dimensions[nodeKey] = {};
+                if (preservedWidth && preservedHeight) {
+                    spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                    spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                }
+                if (preservedRadius) {
+                    spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                }
+                this.logger.debug('MindMapOperations', 'Preserved dimensions for empty node', {
+                    nodeKey,
+                    dimensions: spec._node_dimensions[nodeKey]
+                });
+            }
+        };
+        
         if (nodeType === 'topic') {
             // Update the central topic
             if (updates.text !== undefined) {
+                preserveDimensionsIfEmpty('topic', updates.text);
                 spec.topic = updates.text;
             }
         } else if (nodeType === 'branch') {
@@ -351,6 +379,7 @@ class MindMapOperations {
             branchIndex = parseInt(shapeElement.attr('data-branch-index'));
             if (!isNaN(branchIndex) && Array.isArray(spec.children)) {
                 if (spec.children[branchIndex] && updates.text !== undefined) {
+                    preserveDimensionsIfEmpty(`branch-${branchIndex}`, updates.text);
                     spec.children[branchIndex].label = updates.text;
                 }
             }
@@ -363,30 +392,51 @@ class MindMapOperations {
                 spec.children[branchIndex] &&
                 Array.isArray(spec.children[branchIndex].children)) {
                 if (spec.children[branchIndex].children[childIndex] && updates.text !== undefined) {
+                    preserveDimensionsIfEmpty(`child-${branchIndex}-${childIndex}`, updates.text);
                     spec.children[branchIndex].children[childIndex].label = updates.text;
                 }
             }
         }
         
         // Update the text in positions as well (if layout exists)
-        // IMPORTANT: Also delete width/height so renderer recalculates based on new text
+        // IMPORTANT: For mind maps, preserve dimensions in positions instead of deleting them
         if (spec._layout && spec._layout.positions && updates.text !== undefined) {
             const positions = spec._layout.positions;
+            const preservedWidth = shapeElement.attr('data-preserved-width');
+            const preservedHeight = shapeElement.attr('data-preserved-height');
+            const preservedRadius = shapeElement.attr('data-preserved-radius');
+            
             if (nodeType === 'topic' && positions.topic) {
                 positions.topic.text = updates.text;
-                // Clear dimensions so renderer recalculates based on new text
-                delete positions.topic.width;
-                delete positions.topic.height;
+                // Preserve dimensions if emptying, otherwise clear for recalculation
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    positions.topic.width = parseFloat(preservedWidth);
+                    positions.topic.height = parseFloat(preservedHeight);
+                } else if (updates.text !== '') {
+                    // Clear dimensions so renderer recalculates based on new text
+                    delete positions.topic.width;
+                    delete positions.topic.height;
+                }
             } else if (nodeType === 'branch' && !isNaN(branchIndex) && positions[`branch_${branchIndex}`]) {
                 positions[`branch_${branchIndex}`].text = updates.text;
-                // Clear dimensions so renderer recalculates based on new text
-                delete positions[`branch_${branchIndex}`].width;
-                delete positions[`branch_${branchIndex}`].height;
+                // Preserve dimensions if emptying, otherwise clear for recalculation
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    positions[`branch_${branchIndex}`].width = parseFloat(preservedWidth);
+                    positions[`branch_${branchIndex}`].height = parseFloat(preservedHeight);
+                } else if (updates.text !== '') {
+                    delete positions[`branch_${branchIndex}`].width;
+                    delete positions[`branch_${branchIndex}`].height;
+                }
             } else if (nodeType === 'child' && !isNaN(branchIndex) && !isNaN(childIndex) && positions[`child_${branchIndex}_${childIndex}`]) {
                 positions[`child_${branchIndex}_${childIndex}`].text = updates.text;
-                // Clear dimensions so renderer recalculates based on new text
-                delete positions[`child_${branchIndex}_${childIndex}`].width;
-                delete positions[`child_${branchIndex}_${childIndex}`].height;
+                // Preserve dimensions if emptying, otherwise clear for recalculation
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    positions[`child_${branchIndex}_${childIndex}`].width = parseFloat(preservedWidth);
+                    positions[`child_${branchIndex}_${childIndex}`].height = parseFloat(preservedHeight);
+                } else if (updates.text !== '') {
+                    delete positions[`child_${branchIndex}_${childIndex}`].width;
+                    delete positions[`child_${branchIndex}_${childIndex}`].height;
+                }
             }
         }
         

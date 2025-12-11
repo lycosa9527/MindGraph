@@ -237,6 +237,11 @@ class MultiFlowMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         if (nodeType === 'event') {
             // Update the central event
             if (updates.text !== undefined) {
@@ -247,6 +252,24 @@ class MultiFlowMapOperations {
             const causeIndex = parseInt(shapeElement.attr('data-cause-index'));
             if (!isNaN(causeIndex) && spec.causes && causeIndex < spec.causes.length) {
                 if (updates.text !== undefined) {
+                    // Check if we should preserve dimensions (when emptying node)
+                    const preservedWidth = shapeElement.attr('data-preserved-width');
+                    const preservedHeight = shapeElement.attr('data-preserved-height');
+                    
+                    if (preservedWidth && preservedHeight && updates.text === '') {
+                        // Store preserved dimensions for this node
+                        const nodeKey = `cause-${causeIndex}`;
+                        spec._node_dimensions[nodeKey] = {
+                            w: parseFloat(preservedWidth),
+                            h: parseFloat(preservedHeight)
+                        };
+                        this.logger.debug('MultiFlowMapOperations', 'Preserved dimensions for empty cause node', {
+                            nodeKey,
+                            width: preservedWidth,
+                            height: preservedHeight
+                        });
+                    }
+                    
                     spec.causes[causeIndex] = updates.text;
                 }
             }
@@ -255,6 +278,24 @@ class MultiFlowMapOperations {
             const effectIndex = parseInt(shapeElement.attr('data-effect-index'));
             if (!isNaN(effectIndex) && spec.effects && effectIndex < spec.effects.length) {
                 if (updates.text !== undefined) {
+                    // Check if we should preserve dimensions (when emptying node)
+                    const preservedWidth = shapeElement.attr('data-preserved-width');
+                    const preservedHeight = shapeElement.attr('data-preserved-height');
+                    
+                    if (preservedWidth && preservedHeight && updates.text === '') {
+                        // Store preserved dimensions for this node
+                        const nodeKey = `effect-${effectIndex}`;
+                        spec._node_dimensions[nodeKey] = {
+                            w: parseFloat(preservedWidth),
+                            h: parseFloat(preservedHeight)
+                        };
+                        this.logger.debug('MultiFlowMapOperations', 'Preserved dimensions for empty effect node', {
+                            nodeKey,
+                            width: preservedWidth,
+                            height: preservedHeight
+                        });
+                    }
+                    
                     spec.effects[effectIndex] = updates.text;
                 }
             }

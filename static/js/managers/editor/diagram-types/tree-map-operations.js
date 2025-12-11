@@ -292,6 +292,11 @@ class TreeMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         this.logger.debug('TreeMapOperations', 'Updating node', {
             nodeId,
             nodeType,
@@ -303,12 +308,41 @@ class TreeMapOperations {
         if (nodeType === 'topic') {
             // Update the root topic
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                const preservedRadius = shapeElement.attr('data-preserved-radius');
+                
+                if ((preservedWidth && preservedHeight || preservedRadius) && updates.text === '') {
+                    spec._node_dimensions['topic'] = {};
+                    if (preservedWidth && preservedHeight) {
+                        spec._node_dimensions['topic'].w = parseFloat(preservedWidth);
+                        spec._node_dimensions['topic'].h = parseFloat(preservedHeight);
+                    }
+                    if (preservedRadius) {
+                        spec._node_dimensions['topic'].r = parseFloat(preservedRadius);
+                    }
+                    this.logger.debug('TreeMapOperations', 'Preserved dimensions for empty topic node');
+                }
+                
                 spec.topic = updates.text;
                 this.logger.debug('TreeMapOperations', 'Updated topic', { newText: updates.text });
             }
         } else if (nodeType === 'dimension') {
             // Update the classification dimension
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    spec._node_dimensions['dimension'] = {
+                        w: parseFloat(preservedWidth),
+                        h: parseFloat(preservedHeight)
+                    };
+                    this.logger.debug('TreeMapOperations', 'Preserved dimensions for empty dimension node');
+                }
+                
                 spec.dimension = updates.text;
                 this.logger.debug('TreeMapOperations', 'Updated dimension', { newText: updates.text });
             }
@@ -335,6 +369,22 @@ class TreeMapOperations {
             }
             
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    const nodeKey = `category-${categoryIndex}`;
+                    spec._node_dimensions[nodeKey] = {
+                        w: parseFloat(preservedWidth),
+                        h: parseFloat(preservedHeight)
+                    };
+                    this.logger.debug('TreeMapOperations', 'Preserved dimensions for empty category node', {
+                        nodeKey,
+                        dimensions: spec._node_dimensions[nodeKey]
+                    });
+                }
+                
                 spec.children[categoryIndex].text = updates.text;
                 this.logger.debug('TreeMapOperations', 'Updated category', { 
                     categoryIndex, 

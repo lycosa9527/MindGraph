@@ -165,6 +165,11 @@ class CircleMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         this.logger.debug('CircleMapOperations', 'Updating node', {
             nodeId,
             nodeType,
@@ -177,6 +182,27 @@ class CircleMapOperations {
             const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
             if (!isNaN(arrayIndex) && arrayIndex < spec.context.length) {
                 if (updates.text !== undefined) {
+                    // Check if we should preserve dimensions (when emptying node)
+                    const preservedWidth = shapeElement.attr('data-preserved-width');
+                    const preservedHeight = shapeElement.attr('data-preserved-height');
+                    const preservedRadius = shapeElement.attr('data-preserved-radius');
+                    
+                    if ((preservedWidth && preservedHeight || preservedRadius) && updates.text === '') {
+                        const nodeKey = `context-${arrayIndex}`;
+                        spec._node_dimensions[nodeKey] = {};
+                        if (preservedWidth && preservedHeight) {
+                            spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                            spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                        }
+                        if (preservedRadius) {
+                            spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                        }
+                        this.logger.debug('CircleMapOperations', 'Preserved dimensions for empty context node', {
+                            nodeKey,
+                            dimensions: spec._node_dimensions[nodeKey]
+                        });
+                    }
+                    
                     spec.context[arrayIndex] = updates.text;
                     this.logger.debug('CircleMapOperations', 'Updated context node', {
                         arrayIndex,
@@ -192,6 +218,23 @@ class CircleMapOperations {
         } else if (nodeType === 'topic' || nodeType === 'center') {
             // Update main topic (renderer uses both 'topic' and 'center' for topic node)
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                const preservedRadius = shapeElement.attr('data-preserved-radius');
+                
+                if ((preservedWidth && preservedHeight || preservedRadius) && updates.text === '') {
+                    spec._node_dimensions['topic'] = {};
+                    if (preservedWidth && preservedHeight) {
+                        spec._node_dimensions['topic'].w = parseFloat(preservedWidth);
+                        spec._node_dimensions['topic'].h = parseFloat(preservedHeight);
+                    }
+                    if (preservedRadius) {
+                        spec._node_dimensions['topic'].r = parseFloat(preservedRadius);
+                    }
+                    this.logger.debug('CircleMapOperations', 'Preserved dimensions for empty topic node');
+                }
+                
                 const oldTopic = spec.topic;
                 spec.topic = updates.text;
                 this.logger.debug('CircleMapOperations', 'Updated topic node', {

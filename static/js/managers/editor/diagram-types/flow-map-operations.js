@@ -323,9 +323,26 @@ class FlowMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         if (nodeType === 'title') {
             // Update the title
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                
+                if (preservedWidth && preservedHeight && updates.text === '') {
+                    spec._node_dimensions['title'] = {
+                        w: parseFloat(preservedWidth),
+                        h: parseFloat(preservedHeight)
+                    };
+                    this.logger.debug('FlowMapOperations', 'Preserved dimensions for empty title node');
+                }
+                
                 spec.title = updates.text;
             }
         } else if (nodeType === 'step') {
@@ -360,6 +377,22 @@ class FlowMapOperations {
                 const substepsEntry = spec.substeps.find(s => s.step === spec.steps[stepIndex]);
                 if (substepsEntry && substepsEntry.substeps && substepIndex < substepsEntry.substeps.length) {
                     if (updates.text !== undefined) {
+                        // Check if we should preserve dimensions (when emptying node)
+                        const preservedWidth = shapeElement.attr('data-preserved-width');
+                        const preservedHeight = shapeElement.attr('data-preserved-height');
+                        
+                        if (preservedWidth && preservedHeight && updates.text === '') {
+                            const nodeKey = `substep-${stepIndex}-${substepIndex}`;
+                            spec._node_dimensions[nodeKey] = {
+                                w: parseFloat(preservedWidth),
+                                h: parseFloat(preservedHeight)
+                            };
+                            this.logger.debug('FlowMapOperations', 'Preserved dimensions for empty substep node', {
+                                nodeKey,
+                                dimensions: spec._node_dimensions[nodeKey]
+                            });
+                        }
+                        
                         substepsEntry.substeps[substepIndex] = updates.text;
                     }
                 }

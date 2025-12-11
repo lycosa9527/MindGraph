@@ -53,6 +53,9 @@ class InteractiveEditor {
         this.toolbarManager = null; // Will be initialized after render
         this.renderer = null;
         
+        // Initialize modules reference (will be populated by DiagramSelector)
+        this.modules = null;
+        
         // Store event handler references for cleanup
         this.eventHandlers = {
             orientationChange: null,
@@ -1435,6 +1438,46 @@ class InteractiveEditor {
             selectedNodes: Array.from(this.selectedNodes),
             timestamp: Date.now()
         };
+    }
+    
+    /**
+     * Fit diagram for export - delegates to ViewManager
+     * Ensures full diagram is captured, not just visible area
+     * 
+     * ROOT CAUSE: This method must access ViewManager through this.modules.view
+     * Modules are initialized by DiagramSelector after editor.initialize() is called.
+     * If modules are not initialized, this indicates a bug in the initialization sequence.
+     */
+    fitDiagramForExport() {
+        if (!this.modules) {
+            logger.error('InteractiveEditor', 'fitDiagramForExport: modules not initialized', {
+                diagramType: this.diagramType,
+                sessionId: this.sessionId,
+                hasWindowCurrentEditor: !!window.currentEditor,
+                windowCurrentEditorModules: !!window.currentEditor?.modules
+            });
+            return;
+        }
+        
+        if (!this.modules.view) {
+            logger.error('InteractiveEditor', 'fitDiagramForExport: ViewManager module not found', {
+                diagramType: this.diagramType,
+                availableModules: Object.keys(this.modules || {}),
+                sessionId: this.sessionId
+            });
+            return;
+        }
+        
+        if (typeof this.modules.view.fitDiagramForExport !== 'function') {
+            logger.error('InteractiveEditor', 'fitDiagramForExport: ViewManager.fitDiagramForExport method not found', {
+                diagramType: this.diagramType,
+                viewManagerType: this.modules.view.constructor?.name
+            });
+            return;
+        }
+        
+        // Call ViewManager's fitDiagramForExport method
+        this.modules.view.fitDiagramForExport();
     }
 }
 

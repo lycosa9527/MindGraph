@@ -1309,18 +1309,29 @@ class ToolbarManager {
         // Fit diagram for export (ensures full diagram is captured, not just visible area)
         // ARCHITECTURE NOTE: Direct call to fitDiagramForExport() is acceptable - this is an export-specific
         // operation that requires immediate synchronous execution. Event Bus is not suitable here.
-        if (this.editor && typeof this.editor.fitDiagramForExport === 'function') {
-            this.editor.fitDiagramForExport();
-            
-            // Wait briefly for viewBox update (no transition, so shorter delay)
-            setTimeout(() => {
-                this.performPNGExport();
-            }, 100);
-        } else {
-            // Fallback if editor not available or method not found - export immediately
-            logger.warn('ToolbarManager', 'fitDiagramForExport not available, exporting with current view');
+        if (!this.editor) {
+            logger.error('ToolbarManager', 'Editor reference is null - cannot fit diagram for export');
             this.performPNGExport();
+            return;
         }
+        
+        if (typeof this.editor.fitDiagramForExport !== 'function') {
+            logger.error('ToolbarManager', 'fitDiagramForExport method not found on editor', {
+                editorType: this.editor.constructor?.name,
+                hasModules: !!this.editor.modules,
+                diagramType: this.diagramType
+            });
+            this.performPNGExport();
+            return;
+        }
+        
+        // Call fitDiagramForExport - it will handle ViewManager access internally
+        this.editor.fitDiagramForExport();
+        
+        // Wait briefly for viewBox update (no transition, so shorter delay)
+        setTimeout(() => {
+            this.performPNGExport();
+        }, 100);
     }
     
     /**

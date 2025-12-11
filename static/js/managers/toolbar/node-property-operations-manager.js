@@ -459,12 +459,39 @@ class NodePropertyOperationsManager {
         if (this.editor && selectedNodes.length > 0) {
             const nodeIds = [...selectedNodes];
             
+            // UNIFIED: For all diagram types, preserve node dimensions when emptying
             nodeIds.forEach(nodeId => {
-                // Find the shape element
+                // Find the shape element to get current dimensions
                 const shapeElement = d3.select(`[data-node-id="${nodeId}"]`);
                 if (shapeElement.empty()) {
                     this.logger.warn('NodePropertyOperationsManager', `Shape not found for nodeId: ${nodeId}`);
                     return;
+                }
+                
+                // Get current dimensions from the shape element
+                // Support both rect (width/height) and circle (r) elements
+                let currentWidth = 0;
+                let currentHeight = 0;
+                let currentRadius = 0;
+                
+                const tagName = shapeElement.node().tagName.toLowerCase();
+                if (tagName === 'rect') {
+                    currentWidth = parseFloat(shapeElement.attr('width')) || 0;
+                    currentHeight = parseFloat(shapeElement.attr('height')) || 0;
+                } else if (tagName === 'circle' || tagName === 'ellipse') {
+                    currentRadius = parseFloat(shapeElement.attr('r')) || parseFloat(shapeElement.attr('ry')) || 0;
+                    // For circles, use radius * 2 for both width and height
+                    currentWidth = currentRadius * 2;
+                    currentHeight = currentRadius * 2;
+                } else {
+                    // Try to get bounding box as fallback
+                    try {
+                        const bbox = shapeElement.node().getBBox();
+                        currentWidth = bbox.width || 0;
+                        currentHeight = bbox.height || 0;
+                    } catch (e) {
+                        this.logger.debug('NodePropertyOperationsManager', `Could not get bbox for ${nodeId}`, e);
+                    }
                 }
                 
                 // Find the text element
@@ -484,8 +511,17 @@ class NodePropertyOperationsManager {
                 if (!textElement.empty()) {
                     const textNode = textElement.node();
                     
-                    // Update the text to empty string
+                    // Update the text to empty string with preserved dimensions
                     if (this.editor && typeof this.editor.updateNodeText === 'function') {
+                        // Store dimensions in data attributes for the updateNode operation to pick up
+                        if (currentWidth > 0 && currentHeight > 0) {
+                            shapeElement.attr('data-preserved-width', currentWidth);
+                            shapeElement.attr('data-preserved-height', currentHeight);
+                            if (currentRadius > 0) {
+                                shapeElement.attr('data-preserved-radius', currentRadius);
+                            }
+                        }
+                        
                         this.editor.updateNodeText(nodeId, shapeElement.node(), textNode, '');
                     } else {
                         // Fallback: just update the DOM

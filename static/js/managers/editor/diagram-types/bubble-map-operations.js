@@ -164,17 +164,62 @@ class BubbleMapOperations {
         
         const nodeType = shapeElement.attr('data-node-type');
         
+        // Initialize node dimensions metadata if it doesn't exist
+        if (!spec._node_dimensions) {
+            spec._node_dimensions = {};
+        }
+        
         if (nodeType === 'attribute') {
             // Update attribute node
             const arrayIndex = parseInt(shapeElement.attr('data-array-index'));
             if (!isNaN(arrayIndex) && arrayIndex < spec.attributes.length) {
                 if (updates.text !== undefined) {
+                    // Check if we should preserve dimensions (when emptying node)
+                    const preservedWidth = shapeElement.attr('data-preserved-width');
+                    const preservedHeight = shapeElement.attr('data-preserved-height');
+                    const preservedRadius = shapeElement.attr('data-preserved-radius');
+                    
+                    if ((preservedWidth && preservedHeight || preservedRadius) && updates.text === '') {
+                        // Store preserved dimensions for this node
+                        const nodeKey = `attribute-${arrayIndex}`;
+                        spec._node_dimensions[nodeKey] = {};
+                        if (preservedWidth && preservedHeight) {
+                            spec._node_dimensions[nodeKey].w = parseFloat(preservedWidth);
+                            spec._node_dimensions[nodeKey].h = parseFloat(preservedHeight);
+                        }
+                        if (preservedRadius) {
+                            spec._node_dimensions[nodeKey].r = parseFloat(preservedRadius);
+                        }
+                        this.logger.debug('BubbleMapOperations', 'Preserved dimensions for empty attribute node', {
+                            nodeKey,
+                            dimensions: spec._node_dimensions[nodeKey]
+                        });
+                    }
+                    
                     spec.attributes[arrayIndex] = updates.text;
                 }
             }
         } else if (nodeType === 'topic') {
             // Update main topic
             if (updates.text !== undefined) {
+                // Check if we should preserve dimensions (when emptying node)
+                const preservedWidth = shapeElement.attr('data-preserved-width');
+                const preservedHeight = shapeElement.attr('data-preserved-height');
+                const preservedRadius = shapeElement.attr('data-preserved-radius');
+                
+                if ((preservedWidth && preservedHeight || preservedRadius) && updates.text === '') {
+                    // Store preserved dimensions for topic
+                    spec._node_dimensions['topic'] = {};
+                    if (preservedWidth && preservedHeight) {
+                        spec._node_dimensions['topic'].w = parseFloat(preservedWidth);
+                        spec._node_dimensions['topic'].h = parseFloat(preservedHeight);
+                    }
+                    if (preservedRadius) {
+                        spec._node_dimensions['topic'].r = parseFloat(preservedRadius);
+                    }
+                    this.logger.debug('BubbleMapOperations', 'Preserved dimensions for empty topic node');
+                }
+                
                 spec.topic = updates.text;
             }
         }

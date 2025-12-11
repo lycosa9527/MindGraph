@@ -162,11 +162,16 @@ class ViewManager {
         // Apply zoom behavior to SVG
         svg.call(zoom);
         
+        // CRITICAL: Disable default double-click zoom behavior
+        // This allows custom double-click handlers (e.g., edit modal) to work properly
+        // Per D3.js documentation: https://d3js.org/d3-zoom#zoom
+        svg.on('dblclick.zoom', null);
+        
         // Store zoom behavior for programmatic control
         this.zoomBehavior = zoom;
         this.zoomTransform = d3.zoomIdentity;
         
-        this.logger.debug('ViewManager', 'Zoom and pan enabled (mouse wheel + middle button)');
+        this.logger.debug('ViewManager', 'Zoom and pan enabled (mouse wheel + middle button, double-click disabled)');
     }
     
     /**
@@ -961,6 +966,125 @@ class ViewManager {
             
         } catch (error) {
             this.logger.error('ViewManager', 'Error applying viewBox transform:', error);
+        }
+    }
+    
+    /**
+     * Fit diagram for export - ensures full diagram is captured, not just visible area
+     * Resets zoom/pan and sets viewBox to show all content with minimal padding
+     * This method is called synchronously before export, so no animation
+     */
+    fitDiagramForExport() {
+        try {
+            this.logger.debug('ViewManager', 'Fitting diagram for export');
+            
+            const container = d3.select('#d3-container');
+            const svg = container.select('svg');
+            
+            if (svg.empty()) {
+                this.logger.warn('ViewManager', 'No SVG found for export fit');
+                return;
+            }
+            
+            // CRITICAL: Reset zoom transform first before calculating bounds
+            // This works for diagrams with zoom-group (most diagrams) and without (multiflow map, etc.)
+            const zoomGroup = svg.select('g.zoom-group');
+            if (!zoomGroup.empty() && this.zoomBehavior) {
+                // Reset zoom transform to identity (no zoom, no pan)
+                svg.call(this.zoomBehavior.transform, d3.zoomIdentity);
+                this.zoomTransform = d3.zoomIdentity;
+                this.logger.debug('ViewManager', 'Reset zoom transform for export');
+            } else if (this.zoomBehavior) {
+                // Even without zoom-group, reset the zoom behavior if it exists
+                // This handles cases where zoom was applied but zoom-group wasn't created
+                try {
+                    svg.call(this.zoomBehavior.transform, d3.zoomIdentity);
+                    this.zoomTransform = d3.zoomIdentity;
+                    this.logger.debug('ViewManager', 'Reset zoom transform (no zoom-group)');
+                } catch (e) {
+                    this.logger.debug('ViewManager', 'Could not reset zoom transform', e);
+                }
+            }
+            
+            // Get all visual elements - check both zoom-group and direct children
+            let allElements;
+            if (!zoomGroup.empty()) {
+                allElements = zoomGroup.selectAll('g, circle, rect, ellipse, path, line, text, polygon, polyline');
+            } else {
+                allElements = svg.selectAll('g, circle, rect:not(.background), ellipse, path, line, text, polygon, polyline');
+            }
+            
+            if (allElements.empty()) {
+                this.logger.warn('ViewManager', 'No content found for export fit');
+                return;
+            }
+            
+            // Calculate content bounds
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let hasContent = false;
+            
+            allElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox && bbox.width > 0 && bbox.height > 0 && isFinite(bbox.x) && isFinite(bbox.y)) {
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Skip elements without getBBox
+                }
+            });
+            
+            // Also check text elements
+            const textElements = zoomGroup.empty() 
+                ? svg.selectAll('text')
+                : zoomGroup.selectAll('text');
+            
+            textElements.each(function() {
+                try {
+                    const bbox = this.getBBox();
+                    if (bbox && isFinite(bbox.x) && isFinite(bbox.y)) {
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasContent = true;
+                    }
+                } catch (e) {
+                    // Skip text elements without getBBox
+                }
+            });
+            
+            if (!hasContent || !isFinite(minX) || !isFinite(minY)) {
+                this.logger.warn('ViewManager', 'No valid content bounds found for export');
+                return;
+            }
+            
+            const contentBounds = {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+            };
+            
+            // For export, use minimal padding (just enough to avoid edge clipping)
+            const padding = 20;
+            const newViewBox = `${contentBounds.x - padding} ${contentBounds.y - padding} ${contentBounds.width + padding * 2} ${contentBounds.height + padding * 2}`;
+            
+            // Apply viewBox immediately (no animation for export)
+            svg.attr('viewBox', newViewBox)
+               .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            this.logger.debug('ViewManager', 'Diagram fitted for export', {
+                contentBounds,
+                viewBox: newViewBox
+            });
+            
+        } catch (error) {
+            this.logger.error('ViewManager', 'Error fitting diagram for export:', error);
         }
     }
     
