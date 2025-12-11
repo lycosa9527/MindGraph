@@ -379,11 +379,13 @@ def extract_topics_with_agent(user_prompt, language='zh'):
         language (str): Language for processing ('zh' or 'en')
     Returns:
         tuple: (topic1, topic2) extracted topics
+    Raises:
+        ValueError: If user_prompt is empty or invalid
     """
-    # Input validation
+    # Input validation - raise error instead of using fallback placeholder
     if not isinstance(user_prompt, str) or not user_prompt.strip():
-        logger.warning("Invalid user_prompt provided, using fallback")
-        return extract_topics_from_prompt("主题A vs 主题B")
+        logger.error("Invalid user_prompt provided - empty or not a string")
+        raise ValueError("user_prompt cannot be empty")
     
     if not isinstance(language, str) or language not in ['zh', 'en']:
         logger.warning(f"Invalid language '{language}', defaulting to 'zh'")
@@ -415,15 +417,17 @@ def generate_characteristics_with_agent(topic1, topic2, language='zh'):
         language (str): Language for processing ('zh' or 'en')
     Returns:
         dict: Characteristics specification
+    Raises:
+        ValueError: If topic1 or topic2 is empty or invalid
     """
-    # Input validation
+    # Input validation - raise error instead of using placeholder
     if not isinstance(topic1, str) or not topic1.strip():
-        logger.warning("Invalid topic1 provided, using fallback")
-        topic1 = "主题A"
+        logger.error("Invalid topic1 provided - empty or not a string")
+        raise ValueError("topic1 cannot be empty")
     
     if not isinstance(topic2, str) or not topic2.strip():
-        logger.warning("Invalid topic2 provided, using fallback")
-        topic2 = "主题B"
+        logger.error("Invalid topic2 provided - empty or not a string")
+        raise ValueError("topic2 cannot be empty")
     
     if not isinstance(language, str) or language not in ['zh', 'en']:
         logger.warning(f"Invalid language '{language}', defaulting to 'zh'")

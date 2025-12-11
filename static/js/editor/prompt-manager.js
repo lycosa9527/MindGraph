@@ -247,14 +247,110 @@ class PromptManager {
                 return;
             }
             
-            // Replace topic in template
-            template.topic = data.extracted_topic;
-            if (template.center) template.center = data.extracted_topic;
-            if (template.central_topic) template.central_topic = data.extracted_topic;
+            // Replace topic in template based on diagram type
+            const extractedTopic = data.extracted_topic;
             
-            // Update positions if exists
-            if (template._layout && template._layout.positions && template._layout.positions.topic) {
-                template._layout.positions.topic.text = data.extracted_topic;
+            if (normalizedType === 'double_bubble_map') {
+                // Double bubble map: parse "TopicA和TopicB" or "TopicA vs TopicB" format
+                // Split by common separators: 和, vs, VS, 与, versus, compared to
+                const separators = [' vs ', ' VS ', '和', '与', ' versus ', ' compared to '];
+                let leftTopic = extractedTopic;
+                let rightTopic = extractedTopic;
+                
+                for (const sep of separators) {
+                    if (extractedTopic.includes(sep)) {
+                        const parts = extractedTopic.split(sep);
+                        if (parts.length >= 2) {
+                            leftTopic = parts[0].trim();
+                            rightTopic = parts[1].trim();
+                            break;
+                        }
+                    }
+                }
+                
+                template.left = leftTopic;
+                template.right = rightTopic;
+                
+                // Update positions if exists
+                if (template._layout && template._layout.positions) {
+                    if (template._layout.positions['主题A']) {
+                        delete template._layout.positions['主题A'];
+                        template._layout.positions[leftTopic] = { x: 200, y: 250 };
+                    }
+                    if (template._layout.positions['主题B']) {
+                        delete template._layout.positions['主题B'];
+                        template._layout.positions[rightTopic] = { x: 500, y: 250 };
+                    }
+                    if (template._layout.positions['Topic A']) {
+                        delete template._layout.positions['Topic A'];
+                        template._layout.positions[leftTopic] = { x: 200, y: 250 };
+                    }
+                    if (template._layout.positions['Topic B']) {
+                        delete template._layout.positions['Topic B'];
+                        template._layout.positions[rightTopic] = { x: 500, y: 250 };
+                    }
+                }
+                
+                logger.info('PromptManager', `Double bubble map: left="${leftTopic}", right="${rightTopic}"`);
+                
+            } else if (normalizedType === 'flow_map') {
+                // Flow map uses 'title' field
+                template.title = extractedTopic;
+                if (template.topic) template.topic = extractedTopic;
+                logger.info('PromptManager', `Flow map: title="${extractedTopic}"`);
+                
+            } else if (normalizedType === 'multi_flow_map') {
+                // Multi-flow map uses 'event' field
+                template.event = extractedTopic;
+                if (template.topic) template.topic = extractedTopic;
+                logger.info('PromptManager', `Multi-flow map: event="${extractedTopic}"`);
+                
+            } else if (normalizedType === 'brace_map') {
+                // Brace map uses 'whole' field
+                template.whole = extractedTopic;
+                if (template.topic) template.topic = extractedTopic;
+                logger.info('PromptManager', `Brace map: whole="${extractedTopic}"`);
+                
+            } else if (normalizedType === 'bridge_map') {
+                // Bridge map: try to parse as dimension/relationship or first analogy pair
+                // Common patterns: "A:B", "A和B的关系", "A relates to B"
+                const pairSeparators = [':', '：', ' relates to ', ' is to ', '对应'];
+                let foundPair = false;
+                
+                for (const sep of pairSeparators) {
+                    if (extractedTopic.includes(sep)) {
+                        const parts = extractedTopic.split(sep);
+                        if (parts.length >= 2) {
+                            // Set the first analogy pair
+                            if (template.analogies && template.analogies.length > 0) {
+                                template.analogies[0].left = parts[0].trim();
+                                template.analogies[0].right = parts[1].trim();
+                            }
+                            foundPair = true;
+                            logger.info('PromptManager', `Bridge map: first pair="${parts[0].trim()}:${parts[1].trim()}"`);
+                            break;
+                        }
+                    }
+                }
+                
+                // If no pair pattern found, use as dimension/relationship description
+                if (!foundPair) {
+                    template.dimension = extractedTopic;
+                    logger.info('PromptManager', `Bridge map: dimension="${extractedTopic}"`);
+                }
+                
+            } else {
+                // Standard handling for other diagram types
+                template.topic = extractedTopic;
+                if (template.center) template.center = extractedTopic;
+                if (template.central_topic) template.central_topic = extractedTopic;
+                
+                // Update positions if exists
+                if (template._layout && template._layout.positions && template._layout.positions.topic) {
+                    template._layout.positions.topic.text = extractedTopic;
+                }
+                
+                logger.info('PromptManager', `Standard diagram: topic="${extractedTopic}"`);
             }
             
             logger.info('PromptManager', 'Template loaded and topic replaced successfully');

@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.71] - 2025-12-12 - Auto-Complete Topic Extraction Fix for All 9 Diagram Types
+
+### Fixed
+
+- **Double Bubble Map Auto-Complete Using Placeholder Topics Instead of Actual Topics**
+  - Root cause: When using prompt-based generation (e.g., "比较中国和美国"), the frontend loaded the default template with placeholder values ("主题A", "主题B") but never updated them with the extracted topic
+  - Auto-complete then sent the wrong prompt: `Main topic/center: "主题A vs 主题B"` instead of "中国 vs 美国"
+  - Fixed by adding diagram-type-specific topic field handling in `prompt-manager.js`
+  - Now correctly parses "中国和美国" and updates `template.left = "中国"`, `template.right = "美国"`
+
+- **Extended Topic Field Updates to All Diagram Types**
+  - Double bubble map: Updates `left` and `right` fields (splits by 和, vs, 与, etc.)
+  - Flow map: Updates `title` field
+  - Multi-flow map: Updates `event` field
+  - Brace map: Updates `whole` field
+  - Bridge map: Updates `analogies[0]` or `dimension` field
+  - Other diagrams: Standard `topic`, `center`, `central_topic` handling
+
+- **Added Placeholder Checking for Double Bubble Map and Bridge Map**
+  - `identifyMainTopic()` now checks if `spec.left`/`spec.right` are placeholders before returning
+  - Prevents auto-complete from using placeholder topics when spec hasn't been updated yet
+  - Added similar check for bridge map `spec.analogies[0]`
+
+- **Added Missing Placeholder Patterns for Flow Map and Multi-Flow Map**
+  - Chinese: Added `流程` (flow map title), `主要事件` (multi-flow map event), `子步骤\d+` (substeps)
+  - English: Added `Process`, `Main Event`, `Substep`
+  - These patterns are now correctly identified as placeholders
+
+- **Removed Dangerous Fallback to Hardcoded Placeholders in Backend**
+  - `extract_topics_with_agent()` no longer falls back to "主题A vs 主题B" when prompt is empty
+  - `generate_characteristics_with_agent()` no longer falls back to "主题A"/"主题B" when topics are empty
+  - Now raises `ValueError` for easier debugging instead of silent failures
+
+### Code Review Summary
+
+**Complete Workflow Verified for All 9 Diagram Types:**
+
+| Diagram Type | Classification | Topic Field | Template Update | identifyMainTopic | Placeholder Check |
+|--------------|---------------|-------------|-----------------|-------------------|-------------------|
+| circle_map | OK | `topic` | OK | OK | OK |
+| bubble_map | OK | `topic` | OK | OK | OK |
+| double_bubble_map | OK | `left`, `right` | Fixed | OK | Fixed |
+| brace_map | OK | `whole` | Fixed | OK | OK |
+| bridge_map | OK | `analogies[]` | Fixed | OK | Fixed |
+| tree_map | OK | `topic` | OK | OK | OK |
+| flow_map | OK | `title` | Fixed | OK | Fixed |
+| multi_flow_map | OK | `event` | Fixed | OK | Fixed |
+| mindmap | OK | `topic` | OK | OK | OK |
+
+**Files Changed:**
+- `static/js/editor/prompt-manager.js` - Added diagram-type-specific topic field updates
+- `static/js/managers/toolbar/llm-validation-manager.js` - Added placeholder checking for double_bubble_map and bridge_map
+- `static/js/editor/diagram-validator.js` - Added missing placeholder patterns
+- `agents/core/agent_utils.py` - Removed fallback to hardcoded placeholders
+
+---
+
 ## [4.28.70] - 2025-12-12 - Version Logging Improvements
 
 ### Added

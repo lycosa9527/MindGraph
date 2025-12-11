@@ -26,9 +26,12 @@ class DiagramValidator {
             /^新.*$/,                 // 新节点, 新属性, 新步骤, 新原因, 新结果, etc.
             /^属性\s*\d+$/,           // 属性1, 属性2
             /^步骤\s*\d+$/,           // 步骤1, 步骤2
+            /^子步骤\s*[\d.]+$/,      // 子步骤1.1, 子步骤2.2 (Flow Map)
             /^原因\s*\d+$/,           // 原因1
             /^结果\s*\d+$/,           // 结果1
             /^背景\s*\d+$/,           // 背景1, 背景2 (Circle Map context nodes)
+            /^流程$/,                 // 流程 (Flow Map title)
+            /^主要事件$/,             // 主要事件 (Multi-Flow Map event)
             /^主题\s*\d+$/,           // 主题1
             /^主题$/,                 // 主题 (Circle Map default)
             /^主题[A-Z]$/,            // 主题A, 主题B (Double Bubble Map)
@@ -60,9 +63,12 @@ class DiagramValidator {
             /^New\s+.*$/i,            // New Node, New Attribute, New Step, etc.
             /^Attribute\s+\d+$/i,     // Attribute 1, Attribute 2
             /^Step\s+\d+$/i,          // Step 1, Step 2
+            /^Substep\s+[\d.]+$/i,    // Substep 1.1, Substep 2.2 (Flow Map)
             /^Cause\s+\d+$/i,         // Cause 1
             /^Effect\s+\d+$/i,        // Effect 1
             /^Context\s+\d+$/i,       // Context 1, Context 2 (Circle Map context nodes)
+            /^Process$/i,             // Process (Flow Map title)
+            /^Main\s+Event$/i,        // Main Event (Multi-Flow Map event)
             /^Topic\s+\d+$/i,         // Topic 1
             /^Topic\s+[A-Z]$/i,       // Topic A, Topic B (Double Bubble Map)
             /^Similarity\s+\d+$/i,    // Similarity 1, 2 (Double Bubble Map)

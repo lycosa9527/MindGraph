@@ -187,12 +187,20 @@ class LLMValidationManager {
             logger.info('LLMValidationManager', 'Strategy 1b: Double bubble map - checking spec.left and spec.right');
             
             if (spec && spec.left && spec.right) {
-                const combinedTopic = `${spec.left} vs ${spec.right}`;
-                logger.info('LLMValidationManager', `✓ Main topic from spec: "${combinedTopic}"`, {
-                    left: spec.left,
-                    right: spec.right
-                });
-                return combinedTopic;
+                // Check if topics are placeholders
+                const leftIsPlaceholder = this.validator.isPlaceholderText(spec.left);
+                const rightIsPlaceholder = this.validator.isPlaceholderText(spec.right);
+                
+                if (!leftIsPlaceholder && !rightIsPlaceholder) {
+                    const combinedTopic = `${spec.left} vs ${spec.right}`;
+                    logger.info('LLMValidationManager', `✓ Main topic from spec: "${combinedTopic}"`, {
+                        left: spec.left,
+                        right: spec.right
+                    });
+                    return combinedTopic;
+                } else {
+                    logger.warn('LLMValidationManager', `Double bubble map: Topics are placeholders (left: ${leftIsPlaceholder}, right: ${rightIsPlaceholder})`);
+                }
             }
             logger.warn('LLMValidationManager', 'Double bubble map: No valid left/right topics in spec');
         }
@@ -206,13 +214,21 @@ class LLMValidationManager {
             if (spec && spec.analogies && spec.analogies.length > 0) {
                 const firstPair = spec.analogies[0];
                 if (firstPair.left && firstPair.right) {
-                    const mainTopic = `${firstPair.left}/${firstPair.right}`;
-                    logger.info('LLMValidationManager', `✓ Main topic from spec.analogies[0]: "${mainTopic}"`, {
-                        left: firstPair.left,
-                        right: firstPair.right,
-                        relatingFactor: spec.relatingFactor || 'not set'
-                    });
-                    return mainTopic;
+                    // Check if items are placeholders
+                    const leftIsPlaceholder = this.validator.isPlaceholderText(firstPair.left);
+                    const rightIsPlaceholder = this.validator.isPlaceholderText(firstPair.right);
+                    
+                    if (!leftIsPlaceholder && !rightIsPlaceholder) {
+                        const mainTopic = `${firstPair.left}/${firstPair.right}`;
+                        logger.info('LLMValidationManager', `✓ Main topic from spec.analogies[0]: "${mainTopic}"`, {
+                            left: firstPair.left,
+                            right: firstPair.right,
+                            relatingFactor: spec.relatingFactor || 'not set'
+                        });
+                        return mainTopic;
+                    } else {
+                        logger.warn('LLMValidationManager', `Bridge map: First pair items are placeholders (left: ${leftIsPlaceholder}, right: ${rightIsPlaceholder})`);
+                    }
                 }
             }
             logger.warn('LLMValidationManager', 'Bridge map: No valid analogies in spec');
