@@ -73,7 +73,7 @@ class VoiceIntentService:
                 extracted = await self._extract_target_data(user_message, intent_data['intent'], context)
                 intent_data['extracted_data'] = extracted
             
-            logger.info(f"Intent classified: {intent_data['intent']} -> {intent_data['target']} (confidence: {intent_data['confidence']:.2f})")
+            logger.debug(f"Intent classified: {intent_data['intent']} -> {intent_data['target']} (confidence: {intent_data['confidence']:.2f})")
             return intent_data
         
         except Exception as e:

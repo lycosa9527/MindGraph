@@ -78,7 +78,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             if chunk.get('event') == 'node_generated':
                 node = chunk.get('node', {})
                 node['mode'] = mode  # Tag node with its generation mode
-                logger.info(f"[MultiFlow] Node tagged with mode='{mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                logger.debug(f"[MultiFlow] Node tagged with mode='{mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
             
             yield chunk
     

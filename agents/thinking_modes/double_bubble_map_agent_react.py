@@ -257,7 +257,7 @@ User message: {message}"""
                 result_text = result_text.split('```')[1].split('```')[0].strip()
             
             response = json.loads(result_text)
-            logger.info(f"[DoubleBubbleMapAgent] Intent detected: {response.get('action', 'unknown')}")
+            logger.debug(f"[DoubleBubbleMapAgent] Intent detected: {response.get('action', 'unknown')}")
             return response
             
         except Exception as e:

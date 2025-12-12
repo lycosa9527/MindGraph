@@ -67,8 +67,8 @@ class NodePaletteGenerator:
         self.session_start_times = {}  # session_id -> timestamp
         self.batch_counts = {}  # session_id -> int (total batches)
         
-        logger.info("[NodePalette] Initialized for %s with concurrent multi-LLM architecture", diagram_type)
-        logger.info("[NodePalette] LLMs: %s", ', '.join(self.llm_models))
+        logger.debug("[NodePalette] Initialized for %s with concurrent multi-LLM architecture", diagram_type)
+        logger.debug("[NodePalette] LLMs: %s", ', '.join(self.llm_models))
     
     async def generate_batch(
         self,
@@ -99,13 +99,13 @@ class NodePaletteGenerator:
         if session_id not in self.session_start_times:
             self.session_start_times[session_id] = time.time()
             self.batch_counts[session_id] = 0
-            logger.info("[NodePalette] New session: %s | Topic: '%s'", session_id[:8], center_topic)
+            logger.debug("[NodePalette] New session: %s | Topic: '%s'", session_id[:8], center_topic)
         
         batch_num = self.batch_counts[session_id] + 1
         self.batch_counts[session_id] = batch_num
         
         total_before = len(self.generated_nodes.get(session_id, []))
-        logger.info("[NodePalette] Batch %d starting | Session: %s | Topic: '%s'", 
+        logger.debug("[NodePalette] Batch %d starting | Session: %s | Topic: '%s'", 
                    batch_num, session_id[:8], center_topic)
         
         # Yield batch start
@@ -132,7 +132,7 @@ class NodePaletteGenerator:
         llm_duplicate_counts = {llm: 0 for llm in self.llm_models}
         
         # 🚀 CONCURRENT TOKEN STREAMING - All 4 LLMs fire simultaneously!
-        logger.info("[NodePalette] Streaming from %d LLMs with progressive rendering...", len(self.llm_models))
+        logger.debug("[NodePalette] Streaming from %d LLMs with progressive rendering...", len(self.llm_models))
         
         async for chunk in self.llm_service.stream_progressive(
             prompt=prompt,
@@ -250,7 +250,7 @@ class NodePaletteGenerator:
                     'duration': chunk.get('duration', 0)
                 }
                 
-                logger.info(
+                logger.debug(
                     "[NodePalette] %s batch %d complete | Unique: %d | Duplicates: %d | Time: %.2fs",
                     llm_name, batch_num, llm_unique_counts[llm_name], 
                     llm_duplicate_counts[llm_name], chunk.get('duration', 0)
@@ -271,7 +271,7 @@ class NodePaletteGenerator:
         total_after = len(self.generated_nodes.get(session_id, []))
         batch_unique = total_after - total_before
         
-        logger.info(
+        logger.debug(
             "[NodePalette] Batch %d complete (%.2fs) | New unique: %d | Total: %d",
             batch_num, batch_duration, batch_unique, total_after
         )
@@ -351,8 +351,8 @@ class NodePaletteGenerator:
         total_nodes = len(self.generated_nodes.get(session_id, []))
         batches = self.batch_counts.get(session_id, 0)
         
-        logger.info("[NodePalette] Session ended: %s | Reason: %s", session_id[:8], reason)
-        logger.info("[NodePalette]   Duration: %.2fs | Batches: %d | Total nodes: %d", 
+        logger.debug("[NodePalette] Session ended: %s | Reason: %s", session_id[:8], reason)
+        logger.debug("[NodePalette]   Duration: %.2fs | Batches: %d | Total nodes: %d", 
                    elapsed, batches, total_nodes)
         
         # Cleanup

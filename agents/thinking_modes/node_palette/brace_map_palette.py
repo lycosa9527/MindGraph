@@ -67,10 +67,10 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
         if stage_data:
             self.session_stages[session_id].update(stage_data)
         
-        logger.info("[BraceMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+        logger.debug("[BraceMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
                    stage, session_id[:8], center_topic)
         if stage_data:
-            logger.info("[BraceMapPalette] Stage data: %s", stage_data)
+            logger.debug("[BraceMapPalette] Stage data: %s", stage_data)
         
         # Pass session_id and stage_data through educational_context so _build_prompt can access them directly
         # This is better than relying on session_stages lookup (avoids timing/state sync issues)
@@ -99,10 +99,10 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
                 # For parts stage, use stage name
                 if stage == 'subparts' and stage_data and stage_data.get('part_name'):
                     node_mode = stage_data['part_name']
-                    logger.info(f"[BraceMapPalette] Node tagged with part mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[BraceMapPalette] Node tagged with part mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 else:
                     node_mode = stage
-                    logger.info(f"[BraceMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[BraceMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 
                 node['mode'] = node_mode
             
@@ -145,7 +145,7 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
                 stage = self.session_stages[session_id].get('stage', 'dimensions')
                 stage_data = self.session_stages[session_id]
         
-        logger.info("[BraceMapPalette-Prompt] Building prompt for stage: %s | Stage data: %s", stage, stage_data)
+        logger.debug("[BraceMapPalette-Prompt] Building prompt for stage: %s | Stage data: %s", stage, stage_data)
         
         # Build stage-specific prompt
         if stage == 'dimensions':

@@ -123,7 +123,7 @@ class VoiceDiagramAgent:
             # Parse JSON response
             result = self._parse_response(response)
             
-            logger.info(f"Parsed command: action={result['action']}, target={result.get('target')}, confidence={result.get('confidence')}")
+            logger.debug(f"Parsed command: action={result['action']}, target={result.get('target')}, confidence={result.get('confidence')}")
             
             return result
             

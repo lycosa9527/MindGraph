@@ -105,7 +105,7 @@ Return JSON:
                 result_text = result_text.split('```')[1].split('```')[0].strip()
             
             intent = json.loads(result_text)
-            logger.info(f"[BraceMapThinkingAgent] Detected intent: {intent}")
+            logger.debug(f"[BraceMapThinkingAgent] Detected intent: {intent}")
             return intent
         except Exception as e:
             logger.error(f"[BraceMapThinkingAgent] Intent detection failed: {e}")

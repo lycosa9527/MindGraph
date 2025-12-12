@@ -44,7 +44,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
+            logger.debug(f"DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
             
             # Generate the double bubble map specification
             spec = await self._generate_double_bubble_map_spec(
@@ -159,8 +159,8 @@ class DoubleBubbleMapAgent(BaseAgent):
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
-            logger.info(f"DoubleBubbleMapAgent: Enhancing spec - Left: {spec.get('left')}, Right: {spec.get('right')}")
-            logger.info(f"DoubleBubbleMapAgent: Left attributes: {len(spec.get('left_only', []))}, Right attributes: {len(spec.get('right_only', []))}, Shared: {len(spec.get('shared', []))}")
+            logger.debug(f"DoubleBubbleMapAgent: Enhancing spec - Left: {spec.get('left')}, Right: {spec.get('right')}")
+            logger.debug(f"DoubleBubbleMapAgent: Left attributes: {len(spec.get('left_only', []))}, Right attributes: {len(spec.get('right_only', []))}, Shared: {len(spec.get('shared', []))}")
             
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()

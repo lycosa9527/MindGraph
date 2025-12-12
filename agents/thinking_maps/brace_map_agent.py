@@ -1206,7 +1206,7 @@ class BraceMapAgent(BaseAgent):
             
             # Choose prompt based on whether user has specified a fixed dimension
             if fixed_dimension:
-                logger.info(f"BraceMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                logger.debug(f"BraceMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
                 system_prompt = get_prompt("brace_map_agent", language, "fixed_dimension")
                 
                 if not system_prompt:
@@ -1247,7 +1247,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         user_prompt = f"请为以下描述创建一个括号图，使用指定的拆解维度'{dimension_preference}'：{prompt}"
                     else:
                         user_prompt = f"Please create a brace map for the following description using the specified decomposition dimension '{dimension_preference}': {prompt}"
-                    logger.info(f"BraceMapAgent: User specified dimension preference: {dimension_preference}")
+                    logger.debug(f"BraceMapAgent: User specified dimension preference: {dimension_preference}")
                 else:
                     user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
             
@@ -1290,7 +1290,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if fixed_dimension:
                 spec['dimension'] = fixed_dimension
-                logger.info(f"BraceMapAgent: Enforced FIXED dimension: {fixed_dimension}")
+                logger.debug(f"BraceMapAgent: Enforced FIXED dimension: {fixed_dimension}")
             
             return spec
             

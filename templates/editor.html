@@ -119,14 +119,14 @@
                     <div class="diagram-card" data-type="circle_map">
                         <div class="diagram-preview">
                             <svg viewBox="0 0 200 150">
-                                <circle cx="100" cy="75" r="25" fill="#e91e63"/>
+                                <circle class="circle-map-center" cx="100" cy="75" r="25" fill="#e91e63"/>
                                 <circle cx="100" cy="75" r="71" fill="none" stroke="#f48fb1" stroke-width="2"/>
                                 <!-- 5 little bubbles around the circle -->
-                                <circle cx="100" cy="23" r="13" fill="#f48fb1"/>
-                                <circle cx="150" cy="59" r="13" fill="#f48fb1"/>
-                                <circle cx="131" cy="117" r="13" fill="#f48fb1"/>
-                                <circle cx="69" cy="117" r="13" fill="#f48fb1"/>
-                                <circle cx="50" cy="59" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-1" cx="100" cy="23" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-2" cx="150" cy="59" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-3" cx="131" cy="117" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-4" cx="69" cy="117" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-5" cx="50" cy="59" r="13" fill="#f48fb1"/>
                             </svg>
                         </div>
                         <h3>Circle Map</h3>
@@ -143,13 +143,13 @@
                                 <line x1="100" y1="80" x2="68" y2="125" stroke="#81c784" stroke-width="2"/>
                                 <line x1="100" y1="80" x2="48" y2="63" stroke="#81c784" stroke-width="2"/>
                                 <!-- Center bubble -->
-                                <circle cx="100" cy="80" r="25" fill="#4caf50"/>
+                                <circle class="bubble-map-center" cx="100" cy="80" r="25" fill="#4caf50"/>
                                 <!-- 5 outer bubbles -->
-                                <circle cx="100" cy="25" r="14" fill="#81c784"/>
-                                <circle cx="152" cy="63" r="14" fill="#81c784"/>
-                                <circle cx="132" cy="125" r="14" fill="#81c784"/>
-                                <circle cx="68" cy="125" r="14" fill="#81c784"/>
-                                <circle cx="48" cy="63" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-1" cx="100" cy="25" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-2" cx="152" cy="63" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-3" cx="132" cy="125" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-4" cx="68" cy="125" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-5" cx="48" cy="63" r="14" fill="#81c784"/>
                             </svg>
                         </div>
                         <h3>Bubble Map</h3>
@@ -171,17 +171,17 @@
                                 <line x1="60" y1="75" x2="100" y2="100" stroke="#64b5f6" stroke-width="2"/>
                                 <line x1="140" y1="75" x2="100" y2="100" stroke="#64b5f6" stroke-width="2"/>
                                 <!-- Two main circles -->
-                                <circle cx="60" cy="75" r="22" fill="#2196f3"/>
-                                <circle cx="140" cy="75" r="22" fill="#2196f3"/>
+                                <circle class="double-bubble-map-topic double-bubble-map-topic-left" cx="60" cy="75" r="22" fill="#2196f3"/>
+                                <circle class="double-bubble-map-topic double-bubble-map-topic-right" cx="140" cy="75" r="22" fill="#2196f3"/>
                                 <!-- Left differences (unique to left) -->
-                                <circle cx="20" cy="50" r="12" fill="#64b5f6"/>
-                                <circle cx="20" cy="100" r="12" fill="#64b5f6"/>
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-left-1" cx="20" cy="50" r="12" fill="#64b5f6"/>
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-left-2" cx="20" cy="100" r="12" fill="#64b5f6"/>
                                 <!-- Right differences (unique to right) -->
-                                <circle cx="180" cy="50" r="12" fill="#64b5f6"/>
-                                <circle cx="180" cy="100" r="12" fill="#64b5f6"/>
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-right-1" cx="180" cy="50" r="12" fill="#64b5f6"/>
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-right-2" cx="180" cy="100" r="12" fill="#64b5f6"/>
                                 <!-- Shared bubbles in middle (similarities) -->
-                                <circle cx="100" cy="50" r="12" fill="#90caf9"/>
-                                <circle cx="100" cy="100" r="12" fill="#90caf9"/>
+                                <circle class="double-bubble-map-similarity double-bubble-map-similarity-1" cx="100" cy="50" r="12" fill="#90caf9"/>
+                                <circle class="double-bubble-map-similarity double-bubble-map-similarity-2" cx="100" cy="100" r="12" fill="#90caf9"/>
                             </svg>
                         </div>
                         <h3>Double Bubble Map</h3>
@@ -198,11 +198,11 @@
                                 <line x1="100" y1="74" x2="100" y2="104" stroke="#ce93d8" stroke-width="2"/>
                                 <line x1="155" y1="74" x2="155" y2="104" stroke="#ce93d8" stroke-width="2"/>
                                 <!-- Root square -->
-                                <rect x="75" y="24" width="50" height="25" rx="3" fill="#9c27b0"/>
+                                <rect class="tree-map-topic" x="75" y="24" width="50" height="25" rx="3" fill="#9c27b0"/>
                                 <!-- Child squares -->
-                                <rect x="22" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
-                                <rect x="77" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
-                                <rect x="132" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
+                                <rect class="tree-map-child tree-map-child-1" x="22" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
+                                <rect class="tree-map-child tree-map-child-2" x="77" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
+                                <rect class="tree-map-child tree-map-child-3" x="132" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
                             </svg>
                         </div>
                         <h3>Tree Map</h3>
@@ -222,11 +222,11 @@
                                          Q 105 125, 115 125" 
                                       stroke="#4dd0e1" stroke-width="3" fill="none"/>
                                 <!-- Whole (main item on left) -->
-                                <rect x="15" y="55" width="70" height="40" rx="4" fill="#00bcd4"/>
+                                <rect class="brace-map-topic" x="15" y="55" width="70" height="40" rx="4" fill="#00bcd4"/>
                                 <!-- Parts (items on right) -->
-                                <rect x="125" y="22" width="60" height="26" rx="3" fill="#4dd0e1"/>
-                                <rect x="125" y="62" width="60" height="26" rx="3" fill="#4dd0e1"/>
-                                <rect x="125" y="102" width="60" height="26" rx="3" fill="#4dd0e1"/>
+                                <rect class="brace-map-child brace-map-child-1" x="125" y="22" width="60" height="26" rx="3" fill="#4dd0e1"/>
+                                <rect class="brace-map-child brace-map-child-2" x="125" y="62" width="60" height="26" rx="3" fill="#4dd0e1"/>
+                                <rect class="brace-map-child brace-map-child-3" x="125" y="102" width="60" height="26" rx="3" fill="#4dd0e1"/>
                             </svg>
                         </div>
                         <h3>Brace Map</h3>
@@ -243,9 +243,9 @@
                                 <line x1="120" y1="75" x2="135" y2="75" stroke="#ffb74d" stroke-width="4"/>
                                 <polygon points="135,68 150,75 135,82" fill="#ffb74d"/>
                                 <!-- Flow boxes (rectangles) -->
-                                <rect x="5" y="60" width="45" height="30" rx="4" fill="#ff9800"/>
-                                <rect x="80" y="60" width="40" height="30" rx="4" fill="#ff9800"/>
-                                <rect x="150" y="60" width="45" height="30" rx="4" fill="#ff9800"/>
+                                <rect class="flow-map-box flow-map-box-1" x="5" y="60" width="45" height="30" rx="4" fill="#ff9800"/>
+                                <rect class="flow-map-box flow-map-box-2" x="80" y="60" width="40" height="30" rx="4" fill="#ff9800"/>
+                                <rect class="flow-map-box flow-map-box-3" x="150" y="60" width="45" height="30" rx="4" fill="#ff9800"/>
                             </svg>
                         </div>
                         <h3>Flow Map</h3>
@@ -262,13 +262,13 @@
                                 <line x1="125" y1="67" x2="152" y2="51" stroke="#ff8a65" stroke-width="3"/>
                                 <line x1="125" y1="83" x2="152" y2="99" stroke="#ff8a65" stroke-width="3"/>
                                 <!-- Center event rectangle -->
-                                <rect x="75" y="62" width="50" height="26" rx="4" fill="#ff5722"/>
+                                <rect class="multi-flow-map-event" x="75" y="62" width="50" height="26" rx="4" fill="#ff5722"/>
                                 <!-- Cause rectangles (left) - aligned -->
-                                <rect x="5" y="40" width="43" height="22" rx="3" fill="#ff8a65"/>
-                                <rect x="5" y="88" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <rect class="multi-flow-map-cause multi-flow-map-cause-1" x="5" y="40" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <rect class="multi-flow-map-cause multi-flow-map-cause-2" x="5" y="88" width="43" height="22" rx="3" fill="#ff8a65"/>
                                 <!-- Effect rectangles (right) - aligned with causes -->
-                                <rect x="152" y="40" width="43" height="22" rx="3" fill="#ff8a65"/>
-                                <rect x="152" y="88" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <rect class="multi-flow-map-effect multi-flow-map-effect-1" x="152" y="40" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <rect class="multi-flow-map-effect multi-flow-map-effect-2" x="152" y="88" width="43" height="22" rx="3" fill="#ff8a65"/>
                             </svg>
                         </div>
                         <h3>Multi-Flow Map</h3>
@@ -283,11 +283,11 @@
                                 <!-- Triangle separator -->
                                 <path d="M 92 75 L 100 67 L 108 75 Z" fill="#666"/>
                                 <!-- Left pair: top and bottom nodes -->
-                                <rect x="30" y="45" width="50" height="18" rx="3" fill="#795548"/>
-                                <rect x="30" y="87" width="50" height="18" rx="3" fill="#a1887f"/>
+                                <rect class="bridge-map-pair bridge-map-left bridge-map-left-top" x="30" y="45" width="50" height="18" rx="3" fill="#795548"/>
+                                <rect class="bridge-map-pair bridge-map-left bridge-map-left-bottom" x="30" y="87" width="50" height="18" rx="3" fill="#a1887f"/>
                                 <!-- Right pair: top and bottom nodes -->
-                                <rect x="120" y="45" width="50" height="18" rx="3" fill="#795548"/>
-                                <rect x="120" y="87" width="50" height="18" rx="3" fill="#a1887f"/>
+                                <rect class="bridge-map-pair bridge-map-right bridge-map-right-top" x="120" y="45" width="50" height="18" rx="3" fill="#795548"/>
+                                <rect class="bridge-map-pair bridge-map-right bridge-map-right-bottom" x="120" y="87" width="50" height="18" rx="3" fill="#a1887f"/>
                             </svg>
                         </div>
                         <h3>Bridge Map</h3>
@@ -309,12 +309,12 @@
                                 <path d="M 100 75 Q 135 55, 155 49" stroke="#64b5f6" stroke-width="3" fill="none"/>
                                 <path d="M 100 75 Q 135 95, 155 101" stroke="#64b5f6" stroke-width="3" fill="none"/>
                                 <!-- Center node (round circle) -->
-                                <circle cx="100" cy="75" r="18" fill="#1976d2"/>
+                                <circle class="mind-map-center" cx="100" cy="75" r="18" fill="#1976d2"/>
                                 <!-- Branch nodes -->
-                                <rect x="10" y="40" width="45" height="18" rx="9" fill="#42a5f5"/>
-                                <rect x="10" y="92" width="45" height="18" rx="9" fill="#42a5f5"/>
-                                <rect x="145" y="40" width="45" height="18" rx="9" fill="#42a5f5"/>
-                                <rect x="145" y="92" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-top-left" x="10" y="40" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-lower-left" x="10" y="92" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-top-right" x="145" y="40" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-lower-right" x="145" y="92" width="45" height="18" rx="9" fill="#42a5f5"/>
                             </svg>
                         </div>
                         <h3>Mind Map</h3>
@@ -329,9 +329,9 @@
                                 <line x1="100" y1="40" x2="150" y2="100" stroke="#ef5350" stroke-width="2"/>
                                 <line x1="50" y1="100" x2="150" y2="100" stroke="#ef5350" stroke-width="2" stroke-dasharray="5,5"/>
                                 <!-- Circles -->
-                                <circle cx="100" cy="40" r="22" fill="#f44336"/>
-                                <circle cx="50" cy="100" r="18" fill="#ef5350"/>
-                                <circle cx="150" cy="100" r="18" fill="#ef5350"/>
+                                <circle class="concept-map-node concept-map-top" cx="100" cy="40" r="22" fill="#f44336"/>
+                                <circle class="concept-map-node concept-map-left" cx="50" cy="100" r="18" fill="#ef5350"/>
+                                <circle class="concept-map-node concept-map-right" cx="150" cy="100" r="18" fill="#ef5350"/>
                             </svg>
                         </div>
                         <h3>Concept Map</h3>

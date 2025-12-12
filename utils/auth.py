@@ -936,7 +936,7 @@ def get_current_user_or_api_key(
                     if user:
                         # Detach user from session so it can be used after close
                         db.expunge(user)
-                        logger.info(f"Authenticated teacher: {user.name} (ID: {user.id}, Phone: {user.phone})")
+                        logger.debug(f"Authenticated teacher: {user.name} (ID: {user.id}, Phone: {user.phone})")
                         return user  # Authenticated teacher - full access
                 finally:
                     db.close()  # Release connection immediately

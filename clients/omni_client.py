@@ -50,11 +50,11 @@ class OmniCallback(OmniRealtimeCallback):
     
     def on_open(self) -> None:
         """Connection opened"""
-        logger.info("Connection opened")
+        logger.debug("Connection opened")
     
     def on_close(self, close_status_code: int, close_msg: str) -> None:
         """Connection closed"""
-        logger.info(f"Connection closed: {close_status_code} - {close_msg}")
+        logger.debug(f"Connection closed: {close_status_code} - {close_msg}")
     
     def on_event(self, response: dict) -> None:
         """Handle all Omni server-side events"""
@@ -65,7 +65,7 @@ class OmniCallback(OmniRealtimeCallback):
             # Session Events
             if event_type == 'session.created':
                 self.session_id = response.get('session', {}).get('id')
-                logger.info(f"Session created: {self.session_id}")
+                logger.debug(f"Session created: {self.session_id}")
             
             elif event_type == 'session.updated':
                 session = response.get('session', {})
@@ -82,14 +82,14 @@ class OmniCallback(OmniRealtimeCallback):
             elif event_type == 'input_audio_buffer.speech_started':
                 audio_start_ms = response.get('audio_start_ms', 0)
                 item_id = response.get('item_id', '')
-                logger.info(f"[SDK] VAD: Speech started at {audio_start_ms}ms (item: {item_id})")
+                logger.debug(f"[SDK] VAD: Speech started at {audio_start_ms}ms (item: {item_id})")
                 if self.on_speech_started:
                     self.on_speech_started(audio_start_ms, item_id)
             
             elif event_type == 'input_audio_buffer.speech_stopped':
                 audio_end_ms = response.get('audio_end_ms', 0)
                 item_id = response.get('item_id', '')
-                logger.info(f"[SDK] VAD: Speech stopped at {audio_end_ms}ms (item: {item_id})")
+                logger.debug(f"[SDK] VAD: Speech stopped at {audio_end_ms}ms (item: {item_id})")
                 if self.on_speech_stopped:
                     self.on_speech_stopped(audio_end_ms, item_id)
             
@@ -108,7 +108,7 @@ class OmniCallback(OmniRealtimeCallback):
             elif event_type == 'conversation.item.input_audio_transcription.completed':
                 transcript = response.get('transcript', '')
                 item_id = response.get('item_id', '')
-                logger.info(f"[SDK] Transcription: '{transcript}' (item: {item_id})")
+                logger.debug(f"[SDK] Transcription: '{transcript}' (item: {item_id})")
                 if self.on_transcription:
                     self.on_transcription(transcript)
             
@@ -125,7 +125,7 @@ class OmniCallback(OmniRealtimeCallback):
             elif event_type == 'response.done':
                 resp = response.get('response', {})
                 usage = resp.get('usage', {})
-                logger.info(f"Response done (tokens: {usage.get('total_tokens', 0)})")
+                logger.debug(f"Response done (tokens: {usage.get('total_tokens', 0)})")
                 if self.on_response_done:
                     self.on_response_done(resp)
             
@@ -297,7 +297,7 @@ class OmniClient:
                     instructions=instructions or "你是一个专业的教育助手，帮助K12教师和学生理解概念。"
                 )
                 
-                logger.info("Session started")
+                logger.debug("Session started")
                 
                 # Signal that session is ready
                 queue_event({'type': 'session_ready'})
@@ -397,7 +397,7 @@ class OmniClient:
                 instructions=greeting_text,
                 output_modalities=[MultiModality.TEXT, MultiModality.AUDIO]
             )
-            logger.info(f"Greeting created: {greeting_text}")
+            logger.debug(f"Greeting created: {greeting_text}")
         except Exception as e:
             logger.error(f"Failed to create greeting: {e}", exc_info=True)
     
@@ -406,7 +406,7 @@ class OmniClient:
         if self.conversation:
             try:
                 self.conversation.close()
-                logger.info("Conversation closed")
+                logger.debug("Conversation closed")
             except Exception as e:
                 logger.error(f"Failed to close conversation: {e}")
 

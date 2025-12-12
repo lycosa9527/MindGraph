@@ -89,7 +89,7 @@ class ThinkingAgentFactory:
             logger.warning(f"[ThinkingAgentFactory] No specialized agent for {diagram_type}, using CircleMapThinkingAgent as fallback")
             agent_class = CircleMapThinkingAgent
         
-        logger.info(f"[ThinkingAgentFactory] Creating {agent_class.__name__} for {diagram_type}")
+        logger.debug(f"[ThinkingAgentFactory] Creating {agent_class.__name__} for {diagram_type}")
         instance = agent_class()
         cls._instances[diagram_type] = instance
         return instance

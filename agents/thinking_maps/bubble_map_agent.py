@@ -40,7 +40,7 @@ class BubbleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"BubbleMapAgent: Starting bubble map generation for prompt")
+            logger.debug(f"BubbleMapAgent: Starting bubble map generation for prompt")
             
             # Generate the bubble map specification
             spec = await self._generate_bubble_map_spec(
@@ -237,11 +237,11 @@ class BubbleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.info(f"BubbleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Attributes: {len(spec.get('attributes', []))}")
+            logger.debug(f"BubbleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Attributes: {len(spec.get('attributes', []))}")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
-                logger.info("BubbleMapAgent: Spec already enhanced, skipping")
+                logger.debug("BubbleMapAgent: Spec already enhanced, skipping")
                 return {'success': True, 'spec': spec}
             
             # Enhance the spec

@@ -68,10 +68,10 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
         if stage_data:
             self.session_stages[session_id].update(stage_data)
         
-        logger.info("[MindMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+        logger.debug("[MindMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
                    stage, session_id[:8], center_topic)
         if stage_data:
-            logger.info("[MindMapPalette] Stage data: %s", stage_data)
+            logger.debug("[MindMapPalette] Stage data: %s", stage_data)
         
         # Pass session_id and stage_data through educational_context so _build_prompt can access them directly
         # This is better than relying on session_stages lookup (avoids timing/state sync issues)
@@ -100,10 +100,10 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
                 # For branches stage, use 'branches' as mode
                 if stage == 'children' and stage_data and stage_data.get('branch_name'):
                     node_mode = stage_data['branch_name']
-                    logger.info(f"[MindMapPalette] Node tagged with branch mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[MindMapPalette] Node tagged with branch mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 else:
                     node_mode = stage
-                    logger.info(f"[MindMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[MindMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 
                 node['mode'] = node_mode
             
@@ -145,7 +145,7 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
             stage = self.session_stages[session_id].get('stage', 'branches')
             stage_data = self.session_stages[session_id]
         
-        logger.info("[MindMapPalette-Prompt] Building prompt for stage: %s", stage)
+        logger.debug("[MindMapPalette-Prompt] Building prompt for stage: %s", stage)
         
         # Build stage-specific prompt
         if stage == 'children':

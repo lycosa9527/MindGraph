@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.74] - 2025-12-12 - Gallery Diagram Card Hover Animations
+
+### Added
+
+- **Gallery Diagram Card Hover Animations**
+  - Added continuous cycling animations to all diagram cards in the gallery
+  - Animations trigger on hover and create engaging visual feedback
+  - Each diagram type has a unique animation sequence matching its structure
+
+- **Circle Map Animation**
+  - Center node pulses first, then bubbles animate clockwise
+  - Creates a wave effect flowing from center outward
+
+- **Bubble Map Animation**
+  - Center node pulses first, then bubbles animate clockwise
+  - Same pattern as circle map for consistency
+
+- **Double Bubble Map Animation**
+  - Two topic nodes pulse first, then similarities, then differences
+  - Shows the comparison structure visually
+
+- **Tree Map Animation**
+  - Topic node pulses first, then children animate left to right
+  - Reflects hierarchical structure
+
+- **Brace Map Animation**
+  - Topic node pulses first, then children animate top to bottom
+  - Shows whole-to-parts relationship
+
+- **Flow Map Animation**
+  - Boxes animate sequentially from left to right
+  - Emphasizes sequential flow
+
+- **Multi-Flow Map Animation**
+  - Central event pulses first, then causes, then effects
+  - Visualizes cause-and-effect relationships
+
+- **Bridge Map Animation**
+  - Left pair animates first, then right pair
+  - Shows analogy relationships
+
+- **Mind Map Animation**
+  - Center node pulses first, then branches animate clockwise (top right → lower right → lower left → top left)
+  - Creates radial expansion effect
+
+- **Concept Map Animation**
+  - Top node pulses first, then right, then left
+  - Simple sequential flow
+
+### Files Changed
+
+- `templates/editor.html` - Added CSS classes to all diagram SVG elements for animation targeting
+- `static/css/editor.css` - Added keyframe animations and hover styles for all 10 diagram types
+- `static/js/license-warning.js` - Created missing license warning script file
+
+---
+
 ## [4.28.73] - 2025-12-12 - License Warning Addition
 
 ### Added

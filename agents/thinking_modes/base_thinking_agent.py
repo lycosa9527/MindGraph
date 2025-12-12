@@ -73,7 +73,7 @@ class BaseThinkingAgent(ABC):
         # Session storage (in-memory for MVP)
         self.sessions: Dict[str, Dict] = {}
         
-        logger.info(f"[{self.__class__.__name__}] Initialized for diagram type: {diagram_type}")
+        logger.debug(f"[{self.__class__.__name__}] Initialized for diagram type: {diagram_type}")
     
     # ===== SESSION MANAGEMENT =====
     
@@ -112,7 +112,7 @@ class BaseThinkingAgent(ABC):
                     diagram_data.get('center', {}).get('text', '')  # circle_map, bubble_map
                 )
                 language = self._detect_language(center_text)
-                logger.info(f"[{self.__class__.__name__}] Language detection from text: '{center_text[:30]}...' → {language}")
+                logger.debug(f"[{self.__class__.__name__}] Language detection from text: '{center_text[:30]}...' → {language}")
             
             self.sessions[session_id] = {
                 'session_id': session_id,
@@ -124,7 +124,7 @@ class BaseThinkingAgent(ABC):
                 'language': language,
                 'node_count': len(diagram_data.get('children', [])) if diagram_data else 0
             }
-            logger.info(f"[{self.__class__.__name__}] Created session: {session_id} | Language: {language}")
+            logger.debug(f"[{self.__class__.__name__}] Created session: {session_id} | Language: {language}")
         
         return self.sessions[session_id]
     
@@ -197,7 +197,7 @@ class BaseThinkingAgent(ABC):
             session['diagram_data'] = diagram_data
             session['node_count'] = len(diagram_data.get('children', []))
         
-        logger.info(
+        logger.debug(
             f"[{self.__class__.__name__}] ReAct cycle started | "
             f"State: {current_state} | Message: {message[:50] if message else 'None'}..."
         )
@@ -205,7 +205,7 @@ class BaseThinkingAgent(ABC):
         # ReAct Step 1: REASON - Understand user intent
         intent = await self._reason(session, message, current_state, is_initial_greeting)
         
-        logger.info(f"[{self.__class__.__name__}] REASON → Intent: {intent.get('action', 'unknown')}")
+        logger.debug(f"[{self.__class__.__name__}] REASON → Intent: {intent.get('action', 'unknown')}")
         
         # ReAct Step 2: ACT - Execute action based on intent
         async for event in self._act(session, intent, message, current_state):
@@ -245,7 +245,7 @@ class BaseThinkingAgent(ABC):
             
             if has_history:
                 # Session already has conversation - will send welcome back message
-                logger.info(f"[{self.__class__.__name__}] Greeting requested but session has history - will send welcome back message")
+                logger.debug(f"[{self.__class__.__name__}] Greeting requested but session has history - will send welcome back message")
                 return {'action': 'resume', 'state': current_state}
             else:
                 # New session - greet user
@@ -292,7 +292,7 @@ class BaseThinkingAgent(ABC):
         
         elif action == 'resume':
             # Panel reopened - send a friendly welcome back message
-            logger.info(f"[{self.__class__.__name__}] Resuming existing conversation | History: {len(session.get('history', []))} messages")
+            logger.debug(f"[{self.__class__.__name__}] Resuming existing conversation | History: {len(session.get('history', []))} messages")
             
             # Send a friendly "welcome back" message
             language = session.get('language', 'en')
@@ -323,6 +323,49 @@ class BaseThinkingAgent(ABC):
                 yield event
     
     # ===== LLM COMMUNICATION HELPERS =====
+    
+    async def _call_llm(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        session: Dict,
+        temperature: float = 0.3
+    ) -> str:
+        """
+        Call LLM for non-streaming responses (e.g., intent detection).
+        
+        Args:
+            system_prompt: System message for LLM
+            user_prompt: User prompt for LLM
+            session: Current session
+            temperature: LLM temperature (lower for more deterministic)
+            
+        Returns:
+            Complete response string
+        """
+        try:
+            # Get user context from session for token tracking
+            user_id = session.get('user_id')
+            organization_id = session.get('organization_id')
+            
+            response = await self.llm.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                temperature=temperature,
+                user_id=int(user_id) if user_id and str(user_id).isdigit() else None,
+                organization_id=organization_id,
+                request_type='thinkguide',
+                endpoint_path='/thinking_mode/intent',
+                conversation_id=session.get('session_id'),
+                diagram_type=self.diagram_type
+            )
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"[{self.__class__.__name__}] LLM call error: {e}", exc_info=True)
+            raise
     
     async def _stream_llm_response(
         self,

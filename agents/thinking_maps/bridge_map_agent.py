@@ -54,7 +54,7 @@ class BridgeMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"BridgeMapAgent: Starting bridge map generation for prompt")
+            logger.debug(f"BridgeMapAgent: Starting bridge map generation for prompt")
             
             # Three-template system for bridge maps:
             # 1. existing_analogies provided → identify relationship pattern
@@ -64,9 +64,9 @@ class BridgeMapAgent(BaseAgent):
             if existing_analogies and len(existing_analogies) > 0:
                 # Case 1 & 2: Has existing pairs
                 if fixed_dimension:
-                    logger.info(f"BridgeMapAgent: Mode 2 - Pairs + Relationship provided, FIXED dimension '{fixed_dimension}' - preserving {len(existing_analogies)} pairs")
+                    logger.debug(f"BridgeMapAgent: Mode 2 - Pairs + Relationship provided, FIXED dimension '{fixed_dimension}' - preserving {len(existing_analogies)} pairs")
                 else:
-                    logger.info(f"BridgeMapAgent: Mode 1 - Only pairs provided, will identify relationship pattern from {len(existing_analogies)} pairs")
+                    logger.debug(f"BridgeMapAgent: Mode 1 - Only pairs provided, will identify relationship pattern from {len(existing_analogies)} pairs")
                 spec = await self._identify_relationship_pattern(
                     existing_analogies,
                     language,
@@ -78,7 +78,7 @@ class BridgeMapAgent(BaseAgent):
                 )
             elif fixed_dimension:
                 # Case 3: Relationship-only mode - user provided ONLY the relationship, no pairs
-                logger.info(f"BridgeMapAgent: Mode 3 - Relationship-only mode, generating pairs for '{fixed_dimension}'")
+                logger.debug(f"BridgeMapAgent: Mode 3 - Relationship-only mode, generating pairs for '{fixed_dimension}'")
                 spec = await self._generate_from_relationship_only(
                     fixed_dimension,
                     language,
@@ -225,7 +225,7 @@ class BridgeMapAgent(BaseAgent):
                     user_prompt = f"请为以下描述创建一个桥形图，使用指定的类比关系模式'{dimension_preference}'：{prompt}"
                 else:
                     user_prompt = f"Please create a bridge map for the following description using the specified analogy relationship pattern '{dimension_preference}': {prompt}"
-                logger.info(f"BridgeMapAgent: User specified relationship pattern preference: {dimension_preference}")
+                logger.debug(f"BridgeMapAgent: User specified relationship pattern preference: {dimension_preference}")
             else:
                 user_prompt = f"请为以下描述创建一个桥形图：{prompt}" if language == "zh" else f"Please create a bridge map for the following description: {prompt}"
             logger.debug(f"User prompt: {user_prompt}")
@@ -273,8 +273,8 @@ class BridgeMapAgent(BaseAgent):
                 return None
             
             logger.debug(f"Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
-            logger.info(f"BridgeMapAgent: Dimension field from LLM: {spec.get('dimension', 'NOT PROVIDED')}")
-            logger.info(f"BridgeMapAgent: Alternative dimensions from LLM: {spec.get('alternative_dimensions', 'NOT PROVIDED')}")
+            logger.debug(f"BridgeMapAgent: Dimension field from LLM: {spec.get('dimension', 'NOT PROVIDED')}")
+            logger.debug(f"BridgeMapAgent: Alternative dimensions from LLM: {spec.get('alternative_dimensions', 'NOT PROVIDED')}")
             logger.debug("=== JSON EXTRACTION COMPLETE ===")
                 
             return spec
@@ -308,7 +308,7 @@ class BridgeMapAgent(BaseAgent):
             Spec with user's pairs + new generated pairs + identified/fixed dimension
         """
         try:
-            logger.info(f"BridgeMapAgent: Auto-complete from {len(existing_analogies)} existing pairs")
+            logger.debug(f"BridgeMapAgent: Auto-complete from {len(existing_analogies)} existing pairs")
             
             # Import centralized prompt system
             from prompts import get_prompt
@@ -324,7 +324,7 @@ class BridgeMapAgent(BaseAgent):
             # Choose prompt based on whether user has specified a fixed dimension
             if fixed_dimension:
                 # User has already specified the relationship - use fixed dimension prompt
-                logger.info(f"BridgeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                logger.debug(f"BridgeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
                 system_prompt = get_prompt("bridge_map_agent", language, "fixed_dimension")
                 
                 if not system_prompt:
@@ -405,7 +405,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             
             # Get new pairs from LLM response
             llm_new_pairs = result.get('analogies', [])
-            logger.info(f"BridgeMapAgent: LLM generated {len(llm_new_pairs)} new pairs")
+            logger.debug(f"BridgeMapAgent: LLM generated {len(llm_new_pairs)} new pairs")
             
             # Build combined analogies: user's pairs first, then new unique pairs
             combined_analogies = []
@@ -451,7 +451,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
                 })
                 next_id += 1
             
-            logger.info(f"BridgeMapAgent: Combined total: {len(combined_analogies)} pairs ({len(existing_analogies)} user + {len(combined_analogies) - len(existing_analogies)} new)")
+            logger.debug(f"BridgeMapAgent: Combined total: {len(combined_analogies)} pairs ({len(existing_analogies)} user + {len(combined_analogies) - len(existing_analogies)} new)")
             
             # Build final spec - use fixed_dimension if provided, otherwise use LLM-identified dimension
             final_dimension = fixed_dimension if fixed_dimension else result.get('dimension', '')
@@ -464,9 +464,9 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             }
             
             if fixed_dimension:
-                logger.info(f"BridgeMapAgent: Using FIXED dimension: {final_dimension}")
+                logger.debug(f"BridgeMapAgent: Using FIXED dimension: {final_dimension}")
             else:
-                logger.info(f"BridgeMapAgent: Identified dimension: {spec.get('dimension', 'NOT IDENTIFIED')}")
+                logger.debug(f"BridgeMapAgent: Identified dimension: {spec.get('dimension', 'NOT IDENTIFIED')}")
             
             return spec
             
@@ -509,7 +509,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             Spec with generated pairs following the specified relationship
         """
         try:
-            logger.info(f"BridgeMapAgent: Relationship-only mode - generating pairs for '{relationship}'")
+            logger.debug(f"BridgeMapAgent: Relationship-only mode - generating pairs for '{relationship}'")
             
             # Import centralized prompt system
             from prompts import get_prompt
@@ -562,7 +562,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             
             # Get pairs from LLM response
             analogies = result.get('analogies', [])
-            logger.info(f"BridgeMapAgent: Generated {len(analogies)} pairs for relationship '{relationship}'")
+            logger.debug(f"BridgeMapAgent: Generated {len(analogies)} pairs for relationship '{relationship}'")
             
             # Add IDs to analogies
             for i, pair in enumerate(analogies):
@@ -576,7 +576,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
                 'alternative_dimensions': result.get('alternative_dimensions', [])
             }
             
-            logger.info(f"BridgeMapAgent: Relationship-only complete - dimension: '{relationship}', pairs: {len(analogies)}")
+            logger.debug(f"BridgeMapAgent: Relationship-only complete - dimension: '{relationship}', pairs: {len(analogies)}")
             
             return spec
             
@@ -587,7 +587,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
-            logger.info(f"BridgeMapAgent: Enhancing spec - Analogies: {len(spec.get('analogies', []))}")
+            logger.debug(f"BridgeMapAgent: Enhancing spec - Analogies: {len(spec.get('analogies', []))}")
             
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()
@@ -595,19 +595,19 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             # Ensure dimension and alternative_dimensions fields are preserved
             if 'dimension' in spec:
                 enhanced_spec['dimension'] = spec['dimension']
-                logger.info(f"BridgeMapAgent: Preserving dimension: {spec['dimension']}")
+                logger.debug(f"BridgeMapAgent: Preserving dimension: {spec['dimension']}")
             else:
                 logger.warning("BridgeMapAgent: No dimension field in spec - LLM did not provide it")
             
             if 'alternative_dimensions' in spec:
                 enhanced_spec['alternative_dimensions'] = spec['alternative_dimensions']
-                logger.info(f"BridgeMapAgent: Preserving {len(spec['alternative_dimensions'])} alternative dimensions")
+                logger.debug(f"BridgeMapAgent: Preserving {len(spec['alternative_dimensions'])} alternative dimensions")
             else:
                 logger.warning("BridgeMapAgent: No alternative_dimensions field in spec - LLM did not provide it")
             
             # Ensure we have exactly 5 analogies (renderer expects this)
             if 'analogies' in enhanced_spec and len(enhanced_spec['analogies']) > 5:
-                logger.info(f"BridgeMapAgent: Truncating {len(enhanced_spec['analogies'])} analogies to 5 for renderer")
+                logger.debug(f"BridgeMapAgent: Truncating {len(enhanced_spec['analogies'])} analogies to 5 for renderer")
                 enhanced_spec['analogies'] = enhanced_spec['analogies'][:5]
             
             # Add layout information
@@ -662,11 +662,11 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             Dict containing success status and enhanced spec
         """
         try:
-            logger.info("BridgeMapAgent: Starting spec enhancement")
+            logger.debug("BridgeMapAgent: Starting spec enhancement")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
-                logger.info("BridgeMapAgent: Spec already enhanced, skipping")
+                logger.debug("BridgeMapAgent: Spec already enhanced, skipping")
                 return {'success': True, 'spec': spec}
             
             # Enhance the spec

@@ -48,8 +48,8 @@ class AsyncDifyClient:
             This is an async generator - use `async for chunk in stream_chat(...)`
         """
         
-        logger.info(f"[DIFY] Async streaming message: {message[:50]}... for user {user_id}")
-        logger.info(f"[DIFY] API URL: {self.api_url}, Timeout: {self.timeout}")
+        logger.debug(f"[DIFY] Async streaming message: {message[:50]}... for user {user_id}")
+        logger.debug(f"[DIFY] API URL: {self.api_url}, Timeout: {self.timeout}")
         
         payload = {
             "inputs": {},
@@ -60,18 +60,18 @@ class AsyncDifyClient:
         
         if conversation_id:
             payload["conversation_id"] = conversation_id
-            logger.info(f"[DIFY] Using conversation_id: {conversation_id}")
+            logger.debug(f"[DIFY] Using conversation_id: {conversation_id}")
             
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
         
-        logger.info(f"[DIFY] Request headers: Authorization=Bearer ***")
+        logger.debug(f"[DIFY] Request headers: Authorization=Bearer ***")
         
         try:
             url = f"{self.api_url}/chat-messages"
-            logger.info(f"[DIFY] Making async request to: {url}")
+            logger.debug(f"[DIFY] Making async request to: {url}")
             logger.debug(f"[DIFY] Request payload: {json.dumps(payload, ensure_ascii=False)}")
             
             # Create async HTTP session with timeout
@@ -81,12 +81,12 @@ class AsyncDifyClient:
                 sock_read=self.timeout  # Configurable read timeout per chunk
             )
             
-            logger.info(f"[DIFY] Sending async POST request...")
+            logger.debug(f"[DIFY] Sending async POST request...")
             
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(url, json=payload, headers=headers) as response:
                     
-                    logger.info(f"[DIFY] Response status: {response.status}")
+                    logger.debug(f"[DIFY] Response status: {response.status}")
                     logger.debug(f"[DIFY] Response headers: {dict(response.headers)}")
                     
                     # Check status code
@@ -127,7 +127,7 @@ class AsyncDifyClient:
                             if data_content.strip():
                                 # Handle [DONE] signal
                                 if data_content.strip() == '[DONE]':
-                                    logger.info("Received [DONE] signal from Dify")
+                                    logger.debug("Received [DONE] signal from Dify")
                                     break
                                 
                                 chunk_data = json.loads(data_content.strip())
@@ -143,7 +143,7 @@ class AsyncDifyClient:
                             logger.error(f"Error processing line: {e}")
                             continue
                     
-                    logger.info(f"[DIFY] Async stream completed successfully")
+                    logger.debug(f"[DIFY] Async stream completed successfully")
                             
         except aiohttp.ClientError as e:
             logger.error(f"Dify API async request error: {e}")

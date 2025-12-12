@@ -546,7 +546,7 @@ class HunyuanClient:
             timeout=self.timeout
         )
         
-        logger.info(f"HunyuanClient initialized with OpenAI-compatible API: {self.model_name}")
+        logger.debug(f"HunyuanClient initialized with OpenAI-compatible API: {self.model_name}")
     
     async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
                                    max_tokens: int = 2000) -> str:
@@ -711,7 +711,7 @@ def get_llm_client(model_id='qwen'):
     client = client_map.get(model_id)
     
     if client is not None:
-        logger.info(f"Using {model_id} LLM client")
+        logger.debug(f"Using {model_id} LLM client")
         return client
     else:
         logger.warning("Qwen client not available, using mock client for testing")

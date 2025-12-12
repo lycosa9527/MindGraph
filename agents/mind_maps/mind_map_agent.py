@@ -383,7 +383,7 @@ class MindMapAgent(BaseAgent):
             is_valid, validation_summary, validation_details = self.validate_layout_geometry(layout)
             
             # Log validation results
-            logger.info(f"Layout geometry validation: {validation_summary}")
+            logger.debug(f"Layout geometry validation: {validation_summary}")
             if validation_details:
                 for detail in validation_details:
                     if detail.startswith("CRITICAL") or detail.startswith("WARNING") or detail.startswith("OVERLAP"):
@@ -579,7 +579,7 @@ class MindMapAgent(BaseAgent):
         is_odd = num_branches % 2 != 0
         
         if is_odd:
-            logger.info(f"Odd number of branches ({num_branches}) detected - will handle uneven distribution")
+            logger.debug(f"Odd number of branches ({num_branches}) detected - will handle uneven distribution")
         
         # STEP 1: Clean left/right split with clockwise ordering
         # For odd numbers: put more branches on the right side

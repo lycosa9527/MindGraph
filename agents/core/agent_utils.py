@@ -391,14 +391,14 @@ def extract_topics_with_agent(user_prompt, language='zh'):
         logger.warning(f"Invalid language '{language}', defaulting to 'zh'")
         language = 'zh'
     
-    logger.info(f"Agent: Extracting topics from prompt: {user_prompt}")
+    logger.debug(f"Agent: Extracting topics from prompt: {user_prompt}")
     # Create the topic extraction chain
     from ..main_agent import create_topic_extraction_chain
     topic_chain = create_topic_extraction_chain(language)
     try:
         # Run the chain (refactored to use .invoke())
         result = topic_chain.invoke({"user_prompt": user_prompt})
-        logger.info(f"Agent: Topic extraction result: {result}")
+        logger.debug(f"Agent: Topic extraction result: {result}")
         # Parse the result using utility function
         topics = parse_topic_extraction_result(result, language)
         return topics
@@ -433,14 +433,14 @@ def generate_characteristics_with_agent(topic1, topic2, language='zh'):
         logger.warning(f"Invalid language '{language}', defaulting to 'zh'")
         language = 'zh'
     
-    logger.info(f"Agent: Generating characteristics for {topic1} vs {topic2}")
+    logger.debug(f"Agent: Generating characteristics for {topic1} vs {topic2}")
     # Create the characteristics generation chain
     from ..main_agent import create_characteristics_chain
     char_chain = create_characteristics_chain(language)
     try:
         # Run the chain (refactored to use .invoke())
         result = char_chain.invoke({"topic1": topic1, "topic2": topic2})
-        logger.info(f"Agent: Characteristics generation result: {result}")
+        logger.debug(f"Agent: Characteristics generation result: {result}")
         # Parse the result using utility function
         spec = parse_characteristics_result(result, topic1, topic2)
         return spec

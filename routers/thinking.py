@@ -84,8 +84,8 @@ async def thinking_mode_stream(
             center_text = req.diagram_data.get('center', {}).get('text', 'N/A')
         
         child_count = len(req.diagram_data.get('children', []))
-        logger.info(f"[ThinkGuide] Starting session: {req.session_id} | Diagram: {req.diagram_type} | State: {req.current_state}")
-        logger.info(f"[ThinkGuide] Diagram data - Center: '{center_text}' | Children: {child_count}")
+        logger.debug(f"[ThinkGuide] Starting session: {req.session_id} | Diagram: {req.diagram_type} | State: {req.current_state}")
+        logger.debug(f"[ThinkGuide] Diagram data - Center: '{center_text}' | Children: {child_count}")
         
         # Get user context for token tracking
         user_id = current_user.id if current_user else (req.user_id if hasattr(req, 'user_id') else None)
@@ -164,7 +164,7 @@ async def get_node_learning_material(
                 detail=f"Learning material not found for node: {node_id}"
             )
         
-        logger.info(f"[ThinkGuide] Retrieved learning material for node: {node_id} | Session: {session_id}")
+        logger.debug(f"[ThinkGuide] Retrieved learning material for node: {node_id} | Session: {session_id}")
         return material
     
     except HTTPException:
@@ -192,7 +192,7 @@ async def start_node_palette(
     session_id = req.session_id
     user_id = getattr(req, 'user_id', 'anonymous')
     
-    logger.info("[NodePalette-API] POST /start (V2 Concurrent) | Session: %s | User: %s", 
+    logger.debug("[NodePalette-API] POST /start (V2 Concurrent) | Session: %s | User: %s", 
                session_id[:8], user_id)
     
     # Debug: Log received diagram data structure
@@ -243,11 +243,11 @@ async def start_node_palette(
         # Special logging for bridge map
         if req.diagram_type == 'bridge_map':
             if center_topic and center_topic.strip():
-                logger.info("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | 🚀 Firing 4 LLMs concurrently", center_topic)
+                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 4 LLMs concurrently", center_topic)
             else:
-                logger.info("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | 🚀 Firing 4 LLMs concurrently")
+                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | Firing 4 LLMs concurrently")
         else:
-            logger.info("[NodePalette-API] Type: %s | Topic: '%s' | 🚀 Firing 4 LLMs concurrently", 
+            logger.debug("[NodePalette-API] Type: %s | Topic: '%s' | Firing 4 LLMs concurrently", 
                        req.diagram_type, center_topic)
         
         # Get appropriate generator based on diagram type (with fallback)
@@ -276,7 +276,7 @@ async def start_node_palette(
         
         # Stream with concurrent execution
         async def generate():
-            logger.info("[NodePalette-API] SSE stream starting | Session: %s", session_id[:8])
+            logger.debug("[NodePalette-API] SSE stream starting | Session: %s", session_id[:8])
             node_count = 0
             
             try:
@@ -316,7 +316,7 @@ async def start_node_palette(
                         yield f"data: {json.dumps(chunk)}\n\n"
                 elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap']:
                     # Multi-stage diagrams: pass stage and stage_data for progressive workflow
-                    logger.info("[NodePalette-API] %s stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
+                    logger.debug("[NodePalette-API] %s stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
                     async for chunk in generator.generate_batch(
                         session_id=session_id,
                         center_topic=center_topic,
@@ -348,7 +348,7 @@ async def start_node_palette(
                         
                         yield f"data: {json.dumps(chunk)}\n\n"
                 
-                logger.info("[NodePalette-API] Batch complete | Session: %s | Nodes: %d", 
+                logger.debug("[NodePalette-API] Batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
                 
             except Exception as e:
@@ -389,7 +389,7 @@ async def get_next_batch(
     Infinite scroll - keeps firing 4 concurrent LLMs on each trigger.
     """
     session_id = req.session_id
-    logger.info("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
+    logger.debug("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
     
     try:
         # Get appropriate generator based on diagram type (with fallback)
@@ -416,7 +416,7 @@ async def get_next_batch(
             logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
             generator = get_circle_map_palette_generator()
         
-        logger.info("[NodePalette-API] Type: %s | 🚀 Firing 4 LLMs concurrently for next batch...", req.diagram_type)
+        logger.debug("[NodePalette-API] Type: %s | Firing 4 LLMs concurrently for next batch...", req.diagram_type)
         
         # Stream next batch with concurrent execution
         async def generate():
@@ -457,7 +457,7 @@ async def get_next_batch(
                         yield f"data: {json.dumps(chunk)}\n\n"
                 elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap']:
                     # Multi-stage diagrams: pass stage and stage_data for progressive workflow
-                    logger.info("[NodePalette-API] %s next batch | Stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
+                    logger.debug("[NodePalette-API] %s next batch | Stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
                     async for chunk in generator.generate_batch(
                         session_id=session_id,
                         center_topic=req.center_topic,
@@ -489,7 +489,7 @@ async def get_next_batch(
                         
                         yield f"data: {json.dumps(chunk)}\n\n"
                 
-                logger.info("[NodePalette-API] Next batch complete | Session: %s | Nodes: %d", 
+                logger.debug("[NodePalette-API] Next batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
                 
             except Exception as e:
@@ -529,7 +529,7 @@ async def log_node_selection(
     node_text = req.node_text
     
     action = "selected" if selected else "deselected"
-    logger.info("[NodePalette-Selection] User %s node | Session: %s | Node: '%s' | ID: %s", 
+    logger.debug("[NodePalette-Selection] User %s node | Session: %s | Node: '%s' | ID: %s", 
                action, session_id[:8], node_text[:50], node_id)
     
     return {"status": "logged"}
@@ -551,8 +551,8 @@ async def log_finish_selection(
     total_generated = req.total_nodes_generated
     batches_loaded = req.batches_loaded
     
-    logger.info("[NodePalette-Finish] User closed palette | Session: %s", session_id[:8])
-    logger.info("[NodePalette-Finish]   Selected: %d/%d nodes | Batches: %d | Selection rate: %.1f%%", 
+    logger.debug("[NodePalette-Finish] User closed palette | Session: %s", session_id[:8])
+    logger.debug("[NodePalette-Finish]   Selected: %d/%d nodes | Batches: %d | Selection rate: %.1f%%", 
                selected_count, total_generated, batches_loaded, 
                (selected_count/max(total_generated,1))*100)
     
@@ -579,8 +579,8 @@ async def node_palette_cancel(
     total_generated = request.total_nodes_generated
     batches_loaded = request.batches_loaded
     
-    logger.info("[NodePalette-Cancel] User cancelled palette | Session: %s", session_id[:8])
-    logger.info("[NodePalette-Cancel]   Selected: %d/%d nodes (NOT added) | Batches: %d", 
+    logger.debug("[NodePalette-Cancel] User cancelled palette | Session: %s", session_id[:8])
+    logger.debug("[NodePalette-Cancel]   Selected: %d/%d nodes (NOT added) | Batches: %d", 
                selected_count, total_generated, batches_loaded)
     
     # NOTE: Do NOT end the session here!
@@ -604,7 +604,7 @@ async def node_palette_cleanup(
     session_id = request.session_id
     diagram_type = request.diagram_type or 'circle_map'
     
-    logger.info("[NodePalette-Cleanup] Ending session (user left canvas) | Session: %s", session_id[:8])
+    logger.debug("[NodePalette-Cleanup] Ending session (user left canvas) | Session: %s", session_id[:8])
     
     # Get appropriate generator and end session
     if diagram_type == 'circle_map':

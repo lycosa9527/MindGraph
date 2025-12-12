@@ -113,7 +113,7 @@ class TreeMapAgent(BaseAgent):
             
             # Choose prompt based on whether user has specified a fixed dimension
             if fixed_dimension:
-                logger.info(f"TreeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                logger.debug(f"TreeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
                 system_prompt = get_prompt("tree_map_agent", language, "fixed_dimension")
                 
                 if not system_prompt:
@@ -154,7 +154,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         user_prompt = f"请为以下描述创建一个树形图，使用指定的分类维度'{dimension_preference}'：{prompt}"
                     else:
                         user_prompt = f"Please create a tree map for the following description using the specified classification dimension '{dimension_preference}': {prompt}"
-                    logger.info(f"TreeMapAgent: User specified dimension preference: {dimension_preference}")
+                    logger.debug(f"TreeMapAgent: User specified dimension preference: {dimension_preference}")
                 else:
                     user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
             
@@ -188,7 +188,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 spec = response
             else:
                 # Try to extract JSON from string response
-                logger.info(f"TreeMapAgent: Raw LLM response: {str(response)[:500]}...")
+                logger.debug(f"TreeMapAgent: Raw LLM response: {str(response)[:500]}...")
                 spec = extract_json_from_response(str(response))
             
             if not spec:
@@ -199,10 +199,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if fixed_dimension:
                 spec['dimension'] = fixed_dimension
-                logger.info(f"TreeMapAgent: Enforced FIXED dimension: {fixed_dimension}")
+                logger.debug(f"TreeMapAgent: Enforced FIXED dimension: {fixed_dimension}")
             
             # Log the extracted spec for debugging
-            logger.info(f"TreeMapAgent: Extracted spec: {spec}")
+            logger.debug(f"TreeMapAgent: Extracted spec: {spec}")
             return spec
             
         except Exception as e:
@@ -278,7 +278,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # Normalize branches and leaves
             normalized_children: List[Dict] = []
             seen_branch_labels: Set[str] = set()
-            logger.info(f"TreeMapAgent: Raw children from LLM: {len(children_raw)} items")
+            logger.debug(f"TreeMapAgent: Raw children from LLM: {len(children_raw)} items")
 
             def ensure_node(node: Dict) -> Tuple[str, str]:
                 # returns (id, text) after normalization
@@ -312,7 +312,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                     logger.warning(f"TreeMapAgent: Skipping empty or duplicate branch: '{ctext}'")
                     continue
                 seen_branch_labels.add(ctext)
-                logger.info(f"TreeMapAgent: Processing branch: '{ctext}'")
+                logger.debug(f"TreeMapAgent: Processing branch: '{ctext}'")
 
                 # Normalize child id
                 if not cid:
@@ -350,7 +350,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 if len(normalized_children) >= self.MAX_BRANCHES:
                     break
 
-            logger.info(f"TreeMapAgent: Final normalized children: {len(normalized_children)} branches")
+            logger.debug(f"TreeMapAgent: Final normalized children: {len(normalized_children)} branches")
 
             if not normalized_children:
                 return {"success": False, "error": "At least one branch (child) is required"}

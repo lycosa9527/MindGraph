@@ -43,7 +43,7 @@ class ClientManager:
         self._clients: Dict[str, Any] = {}
         self._lock = Lock()
         self._initialized = False
-        logger.info("[ClientManager] Initialized")
+        logger.debug("[ClientManager] Initialized")
     
     def initialize(self) -> None:
         """
@@ -58,7 +58,7 @@ class ClientManager:
             if self._initialized:  # Double-check after acquiring lock
                 return
             
-            logger.info("[ClientManager] Initializing LLM clients...")
+            logger.debug("[ClientManager] Initializing LLM clients...")
             
             try:
                 # Initialize Qwen clients (two instances for different purposes)
@@ -73,7 +73,7 @@ class ClientManager:
                 
                 # Initialize Qwen Omni client (for VoiceAgent)
                 self._clients['omni'] = OmniClient()
-                logger.info("[ClientManager] Omni client initialized")
+                logger.debug("[ClientManager] Omni client initialized")
                 
                 # Optional: ChatGLM (if configured)
                 # NOTE: CHATGLM_API_KEY is NOT currently in config/settings.py
@@ -83,7 +83,7 @@ class ClientManager:
                 #     self._clients['chatglm'] = ChatGLMClient()
                 
                 self._initialized = True
-                logger.info(f"[ClientManager] Initialized {len(self._clients)} LLM clients")
+                logger.debug(f"[ClientManager] Initialized {len(self._clients)} LLM clients")
                 
             except Exception as e:
                 logger.error(f"[ClientManager] Initialization failed: {e}", exc_info=True)
@@ -135,11 +135,11 @@ class ClientManager:
         """
         Cleanup all clients (called during shutdown).
         """
-        logger.info("[ClientManager] Cleaning up clients...")
+        logger.debug("[ClientManager] Cleaning up clients...")
         with self._lock:
             self._clients.clear()
             self._initialized = False
-        logger.info("[ClientManager] Cleanup complete")
+        logger.debug("[ClientManager] Cleanup complete")
     
     @property
     def omni_client(self):

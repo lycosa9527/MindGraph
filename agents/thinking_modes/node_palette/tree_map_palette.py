@@ -70,10 +70,10 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         if stage_data:
             self.session_stages[session_id].update(stage_data)
         
-        logger.info("[TreeMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+        logger.debug("[TreeMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
                    stage, session_id[:8], center_topic)
         if stage_data:
-            logger.info("[TreeMapPalette] Stage data: %s", stage_data)
+            logger.debug("[TreeMapPalette] Stage data: %s", stage_data)
         
         # Pass session_id through educational_context so _build_prompt can access it
         if educational_context is None:
@@ -98,10 +98,10 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
                 # For other stages, use stage name
                 if stage == 'children' and stage_data and stage_data.get('category_name'):
                     node_mode = stage_data['category_name']
-                    logger.info(f"[TreeMapPalette] Node tagged with category mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[TreeMapPalette] Node tagged with category mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 else:
                     node_mode = stage
-                    logger.info(f"[TreeMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[TreeMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 
                 node['mode'] = node_mode
             
@@ -143,7 +143,7 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
             stage = self.session_stages[session_id].get('stage', 'categories')
             stage_data = self.session_stages[session_id]
         
-        logger.info("[TreeMapPalette-Prompt] Building prompt for stage: %s", stage)
+        logger.debug("[TreeMapPalette-Prompt] Building prompt for stage: %s", stage)
         
         # Build stage-specific prompt
         if stage == 'dimensions':

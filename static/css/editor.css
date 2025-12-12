@@ -514,6 +514,979 @@ body {
     margin: 0;
 }
 
+/* ========== Circle Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes circleMapCenterPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes circleMapBubble1Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.38);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes circleMapBubble2Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.38);
+    }
+    50% {
+        transform: scale(1);
+    }
+}
+
+@keyframes circleMapBubble3Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.38);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+@keyframes circleMapBubble4Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1);
+    }
+    60% {
+        transform: scale(1.38);
+    }
+    70% {
+        transform: scale(1);
+    }
+}
+
+@keyframes circleMapBubble5Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    60% {
+        transform: scale(1);
+    }
+    70% {
+        transform: scale(1.38);
+    }
+    80% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins */
+.diagram-card[data-type="circle_map"] .circle-map-center {
+    transform-origin: 100px 75px;
+}
+
+.diagram-card[data-type="circle_map"] .circle-map-bubble-1 {
+    transform-origin: 100px 23px;
+}
+
+.diagram-card[data-type="circle_map"] .circle-map-bubble-2 {
+    transform-origin: 150px 59px;
+}
+
+.diagram-card[data-type="circle_map"] .circle-map-bubble-3 {
+    transform-origin: 131px 117px;
+}
+
+.diagram-card[data-type="circle_map"] .circle-map-bubble-4 {
+    transform-origin: 69px 117px;
+}
+
+.diagram-card[data-type="circle_map"] .circle-map-bubble-5 {
+    transform-origin: 50px 59px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="circle_map"]:hover .circle-map-center {
+    animation: circleMapCenterPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="circle_map"]:hover .circle-map-bubble-1 {
+    animation: circleMapBubble1Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="circle_map"]:hover .circle-map-bubble-2 {
+    animation: circleMapBubble2Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="circle_map"]:hover .circle-map-bubble-3 {
+    animation: circleMapBubble3Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="circle_map"]:hover .circle-map-bubble-4 {
+    animation: circleMapBubble4Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="circle_map"]:hover .circle-map-bubble-5 {
+    animation: circleMapBubble5Pulse 2s ease-in-out infinite;
+}
+
+/* ========== Bubble Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes bubbleMapCenterPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bubbleMapBubble1Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.38);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bubbleMapBubble2Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.38);
+    }
+    50% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bubbleMapBubble3Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.38);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bubbleMapBubble4Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1);
+    }
+    60% {
+        transform: scale(1.38);
+    }
+    70% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bubbleMapBubble5Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    60% {
+        transform: scale(1);
+    }
+    70% {
+        transform: scale(1.38);
+    }
+    80% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins */
+.diagram-card[data-type="bubble_map"] .bubble-map-center {
+    transform-origin: 100px 80px;
+}
+
+.diagram-card[data-type="bubble_map"] .bubble-map-bubble-1 {
+    transform-origin: 100px 25px;
+}
+
+.diagram-card[data-type="bubble_map"] .bubble-map-bubble-2 {
+    transform-origin: 152px 63px;
+}
+
+.diagram-card[data-type="bubble_map"] .bubble-map-bubble-3 {
+    transform-origin: 132px 125px;
+}
+
+.diagram-card[data-type="bubble_map"] .bubble-map-bubble-4 {
+    transform-origin: 68px 125px;
+}
+
+.diagram-card[data-type="bubble_map"] .bubble-map-bubble-5 {
+    transform-origin: 48px 63px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="bubble_map"]:hover .bubble-map-center {
+    animation: bubbleMapCenterPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="bubble_map"]:hover .bubble-map-bubble-1 {
+    animation: bubbleMapBubble1Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="bubble_map"]:hover .bubble-map-bubble-2 {
+    animation: bubbleMapBubble2Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="bubble_map"]:hover .bubble-map-bubble-3 {
+    animation: bubbleMapBubble3Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="bubble_map"]:hover .bubble-map-bubble-4 {
+    animation: bubbleMapBubble4Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="bubble_map"]:hover .bubble-map-bubble-5 {
+    animation: bubbleMapBubble5Pulse 2s ease-in-out infinite;
+}
+
+/* ========== Double Bubble Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes doubleBubbleMapTopicPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes doubleBubbleMapSimilarityPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.38);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes doubleBubbleMapDiffPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.38);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins */
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-topic-left {
+    transform-origin: 60px 75px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-topic-right {
+    transform-origin: 140px 75px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-similarity-1 {
+    transform-origin: 100px 50px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-similarity-2 {
+    transform-origin: 100px 100px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-diff-left-1 {
+    transform-origin: 20px 50px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-diff-left-2 {
+    transform-origin: 20px 100px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-diff-right-1 {
+    transform-origin: 180px 50px;
+}
+
+.diagram-card[data-type="double_bubble_map"] .double-bubble-map-diff-right-2 {
+    transform-origin: 180px 100px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="double_bubble_map"]:hover .double-bubble-map-topic {
+    animation: doubleBubbleMapTopicPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="double_bubble_map"]:hover .double-bubble-map-similarity {
+    animation: doubleBubbleMapSimilarityPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="double_bubble_map"]:hover .double-bubble-map-diff {
+    animation: doubleBubbleMapDiffPulse 2s ease-in-out infinite;
+}
+
+/* ========== Tree Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes treeMapTopicPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes treeMapChild1Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.3);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes treeMapChild2Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.3);
+    }
+    50% {
+        transform: scale(1);
+    }
+}
+
+@keyframes treeMapChild3Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins (center of each rectangle) */
+.diagram-card[data-type="tree_map"] .tree-map-topic {
+    transform-origin: 100px 36.5px;
+}
+
+.diagram-card[data-type="tree_map"] .tree-map-child-1 {
+    transform-origin: 45px 115px;
+}
+
+.diagram-card[data-type="tree_map"] .tree-map-child-2 {
+    transform-origin: 100px 115px;
+}
+
+.diagram-card[data-type="tree_map"] .tree-map-child-3 {
+    transform-origin: 155px 115px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="tree_map"]:hover .tree-map-topic {
+    animation: treeMapTopicPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="tree_map"]:hover .tree-map-child-1 {
+    animation: treeMapChild1Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="tree_map"]:hover .tree-map-child-2 {
+    animation: treeMapChild2Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="tree_map"]:hover .tree-map-child-3 {
+    animation: treeMapChild3Pulse 2s ease-in-out infinite;
+}
+
+/* ========== Brace Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes braceMapTopicPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes braceMapChild1Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.3);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes braceMapChild2Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.3);
+    }
+    50% {
+        transform: scale(1);
+    }
+}
+
+@keyframes braceMapChild3Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins (center of each rectangle) */
+.diagram-card[data-type="brace_map"] .brace-map-topic {
+    transform-origin: 50px 75px;
+}
+
+.diagram-card[data-type="brace_map"] .brace-map-child-1 {
+    transform-origin: 155px 35px;
+}
+
+.diagram-card[data-type="brace_map"] .brace-map-child-2 {
+    transform-origin: 155px 75px;
+}
+
+.diagram-card[data-type="brace_map"] .brace-map-child-3 {
+    transform-origin: 155px 115px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="brace_map"]:hover .brace-map-topic {
+    animation: braceMapTopicPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="brace_map"]:hover .brace-map-child-1 {
+    animation: braceMapChild1Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="brace_map"]:hover .brace-map-child-2 {
+    animation: braceMapChild2Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="brace_map"]:hover .brace-map-child-3 {
+    animation: braceMapChild3Pulse 2s ease-in-out infinite;
+}
+
+/* ========== Flow Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes flowMapBox1Pulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes flowMapBox2Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.2);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes flowMapBox3Pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.2);
+    }
+    50% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins (center of each rectangle) */
+.diagram-card[data-type="flow_map"] .flow-map-box-1 {
+    transform-origin: 27.5px 75px;
+}
+
+.diagram-card[data-type="flow_map"] .flow-map-box-2 {
+    transform-origin: 100px 75px;
+}
+
+.diagram-card[data-type="flow_map"] .flow-map-box-3 {
+    transform-origin: 172.5px 75px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="flow_map"]:hover .flow-map-box-1 {
+    animation: flowMapBox1Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="flow_map"]:hover .flow-map-box-2 {
+    animation: flowMapBox2Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="flow_map"]:hover .flow-map-box-3 {
+    animation: flowMapBox3Pulse 2s ease-in-out infinite;
+}
+
+/* ========== Multi-Flow Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes multiFlowMapEventPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes multiFlowMapCausePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.3);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes multiFlowMapEffectPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins (center of each rectangle) */
+.diagram-card[data-type="multi_flow_map"] .multi-flow-map-event {
+    transform-origin: 100px 75px;
+}
+
+.diagram-card[data-type="multi_flow_map"] .multi-flow-map-cause-1 {
+    transform-origin: 26.5px 51px;
+}
+
+.diagram-card[data-type="multi_flow_map"] .multi-flow-map-cause-2 {
+    transform-origin: 26.5px 99px;
+}
+
+.diagram-card[data-type="multi_flow_map"] .multi-flow-map-effect-1 {
+    transform-origin: 173.5px 51px;
+}
+
+.diagram-card[data-type="multi_flow_map"] .multi-flow-map-effect-2 {
+    transform-origin: 173.5px 99px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="multi_flow_map"]:hover .multi-flow-map-event {
+    animation: multiFlowMapEventPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="multi_flow_map"]:hover .multi-flow-map-cause {
+    animation: multiFlowMapCausePulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="multi_flow_map"]:hover .multi-flow-map-effect {
+    animation: multiFlowMapEffectPulse 2s ease-in-out infinite;
+}
+
+/* ========== Bridge Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes bridgeMapLeftPairPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bridgeMapRightPairPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins (center of each rectangle) */
+.diagram-card[data-type="bridge_map"] .bridge-map-left-top {
+    transform-origin: 55px 54px;
+}
+
+.diagram-card[data-type="bridge_map"] .bridge-map-left-bottom {
+    transform-origin: 55px 96px;
+}
+
+.diagram-card[data-type="bridge_map"] .bridge-map-right-top {
+    transform-origin: 145px 54px;
+}
+
+.diagram-card[data-type="bridge_map"] .bridge-map-right-bottom {
+    transform-origin: 145px 96px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="bridge_map"]:hover .bridge-map-left {
+    animation: bridgeMapLeftPairPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="bridge_map"]:hover .bridge-map-right {
+    animation: bridgeMapRightPairPulse 2s ease-in-out infinite;
+}
+
+/* ========== Mind Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes mindMapCenterPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes mindMapBranchTopRightPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    27.5% {
+        transform: scale(1.3);
+    }
+    35% {
+        transform: scale(1);
+    }
+}
+
+@keyframes mindMapBranchLowerRightPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    37.5% {
+        transform: scale(1.3);
+    }
+    45% {
+        transform: scale(1);
+    }
+}
+
+@keyframes mindMapBranchLowerLeftPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1);
+    }
+    47.5% {
+        transform: scale(1.3);
+    }
+    55% {
+        transform: scale(1);
+    }
+}
+
+@keyframes mindMapBranchTopLeftPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1);
+    }
+    57.5% {
+        transform: scale(1.3);
+    }
+    65% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins */
+.diagram-card[data-type="mindmap"] .mind-map-center {
+    transform-origin: 100px 75px;
+}
+
+.diagram-card[data-type="mindmap"] .mind-map-branch-top-right {
+    transform-origin: 167.5px 49px;
+}
+
+.diagram-card[data-type="mindmap"] .mind-map-branch-lower-right {
+    transform-origin: 167.5px 101px;
+}
+
+.diagram-card[data-type="mindmap"] .mind-map-branch-lower-left {
+    transform-origin: 32.5px 101px;
+}
+
+.diagram-card[data-type="mindmap"] .mind-map-branch-top-left {
+    transform-origin: 32.5px 49px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="mindmap"]:hover .mind-map-center {
+    animation: mindMapCenterPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="mindmap"]:hover .mind-map-branch-top-right {
+    animation: mindMapBranchTopRightPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="mindmap"]:hover .mind-map-branch-lower-right {
+    animation: mindMapBranchLowerRightPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="mindmap"]:hover .mind-map-branch-lower-left {
+    animation: mindMapBranchLowerLeftPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="mindmap"]:hover .mind-map-branch-top-left {
+    animation: mindMapBranchTopLeftPulse 2s ease-in-out infinite;
+}
+
+/* ========== Concept Map Hover Animation ========== */
+/* Keyframe animations for cycling effect */
+@keyframes conceptMapTopPulse {
+    0% {
+        transform: scale(1);
+    }
+    10% {
+        transform: scale(1.2);
+    }
+    20% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes conceptMapRightPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.3);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes conceptMapLeftPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.3);
+    }
+    50% {
+        transform: scale(1);
+    }
+}
+
+/* Set transform origins */
+.diagram-card[data-type="concept_map"] .concept-map-top {
+    transform-origin: 100px 40px;
+}
+
+.diagram-card[data-type="concept_map"] .concept-map-right {
+    transform-origin: 150px 100px;
+}
+
+.diagram-card[data-type="concept_map"] .concept-map-left {
+    transform-origin: 50px 100px;
+}
+
+/* Apply animations on hover - cycle continuously */
+.diagram-card[data-type="concept_map"]:hover .concept-map-top {
+    animation: conceptMapTopPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="concept_map"]:hover .concept-map-right {
+    animation: conceptMapRightPulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="concept_map"]:hover .concept-map-left {
+    animation: conceptMapLeftPulse 2s ease-in-out infinite;
+}
+
 /* ========== Landing Footer ========== */
 .landing-footer {
     text-align: center;

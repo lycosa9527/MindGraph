@@ -70,7 +70,7 @@ def create_voice_session(
         'conversation_history': []
     }
     
-    logger.info(f"Session created: {session_id} (linked to diagram={diagram_session_id})")
+    logger.debug(f"Session created: {session_id} (linked to diagram={diagram_session_id})")
     return session_id
 
 
@@ -84,13 +84,13 @@ def update_panel_context(session_id: str, active_panel: str) -> None:
     if session_id in voice_sessions:
         old_panel = voice_sessions[session_id].get('active_panel', 'unknown')
         voice_sessions[session_id]['active_panel'] = active_panel
-        logger.info(f"Panel context updated: {session_id} ({old_panel} -> {active_panel})")
+        logger.debug(f"Panel context updated: {session_id} ({old_panel} -> {active_panel})")
 
 
 def end_voice_session(session_id: str, reason: str = 'completed') -> None:
     """End and cleanup session"""
     if session_id in voice_sessions:
-        logger.info(f"Session ended: {session_id} (reason={reason})")
+        logger.debug(f"Session ended: {session_id} (reason={reason})")
         del voice_sessions[session_id]
 
 
@@ -106,7 +106,7 @@ def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
             break
     
     if voice_session_id:
-        logger.info(f"Cleaning up voice session {voice_session_id} (diagram session {diagram_session_id} ended)")
+        logger.debug(f"Cleaning up voice session {voice_session_id} (diagram session {diagram_session_id} ended)")
         end_voice_session(voice_session_id, reason='diagram_session_ended')
         return True
     
@@ -251,7 +251,7 @@ async def voice_conversation(
             logger.warning(f"WebSocket auth failed: User {user_id_str} not found")
             return
         
-        logger.info(f"WebSocket authenticated: user {current_user.id}")
+        logger.debug(f"WebSocket authenticated: user {current_user.id}")
         
     except Exception as e:
         logger.error(f"WebSocket auth error: {e}", exc_info=True)
@@ -272,7 +272,7 @@ async def voice_conversation(
             await websocket.close()
             return
         
-        logger.info(f"Starting voice conversation for user {user_id}")
+        logger.debug(f"Starting voice conversation for user {user_id}")
         
         # Create voice session
         voice_session_id = create_voice_session(
@@ -309,7 +309,7 @@ async def voice_conversation(
             'session_id': voice_session_id
         })
         
-        logger.info(f"Voice session {voice_session_id} connected")
+        logger.debug(f"Voice session {voice_session_id} connected")
         
         # Wait for SDK to initialize conversation (check via async iteration start)
         # The first event will confirm conversation is ready
@@ -351,13 +351,13 @@ async def voice_conversation(
                         new_instructions = build_voice_instructions(updated_context)
                         client_manager.omni_client.update_instructions(new_instructions)
                         
-                        logger.info(f"Context updated for {voice_session_id}")
+                        logger.debug(f"Context updated for {voice_session_id}")
                     
                     elif msg_type == 'stop':
                         break
             
             except WebSocketDisconnect:
-                logger.info(f"Client disconnected: {voice_session_id}")
+                logger.debug(f"Client disconnected: {voice_session_id}")
             except Exception as e:
                 logger.error(f"Client message error: {e}", exc_info=True)
         
@@ -378,12 +378,12 @@ async def voice_conversation(
                             greeting_text=greeting
                         )
                         greeting_sent = True
-                        logger.info(f"Greeting sent: {greeting[:50]}...")
+                        logger.debug(f"Greeting sent: {greeting[:50]}...")
                     
                     if event_type == 'transcription':
                         transcription_text = event.get('text', '')
                         
-                        logger.info(f"Omni transcription: '{transcription_text}'")
+                        logger.debug(f"Omni transcription: '{transcription_text}'")
                         
                         # Send transcription to client
                         await websocket.send_json({
@@ -412,7 +412,7 @@ async def voice_conversation(
                             node_index = command.get('node_index')
                             confidence = command.get('confidence', 0.0)
                             
-                            logger.info(f"Voice command: action={action}, target={target}, node_index={node_index}, confidence={confidence}")
+                            logger.debug(f"Voice command: action={action}, target={target}, node_index={node_index}, confidence={confidence}")
                             
                             # Only proceed if confidence is high enough (except for UI actions)
                             ui_actions = [
@@ -423,13 +423,13 @@ async def voice_conversation(
                                 'ask_thinkguide', 'ask_mindmate', 'auto_complete', 'help'
                             ]
                             if action not in ui_actions and confidence < 0.7:
-                                logger.info(f"Low confidence ({confidence}), skipping diagram update")
+                                logger.debug(f"Low confidence ({confidence}), skipping diagram update")
                                 continue
                             
                             # Handle UI actions first
                             # Panel control
                             if action == 'open_thinkguide':
-                                logger.info("Opening ThinkGuide panel")
+                                logger.debug("Opening ThinkGuide panel")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'open_thinkguide',
@@ -438,7 +438,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'close_thinkguide':
-                                logger.info("Closing ThinkGuide panel")
+                                logger.debug("Closing ThinkGuide panel")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'close_thinkguide',
@@ -447,7 +447,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'open_node_palette':
-                                logger.info("Opening Node Palette")
+                                logger.debug("Opening Node Palette")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'open_node_palette',
@@ -456,7 +456,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'close_node_palette':
-                                logger.info("Closing Node Palette")
+                                logger.debug("Closing Node Palette")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'close_node_palette',
@@ -465,7 +465,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'open_mindmate':
-                                logger.info("Opening MindMate AI panel")
+                                logger.debug("Opening MindMate AI panel")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'open_mindmate',
@@ -474,7 +474,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'close_mindmate':
-                                logger.info("Closing MindMate AI panel")
+                                logger.debug("Closing MindMate AI panel")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'close_mindmate',
@@ -483,7 +483,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'close_all_panels':
-                                logger.info("Closing all panels")
+                                logger.debug("Closing all panels")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'close_all_panels',
@@ -493,7 +493,7 @@ async def voice_conversation(
                             
                             # Interaction control
                             elif action == 'auto_complete':
-                                logger.info("Triggering AI auto-complete")
+                                logger.debug("Triggering AI auto-complete")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'auto_complete',
@@ -502,7 +502,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'ask_thinkguide' and target:
-                                logger.info(f"Sending question to ThinkGuide: {target}")
+                                logger.debug(f"Sending question to ThinkGuide: {target}")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'ask_thinkguide',
@@ -511,7 +511,7 @@ async def voice_conversation(
                                 continue
                             
                             elif action == 'ask_mindmate' and target:
-                                logger.info(f"Sending question to MindMate: {target}")
+                                logger.debug(f"Sending question to MindMate: {target}")
                                 await websocket.send_json({
                                     'type': 'action',
                                     'action': 'ask_mindmate',
@@ -531,7 +531,7 @@ async def voice_conversation(
                                             resolved_node_id = node.get('id') if isinstance(node, dict) else f"context_{node_index}"
                                     
                                     if resolved_node_id:
-                                        logger.info(f"Selecting node: {resolved_node_id}")
+                                        logger.debug(f"Selecting node: {resolved_node_id}")
                                         await websocket.send_json({
                                             'type': 'action',
                                             'action': 'select_node',
@@ -554,7 +554,7 @@ async def voice_conversation(
                                                 node_label = node.get('text', node.get('label', ''))
                                     
                                     if resolved_node_id and node_label:
-                                        logger.info(f"Explaining node: {resolved_node_id} ({node_label})")
+                                        logger.debug(f"Explaining node: {resolved_node_id} ({node_label})")
                                         await websocket.send_json({
                                             'type': 'action',
                                             'action': 'explain_node',
@@ -570,7 +570,7 @@ async def voice_conversation(
                                 # Not a diagram update - just conversation or help request
                                 if action == 'help':
                                     # Open ThinkGuide for help
-                                    logger.info("User requested help - opening ThinkGuide")
+                                    logger.debug("User requested help - opening ThinkGuide")
                                     await websocket.send_json({
                                         'type': 'action',
                                         'action': 'open_thinkguide',
@@ -582,7 +582,7 @@ async def voice_conversation(
                             
                             # Handle diagram updates
                             if action == 'update_center' and target:
-                                logger.info(f"Updating center to: {target}")
+                                logger.debug(f"Updating center to: {target}")
                                 
                                 await websocket.send_json({
                                     'type': 'diagram_update',
@@ -598,7 +598,7 @@ async def voice_conversation(
                                 session_context['diagram_data']['center']['text'] = target
                             
                             elif action == 'update_node' and target and node_index is not None:
-                                logger.info(f"Updating node {node_index} to: {target}")
+                                logger.debug(f"Updating node {node_index} to: {target}")
                                 
                                 # Get node ID from index
                                 nodes = session_context.get('diagram_data', {}).get('children', [])
@@ -616,7 +616,7 @@ async def voice_conversation(
                                     })
                             
                             elif action == 'add_node' and target:
-                                logger.info(f"Adding node: {target}")
+                                logger.debug(f"Adding node: {target}")
                                 
                                 await websocket.send_json({
                                     'type': 'diagram_update',
@@ -625,7 +625,7 @@ async def voice_conversation(
                                 })
                             
                             elif action == 'delete_node' and node_index is not None:
-                                logger.info(f"Deleting node: {node_index}")
+                                logger.debug(f"Deleting node: {node_index}")
                                 
                                 nodes = session_context.get('diagram_data', {}).get('children', [])
                                 if 0 <= node_index < len(nodes):
@@ -669,21 +669,21 @@ async def voice_conversation(
                         })
                     
                     elif event_type == 'speech_started':
-                        logger.info(f"VAD: Speech started at {event.get('audio_start_ms')}ms")
+                        logger.debug(f"VAD: Speech started at {event.get('audio_start_ms')}ms")
                         await websocket.send_json({
                             'type': 'speech_started',
                             'audio_start_ms': event.get('audio_start_ms')
                         })
                     
                     elif event_type == 'speech_stopped':
-                        logger.info(f"VAD: Speech stopped at {event.get('audio_end_ms')}ms")
+                        logger.debug(f"VAD: Speech stopped at {event.get('audio_end_ms')}ms")
                         await websocket.send_json({
                             'type': 'speech_stopped',
                             'audio_end_ms': event.get('audio_end_ms')
                         })
                     
                     elif event_type == 'response_done':
-                        logger.info(f"Omni response complete")
+                        logger.debug(f"Omni response complete")
                         
                         # Track token usage from Omni response
                         try:
@@ -748,7 +748,7 @@ async def voice_conversation(
         )
     
     except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected: {voice_session_id}")
+        logger.debug(f"WebSocket disconnected: {voice_session_id}")
     
     except Exception as e:
         logger.error(f"WebSocket error: {e}", exc_info=True)

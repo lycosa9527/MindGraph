@@ -799,7 +799,7 @@ async def _detect_diagram_type_from_prompt(
         elif is_too_short or is_too_long:
             # Prompt length is suspicious
             clarity = 'unclear'
-            logger.info(f"Prompt length is suspicious (words: {len(prompt_words)})")
+            logger.debug(f"Prompt length is suspicious (words: {len(prompt_words)})")
         
         result = {
             'diagram_type': detected_type,
@@ -807,7 +807,7 @@ async def _detect_diagram_type_from_prompt(
             'has_topic': has_topic
         }
         
-        logger.info(f"LLM classification: '{user_prompt}' → {detected_type} (clarity: {clarity})")
+        logger.debug(f"LLM classification: '{user_prompt}' → {detected_type} (clarity: {clarity})")
         return result
             
     except ValueError as e:
@@ -1525,9 +1525,9 @@ async def _generate_spec_with_agent(
         if diagram_type == 'bridge_map' and existing_analogies:
             # Mode 1 or 2: Has existing pairs
             if fixed_dimension:
-                logger.info(f"Bridge map Mode 2: Pairs + Relationship - preserving {len(existing_analogies)} pairs with FIXED dimension '{fixed_dimension}'")
+                logger.debug(f"Bridge map Mode 2: Pairs + Relationship - preserving {len(existing_analogies)} pairs with FIXED dimension '{fixed_dimension}'")
             else:
-                logger.info(f"Bridge map Mode 1: Only pairs - will identify relationship from {len(existing_analogies)} pairs")
+                logger.debug(f"Bridge map Mode 1: Only pairs - will identify relationship from {len(existing_analogies)} pairs")
             result = await agent.generate_graph(
                 user_prompt, 
                 language, 
@@ -1543,7 +1543,7 @@ async def _generate_spec_with_agent(
             )
         # Bridge map Mode 3: Relationship-only mode (no pairs, but has fixed dimension)
         elif diagram_type == 'bridge_map' and fixed_dimension and not existing_analogies:
-            logger.info(f"Bridge map Mode 3: Relationship-only - generating pairs for '{fixed_dimension}'")
+            logger.debug(f"Bridge map Mode 3: Relationship-only - generating pairs for '{fixed_dimension}'")
             result = await agent.generate_graph(
                 user_prompt, 
                 language, 
@@ -1559,7 +1559,7 @@ async def _generate_spec_with_agent(
             )
         # For tree maps with fixed dimension (auto-complete mode)
         elif diagram_type == 'tree_map' and fixed_dimension:
-            logger.info(f"Tree map auto-complete mode with FIXED dimension '{fixed_dimension}'")
+            logger.debug(f"Tree map auto-complete mode with FIXED dimension '{fixed_dimension}'")
             result = await agent.generate_graph(
                 user_prompt, 
                 language, 
@@ -1574,7 +1574,7 @@ async def _generate_spec_with_agent(
             )
         # For brace maps with fixed dimension (auto-complete mode)
         elif diagram_type == 'brace_map' and fixed_dimension:
-            logger.info(f"Brace map auto-complete mode with FIXED dimension '{fixed_dimension}'")
+            logger.debug(f"Brace map auto-complete mode with FIXED dimension '{fixed_dimension}'")
             result = await agent.generate_graph(
                 user_prompt, 
                 language, 
@@ -1590,11 +1590,11 @@ async def _generate_spec_with_agent(
         # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
         elif (diagram_type == 'brace_map' or diagram_type == 'tree_map' or diagram_type == 'bridge_map') and dimension_preference:
             if diagram_type == 'brace_map':
-                logger.info(f"Passing decomposition dimension preference to brace map agent: {dimension_preference}")
+                logger.debug(f"Passing decomposition dimension preference to brace map agent: {dimension_preference}")
             elif diagram_type == 'tree_map':
-                logger.info(f"Passing classification dimension preference to tree map agent: {dimension_preference}")
+                logger.debug(f"Passing classification dimension preference to tree map agent: {dimension_preference}")
             elif diagram_type == 'bridge_map':
-                logger.info(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
+                logger.debug(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
             result = await agent.generate_graph(
                 user_prompt, 
                 language, 
@@ -1657,7 +1657,7 @@ def _detect_learning_sheet_from_prompt(user_prompt: str, language: str) -> bool:
     is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
     
     if is_learning_sheet:
-        logger.info(f"Learning sheet detected in prompt: '{user_prompt}'")
+        logger.debug(f"Learning sheet detected in prompt: '{user_prompt}'")
     
     return is_learning_sheet
 
@@ -1725,7 +1725,7 @@ async def agent_graph_workflow_with_styles(
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
     """
-    logger.info("Starting simplified graph workflow")
+    logger.debug("Starting simplified graph workflow")
     
     try:
         # Validate inputs
@@ -1735,7 +1735,7 @@ async def agent_graph_workflow_with_styles(
         if forced_diagram_type:
             diagram_type = forced_diagram_type
             detection_result = {'diagram_type': diagram_type, 'clarity': 'clear', 'has_topic': True}
-            logger.info(f"Using forced diagram type: {diagram_type}")
+            logger.debug(f"Using forced diagram type: {diagram_type}")
         else:
             # LLM-based diagram type detection for semantic understanding
             detection_result = await _detect_diagram_type_from_prompt(
@@ -1749,7 +1749,7 @@ async def agent_graph_workflow_with_styles(
                 endpoint_path=endpoint_path
             )
             diagram_type = detection_result['diagram_type']
-            logger.info(f"Detected diagram type: {diagram_type}, clarity: {detection_result['clarity']}")
+            logger.debug(f"Detected diagram type: {diagram_type}, clarity: {detection_result['clarity']}")
             
             # Check if prompt is too complex/unclear and should show guidance modal
             if detection_result['clarity'] == 'very_unclear' and not detection_result['has_topic']:
@@ -1791,7 +1791,7 @@ async def agent_graph_workflow_with_styles(
                 endpoint_path=endpoint_path
             )
             main_topic = main_topic.strip().strip('"\'')
-            logger.info(f"Extracted main topic: '{main_topic}'")
+            logger.debug(f"Extracted main topic: '{main_topic}'")
             
             # Return just the topic and diagram type - frontend will load default template
             return {
@@ -1805,12 +1805,12 @@ async def agent_graph_workflow_with_styles(
         # For forced diagram type (manual generation), use full agent workflow
         # Add learning sheet detection
         is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
-        logger.info(f"Learning sheet detected: {is_learning_sheet}")
+        logger.debug(f"Learning sheet detected: {is_learning_sheet}")
         
         # Clean the prompt for learning sheets to generate actual content, not meta-content
         generation_prompt = _clean_prompt_for_learning_sheet(user_prompt) if is_learning_sheet else user_prompt
         if is_learning_sheet:
-            logger.info(f"Using cleaned prompt for generation: '{generation_prompt}'")
+            logger.debug(f"Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
         spec = await _generate_spec_with_agent(

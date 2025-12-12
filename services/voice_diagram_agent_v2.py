@@ -147,7 +147,7 @@ class VoiceDiagramAgentV2:
             # Post-process: resolve node references
             result = self._resolve_node_references(result, nodes, diagram_type)
             
-            logger.info(f"Parsed command: {result}")
+            logger.debug(f"Parsed command: {result}")
             
             return result
             
@@ -408,7 +408,7 @@ class VoiceDiagramAgentV2:
                 result['node_index'] = match['index']
                 result['node_text'] = match['text']
                 result['match_score'] = match['score']
-                logger.info(f"Found node by content: index={match['index']}, text={match['text']}, score={match['score']:.2f}")
+                logger.debug(f"Found node by content: index={match['index']}, text={match['text']}, score={match['score']:.2f}")
         
         # Generate node_id if we have node_index
         if result.get('node_index') is not None:

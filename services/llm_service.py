@@ -55,8 +55,8 @@ class LLMService:
         
         # Initialize rate limiter for Dashscope platform
         if config.DASHSCOPE_RATE_LIMITING_ENABLED:
-            logger.info("[LLMService] Configuring Dashscope rate limiting")
-            logger.info(
+            logger.debug("[LLMService] Configuring Dashscope rate limiting")
+            logger.debug(
                 f"[LLMService] QPM={config.DASHSCOPE_QPM_LIMIT}, "
                 f"Concurrent={config.DASHSCOPE_CONCURRENT_LIMIT}"
             )
@@ -67,10 +67,10 @@ class LLMService:
                 enabled=config.DASHSCOPE_RATE_LIMITING_ENABLED
             )
         else:
-            logger.info("[LLMService] Rate limiting disabled")
+            logger.debug("[LLMService] Rate limiting disabled")
             self.rate_limiter = None
         
-        logger.info("[LLMService] Ready")
+        logger.debug("[LLMService] Ready")
     
     def cleanup(self) -> None:
         """Cleanup LLM Service (called at app shutdown)."""
@@ -358,7 +358,7 @@ class LLMService:
                     yield chunk
             
             duration = time.time() - start_time
-            logger.info(f"[LLMService] {model} stream completed in {duration:.2f}s")
+            logger.debug(f"[LLMService] {model} stream completed in {duration:.2f}s")
             
             # Track token usage (async, non-blocking)
             if usage_data:
@@ -566,7 +566,7 @@ class LLMService:
             models = ['qwen', 'deepseek', 'kimi']
         
         start_time = time.time()
-        logger.info(f"[LLMService] generate_multi() - {len(models)} models in parallel")
+        logger.debug(f"[LLMService] generate_multi() - {len(models)} models in parallel")
         
         # Create tasks for all models
         tasks = {}
@@ -653,7 +653,7 @@ class LLMService:
         if models is None:
             models = ['qwen', 'deepseek', 'kimi']
         
-        logger.info(f"[LLMService] generate_progressive() - {len(models)} models")
+        logger.debug(f"[LLMService] generate_progressive() - {len(models)} models")
         
         # Create tasks with model info
         task_model_pairs = []
@@ -696,7 +696,7 @@ class LLMService:
                         'error': None,
                         'timestamp': time.time()
                     }
-                    logger.info(f"[LLMService] {completed_model} completed in {result['duration']:.2f}s")
+                    logger.debug(f"[LLMService] {completed_model} completed in {result['duration']:.2f}s")
                 
             except Exception as e:
                 # Find which model failed
@@ -778,7 +778,7 @@ class LLMService:
         if models is None:
             models = ['qwen', 'deepseek', 'kimi', 'hunyuan']
         
-        logger.info(f"[LLMService] stream_progressive() - streaming from {len(models)} models concurrently")
+        logger.debug(f"[LLMService] stream_progressive() - streaming from {len(models)} models concurrently")
         
         queue = asyncio.Queue()
         
@@ -914,7 +914,7 @@ class LLMService:
         if models is None:
             models = ['qwen-turbo', 'qwen', 'deepseek']
         
-        logger.info(f"[LLMService] generate_race() - first of {len(models)} models")
+        logger.debug(f"[LLMService] generate_race() - first of {len(models)} models")
         
         # Create tasks with model info
         task_model_pairs = []
@@ -952,7 +952,7 @@ class LLMService:
                         if not task.done():
                             task.cancel()
                     
-                    logger.info(f"[LLMService] {completed_model} won the race in {result['duration']:.2f}s")
+                    logger.debug(f"[LLMService] {completed_model} won the race in {result['duration']:.2f}s")
                     
                     return {
                         'llm': completed_model,

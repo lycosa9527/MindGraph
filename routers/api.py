@@ -83,7 +83,7 @@ async def ai_assistant_stream(
     # Handle Dify conversation opener trigger
     # When message is "start" with no conversation_id, this triggers Dify's opener
     if message.lower() == 'start' and not req.conversation_id:
-        logger.info(f"[MindMate] Conversation opener triggered for user {req.user_id}")
+        logger.debug(f"[MindMate] Conversation opener triggered for user {req.user_id}")
         logger.debug("[MindMate] Dify will respond with configured opening message")
     
     # Get Dify configuration from environment
@@ -263,33 +263,33 @@ async def export_png(
     logger.debug(f"PNG export request - diagram_type: {diagram_type}, data keys: {list(diagram_data.keys())}")
     
     # VERBOSE LOGGING: Complete diagram data from LLM
-    logger.info("="*80)
-    logger.info("VERBOSE PNG EXPORT - Complete Diagram Data:")
-    logger.info(f"Diagram Type: {diagram_type}")
-    logger.info(f"Diagram Data Keys: {list(diagram_data.keys())}")
-    logger.info("Complete Diagram Data JSON:")
-    logger.info(json.dumps(diagram_data, indent=2, ensure_ascii=False))
+    logger.debug("="*80)
+    logger.debug("VERBOSE PNG EXPORT - Complete Diagram Data:")
+    logger.debug(f"Diagram Type: {diagram_type}")
+    logger.debug(f"Diagram Data Keys: {list(diagram_data.keys())}")
+    logger.debug("Complete Diagram Data JSON:")
+    logger.debug(json.dumps(diagram_data, indent=2, ensure_ascii=False))
     
     # Check specific important fields
     if 'topic' in diagram_data:
-        logger.info(f"Topic: {diagram_data['topic']}")
+        logger.debug(f"Topic: {diagram_data['topic']}")
     if 'attributes' in diagram_data:
-        logger.info(f"Number of attributes: {len(diagram_data['attributes'])}")
+        logger.debug(f"Number of attributes: {len(diagram_data['attributes'])}")
         for i, attr in enumerate(diagram_data.get('attributes', [])):
-            logger.info(f"  Attribute {i}: {attr}")
+            logger.debug(f"  Attribute {i}: {attr}")
     if 'nodes' in diagram_data:
-        logger.info(f"Number of nodes: {len(diagram_data['nodes'])}")
+        logger.debug(f"Number of nodes: {len(diagram_data['nodes'])}")
         for i, node in enumerate(diagram_data.get('nodes', [])):
-            logger.info(f"  Node {i}: {node}")
+            logger.debug(f"  Node {i}: {node}")
     if '_layout' in diagram_data:
-        logger.info(f"Layout info: {diagram_data['_layout']}")
+        logger.debug(f"Layout info: {diagram_data['_layout']}")
     if '_recommended_dimensions' in diagram_data:
-        logger.info(f"Recommended dimensions: {diagram_data['_recommended_dimensions']}")
+        logger.debug(f"Recommended dimensions: {diagram_data['_recommended_dimensions']}")
     if '_metadata' in diagram_data:
-        logger.info(f"Metadata: {diagram_data['_metadata']}")
+        logger.debug(f"Metadata: {diagram_data['_metadata']}")
     
-    logger.info(f"Request width: {req.width}, height: {req.height}, scale: {req.scale}")
-    logger.info("="*80)
+    logger.debug(f"Request width: {req.width}, height: {req.height}, scale: {req.scale}")
+    logger.debug("="*80)
     
     try:
         # Use async browser manager
@@ -301,8 +301,8 @@ async def export_png(
             port = os.getenv('PORT', '5000')
             base_url = f"http://localhost:{port}"
             
-            logger.info(f"Creating HTML with base_url: {base_url}")
-            logger.info(f"Container dimensions: {req.width or 1200}x{req.height or 800}")
+            logger.debug(f"Creating HTML with base_url: {base_url}")
+            logger.debug(f"Container dimensions: {req.width or 1200}x{req.height or 800}")
             
             # Create minimal HTML page with rendering infrastructure
             html_content = f"""
@@ -495,10 +495,10 @@ async def export_png(
             """
             
             # Set page content
-            logger.info("Setting page content...")
+            logger.debug("Setting page content...")
             logger.debug(f"HTML content length: {len(html_content)} characters")
             await page.set_content(html_content)
-            logger.info("Page content set successfully")
+            logger.debug("Page content set successfully")
             
             # Capture console logs for debugging
             page.on("console", lambda msg: logger.debug(f"[Browser Console] {msg.type}: {msg.text}"))
@@ -521,7 +521,7 @@ async def export_png(
             
             # Verify SVG was created
             svg_exists = await page.evaluate("!!document.querySelector('#d3-container svg')")
-            logger.info(f"SVG exists check: {svg_exists}")
+            logger.debug(f"SVG exists check: {svg_exists}")
             
             if not svg_exists:
                 logger.error("="*80)
@@ -621,7 +621,7 @@ async def export_png(
                 logger.error("Failed to extract SVG dimensions")
                 raise Exception("Could not determine SVG dimensions")
             
-            logger.info(f"SVG dimensions extracted: {svg_dimensions['width']}x{svg_dimensions['height']} (from {svg_dimensions['source']})")
+            logger.debug(f"SVG dimensions extracted: {svg_dimensions['width']}x{svg_dimensions['height']} (from {svg_dimensions['source']})")
             
             # Ensure SVG width/height attributes match viewBox dimensions (browser handles viewBox offset automatically)
             # This fixes clipping issues without needing to translate elements
@@ -669,7 +669,7 @@ async def export_png(
             final_width = int(svg_dimensions['width'] * scale_factor)
             final_height = int(svg_dimensions['height'] * scale_factor)
             
-            logger.info(f"Taking screenshot at {svg_dimensions['width']}x{svg_dimensions['height']} with scale {scale_factor}x (output: {final_width}x{final_height})")
+            logger.debug(f"Taking screenshot at {svg_dimensions['width']}x{svg_dimensions['height']} with scale {scale_factor}x (output: {final_width}x{final_height})")
             
             # Take screenshot of the resized container with scale
             d3_container = await page.query_selector('#d3-container')
@@ -728,7 +728,7 @@ async def generate_png_from_prompt(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    logger.info(f"[generate_png] Request: {prompt[:50]}... (llm={req.llm})")
+    logger.debug(f"[generate_png] Request: {prompt[:50]}... (llm={req.llm})")
     
     try:
         # Step 1: Generate diagram spec using main agent (reuse existing endpoint)
@@ -793,7 +793,7 @@ async def generate_dingtalk_png(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    logger.info(f"[generate_dingtalk] Request: {prompt[:50]}...")
+    logger.debug(f"[generate_dingtalk] Request: {prompt[:50]}...")
     
     try:
         # Step 1: Main agent extracts topic + generates diagram spec
@@ -988,7 +988,7 @@ async def recalculate_mindmap_layout(
                 detail="Failed to calculate layout"
             )
         
-        logger.info(f"[RecalculateLayout] Layout recalculated for {len(spec.get('children', []))} branches")
+        logger.debug(f"[RecalculateLayout] Layout recalculated for {len(spec.get('children', []))} branches")
         
         return {
             'success': True,
@@ -1098,7 +1098,7 @@ async def generate_multi_parallel(
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
     
-    logger.info(f"[generate_multi_parallel] Starting parallel generation with {len(models)} models")
+    logger.debug(f"[generate_multi_parallel] Starting parallel generation with {len(models)} models")
     
     import time
     import asyncio
@@ -1270,7 +1270,7 @@ async def generate_multi_progressive(
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
     
-    logger.info(f"[generate_multi_progressive] Starting progressive generation with {len(models)} models")
+    logger.debug(f"[generate_multi_progressive] Starting progressive generation with {len(models)} models")
     
     start_time = time.time()
     

@@ -215,12 +215,10 @@ Attribute nodes ({len(children)} total):
 User message: {message}"""
         
         try:
-            response = await self.llm.chat_stream_complete(
+            response = await self.llm.chat(
+                prompt=user_prompt,
                 model=self.model,
-                messages=[
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': user_prompt}
-                ],
+                system_message=system_prompt,
                 temperature=0.3,
                 max_tokens=300
             )
@@ -247,8 +245,9 @@ User message: {message}"""
         self,
         session: Dict,
         intent: Dict,
-        message: str
-    ) -> AsyncGenerator[str, None]:
+        message: str,
+        current_state: str
+    ) -> AsyncGenerator[Dict, None]:
         """
         Handle Bubble Map-specific actions.
         

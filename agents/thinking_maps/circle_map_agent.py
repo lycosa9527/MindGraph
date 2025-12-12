@@ -44,7 +44,7 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.info(f"CircleMapAgent: Starting circle map generation for prompt")
+            logger.debug(f"CircleMapAgent: Starting circle map generation for prompt")
             
             # Generate the circle map specification
             spec = await self._generate_circle_map_spec(
@@ -231,11 +231,11 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.info(f"CircleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Context elements: {len(spec.get('context', []))}")
+            logger.debug(f"CircleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Context elements: {len(spec.get('context', []))}")
             
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
-                logger.info("CircleMapAgent: Spec already enhanced, skipping")
+                logger.debug("CircleMapAgent: Spec already enhanced, skipping")
                 return {'success': True, 'spec': spec}
             
             # Enhance the spec

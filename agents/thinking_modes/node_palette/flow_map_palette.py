@@ -101,10 +101,10 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
                 # For other stages, use stage name as mode
                 if stage == 'substeps' and stage_data and stage_data.get('step_name'):
                     node_mode = stage_data['step_name']
-                    logger.info(f"[FlowMapPalette] Node tagged with step mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[FlowMapPalette] Node tagged with step mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 else:
                     node_mode = stage
-                    logger.info(f"[FlowMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    logger.debug(f"[FlowMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
                 
                 node['mode'] = node_mode
                 
@@ -146,7 +146,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         stage_info = self.session_stages.get(session_id, {})
         stage = stage_info.get('stage', 'dimensions')
         
-        logger.info(f"[FlowMapPalette-Prompt] Building prompt for stage: {stage}")
+        logger.debug(f"[FlowMapPalette-Prompt] Building prompt for stage: {stage}")
         
         # Build stage-specific prompt
         if stage == 'dimensions':
