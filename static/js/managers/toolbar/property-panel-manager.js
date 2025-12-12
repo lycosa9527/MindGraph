@@ -36,6 +36,7 @@ class PropertyPanelManager {
         this.propBold = null;
         this.propItalic = null;
         this.propUnderline = null;
+        this.propStrikethrough = null;
         
         // Color button previews
         this.previewTextColor = null;
@@ -69,6 +70,7 @@ class PropertyPanelManager {
         this.propBold = document.getElementById('prop-bold');
         this.propItalic = document.getElementById('prop-italic');
         this.propUnderline = document.getElementById('prop-underline');
+        this.propStrikethrough = document.getElementById('prop-strikethrough');
         
         // Color button previews
         this.previewTextColor = document.getElementById('preview-text-color');
@@ -388,7 +390,11 @@ class PropertyPanelManager {
             this.propItalic.classList.toggle('active', fontStyle === 'italic');
         }
         if (this.propUnderline) {
-            this.propUnderline.classList.toggle('active', textDecoration === 'underline');
+            // textDecoration can contain multiple values like 'underline line-through'
+            this.propUnderline.classList.toggle('active', textDecoration.includes('underline'));
+        }
+        if (this.propStrikethrough) {
+            this.propStrikethrough.classList.toggle('active', textDecoration.includes('line-through'));
         }
         
         this.logger.debug('PropertyPanelManager', 'Loaded node properties', {
@@ -447,6 +453,7 @@ class PropertyPanelManager {
         if (this.propBold) this.propBold.classList.remove('active');
         if (this.propItalic) this.propItalic.classList.remove('active');
         if (this.propUnderline) this.propUnderline.classList.remove('active');
+        if (this.propStrikethrough) this.propStrikethrough.classList.remove('active');
         
         // Update color button previews
         this.updateColorPreviews();

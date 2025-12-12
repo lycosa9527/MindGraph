@@ -421,6 +421,24 @@ class NodePaletteFinishRequest(BaseModel):
         }
 
 
+class NodePaletteCleanupRequest(BaseModel):
+    """Request model for /thinking_mode/node_palette/cleanup endpoint
+    
+    Simplified model for session cleanup - only requires session_id.
+    Used when user leaves canvas or navigates away.
+    """
+    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "session_id": "palette_abc123",
+                "diagram_type": "circle_map"
+            }
+        }
+
+
 # ============================================================================
 # AUTHENTICATION REQUEST MODELS
 # ============================================================================

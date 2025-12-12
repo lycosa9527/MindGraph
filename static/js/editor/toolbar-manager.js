@@ -136,6 +136,7 @@ class ToolbarManager {
         this.propBold = document.getElementById('prop-bold');
         this.propItalic = document.getElementById('prop-italic');
         this.propUnderline = document.getElementById('prop-underline');
+        this.propStrikethrough = document.getElementById('prop-strikethrough');
         
         // Color properties - hidden inputs for actual values
         this.propTextColor = document.getElementById('prop-text-color');
@@ -347,6 +348,12 @@ class ToolbarManager {
             e.stopPropagation();
             e.preventDefault();
             this.toggleUnderline();
+            this.applyStylesRealtime(); // Apply immediately
+        });
+        this.propStrikethrough?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.toggleStrikethrough();
             this.applyStylesRealtime(); // Apply immediately
         });
         
@@ -673,6 +680,7 @@ class ToolbarManager {
         if (this.propBold) this.propBold.classList.remove('active');
         if (this.propItalic) this.propItalic.classList.remove('active');
         if (this.propUnderline) this.propUnderline.classList.remove('active');
+        if (this.propStrikethrough) this.propStrikethrough.classList.remove('active');
         
         // Update color button previews
         this.updateColorPreviews();
@@ -876,7 +884,11 @@ class ToolbarManager {
             this.propItalic.classList.toggle('active', fontStyle === 'italic');
         }
         if (this.propUnderline) {
-            this.propUnderline.classList.toggle('active', textDecoration === 'underline');
+            // textDecoration can contain multiple values like 'underline line-through'
+            this.propUnderline.classList.toggle('active', textDecoration.includes('underline'));
+        }
+        if (this.propStrikethrough) {
+            this.propStrikethrough.classList.toggle('active', textDecoration.includes('line-through'));
         }
     }
     
@@ -1215,6 +1227,13 @@ class ToolbarManager {
      */
     toggleUnderline() {
         window.eventBus.emit('properties:toggle_underline_requested', {});
+    }
+    
+    /**
+     * Toggle strikethrough - EVENT BUS WRAPPER
+     */
+    toggleStrikethrough() {
+        window.eventBus.emit('properties:toggle_strikethrough_requested', {});
     }
     
     /**

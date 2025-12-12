@@ -34,6 +34,7 @@ class NodePropertyOperationsManager {
             toggleBold: () => this.toggleBold(),
             toggleItalic: () => this.toggleItalic(),
             toggleUnderline: () => this.toggleUnderline(),
+            toggleStrikethrough: () => this.toggleStrikethrough(),
             addNode: () => this.handleAddNode(),
             deleteNode: () => this.handleDeleteNode(),
             emptyNode: () => this.handleEmptyNode()
@@ -76,6 +77,7 @@ class NodePropertyOperationsManager {
         this.eventBus.onWithOwner('properties:toggle_bold_requested', this.callbacks.toggleBold, this.ownerId);
         this.eventBus.onWithOwner('properties:toggle_italic_requested', this.callbacks.toggleItalic, this.ownerId);
         this.eventBus.onWithOwner('properties:toggle_underline_requested', this.callbacks.toggleUnderline, this.ownerId);
+        this.eventBus.onWithOwner('properties:toggle_strikethrough_requested', this.callbacks.toggleStrikethrough, this.ownerId);
         
         // Node operations - use stored callback references with owner tracking
         this.eventBus.onWithOwner('node:add_requested', this.callbacks.addNode, this.ownerId);
@@ -106,7 +108,8 @@ class NodePropertyOperationsManager {
             opacity: this.toolbarManager.propOpacity?.value,
             bold: this.toolbarManager.propBold?.classList.contains('active'),
             italic: this.toolbarManager.propItalic?.classList.contains('active'),
-            underline: this.toolbarManager.propUnderline?.classList.contains('active')
+            underline: this.toolbarManager.propUnderline?.classList.contains('active'),
+            strikethrough: this.toolbarManager.propStrikethrough?.classList.contains('active')
         };
         
         this.logger.debug('NodePropertyOperationsManager', 'Applying all properties', {
@@ -142,9 +145,18 @@ class NodePropertyOperationsManager {
             }
             if (properties.strokeColor) {
                 nodeElement.attr('stroke', properties.strokeColor);
+                // CRITICAL: Also update data-original-stroke so SelectionManager
+                // restores the NEW value when deselecting, not the old one
+                if (nodeElement.attr('data-original-stroke')) {
+                    nodeElement.attr('data-original-stroke', properties.strokeColor);
+                }
             }
             if (properties.strokeWidth) {
                 nodeElement.attr('stroke-width', properties.strokeWidth);
+                // Also update data-original-stroke-width
+                if (nodeElement.attr('data-original-stroke-width')) {
+                    nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
+                }
             }
             // Use explicit null/undefined check to allow opacity 0 (fully transparent)
             if (properties.opacity !== null && properties.opacity !== undefined && properties.opacity !== '') {
@@ -172,11 +184,11 @@ class NodePropertyOperationsManager {
                 } else {
                     textElements.attr('font-style', 'normal');
                 }
-                if (properties.underline) {
-                    textElements.attr('text-decoration', 'underline');
-                } else {
-                    textElements.attr('text-decoration', 'none');
-                }
+                // Combine text-decoration values
+                const decorations = [];
+                if (properties.underline) decorations.push('underline');
+                if (properties.strikethrough) decorations.push('line-through');
+                textElements.attr('text-decoration', decorations.length > 0 ? decorations.join(' ') : 'none');
             }
         });
         
@@ -208,7 +220,8 @@ class NodePropertyOperationsManager {
             opacity: this.toolbarManager.propOpacity?.value,
             bold: this.toolbarManager.propBold?.classList.contains('active'),
             italic: this.toolbarManager.propItalic?.classList.contains('active'),
-            underline: this.toolbarManager.propUnderline?.classList.contains('active')
+            underline: this.toolbarManager.propUnderline?.classList.contains('active'),
+            strikethrough: this.toolbarManager.propStrikethrough?.classList.contains('active')
         };
         
         // Apply to all selected nodes
@@ -222,9 +235,18 @@ class NodePropertyOperationsManager {
             }
             if (properties.strokeColor) {
                 nodeElement.attr('stroke', properties.strokeColor);
+                // CRITICAL: Also update data-original-stroke so SelectionManager
+                // restores the NEW value when deselecting, not the old one
+                if (nodeElement.attr('data-original-stroke')) {
+                    nodeElement.attr('data-original-stroke', properties.strokeColor);
+                }
             }
             if (properties.strokeWidth) {
                 nodeElement.attr('stroke-width', properties.strokeWidth);
+                // Also update data-original-stroke-width
+                if (nodeElement.attr('data-original-stroke-width')) {
+                    nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
+                }
             }
             // Use explicit null/undefined check to allow opacity 0 (fully transparent)
             if (properties.opacity !== null && properties.opacity !== undefined && properties.opacity !== '') {
@@ -258,7 +280,11 @@ class NodePropertyOperationsManager {
                 }
                 textElements.attr('font-weight', properties.bold ? 'bold' : 'normal');
                 textElements.attr('font-style', properties.italic ? 'italic' : 'normal');
-                textElements.attr('text-decoration', properties.underline ? 'underline' : 'none');
+                // Combine text-decoration values
+                const decorations = [];
+                if (properties.underline) decorations.push('underline');
+                if (properties.strikethrough) decorations.push('line-through');
+                textElements.attr('text-decoration', decorations.length > 0 ? decorations.join(' ') : 'none');
             }
         });
         
@@ -374,6 +400,14 @@ class NodePropertyOperationsManager {
     toggleUnderline() {
         if (!this.toolbarManager) return;
         this.toolbarManager.propUnderline.classList.toggle('active');
+    }
+    
+    /**
+     * Toggle strikethrough
+     */
+    toggleStrikethrough() {
+        if (!this.toolbarManager) return;
+        this.toolbarManager.propStrikethrough.classList.toggle('active');
     }
     
     /**

@@ -1763,6 +1763,8 @@ body {
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
+    position: relative;
+    z-index: 150; /* Higher than property panel (100) to prevent tooltip overlay */
 }
 
 .editor-status-bar .status-left,

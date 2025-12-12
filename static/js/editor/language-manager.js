@@ -192,6 +192,7 @@ class LanguageManager {
                 boldTooltip: 'Bold',
                 italicTooltip: 'Italic',
                 underlineTooltip: 'Underline',
+                strikethroughTooltip: 'Strikethrough',
                 closeTooltip: 'Close',
                 // Node Editor
                 editNodeContent: 'Edit Node Content',
@@ -461,6 +462,7 @@ class LanguageManager {
                 boldTooltip: '粗体',
                 italicTooltip: '斜体',
                 underlineTooltip: '下划线',
+                strikethroughTooltip: '删除线',
                 closeTooltip: '关闭',
                 // Node Editor
                 editNodeContent: '编辑节点内容',
@@ -728,6 +730,7 @@ class LanguageManager {
                 boldTooltip: 'Qalın',
                 italicTooltip: 'İtalik',
                 underlineTooltip: 'Altı Xətt',
+                strikethroughTooltip: 'Üstündən Xətt',
                 closeTooltip: 'Bağla',
                 // Node Editor
                 editNodeContent: 'Düyün Məzmununu Redaktə Et',
@@ -1184,6 +1187,9 @@ class LanguageManager {
         if (propItalic) propItalic.title = t.italicTooltip;
         if (propUnderline) propUnderline.title = t.underlineTooltip;
         
+        const propStrikethrough = document.getElementById('prop-strikethrough');
+        if (propStrikethrough) propStrikethrough.title = t.strikethroughTooltip;
+        
         // Update AI assistant close button tooltip
         const aiCloseBtn = document.getElementById('toggle-ai-assistant');
         if (aiCloseBtn) aiCloseBtn.title = t.closeTooltip;
@@ -1256,6 +1262,16 @@ class LanguageManager {
         
         const propStrokeColorLabel = document.querySelector('label[for="prop-stroke-color"]');
         if (propStrokeColorLabel) propStrokeColorLabel.textContent = t.strokeColor;
+        
+        // Update color button titles (tooltips)
+        const btnTextColor = document.getElementById('btn-text-color');
+        if (btnTextColor) btnTextColor.title = t.textColor;
+        
+        const btnFillColor = document.getElementById('btn-fill-color');
+        if (btnFillColor) btnFillColor.title = t.fillColor;
+        
+        const btnStrokeColor = document.getElementById('btn-stroke-color');
+        if (btnStrokeColor) btnStrokeColor.title = t.strokeColor;
         
         const propStrokeWidthLabel = document.querySelector('label[for="prop-stroke-width"]');
         if (propStrokeWidthLabel) propStrokeWidthLabel.textContent = t.strokeWidth;

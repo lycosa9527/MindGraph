@@ -187,20 +187,22 @@ class UIStateLLMManager {
         svg.selectAll('marker path.arrowhead-marker, marker path')
             .each(function() {
                 const element = d3.select(this);
-                if (element.attr('class') && element.attr('class').includes('arrowhead-marker')) {
+                const isArrowhead = (element.attr('class') && element.attr('class').includes('arrowhead-marker')) ||
+                                   (element.attr('d') && element.attr('d').includes('M0,-5L10,0L0,5'));
+                
+                if (isArrowhead) {
+                    // Store original values for restoration
+                    if (!element.attr('data-original-fill')) {
+                        element.attr('data-original-fill', element.style('fill') || element.attr('fill') || '#000000');
+                    }
+                    if (!element.attr('data-original-stroke')) {
+                        element.attr('data-original-stroke', element.style('stroke') || element.attr('stroke') || '#000000');
+                    }
+                    
                     element
                         .style('fill', '#000000')
                         .style('stroke', '#000000')
                         .style('stroke-width', '1px');
-                } else {
-                    // Check if it's an arrowhead path (M0,-5L10,0L0,5 pattern)
-                    const d = element.attr('d');
-                    if (d && d.includes('M0,-5L10,0L0,5')) {
-                        element
-                            .style('fill', '#000000')
-                            .style('stroke', '#000000')
-                            .style('stroke-width', '1px');
-                    }
                 }
             });
     }
@@ -233,6 +235,8 @@ class UIStateLLMManager {
             
         } else {
             // Restore original colors
+            // IMPORTANT: Remove inline styles and restore via attributes
+            // This ensures property panel can modify colors (attributes) without style override
             
             // Restore canvas background (if it had one)
             svg.style('background-color', null);
@@ -242,8 +246,13 @@ class UIStateLLMManager {
                 .each(function() {
                     const element = d3.select(this);
                     const originalFill = element.attr('data-original-fill');
+                    
+                    // ALWAYS remove inline style
+                    element.style('fill', null);
+                    
+                    // Restore original value if we have it
                     if (originalFill) {
-                        element.style('fill', originalFill === 'none' ? 'none' : originalFill);
+                        element.attr('fill', originalFill === 'none' ? 'none' : originalFill);
                         element.attr('data-original-fill', null);
                     }
                 });
@@ -257,16 +266,23 @@ class UIStateLLMManager {
                     const originalStroke = element.attr('data-original-stroke');
                     const originalStrokeWidth = element.attr('data-original-stroke-width');
                     
+                    // ALWAYS remove inline styles to ensure property panel can work
+                    // This is critical - inline styles override attributes
+                    element.style('fill', null);
+                    element.style('stroke', null);
+                    element.style('stroke-width', null);
+                    
+                    // Restore original values via attributes if we have them
                     if (originalFill) {
-                        element.style('fill', originalFill === 'none' ? 'none' : originalFill);
+                        element.attr('fill', originalFill === 'none' ? 'none' : originalFill);
                         element.attr('data-original-fill', null);
                     }
                     if (originalStroke) {
-                        element.style('stroke', originalStroke === 'none' ? 'none' : originalStroke);
+                        element.attr('stroke', originalStroke === 'none' ? 'none' : originalStroke);
                         element.attr('data-original-stroke', null);
                     }
                     if (originalStrokeWidth) {
-                        element.style('stroke-width', originalStrokeWidth);
+                        element.attr('stroke-width', originalStrokeWidth);
                         element.attr('data-original-stroke-width', null);
                     }
                 });
@@ -277,8 +293,12 @@ class UIStateLLMManager {
                     const element = d3.select(this);
                     const originalFill = element.attr('data-original-fill');
                     
+                    // ALWAYS remove inline style
+                    element.style('fill', null);
+                    
+                    // Restore original value if we have it
                     if (originalFill) {
-                        element.style('fill', originalFill);
+                        element.attr('fill', originalFill);
                         element.attr('data-original-fill', null);
                     }
                 });
@@ -289,8 +309,35 @@ class UIStateLLMManager {
                     const element = d3.select(this);
                     const originalStroke = element.attr('data-original-stroke');
                     
+                    // ALWAYS remove inline style
+                    element.style('stroke', null);
+                    
+                    // Restore original value if we have it
                     if (originalStroke) {
-                        element.style('stroke', originalStroke);
+                        element.attr('stroke', originalStroke);
+                        element.attr('data-original-stroke', null);
+                    }
+                });
+            
+            // Restore arrowhead marker colors
+            svg.selectAll('marker path.arrowhead-marker, marker path')
+                .each(function() {
+                    const element = d3.select(this);
+                    const originalFill = element.attr('data-original-fill');
+                    const originalStroke = element.attr('data-original-stroke');
+                    
+                    // ALWAYS remove inline styles
+                    element.style('fill', null);
+                    element.style('stroke', null);
+                    element.style('stroke-width', null);
+                    
+                    // Restore original values if we have them
+                    if (originalFill) {
+                        element.attr('fill', originalFill);
+                        element.attr('data-original-fill', null);
+                    }
+                    if (originalStroke) {
+                        element.attr('stroke', originalStroke);
                         element.attr('data-original-stroke', null);
                     }
                 });

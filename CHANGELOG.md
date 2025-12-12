@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.77] - 2025-12-13 - Node Palette Cleanup & Line Mode Fix
+
+### Fixed
+
+- **Node Palette Cleanup 422 Error**
+  - Fixed 422 Unprocessable Content error when leaving canvas with Node Palette active
+  - Root cause: `/thinking_mode/node_palette/cleanup` endpoint used `NodePaletteFinishRequest` which required `batches_loaded >= 1`, but cleanup sent `batches_loaded: 0`
+  - Created new `NodePaletteCleanupRequest` model with only required fields (`session_id`, `diagram_type`)
+  - Updated cleanup endpoint to use the new simplified model
+  - Simplified client-side cleanup request to only send required fields
+
+- **Canvas "No Valid Content Bounds" Warnings**
+  - Fixed spurious warnings appearing when Node Palette is open and window is resized
+  - Root cause: Fit operations tried to calculate bounds on hidden d3-container
+  - Added guards to skip fit operations when Node Palette is active (d3-container hidden)
+  - Affected methods: `CanvasController.fitDiagramToWindow()`, `CanvasController.checkAutoFitNeeded()`, `ViewManager._fitToCanvas()`, `ViewManager.fitDiagramToWindow()`
+
+- **Property Panel Not Working After Line Mode**
+  - Fixed stroke color, fill color, and other properties not applying after exiting line mode
+  - Root cause: CSS specificity conflict - line mode used `.style()` (inline CSS) which overrides `.attr()` (SVG attributes) used by property panel
+  - Solution: When exiting line mode, ALWAYS remove inline styles via `.style(null)` regardless of saved values, then restore attributes
+  - This ensures property panel changes work even in edge cases where original values weren't saved
+  - Added missing original value storage and restore logic for arrowhead markers
+
+- **Property Panel Changes Lost When Clicking Canvas**
+  - Fixed stroke color and width changes being reverted when clicking on canvas to deselect
+  - Root cause: SelectionManager saved original stroke when selecting, then restored the OLD value when deselecting - overwriting user's changes
+  - Solution: When property panel changes stroke color/width, also update `data-original-stroke` and `data-original-stroke-width` attributes
+  - This ensures SelectionManager restores the NEW user-chosen values, not the old ones
+
+### Changed
+
+- **Auto-Complete: Topic-Only Mode for Brace Map, Tree Map, Bridge Map**
+  - When user edits the main topic and uses auto-complete again, LLM now generates based on the topic only
+  - Previously: Auto-complete would use the old dimension (from first generation), constraining the LLM
+  - Now: Auto-complete sends only the topic, letting LLM determine the best dimension for the new topic
+  - For bridge_map: Sends existing pairs without dimension, LLM infers relationship pattern from pairs
+  - For tree_map: Sends topic only, LLM determines classification dimension
+  - For brace_map: Sends topic only, LLM determines decomposition dimension
+
+- **Property Panel Color Button Tooltips Now Translated**
+  - Fixed color button tooltips (Text Color, Fill Color, Stroke Color) not being translated
+  - Tooltips now display in Chinese when language is set to Chinese
+
+### Added
+
+- **Strikethrough Button in Property Panel**
+  - Added strikethrough (删除线) button next to Bold, Italic, Underline buttons
+  - Supports combining with underline (e.g., both underline and strikethrough together)
+  - Tooltip translated to Chinese (删除线) and Azerbaijani (Üstündən Xətt)
+
+- **Fixed Reset View Button Tooltip Overlay**
+  - Status bar now has higher z-index (150) than property panel (100)
+  - Prevents property panel from overlaying status bar elements when open
+
+### Files Changed
+
+- `models/requests.py` - Added `NodePaletteCleanupRequest` model
+- `routers/thinking.py` - Updated cleanup endpoint to use new model
+- `static/js/editor/diagram-selector.js` - Simplified cleanup request body
+- `static/js/managers/editor/canvas-controller.js` - Added Node Palette guards
+- `static/js/managers/editor/view-manager.js` - Added Node Palette guards
+- `static/js/managers/toolbar/ui-state-llm-manager.js` - Fixed line mode restore logic
+- `static/js/managers/toolbar/node-property-operations-manager.js` - Sync stroke changes with selection data
+- `static/js/managers/toolbar/llm-autocomplete-manager.js` - Topic-only auto-complete for brace/tree/bridge maps
+- `static/js/editor/language-manager.js` - Added translation for color button tooltips, strikethrough tooltip
+- `templates/editor.html` - Added strikethrough button
+- `static/js/editor/toolbar-manager.js` - Added strikethrough property and toggle function
+- `static/css/editor.css` - Fixed status bar z-index to prevent property panel overlay
+
+---
+
 ## [4.28.76] - 2025-12-13 - Responsive Toolbar & UI Cleanup
 
 ### Fixed

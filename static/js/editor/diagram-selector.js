@@ -672,10 +672,7 @@ class DiagramSelector {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         session_id: sessionId,
-                        diagram_type: diagramType,
-                        selected_node_ids: [],
-                        total_nodes_generated: 0,
-                        batches_loaded: 0
+                        diagram_type: diagramType
                     })
                 }).catch(err => {
                     logger.debug('DiagramSelector', 'Node Palette cleanup failed (non-critical)', err);

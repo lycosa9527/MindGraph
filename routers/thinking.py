@@ -34,7 +34,8 @@ from models.requests import (
     NodePaletteStartRequest,
     NodePaletteNextRequest,
     NodeSelectionRequest,
-    NodePaletteFinishRequest
+    NodePaletteFinishRequest,
+    NodePaletteCleanupRequest
 )
 
 router = APIRouter(tags=["thinking"])
@@ -653,7 +654,7 @@ async def node_palette_cancel(
 
 @router.post("/thinking_mode/node_palette/cleanup")
 async def node_palette_cleanup(
-    request: NodePaletteFinishRequest,
+    request: NodePaletteCleanupRequest,
     current_user: User = Depends(get_current_user)
 ):
     """
