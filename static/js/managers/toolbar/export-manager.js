@@ -933,8 +933,14 @@ class ExportManager {
                     this.logger.debug('ExportManager', 'Save picker cancelled by user');
                     return { success: false, cancelled: true };
                 }
-                // Other error - fall through to fallback
-                this.logger.warn('ExportManager', 'Save picker failed, using fallback', error);
+                // NotAllowedError is expected in some contexts (async, iframes, etc.)
+                // Fall through to fallback silently
+                if (error.name === 'NotAllowedError') {
+                    this.logger.debug('ExportManager', 'Save picker not allowed in this context, using fallback');
+                } else {
+                    // Other unexpected error - log as warning
+                    this.logger.warn('ExportManager', 'Save picker failed, using fallback', error);
+                }
             }
         }
         

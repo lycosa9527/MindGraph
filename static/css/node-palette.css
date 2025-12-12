@@ -1,10 +1,20 @@
 /**
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
+ */
+
+/**
  * Node Palette Styles (Enhanced Professional Grid)
  * =================================================
  * 
  * Sophisticated grid layout for multi-LLM node brainstorming with visual complexity.
  * 
- * ✨ Visual Enhancements:
+ * Visual Enhancements:
  * - Staggered entrance animations (wave effect)
  * - Gradient backgrounds with subtle LLM-specific tints
  * - Multi-layered depth shadows
@@ -13,15 +23,12 @@
  * - Glowing selection rings with pulsing animation
  * - Smooth state transitions (400ms cubic-bezier)
  * 
- * 🎨 Design Features:
+ * Design Features:
  * - Clean professional grid (no overlaps)
  * - Responsive: 2-6 columns based on screen width
  * - Perfect spacing at all breakpoints
  * - LLM-specific color themes (Qwen, DeepSeek, Hunyuan, Kimi)
  * - Accessible and performant animations
- * 
- * @author lycosa9527
- * @made_by MindSpring Team
  */
 
 /* ============================================================================

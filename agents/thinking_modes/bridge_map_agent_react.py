@@ -149,46 +149,6 @@ Let's refine your analogy analysis! Please tell me:
         yield {'event': 'message_chunk', 'content': greeting}
         yield {'event': 'message_complete', 'new_state': 'CONTEXT_GATHERING'}
     
-    async def _generate_response(
-        self,
-        session: Dict,
-        message: str,
-        intent: Dict
-    ) -> AsyncGenerator[Dict, None]:
-        """Generate Socratic response for Bridge Map"""
-        language = session.get('language', 'en')
-        current_state = session.get('current_state', 'CONTEXT_GATHERING')
-        
-        if language == 'zh':
-            system_prompt = f"""你是一位苏格拉底式的K12教育助手，专注于桥型图的类比思维训练。
-
-当前阶段：{current_state}
-
-桥型图教学要点：
-1. 引导学生识别关系模式（如：部分/整体、因果等）
-2. 确保类比关系一致
-3. 探讨表面相似和深层相似
-4. 适合的数量：3-5对类比
-
-请用温和、启发式的方式引导教师。"""
-        else:
-            system_prompt = f"""You are a Socratic K12 education assistant focused on Bridge Map analogical thinking.
-
-Current stage: {current_state}
-
-Bridge Map teaching points:
-1. Guide students to identify relationship patterns (e.g., part/whole, cause/effect)
-2. Ensure analogical relationships are consistent
-3. Explore surface and deep similarities
-4. Appropriate number: 3-5 analogy pairs
-
-Guide teachers gently using Socratic questions."""
-        
-        user_prompt = f"User intent: {intent}\nMessage: {message}"
-        
-        async for chunk in self._stream_llm_response(system_prompt, user_prompt, session):
-            yield chunk
-    
     async def _handle_discussion(
         self,
         session: Dict,

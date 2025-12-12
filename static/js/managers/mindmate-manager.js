@@ -405,9 +405,11 @@ class MindMateManager {
                             this.setInputEnabled(true);
                             
                             // Emit completion event
-                            this.eventBus.emit('mindmate:message_completed', {
-                                conversationId: this.conversationId
-                            });
+                            if (this.eventBus) {
+                                this.eventBus.emit('mindmate:message_completed', {
+                                    conversationId: this.conversationId
+                                });
+                            }
                             
                             resolve();
                             return;
@@ -456,7 +458,9 @@ class MindMateManager {
                         this.setInputEnabled(true);
                         
                         // Emit error event
-                        this.eventBus.emit('mindmate:error', { error: error.message });
+                        if (this.eventBus) {
+                            this.eventBus.emit('mindmate:error', { error: error.message });
+                        }
                         
                         reject(error);
                     });
@@ -481,7 +485,9 @@ class MindMateManager {
                 this.setInputEnabled(true);
                 
                 // Emit error event
-                this.eventBus.emit('mindmate:error', { error: error.message });
+                if (this.eventBus) {
+                    this.eventBus.emit('mindmate:error', { error: error.message });
+                }
                 
                 reject(error);
             });
@@ -502,7 +508,9 @@ class MindMateManager {
                 this.updateStreamingMessage(this.messageBuffer);
                 
                 // Emit chunk event
-                this.eventBus.emit('mindmate:message_chunk', { chunk: content });
+                if (this.eventBus) {
+                    this.eventBus.emit('mindmate:message_chunk', { chunk: content });
+                }
             }
             
             // Save conversation ID
@@ -525,19 +533,32 @@ class MindMateManager {
             this.currentStreamingMessage = null;
             
         } else if (event === 'error') {
-            // Handle error
-            this.logger.error('MindMateManager', 'Stream error', { error: data.error });
+            // Handle error with error_type for user-friendly messages
+            const errorType = data.error_type || 'unknown';
+            const errorMessage = data.message || data.error || 'An error occurred';
+            
+            this.logger.error('MindMateManager', 'Stream error', { 
+                error: data.error,
+                error_type: errorType
+            });
             
             if (this.currentStreamingMessage && this.currentStreamingMessage.parentNode) {
                 this.currentStreamingMessage.parentNode.removeChild(this.currentStreamingMessage);
             }
             
-            this.addMessage('assistant', `Error: ${data.error}`);
+            // Use localized message from backend if available, otherwise fallback
+            this.addMessage('assistant', errorMessage);
             this.messageBuffer = '';
             this.currentStreamingMessage = null;
             
-            // Emit error event
-            this.eventBus.emit('mindmate:stream_error', { error: data.error });
+            // Emit error event with error_type
+            if (this.eventBus) {
+                this.eventBus.emit('mindmate:stream_error', { 
+                    error: data.error,
+                    error_type: errorType,
+                    message: errorMessage
+                });
+            }
         }
     }
     

@@ -173,46 +173,6 @@ Let's refine your structure analysis! Please tell me:
         yield {'event': 'message_chunk', 'content': greeting}
         yield {'event': 'message_complete', 'new_state': 'CONTEXT_GATHERING'}
     
-    async def _generate_response(
-        self,
-        session: Dict,
-        message: str,
-        intent: Dict
-    ) -> AsyncGenerator[Dict, None]:
-        """Generate Socratic response for Brace Map"""
-        language = session.get('language', 'en')
-        current_state = session.get('current_state', 'CONTEXT_GATHERING')
-        
-        if language == 'zh':
-            system_prompt = f"""你是一位苏格拉底式的K12教育助手，专注于括弧图的整体-部分思维训练。
-
-当前阶段：{current_state}
-
-括弧图教学要点：
-1. 引导学生思考主要部分和次要部分
-2. 确保部分完整覆盖整体
-3. 检查层次结构是否合理
-4. 适合的数量：3-5个主要部分
-
-请用温和、启发式的方式引导教师。"""
-        else:
-            system_prompt = f"""You are a Socratic K12 education assistant focused on Brace Map part-whole thinking.
-
-Current stage: {current_state}
-
-Brace Map teaching points:
-1. Guide students to think about major and minor parts
-2. Ensure parts completely cover the whole
-3. Check if hierarchy structure makes sense
-4. Appropriate number: 3-5 major parts
-
-Guide teachers gently using Socratic questions."""
-        
-        user_prompt = f"User intent: {intent}\nMessage: {message}"
-        
-        async for chunk in self._stream_llm_response(system_prompt, user_prompt, session):
-            yield chunk
-    
     async def _handle_discussion(
         self,
         session: Dict,

@@ -151,46 +151,6 @@ Let's refine your cause-effect analysis! Please tell me:
         yield {'event': 'message_chunk', 'content': greeting}
         yield {'event': 'message_complete', 'new_state': 'CONTEXT_GATHERING'}
     
-    async def _generate_response(
-        self,
-        session: Dict,
-        message: str,
-        intent: Dict
-    ) -> AsyncGenerator[Dict, None]:
-        """Generate Socratic response for Multi Flow Map"""
-        language = session.get('language', 'en')
-        current_state = session.get('current_state', 'CONTEXT_GATHERING')
-        
-        if language == 'zh':
-            system_prompt = f"""你是一位苏格拉底式的K12教育助手，专注于复流程图的因果思维训练。
-
-当前阶段：{current_state}
-
-复流程图教学要点：
-1. 引导学生区分直接原因和间接原因
-2. 分析短期影响和长期影响
-3. 探讨因果关系的复杂性
-4. 适合的数量：3-5个原因，3-5个结果
-
-请用温和、启发式的方式引导教师。"""
-        else:
-            system_prompt = f"""You are a Socratic K12 education assistant focused on Multi Flow Map cause-effect thinking.
-
-Current stage: {current_state}
-
-Multi Flow Map teaching points:
-1. Guide students to distinguish direct and indirect causes
-2. Analyze short-term and long-term effects
-3. Explore complexity of causal relationships
-4. Appropriate number: 3-5 causes, 3-5 effects
-
-Guide teachers gently using Socratic questions."""
-        
-        user_prompt = f"User intent: {intent}\nMessage: {message}"
-        
-        async for chunk in self._stream_llm_response(system_prompt, user_prompt, session):
-            yield chunk
-    
     async def _handle_discussion(
         self,
         session: Dict,

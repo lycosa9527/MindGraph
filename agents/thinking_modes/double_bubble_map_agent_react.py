@@ -328,8 +328,9 @@ Keep it concise, professional, no emojis."""
         self,
         session: Dict,
         intent: Dict,
-        message: str
-    ) -> AsyncGenerator[str, None]:
+        message: str,
+        current_state: str
+    ) -> AsyncGenerator[Dict, None]:
         """
         Handle Double Bubble Map-specific actions.
         
@@ -341,25 +342,26 @@ Keep it concise, professional, no emojis."""
         
         if action == 'open_node_palette':
             # Yield action event for frontend
-            yield json.dumps({
-                'type': 'action',
+            yield {
+                'event': 'action',
                 'action': 'open_node_palette',
                 'data': {}
-            }) + '\n\n'
+            }
             
             # Provide conversational feedback
             msg = "正在打开节点选择板..." if language == 'zh' else "Opening Node Palette..."
-            yield json.dumps({
-                'type': 'message',
+            yield {
+                'event': 'message_chunk',
                 'content': msg
-            }) + '\n\n'
+            }
+            yield {
+                'event': 'message_complete',
+                'new_state': current_state
+            }
             return
         
-        # For other actions, provide guidance based on current state
-        current_state = session.get('state', 'CONTEXT_GATHERING')
-        
-        # Generate response using state-specific prompts
-        async for chunk in self._generate_state_response(session, message, intent):
+        # For other actions, fallback to discussion
+        async for chunk in self._handle_discussion(session, message, current_state):
             yield chunk
     
     # ===== DIAGRAM-SPECIFIC: STATE PROMPTS =====
@@ -442,8 +444,10 @@ Think about:
 
 Which parts of this comparison do you think are most important?"""
         
-        # Add more states as needed
-        return self._get_default_prompt(session, message)
+        # Default fallback for unhandled states
+        if language == 'zh':
+            return f"让我们继续完善「{left_topic}」与「{right_topic}」的对比分析。你有什么想法或问题吗？"
+        return f"Let's continue refining your comparison of \"{left_topic}\" and \"{right_topic}\". What are your thoughts or questions?"
     
     # ===== DIAGRAM-SPECIFIC: NODE GENERATION =====
     
@@ -483,12 +487,11 @@ Difference: {left_topic} feature | {right_topic} contrasting feature
 Suitable for K12 teaching, concise and clear:"""
         
         try:
-            response = await self.llm.chat_stream_complete(
+            system_message = '你是K12教育专家。' if language == 'zh' else 'You are a K12 education expert.'
+            response = await self.llm.chat(
+                prompt=prompt,
                 model=self.model,
-                messages=[
-                    {'role': 'system', 'content': '你是K12教育专家。' if language == 'zh' else 'You are a K12 education expert.'},
-                    {'role': 'user', 'content': prompt}
-                ],
+                system_message=system_message,
                 temperature=0.8,
                 max_tokens=300
             )
@@ -568,11 +571,8 @@ Please generate {count} suggestions (mix of similarities and differences):"""
         
         # Stream node suggestions from LLM
         try:
-            async for chunk in self._stream_llm_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                session_id=session.get('session_id', '')
-            ):
+            combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+            async for chunk in self._stream_llm_response(combined_prompt, session):
                 yield chunk
                 
         except Exception as e:

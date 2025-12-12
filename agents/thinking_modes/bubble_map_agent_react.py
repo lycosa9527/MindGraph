@@ -259,25 +259,26 @@ User message: {message}"""
         
         if action == 'open_node_palette':
             # Yield action event for frontend
-            yield json.dumps({
-                'type': 'action',
+            yield {
+                'event': 'action',
                 'action': 'open_node_palette',
                 'data': {}
-            }) + '\n\n'
+            }
             
             # Provide conversational feedback
             msg = "正在打开节点选择板..." if language == 'zh' else "Opening Node Palette..."
-            yield json.dumps({
-                'type': 'message',
+            yield {
+                'event': 'message_chunk',
                 'content': msg
-            }) + '\n\n'
+            }
+            yield {
+                'event': 'message_complete',
+                'new_state': current_state
+            }
             return
         
-        # For other actions, provide guidance based on current state
-        current_state = session.get('state', 'CONTEXT_GATHERING')
-        
-        # Generate response using state-specific prompts
-        async for chunk in self._generate_state_response(session, message, intent):
+        # For other actions, fallback to discussion
+        async for chunk in self._handle_discussion(session, message, current_state):
             yield chunk
     
     # ===== DIAGRAM-SPECIFIC: STATE PROMPTS =====
@@ -353,8 +354,10 @@ Think about:
 
 Which of these attributes do you think are most important?"""
         
-        # Add more states as needed
-        return self._get_default_prompt(session, message)
+        # Default fallback for unhandled states
+        if language == 'zh':
+            return f"让我们继续完善「{center_text}」的气泡图。你有什么想法或问题吗？"
+        return f"Let's continue refining your Bubble Map on \"{center_text}\". What are your thoughts or questions?"
     
     # ===== DIAGRAM-SPECIFIC: NODE GENERATION =====
     
@@ -393,12 +396,11 @@ Requirements:
 Output only the attributes, no numbering:"""
         
         try:
-            response = await self.llm.chat_stream_complete(
+            system_message = '你是K12教育专家。' if language == 'zh' else 'You are a K12 education expert.'
+            response = await self.llm.chat(
+                prompt=prompt,
                 model=self.model,
-                messages=[
-                    {'role': 'system', 'content': '你是K12教育专家。' if language == 'zh' else 'You are a K12 education expert.'},
-                    {'role': 'user', 'content': prompt}
-                ],
+                system_message=system_message,
                 temperature=0.8,
                 max_tokens=200
             )

@@ -1,4 +1,14 @@
 /**
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
+ */
+
+/**
  * Update Notification Manager
  * ============================
  * 
@@ -10,9 +20,6 @@
  * - Bilingual support (Chinese/English)
  * - Changelog display
  * - Dismissible (won't show again for same version)
- * 
- * @author lycosa9527
- * @made-by MindSpring Team
  */
 
 class UpdateNotificationManager {

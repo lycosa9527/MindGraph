@@ -12,8 +12,9 @@ import logging
 import os
 from typing import Dict, List, Optional, Any, AsyncGenerator
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIError, RateLimitError, APIStatusError
 from config.settings import config
+from services.error_handler import LLMRateLimitError, LLMContentFilterError, LLMProviderError
 
 # Load environment variables for logging configuration
 load_dotenv()
@@ -93,6 +94,33 @@ class QwenClient:
                     else:
                         error_text = await response.text()
                         logger.error(f"Qwen API error {response.status}: {error_text}")
+                        
+                        # Parse error response for specific error types
+                        try:
+                            error_data = json.loads(error_text)
+                            error_info = error_data.get('error', {})
+                            error_code = error_info.get('code', '')
+                            error_message = error_info.get('message', error_text)
+                            
+                            # Content filter - don't retry
+                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
+                                raise LLMContentFilterError(f"Qwen content filter: {error_message}")
+                            
+                            # Rate limit
+                            if response.status == 429 or error_code in ['Throttling', 'Throttling.RateQuota', 'limit_requests']:
+                                raise LLMRateLimitError(f"Qwen rate limit: {error_message}")
+                            
+                            # Quota exhausted - don't retry
+                            if error_code in ['Throttling.AllocationQuota', 'Arrearage']:
+                                raise LLMProviderError(f"Qwen quota exhausted: {error_message}", provider='qwen', error_code=error_code)
+                            
+                            # Input too long
+                            if 'Range of input length' in error_message:
+                                raise LLMProviderError(f"Input too long: {error_message}", provider='qwen', error_code='input_too_long')
+                            
+                        except json.JSONDecodeError:
+                            pass
+                        
                         raise Exception(f"Qwen API error: {response.status}")
                         
         except asyncio.TimeoutError:
@@ -156,6 +184,25 @@ class QwenClient:
                     if response.status != 200:
                         error_text = await response.text()
                         logger.error(f"Qwen stream error {response.status}: {error_text}")
+                        
+                        # Parse error response for specific error types
+                        try:
+                            error_data = json.loads(error_text)
+                            error_info = error_data.get('error', {})
+                            error_code = error_info.get('code', '')
+                            error_message = error_info.get('message', error_text)
+                            
+                            # Content filter - don't retry
+                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
+                                raise LLMContentFilterError(f"Qwen content filter: {error_message}")
+                            
+                            # Rate limit
+                            if response.status == 429 or error_code in ['Throttling', 'Throttling.RateQuota', 'limit_requests']:
+                                raise LLMRateLimitError(f"Qwen rate limit: {error_message}")
+                            
+                        except json.JSONDecodeError:
+                            pass
+                        
                         raise Exception(f"Qwen stream error: {response.status}")
                     
                     # Read SSE stream line by line
@@ -268,6 +315,25 @@ class DeepSeekClient:
                     else:
                         error_text = await response.text()
                         logger.error(f"DeepSeek API error {response.status}: {error_text}")
+                        
+                        # Parse error response for specific error types
+                        try:
+                            error_data = json.loads(error_text)
+                            error_info = error_data.get('error', {})
+                            error_code = error_info.get('code', '')
+                            error_message = error_info.get('message', error_text)
+                            
+                            # Content filter - don't retry
+                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
+                                raise LLMContentFilterError(f"DeepSeek content filter: {error_message}")
+                            
+                            # Rate limit
+                            if response.status == 429 or error_code in ['Throttling', 'limit_requests']:
+                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_message}")
+                            
+                        except json.JSONDecodeError:
+                            pass
+                        
                         raise Exception(f"DeepSeek API error: {response.status}")
                         
         except asyncio.TimeoutError:
@@ -329,6 +395,23 @@ class DeepSeekClient:
                     if response.status != 200:
                         error_text = await response.text()
                         logger.error(f"DeepSeek stream error {response.status}: {error_text}")
+                        
+                        # Parse error response for specific error types
+                        try:
+                            error_data = json.loads(error_text)
+                            error_info = error_data.get('error', {})
+                            error_code = error_info.get('code', '')
+                            error_message = error_info.get('message', error_text)
+                            
+                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
+                                raise LLMContentFilterError(f"DeepSeek content filter: {error_message}")
+                            
+                            if response.status == 429 or error_code in ['Throttling', 'limit_requests']:
+                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_message}")
+                            
+                        except json.JSONDecodeError:
+                            pass
+                        
                         raise Exception(f"DeepSeek stream error: {response.status}")
                     
                     last_usage = None
@@ -423,6 +506,21 @@ class KimiClient:
                     else:
                         error_text = await response.text()
                         logger.error(f"Kimi API error {response.status}: {error_text}")
+                        
+                        # Parse error response for specific error types
+                        try:
+                            error_data = json.loads(error_text)
+                            error_info = error_data.get('error', {})
+                            error_code = error_info.get('code', '')
+                            error_message = error_info.get('message', error_text)
+                            
+                            # Rate limit (Kimi uses 429 and limit_requests)
+                            if response.status == 429 or error_code == 'limit_requests':
+                                raise LLMRateLimitError(f"Kimi rate limit: {error_message}")
+                            
+                        except json.JSONDecodeError:
+                            pass
+                        
                         raise Exception(f"Kimi API error: {response.status}")
                         
         except asyncio.TimeoutError:
@@ -484,6 +582,20 @@ class KimiClient:
                     if response.status != 200:
                         error_text = await response.text()
                         logger.error(f"Kimi stream error {response.status}: {error_text}")
+                        
+                        # Parse error response for specific error types
+                        try:
+                            error_data = json.loads(error_text)
+                            error_info = error_data.get('error', {})
+                            error_code = error_info.get('code', '')
+                            error_message = error_info.get('message', error_text)
+                            
+                            if response.status == 429 or error_code == 'limit_requests':
+                                raise LLMRateLimitError(f"Kimi rate limit: {error_message}")
+                            
+                        except json.JSONDecodeError:
+                            pass
+                        
                         raise Exception(f"Kimi stream error: {response.status}")
                     
                     last_usage = None
@@ -596,6 +708,42 @@ class HunyuanClient:
             else:
                 logger.error("Hunyuan API returned empty content")
                 raise Exception("Hunyuan API returned empty content")
+        
+        except RateLimitError as e:
+            logger.error(f"Hunyuan rate limit error: {e}")
+            raise LLMRateLimitError(f"Hunyuan rate limit: {e}")
+        
+        except APIStatusError as e:
+            error_msg = str(e)
+            logger.error(f"Hunyuan API status error: {error_msg}")
+            
+            # Check for Hunyuan-specific error codes
+            # Rate limit codes
+            rate_limit_codes = [
+                'LimitExceeded', 'RequestLimitExceeded',
+                'RequestLimitExceeded.IPLimitExceeded',
+                'RequestLimitExceeded.UinLimitExceeded',
+                'FailedOperation.EngineServerLimitExceeded'
+            ]
+            
+            # Content filter codes
+            content_filter_codes = [
+                'OperationDenied.TextIllegalDetected',
+                'OperationDenied.ImageIllegalDetected',
+                'FailedOperation.GenerateImageFailed'
+            ]
+            
+            # Check if any rate limit code is in the error message
+            for code in rate_limit_codes:
+                if code in error_msg or '2003' in error_msg or '请求限频' in error_msg:
+                    raise LLMRateLimitError(f"Hunyuan rate limit: {error_msg}")
+            
+            # Check for content filter
+            for code in content_filter_codes:
+                if code in error_msg:
+                    raise LLMContentFilterError(f"Hunyuan content filter: {error_msg}")
+            
+            raise LLMProviderError(f"Hunyuan API error: {error_msg}", provider='hunyuan')
                 
         except Exception as e:
             logger.error(f"Hunyuan API error: {e}")
@@ -658,6 +806,24 @@ class HunyuanClient:
             # Yield usage data as final chunk
             if last_usage:
                 yield {'type': 'usage', 'usage': last_usage}
+        
+        except RateLimitError as e:
+            logger.error(f"Hunyuan streaming rate limit: {e}")
+            raise LLMRateLimitError(f"Hunyuan rate limit: {e}")
+        
+        except APIStatusError as e:
+            error_msg = str(e)
+            logger.error(f"Hunyuan streaming API error: {error_msg}")
+            
+            # Check for rate limit indicators
+            if '2003' in error_msg or '请求限频' in error_msg or 'LimitExceeded' in error_msg:
+                raise LLMRateLimitError(f"Hunyuan rate limit: {error_msg}")
+            
+            # Check for content filter
+            if 'TextIllegalDetected' in error_msg or 'ImageIllegalDetected' in error_msg:
+                raise LLMContentFilterError(f"Hunyuan content filter: {error_msg}")
+            
+            raise LLMProviderError(f"Hunyuan stream error: {error_msg}", provider='hunyuan')
         
         except Exception as e:
             logger.error(f"Hunyuan streaming error: {e}")

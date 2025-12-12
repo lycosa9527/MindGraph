@@ -38,6 +38,19 @@ class LLMRateLimitError(LLMServiceError):
     pass
 
 
+class LLMContentFilterError(LLMServiceError):
+    """Raised when content is flagged by safety filter - DO NOT RETRY."""
+    pass
+
+
+class LLMProviderError(LLMServiceError):
+    """Raised for provider-specific errors with error code."""
+    def __init__(self, message: str, provider: str = None, error_code: str = None):
+        super().__init__(message)
+        self.provider = provider
+        self.error_code = error_code
+
+
 class ErrorHandler:
     """
     Handles errors and retries for LLM API calls.
@@ -88,6 +101,22 @@ class ErrorHandler:
             except asyncio.TimeoutError as e:
                 last_exception = LLMTimeoutError(f"Timeout on attempt {attempt + 1}: {e}")
                 logger.warning(f"[ErrorHandler] {last_exception}")
+            
+            except LLMContentFilterError as e:
+                # Content filter - DO NOT RETRY
+                logger.warning(f"[ErrorHandler] Content filter triggered, not retrying: {e}")
+                raise  # Re-raise immediately, no retry
+            
+            except LLMRateLimitError as e:
+                # Rate limit - retry with longer delay
+                last_exception = e
+                logger.warning(f"[ErrorHandler] Rate limited on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    # Longer delays for rate limits: 5s, 10s, 20s
+                    delay = min(5.0 * (2 ** attempt), 30.0)
+                    logger.debug(f"[ErrorHandler] Rate limit retry in {delay:.1f}s...")
+                    await asyncio.sleep(delay)
+                continue  # Skip normal delay calculation
                 
             except Exception as e:
                 last_exception = e

@@ -473,6 +473,36 @@ Your style:
     
     # ===== DEFAULT ACTION HANDLERS =====
     
+    def _get_default_prompt(self, session: Dict, message: str = None) -> str:
+        """
+        Default prompt fallback for unhandled states.
+        
+        Args:
+            session: Current session
+            message: User message (optional)
+            
+        Returns:
+            Generic prompt string
+        """
+        language = session.get('language', 'en')
+        diagram_data = session.get('diagram_data', {})
+        
+        # Try to get topic from common fields
+        topic = (
+            diagram_data.get('topic', '') or
+            diagram_data.get('center', {}).get('text', '') or
+            diagram_data.get('event', '') or
+            diagram_data.get('whole', '') or
+            diagram_data.get('left', '') or
+            diagram_data.get('title', '') or
+            diagram_data.get('dimension', '') or
+            'your diagram'
+        )
+        
+        if language == 'zh':
+            return f"让我们继续完善关于「{topic}」的图表。您有什么想法或问题吗？"
+        return f"Let's continue refining your diagram about \"{topic}\". What are your thoughts or questions?"
+    
     async def _handle_greeting(
         self,
         session: Dict,

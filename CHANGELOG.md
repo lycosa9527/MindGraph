@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.75] - 2025-12-13 - Ubuntu Server Error Fixes & Copyright Standardization
+
+### Fixed
+
+- **Critical Backend Bugs (6 issues)**
+  - Fixed `_handle_action()` missing `current_state` parameter in DoubleBubbleMapThinkingAgent
+  - Fixed `_generate_state_response` undefined - replaced with `_handle_discussion`
+  - Fixed `chat_stream_complete` undefined - replaced with `self.llm.chat()`
+  - Added `_get_default_prompt` method to BaseThinkingAgent for all 8 agents
+  - Fixed `_stream_llm_response` wrong arguments in DoubleBubbleMapThinkingAgent
+  - Created `scripts/clear_pycache.sh` to fix stale bytecode cache causing `_call_llm` not found
+
+- **LLM Error Handling (5 issues)**
+  - Added `LLMContentFilterError` and `LLMProviderError` classes to error_handler.py
+  - Added error detection for Qwen: `DataInspectionFailed`, `Throttling`, quota errors
+  - Added error detection for Hunyuan: rate limit codes, content filter codes, timeout codes
+  - Added error detection for Kimi: 429 rate limit handling
+  - Added structured error responses with `error_type` and localized EN/ZH messages
+
+- **Frontend Issues (3 issues)**
+  - Added 5 null checks for `eventBus.emit()` in mindmate-manager.js
+  - Changed NotAllowedError log level to debug in export-manager.js
+  - Fixed TTL mismatch in llm-autocomplete-manager.js, changed cache errors to debug level
+
+### Removed
+
+- **Dead Code Cleanup (~240 lines)**
+  - Removed unused `_generate_response` methods from 6 agent files:
+    - flow_map_agent_react.py
+    - brace_map_agent_react.py
+    - bridge_map_agent_react.py
+    - mindmap_agent_react.py
+    - tree_map_agent_react.py
+    - multi_flow_map_agent_react.py
+
+### Added
+
+- **Copyright Header Standardization**
+  - Added copyright headers to all CSS files that were missing them
+  - Added copyright header to update-notification.js
+  - Added copyright headers to Python cache manager files in static/js
+  - Standardized copyright notice format across all proprietary files
+
+### Files Changed
+
+- `agents/thinking_modes/double_bubble_map_agent_react.py` - 7 fixes
+- `agents/thinking_modes/bubble_map_agent_react.py` - 4 fixes
+- `agents/thinking_modes/base_thinking_agent.py` - Added `_get_default_prompt` method
+- `agents/thinking_modes/flow_map_agent_react.py` - Removed dead code
+- `agents/thinking_modes/brace_map_agent_react.py` - Removed dead code
+- `agents/thinking_modes/bridge_map_agent_react.py` - Removed dead code
+- `agents/thinking_modes/mindmap_agent_react.py` - Removed dead code
+- `agents/thinking_modes/tree_map_agent_react.py` - Removed dead code
+- `agents/thinking_modes/multi_flow_map_agent_react.py` - Removed dead code
+- `services/error_handler.py` - Added error classes and retry logic
+- `clients/llm.py` - Added error detection for all LLM providers
+- `routers/thinking.py` - Added structured error responses
+- `static/js/managers/mindmate-manager.js` - Added null checks and error handling
+- `static/js/managers/toolbar/export-manager.js` - Changed log level
+- `static/js/managers/toolbar/llm-autocomplete-manager.js` - Fixed TTL and log level
+- `scripts/clear_pycache.sh` - Created cache clearing script
+- `static/css/comic-bubble.css` - Added copyright header
+- `static/css/editor-toolbar.css` - Added copyright header
+- `static/css/editor.css` - Added copyright header
+- `static/css/node-palette.css` - Added copyright header
+- `static/js/editor/update-notification.js` - Added copyright header
+- `static/js/cache_manager.py` - Added copyright header
+- `static/js/lazy_cache_manager.py` - Added copyright header
+- `static/js/modular_cache_python.py` - Added copyright header
+
+---
+
 ## [4.28.74] - 2025-12-12 - Gallery Diagram Card Hover Animations
 
 ### Added

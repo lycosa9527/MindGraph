@@ -2869,23 +2869,27 @@ class NodePaletteManager {
         console.log(`[NodePalette-Cancel] Session ID: ${this.sessionId}`);
         console.log('[NodePalette-Cancel] Action: Returning to canvas WITHOUT adding nodes');
         
-        // Log cancel event to backend
-        console.log('[NodePalette-Cancel] Sending cancel event to backend...');
-        try {
-            const response = await auth.fetch('/thinking_mode/node_palette/cancel', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: this.sessionId,
-                    diagram_type: this.diagramType,  // CRITICAL: Backend needs this to clean up generator
-                    selected_node_count: this.selectedNodes.size,
-                    total_nodes_generated: this.nodes.length,
-                    batches_loaded: this.currentBatch
-                })
-            });
-            console.log('[NodePalette-Cancel] Backend response:', response.status, response.statusText);
-        } catch (e) {
-            console.error('[NodePalette-Cancel] Failed to log cancel event:', e);
+        // Log cancel event to backend (only if session was initialized)
+        if (this.sessionId && this.currentBatch > 0) {
+            console.log('[NodePalette-Cancel] Sending cancel event to backend...');
+            try {
+                const response = await auth.fetch('/thinking_mode/node_palette/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: this.sessionId,
+                        diagram_type: this.diagramType,
+                        selected_node_ids: Array.from(this.selectedNodes),  // Backend expects list of IDs
+                        total_nodes_generated: this.nodes.length,
+                        batches_loaded: this.currentBatch
+                    })
+                });
+                console.log('[NodePalette-Cancel] Backend response:', response.status, response.statusText);
+            } catch (e) {
+                console.error('[NodePalette-Cancel] Failed to log cancel event:', e);
+            }
+        } else {
+            console.log('[NodePalette-Cancel] Skipping backend call (no active session)');
         }
         
         // Hide Node Palette panel
@@ -3213,6 +3217,13 @@ class NodePaletteManager {
          * Works for Tree Map (categories), Brace Map (parts), Mindmap (branches), and Flow Map (steps)
          * @param {string} categoryName - Name of the category/part/branch/step to generate children/subparts/substeps for
          */
+        
+        // Guard clause: Check required fields before making API call
+        if (!this.sessionId || !this.diagramType || !this.diagramData) {
+            console.warn(`[NodePalette] Cannot load category "${categoryName}": session not initialized`);
+            return;
+        }
+        
         const logPrefix = this.diagramType === 'tree_map' ? 'TreeMap' : 
                          this.diagramType === 'brace_map' ? 'BraceMap' : 
                          this.diagramType === 'mindmap' ? 'Mindmap' : 'FlowMap';
@@ -3291,6 +3302,13 @@ class NodePaletteManager {
          * Load a single tab's batch (used by loadBothTabsInitial)
          * @param {string} mode - 'similarities' or 'differences'
          */
+        
+        // Guard clause: Check required fields before making API call
+        if (!this.sessionId || !this.diagramType || !this.diagramData) {
+            console.warn(`[NodePalette] Cannot load ${mode} tab: session not initialized`);
+            return 0;
+        }
+        
         console.log(`[NodePalette] CATAPULT for ${mode} tab (4 LLMs launching)...`);
         
         const url = '/thinking_mode/node_palette/start';
@@ -3386,7 +3404,11 @@ class NodePaletteManager {
                         if (data.event === 'batch_start') {
                             // CATAPULT LAUNCHED! All 4 LLMs are now firing
                             console.log(`[NodePalette] CATAPULT LAUNCHED: ${data.llm_count} LLMs firing concurrently`);
-                            this.updateCatapultLoading(`Launching ${data.llm_count} LLMs...`, 0, data.llm_count);
+                            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                            const launchMsg = lang === 'zh' 
+                                ? `正在启动 ${data.llm_count} 个AI模型...` 
+                                : `Launching ${data.llm_count} LLMs...`;
+                            this.updateCatapultLoading(launchMsg, 0, data.llm_count);
                             
                         } else if (data.event === 'node_generated') {
                             const node = data.node;
@@ -3400,7 +3422,11 @@ class NodePaletteManager {
                             nodeCount++;
                             
                             // Update loading animation with live count
-                            this.updateCatapultLoading(`Generating ideas... ${nodeCount} nodes received`, llmsComplete, 4);
+                            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                            const genMsg = lang === 'zh' 
+                                ? `正在生成创意... 已收到 ${nodeCount} 个节点` 
+                                : `Generating ideas... ${nodeCount} nodes received`;
+                            this.updateCatapultLoading(genMsg, llmsComplete, 4);
                             
                             // Add node to appropriate target (tab-specific or main array)
                             if (targetMode && this.tabNodes) {
@@ -3459,13 +3485,37 @@ class NodePaletteManager {
                             }
                             
                         } else if (data.event === 'llm_complete') {
-                            // One of the 4 LLMs has finished
+                            // One of the 4 LLMs has finished successfully
                             llmsComplete++;
                             console.log(`[NodePalette] ${data.llm} complete: ${data.unique_nodes} unique, ${data.duplicates} duplicates (${data.duration}s)`);
                             
+                            // Track LLM status for UI
+                            this.updateLlmStatus(data.llm, 'success', data.unique_nodes);
+                            
                             // Only update loading animation if we're showing it
                             if (showLoading) {
-                                this.updateCatapultLoading(`${data.llm} complete (${llmsComplete}/4)`, llmsComplete, 4);
+                                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                                const completeMsg = lang === 'zh' 
+                                    ? `${data.llm} 完成 (${llmsComplete}/4)` 
+                                    : `${data.llm} complete (${llmsComplete}/4)`;
+                                this.updateCatapultLoading(completeMsg, llmsComplete, 4);
+                            }
+                            
+                        } else if (data.event === 'llm_error') {
+                            // One LLM failed - but others continue
+                            llmsComplete++;
+                            console.warn(`[NodePalette] ${data.llm} error (${data.error_type}): ${data.error}`);
+                            
+                            // Track LLM failure status for UI
+                            this.updateLlmStatus(data.llm, 'error', data.nodes_before_error, data.error_type);
+                            
+                            // Only update loading animation if we're showing it
+                            if (showLoading) {
+                                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                                const failMsg = lang === 'zh' 
+                                    ? `${data.llm} 失败 (${llmsComplete}/4)` 
+                                    : `${data.llm} failed (${llmsComplete}/4)`;
+                                this.updateCatapultLoading(failMsg, llmsComplete, 4);
                             }
                             
                         } else if (data.event === 'batch_complete') {
@@ -3475,7 +3525,11 @@ class NodePaletteManager {
                             
                             // Only update/hide loading animation if we're showing it
                             if (showLoading) {
-                                this.updateCatapultLoading(`Complete! ${data.new_unique_nodes} new ideas`, 4, 4);
+                                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                                const doneMsg = lang === 'zh' 
+                                    ? `完成！${data.new_unique_nodes} 个新创意` 
+                                    : `Complete! ${data.new_unique_nodes} new ideas`;
+                                this.updateCatapultLoading(doneMsg, 4, 4);
                                 // Hide catapult loading animation after brief delay
                                 setTimeout(() => this.hideCatapultLoading(), 800);
                             }
@@ -3515,6 +3569,18 @@ class NodePaletteManager {
          */
         if (this.isLoadingBatch) {
             console.warn('[NodePalette] Batch load already in progress, skipping');
+            return;
+        }
+        
+        // Guard clause: Check required fields before making API call
+        if (!this.sessionId || !this.diagramType) {
+            console.warn('[NodePalette] Cannot load batch: session not initialized (missing sessionId or diagramType)');
+            return;
+        }
+        
+        // For batch 1 (start), diagram_data is required
+        if (this.currentBatch === 0 && !this.diagramData) {
+            console.warn('[NodePalette] Cannot load first batch: diagramData is null');
             return;
         }
         
@@ -4224,6 +4290,66 @@ class NodePaletteManager {
             setTimeout(() => {
                 loader.remove();
             }, 300);
+        }
+        // Clear LLM status tracking
+        this.llmStatusMap = {};
+    }
+    
+    updateLlmStatus(llmName, status, nodeCount, errorType = null) {
+        /**
+         * Track LLM status for UI display
+         * @param {string} llmName - 'qwen', 'deepseek', 'kimi', 'hunyuan'
+         * @param {string} status - 'success' or 'error'
+         * @param {number} nodeCount - Number of nodes generated
+         * @param {string} errorType - Error type if failed ('rate_limit', 'content_filter', 'timeout')
+         */
+        // Initialize status map if not exists
+        if (!this.llmStatusMap) {
+            this.llmStatusMap = {};
+        }
+        
+        this.llmStatusMap[llmName] = {
+            status: status,
+            nodeCount: nodeCount,
+            errorType: errorType
+        };
+        
+        // Update the loader UI to show individual LLM status
+        const loader = document.getElementById('catapult-loader');
+        if (!loader) return;
+        
+        // Find or create LLM status container
+        let statusContainer = loader.querySelector('.llm-status-container');
+        if (!statusContainer) {
+            statusContainer = document.createElement('div');
+            statusContainer.className = 'llm-status-container';
+            statusContainer.style.cssText = 'display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap;';
+            loader.appendChild(statusContainer);
+        }
+        
+        // Create/update status badge for this LLM
+        let badge = statusContainer.querySelector(`[data-llm="${llmName}"]`);
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.setAttribute('data-llm', llmName);
+            badge.style.cssText = 'padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;';
+            statusContainer.appendChild(badge);
+        }
+        
+        // Style based on status
+        if (status === 'success') {
+            badge.style.background = '#4caf5020';
+            badge.style.color = '#4caf50';
+            badge.textContent = `${llmName}: ${nodeCount}`;
+            badge.title = `${llmName}: ${nodeCount} nodes generated`;
+        } else {
+            badge.style.background = '#ff980020';
+            badge.style.color = '#ff9800';
+            const errorLabel = errorType === 'rate_limit' ? 'busy' : 
+                              errorType === 'content_filter' ? 'filtered' : 
+                              errorType === 'timeout' ? 'timeout' : 'error';
+            badge.textContent = `${llmName}: ${errorLabel}`;
+            badge.title = `${llmName}: ${errorType || 'error'} (${nodeCount} nodes before failure)`;
         }
     }
     

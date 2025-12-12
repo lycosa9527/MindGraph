@@ -912,10 +912,20 @@ async def log_requests(request: Request, call_next):
     response_time = time.time() - start_time
     logger.debug(f"Response: {response.status_code} in {response_time:.3f}s")
     
-    # Monitor slow requests
+    # Monitor slow requests (thresholds based on endpoint type)
     if 'generate_png' in request.url.path and response_time > 20:
         logger.warning(f"Slow PNG generation: {request.method} {request.url.path} took {response_time:.3f}s")
+    elif 'generate_graph' in request.url.path and response_time > 15:
+        # LLM generation can take 5-10s normally, only warn above 15s
+        logger.warning(f"Slow graph generation: {request.method} {request.url.path} took {response_time:.3f}s")
+    elif 'node_palette' in request.url.path and response_time > 10:
+        # Node Palette streams from 4 LLMs, 5-8s is normal
+        logger.warning(f"Slow node palette: {request.method} {request.url.path} took {response_time:.3f}s")
+    elif 'thinking_mode' in request.url.path and response_time > 10:
+        # ThinkGuide LLM calls take 3-8s normally
+        logger.warning(f"Slow thinking mode: {request.method} {request.url.path} took {response_time:.3f}s")
     elif response_time > 5:
+        # Other endpoints (static files, auth, etc.) should be fast
         logger.warning(f"Slow request: {request.method} {request.url.path} took {response_time:.3f}s")
     
     return response

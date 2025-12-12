@@ -173,46 +173,6 @@ Let's refine your process analysis! Please tell me:
         yield {'event': 'message_chunk', 'content': greeting}
         yield {'event': 'message_complete', 'new_state': 'CONTEXT_GATHERING'}
     
-    async def _generate_response(
-        self,
-        session: Dict,
-        message: str,
-        intent: Dict
-    ) -> AsyncGenerator[Dict, None]:
-        """Generate Socratic response for Flow Map"""
-        language = session.get('language', 'en')
-        current_state = session.get('current_state', 'CONTEXT_GATHERING')
-        
-        if language == 'zh':
-            system_prompt = f"""你是一位苏格拉底式的K12教育助手，专注于流程图的顺序思维训练。
-
-当前阶段：{current_state}
-
-流程图教学要点：
-1. 引导学生思考步骤的先后顺序
-2. 分析因果关系和逻辑联系
-3. 检查是否有遗漏的步骤
-4. 适合的步骤数量：4-8步
-
-请用温和、启发式的方式引导教师。"""
-        else:
-            system_prompt = f"""You are a Socratic K12 education assistant focused on Flow Map sequential thinking.
-
-Current stage: {current_state}
-
-Flow Map teaching points:
-1. Guide students to think about step sequence
-2. Analyze cause-effect relationships
-3. Check for missing steps
-4. Appropriate number: 4-8 steps
-
-Guide teachers gently using Socratic questions."""
-        
-        user_prompt = f"User intent: {intent}\nMessage: {message}"
-        
-        async for chunk in self._stream_llm_response(system_prompt, user_prompt, session):
-            yield chunk
-    
     async def _handle_discussion(
         self,
         session: Dict,

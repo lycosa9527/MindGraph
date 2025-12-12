@@ -58,11 +58,20 @@ class LLMAutoCompleteManager {
     }
     
     /**
-     * Get cached LLM results
-     * Exposes resultCache.results for backward compatibility
+     * Get cached LLM results (TTL-validated)
+     * Exposes only valid (non-expired) results for UI consistency
      */
     get llmResults() {
-        return this.resultCache.results;
+        // Return TTL-validated results to match getResult() behavior
+        // This prevents UI/cache mismatch when cache expires
+        const validResults = {};
+        for (const model of Object.keys(this.resultCache.results)) {
+            const result = this.resultCache.getResult(model);  // Uses TTL check
+            if (result) {
+                validResults[model] = result;
+            }
+        }
+        return validResults;
     }
     
     /**
@@ -504,8 +513,15 @@ class LLMAutoCompleteManager {
         
         const cachedResult = this.resultCache.getResult(llmModel);
         if (!cachedResult || !cachedResult.success) {
-            this.logger.error('LLMAutoCompleteManager', `Cannot render ${llmModel}: No valid cached data`);
-            this.toolbarManager.showNotification(`Error loading ${llmModel} result`, 'error');
+            // This can happen if cache expired between UI check and render
+            // Log as debug (not error) since it's an edge case, not a bug
+            this.logger.debug('LLMAutoCompleteManager', `Cannot render ${llmModel}: No valid cached data (may have expired)`);
+            // Don't show error notification - just inform user to regenerate
+            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+            const message = lang === 'zh' 
+                ? '缓存已过期，请重新生成' 
+                : 'Cache expired, please regenerate';
+            this.toolbarManager.showNotification(message, 'info');
             return;
         }
         

@@ -185,8 +185,8 @@ class BasePaletteGenerator(ABC):
                                 'selected': False
                             }
                             
-                            # Verbose logging for streaming nodes
-                            logger.info(
+                            # Verbose logging for streaming nodes (DEBUG level - very frequent)
+                            logger.debug(
                                 "[NodePalette-Stream] Node generated | LLM: %s | Batch: %d | ID: %s | Text: '%s'",
                                 llm_name, batch_num, node['id'], node_text[:50] + ('...' if len(node_text) > 50 else '')
                             )
@@ -239,8 +239,8 @@ class BasePaletteGenerator(ABC):
                                 'selected': False
                             }
                             
-                            # Verbose logging for final node in stream
-                            logger.info(
+                            # Verbose logging for final node in stream (DEBUG level - per-LLM)
+                            logger.debug(
                                 "[NodePalette-Complete] Final node | LLM: %s | Batch: %d | ID: %s | Text: '%s'",
                                 llm_name, batch_num, node['id'], node_text[:50] + ('...' if len(node_text) > 50 else '')
                             )
@@ -270,7 +270,8 @@ class BasePaletteGenerator(ABC):
                     'unique': llm_unique_counts[llm_name],
                     'duplicates': llm_duplicate_counts[llm_name],
                     'duration': chunk.get('duration', 0),
-                    'token_count': chunk.get('token_count', 0)
+                    'token_count': chunk.get('token_count', 0),
+                    'success': True
                 }
                 
                 # Yield any remaining pending nodes from this LLM before completing
@@ -283,7 +284,8 @@ class BasePaletteGenerator(ABC):
                     'llm': llm_name,
                     'unique_nodes': llm_unique_counts[llm_name],
                     'duplicates': llm_duplicate_counts[llm_name],
-                    'duration': chunk.get('duration', 0)
+                    'duration': chunk.get('duration', 0),
+                    'success': True
                 }
                 
                 logger.debug(
@@ -301,13 +303,37 @@ class BasePaletteGenerator(ABC):
                         yield pending_nodes[llm].pop(0)
             
             elif event == 'error':
-                # LLM failed
-                logger.error("[NodePalette] %s stream error: %s", llm_name, chunk.get('error'))
+                # LLM failed - categorize the error type
+                error_msg = chunk.get('error', 'Unknown error')
+                error_type = 'unknown'
+                
+                # Detect error type from message
+                error_lower = error_msg.lower()
+                if 'rate' in error_lower or '429' in error_lower or '2003' in error_lower or 'limit' in error_lower:
+                    error_type = 'rate_limit'
+                elif 'content' in error_lower or 'filter' in error_lower or 'inspection' in error_lower:
+                    error_type = 'content_filter'
+                elif 'timeout' in error_lower:
+                    error_type = 'timeout'
+                
+                logger.error("[NodePalette] %s stream error (%s): %s", llm_name, error_type, error_msg)
+                
                 llm_stats[llm_name] = {
                     'unique': llm_unique_counts[llm_name],
                     'duplicates': llm_duplicate_counts[llm_name],
                     'duration': chunk.get('duration', 0),
-                    'error': chunk.get('error')
+                    'error': error_msg,
+                    'error_type': error_type,
+                    'success': False
+                }
+                
+                # Yield llm_error event for frontend tracking
+                yield {
+                    'event': 'llm_error',
+                    'llm': llm_name,
+                    'error': error_msg,
+                    'error_type': error_type,
+                    'nodes_before_error': llm_unique_counts[llm_name]
                 }
         
         # Batch complete

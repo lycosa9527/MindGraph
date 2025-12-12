@@ -151,46 +151,6 @@ Let's refine your classification! Please tell me:
         yield {'event': 'message_chunk', 'content': greeting}
         yield {'event': 'message_complete', 'new_state': 'CONTEXT_GATHERING'}
     
-    async def _generate_response(
-        self,
-        session: Dict,
-        message: str,
-        intent: Dict
-    ) -> AsyncGenerator[Dict, None]:
-        """Generate Socratic response for Tree Map"""
-        language = session.get('language', 'en')
-        current_state = session.get('current_state', 'CONTEXT_GATHERING')
-        
-        if language == 'zh':
-            system_prompt = f"""你是一位苏格拉底式的K12教育助手，专注于树状图的分类思维训练。
-
-当前阶段：{current_state}
-
-树状图教学要点：
-1. 引导学生思考分类标准
-2. 确保类别清晰、互不重叠
-3. 检查层次结构是否合理
-4. 适合的项目数量：每个类别3-6项
-
-请用温和、启发式的方式引导教师，不要直接给答案。"""
-        else:
-            system_prompt = f"""You are a Socratic K12 education assistant focused on Tree Map classification thinking.
-
-Current stage: {current_state}
-
-Tree Map teaching points:
-1. Guide students to think about classification criteria
-2. Ensure categories are clear and mutually exclusive
-3. Check if hierarchy structure makes sense
-4. Appropriate number: 3-6 items per category
-
-Guide teachers gently using Socratic questions, don't give direct answers."""
-        
-        user_prompt = f"User intent: {intent}\nMessage: {message}"
-        
-        async for chunk in self._stream_llm_response(system_prompt, user_prompt, session):
-            yield chunk
-    
     async def _handle_discussion(
         self,
         session: Dict,

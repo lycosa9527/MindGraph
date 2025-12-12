@@ -28,6 +28,7 @@ from agents.thinking_modes.node_palette.flow_map_palette import get_flow_map_pal
 from agents.thinking_modes.node_palette.brace_map_palette import get_brace_map_palette_generator
 from agents.thinking_modes.node_palette.bridge_map_palette import get_bridge_map_palette_generator
 from agents.thinking_modes.node_palette.mindmap_palette import get_mindmap_palette_generator
+from services.error_handler import LLMContentFilterError, LLMRateLimitError
 from models.requests import (
     ThinkingModeRequest,
     NodePaletteStartRequest,
@@ -108,9 +109,44 @@ async def thinking_mode_stream(
                     # Format as SSE
                     yield f"data: {json.dumps(chunk)}\n\n"
                 
+            except LLMContentFilterError as e:
+                # Content filter - don't retry, specific message
+                logger.warning(f"[ThinkGuide] Content filter triggered: {e}")
+                if req.language == 'zh':
+                    user_message = "无法处理您的请求，请尝试修改主题描述。"
+                else:
+                    user_message = "Your request couldn't be processed. Please try rephrasing your topic."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
+            
+            except LLMRateLimitError as e:
+                # Rate limit - can retry
+                logger.warning(f"[ThinkGuide] Rate limit hit: {e}")
+                if req.language == 'zh':
+                    user_message = "AI服务繁忙，请稍后重试。"
+                else:
+                    user_message = "AI service is busy. Please try again in a few seconds."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+            
             except Exception as e:
                 logger.error(f"[ThinkGuide] Streaming error: {e}", exc_info=True)
-                yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
+                
+                # Determine error type from exception string
+                error_type = 'unknown'
+                error_str = str(e).lower()
+                
+                if 'timeout' in error_str:
+                    error_type = 'timeout'
+                    if req.language == 'zh':
+                        user_message = "请求超时，请重试。"
+                    else:
+                        user_message = "Request timed out. Please try again."
+                else:
+                    if req.language == 'zh':
+                        user_message = "出现问题，请重试。"
+                    else:
+                        user_message = "Something went wrong. Please try again."
+                
+                yield f"data: {json.dumps({'event': 'error', 'error_type': error_type, 'message': user_message})}\n\n"
         
         # Return SSE stream
         return StreamingResponse(
@@ -351,12 +387,25 @@ async def start_node_palette(
                 logger.debug("[NodePalette-API] Batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
                 
+            except LLMContentFilterError as e:
+                logger.warning("[NodePalette-API] Content filter | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Content could not be processed. Please try a different topic."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
+            
+            except LLMRateLimitError as e:
+                logger.warning("[NodePalette-API] Rate limit | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please try again in a few seconds."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+            
             except Exception as e:
                 logger.error("[NodePalette-API] Stream error | Session: %s | Error: %s", 
                             session_id[:8], str(e), exc_info=True)
                 error_event = {
                     'event': 'error',
-                    'message': str(e)
+                    'error_type': 'unknown',
+                    'message': "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
                 }
                 yield f"data: {json.dumps(error_event)}\n\n"
         
@@ -492,10 +541,22 @@ async def get_next_batch(
                 logger.debug("[NodePalette-API] Next batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
                 
+            except LLMContentFilterError as e:
+                logger.warning("[NodePalette-API] Next batch content filter | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Content could not be processed."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
+            
+            except LLMRateLimitError as e:
+                logger.warning("[NodePalette-API] Next batch rate limit | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please retry."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+            
             except Exception as e:
                 logger.error("[NodePalette-API] Next batch error | Session: %s | Error: %s", 
                             session_id[:8], str(e), exc_info=True)
-                yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': str(e)})}\n\n"
         
         return StreamingResponse(
             generate(),
@@ -575,7 +636,7 @@ async def node_palette_cancel(
     User clicked Cancel button - log the event and end session without adding nodes.
     """
     session_id = request.session_id
-    selected_count = request.selected_node_count if hasattr(request, 'selected_node_count') else 0
+    selected_count = len(request.selected_node_ids)  # Use the correct field from request model
     total_generated = request.total_nodes_generated
     batches_loaded = request.batches_loaded
     
