@@ -160,7 +160,7 @@
     }
 }
 
-/* Medium-large screens - start optimizing space */
+/* Medium-large screens (1200-1399px) - icon-only AI button for budget laptops */
 @media (max-width: 1399px) and (min-width: 1200px) {
     .toolbar-center {
         flex: 1;
@@ -184,13 +184,23 @@
         font-size: 13px !important;
     }
     
+    /* MindMate AI button - icon only */
     .mindmate-ai-btn {
-        padding: 8px 14px;
+        padding: 8px 10px;
         font-size: 13px;
+    }
+    
+    .mindmate-ai-btn.icon-only {
+        padding: 8px 10px;
+    }
+    
+    .mindmate-ai-btn.icon-only svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
-/* Medium screens - hide labels to save space */
+/* Medium screens (900-1199px) - hide labels, icon-only AI button */
 @media (max-width: 1199px) and (min-width: 900px) {
     .toolbar-center {
         flex: 1;
@@ -211,18 +221,23 @@
         font-size: 12px !important;
     }
     
+    /* MindMate AI button - icon only */
     .mindmate-ai-btn {
-        padding: 8px 12px;
+        padding: 8px;
         font-size: 12px;
     }
     
-    .mindmate-ai-btn svg {
-        width: 16px;
-        height: 16px;
+    .mindmate-ai-btn.icon-only {
+        padding: 8px;
+    }
+    
+    .mindmate-ai-btn.icon-only svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
-/* Small-medium screens - compact buttons, move right section if needed */
+/* Small-medium screens - compact buttons, icon-only AI button */
 @media (max-width: 899px) and (min-width: 769px) {
     .editor-toolbar {
         gap: 10px;
@@ -263,9 +278,19 @@
         font-size: 12px !important;
     }
     
+    /* MindMate AI button - icon only in minimal mode */
     .mindmate-ai-btn {
-        padding: 8px 12px;
+        padding: 8px;
         font-size: 12px;
+    }
+    
+    .mindmate-ai-btn.icon-only {
+        padding: 8px;
+    }
+    
+    .mindmate-ai-btn.icon-only svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
@@ -565,6 +590,18 @@
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Icon-only mode for narrow desktop screens */
+.mindmate-ai-btn.icon-only {
+    padding: 10px;
+    gap: 0;
+    border-radius: 8px;
+}
+
+.mindmate-ai-btn.icon-only svg {
+    width: 20px;
+    height: 20px;
 }
 
 .mindmate-ai-btn:hover {

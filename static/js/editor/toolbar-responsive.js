@@ -166,33 +166,38 @@ class ToolbarResponsiveManager {
          */
         this.showAllLabels();
         this.showFullButtonText();
+        this.showFullAIButton();
         this.removeCollapsible();
     }
     
     applyLargeMode() {
         /**
-         * Large mode - slightly smaller buttons, labels visible.
+         * Large mode - slightly smaller buttons, labels visible, icon-only AI button.
+         * Covers 1200-1399px (includes 1366px budget laptops).
          */
         this.showAllLabels();
         this.showFullButtonText();
+        this.showIconOnlyAIButton();
         this.removeCollapsible();
     }
     
     applyCompactMode() {
         /**
-         * Compact mode - hide labels, full button text.
+         * Compact mode - hide labels, icon-only AI button.
+         * Covers 900-1199px.
          */
         this.hideLabels();
         this.showFullButtonText();
+        this.showIconOnlyAIButton();
         this.removeCollapsible();
     }
     
     applyMinimalMode() {
         /**
-         * Minimal mode - hide labels, abbreviated button text, MindMate AI on new line if needed.
+         * Minimal mode - hide labels, show only AI icon for MindMate button.
          */
         this.hideLabels();
-        this.abbreviateButtonText();
+        this.showIconOnlyAIButton();
         this.removeCollapsible();
     }
     
@@ -202,6 +207,7 @@ class ToolbarResponsiveManager {
          */
         this.hideLabels();
         // Don't abbreviate AI button - keep full text on mobile
+        this.showFullAIButton();
         this.makeCollapsible();
     }
     
@@ -269,6 +275,35 @@ class ToolbarResponsiveManager {
         const mindmateBtn = document.getElementById('mindmate-btn-text');
         if (mindmateBtn) {
             mindmateBtn.textContent = 'AI';
+        }
+    }
+    
+    showIconOnlyAIButton() {
+        /**
+         * Show only the AI icon, hide the text label completely.
+         * Used for narrow desktop screens to save space.
+         */
+        const mindmateBtn = document.getElementById('mindmate-btn-text');
+        const mindmateContainer = document.getElementById('mindmate-ai-btn');
+        if (mindmateBtn) {
+            mindmateBtn.style.display = 'none';
+        }
+        if (mindmateContainer) {
+            mindmateContainer.classList.add('icon-only');
+        }
+    }
+    
+    showFullAIButton() {
+        /**
+         * Restore full AI button with text.
+         */
+        const mindmateBtn = document.getElementById('mindmate-btn-text');
+        const mindmateContainer = document.getElementById('mindmate-ai-btn');
+        if (mindmateBtn) {
+            mindmateBtn.style.display = '';
+        }
+        if (mindmateContainer) {
+            mindmateContainer.classList.remove('icon-only');
         }
     }
     

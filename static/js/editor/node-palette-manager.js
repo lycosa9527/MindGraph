@@ -935,6 +935,9 @@ class NodePaletteManager {
     showStageTransition(stageName) {
         console.log(`[NodePalette-TreeMap] Stage transition: ${stageName}`);
         
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        const firingText = lang === 'zh' ? '正在发射...' : 'Firing catapults...';
+        
         // Create overlay
         const overlay = document.createElement('div');
         overlay.className = 'stage-transition-overlay';
@@ -942,7 +945,7 @@ class NodePaletteManager {
             <div class="stage-transition-content">
                 <div class="stage-transition-icon">🚀</div>
                 <div class="stage-transition-text">${stageName}</div>
-                <div class="stage-transition-subtext">Firing catapults...</div>
+                <div class="stage-transition-subtext">${firingText}</div>
             </div>
         `;
         
@@ -4133,6 +4136,10 @@ class NodePaletteManager {
         const container = document.getElementById('node-palette-grid');
         if (!container) return;
         
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        const preparingText = lang === 'zh' ? '正在准备下一批...' : 'Preparing next batch...';
+        const scrollText = lang === 'zh' ? '向下滚动查看更多创意' : 'Scroll down for more ideas';
+        
         // Check if transition element already exists
         let transition = document.getElementById('batch-transition');
         if (!transition) {
@@ -4146,8 +4153,8 @@ class NodePaletteManager {
                         <div class="spinner-ring"></div>
                         <div class="spinner-ring"></div>
                     </div>
-                    <div class="transition-text">Preparing next batch...</div>
-                    <div class="transition-subtext">Scroll down for more ideas</div>
+                    <div class="transition-text">${preparingText}</div>
+                    <div class="transition-subtext">${scrollText}</div>
                 </div>
             `;
             container.appendChild(transition);

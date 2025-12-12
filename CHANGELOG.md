@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.76] - 2025-12-13 - Responsive Toolbar & UI Cleanup
+
+### Fixed
+
+- **Shell Script Line Endings**
+  - Fixed `scripts/clear_pycache.sh` CRLF line endings causing "cannot execute: required file not found" error on Ubuntu
+  - Script now uses proper Unix LF line endings
+
+- **Node Palette Missing Translations**
+  - Added Chinese translations for "Preparing next batch..." -> "正在准备下一批..."
+  - Added Chinese translations for "Scroll down for more ideas" -> "向下滚动查看更多创意"
+  - Added Chinese translations for "Firing catapults..." -> "正在发射..."
+
+### Changed
+
+- **Responsive MindMate AI Button**
+  - MindMate AI button now shows icon-only on screens narrower than 1400px
+  - Optimized for budget laptops with 1366px width
+  - Full text restored on mobile (<769px) for touch-friendly interaction
+  - Breakpoints: Full text (>=1400px), Icon-only (769-1399px), Full text mobile (<769px)
+
+### Removed
+
+- **Copyright Popup Removed**
+  - Removed `static/js/license-warning.js` file
+  - Removed license warning script reference from `templates/editor.html`
+  - Copyright notice popup no longer appears on page load
+
+### Files Changed
+
+- `scripts/clear_pycache.sh` - Fixed line endings
+- `static/js/license-warning.js` - Deleted
+- `templates/editor.html` - Removed license warning script
+- `static/js/editor/node-palette-manager.js` - Added Chinese translations
+- `static/js/editor/toolbar-responsive.js` - Added icon-only AI button support
+- `static/css/editor-toolbar.css` - Added icon-only button styles
+
+---
+
 ## [4.28.75] - 2025-12-13 - Ubuntu Server Error Fixes & Copyright Standardization
 
 ### Fixed
