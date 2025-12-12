@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.73] - 2025-12-12 - License Warning Addition
+
+### Added
+
+- **License Warning Script**
+  - Added license warning script reference in editor template
+  - Displays copyright notice immediately on page load
+  - Ensures proper attribution and license compliance
+
+### Files Changed
+
+- `templates/editor.html` - Added license-warning.js script reference
+
+---
+
 ## [4.28.72] - 2025-12-12 - Mobile Experience Improvements
 
 ### Added
