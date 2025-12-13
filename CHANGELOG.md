@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.82] - 2025-12-13 - UI Improvements
+
+### Improved
+
+- **Circle Map Gallery Animation** (`templates/editor.html`, `static/css/editor.css`)
+  - Added outer ring enlargement as the final step of the hover animation
+  - Animation sequence: center pulse → bubbles 1-5 cascade → outer ring expands
+  - Creates a more complete visual effect with the ring "breathing" at the end
+
+- **Toolbar Layout Distribution** (`static/css/editor.css`)
+  - Fixed toolbar sections clustering to the left with MindMate stuck to the right
+  - Removed `margin-left: auto` from `.toolbar-right` so `justify-content: space-between` works correctly
+  - All 4 toolbar sections now spread evenly across the toolbar
+  - Mobile layout (multi-row) unchanged - MindMate still right-aligned on Row 3
+
+---
+
 ## [4.28.81] - 2025-12-13 - SMS Verification Security Fixes
 
 ### Fixed

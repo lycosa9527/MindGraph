@@ -1613,7 +1613,6 @@ body {
 
 .toolbar-right {
     flex-shrink: 0;
-    margin-left: auto;
 }
 
 .toolbar-group {
