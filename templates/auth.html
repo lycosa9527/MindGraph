@@ -272,6 +272,76 @@
             cursor: not-allowed;
         }
 
+        /* Forget Password Link */
+        .forget-password-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forget-password-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .forget-password-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        /* Back Link */
+        .back-link {
+            margin-bottom: 15px;
+        }
+
+        .back-link a {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .back-link a:hover {
+            color: #667eea;
+        }
+
+        /* Reset Title */
+        .reset-title {
+            color: #334155;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Resend Link */
+        .resend-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .resend-link a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .resend-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .resend-link a.disabled {
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        #resend-countdown {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
         /* Responsive */
         @media (max-width: 480px) {
             .auth-container {
@@ -361,6 +431,107 @@
                     <span class="lang-en">Login</span>
                 </button>
                 <div class="spinner" id="login-spinner"></div>
+                
+                <div class="forget-password-link">
+                    <a href="#" onclick="showResetPassword(event)">
+                        <span class="lang-zh">忘记密码？</span>
+                        <span class="lang-en">Forgot Password?</span>
+                    </a>
+                </div>
+            </form>
+            
+            <!-- Reset Password Form -->
+            <form id="reset-form" style="display: none;">
+                <div class="back-link">
+                    <a href="#" onclick="backToLogin(event)">
+                        <span class="lang-zh">← 返回登录</span>
+                        <span class="lang-en">← Back to Login</span>
+                    </a>
+                </div>
+                
+                <!-- Step 1: Phone + Captcha to send SMS -->
+                <div id="reset-step1">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">手机号</span>
+                            <span class="lang-en">Phone Number</span>
+                        </label>
+                        <input type="tel" class="form-input" name="phone" id="reset-phone"
+                               placeholder="输入注册手机号" maxlength="11" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">图形验证码</span>
+                            <span class="lang-en">Captcha</span>
+                        </label>
+                        <div class="captcha-group">
+                            <input type="text" class="form-input captcha-input" name="captcha" id="reset-captcha"
+                                   placeholder="输入验证码" maxlength="4" required>
+                            <img id="resetCaptchaImage" class="captcha-image" src="" alt="验证码" 
+                                 onclick="refreshResetCaptcha()" title="点击刷新">
+                        </div>
+                        <small class="hint-text">
+                            <span class="lang-zh">验证后发送短信验证码</span>
+                            <span class="lang-en">Verify to receive SMS code</span>
+                        </small>
+                        <input type="hidden" name="captcha_id" id="resetCaptchaId">
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="send-sms-btn" onclick="sendResetSMS()">
+                        <span class="lang-zh">发送短信验证码</span>
+                        <span class="lang-en">Send SMS Code</span>
+                    </button>
+                    <div class="spinner" id="sms-spinner"></div>
+                </div>
+                
+                <!-- Step 2: SMS Code + New Password -->
+                <div id="reset-step2" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">短信验证码</span>
+                            <span class="lang-en">SMS Code</span>
+                        </label>
+                        <input type="text" class="form-input" name="sms_code" id="reset-sms-code"
+                               placeholder="输入6位短信验证码" maxlength="6" required>
+                        <small class="hint-text">
+                            <span class="lang-zh" id="sms-sent-hint">验证码已发送至 <span id="masked-phone"></span></span>
+                            <span class="lang-en" id="sms-sent-hint-en">Code sent to <span id="masked-phone-en"></span></span>
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">新密码</span>
+                            <span class="lang-en">New Password</span>
+                        </label>
+                        <input type="password" class="form-input" name="new_password" id="reset-new-password"
+                               placeholder="输入新密码（至少8位）" minlength="8" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">确认密码</span>
+                            <span class="lang-en">Confirm Password</span>
+                        </label>
+                        <input type="password" class="form-input" name="confirm_password" id="reset-confirm-password"
+                               placeholder="再次输入新密码" minlength="8" required>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="reset-password-btn" onclick="resetPassword()">
+                        <span class="lang-zh">重置密码</span>
+                        <span class="lang-en">Reset Password</span>
+                    </button>
+                    <div class="spinner" id="reset-spinner"></div>
+                    
+                    <div class="resend-link">
+                        <a href="#" onclick="resendSMS(event)" id="resend-sms-link">
+                            <span class="lang-zh">重新发送验证码</span>
+                            <span class="lang-en">Resend Code</span>
+                        </a>
+                        <span id="resend-countdown" style="display: none;"></span>
+                    </div>
+                </div>
             </form>
 
             <!-- Register Form -->
@@ -862,6 +1033,299 @@
                 document.getElementById('register-spinner').style.display = 'none';
             }
         });
+
+        // ============================================================================
+        // RESET PASSWORD FUNCTIONS
+        // ============================================================================
+        
+        let resetPhone = '';
+        let resendCountdown = 0;
+        let countdownInterval = null;
+
+        // Show reset password form
+        function showResetPassword(event) {
+            event.preventDefault();
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('reset-form').style.display = 'block';
+            document.getElementById('reset-step1').style.display = 'block';
+            document.getElementById('reset-step2').style.display = 'none';
+            hideAlert();
+            refreshResetCaptcha();
+        }
+
+        // Back to login
+        function backToLogin(event) {
+            event.preventDefault();
+            document.getElementById('reset-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+            hideAlert();
+            // Clear reset form
+            document.getElementById('reset-phone').value = '';
+            document.getElementById('reset-captcha').value = '';
+            document.getElementById('reset-sms-code').value = '';
+            document.getElementById('reset-new-password').value = '';
+            document.getElementById('reset-confirm-password').value = '';
+            resetPhone = '';
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        // Refresh reset captcha
+        async function refreshResetCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            const errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                            showAlert(errorMsg, 'error');
+                        } else {
+                            showAlert(data.detail || 'Too many requests', 'error');
+                        }
+                    }
+                    return;
+                }
+                
+                document.getElementById('resetCaptchaImage').src = data.captcha_image;
+                document.getElementById('resetCaptchaId').value = data.captcha_id;
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
+            }
+        }
+
+        // Send reset SMS
+        async function sendResetSMS() {
+            hideAlert();
+            
+            const phone = document.getElementById('reset-phone').value.trim();
+            const captcha = document.getElementById('reset-captcha').value.trim();
+            const captchaId = document.getElementById('resetCaptchaId').value;
+            
+            // Validate phone
+            if (!/^1\d{10}$/.test(phone)) {
+                const msg = currentLang === 'zh' ? '请输入正确的11位手机号' : 'Please enter valid 11-digit phone number';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate captcha
+            if (!captcha || captcha.length !== 4) {
+                const msg = currentLang === 'zh' ? '请输入4位图形验证码' : 'Please enter 4-digit captcha';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // First verify captcha via login attempt (this consumes captcha)
+            // Actually, we'll send SMS directly - the backend will handle captcha-like rate limiting
+            
+            document.getElementById('send-sms-btn').disabled = true;
+            document.getElementById('sms-spinner').style.display = 'block';
+            
+            try {
+                // Send SMS verification code with captcha
+                const response = await fetch('/api/auth/sms/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        purpose: 'reset_password',
+                        captcha: captcha,
+                        captcha_id: captchaId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resetPhone = phone;
+                    
+                    // Show step 2
+                    document.getElementById('reset-step1').style.display = 'none';
+                    document.getElementById('reset-step2').style.display = 'block';
+                    
+                    // Show masked phone
+                    const maskedPhone = phone.substring(0, 3) + '****' + phone.substring(7);
+                    document.getElementById('masked-phone').textContent = maskedPhone;
+                    document.getElementById('masked-phone-en').textContent = maskedPhone;
+                    
+                    // Start resend countdown
+                    startResendCountdown(result.resend_after || 60);
+                    
+                    const msg = currentLang === 'zh' ? '验证码已发送' : 'Verification code sent';
+                    showAlert(msg, 'success');
+                } else {
+                    showAlert(result.detail || 'Failed to send SMS', 'error');
+                    refreshResetCaptcha();
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+                refreshResetCaptcha();
+            } finally {
+                document.getElementById('send-sms-btn').disabled = false;
+                document.getElementById('sms-spinner').style.display = 'none';
+            }
+        }
+
+        // Start resend countdown
+        function startResendCountdown(seconds) {
+            // Clear any existing interval to prevent multiple concurrent countdowns
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            resendCountdown = seconds;
+            const link = document.getElementById('resend-sms-link');
+            const countdown = document.getElementById('resend-countdown');
+            
+            link.style.display = 'none';
+            countdown.style.display = 'inline';
+            
+            const updateCountdown = () => {
+                if (resendCountdown > 0) {
+                    countdown.textContent = currentLang === 'zh' 
+                        ? `${resendCountdown}秒后可重新发送` 
+                        : `Resend in ${resendCountdown}s`;
+                    resendCountdown--;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    countdown.style.display = 'none';
+                    link.style.display = 'inline';
+                }
+            };
+            
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // Resend SMS - go back to step 1 with phone pre-filled for new captcha
+        async function resendSMS(event) {
+            event.preventDefault();
+            
+            if (!resetPhone) {
+                backToLogin(event);
+                return;
+            }
+            
+            // Clear any existing countdown interval to prevent orphaned intervals
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // Go back to step 1 with phone pre-filled
+            document.getElementById('reset-phone').value = resetPhone;
+            document.getElementById('reset-captcha').value = '';
+            document.getElementById('reset-step2').style.display = 'none';
+            document.getElementById('reset-step1').style.display = 'block';
+            
+            // Refresh captcha
+            refreshResetCaptcha();
+            
+            const msg = currentLang === 'zh' ? '请重新验证图形验证码' : 'Please verify captcha again';
+            showAlert(msg, 'info');
+        }
+
+        // Reset password
+        async function resetPassword() {
+            hideAlert();
+            
+            const smsCode = document.getElementById('reset-sms-code').value.trim();
+            const newPassword = document.getElementById('reset-new-password').value;
+            const confirmPassword = document.getElementById('reset-confirm-password').value;
+            
+            // Validate SMS code
+            if (!/^\d{6}$/.test(smsCode)) {
+                const msg = currentLang === 'zh' ? '请输入6位短信验证码' : 'Please enter 6-digit SMS code';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate password
+            if (newPassword.length < 8) {
+                const msg = currentLang === 'zh' ? '密码至少需要8个字符' : 'Password must be at least 8 characters';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate password match
+            if (newPassword !== confirmPassword) {
+                const msg = currentLang === 'zh' ? '两次输入的密码不一致' : 'Passwords do not match';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            document.getElementById('reset-password-btn').disabled = true;
+            document.getElementById('reset-spinner').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/auth/reset_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: resetPhone,
+                        sms_code: smsCode,
+                        new_password: newPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const msg = currentLang === 'zh' ? '密码重置成功！请使用新密码登录' : 'Password reset successful! Please login with new password';
+                    showAlert(msg, 'success');
+                    
+                    // Clear and go back to login after 2 seconds
+                    setTimeout(() => {
+                        backToLogin({ preventDefault: () => {} });
+                        refreshCaptcha();
+                    }, 2000);
+                } else {
+                    showAlert(result.detail || 'Password reset failed', 'error');
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+            } finally {
+                document.getElementById('reset-password-btn').disabled = false;
+                document.getElementById('reset-spinner').style.display = 'none';
+            }
+        }
+
+        // Update placeholders for reset form
+        function updateResetPlaceholders() {
+            if (currentLang === 'zh') {
+                document.getElementById('reset-phone').placeholder = '输入注册手机号';
+                document.getElementById('reset-captcha').placeholder = '输入验证码';
+                document.getElementById('reset-sms-code').placeholder = '输入6位短信验证码';
+                document.getElementById('reset-new-password').placeholder = '输入新密码（至少8位）';
+                document.getElementById('reset-confirm-password').placeholder = '再次输入新密码';
+            } else {
+                document.getElementById('reset-phone').placeholder = 'Enter registered phone';
+                document.getElementById('reset-captcha').placeholder = 'Enter captcha';
+                document.getElementById('reset-sms-code').placeholder = 'Enter 6-digit SMS code';
+                document.getElementById('reset-new-password').placeholder = 'New password (min 8 chars)';
+                document.getElementById('reset-confirm-password').placeholder = 'Confirm new password';
+            }
+        }
+
+        // Override updatePlaceholders to include reset form
+        const originalUpdatePlaceholders = updatePlaceholders;
+        updatePlaceholders = function() {
+            originalUpdatePlaceholders();
+            updateResetPlaceholders();
+        };
     </script>
 </body>
 </html>

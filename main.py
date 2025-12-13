@@ -752,6 +752,16 @@ async def lifespan(app: FastAPI):
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to flush TokenTracker: {e}")
         
+        # Shutdown SMS service (close httpx async client)
+        try:
+            from services.sms_service import shutdown_sms_service
+            await shutdown_sms_service()
+            if worker_id == '0' or not worker_id:
+                logger.info("SMS service shut down")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to shutdown SMS service: {e}")
+        
         # Cleanup Database
         try:
             from config.database import close_db

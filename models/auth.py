@@ -160,3 +160,40 @@ class Captcha(Base):
     expires_at = Column(DateTime, nullable=False)  # Expiration timestamp
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class SMSVerification(Base):
+    """
+    SMS Verification Code Storage
+    
+    Stores SMS verification codes for:
+    - Account registration
+    - SMS login
+    - Password reset
+    
+    Features:
+    - Time-limited codes (default 5 minutes)
+    - Rate limiting per phone number
+    - Purpose-based verification (register/login/reset_password)
+    - One-time use (marked as used after verification)
+    """
+    __tablename__ = "sms_verifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    phone = Column(String(20), nullable=False, index=True)  # Phone number
+    code = Column(String(10), nullable=False)  # 6-digit verification code
+    purpose = Column(String(20), nullable=False)  # register, login, reset_password
+    
+    # Status tracking
+    is_used = Column(Boolean, default=False)  # One-time use flag
+    attempts = Column(Integer, default=0)  # Failed verification attempts
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)  # Expiration timestamp
+    used_at = Column(DateTime, nullable=True)  # When code was successfully used
+    
+    # Composite index for efficient lookups
+    __table_args__ = (
+        UniqueConstraint('phone', 'code', 'purpose', name='uq_phone_code_purpose'),
+    )
+

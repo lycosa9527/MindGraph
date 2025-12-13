@@ -7,6 +7,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.81] - 2025-12-13 - SMS Verification Security Fixes
+
+### Fixed
+
+- **Rate Limit Bypass** (`routers/auth.py`)
+  - Fixed: Rate limit only counted non-expired or used codes, allowing bypass
+  - Now counts ALL codes created within the time window regardless of status
+
+- **SMS Code Wasted on Validation Failure** (`routers/auth.py`)
+  - Fixed: SMS code consumed before validating invitation code/org status
+  - Now validates all prerequisites BEFORE consuming the SMS code
+  - Applies to both `register_sms` and `login_sms` endpoints
+
+- **Race Condition in Code Consumption** (`routers/auth.py`)
+  - Fixed: `SELECT FOR UPDATE` silently ignored by SQLite
+  - Now uses atomic UPDATE with rowcount check for cross-database compatibility
+  - Works correctly on SQLite, PostgreSQL, and MySQL
+
+- **Unique Constraint Collision** (`routers/auth.py`)
+  - Fixed: Same 6-digit code regenerated could cause IntegrityError
+  - Now deletes conflicting old records before inserting new code
+
+- **SMS Sent Before Database Storage** (`routers/auth.py`)
+  - Fixed: If DB failed after SMS sent, user had unusable code
+  - Now stores code in DB first, sends SMS second
+  - Cleans up DB record if SMS sending fails
+
+### Security
+
+- Atomic UPDATE prevents double-consumption of SMS codes
+- Rate limiting counts all attempts, not just successful ones
+- Validation-first approach prevents code waste attacks
+- Database-first storage ensures code consistency
+
+---
+
+## [4.28.80] - 2025-12-13 - SMS Verification for Password Reset
+
+### Added
+
+- **SMS Verification System** (Tencent Cloud SMS)
+  - Native async implementation using `httpx` with HTTP/2 support
+  - TC3-HMAC-SHA256 signature for Tencent Cloud API authentication
+  - Support for three purposes: registration, login, password reset
+  - Configurable template parameters per purpose (1 or 2 params)
+
+- **Forget Password Feature** (`templates/auth.html`)
+  - "Forgot Password?" link on login form
+  - Two-step reset flow: send SMS code, then reset password
+  - 60-second resend countdown with bilingual support (EN/ZH)
+  - Password confirmation validation
+  - Masked phone number display
+
+- **SMS API Endpoints** (`routers/auth.py`)
+  - `POST /api/auth/sms/send` - Send verification code
+  - `POST /api/auth/sms/verify` - Verify code (standalone)
+  - `POST /api/auth/reset_password` - Reset password with SMS
+
+- **SMS Verification Database Model** (`models/auth.py`)
+  - `SMSVerification` table for code storage
+  - Fields: phone, code, purpose, is_used, attempts, expires_at
+  - One-time use enforcement with `is_used` flag
+  - Unique constraint on phone+code+purpose
+
+- **SMS Service** (`services/sms_service.py`)
+  - Native async HTTP calls (no SDK dependency)
+  - Full Tencent Cloud API v3 signature implementation
+  - Rate limiting: 60s cooldown, 5 codes/hour per phone
+  - 5-minute code expiration
+  - User-friendly error message translation
+
+- **Configuration** (`env.example`)
+  - `TENCENT_SMS_SECRET_ID` - Tencent Cloud API credentials
+  - `TENCENT_SMS_SECRET_KEY` - API secret for signing
+  - `TENCENT_SMS_SDK_APP_ID` - SMS application ID
+  - `TENCENT_SMS_SIGN_NAME` - Approved SMS signature
+  - `TENCENT_SMS_TEMPLATE_*` - Template IDs for each purpose
+  - `SMS_CODE_EXPIRY_MINUTES` - Code expiration (default: 5)
+  - `SMS_RESEND_INTERVAL_SECONDS` - Cooldown (default: 60)
+
+- **Request Models** (`models/requests.py`)
+  - `SendSMSCodeRequest` - Send SMS code request
+  - `VerifySMSCodeRequest` - Verify code request
+  - `RegisterWithSMSRequest` - SMS-based registration
+  - `LoginWithSMSRequest` - SMS-based login
+  - `ResetPasswordWithSMSRequest` - Password reset with SMS
+
+### Changed
+
+- Updated `requirements.txt`: `httpx[http2]>=0.28.0` for HTTP/2 support
+- Updated `config/database.py`: Import `SMSVerification` for auto-creation
+
+### Security
+
+- **Captcha verification required** for SMS send endpoint (anti-bot protection)
+- SMS codes are one-time use (marked as used after verification)
+- 5-minute expiration prevents stale code attacks
+- Rate limiting prevents SMS bombing (60s cooldown, 5/hour)
+- Purpose-specific codes (register code can't be used for reset)
+- Account automatically unlocked on successful password reset
+- Resend requires new captcha verification
+
+---
+
 ## [4.28.79] - 2025-12-13 - Diagram Placeholder Text Updates
 
 ### Changed

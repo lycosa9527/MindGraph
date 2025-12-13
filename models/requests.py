@@ -527,6 +527,207 @@ class DemoPasskeyRequest(BaseModel):
         }
 
 
+# ============================================================================
+# SMS VERIFICATION REQUEST MODELS
+# ============================================================================
+
+class SendSMSCodeRequest(BaseModel):
+    """Request model for sending SMS verification code"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    purpose: str = Field(..., description="Purpose: 'register', 'login', or 'reset_password'")
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone must contain only digits")
+        if len(v) != 11:
+            raise ValueError("Phone must be exactly 11 digits")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers start with 1")
+        return v
+    
+    @field_validator('purpose')
+    @classmethod
+    def validate_purpose(cls, v):
+        """Validate SMS purpose"""
+        valid_purposes = ['register', 'login', 'reset_password']
+        if v not in valid_purposes:
+            raise ValueError(f"Purpose must be one of: {', '.join(valid_purposes)}")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "purpose": "register",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session"
+            }
+        }
+
+
+class VerifySMSCodeRequest(BaseModel):
+    """Request model for verifying SMS code (standalone verification)"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+    purpose: str = Field(..., description="Purpose: 'register', 'login', or 'reset_password'")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone must contain only digits")
+        if len(v) != 11:
+            raise ValueError("Phone must be exactly 11 digits")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers start with 1")
+        return v
+    
+    @field_validator('code')
+    @classmethod
+    def validate_code(cls, v):
+        """Validate 6-digit SMS code"""
+        if not v.isdigit():
+            raise ValueError("Code must contain only digits")
+        if len(v) != 6:
+            raise ValueError("Code must be exactly 6 digits")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "code": "123456",
+                "purpose": "register"
+            }
+        }
+
+
+class RegisterWithSMSRequest(BaseModel):
+    """Request model for registration with SMS verification"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    name: str = Field(..., min_length=2, description="Teacher's name (required, min 2 chars, no numbers)")
+    invitation_code: str = Field(..., description="Invitation code for registration")
+    sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone must contain only digits")
+        if len(v) != 11:
+            raise ValueError("Phone must be exactly 11 digits")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers start with 1")
+        return v
+    
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        """Validate name has no numbers"""
+        if any(char.isdigit() for char in v):
+            raise ValueError("Name cannot contain numbers")
+        if len(v) < 2:
+            raise ValueError("Name must be at least 2 characters")
+        return v
+    
+    @field_validator('sms_code')
+    @classmethod
+    def validate_sms_code(cls, v):
+        """Validate 6-digit SMS code"""
+        if not v.isdigit():
+            raise ValueError("SMS code must contain only digits")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "password": "Teacher123!",
+                "name": "Zhang Wei",
+                "invitation_code": "DEMO2024",
+                "sms_code": "123456"
+            }
+        }
+
+
+class LoginWithSMSRequest(BaseModel):
+    """Request model for login with SMS verification"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone must contain only digits")
+        if len(v) != 11:
+            raise ValueError("Phone must be exactly 11 digits")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers start with 1")
+        return v
+    
+    @field_validator('sms_code')
+    @classmethod
+    def validate_sms_code(cls, v):
+        """Validate 6-digit SMS code"""
+        if not v.isdigit():
+            raise ValueError("SMS code must contain only digits")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "sms_code": "123456"
+            }
+        }
+
+
+class ResetPasswordWithSMSRequest(BaseModel):
+    """Request model for password reset with SMS verification"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone must contain only digits")
+        if len(v) != 11:
+            raise ValueError("Phone must be exactly 11 digits")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers start with 1")
+        return v
+    
+    @field_validator('sms_code')
+    @classmethod
+    def validate_sms_code(cls, v):
+        """Validate 6-digit SMS code"""
+        if not v.isdigit():
+            raise ValueError("SMS code must contain only digits")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "sms_code": "123456",
+                "new_password": "NewPassword123!"
+            }
+        }
+
+
 class FeedbackRequest(BaseModel):
     """Request model for /api/feedback endpoint"""
     message: str = Field(..., min_length=1, max_length=5000, description="Feedback message content")

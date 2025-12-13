@@ -25,8 +25,17 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from config.database import get_db
 from utils.invitations import normalize_or_generate, INVITE_PATTERN
-from models.auth import User, Organization
-from models.requests import RegisterRequest, LoginRequest, DemoPasskeyRequest
+from models.auth import User, Organization, SMSVerification
+from models.requests import (
+    RegisterRequest, 
+    LoginRequest, 
+    DemoPasskeyRequest,
+    SendSMSCodeRequest,
+    VerifySMSCodeRequest,
+    RegisterWithSMSRequest,
+    LoginWithSMSRequest,
+    ResetPasswordWithSMSRequest
+)
 from utils.auth import (
     hash_password,
     verify_password,
@@ -60,6 +69,13 @@ from utils.auth import (
     validate_bayi_token_body
 )
 from services.captcha_storage import get_captcha_storage
+from services.sms_service import (
+    get_sms_service, 
+    SMS_CODE_EXPIRY_MINUTES, 
+    SMS_RESEND_INTERVAL_SECONDS,
+    SMS_MAX_ATTEMPTS_PER_PHONE,
+    SMS_MAX_ATTEMPTS_WINDOW_HOURS
+)
 
 import logging
 
@@ -598,6 +614,515 @@ def verify_captcha(captcha_id: str, user_code: str) -> bool:
     Removes captcha after verification (one-time use)
     """
     return captcha_storage.verify_and_remove(captcha_id, user_code)
+
+
+# ============================================================================
+# SMS VERIFICATION
+# ============================================================================
+
+@router.post("/sms/send")
+async def send_sms_code(
+    request: SendSMSCodeRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Send SMS verification code
+    
+    Sends a 6-digit verification code via Tencent SMS.
+    
+    Security:
+    - Captcha verification required (bot protection)
+    
+    Purposes:
+    - register: For new user registration
+    - login: For SMS-based login
+    - reset_password: For password recovery
+    
+    Rate limiting:
+    - 60 seconds cooldown between requests for same phone/purpose
+    - Maximum 5 codes per hour per phone number
+    """
+    # Verify captcha first (anti-bot protection)
+    captcha_valid = verify_captcha(request.captcha_id, request.captcha)
+    if not captcha_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha expired, invalid, or incorrect. Please refresh."
+        )
+    
+    sms_service = get_sms_service()
+    
+    # Check if SMS service is available
+    if not sms_service.is_available:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="SMS service is not configured"
+        )
+    
+    phone = request.phone
+    purpose = request.purpose
+    
+    # For registration, check if phone already exists
+    if purpose == "register":
+        existing_user = db.query(User).filter(User.phone == phone).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Phone number already registered"
+            )
+    
+    # For login and reset_password, check if user exists
+    if purpose in ["login", "reset_password"]:
+        existing_user = db.query(User).filter(User.phone == phone).first()
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Phone number not registered"
+            )
+    
+    # Check rate limiting: cooldown between requests
+    now = datetime.utcnow()
+    cooldown_threshold = now - timedelta(seconds=SMS_RESEND_INTERVAL_SECONDS)
+    
+    recent_code = db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.purpose == purpose,
+        SMSVerification.created_at > cooldown_threshold,
+        SMSVerification.is_used == False
+    ).first()
+    
+    if recent_code:
+        wait_seconds = SMS_RESEND_INTERVAL_SECONDS - int((now - recent_code.created_at).total_seconds())
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Please wait {wait_seconds} seconds before requesting a new code"
+        )
+    
+    # Check rate limit within time window
+    # Count ALL codes created within the window to prevent rate limit bypass
+    # (users could otherwise request codes, let them expire, and request more)
+    window_start = now - timedelta(hours=SMS_MAX_ATTEMPTS_WINDOW_HOURS)
+    window_count = db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.created_at > window_start
+    ).count()
+    
+    if window_count >= SMS_MAX_ATTEMPTS_PER_PHONE:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many SMS requests. Please try again in {SMS_MAX_ATTEMPTS_WINDOW_HOURS} hour(s)."
+        )
+    
+    # Generate verification code first
+    code = sms_service.generate_code()
+    
+    # Store verification code in database BEFORE sending SMS
+    # This ensures the code is always verifiable if the user receives it.
+    # If we sent first and DB failed, user would have unusable code.
+    expires_at = now + timedelta(minutes=SMS_CODE_EXPIRY_MINUTES)
+    
+    # Delete any existing record with same (phone, code, purpose) to prevent
+    # IntegrityError from UniqueConstraint collision. This handles the case where
+    # the same 6-digit code is randomly generated again for the same phone/purpose.
+    db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.code == code,
+        SMSVerification.purpose == purpose
+    ).delete()
+    
+    sms_verification = SMSVerification(
+        phone=phone,
+        code=code,
+        purpose=purpose,
+        expires_at=expires_at,
+        created_at=now
+    )
+    db.add(sms_verification)
+    db.commit()
+    
+    # Now send the SMS with pre-generated code
+    success, message, _ = await sms_service.send_verification_code(phone, purpose, code=code)
+    
+    if not success:
+        # SMS sending failed - remove the database record since user won't receive the code
+        db.query(SMSVerification).filter(
+            SMSVerification.id == sms_verification.id
+        ).delete()
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=message
+        )
+    
+    logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
+    
+    return {
+        "message": "Verification code sent successfully",
+        "expires_in": SMS_CODE_EXPIRY_MINUTES * 60,  # in seconds
+        "resend_after": SMS_RESEND_INTERVAL_SECONDS  # in seconds
+    }
+
+
+@router.post("/sms/verify")
+async def verify_sms_code(
+    request: VerifySMSCodeRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify SMS code (standalone verification)
+    
+    Verifies the SMS code without performing any action.
+    Useful for frontend validation before form submission.
+    
+    Note: This does NOT consume the code - the actual action
+    endpoints (register_sms, login_sms, reset_password) will
+    consume it.
+    """
+    phone = request.phone
+    code = request.code
+    purpose = request.purpose
+    now = datetime.utcnow()
+    
+    # Find valid verification code
+    verification = db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.code == code,
+        SMSVerification.purpose == purpose,
+        SMSVerification.is_used == False,
+        SMSVerification.expires_at > now
+    ).order_by(SMSVerification.created_at.desc()).first()
+    
+    if not verification:
+        # Check if code exists but expired
+        expired = db.query(SMSVerification).filter(
+            SMSVerification.phone == phone,
+            SMSVerification.code == code,
+            SMSVerification.purpose == purpose,
+            SMSVerification.is_used == False
+        ).first()
+        
+        if expired and expired.expires_at <= now:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Verification code expired"
+            )
+        
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification code"
+        )
+    
+    # Increment attempt count (for tracking)
+    verification.attempts += 1
+    db.commit()
+    
+    return {
+        "valid": True,
+        "message": "Verification code is valid"
+    }
+
+
+def _verify_and_consume_sms_code(
+    phone: str, 
+    code: str, 
+    purpose: str, 
+    db: Session
+) -> bool:
+    """
+    Internal helper to verify and consume SMS code
+    
+    Returns True if valid, raises HTTPException if invalid
+    
+    Uses atomic UPDATE with rowcount check to prevent race conditions.
+    This approach works with both SQLite (which ignores SELECT FOR UPDATE)
+    and PostgreSQL/MySQL. Only one concurrent request can succeed.
+    """
+    now = datetime.utcnow()
+    
+    # Use atomic UPDATE with WHERE conditions to prevent race conditions
+    # Only one concurrent request will get rowcount=1, others get rowcount=0
+    # This works on SQLite (which ignores SELECT FOR UPDATE) and PostgreSQL/MySQL
+    result = db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.code == code,
+        SMSVerification.purpose == purpose,
+        SMSVerification.is_used == False,
+        SMSVerification.expires_at > now
+    ).update(
+        {
+            SMSVerification.is_used: True,
+            SMSVerification.used_at: now
+        },
+        synchronize_session=False
+    )
+    db.commit()
+    
+    # If rowcount is 1, we successfully consumed the code
+    # If rowcount is 0, either code doesn't exist, is expired, or was already consumed
+    if result == 1:
+        return True
+    
+    # Code was not consumed - provide appropriate error message
+    # Check if code exists but expired (for better error message)
+    expired = db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.code == code,
+        SMSVerification.purpose == purpose,
+        SMSVerification.is_used == False
+    ).first()
+    
+    if expired and expired.expires_at <= now:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification code expired"
+        )
+    
+    # Check if code was already used (race condition - another request consumed it)
+    already_used = db.query(SMSVerification).filter(
+        SMSVerification.phone == phone,
+        SMSVerification.code == code,
+        SMSVerification.purpose == purpose,
+        SMSVerification.is_used == True
+    ).first()
+    
+    if already_used:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification code already used"
+        )
+    
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid verification code"
+    )
+
+
+@router.post("/register_sms")
+async def register_with_sms(
+    request: RegisterWithSMSRequest,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Register new user with SMS verification
+    
+    Alternative to captcha-based registration.
+    Requires a valid SMS verification code.
+    
+    Validates:
+    - 11-digit Chinese mobile number
+    - 8+ character password
+    - Mandatory name (no numbers)
+    - Valid invitation code
+    - SMS verification code (consumed last to avoid wasting codes)
+    """
+    # Validate all prerequisites BEFORE consuming SMS code
+    # This prevents wasting codes on validation failures
+    
+    # Check if phone already exists
+    existing_user = db.query(User).filter(User.phone == request.phone).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Phone number already registered"
+        )
+    
+    # Find organization by invitation code
+    provided_invite = (request.invitation_code or "").strip().upper()
+    if not provided_invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invitation code is required"
+        )
+    
+    org = db.query(Organization).filter(
+        Organization.invitation_code == provided_invite
+    ).first()
+    
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or expired invitation code"
+        )
+    
+    # All validations passed - now consume the SMS code
+    _verify_and_consume_sms_code(
+        request.phone, 
+        request.sms_code, 
+        "register", 
+        db
+    )
+    
+    logger.debug(f"User registering with SMS for organization: {org.code} ({org.name})")
+    
+    # Create new user
+    new_user = User(
+        phone=request.phone,
+        password_hash=hash_password(request.password),
+        name=request.name,
+        organization_id=org.id,
+        created_at=datetime.utcnow()
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    # Generate JWT token
+    token = create_access_token(new_user)
+    
+    # Set token as HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60  # 7 days
+    )
+    
+    logger.info(f"User registered via SMS: {new_user.phone} (Org: {org.code})")
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": new_user.id,
+            "phone": new_user.phone,
+            "name": new_user.name,
+            "organization": org.name
+        }
+    }
+
+
+@router.post("/login_sms")
+async def login_with_sms(
+    request: LoginWithSMSRequest,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Login with SMS verification
+    
+    Alternative to password-based login.
+    Requires a valid SMS verification code.
+    
+    Benefits:
+    - No password required
+    - Bypasses account lockout
+    - Quick verification
+    """
+    # Validate all prerequisites BEFORE consuming SMS code
+    # This prevents wasting codes on validation failures
+    
+    # Find user first
+    user = db.query(User).filter(User.phone == request.phone).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Phone number not registered"
+        )
+    
+    # Get organization and check status BEFORE consuming code
+    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    
+    # Check organization status
+    if org:
+        is_active = org.is_active if hasattr(org, 'is_active') else True
+        if not is_active:
+            logger.warning(f"SMS login blocked: Organization {org.code} is locked")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organization account is locked. Please contact support."
+            )
+        
+        if hasattr(org, 'expires_at') and org.expires_at:
+            if org.expires_at < datetime.utcnow():
+                logger.warning(f"SMS login blocked: Organization {org.code} expired")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Organization subscription has expired. Please contact support."
+                )
+    
+    # All validations passed - now consume the SMS code
+    _verify_and_consume_sms_code(
+        request.phone,
+        request.sms_code,
+        "login",
+        db
+    )
+    
+    # Reset any failed attempts (SMS login is verified)
+    reset_failed_attempts(user, db)
+    
+    # Generate JWT token
+    token = create_access_token(user)
+    
+    # Set token as HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    logger.info(f"User logged in via SMS: {user.phone}")
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "phone": user.phone,
+            "name": user.name,
+            "organization": org.name if org else None
+        }
+    }
+
+
+@router.post("/reset_password")
+async def reset_password_with_sms(
+    request: ResetPasswordWithSMSRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset password with SMS verification
+    
+    Allows users to reset their password using SMS verification.
+    Also unlocks the account if it was locked.
+    """
+    # Find user
+    user = db.query(User).filter(User.phone == request.phone).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Phone number not registered"
+        )
+    
+    # Verify SMS code
+    _verify_and_consume_sms_code(
+        request.phone,
+        request.sms_code,
+        "reset_password",
+        db
+    )
+    
+    # Update password
+    user.password_hash = hash_password(request.new_password)
+    user.failed_login_attempts = 0  # Unlock account
+    user.locked_until = None
+    db.commit()
+    
+    logger.info(f"Password reset via SMS for user: {user.phone}")
+    
+    return {
+        "message": "Password reset successfully",
+        "phone": user.phone[:3] + "****" + user.phone[-4:]
+    }
 
 
 # ============================================================================
