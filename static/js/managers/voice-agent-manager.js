@@ -275,6 +275,33 @@ class VoiceAgentManager {
         if (this.isVoiceActive) return;
         
         try {
+            // Check if MediaDevices API is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const isSecureContext = window.isSecureContext || location.protocol === 'https:';
+                const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                let errorMessage = 'Microphone access is not available. ';
+                
+                if (!isSecureContext && !isLocalhost) {
+                    // IP address over HTTP - needs HTTPS
+                    errorMessage += 'Voice input requires HTTPS when accessing via IP address. ';
+                    errorMessage += 'Solutions: 1) Use HTTPS (recommended), 2) Use localhost for testing, or 3) Use a reverse proxy with SSL.';
+                } else if (!isSecureContext && isLocalhost) {
+                    // localhost over HTTP - should work but might not in some browsers
+                    errorMessage += 'Voice input may not work over HTTP. Please use HTTPS or ensure your browser allows getUserMedia on localhost.';
+                } else if (!navigator.mediaDevices) {
+                    errorMessage += 'Your browser does not support the MediaDevices API.';
+                } else {
+                    errorMessage += 'getUserMedia is not available in your browser.';
+                }
+                
+                this.logger.error('VoiceAgentManager', errorMessage);
+                if (this.comicBubble) {
+                    this.comicBubble.setVoiceActive(false);
+                    this.comicBubble.addMessage(errorMessage, 'agent');
+                }
+                throw new Error(errorMessage);
+            }
+            
             // Ensure conversation is active
             if (!this.isActive) {
                 await this.startConversation();
@@ -311,6 +338,15 @@ class VoiceAgentManager {
             
             if (this.comicBubble) {
                 this.comicBubble.setVoiceActive(false);
+                // Only show error message if it's not already shown above
+                if (!error.message || !error.message.includes('Microphone access is not available')) {
+                    const errorMessage = error.name === 'NotAllowedError' 
+                        ? 'Microphone permission denied. Please allow microphone access in your browser settings.'
+                        : error.name === 'NotFoundError'
+                        ? 'No microphone found. Please connect a microphone and try again.'
+                        : 'Failed to access microphone: ' + (error.message || error.toString());
+                    this.comicBubble.addMessage(errorMessage, 'agent');
+                }
             }
         }
     }

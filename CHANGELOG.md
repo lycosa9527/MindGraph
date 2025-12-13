@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.84] - 2025-12-13 - Dependency Fixes & Voice Input HTTPS Support
+
+### Fixed
+
+- **LangChain Dependency Version Conflicts** (`requirements.txt`)
+  - Fixed: `langchain-core>=0.3.72` conflicted with LangChain 1.x (requires >=1.0.0)
+  - Fixed: `langgraph>=0.2.60` conflicted with LangChain 1.x (requires >=1.0.0)
+  - Updated constraints to ensure compatibility with LangChain 1.x ecosystem
+  - Impact: Resolves `langchain-openai` dependency conflicts on Ubuntu server
+
+- **Voice Input Microphone Access Error** (`static/js/managers/voice-agent-manager.js`)
+  - Fixed: `TypeError: Cannot read properties of undefined (reading 'getUserMedia')`
+  - Added proper check for `navigator.mediaDevices` before accessing `getUserMedia()`
+  - Detects HTTP vs HTTPS context and provides helpful error messages
+  - Impact: Users get clear error messages instead of crashes when microphone access fails
+
+- **Removed Unused passlib Dependency** (`requirements.txt`, `scripts/setup.py`)
+  - Removed: `passlib>=1.7.4` (was replaced by direct bcrypt usage in v4.12.0)
+  - Updated setup script to reflect removal
+  - Impact: Cleaner dependencies, avoids potential compatibility issues
+
+### Added
+
+- **Comprehensive Package Review** (`docs/PACKAGE_REVIEW.md`)
+  - Complete analysis of all 30+ Python dependencies
+  - Security vulnerability assessment (FastAPI XSS, LangChain file access)
+  - Version compatibility analysis
+  - Usage verification for each package
+  - Recommendations for updates and best practices
+  - Impact: Better dependency management and security awareness
+
+- **HTTPS Setup Guide for Voice Input** (`docs/HTTPS_SETUP_FOR_VOICE.md`)
+  - Step-by-step guide for setting up HTTPS with Nginx + Let's Encrypt
+  - Self-signed certificate instructions for testing
+  - ngrok tunnel solution for quick testing
+  - Troubleshooting guide
+  - Impact: Helps users enable microphone access on production servers
+
+- **langchain-openai Dependency** (`requirements.txt`)
+  - Added: `langchain-openai>=0.1.0` (compatible with LangChain 1.x)
+  - Explicitly pinned to avoid conflicts with `langchain-core 1.2.0`
+  - Impact: Prevents dependency resolution conflicts
+
+### Improved
+
+- **Voice Input Error Messages** (`static/js/managers/voice-agent-manager.js`)
+  - Enhanced error detection for different failure scenarios:
+    - HTTP access (requires HTTPS)
+    - Browser doesn't support MediaDevices API
+    - Permission denied
+    - No microphone found
+  - Provides actionable solutions in error messages
+  - Impact: Better user experience when microphone access fails
+
+- **Dependency Documentation** (`requirements.txt`)
+  - Added security notes for FastAPI (CVE-2025-53528, CVE-2025-54073)
+  - Added review comments for potentially unused packages
+  - Better version constraint comments explaining fixes
+  - Impact: Easier maintenance and security awareness
+
+### Technical Details
+
+- **LangChain Ecosystem Compatibility**: All LangChain packages now use compatible 1.x versions
+- **HTTPS Requirement**: `getUserMedia()` requires secure context (HTTPS) except for localhost
+- **Error Handling**: Voice agent now gracefully handles missing MediaDevices API with helpful messages
+
+---
+
 ## [4.28.83] - 2025-12-13 - Voice Agent Connection Lifecycle Fixes
 
 ### Fixed
