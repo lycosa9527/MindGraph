@@ -783,8 +783,9 @@ app = FastAPI(
     title="MindGraph API",
     description="AI-Powered Graph Generation with FastAPI + Uvicorn",
     version=config.VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    # Disable Swagger UI in production for security (only enable in DEBUG mode)
+    docs_url="/docs" if config.DEBUG else None,
+    redoc_url="/redoc" if config.DEBUG else None,
     lifespan=lifespan
 )
 
@@ -834,6 +835,7 @@ async def add_security_headers(request: Request, call_next):
     - 'unsafe-eval': Required for D3.js library (data transformations)
     - ws:/wss:: Required for VoiceAgent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
+    - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
     
     Reviewed: 2025-10-26 - All directives verified against actual codebase
     """
@@ -850,17 +852,33 @@ async def add_security_headers(request: Request, call_next):
     
     # Content Security Policy (controls what resources can load)
     # Tailored specifically for MindGraph's architecture
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data: http: https: blob:; "
-        "font-src 'self' data:; "
-        "connect-src 'self' ws: wss: blob:; "
-        "frame-ancestors 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self';"
-    )
+    # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
+    if config.DEBUG:
+        # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: http: https: blob: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
+            "font-src 'self' data: https://cdn.jsdelivr.net; "
+            "connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+    else:
+        # Production: Strict CSP without external CDN access
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: http: https: blob:; "
+            "font-src 'self' data:; "
+            "connect-src 'self' ws: wss: blob:; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
     
     # Referrer Policy (controls info sent in Referer header)
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

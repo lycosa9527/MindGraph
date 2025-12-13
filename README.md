@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.12.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.28.81-brightgreen.svg)](CHANGELOG.md)
 [![Built with Cursor](https://img.shields.io/badge/Built%20with-Cursor%20AI-blueviolet.svg)](https://cursor.sh)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -24,10 +24,12 @@ Transform natural language into professional visual diagrams. **API-first platfo
 > **中文:** 这个**完整的企业级应用**由一个**零编程知识**的人使用 [Cursor AI](https://cursor.sh)（AI驱动的代码编辑器）创建。从FastAPI后端到交互式前端，从数据库设计到API安全，**一切都通过AI结对编程完成**。这个项目证明了在AI时代，**任何有愿景和想法的人都可以构建专业软件**，无论技术背景如何。
 >
 > **Key Achievement | 关键成就:**
-> - ✅ **6,900+ lines** of production code | **6,900+行**生产代码
-> - ✅ **15 files modified** for security system | **15个文件**的安全系统
+> - ✅ **113,700+ lines** of production code | **113,700+行**生产代码
+> - ✅ **230+ files** in the codebase | **230+个文件**的代码库
 > - ✅ **4,000+ concurrent connections** supported | 支持**4,000+并发连接**
 > - ✅ **10 diagram types** with AI generation | **10种图表类型**的AI生成
+> - ✅ **9 thinking tools** for deep analysis | **9种思考工具**深度分析
+> - ✅ **Voice input** with real-time recognition | **语音输入**实时识别
 > - ✅ **Bilingual** English/Chinese support | **双语**中英文支持
 > - ✅ **100% AI-assisted development** | **100% AI辅助开发**
 
@@ -40,10 +42,29 @@ Transform natural language into professional visual diagrams. **API-first platfo
 - **Mind Map | 思维导图**: Radial brainstorming and concept organization | 放射状头脑风暴和概念组织
 - **Concept Map | 概念图**: Advanced relationship mapping | 高级关系映射
 
+### 🧠 9 Thinking Tools | 9种思考工具
+- **5W1H Analysis | 5W1H分析**: Who, What, When, Where, Why, How
+- **Four Quadrant | 四象限分析**: Priority and decision matrix | 优先级和决策矩阵
+- **Three Position | 三角分析**: Multi-perspective analysis | 多视角分析
+- **WHWM Analysis | WHWM分析**: What, How, Why, Meaning
+- **Factor Analysis | 因素分析**: Root cause identification | 根本原因识别
+- **Goal Analysis | 目标分析**: Objective breakdown | 目标分解
+- **Possibility Analysis | 可能性分析**: Option exploration | 方案探索
+- **Result Analysis | 结果分析**: Outcome evaluation | 结果评估
+- **Perspective Analysis | 角度分析**: Viewpoint comparison | 观点对比
+
 ### 🤖 AI-Powered Generation | AI驱动生成
 - **Smart Classification | 智能分类**: Auto-detect diagram type from natural language | 从自然语言自动检测图表类型
 - **Multi-LLM Support | 多LLM支持**: Qwen, DeepSeek, Kimi, Hunyuan
+- **Node Palette | 节点调色板**: AI-suggested nodes with streaming batches | AI推荐节点流式批次
+- **Auto-Complete | 智能补全**: Context-aware diagram completion | 上下文感知图表补全
+- **Math & Chemical Formulas | 数学和化学公式**: LaTeX and chemical equation rendering | LaTeX和化学方程式渲染
 - **Bilingual | 双语**: Perfect Chinese/English support | 完美中英文支持
+
+### 🎤 Voice Input | 语音输入
+- **Real-time Recognition | 实时识别**: Browser-based speech-to-text | 浏览器语音转文字
+- **Voice-to-Diagram | 语音生成图表**: Speak your idea, get a diagram | 说出想法，生成图表
+- **Hands-free Editing | 免提编辑**: Voice commands for node editing | 语音命令编辑节点
 
 ### 🎓 Education Features | 教育功能
 - **Interactive Learning Mode | 交互式学习模式**: AI tutor with real-time validation | AI导师实时验证
@@ -53,12 +74,19 @@ Transform natural language into professional visual diagrams. **API-first platfo
 ### 🔐 Secure Authentication | 安全认证
 - **API Key Authentication | API密钥认证**: For external services (Dify, partners) | 用于外部服务（Dify、合作伙伴）
 - **JWT Token Authentication | JWT令牌认证**: For authenticated users | 用于已认证用户
+- **SMS Verification | 短信验证**: Secure phone-based authentication | 安全的手机验证
 - **Admin Panel | 管理面板**: Complete API key management | 完整的API密钥管理
+
+### 💾 Database & Backup | 数据库和备份
+- **Automated Backups | 自动备份**: Daily scheduled backups with retention policy | 每日定时备份与保留策略
+- **Recovery Wizard | 恢复向导**: Interactive database recovery system | 交互式数据库恢复系统
+- **Data Anomaly Detection | 数据异常检测**: Detects significant data loss | 检测重大数据丢失
 
 ### ⚡ Performance | 性能表现
 - **Async Architecture | 异步架构**: 4,000+ concurrent connections | 4,000+并发连接
 - **Fast Response | 快速响应**: Average 8.7s end-to-end | 平均8.7秒端到端
 - **Production Ready | 生产就绪**: FastAPI + Uvicorn ASGI
+- **systemd Support | systemd支持**: One-command Linux deployment | 一键Linux部署
 
 ---
 
@@ -323,7 +351,10 @@ docker-compose -f docker/docker-compose.yml up -d
 ## 📚 Documentation
 
 - [**API Reference**](docs/API_REFERENCE.md) - Complete API documentation with bilingual examples
-- [**API Key Security**](docs/API_KEY_SECURITY_IMPLEMENTATION.md) - Security implementation guide
+- [**API Key Authentication**](docs/API_KEY_AUTHENTICATION_GUIDE.md) - Security implementation guide
+- [**Math & Chemical Formulas**](docs/MATH_CHEMICAL_IMPLEMENTATION_GUIDE.md) - LaTeX and chemical equation guide
+- [**Drag & Drop Swap**](docs/DRAG_AND_DROP_SWAP_FEATURE.md) - Node swap feature documentation
+- [**Auto-Complete Cache**](docs/AUTO_COMPLETE_CACHE_FRAMEWORK.md) - Cache framework documentation
 - [**Changelog**](CHANGELOG.md) - Version history and updates
 
 ---
@@ -341,6 +372,7 @@ python test_all_agents.py production
 
 **Test Coverage | 测试覆盖:**
 - 10 diagram types with diverse topics | 10种图表类型及多样化主题
+- 9 thinking tools with analysis scenarios | 9种思考工具及分析场景
 - Concurrent request handling | 并发请求处理
 - PNG generation validation | PNG生成验证
 - Performance benchmarking | 性能基准测试

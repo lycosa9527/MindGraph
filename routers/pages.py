@@ -100,10 +100,34 @@ async def index(request: Request, db: Session = Depends(get_db)):
         raise
 
 @router.get("/debug", response_class=HTMLResponse)
-async def debug(request: Request):
-    """Debug page - debug.html"""
+async def debug(request: Request, db: Session = Depends(get_db)):
+    """
+    Debug page - debug.html
+    
+    Security: Only accessible in DEBUG mode OR by authenticated admin users.
+    Non-admin users and unauthenticated requests in production are redirected.
+    """
     try:
-        return templates.TemplateResponse("debug.html", {"request": request, "version": get_app_version()})
+        # Allow access in DEBUG mode (development environment)
+        if config.DEBUG:
+            return templates.TemplateResponse("debug.html", {"request": request, "version": get_app_version()})
+        
+        # In production, require admin authentication
+        auth_cookie = request.cookies.get("access_token")
+        if auth_cookie:
+            user = get_user_from_cookie(auth_cookie, db)
+            if user and is_admin(user):
+                logger.debug(f"Admin {user.phone} accessing /debug in production mode")
+                return templates.TemplateResponse("debug.html", {"request": request, "version": get_app_version()})
+        
+        # Not authorized - redirect to appropriate page based on AUTH_MODE
+        logger.warning(f"Unauthorized /debug access attempt from {request.client.host}")
+        if AUTH_MODE in ["demo", "bayi"]:
+            return RedirectResponse(url="/demo", status_code=303)
+        elif AUTH_MODE == "standard":
+            return RedirectResponse(url="/auth", status_code=303)
+        else:
+            return RedirectResponse(url="/editor", status_code=303)
     except Exception as e:
         logger.error(f"/debug route failed: {e}", exc_info=True)
         raise
@@ -257,77 +281,19 @@ async def editor(request: Request, db: Session = Depends(get_db)):
         logger.error(f"/editor route failed: {e}", exc_info=True)
         raise
 
-@router.get("/style-demo", response_class=HTMLResponse)
-async def style_demo(request: Request):
-    """Style demonstration - style-demo.html"""
-    try:
-        return templates.TemplateResponse("style-demo.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/style-demo route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/test_style_manager", response_class=HTMLResponse)
-async def test_style_manager(request: Request):
-    """Test style manager - test_style_manager.html"""
-    try:
-        return templates.TemplateResponse("test_style_manager.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/test_style_manager route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/test_png_generation", response_class=HTMLResponse)
-async def test_png_generation(request: Request):
-    """Test PNG generation - test_png_generation.html"""
-    try:
-        return templates.TemplateResponse("test_png_generation.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/test_png_generation route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/simple_test", response_class=HTMLResponse)
-async def simple_test(request: Request):
-    """Simple test page - simple_test.html"""
-    try:
-        return templates.TemplateResponse("simple_test.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/simple_test route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/test_browser", response_class=HTMLResponse)
-async def browser_test(request: Request):
-    """Browser rendering test - test_browser_rendering.html"""
-    try:
-        return templates.TemplateResponse("test_browser_rendering.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/test_browser route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/test_bubble_map", response_class=HTMLResponse)
-async def bubble_map_test(request: Request):
-    """Bubble map styling test - test_bubble_map_styling.html"""
-    try:
-        return templates.TemplateResponse("test_bubble_map_styling.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/test_bubble_map route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/debug_theme_conversion", response_class=HTMLResponse)
-async def debug_theme_conversion(request: Request):
-    """Debug theme conversion - debug_theme_conversion.html"""
-    try:
-        return templates.TemplateResponse("debug_theme_conversion.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/debug_theme_conversion route failed: {e}", exc_info=True)
-        raise
-
-@router.get("/timing_stats", response_class=HTMLResponse)
-async def timing_stats(request: Request):
-    """Timing statistics - timing_stats.html"""
-    try:
-        return templates.TemplateResponse("timing_stats.html", {"request": request})
-    except Exception as e:
-        logger.error(f"/timing_stats route failed: {e}", exc_info=True)
-        raise
+# ============================================================================
+# REMOVED TEST ROUTES (Templates no longer exist)
+# ============================================================================
+# The following test routes were removed as their templates no longer exist:
+# - /style-demo (style-demo.html)
+# - /test_style_manager (test_style_manager.html)
+# - /test_png_generation (test_png_generation.html)
+# - /simple_test (simple_test.html)
+# - /test_browser (test_browser_rendering.html)
+# - /test_bubble_map (test_bubble_map_styling.html)
+# - /debug_theme_conversion (debug_theme_conversion.html)
+# - /timing_stats (timing_stats.html)
+# These were development-only routes that are no longer needed.
 
 # ============================================================================
 # AUTHENTICATION ROUTES
@@ -662,5 +628,5 @@ async def admin_page(request: Request, db: Session = Depends(get_db)):
 # Only log from main worker to avoid duplicate messages
 import os
 if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
-    logger.debug("Page routes initialized: 14 routes registered (11 legacy + 3 auth)")
+    logger.debug("Page routes initialized: 6 routes registered")
 
