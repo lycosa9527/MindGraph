@@ -996,19 +996,13 @@
                 }
                 window.blackCat = blackCat;
                 
-                // Initialize VoiceAgent
+                // Initialize VoiceAgent (handles black cat click internally)
                 const voiceAgent = new VoiceAgentManager(window.eventBus, window.stateManager, window.logger);
                 voiceAgent.init();
                 window.voiceAgent = voiceAgent;
                 
-                // Connect black cat click to voice agent
-                blackCat.onClick = async () => {
-                    if (!voiceAgent.isActive) {
-                        await voiceAgent.startConversation();
-                    } else {
-                        await voiceAgent.stopConversation();
-                    }
-                };
+                // Note: VoiceAgentManager sets blackCat.onClick to toggle chat window
+                // No need to set it again here
                 
                 window.logger.info('App', 'VoiceAgent and BlackCat initialized');
             } else {

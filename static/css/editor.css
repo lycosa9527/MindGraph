@@ -3977,27 +3977,8 @@ body {
     }
 }
 
-/* ========== Black Cat VoiceAgent ========== */
-.black-cat-container {
-    position: fixed;
-    bottom: 80px;  /* Moved up from 20px to clear status bar */
-    left: 30px;
-    width: 120px;  /* Increased from 80px */
-    height: 120px;  /* Increased from 80px */
-    cursor: pointer;
-    z-index: 9999;
-    transition: transform 0.3s ease, filter 0.3s ease;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
-}
-
-.black-cat-container:hover {
-    transform: scale(1.15);  /* Slightly more scale on hover */
-    filter: drop-shadow(0 8px 20px rgba(102, 126, 234, 0.5));
-}
-
-.black-cat-container:active {
-    transform: scale(0.95);
-}
+/* ========== Kitty VoiceAgent Mascot ========== */
+/* NOTE: All kitty styles are now in comic-bubble.css */
 
 /* ========== Flow Map Orientation Controls ========== */
 .flow-map-controls {

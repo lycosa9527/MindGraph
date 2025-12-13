@@ -721,7 +721,7 @@ class Config:
     @property
     def QWEN_OMNI_MODEL(self) -> str:
         """Qwen Omni model name"""
-        return self._get_cached_value('QWEN_OMNI_MODEL', 'qwen3-omni-flash-realtime')
+        return self._get_cached_value('QWEN_OMNI_MODEL', 'qwen3-omni-flash-realtime-2025-12-01')
     
     @property
     def QWEN_OMNI_VOICE(self) -> str:
@@ -735,8 +735,8 @@ class Config:
     
     @property
     def QWEN_OMNI_VAD_SILENCE_MS(self) -> int:
-        """Qwen Omni VAD silence duration (ms)"""
-        return int(self._get_cached_value('QWEN_OMNI_VAD_SILENCE_MS', '800'))
+        """Qwen Omni VAD silence duration (ms) - time to wait after user stops speaking"""
+        return int(self._get_cached_value('QWEN_OMNI_VAD_SILENCE_MS', '1200'))
     
     @property
     def QWEN_OMNI_VAD_PREFIX_MS(self) -> int:

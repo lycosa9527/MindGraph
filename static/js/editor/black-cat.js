@@ -1,6 +1,6 @@
 /**
- * Black Cat VoiceAgent Character
- * Animated visual representation of VoiceAgent
+ * Kitty - MindGraph Mascot & VoiceAgent Character
+ * SVG-based animated visual representation of VoiceAgent
  * 
  * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
  * All Rights Reserved
@@ -14,18 +14,9 @@
 class BlackCat {
     constructor() {
         this.container = null;
-        this.canvas = null;
-        this.ctx = null;
+        this.svgElement = null;
         this.state = 'idle';  // idle, listening, thinking, speaking, celebrating, error
-        this.animationFrame = null;
         this.onClick = null;
-        
-        // Animation parameters
-        this.breatheOffset = 0;
-        this.blinkTimer = 0;
-        this.earAngle = 0;
-        this.mouthOpen = 0;
-        this.sparkles = [];
         
         this.logger = window.logger || console;
     }
@@ -34,16 +25,11 @@ class BlackCat {
         // Create container
         this.container = document.createElement('div');
         this.container.className = 'black-cat-container';
-        this.container.title = 'Click me to talk';
+        this.container.title = '点我开始对话';
         
-        // Create canvas
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = 240;  // 2x for retina
-        this.canvas.height = 240;  // 2x for retina
-        this.canvas.style.width = '120px';
-        this.canvas.style.height = '120px';
-        
-        this.ctx = this.canvas.getContext('2d');
+        // Create SVG
+        this.container.innerHTML = this._getSVG();
+        this.svgElement = this.container.querySelector('svg');
         
         // Add click handler
         this.container.addEventListener('click', () => {
@@ -52,329 +38,220 @@ class BlackCat {
             }
         });
         
-        this.container.appendChild(this.canvas);
         parentElement.appendChild(this.container);
         
-        // Start animation
-        this.animate();
-        
-        this.logger.info('BlackCat', 'Initialized');
+        this.logger.info('BlackCat', 'Kitty mascot initialized');
     }
     
-    animate() {
-        this.animationFrame = requestAnimationFrame(() => this.animate());
-        
-        this.ctx.clearRect(0, 0, 240, 240);
-        
-        // Enable antialiasing for smoother rendering
-        this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = 'high';
-        
-        switch (this.state) {
-            case 'idle':
-                this.drawIdle();
-                break;
-            case 'listening':
-                this.drawListening();
-                break;
-            case 'thinking':
-                this.drawThinking();
-                break;
-            case 'speaking':
-                this.drawSpeaking();
-                break;
-            case 'celebrating':
-                this.drawCelebrating();
-                break;
-            case 'error':
-                this.drawError();
-                break;
-        }
-    }
-    
-    drawIdle() {
-        const ctx = this.ctx;
-        const centerX = 120;  // Scaled for 240px canvas
-        const centerY = 135;  // Scaled for 240px canvas
-        
-        this.breatheOffset = Math.sin(Date.now() / 1000) * 2;
-        
-        // Body
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.ellipse(centerX, centerY + this.breatheOffset, 52, 60, 0, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        // Head
-        ctx.beginPath();
-        ctx.arc(centerX, centerY - 52 + this.breatheOffset, 45, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        // Ears
-        this.drawEars(centerX, centerY - 52 + this.breatheOffset, 0);
-        
-        // Eyes
-        this.blinkTimer++;
-        const eyeOpen = this.blinkTimer % 200 < 195 ? 1 : 0;
-        this.drawEyes(centerX, centerY - 52 + this.breatheOffset, eyeOpen);
-        
-        // Nose
-        this.drawNose(centerX, centerY - 48 + this.breatheOffset);
-        
-        // Tail
-        this.drawTail(centerX + 45, centerY + 30, 0);
-    }
-    
-    drawListening() {
-        const ctx = this.ctx;
-        const centerX = 120;
-        const centerY = 135;
-        
-        // Glow effect
-        ctx.save();
-        ctx.shadowColor = '#667eea';
-        ctx.shadowBlur = 30;  // Scaled 1.5x
-        
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.ellipse(centerX, centerY, 52, 60, 0, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        ctx.restore();
-        
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(centerX, centerY - 52, 45, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        this.earAngle = Math.min(this.earAngle + 0.1, Math.PI / 6);
-        this.drawEars(centerX, centerY - 52, -this.earAngle);
-        this.drawEyes(centerX, centerY - 52, 1, 1.2);
-        this.drawNose(centerX, centerY - 48);
-        this.drawTail(centerX + 45, centerY + 30, Math.sin(Date.now() / 200) * 0.2);
-    }
-    
-    drawThinking() {
-        this.drawListening();
-        
-        const ctx = this.ctx;
-        ctx.fillStyle = '#667eea';
-        ctx.font = 'bold 36px Arial';  // Scaled 1.5x
-        ctx.fillText('?', 180, 60);  // Scaled 1.5x
-    }
-    
-    drawSpeaking() {
-        const ctx = this.ctx;
-        const centerX = 120;
-        const centerY = 135;
-        
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.ellipse(centerX, centerY, 52, 60, 0, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        ctx.beginPath();
-        ctx.arc(centerX, centerY - 52, 45, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        this.drawEars(centerX, centerY - 52, 0);
-        this.drawEyes(centerX, centerY - 52, 1);
-        this.drawNose(centerX, centerY - 48);
-        
-        this.mouthOpen = Math.abs(Math.sin(Date.now() / 100));
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY - 42, 12, 0, Math.PI * this.mouthOpen);
-        ctx.stroke();
-        
-        this.drawSoundWaves(centerX + 60, centerY - 52);
-    }
-    
-    drawCelebrating() {
-        const ctx = this.ctx;
-        const centerX = 120;
-        const bounce = Math.abs(Math.sin(Date.now() / 200)) * 15;  // Scaled 1.5x
-        const centerY = 120 - bounce;  // Scaled 1.5x
-        
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.ellipse(centerX, centerY, 52, 60, 0, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        ctx.beginPath();
-        ctx.arc(centerX, centerY - 52, 45, 0, Math.PI * 2);  // Scaled 1.5x
-        ctx.fill();
-        
-        this.drawEars(centerX, centerY - 52, Math.PI / 8);
-        
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 4;  // Scaled 1.5x
-        ctx.beginPath();
-        ctx.arc(centerX - 15, centerY - 60, 7, 0, Math.PI);  // Scaled 1.5x
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(centerX + 15, centerY - 60, 7, 0, Math.PI);  // Scaled 1.5x
-        ctx.stroke();
-        
-        this.updateSparkles();
-        this.drawSparkles();
-        
-        this.drawTail(centerX + 45, centerY + 30, Math.sin(Date.now() / 100) * 0.5);  // Scaled 1.5x
-    }
-    
-    drawError() {
-        // Similar to idle but with red tint
-        this.drawIdle();
-        const ctx = this.ctx;
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-    
-    drawEars(x, y, angle) {
-        const ctx = this.ctx;
-        ctx.fillStyle = '#000';
-        
-        // Left ear - smooth rounded triangle
-        ctx.save();
-        ctx.translate(x - 28, y - 38);
-        ctx.rotate(-Math.PI / 6 + angle);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-8, -18, -10, -28);
-        ctx.quadraticCurveTo(-5, -30, 0, -28);
-        ctx.quadraticCurveTo(5, -26, 10, -20);
-        ctx.quadraticCurveTo(8, -10, 0, 0);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Inner ear detail (pink)
-        ctx.fillStyle = '#FF69B4';
-        ctx.beginPath();
-        ctx.moveTo(2, -4);
-        ctx.quadraticCurveTo(0, -16, -2, -20);
-        ctx.quadraticCurveTo(3, -18, 5, -12);
-        ctx.quadraticCurveTo(5, -8, 2, -4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-        
-        // Right ear - smooth rounded triangle
-        ctx.save();
-        ctx.translate(x + 28, y - 38);
-        ctx.rotate(Math.PI / 6 - angle);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(8, -18, 10, -28);
-        ctx.quadraticCurveTo(5, -30, 0, -28);
-        ctx.quadraticCurveTo(-5, -26, -10, -20);
-        ctx.quadraticCurveTo(-8, -10, 0, 0);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Inner ear detail (pink)
-        ctx.fillStyle = '#FF69B4';
-        ctx.beginPath();
-        ctx.moveTo(-2, -4);
-        ctx.quadraticCurveTo(0, -16, 2, -20);
-        ctx.quadraticCurveTo(-3, -18, -5, -12);
-        ctx.quadraticCurveTo(-5, -8, -2, -4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-    }
-    
-    drawEyes(x, y, open = 1, scale = 1) {
-        const ctx = this.ctx;
-        ctx.fillStyle = open > 0 ? '#FFD700' : '#000';
-        
-        ctx.beginPath();
-        ctx.ellipse(x - 15, y - 7, 6 * scale, 9 * open, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.beginPath();
-        ctx.ellipse(x + 15, y - 7, 6 * scale, 9 * open, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Add pupils for more life
-        if (open > 0.5) {
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(x - 15, y - 7, 3 * scale, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(x + 15, y - 7, 3 * scale, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    
-    drawNose(x, y) {
-        const ctx = this.ctx;
-        
-        // Pink triangular nose
-        ctx.fillStyle = '#FF69B4';
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x - 4, y - 6);
-        ctx.lineTo(x + 4, y - 6);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Nose highlight for depth
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.beginPath();
-        ctx.moveTo(x - 1, y - 2);
-        ctx.lineTo(x - 3, y - 5);
-        ctx.lineTo(x + 1, y - 5);
-        ctx.closePath();
-        ctx.fill();
-    }
-    
-    drawTail(x, y, angle) {
-        const ctx = this.ctx;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 12;  // Scaled 1.5x
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x + 30, y - 30 + angle * 30, x + 45, y - 15);  // Scaled 1.5x
-        ctx.stroke();
-    }
-    
-    drawSoundWaves(x, y) {
-        const ctx = this.ctx;
-        ctx.strokeStyle = 'rgba(102, 126, 234, 0.6)';
-        ctx.lineWidth = 3;  // Scaled 1.5x
-        
-        for (let i = 0; i < 3; i++) {
-            const offset = (Date.now() / 200 + i * 0.5) % 2;
-            ctx.beginPath();
-            ctx.arc(x, y, 15 + offset * 15, 0, Math.PI * 2);  // Scaled 1.5x
-            ctx.stroke();
-        }
-    }
-    
-    updateSparkles() {
-        if (this.sparkles.length < 10 && Math.random() > 0.7) {
-            this.sparkles.push({
-                x: 120 + (Math.random() - 0.5) * 90,  // Scaled 1.5x
-                y: 75 + (Math.random() - 0.5) * 90,  // Scaled 1.5x
-                life: 1
-            });
-        }
-        
-        this.sparkles = this.sparkles.filter(s => s.life > 0);
-        this.sparkles.forEach(s => s.life -= 0.02);
-    }
-    
-    drawSparkles() {
-        const ctx = this.ctx;
-        this.sparkles.forEach(s => {
-            ctx.fillStyle = `rgba(255, 215, 0, ${s.life})`;
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, 4.5, 0, Math.PI * 2);  // Scaled 1.5x
-            ctx.fill();
-        });
+    _getSVG() {
+        return `
+        <svg class="kitty-svg" width="100%" height="100%" viewBox="0 0 200 300" preserveAspectRatio="xMidYMax meet" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <style>
+              /* --- PALETTE --- */
+              .fur-dark { fill: #1f1f24; }
+              .fur-leg { fill: #26262e; }
+              .ear-inner { fill: #454552; }
+              
+              /* Eyes */
+              .sclera { fill: #fcfcfc; }
+              .iris-left { fill: #89e289; }
+              .iris-right { fill: #eecf68; }
+              .pupil { fill: #111111; }
+              .highlight { fill: #ffffff; opacity: 0.9; }
+              
+              /* Bow */
+              .bow-main { fill: #d93636; }
+              .bow-knot { fill: #b52828; }
+              .bow-highlight { fill: #e85555; opacity: 0.5; }
+
+              /* --- ANIMATIONS --- */
+              .tail-wrapper {
+                transform-origin: 100px 240px;
+                animation: tailSway 5s ease-in-out infinite alternate;
+              }
+              
+              .pupils-group {
+                animation: lookAround 8s ease-in-out infinite;
+              }
+              
+              .eyelids {
+                fill: #1f1f24;
+                transform-origin: center;
+                transform: scaleY(0);
+                animation: blink 6s linear infinite;
+              }
+
+              @keyframes tailSway {
+                0% { transform: rotate(-10deg); }
+                100% { transform: rotate(10deg); }
+              }
+
+              @keyframes lookAround {
+                0%, 15% { transform: translate(0, 0); }
+                20%, 40% { transform: translate(-5px, 2px); }
+                45%, 65% { transform: translate(5px, -2px); }
+                70%, 100% { transform: translate(0, 0); }
+              }
+
+              @keyframes blink {
+                0%, 96% { transform: scaleY(0); }
+                98% { transform: scaleY(1); }
+                100% { transform: scaleY(0); }
+              }
+              
+              /* State-specific animations */
+              @keyframes pulse-glow {
+                0%, 100% { filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6)); }
+                50% { filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.9)); }
+              }
+              
+              @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-8px); }
+              }
+              
+              @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-3px); }
+                75% { transform: translateX(3px); }
+              }
+              
+              .kitty-svg.listening {
+                animation: pulse-glow 1.5s ease-in-out infinite;
+              }
+              
+              .kitty-svg.thinking {
+                animation: pulse-glow 2s ease-in-out infinite;
+              }
+              
+              .kitty-svg.speaking .tail-wrapper {
+                animation: tailSway 1s ease-in-out infinite alternate !important;
+              }
+              
+              .kitty-svg.celebrating {
+                animation: bounce 0.5s ease-in-out infinite;
+              }
+              
+              .kitty-svg.error {
+                animation: shake 0.3s ease-in-out;
+                filter: drop-shadow(0 0 10px rgba(255, 80, 80, 0.6));
+              }
+            </style>
+            
+            <!-- Gradient for listening glow -->
+            <radialGradient id="listening-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgba(102, 126, 234, 0.3)" />
+              <stop offset="100%" stop-color="rgba(102, 126, 234, 0)" />
+            </radialGradient>
+          </defs>
+
+          <!-- Tail -->
+          <g class="tail-wrapper">
+            <path d="M100 240 Q 160 250 160 190 Q 160 140 180 130 C 190 125 195 135 185 150 Q 180 180 180 200 Q 185 260 100 250 Z" class="fur-dark"/>
+          </g>
+
+          <!-- Body -->
+          <path d="M60 250 C 45 250 50 200 55 180 C 68 145 85 135 100 135 C 115 135 132 145 145 180 C 150 200 155 250 140 250 L 60 250 Z" class="fur-dark"/>
+
+          <!-- Red Butterfly Bow -->
+          <g class="bow-group" transform="translate(100, 138)">
+            <ellipse cx="-15" cy="0" rx="12" ry="7" class="bow-main" transform="rotate(-10)"/>
+            <ellipse cx="15" cy="0" rx="12" ry="7" class="bow-main" transform="rotate(10)"/>
+            <ellipse cx="0" cy="0" rx="5" ry="4" class="bow-knot"/>
+            <ellipse cx="-17" cy="-2" rx="3" ry="1.5" class="bow-highlight" transform="rotate(-10)"/>
+            <ellipse cx="17" cy="-2" rx="3" ry="1.5" class="bow-highlight" transform="rotate(10)"/>
+          </g>
+
+          <!-- Front Legs -->
+          <path d="M72 255 L 75 210 C 75 195 85 195 85 210 L 88 255 L 72 255 Z" class="fur-leg"/>
+          <path d="M112 255 L 115 210 C 115 195 125 195 125 210 L 128 255 L 112 255 Z" class="fur-leg"/>
+          
+          <!-- Paws -->
+          <ellipse cx="80" cy="255" rx="10" ry="6" class="fur-dark"/>
+          <ellipse cx="120" cy="255" rx="10" ry="6" class="fur-dark"/>
+
+          <!-- Head Group -->
+          <g class="head-group" transform="translate(0, -10)">
+            <!-- Ears -->
+            <path d="M55 90 L 30 15 L 95 68" class="fur-dark"/>
+            <path d="M145 90 L 170 15 L 105 68" class="fur-dark"/>
+            <path d="M42 38 L 55 78 L 75 72" class="ear-inner"/>
+            <path d="M158 38 L 145 78 L 125 72" class="ear-inner"/>
+
+            <!-- Head -->
+            <ellipse cx="100" cy="100" rx="55" ry="45" class="fur-dark"/>
+
+            <!-- Whiskers -->
+            <g class="whiskers" stroke="#888" stroke-width="1.5" fill="none" opacity="0.9" stroke-linecap="round">
+              <path d="M58 108 L 10 98"/>
+              <path d="M58 116 L 12 118"/>
+              <path d="M58 124 L 15 135"/>
+              <path d="M142 108 L 190 98"/>
+              <path d="M142 116 L 188 118"/>
+              <path d="M142 124 L 185 135"/>
+            </g>
+
+            <!-- Nose -->
+            <path d="M96 118 L 104 118 L 100 124 Z" fill="#000"/>
+
+            <!-- Eyes with clip paths -->
+            <clipPath id="clip-left"><ellipse cx="72" cy="95" rx="15" ry="18"/></clipPath>
+            <clipPath id="clip-right"><ellipse cx="128" cy="95" rx="15" ry="18"/></clipPath>
+
+            <!-- Left Eye -->
+            <g clip-path="url(#clip-left)">
+              <rect x="50" y="70" width="50" height="50" class="sclera"/>
+              <circle cx="72" cy="95" r="13" class="iris-left"/>
+              <g class="pupils-group"><ellipse cx="72" cy="95" rx="4" ry="11" class="pupil"/></g>
+              <rect x="50" y="70" width="50" height="50" class="eyelids"/>
+            </g>
+
+            <!-- Right Eye -->
+            <g clip-path="url(#clip-right)">
+              <rect x="100" y="70" width="50" height="50" class="sclera"/>
+              <circle cx="128" cy="95" r="13" class="iris-right"/>
+              <g class="pupils-group"><ellipse cx="128" cy="95" rx="4" ry="11" class="pupil"/></g>
+              <rect x="100" y="70" width="50" height="50" class="eyelids"/>
+            </g>
+
+            <!-- Eye Highlights -->
+            <circle cx="76" cy="88" r="3.5" class="highlight"/>
+            <circle cx="132" cy="88" r="3.5" class="highlight"/>
+          </g>
+          
+          <!-- State Indicators (hidden by default) -->
+          <g class="state-indicator thinking-indicator" style="display: none;">
+            <text x="165" y="30" font-size="28" fill="#667eea">?</text>
+          </g>
+          
+          <g class="state-indicator speaking-waves" style="display: none;">
+            <circle cx="175" cy="80" r="8" stroke="#667eea" stroke-width="2" fill="none" opacity="0.8">
+              <animate attributeName="r" values="8;18;8" dur="1s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="175" cy="80" r="12" stroke="#667eea" stroke-width="2" fill="none" opacity="0.5">
+              <animate attributeName="r" values="12;22;12" dur="1s" repeatCount="indefinite" begin="0.3s"/>
+              <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1s" repeatCount="indefinite" begin="0.3s"/>
+            </circle>
+          </g>
+          
+          <g class="state-indicator celebrating-sparkles" style="display: none;">
+            <circle cx="40" cy="40" r="4" fill="#FFD700">
+              <animate attributeName="opacity" values="1;0.3;1" dur="0.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="160" cy="50" r="3" fill="#FFD700">
+              <animate attributeName="opacity" values="0.3;1;0.3" dur="0.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="30" cy="100" r="3" fill="#FFD700">
+              <animate attributeName="opacity" values="1;0.5;1" dur="0.4s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="170" cy="120" r="4" fill="#FFD700">
+              <animate attributeName="opacity" values="0.5;1;0.5" dur="0.6s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+        </svg>
+        `;
     }
     
     setState(newState) {
@@ -383,26 +260,45 @@ class BlackCat {
         this.logger.info('BlackCat', 'State:', this.state, '->', newState);
         this.state = newState;
         
+        // Update SVG class for state-specific animations
+        this.svgElement.className.baseVal = 'kitty-svg ' + newState;
+        
+        // Toggle state indicators
+        const thinkingIndicator = this.svgElement.querySelector('.thinking-indicator');
+        const speakingWaves = this.svgElement.querySelector('.speaking-waves');
+        const celebratingSparkles = this.svgElement.querySelector('.celebrating-sparkles');
+        
+        // Hide all indicators first
+        if (thinkingIndicator) thinkingIndicator.style.display = 'none';
+        if (speakingWaves) speakingWaves.style.display = 'none';
+        if (celebratingSparkles) celebratingSparkles.style.display = 'none';
+        
+        // Show state-specific indicator
+        switch (newState) {
+            case 'thinking':
+                if (thinkingIndicator) thinkingIndicator.style.display = 'block';
+                break;
+            case 'speaking':
+                if (speakingWaves) speakingWaves.style.display = 'block';
+                break;
+            case 'celebrating':
+                if (celebratingSparkles) celebratingSparkles.style.display = 'block';
+                break;
+        }
+        
+        // Update tooltips
         const tooltips = {
-            idle: 'Click me to talk',
-            listening: "I'm listening...",
-            thinking: 'Thinking...',
-            speaking: 'Speaking...',
-            celebrating: 'Success!',
-            error: 'Oops! Something went wrong'
+            idle: '点我开始对话',
+            listening: '正在听...',
+            thinking: '思考中...',
+            speaking: '说话中...',
+            celebrating: '完成！',
+            error: '出错了'
         };
         this.container.title = tooltips[newState] || '';
-        
-        if (newState === 'idle') {
-            this.earAngle = 0;
-            this.sparkles = [];
-        }
     }
     
     destroy() {
-        if (this.animationFrame) {
-            cancelAnimationFrame(this.animationFrame);
-        }
         if (this.container && this.container.parentElement) {
             this.container.parentElement.removeChild(this.container);
         }
@@ -410,4 +306,3 @@ class BlackCat {
 }
 
 window.BlackCat = BlackCat;
-

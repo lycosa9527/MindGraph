@@ -417,7 +417,38 @@ class DiagramSelector {
             diagramName
         });
         
-        // Clean up previous editor and canvas first
+        // CRITICAL: Track OLD session ID BEFORE cleanup
+        // This ensures we can clean up the old voice session WebSocket connection
+        const oldSessionId = this.currentSession?.id || window.currentEditor?.sessionId || null;
+        
+        // CRITICAL: Clean up previous session BEFORE creating new one
+        // This ensures all managers (including voice agent) are properly destroyed via SessionLifecycleManager
+        if (this.editorActive) {
+            // Clean up all registered managers (18 total) via SessionLifecycleManager
+            // This ensures proper cleanup order: lifecycle event → backend cleanup → frontend cleanup
+            // Pass the OLD session ID to ensure voice agent cleanup uses the correct ID
+            if (oldSessionId && window.sessionLifecycle.currentSessionId !== oldSessionId) {
+                // Ensure SessionLifecycleManager has the correct old session ID for cleanup
+                window.sessionLifecycle.currentSessionId = oldSessionId;
+            }
+            window.sessionLifecycle.cleanup();
+        }
+        
+        // CRITICAL: Also explicitly cleanup old voice session backend if we have the old session ID
+        // This ensures the WebSocket connection is closed even if lifecycle cleanup didn't catch it
+        if (oldSessionId && window.auth) {
+            logger.debug('DiagramSelector', 'Explicitly cleaning up old voice session', {
+                oldSessionId: oldSessionId.substr(-8)
+            });
+            window.auth.fetch(`/api/voice/cleanup/${oldSessionId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).catch(err => {
+                logger.debug('DiagramSelector', 'Old voice session cleanup failed (non-critical)', err);
+            });
+        }
+        
+        // Clean up previous editor and canvas
         this.cleanupCanvas();
         
         // Hide landing page
@@ -468,10 +499,13 @@ class DiagramSelector {
                 'nodePalette'
             );
             
-            window.currentEditor.voiceAgent = window.sessionLifecycle.register(
-                new VoiceAgentManager(window.eventBus, window.stateManager, logger),
-                'voiceAgent'
-            );
+            // CRITICAL: Create and initialize voice agent manager
+            // VoiceAgentManager requires init() to be called to set up event listeners and UI
+            const voiceAgent = new VoiceAgentManager(window.eventBus, window.stateManager, logger);
+            voiceAgent.init().catch(err => {
+                logger.error('DiagramSelector', 'Failed to initialize voice agent', err);
+            });
+            window.currentEditor.voiceAgent = window.sessionLifecycle.register(voiceAgent, 'voiceAgent');
             
             // Phase 7: Instantiate extracted modules
             // These modules use the existing Event Bus (window.eventBus) for decoupled communication
@@ -690,7 +724,11 @@ class DiagramSelector {
         // ========================================
         // 3. DESTROY CURRENT EDITOR & MANAGERS
         // ========================================
+        // NOTE: Voice agent cleanup is now handled automatically via SessionLifecycleManager
+        // The voice agent listens to 'lifecycle:session_ending' event and cleans up backend state
+        // No manual cleanup needed here - SessionLifecycleManager.cleanup() will handle it
         if (window.currentEditor) {
+            
             // Call comprehensive destroy() method
             // This removes ALL event listeners, destroys ALL managers, and clears ALL data
             try {
@@ -799,7 +837,20 @@ class DiagramSelector {
             nodePalettePanel.classList.remove('thinkguide-visible');
         }
         
-        // 4. Property Panel
+        // 4. Voice Agent Modal - Explicit cleanup to ensure modal doesn't persist
+        // Note: VoiceAgentManager.destroy() should handle this, but adding explicit cleanup as safety measure
+        const chatWindow = document.querySelector('.chat-window');
+        if (chatWindow) {
+            chatWindow.classList.remove('visible');
+            logger.debug('DiagramSelector', 'Voice agent chat window explicitly hidden');
+        }
+        const comicBubble = document.querySelector('.comic-bubble');
+        if (comicBubble) {
+            comicBubble.classList.remove('visible');
+            logger.debug('DiagramSelector', 'Voice agent bubble explicitly hidden');
+        }
+        
+        // 5. Property Panel
         const propertyPanel = document.getElementById('property-panel');
         if (propertyPanel) {
             propertyPanel.style.display = 'none';

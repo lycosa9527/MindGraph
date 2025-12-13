@@ -40,10 +40,11 @@ websockets>=14.2  # WebSocket support
 # ============================================================================
 # AI & LANGUAGE PROCESSING
 # ============================================================================
-langchain>=0.3.27
+# LangChain 1.x - Major upgrade with create_agent, LangGraph runtime, and middleware
+langchain>=1.1.0
 langchain-community>=0.3.27
 langchain-core>=0.3.72
-langgraph>=0.2.28
+langgraph>=0.2.60
 langgraph-checkpoint>=2.0.0
 dashscope>=1.23.9
 

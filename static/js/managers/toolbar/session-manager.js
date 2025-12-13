@@ -58,8 +58,8 @@ class SessionManager {
         }, this.ownerId);
         
         // Listen for session cleanup requests
-        this.eventBus.onWithOwner('session:cleanup_requested', (data) => {
-            this.cleanupSession(data.sessionId);
+        this.eventBus.onWithOwner('session:cleanup_requested', async (data) => {
+            await this.cleanupSession(data.sessionId);
         }, this.ownerId);
         
         this.logger.debug('SessionManager', 'Subscribed to events with owner tracking');
@@ -163,7 +163,7 @@ class SessionManager {
      * Cleanup session
      * @param {string} sessionId - Session ID to cleanup
      */
-    cleanupSession(sessionId) {
+    async cleanupSession(sessionId) {
         if (!sessionId) {
             sessionId = this.sessionId;
         }
@@ -176,6 +176,36 @@ class SessionManager {
         this.logger.info('SessionManager', 'Cleaning up session', {
             sessionId: sessionId?.substr(-8)
         });
+        
+        // CRITICAL: Cleanup backend voice session via API
+        // This ensures backend voice sessions are properly cleaned up when diagram session ends
+        try {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                const response = await fetch(`/api/voice/cleanup/${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    this.logger.debug('SessionManager', 'Voice session cleaned up', result);
+                } else {
+                    this.logger.warn('SessionManager', 'Voice cleanup API call failed', {
+                        status: response.status,
+                        statusText: response.statusText
+                    });
+                }
+            } else {
+                this.logger.warn('SessionManager', 'No auth token for voice cleanup');
+            }
+        } catch (error) {
+            // Non-critical - log but don't fail session cleanup
+            this.logger.warn('SessionManager', 'Voice cleanup API call error (non-critical)', error);
+        }
         
         // Remove from registry
         window.toolbarManagerRegistry.delete(sessionId);
@@ -196,13 +226,12 @@ class SessionManager {
     /**
      * Cleanup all sessions
      */
-    cleanupAllSessions() {
+    async cleanupAllSessions() {
         this.logger.info('SessionManager', 'Cleaning up all sessions');
         
         const sessionIds = Array.from(this.registeredInstances.keys());
-        sessionIds.forEach(sessionId => {
-            this.cleanupSession(sessionId);
-        });
+        // Use Promise.all to cleanup all sessions concurrently
+        await Promise.all(sessionIds.map(sessionId => this.cleanupSession(sessionId)));
     }
     
     /**
@@ -239,7 +268,11 @@ class SessionManager {
         }
         
         // Cleanup all sessions
-        this.cleanupAllSessions();
+        // Note: This is called from destroy(), which is synchronous, so we don't await
+        // The cleanup will happen asynchronously but that's fine for cleanup
+        this.cleanupAllSessions().catch(err => {
+            this.logger.warn('SessionManager', 'Error during async cleanup (non-critical)', err);
+        });
         
         // Clear references
         this.eventBus = null;

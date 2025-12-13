@@ -83,17 +83,22 @@ class SessionLifecycleManager {
             return;
         }
         
+        // CRITICAL: Store the current session ID BEFORE clearing it
+        // This ensures managers (like voice agent) can clean up using the correct session ID
+        const sessionIdToCleanup = this.currentSessionId;
+        
         logger.info('SessionLifecycle', 'Cleaning up session', {
-            sessionId: this.currentSessionId?.substr(-8),
+            sessionId: sessionIdToCleanup?.substr(-8),
             diagramType: this.diagramType,
             managerCount: this.managers.length
         });
         
         // Emit lifecycle event BEFORE destroying managers
         // This allows managers to cancel operations before destruction
+        // CRITICAL: Use the stored session ID, not this.currentSessionId (which might be cleared)
         if (window.eventBus) {
             window.eventBus.emit('lifecycle:session_ending', {
-                sessionId: this.currentSessionId,
+                sessionId: sessionIdToCleanup,
                 diagramType: this.diagramType,
                 managerCount: this.managers.length
             });

@@ -11,6 +11,7 @@ from .concept_maps import CONCEPT_MAP_PROMPTS
 from .mind_maps import MIND_MAP_PROMPTS
 from .main_agent import MAIN_AGENT_PROMPTS
 from .thinking_tools import THINKING_TOOLS_PROMPTS
+from .voice_agent import VOICE_AGENT_PROMPTS
 
 
 # Unified prompt registry
@@ -20,6 +21,7 @@ PROMPT_REGISTRY = {
     **MIND_MAP_PROMPTS,
     **MAIN_AGENT_PROMPTS,
     **THINKING_TOOLS_PROMPTS,
+    **VOICE_AGENT_PROMPTS,
 }
 
 def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'generation') -> str:

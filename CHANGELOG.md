@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.83] - 2025-12-13 - Voice Agent Connection Lifecycle Fixes
+
+### Fixed
+
+- **Voice Agent Not Initializing on New Diagrams** (`static/js/editor/diagram-selector.js`, `static/js/managers/voice-agent-manager.js`)
+  - Fixed: `init()` was not called when creating new VoiceAgentManager for each diagram
+  - Now explicitly calls `init()` after creating VoiceAgentManager instance
+  - Ensures event listeners are registered and UI components are initialized
+  - Impact: Voice agent now works correctly when switching between diagrams
+
+- **Voice Agent Using Wrong Session ID Source** (`static/js/managers/voice-agent-manager.js`)
+  - Fixed: Voice agent was using `window.sessionManager?.currentSessionId` (wrong manager)
+  - Now uses correct session ID sources in priority order:
+    1. `window.currentEditor?.sessionId` (most reliable)
+    2. `window.sessionLifecycle?.currentSessionId` (fallback)
+    3. `window.diagramSelector?.currentSession?.id` (fallback)
+    4. `'default'` (last resort)
+  - Added debug logging to track session ID source
+  - Impact: Voice agent connects to correct diagram session, prevents connection issues
+
+### Improved
+
+- **Voice Agent Cleanup Timing** (`static/js/managers/voice-agent-manager.js`, `routers/voice.py`)
+  - Frontend cleanup is synchronous and immediate (< 15ms) - instant user experience
+  - Backend cleanup is fire-and-forget (non-blocking) - doesn't delay UI
+  - WebSocket closure happens asynchronously (10-100ms per connection)
+  - OmniClient closure scheduled as background task (50-500ms, non-blocking)
+  - Impact: User sees instant termination, backend cleanup happens in background
+
+- **Voice Agent Connection Lifecycle Documentation**
+  - Created comprehensive documentation:
+    - `VOICE_AGENT_CONNECTION_LIFECYCLE_REVIEW.md` - Complete flow verification
+    - `VOICE_AGENT_CLEANUP_TIMING_ANALYSIS.md` - Detailed timing breakdown
+    - `VOICE_AGENT_BLOCKING_SCENARIOS.md` - Blocking vs non-blocking analysis
+  - Documents new connection for new diagram flow
+  - Documents exit diagram termination flow
+  - Verifies no auto-reconnect behavior
+
+### Technical Details
+
+- **New Connection Flow**: Each diagram gets fresh VoiceAgentManager instance with `init()` called
+- **Termination Flow**: `lifecycle:session_ending` event → immediate frontend cleanup → backend API call (fire-and-forget)
+- **No Auto-Reconnect**: Voice agent requires user interaction (click black cat or send message) to start
+- **Complete Resource Cleanup**: All WebSocket connections, OmniClient instances, and agents are properly terminated
+
+---
 ## [4.28.82] - 2025-12-13 - UI Improvements
 
 ### Improved

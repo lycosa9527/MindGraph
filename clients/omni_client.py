@@ -36,9 +36,25 @@ class OmniCallback(OmniRealtimeCallback):
         on_response_done: Optional[Callable[[dict], None]] = None,
         on_speech_started: Optional[Callable[[int, str], None]] = None,
         on_speech_stopped: Optional[Callable[[int, str], None]] = None,
-        on_error: Optional[Callable[[dict], None]] = None
+        on_error: Optional[Callable[[dict], None]] = None,
+        # Additional callbacks (handled internally, not passed to parent)
+        on_session_created: Optional[Callable[[dict], None]] = None,
+        on_session_updated: Optional[Callable[[dict], None]] = None,
+        on_response_created: Optional[Callable[[dict], None]] = None,
+        on_audio_buffer_committed: Optional[Callable[[str], None]] = None,
+        on_audio_buffer_cleared: Optional[Callable[[], None]] = None,
+        on_item_created: Optional[Callable[[dict], None]] = None,
+        on_response_text_done: Optional[Callable[[str], None]] = None,
+        on_response_audio_done: Optional[Callable[[], None]] = None,
+        on_response_audio_transcript_done: Optional[Callable[[str], None]] = None,
+        on_output_item_added: Optional[Callable[[dict], None]] = None,
+        on_output_item_done: Optional[Callable[[dict], None]] = None,
+        on_content_part_added: Optional[Callable[[dict], None]] = None,
+        on_content_part_done: Optional[Callable[[dict], None]] = None
     ):
+        # Only pass supported callbacks to parent class
         super().__init__()
+        # Store all callbacks as instance attributes
         self.on_transcription = on_transcription
         self.on_text_chunk = on_text_chunk
         self.on_audio_chunk = on_audio_chunk
@@ -46,6 +62,20 @@ class OmniCallback(OmniRealtimeCallback):
         self.on_speech_started = on_speech_started
         self.on_speech_stopped = on_speech_stopped
         self.on_error = on_error
+        # Additional callbacks (handled internally)
+        self.on_session_created = on_session_created
+        self.on_session_updated = on_session_updated
+        self.on_response_created = on_response_created
+        self.on_audio_buffer_committed = on_audio_buffer_committed
+        self.on_audio_buffer_cleared = on_audio_buffer_cleared
+        self.on_item_created = on_item_created
+        self.on_response_text_done = on_response_text_done
+        self.on_response_audio_done = on_response_audio_done
+        self.on_response_audio_transcript_done = on_response_audio_transcript_done
+        self.on_output_item_added = on_output_item_added
+        self.on_output_item_done = on_output_item_done
+        self.on_content_part_added = on_content_part_added
+        self.on_content_part_done = on_content_part_done
         self.session_id = None
     
     def on_open(self) -> None:
@@ -66,10 +96,14 @@ class OmniCallback(OmniRealtimeCallback):
             if event_type == 'session.created':
                 self.session_id = response.get('session', {}).get('id')
                 logger.debug(f"Session created: {self.session_id}")
+                if self.on_session_created:
+                    self.on_session_created(response.get('session', {}))
             
             elif event_type == 'session.updated':
                 session = response.get('session', {})
                 logger.debug(f"Session updated: {session.get('id')}")
+                if self.on_session_updated:
+                    self.on_session_updated(session)
             
             # Error Events
             elif event_type == 'error':
@@ -96,14 +130,20 @@ class OmniCallback(OmniRealtimeCallback):
             elif event_type == 'input_audio_buffer.committed':
                 item_id = response.get('item_id', '')
                 logger.debug(f"Audio buffer committed (item: {item_id})")
+                if self.on_audio_buffer_committed:
+                    self.on_audio_buffer_committed(item_id)
             
             elif event_type == 'input_audio_buffer.cleared':
                 logger.debug("Audio buffer cleared")
+                if self.on_audio_buffer_cleared:
+                    self.on_audio_buffer_cleared()
             
             # Conversation Item Events
             elif event_type == 'conversation.item.created':
                 item = response.get('item', {})
                 logger.debug(f"Item created: {item.get('id')} (role: {item.get('role')})")
+                if self.on_item_created:
+                    self.on_item_created(item)
             
             elif event_type == 'conversation.item.input_audio_transcription.completed':
                 transcript = response.get('transcript', '')
@@ -116,11 +156,20 @@ class OmniCallback(OmniRealtimeCallback):
                 error = response.get('error', {})
                 item_id = response.get('item_id', '')
                 logger.error(f"Transcription failed for {item_id}: {error.get('message')}")
+                # Forward transcription failure as error event
+                if self.on_error:
+                    self.on_error({
+                        'type': 'transcription_failed',
+                        'message': error.get('message', 'Transcription failed'),
+                        'item_id': item_id
+                    })
             
             # Response Events
             elif event_type == 'response.created':
                 resp = response.get('response', {})
                 logger.debug(f"Response created: {resp.get('id')}")
+                if self.on_response_created:
+                    self.on_response_created(resp)
             
             elif event_type == 'response.done':
                 resp = response.get('response', {})
@@ -139,6 +188,8 @@ class OmniCallback(OmniRealtimeCallback):
             elif event_type == 'response.text.done':
                 text = response.get('text', '')
                 logger.debug(f"[SDK] Text done: {text[:50]}...")
+                if self.on_response_text_done:
+                    self.on_response_text_done(text)
             
             # Response Audio Events
             elif event_type == 'response.audio.delta':
@@ -150,6 +201,8 @@ class OmniCallback(OmniRealtimeCallback):
             
             elif event_type == 'response.audio.done':
                 logger.debug("[SDK] Audio done")
+                if self.on_response_audio_done:
+                    self.on_response_audio_done()
             
             # Response Audio Transcript Events
             elif event_type == 'response.audio_transcript.delta':
@@ -160,24 +213,34 @@ class OmniCallback(OmniRealtimeCallback):
             elif event_type == 'response.audio_transcript.done':
                 transcript = response.get('transcript', '')
                 logger.debug(f"Audio transcript: {transcript[:50]}...")
+                if self.on_response_audio_transcript_done:
+                    self.on_response_audio_transcript_done(transcript)
             
             # Response Output Item Events
             elif event_type == 'response.output_item.added':
                 item = response.get('item', {})
                 logger.debug(f"Output item added: {item.get('id')}")
+                if self.on_output_item_added:
+                    self.on_output_item_added(item)
             
             elif event_type == 'response.output_item.done':
                 item = response.get('item', {})
                 logger.debug(f"Output item done: {item.get('id')}")
+                if self.on_output_item_done:
+                    self.on_output_item_done(item)
             
             # Response Content Part Events
             elif event_type == 'response.content_part.added':
                 part = response.get('part', {})
                 logger.debug(f"Content part added: {part.get('type')}")
+                if self.on_content_part_added:
+                    self.on_content_part_added(part)
             
             elif event_type == 'response.content_part.done':
                 part = response.get('part', {})
                 logger.debug(f"Content part done: {part.get('type')}")
+                if self.on_content_part_done:
+                    self.on_content_part_done(part)
         
         except Exception as e:
             logger.error(f"Event handling error: {e}", exc_info=True)
@@ -237,7 +300,7 @@ class OmniClient:
             except Exception as e:
                 logger.error(f"Failed to queue event: {e}")
         
-        # Create callback
+        # Create callback with all event handlers for comprehensive event tracking
         callback = OmniCallback(
             on_transcription=lambda text: queue_event({'type': 'transcription', 'text': text}),
             on_text_chunk=lambda text: queue_event({'type': 'text_chunk', 'text': text}),
@@ -253,7 +316,24 @@ class OmniClient:
                 'audio_end_ms': ms,
                 'item_id': item_id
             }),
-            on_error=lambda error: queue_event({'type': 'error', 'error': error})
+            on_error=lambda error: queue_event({'type': 'error', 'error': error}),
+            # Additional event handlers for comprehensive event tracking
+            on_session_created=lambda session: queue_event({'type': 'session_created', 'session': session}),
+            on_session_updated=lambda session: queue_event({'type': 'session_updated', 'session': session}),
+            on_response_created=lambda resp: queue_event({'type': 'response_created', 'response': resp}),
+            on_audio_buffer_committed=lambda item_id: queue_event({'type': 'audio_buffer_committed', 'item_id': item_id}),
+            on_audio_buffer_cleared=lambda: queue_event({'type': 'audio_buffer_cleared'}),
+            on_item_created=lambda item: queue_event({'type': 'item_created', 'item': item}),
+            on_response_text_done=lambda text: queue_event({'type': 'response_text_done', 'text': text}),
+            on_response_audio_done=lambda: queue_event({'type': 'response_audio_done'}),
+            on_response_audio_transcript_done=lambda transcript: queue_event({
+                'type': 'response_audio_transcript_done',
+                'transcript': transcript
+            }),
+            on_output_item_added=lambda item: queue_event({'type': 'output_item_added', 'item': item}),
+            on_output_item_done=lambda item: queue_event({'type': 'output_item_done', 'item': item}),
+            on_content_part_added=lambda part: queue_event({'type': 'content_part_added', 'part': part}),
+            on_content_part_done=lambda part: queue_event({'type': 'content_part_done', 'part': part})
         )
         
         # Start conversation in background thread
@@ -400,6 +480,134 @@ class OmniClient:
             logger.debug(f"Greeting created: {greeting_text}")
         except Exception as e:
             logger.error(f"Failed to create greeting: {e}", exc_info=True)
+    
+    def send_text_message(self, text: str):
+        """
+        Send a text message to Omni and trigger a response.
+        This is used when the user types a message instead of speaking.
+        
+        Args:
+            text: The text message from the user
+        """
+        if not self.conversation:
+            logger.warning("No active conversation for text message")
+            return
+        
+        try:
+            # Create a conversation item with the user's text
+            # Then trigger a response from the model
+            self.conversation.create_response(
+                instructions=f"The user typed this message: \"{text}\". Please respond helpfully and naturally.",
+                output_modalities=[MultiModality.TEXT, MultiModality.AUDIO]
+            )
+            logger.debug(f"Text message sent: {text[:50]}...")
+        except Exception as e:
+            logger.error(f"Failed to send text message: {e}", exc_info=True)
+    
+    def cancel_response(self):
+        """
+        Cancel an ongoing response from Omni.
+        
+        This sends a response.cancel client event to stop the current response generation.
+        Useful when user interrupts the AI mid-response.
+        """
+        if not self.conversation:
+            logger.warning("No active conversation to cancel response")
+            return
+        
+        try:
+            # Check if conversation has cancel_response method
+            if hasattr(self.conversation, 'cancel_response'):
+                self.conversation.cancel_response()
+                logger.debug("Response cancelled")
+            elif hasattr(self.conversation, 'cancel'):
+                # Alternative method name
+                self.conversation.cancel()
+                logger.debug("Response cancelled")
+            else:
+                logger.warning("Conversation object does not support response cancellation")
+        except Exception as e:
+            logger.error(f"Failed to cancel response: {e}", exc_info=True)
+    
+    def clear_audio_buffer(self):
+        """
+        Clear the input audio buffer.
+        
+        This sends an input_audio_buffer.clear client event to discard pending audio input.
+        Useful when user wants to cancel their current audio input.
+        """
+        if not self.conversation:
+            logger.warning("No active conversation to clear audio buffer")
+            return
+        
+        try:
+            # Check if conversation has clear_audio_buffer method
+            if hasattr(self.conversation, 'clear_audio_buffer'):
+                self.conversation.clear_audio_buffer()
+                logger.debug("Audio buffer cleared")
+            elif hasattr(self.conversation, 'clear_input_audio'):
+                # Alternative method name
+                self.conversation.clear_input_audio()
+                logger.debug("Audio buffer cleared")
+            else:
+                logger.warning("Conversation object does not support audio buffer clearing")
+        except Exception as e:
+            logger.error(f"Failed to clear audio buffer: {e}", exc_info=True)
+    
+    def commit_audio_buffer(self):
+        """
+        Explicitly commit the input audio buffer.
+        
+        This sends an input_audio_buffer.commit client event to create a new user message item.
+        Note: With server_vad mode, this is usually handled automatically, but can be useful
+        for client_vad mode or manual control.
+        """
+        if not self.conversation:
+            logger.warning("No active conversation to commit audio buffer")
+            return
+        
+        try:
+            # Check if conversation has commit_audio_buffer method
+            if hasattr(self.conversation, 'commit_audio_buffer'):
+                self.conversation.commit_audio_buffer()
+                logger.debug("Audio buffer committed")
+            elif hasattr(self.conversation, 'commit_input_audio'):
+                # Alternative method name
+                self.conversation.commit_input_audio()
+                logger.debug("Audio buffer committed")
+            else:
+                logger.warning("Conversation object does not support audio buffer commit")
+        except Exception as e:
+            logger.error(f"Failed to commit audio buffer: {e}", exc_info=True)
+    
+    def append_image(self, image_data: bytes, image_format: str = 'jpeg'):
+        """
+        Append image data to the input image buffer.
+        
+        This sends an input_image_buffer.append client event to add image data.
+        Useful for multimodal conversations (voice + image).
+        
+        Args:
+            image_data: Image bytes (JPEG, PNG, etc.)
+            image_format: Image format ('jpeg', 'png', etc.)
+        """
+        if not self.conversation:
+            logger.warning("No active conversation to append image")
+            return
+        
+        try:
+            # Check if conversation has append_image method
+            if hasattr(self.conversation, 'append_image'):
+                self.conversation.append_image(image_data, image_format)
+                logger.debug(f"Image appended: {len(image_data)} bytes ({image_format})")
+            elif hasattr(self.conversation, 'add_image'):
+                # Alternative method name
+                self.conversation.add_image(image_data, image_format)
+                logger.debug(f"Image appended: {len(image_data)} bytes ({image_format})")
+            else:
+                logger.warning("Conversation object does not support image input")
+        except Exception as e:
+            logger.error(f"Failed to append image: {e}", exc_info=True)
     
     def close(self):
         """Close conversation"""
