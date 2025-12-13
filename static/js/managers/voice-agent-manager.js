@@ -553,6 +553,9 @@ class VoiceAgentManager {
      */
     async connectWebSocket() {
         return new Promise((resolve, reject) => {
+            // Use safe logger access (fallback to console if logger is null)
+            const logger = this.logger || console;
+            
             // CRITICAL: Prevent new connections if manager is destroyed
             // Note: _cleaningUp is reset in startConversation(), so we only check _destroyed here
             if (this._destroyed) {
@@ -585,9 +588,9 @@ class VoiceAgentManager {
                     if (oldWs.readyState === WebSocket.OPEN || oldWs.readyState === WebSocket.CONNECTING) {
                         oldWs.close(1001, 'Switching to new diagram session');
                     }
-                    this.logger.debug('VoiceAgentManager', 'Closed existing WebSocket before reconnecting');
+                    logger.debug('VoiceAgentManager', 'Closed existing WebSocket before reconnecting');
                 } catch (e) {
-                    this.logger.debug('VoiceAgentManager', 'Error closing existing WebSocket', e);
+                    logger.debug('VoiceAgentManager', 'Error closing existing WebSocket', e);
                 }
             }
             
@@ -603,7 +606,7 @@ class VoiceAgentManager {
                                     window.sessionLifecycle?.currentSessionId ? 'sessionLifecycle' :
                                     window.diagramSelector?.currentSession?.id ? 'diagramSelector' :
                                     'default';
-            this.logger.debug('VoiceAgentManager', `Using diagram session ID from ${sessionIdSource}: ${diagramSessionId.substr(-8)}`);
+            logger.debug('VoiceAgentManager', `Using diagram session ID from ${sessionIdSource}: ${diagramSessionId.substr(-8)}`);
             
             // CRITICAL: Store diagram session ID for cleanup (available even after currentEditor is destroyed)
             this.diagramSessionId = diagramSessionId;
@@ -620,13 +623,13 @@ class VoiceAgentManager {
             this.ws.onopen = () => {
                 // CRITICAL: Check again if cleanup started during connection
                 if (this._cleaningUp || this._destroyed) {
-                    this.logger.debug('VoiceAgentManager', 'Cleanup started during connection, closing WebSocket');
+                    logger.debug('VoiceAgentManager', 'Cleanup started during connection, closing WebSocket');
                     this.ws.close();
                     reject(new Error('Cleanup started during connection'));
                     return;
                 }
                 
-                this.logger.info('VoiceAgentManager', 'WebSocket connected');
+                logger.info('VoiceAgentManager', 'WebSocket connected');
                 
                 // Send start message with context
                 const context = this.collectContext();
@@ -649,13 +652,15 @@ class VoiceAgentManager {
                         resolve();
                     }
                 } catch (error) {
-                    this.logger.error('VoiceAgentManager', 'Message parse error:', error);
+                    logger.error('VoiceAgentManager', 'Message parse error:', error);
                 }
             };
             
             this.ws.onerror = (error) => {
-                this.logger.error('VoiceAgentManager', 'WebSocket error:', error);
-                this.eventBus.emit('voice:ws_error', { error });
+                logger.error('VoiceAgentManager', 'WebSocket error:', error);
+                if (this.eventBus) {
+                    this.eventBus.emit('voice:ws_error', { error });
+                }
                 
                 // Reset UI state on error
                 if (this.comicBubble) {
@@ -671,14 +676,20 @@ class VoiceAgentManager {
             };
             
             this.ws.onclose = () => {
-                this.logger.info('VoiceAgentManager', 'WebSocket closed');
+                logger.info('VoiceAgentManager', 'WebSocket closed');
                 this.isActive = false;
                 this.isVoiceActive = false;
+                
+                if (this.stateManager) {
                     this.stateManager.updateVoice({ 
                         active: false,
                         stoppedAt: Date.now()
                     });
+                }
+                
+                if (this.eventBus) {
                     this.eventBus.emit('voice:ws_closed', {});
+                }
                 
                 // Reset UI state
                 if (this.comicBubble) {
@@ -1519,6 +1530,13 @@ class VoiceAgentManager {
         // 5. Close WebSocket connection IMMEDIATELY
         if (this.ws) {
             try {
+                // CRITICAL: Remove all event handlers BEFORE closing to prevent handlers from firing after cleanup
+                // This prevents errors when handlers try to access null logger or other destroyed properties
+                this.ws.onopen = null;
+                this.ws.onmessage = null;
+                this.ws.onerror = null;
+                this.ws.onclose = null;
+                
                 // Send stop message if connection is still open
                 if (this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({ type: 'stop' }));
@@ -1693,6 +1711,13 @@ class VoiceAgentManager {
         // CRITICAL: Explicitly close WebSocket if still open (defensive cleanup)
         if (this.ws) {
             try {
+                // CRITICAL: Remove all event handlers BEFORE closing to prevent handlers from firing after destroy()
+                // This prevents errors when handlers try to access null logger or other destroyed properties
+                this.ws.onopen = null;
+                this.ws.onmessage = null;
+                this.ws.onerror = null;
+                this.ws.onclose = null;
+                
                 // Send stop message if connection is still open
                 if (this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({ type: 'stop' }));
