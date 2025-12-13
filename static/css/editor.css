@@ -640,8 +640,24 @@ body {
     }
 }
 
+@keyframes circleMapOuterRingPulse {
+    0%, 80% {
+        transform: scale(1);
+    }
+    90% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 /* Set transform origins */
 .diagram-card[data-type="circle_map"] .circle-map-center {
+    transform-origin: 100px 75px;
+}
+
+.diagram-card[data-type="circle_map"] .circle-map-outer-ring {
     transform-origin: 100px 75px;
 }
 
@@ -688,6 +704,10 @@ body {
 
 .diagram-card[data-type="circle_map"]:hover .circle-map-bubble-5 {
     animation: circleMapBubble5Pulse 2s ease-in-out infinite;
+}
+
+.diagram-card[data-type="circle_map"]:hover .circle-map-outer-ring {
+    animation: circleMapOuterRingPulse 2s ease-in-out infinite;
 }
 
 /* ========== Bubble Map Hover Animation ========== */
