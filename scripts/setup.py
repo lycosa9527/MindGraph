@@ -71,8 +71,7 @@ CORE_DEPENDENCIES = {
     'sqlalchemy': 'SQLAlchemy',
     'alembic': 'alembic',
     'jose': 'python-jose',
-    'passlib': 'passlib',
-    'bcrypt': 'bcrypt',
+    'bcrypt': 'bcrypt',  # passlib removed in v4.12.0, using bcrypt directly
     'captcha': 'captcha',
     'Crypto': 'pycryptodome',
     

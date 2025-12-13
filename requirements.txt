@@ -18,7 +18,7 @@
 # ============================================================================
 # WEB FRAMEWORK
 # ============================================================================
-fastapi>=0.115.0
+fastapi>=0.115.0  # NOTE: Verify >=5.4.3 for security fixes (CVE-2025-53528, CVE-2025-54073)
 uvicorn[standard]>=0.32.0
 jinja2>=3.1.4
 starlette>=0.40.0  # FastAPI dependency (explicit for version control)
@@ -34,7 +34,7 @@ aiohttp>=3.12.0
 openai>=1.58.0
 python-multipart>=0.0.20
 httpx[http2]>=0.28.0  # Modern async HTTP client with HTTP/2 support
-requests>=2.32.0  # Sync HTTP client (fallback)
+requests>=2.32.0  # Sync HTTP client (fallback) - REVIEW: May be removable if only httpx is used
 websockets>=14.2  # WebSocket support
 
 # ============================================================================
@@ -43,8 +43,9 @@ websockets>=14.2  # WebSocket support
 # LangChain 1.x - Major upgrade with create_agent, LangGraph runtime, and middleware
 langchain>=1.1.0
 langchain-community>=0.3.27
-langchain-core>=0.3.72
-langgraph>=0.2.60
+langchain-core>=1.0.0  # FIXED: Must be 1.x for LangChain 1.x compatibility (was >=0.3.72)
+langchain-openai>=0.1.0  # Explicitly pin compatible version to avoid conflicts with langchain-core 1.x
+langgraph>=1.0.0  # FIXED: Must be 1.x for LangChain 1.x compatibility (was >=0.2.60)
 langgraph-checkpoint>=2.0.0
 dashscope>=1.23.9
 
@@ -78,8 +79,7 @@ watchfiles>=1.0.0  # File watching for auto-reload
 SQLAlchemy>=2.0.36
 alembic>=1.14.0  # Database migrations
 python-jose[cryptography]>=3.3.0
-passlib>=1.7.4  # Password hashing
-bcrypt>=5.0.0
+bcrypt>=5.0.0  # Password hashing (direct bcrypt, passlib removed in v4.12.0)
 captcha>=0.6
 pycryptodome>=3.20.0  # AES decryption for bayi mode
 # Note: Tencent SMS uses native async httpx calls (no SDK needed)
