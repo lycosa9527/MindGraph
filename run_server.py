@@ -13,6 +13,7 @@ Proprietary License
 
 import os
 import sys
+import signal
 import logging
 import importlib.util
 import multiprocessing
@@ -92,6 +93,34 @@ def run_uvicorn():
     if not check_package_installed('uvicorn'):
         print("[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
         sys.exit(1)
+    
+    # Setup signal handlers for graceful shutdown (Linux/macOS)
+    # This ensures SIGTERM kills all worker processes, not just the main process
+    if sys.platform != 'win32':
+        def signal_handler(signum, frame):
+            """Handle SIGTERM/SIGINT by killing entire process group"""
+            sig_name = 'SIGTERM' if signum == signal.SIGTERM else 'SIGINT'
+            print(f"\n[SHUTDOWN] Received {sig_name}, stopping all workers...")
+            
+            # Kill entire process group (includes all uvicorn workers)
+            try:
+                os.killpg(os.getpgid(os.getpid()), signal.SIGTERM)
+            except ProcessLookupError:
+                pass  # Process group already dead
+            except Exception as e:
+                print(f"[SHUTDOWN] Error killing process group: {e}")
+            
+            sys.exit(0)
+        
+        # Become process group leader (allows killing all children)
+        try:
+            os.setpgrp()
+        except OSError:
+            pass  # Already a process group leader
+        
+        # Register signal handlers
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
     
     try:
         # Ensure we're in the correct directory

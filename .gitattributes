@@ -1,0 +1,45 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts must always have LF line endings (for Linux execution)
+*.sh text eol=lf
+
+# Batch files must always have CRLF line endings (for Windows execution)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Python files - normalize to LF
+*.py text eol=lf
+
+# Config files - normalize to LF
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+
+# Web files
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+
+# Markdown and docs
+*.md text eol=lf
+*.txt text eol=lf
+
+# Binary files - do not modify
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+

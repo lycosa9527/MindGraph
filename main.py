@@ -32,6 +32,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from services.temp_image_cleaner import start_cleanup_scheduler
 from services.captcha_storage import start_captcha_cleanup_scheduler
+from services.backup_scheduler import start_backup_scheduler
 from utils.env_utils import ensure_utf8_env_file
 
 # Ensure .env file is UTF-8 encoded before loading
@@ -592,26 +593,27 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to initialize JavaScript cache: {e}")
     
-    # Initialize Database
+    # Initialize Database with corruption detection and recovery
     try:
-        from config.database import init_db, check_integrity
+        from config.database import init_db
         from utils.auth import display_demo_info
+        from services.database_recovery import check_database_on_startup
         
-        # Check database integrity on startup
+        # Check database integrity on startup (only on worker 0)
+        # If corruption is detected, interactive recovery wizard is triggered
         if worker_id == '0' or not worker_id:
-            if not check_integrity():
-                logger.error(
-                    "DATABASE INTEGRITY CHECK FAILED! "
-                    "Database may be corrupted. Please run: python scripts/recover_database.py"
-                )
-            else:
-                logger.info("Database integrity check passed")
+            if not check_database_on_startup():
+                logger.critical("Database recovery failed or was aborted. Shutting down.")
+                raise SystemExit(1)
+            logger.info("Database integrity verified")
         
         init_db()
         if worker_id == '0' or not worker_id:
             logger.info("Database initialized successfully")
             # Display demo info if in demo mode
             display_demo_info()
+    except SystemExit:
+        raise  # Re-raise SystemExit to abort startup
     except Exception as e:
         if worker_id == '0' or not worker_id:
             logger.error(f"Failed to initialize database: {e}")
@@ -660,6 +662,17 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to start WAL checkpoint scheduler: {e}")
     
+    # Start database backup scheduler (daily automatic backups)
+    # Backs up SQLite database daily, keeps configurable retention (default: 2 backups)
+    # Only run on worker 0 to avoid multiple workers backing up simultaneously
+    backup_scheduler_task = None
+    if worker_id == '0' or not worker_id:
+        try:
+            backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
+            logger.info("Database backup scheduler started")
+        except Exception as e:
+            logger.warning(f"Failed to start backup scheduler: {e}")
+    
     # Yield control to application
     try:
         yield
@@ -698,6 +711,15 @@ async def lifespan(app: FastAPI):
                 pass
             if worker_id == '0' or not worker_id:
                 logger.info("WAL checkpoint scheduler stopped")
+        
+        # Stop backup scheduler (only runs on worker 0)
+        if backup_scheduler_task:
+            backup_scheduler_task.cancel()
+            try:
+                await backup_scheduler_task
+            except asyncio.CancelledError:
+                pass
+            logger.info("Database backup scheduler stopped")
         
         # Cleanup LLM Service
         try:

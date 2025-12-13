@@ -7,6 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.78] - 2025-12-13 - Database Backup, Recovery & systemd Service
+
+### Added
+
+- **systemd Service Support** (Linux Production Deployment)
+  - One-command setup: `./scripts/setup_systemd.sh`
+  - Auto-detects Python path (works with conda or venv)
+  - Auto-detects user, group, and project directory
+  - Proper graceful shutdown with 30-second timeout
+  - Auto-restart on crash (except database corruption)
+  - Auto-start on system boot
+  - Commands: `systemctl start/stop/restart/status mindgraph`
+  - Logs: `journalctl -u mindgraph -f`
+  - Files: `scripts/mindgraph.service.template`, `scripts/setup_systemd.sh`
+
+- **Improved Signal Handling** (`run_server.py`)
+  - Added SIGTERM/SIGINT handlers for graceful shutdown
+  - Process group management ensures all workers are killed
+  - `kill -15` now works correctly (no more orphaned processes)
+
+- **Automated Database Backup Scheduler** (`services/backup_scheduler.py`)
+  - Daily automatic backups at configurable hour (default: 3:00 AM)
+  - Count-based retention: keeps N most recent backups (default: 2)
+  - Uses SQLite backup API for safe WAL-mode backups
+  - Runs in background without blocking application
+  - Configuration via environment variables:
+    - `BACKUP_ENABLED=true` (default: true)
+    - `BACKUP_HOUR=3` (default: 3 = 3:00 AM)
+    - `BACKUP_RETENTION_COUNT=2` (default: 2)
+    - `BACKUP_DIR=backup` (default: backup/)
+  - Manual trigger support via `run_backup_now()`
+  - Status API via `get_backup_status()`
+
+- **Database Recovery Module** (`services/database_recovery.py`)
+  - Automatic corruption detection on startup using `PRAGMA integrity_check`
+  - Interactive recovery wizard when corruption is detected:
+    - Lists all available backups with metadata (size, date, user counts)
+    - Compares backup contents to help make informed decisions
+    - Confirmation required before restore
+  - Non-interactive mode (systemd/Docker) requires manual intervention - NO auto-restore
+  - Corrupted database is preserved to `.corrupted` file before restore
+  - WAL/SHM files properly handled during backup and restore
+
+- **Data Anomaly Detection**
+  - Detects significant data loss between consecutive backups (>50% drop)
+  - Warns user when newer backup has fewer records than older backup
+  - Example: Monday backup has 500 users, Tuesday has 5 users → flagged as anomaly
+
+- **Smart Backup Merge**
+  - When data loss is detected, offers MERGE option
+  - Combines data from multiple backups: base backup (more data) + newer backup (new records)
+  - Uses `INSERT OR IGNORE` to add new records without duplicates
+  - Result: All data from both backups combined
+
+- **Empty/Invalid Backup Protection**
+  - Minimum file size check (1KB) prevents loading empty databases
+  - SQLite header magic bytes validation ("SQLite format 3")
+  - Integrity check before restore
+  - Invalid backups shown as "CORRUPTED" in recovery wizard
+
+### Changed
+
+- **Startup Flow**
+  - Database integrity check now runs BEFORE `init_db()`
+  - If corruption detected in interactive mode: recovery wizard
+  - If corruption detected in non-interactive mode: application aborts with clear instructions
+  - Fresh deployments (no DB file) pass integrity check and continue normally
+
+- **Multi-Worker Safety**
+  - Backup scheduler only runs on worker 0 to prevent race conditions
+  - Recovery check only runs on worker 0
+
+### Technical Details
+
+- **Error Handling** - Comprehensive error handlers for:
+  - Database locked
+  - Disk I/O errors
+  - Permission denied
+  - Disk full (ENOSPC)
+  - Database corruption
+  - Connection timeouts
+
+- **Disk Space Checks**
+  - Before backup: checks for 100MB minimum free space
+  - Before restore: checks for backup size + 100MB buffer
+  - Windows compatible (skips statvfs check)
+
+- **Partial Backup Cleanup**
+  - Failed backups are automatically cleaned up
+  - No orphaned partial files left on disk
+
+### Files Added
+
+- `services/backup_scheduler.py` - Automated backup scheduler (461 lines)
+- `services/database_recovery.py` - Recovery module with interactive wizard (830 lines)
+- `scripts/mindgraph.service.template` - systemd service file template
+- `scripts/setup_systemd.sh` - One-command systemd setup script
+- `.gitattributes` - Ensures shell scripts have LF line endings on all platforms
+
+### Files Changed
+
+- `main.py` - Integrated backup scheduler and recovery check into lifespan
+- `run_server.py` - Added SIGTERM/SIGINT signal handlers for graceful shutdown
+- `scripts/setup.py` - Added systemd hint for Linux users in next steps
+- `env.example` - Added database backup configuration section
+
+---
+
 ## [4.28.77] - 2025-12-13 - Node Palette Cleanup & Line Mode Fix
 
 ### Fixed

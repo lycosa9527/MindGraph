@@ -973,6 +973,14 @@ def print_next_steps() -> None:
     print("    1. Copy env.example to .env and configure your API keys")
     print("    2. Run: python run_server.py")
     print("    3. Open http://localhost:9527 in your browser")
+    
+    # Show systemd hint for Linux users
+    os_name = platform.system().lower()
+    if os_name == "linux":
+        print("\n[INFO] For production deployment (Linux):")
+        print("    Run: ./scripts/setup_systemd.sh")
+        print("    Then use: sudo systemctl start/stop/restart mindgraph")
+    
     print("\n[INFO] For more information, see README.md")
 
 
