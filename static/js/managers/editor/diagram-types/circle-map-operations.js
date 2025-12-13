@@ -41,7 +41,7 @@ class CircleMapOperations {
         
         // Get language for new node text
         const lang = window.languageManager?.getCurrentLanguage() || 'en';
-        const newContextText = lang === 'zh' ? '新背景' : 'New Context';
+        const newContextText = lang === 'zh' ? '新联想' : 'New Context';
         
         // Add new context item
         spec.context.push(newContextText);

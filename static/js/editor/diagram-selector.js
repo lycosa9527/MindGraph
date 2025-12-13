@@ -876,7 +876,7 @@ class DiagramSelector {
         if (lang === 'zh') {
             return {
                 topic: '主题',
-                context: ['背景1', '背景2', '背景3', '背景4', '背景5', '背景6', '背景7', '背景8'],
+                context: ['联想1', '联想2', '联想3', '联想4', '联想5', '联想6', '联想7', '联想8'],
                 _layout: {
                     positions: {
                         '主题': { x: 350, y: 250 }
@@ -917,8 +917,8 @@ class DiagramSelector {
                 left: '主题A',
                 right: '主题B',
                 similarities: ['相似点1', '相似点2'],
-                left_differences: ['差异A1', '差异A2'],
-                right_differences: ['差异B1', '差异B2'],
+                left_differences: ['不同点A1', '不同点A2'],
+                right_differences: ['不同点B1', '不同点B2'],
                 _layout: {
                     positions: {
                         '主题A': { x: 200, y: 250 },
@@ -961,12 +961,12 @@ class DiagramSelector {
         
         if (lang === 'zh') {
             return {
-                event: '主要事件',
+                event: '事件',
                 causes: ['原因1', '原因2'],
                 effects: ['结果1', '结果2'],
                 _layout: {
                     positions: {
-                        '主要事件': { x: 350, y: 250 }
+                        '事件': { x: 350, y: 250 }
                     }
                 },
                 _recommended_dimensions: {
@@ -1005,9 +1005,9 @@ class DiagramSelector {
                 relating_factor: '如同',
                 dimension: '',  // Empty = diverse relationships, Filled = specific relationship
                 analogies: [
-                    { left: '项目1', right: '项目A' },
-                    { left: '项目2', right: '项目B' },
-                    { left: '项目3', right: '项目C' }
+                    { left: '事物A1', right: '事物B1' },
+                    { left: '事物A2', right: '事物B2' },
+                    { left: '事物A3', right: '事物B3' }
                 ],
                 _layout: {
                     positions: {}
@@ -1530,7 +1530,7 @@ class DiagramSelector {
         
         if (lang === 'zh') {
             return {
-                title: '流程',
+                title: '事件流程',
                 steps: [
                     '步骤1',
                     '步骤2',

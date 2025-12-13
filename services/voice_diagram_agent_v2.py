@@ -28,7 +28,7 @@ DIAGRAM_METADATA = {
     'circle_map': {
         'purpose': '定义概念，探索观察',
         'center_name': '主题/概念',
-        'node_name': '观察/背景',
+        'node_name': '观察/联想',
         'array_name': 'context',
         'node_id_prefix': 'context'
     },
@@ -241,8 +241,8 @@ class VoiceDiagramAgentV2:
 返回：{{"action": "update_node", "target": "汽车", "node_index": 0, "confidence": 0.9}}
 
 例3 - 按内容查找并修改：
-用户："把关于背景的那个改成环境"
-返回：{{"action": "update_node", "target": "环境", "search_term": "背景", "confidence": 0.85}}
+用户："把关于联想的那个改成环境"
+返回：{{"action": "update_node", "target": "环境", "search_term": "联想", "confidence": 0.85}}
 
 例4 - 打开帮助：
 用户："帮我添加更多节点"

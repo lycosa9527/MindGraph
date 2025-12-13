@@ -527,10 +527,10 @@ class LanguageManager {
                     invalidFileFormat: '无效的文件格式',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: '无法确定节点类型。请重试。',
-                    cannotAddMainTopics: '无法添加主主题。请选择相似或差异节点。',
-                    unknownNodeType: '未知节点类型。请选择相似或差异节点。',
+                    cannotAddMainTopics: '无法添加主主题。请选择相似或不同点节点。',
+                    unknownNodeType: '未知节点类型。请选择相似或不同点节点。',
                     similarityNodeAdded: '相似节点已添加！',
-                    differencePairAdded: '差异对已添加！',
+                    differencePairAdded: '不同点对已添加！',
                     invalidPartIndex: '无效的部分索引',
                     cannotAddToTopic: '无法添加到主题。请选择部分或子部分节点。',
                     unknownNodeSelectPart: '未知节点类型。请选择部分或子部分节点。',
@@ -1112,7 +1112,7 @@ class LanguageManager {
                 langEnSpan.style.display = this.currentLanguage === 'en' ? 'inline' : 'none';
                 langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
             }
-            logoutBtn.title = t.logoutTooltip;
+            logoutBtn.dataset.tooltip = t.logoutTooltip;
         }
         
         // Update feedback button text and language classes
@@ -1125,7 +1125,7 @@ class LanguageManager {
                 langEnSpan.style.display = this.currentLanguage === 'en' ? 'inline' : 'none';
                 langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
             }
-            feedbackBtn.title = t.feedbackTooltip;
+            feedbackBtn.dataset.tooltip = t.feedbackTooltip;
         }
         
         // Update ThinkGuide input placeholder
@@ -1151,7 +1151,7 @@ class LanguageManager {
         // Update language toggle button tooltip
         const langToggle = document.getElementById('language-toggle');
         if (langToggle) {
-            langToggle.title = t.switchLanguageTooltip;
+            langToggle.dataset.tooltip = t.switchLanguageTooltip;
         }
         
         // Update feedback button is handled above (line 751-762)

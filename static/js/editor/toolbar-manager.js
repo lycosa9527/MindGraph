@@ -818,21 +818,21 @@ class ToolbarManager {
             // === Chinese Patterns ===
             const chinesePatterns = [
                 // "新X" patterns
-                /^新(属性|步骤|原因|结果|分支|节点|项目|类别|子项|概念|背景|相似点|部分|子部分|左项|右项)$/,
-                // "X差异" patterns (including alphanumeric like "差异A1")
-                /^(左|右)差异$/,
-                /^差异[A-Z]\d+$/,
+                /^新(属性|步骤|原因|结果|分支|节点|项目|类别|子项|概念|联想|相似点|部分|子部分|左项|右项|事物[AB])$/,
+                // "X不同点" patterns (including alphanumeric like "不同点A1")
+                /^(左|右)不同点$/,
+                /^不同点[A-Z]\d+$/,
                 // Topic variations
-                /^(主题|中心主题|主要概念|根主题|主要事件|核心概念)$/,
+                /^(主题|中心主题|主要概念|根主题|事件|核心概念)$/,
                 /^主题[A-Z]$/,
-                // Numbered patterns: "背景1", "属性5", "项目99", etc.
-                /^(背景|属性|相似点|原因|结果|项目|步骤|部分|概念|分支|类别)\d+$/,
-                // Lettered patterns: "项目A", "项目B", etc.
-                /^项目[A-Z]$/,
+                // Numbered patterns: "联想1", "属性5", etc.
+                /^(联想|属性|相似点|原因|结果|步骤|部分|概念|分支|类别)\d+$/,
+                // Bridge Map paired patterns: "事物A1", "事物B1", etc.
+                /^事物[A-Z]\d+$/,
                 // Hierarchical patterns: "子步骤1.1", "子部分2.3", "子项4.1", "子节点3.2", "项目1.1"
                 /^(子步骤|子部分|子项|子节点|项目)\d+\.\d+$/,
                 // Flow/Process
-                /^(流程|标题)$/,
+                /^(事件流程|标题)$/,
                 // Bridge Map relating factor
                 /^如同$/,
                 // Concept Map relationship labels (edge text)

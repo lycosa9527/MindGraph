@@ -41,8 +41,8 @@ class BridgeMapOperations {
         // This is because bridge maps are sequential in nature
         const lang = window.languageManager?.getCurrentLanguage() || 'en';
         const newPair = {
-            left: lang === 'zh' ? '新左项' : 'New Left',
-            right: lang === 'zh' ? '新右项' : 'New Right'
+            left: lang === 'zh' ? '新事物A' : 'New Left',
+            right: lang === 'zh' ? '新事物B' : 'New Right'
         };
         
         spec.analogies.push(newPair);

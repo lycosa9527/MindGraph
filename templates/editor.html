@@ -45,16 +45,16 @@
     <div class="editor-landing" id="editor-landing">
         <!-- Top Right Buttons -->
         <div class="top-right-controls">
-            <button id="language-toggle" class="control-btn" title="Switch Language">
+            <button id="language-toggle" class="control-btn" data-tooltip="Switch Language">
                 <span class="lang-text">EN</span>
             </button>
             {% if wechat_qr_image %}
-            <button id="feedback-btn" class="control-btn" title="Feedback">
+            <button id="feedback-btn" class="control-btn" data-tooltip="Feedback">
                 <span class="lang-en">Feedback</span>
                 <span class="lang-zh">反馈</span>
             </button>
             {% endif %}
-            <button id="logout-btn" class="control-btn" title="Logout">
+            <button id="logout-btn" class="control-btn" data-tooltip="Logout">
                 <span class="lang-en">Logout</span>
                 <span class="lang-zh">退出</span>
             </button>

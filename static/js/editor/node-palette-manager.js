@@ -244,7 +244,7 @@ class NodePaletteManager {
         if (!validator) {
             console.warn('[NodePalette] DiagramValidator not found, using fallback placeholder detection');
             // Fallback: basic pattern matching that covers common placeholders
-            return /^(Context|背景|New|新|属性|Attribute)\s*\d*$/i.test(text.trim());
+            return /^(Context|联想|New|新|属性|Attribute)\s*\d*$/i.test(text.trim());
         }
         
         return validator.isPlaceholderText(text);

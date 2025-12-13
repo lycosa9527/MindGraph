@@ -83,8 +83,8 @@ class DoubleBubbleMapOperations {
                 if (!Array.isArray(spec.right_differences)) {
                     spec.right_differences = [];
                 }
-                const leftDiffText = lang === 'zh' ? '左差异' : 'Left Difference';
-                const rightDiffText = lang === 'zh' ? '右差异' : 'Right Difference';
+                const leftDiffText = lang === 'zh' ? '左不同点' : 'Left Difference';
+                const rightDiffText = lang === 'zh' ? '右不同点' : 'Right Difference';
                 spec.left_differences.push(leftDiffText);
                 spec.right_differences.push(rightDiffText);
                 addedNodeType = 'difference_pair';

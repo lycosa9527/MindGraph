@@ -200,13 +200,11 @@ class LLMAutoCompleteManager {
             if (currentDiagramType === 'bridge_map' && this.editor.currentSpec?.analogies) {
                 // Placeholder patterns to filter out (match llm-validation-manager.js patterns)
                 const placeholderPatterns = [
-                    /^项目\d+$/i,        // 项目1, 项目2, etc.
-                    /^项目[A-Z]$/i,      // 项目A, 项目B, etc.
+                    /^事物[A-Z]\d+$/i,   // 事物A1, 事物B1, etc.
                     /^Item\s*\d+$/i,     // Item 1, Item 2, etc.
                     /^Item\s*[A-Z]$/i,   // Item A, Item B, etc.
                     /^New\s*(Left|Right)$/i,  // New Left, New Right
-                    /^新左项$/,           // Chinese "New Left"
-                    /^新右项$/,           // Chinese "New Right"
+                    /^新事物[AB]$/,       // Chinese "New Item A/B"
                     /^左项\d*$/,          // 左项, 左项1, etc.
                     /^右项\d*$/,          // 右项, 右项1, etc.
                 ];

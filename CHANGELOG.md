@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.79] - 2025-12-13 - Diagram Placeholder Text Updates
+
+### Changed
+
+- **Circle Map Placeholders** (Chinese)
+  - Template nodes: `背景1-8` → `联想1-8`
+  - New node text: `新背景` → `新联想`
+  - Voice metadata updated
+
+- **Double Bubble Map Placeholders** (Chinese)
+  - Template differences: `差异A1/B1` → `不同点A1/B1`
+  - Dynamic add text: `左差异`/`右差异` → `左不同点`/`右不同点`
+  - UI messages updated for consistency
+
+- **Flow Map Placeholders** (Chinese)
+  - Template title: `流程` → `事件流程`
+
+- **Multi-Flow Map Placeholders** (Chinese)
+  - Template event: `主要事件` → `事件`
+
+- **Bridge Map Placeholders** (Chinese)
+  - Template pairs: `项目1/A, 项目2/B, 项目3/C` → `事物A1/B1, 事物A2/B2, 事物A3/B3`
+  - New pair text: `新左项`/`新右项` → `新事物A`/`新事物B`
+
+### Technical
+
+- Updated placeholder detection regex patterns in:
+  - `diagram-validator.js`
+  - `toolbar-manager.js`
+  - `property-panel-manager.js`
+  - `node-palette-manager.js`
+  - `llm-autocomplete-manager.js`
+- Updated dynamic node text in operations files
+- Updated voice agent metadata in `voice_diagram_agent_v2.py`
+- Full documentation: `docs/CIRCLE_MAP_PLACEHOLDER_CHANGE_GUIDE.md`
+
+---
+
 ## [4.28.78] - 2025-12-13 - Database Backup, Recovery & systemd Service
 
 ### Added

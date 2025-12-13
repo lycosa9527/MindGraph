@@ -59,6 +59,33 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+    position: relative;
+}
+
+/* Custom tooltip for control buttons - positioned below to avoid browser cutoff */
+.control-btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 10000;
+}
+
+.control-btn[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
 }
 
 .control-btn:hover {

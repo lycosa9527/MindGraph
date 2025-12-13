@@ -29,17 +29,16 @@ class DiagramValidator {
             /^子步骤\s*[\d.]+$/,      // 子步骤1.1, 子步骤2.2 (Flow Map)
             /^原因\s*\d+$/,           // 原因1
             /^结果\s*\d+$/,           // 结果1
-            /^背景\s*\d+$/,           // 背景1, 背景2 (Circle Map context nodes)
-            /^流程$/,                 // 流程 (Flow Map title)
-            /^主要事件$/,             // 主要事件 (Multi-Flow Map event)
+            /^联想\s*\d+$/,           // 联想1, 联想2 (Circle Map context nodes)
+            /^事件流程$/,             // 事件流程 (Flow Map title)
+            /^事件$/,                 // 事件 (Multi-Flow Map event)
             /^主题\s*\d+$/,           // 主题1
             /^主题$/,                 // 主题 (Circle Map default)
             /^主题[A-Z]$/,            // 主题A, 主题B (Double Bubble Map)
             /^相似点\s*\d+$/,         // 相似点1, 相似点2 (Double Bubble Map)
-            /^差异[A-Z]\d+$/,         // 差异A1, 差异B2 (Double Bubble Map)
+            /^不同点[A-Z]\d+$/,       // 不同点A1, 不同点B2 (Double Bubble Map)
             /^如同$/,                 // 如同 (Bridge Map relating factor)
-            /^项目\s*\d+$/,           // 项目1, 项目2 (Bridge Map)
-            /^项目[A-Z]$/,            // 项目A, 项目B (Bridge Map)
+            /^事物[A-Z]\d+$/,         // 事物A1, 事物B1 (Bridge Map)
             /^项目[\d.]+$/,           // 项目1.1, 项目2.3 (Tree Map)
             /^根主题$/,               // 根主题 (Tree Map)
             /^类别\s*\d+$/,           // 类别1, 类别2 (Tree Map)
