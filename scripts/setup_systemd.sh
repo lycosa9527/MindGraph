@@ -105,18 +105,60 @@ fi
 print_info "Detecting configuration..."
 
 # Get current user (the one who will run the service)
-CURRENT_USER=$(whoami)
-CURRENT_GROUP=$(id -gn)
+# If running as root via sudo, try to get the original user
+if [[ "$EUID" -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
+    CURRENT_USER="$SUDO_USER"
+    CURRENT_GROUP=$(id -gn "$SUDO_USER")
+else
+    CURRENT_USER=$(whoami)
+    CURRENT_GROUP=$(id -gn)
+fi
 
 # Get Python path (works with conda, venv, or system Python)
-PYTHON_PATH=$(which python 2>/dev/null || which python3 2>/dev/null)
-if [[ -z "$PYTHON_PATH" ]]; then
-    print_error "Python not found in PATH"
+# Priority: 1) CONDA_PREFIX (if conda is active), 2) which python, 3) which python3
+if [[ -n "$CONDA_PREFIX" ]]; then
+    # Conda environment is active
+    PYTHON_PATH="$CONDA_PREFIX/bin/python"
+elif [[ -n "$VIRTUAL_ENV" ]]; then
+    # Virtualenv is active
+    PYTHON_PATH="$VIRTUAL_ENV/bin/python"
+else
+    # Fallback to which (may not work correctly with sudo)
+    PYTHON_PATH=$(which python 2>/dev/null || which python3 2>/dev/null)
+fi
+
+# Validate Python path
+if [[ -z "$PYTHON_PATH" ]] || [[ ! -x "$PYTHON_PATH" ]]; then
+    print_error "Python not found or not executable"
     print_info "Please activate your conda/venv environment first:"
     print_info "  conda activate python313"
     print_info "  # or: source venv/bin/activate"
+    print_info ""
+    print_info "Then run this script WITHOUT sudo:"
+    print_info "  ./scripts/setup_systemd.sh"
+    print_info ""
+    print_info "Or specify Python path manually:"
+    print_info "  PYTHON_PATH=/path/to/python ./scripts/setup_systemd.sh"
     exit 1
 fi
+
+# Check if we're using system Python when conda/venv might be intended
+if [[ "$PYTHON_PATH" == "/usr/bin/python"* ]] && [[ "$EUID" -eq 0 ]]; then
+    print_warning "Detected system Python: $PYTHON_PATH"
+    print_warning "If you intended to use conda/venv, the environment may not be active."
+    print_info ""
+    print_info "To use your conda environment, run WITHOUT sudo first:"
+    print_info "  conda activate python313"
+    print_info "  ./scripts/setup_systemd.sh"
+    print_info ""
+    read -p "Continue with system Python? (y/n): " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_info "Setup cancelled. Please activate your environment and try again."
+        exit 0
+    fi
+fi
+
 PYTHON_BIN_DIR=$(dirname "$PYTHON_PATH")
 
 # Verify Python
