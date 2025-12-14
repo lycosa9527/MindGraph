@@ -12,8 +12,8 @@ import uuid
 import base64
 import random
 import string
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple
 from io import BytesIO
 import math
 
@@ -60,6 +60,7 @@ from utils.auth import (
     MAX_CAPTCHA_ATTEMPTS,
     CAPTCHA_SESSION_COOKIE_NAME,
     RATE_LIMIT_WINDOW_MINUTES,
+    LOCKOUT_DURATION_MINUTES,
     AUTH_MODE,
     DEMO_PASSKEY,
     ADMIN_DEMO_PASSKEY,
@@ -157,15 +158,41 @@ async def register(
     
     Note: Organization is automatically determined from invitation code.
     Each invitation code is unique and belongs to one school.
+    
+    Registration is only available in standard and enterprise modes.
+    Demo and bayi modes use passkey authentication instead.
     """
+    # Check authentication mode - registration not allowed in demo/bayi modes
+    if AUTH_MODE in ["demo", "bayi"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Registration is not available in {AUTH_MODE} mode. Please use passkey authentication instead."
+        )
+    
     # Validate captcha first (anti-bot protection)
     # Use verify_and_remove() for consistency with login and to prevent race conditions
-    captcha_valid = verify_captcha(request.captcha_id, request.captcha)
+    captcha_valid, captcha_error = verify_captcha(request.captcha_id, request.captcha)
     if not captcha_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Captcha expired, invalid, or incorrect. Please refresh."
-        )
+        if captcha_error == "expired":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha code has expired. Please refresh the captcha image and try again."
+            )
+        elif captcha_error == "not_found":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha session not found. Please refresh the captcha image and try again."
+            )
+        elif captcha_error == "incorrect":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha code is incorrect. Please check the code and try again, or refresh for a new code."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha verification failed. Please refresh the captcha image and try again."
+            )
     
     logger.debug(f"Captcha verified for registration: {request.phone}")
     
@@ -174,7 +201,7 @@ async def register(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Phone number already registered"
+            detail="This phone number is already registered. Please use login instead or try a different phone number."
         )
     
     # Find organization by invitation code (each invitation code is unique)
@@ -182,7 +209,14 @@ async def register(
     if not provided_invite:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invitation code is required"
+            detail="Invitation code is required. Please enter the invitation code provided by your school administrator."
+        )
+    
+    # Validate invitation code format (AAAA-XXXXX pattern)
+    if not INVITE_PATTERN.match(provided_invite):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid invitation code format. Expected format: AAAA-XXXXX (4 letters, dash, 5 alphanumeric characters). You entered: {request.invitation_code}"
         )
     
     org = db.query(Organization).filter(
@@ -192,7 +226,7 @@ async def register(
     if not org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or expired invitation code"
+            detail=f"Invitation code '{request.invitation_code}' is not valid or does not exist. Please check the code provided by your school administrator, or contact support if you believe this is an error."
         )
     
     logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
@@ -203,7 +237,7 @@ async def register(
         password_hash=hash_password(request.password),
         name=request.name,
         organization_id=org.id,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     
     db.add(new_user)
@@ -273,10 +307,18 @@ async def login(
     if not user:
         # Record failed attempt even if user doesn't exist (security)
         record_failed_attempt(request.phone, login_attempts)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Login failed. Invalid phone number or password."
-        )
+        recent_attempts = [t for t in login_attempts.get(request.phone, []) if t > time.time() - (RATE_LIMIT_WINDOW_MINUTES * 60)]
+        attempts_left = MAX_LOGIN_ATTEMPTS - len(recent_attempts)
+        if attempts_left > 0:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Login failed. Phone number not found or password incorrect. {attempts_left} attempt(s) remaining."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Too many failed login attempts. Please try again in {RATE_LIMIT_WINDOW_MINUTES} minutes."
+            )
     
     # Check account lockout
     is_locked, lockout_msg = check_account_lockout(user)
@@ -287,20 +329,33 @@ async def login(
         )
     
     # Verify captcha
-    captcha_valid = verify_captcha(request.captcha_id, request.captcha)
+    captcha_valid, captcha_error = verify_captcha(request.captcha_id, request.captcha)
     if not captcha_valid:
         record_failed_attempt(request.phone, login_attempts)
         increment_failed_attempts(user, db)
         attempts_left = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
+        
+        # Provide specific captcha error message
+        if captcha_error == "expired":
+            captcha_msg = "Captcha code has expired. Please refresh the captcha image"
+        elif captcha_error == "not_found":
+            captcha_msg = "Captcha session not found. Please refresh the captcha image"
+        elif captcha_error == "incorrect":
+            captcha_msg = "Captcha code is incorrect. Please check the code or refresh for a new one"
+        else:
+            captcha_msg = "Captcha verification failed. Please refresh the captcha image"
+        
         if attempts_left > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Login failed. Wrong captcha code. {attempts_left} attempts left."
+                detail=f"{captcha_msg} and try again. {attempts_left} attempt(s) remaining before account lockout."
             )
         else:
+            # Account is now locked
+            minutes_left = LOCKOUT_DURATION_MINUTES
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
-                detail="Account locked due to too many failed attempts. Try again in 5 minutes."
+                detail=f"Account temporarily locked due to {MAX_LOGIN_ATTEMPTS} failed attempts. Please try again in {minutes_left} minutes."
             )
     
     # Verify password
@@ -312,12 +367,14 @@ async def login(
         if attempts_left > 0:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Login failed. Wrong password. {attempts_left} attempts left."
+                detail=f"Invalid password. Please check your password and try again. {attempts_left} attempt(s) remaining before account lockout."
             )
         else:
+            # Account is now locked
+            minutes_left = LOCKOUT_DURATION_MINUTES
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
-                detail="Account locked due to too many failed attempts. Try again in 5 minutes."
+                detail=f"Account temporarily locked due to {MAX_LOGIN_ATTEMPTS} failed login attempts. Please try again in {minutes_left} minutes."
             )
     
     # Successful login
@@ -335,17 +392,18 @@ async def login(
             logger.warning(f"Login blocked: Organization {org.code} is locked")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Organization account is locked. Please contact support."
+                detail=f"Your school account ({org.name}) has been locked by the administrator. Please contact your school administrator or support for assistance."
             )
         
         # Check if organization subscription has expired
         if hasattr(org, 'expires_at') and org.expires_at:
-            from datetime import datetime
-            if org.expires_at < datetime.utcnow():
+            from datetime import datetime, timezone
+            if org.expires_at < datetime.now(timezone.utc):
                 logger.warning(f"Login blocked: Organization {org.code} expired on {org.expires_at}")
+                expired_date = org.expires_at.strftime("%Y-%m-%d")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Organization subscription has expired. Please contact support."
+                    detail=f"Your school subscription ({org.name}) expired on {expired_date}. Please contact your school administrator to renew the subscription."
                 )
     
     # Generate JWT token
@@ -603,14 +661,16 @@ async def generate_captcha(request: Request, response: Response):
     }
 
 
-def verify_captcha(captcha_id: str, user_code: str) -> bool:
+def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
     """
     Verify captcha code
     
     Note: Verification is CASE-INSENSITIVE for better user experience.
     Users can enter captcha in any case (upper/lower/mixed).
     
-    Returns True if valid, False otherwise
+    Returns:
+        Tuple of (is_valid: bool, error_reason: Optional[str])
+        error_reason can be: "not_found", "expired", "incorrect", or None if valid
     Removes captcha after verification (one-time use)
     """
     return captcha_storage.verify_and_remove(captcha_id, user_code)
@@ -642,13 +702,36 @@ async def send_sms_code(
     - 60 seconds cooldown between requests for same phone/purpose
     - Maximum 5 codes per hour per phone number
     """
-    # Verify captcha first (anti-bot protection)
-    captcha_valid = verify_captcha(request.captcha_id, request.captcha)
-    if not captcha_valid:
+    # Check authentication mode - registration SMS not allowed in demo/bayi modes
+    if request.purpose == "register" and AUTH_MODE in ["demo", "bayi"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Captcha expired, invalid, or incorrect. Please refresh."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Registration is not available in {AUTH_MODE} mode. Please use passkey authentication instead."
         )
+    
+    # Verify captcha first (anti-bot protection)
+    captcha_valid, captcha_error = verify_captcha(request.captcha_id, request.captcha)
+    if not captcha_valid:
+        if captcha_error == "expired":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha code has expired. Please refresh the captcha image and try again."
+            )
+        elif captcha_error == "not_found":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha session not found. Please refresh the captcha image and try again."
+            )
+        elif captcha_error == "incorrect":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha code is incorrect. Please check the code and try again, or refresh for a new code."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha verification failed. Please refresh the captcha image and try again."
+            )
     
     sms_service = get_sms_service()
     
@@ -656,7 +739,7 @@ async def send_sms_code(
     if not sms_service.is_available:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="SMS service is not configured"
+            detail="SMS service is not configured. Please contact support or use password-based authentication instead."
         )
     
     phone = request.phone
@@ -668,20 +751,26 @@ async def send_sms_code(
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Phone number already registered"
+                detail="This phone number is already registered. Please use login instead or try a different phone number."
             )
     
     # For login and reset_password, check if user exists
     if purpose in ["login", "reset_password"]:
         existing_user = db.query(User).filter(User.phone == phone).first()
         if not existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Phone number not registered"
-            )
+            if purpose == "login":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="This phone number is not registered. Please check your phone number or register a new account."
+                )
+            else:  # reset_password
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="This phone number is not registered. Please check your phone number or contact support."
+                )
     
     # Check rate limiting: cooldown between requests
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     cooldown_threshold = now - timedelta(seconds=SMS_RESEND_INTERVAL_SECONDS)
     
     recent_code = db.query(SMSVerification).filter(
@@ -693,10 +782,17 @@ async def send_sms_code(
     
     if recent_code:
         wait_seconds = SMS_RESEND_INTERVAL_SECONDS - int((now - recent_code.created_at).total_seconds())
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Please wait {wait_seconds} seconds before requesting a new code"
-        )
+        wait_minutes = (wait_seconds // 60) + 1 if wait_seconds >= 60 else 0
+        if wait_minutes > 0:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Please wait {wait_minutes} minute(s) before requesting a new SMS code. A code was recently sent to this number."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Please wait {wait_seconds} second(s) before requesting a new SMS code. A code was recently sent to this number."
+            )
     
     # Check rate limit within time window
     # Count ALL codes created within the window to prevent rate limit bypass
@@ -710,7 +806,7 @@ async def send_sms_code(
     if window_count >= SMS_MAX_ATTEMPTS_PER_PHONE:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many SMS requests. Please try again in {SMS_MAX_ATTEMPTS_WINDOW_HOURS} hour(s)."
+            detail=f"Too many SMS verification code requests ({window_count} requests in {SMS_MAX_ATTEMPTS_WINDOW_HOURS} hour(s)). Please try again later."
         )
     
     # Generate verification code first
@@ -749,9 +845,11 @@ async def send_sms_code(
             SMSVerification.id == sms_verification.id
         ).delete()
         db.commit()
+        # Provide more specific error message
+        error_detail = message if message and message != "SMS service not available" else "SMS service is temporarily unavailable. Please try again later or contact support if the problem persists."
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message
+            detail=error_detail
         )
     
     logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
@@ -781,7 +879,7 @@ async def verify_sms_code(
     phone = request.phone
     code = request.code
     purpose = request.purpose
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     # Find valid verification code
     verification = db.query(SMSVerification).filter(
@@ -804,12 +902,12 @@ async def verify_sms_code(
         if expired and expired.expires_at <= now:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Verification code expired"
+                detail=f"SMS verification code has expired. Codes are valid for {SMS_CODE_EXPIRY_MINUTES} minutes. Please request a new code."
             )
         
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid verification code"
+            detail="Invalid SMS verification code. Please check the code and try again, or request a new code."
         )
     
     # Increment attempt count (for tracking)
@@ -837,7 +935,7 @@ def _verify_and_consume_sms_code(
     This approach works with both SQLite (which ignores SELECT FOR UPDATE)
     and PostgreSQL/MySQL. Only one concurrent request can succeed.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     # Use atomic UPDATE with WHERE conditions to prevent race conditions
     # Only one concurrent request will get rowcount=1, others get rowcount=0
@@ -874,7 +972,7 @@ def _verify_and_consume_sms_code(
     if expired and expired.expires_at <= now:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification code expired"
+            detail=f"SMS verification code has expired. Codes are valid for {SMS_CODE_EXPIRY_MINUTES} minutes. Please request a new code."
         )
     
     # Check if code was already used (race condition - another request consumed it)
@@ -888,12 +986,12 @@ def _verify_and_consume_sms_code(
     if already_used:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification code already used"
+            detail="This SMS verification code has already been used. Each code can only be used once. Please request a new code."
         )
     
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid verification code"
+        detail="Invalid SMS verification code. Please check the code and try again, or request a new code."
     )
 
 
@@ -915,7 +1013,17 @@ async def register_with_sms(
     - Mandatory name (no numbers)
     - Valid invitation code
     - SMS verification code (consumed last to avoid wasting codes)
+    
+    Registration is only available in standard and enterprise modes.
+    Demo and bayi modes use passkey authentication instead.
     """
+    # Check authentication mode - registration not allowed in demo/bayi modes
+    if AUTH_MODE in ["demo", "bayi"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Registration is not available in {AUTH_MODE} mode. Please use passkey authentication instead."
+        )
+    
     # Validate all prerequisites BEFORE consuming SMS code
     # This prevents wasting codes on validation failures
     
@@ -924,7 +1032,7 @@ async def register_with_sms(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Phone number already registered"
+            detail="This phone number is already registered. Please use login instead or try a different phone number."
         )
     
     # Find organization by invitation code
@@ -932,7 +1040,14 @@ async def register_with_sms(
     if not provided_invite:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invitation code is required"
+            detail="Invitation code is required. Please enter the invitation code provided by your school administrator."
+        )
+    
+    # Validate invitation code format (AAAA-XXXXX pattern)
+    if not INVITE_PATTERN.match(provided_invite):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid invitation code format. Expected format: AAAA-XXXXX (4 letters, dash, 5 alphanumeric characters). You entered: {request.invitation_code}"
         )
     
     org = db.query(Organization).filter(
@@ -942,7 +1057,7 @@ async def register_with_sms(
     if not org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or expired invitation code"
+            detail=f"Invitation code '{request.invitation_code}' is not valid or does not exist. Please check the code provided by your school administrator, or contact support if you believe this is an error."
         )
     
     # All validations passed - now consume the SMS code
@@ -961,7 +1076,7 @@ async def register_with_sms(
         password_hash=hash_password(request.password),
         name=request.name,
         organization_id=org.id,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     
     db.add(new_user)
@@ -1034,15 +1149,16 @@ async def login_with_sms(
             logger.warning(f"SMS login blocked: Organization {org.code} is locked")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Organization account is locked. Please contact support."
+                detail=f"Your school account ({org.name}) has been locked by the administrator. Please contact your school administrator or support for assistance."
             )
         
         if hasattr(org, 'expires_at') and org.expires_at:
-            if org.expires_at < datetime.utcnow():
+            if org.expires_at < datetime.now(timezone.utc):
                 logger.warning(f"SMS login blocked: Organization {org.code} expired")
+                expired_date = org.expires_at.strftime("%Y-%m-%d")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Organization subscription has expired. Please contact support."
+                    detail=f"Your school subscription ({org.name}) expired on {expired_date}. Please contact your school administrator to renew the subscription."
                 )
     
     # All validations passed - now consume the SMS code
@@ -1100,7 +1216,7 @@ async def reset_password_with_sms(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Phone number not registered"
+            detail="This phone number is not registered. Please check your phone number or contact support."
         )
     
     # Verify SMS code
@@ -1212,7 +1328,7 @@ async def verify_demo(
                     code=BAYI_DEFAULT_ORG_CODE,
                     name="Bayi School",
                     invitation_code="BAYI2024",
-                    created_at=datetime.utcnow()
+                    created_at=datetime.now(timezone.utc)
                 )
                 db.add(org)
                 db.commit()
@@ -1234,7 +1350,7 @@ async def verify_demo(
                 password_hash=hash_password("passkey-no-pwd"),
                 name=user_name,
                 organization_id=org.id,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
             db.add(auth_user)
             db.commit()
@@ -1318,7 +1434,7 @@ async def list_organizations_admin(
     
     # Get token stats for all organizations (this week)
     token_stats_by_org = {}
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     week_ago = now - timedelta(days=7)
     
     try:
@@ -1410,7 +1526,7 @@ async def create_organization_admin(
         code=request["code"],
         name=request["name"],
         invitation_code=invitation_code,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     db.add(new_org)
     db.commit()
@@ -1588,7 +1704,7 @@ async def list_users_admin(
     users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
     
     # Get token stats for all users (this week)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     week_ago = now - timedelta(days=7)
     token_stats_by_user = {}
     
@@ -1686,7 +1802,7 @@ async def update_user_admin(
             existing = db.query(User).filter(User.phone == new_phone).first()
             if existing:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                                  detail=f"Phone number {new_phone} already registered")
+                                  detail=f"Phone number {new_phone} is already registered by another user")
         user.phone = new_phone
     
     # Update name (with validation)
@@ -1931,7 +2047,7 @@ async def get_stats_admin(
     # Sort by count (highest first)
     users_by_org = dict(sorted(users_by_org.items(), key=lambda x: x[1], reverse=True))
     
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
     recent_registrations = db.query(User).filter(User.created_at >= today_start).count()
@@ -2021,7 +2137,7 @@ async def get_token_stats_admin(
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)

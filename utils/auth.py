@@ -744,7 +744,10 @@ def check_rate_limit(
     
     if len(recent_attempts) >= max_attempts:
         minutes_left = int((recent_attempts[0] + (RATE_LIMIT_WINDOW_MINUTES * 60) - now) / 60) + 1
-        return False, f"Too many attempts. Try again in {minutes_left} minutes."
+        attempts_made = len(recent_attempts)
+        if minutes_left == 1:
+            return False, f"Too many login attempts ({attempts_made} attempts in {RATE_LIMIT_WINDOW_MINUTES} minutes). Please try again in {minutes_left} minute."
+        return False, f"Too many login attempts ({attempts_made} attempts in {RATE_LIMIT_WINDOW_MINUTES} minutes). Please try again in {minutes_left} minutes."
     
     return True, ""
 
@@ -772,8 +775,11 @@ def check_account_lockout(user: User) -> Tuple[bool, str]:
         (is_locked, error_message)
     """
     if user.locked_until and user.locked_until > datetime.utcnow():
-        minutes_left = int((user.locked_until - datetime.utcnow()).total_seconds() / 60) + 1
-        return True, f"Account locked. Try again in {minutes_left} minutes."
+        seconds_left = int((user.locked_until - datetime.utcnow()).total_seconds())
+        minutes_left = (seconds_left // 60) + 1
+        if minutes_left == 1:
+            return True, f"Account temporarily locked due to too many failed attempts. Please try again in {minutes_left} minute."
+        return True, f"Account temporarily locked due to too many failed attempts. Please try again in {minutes_left} minutes."
     
     return False, ""
 

@@ -208,9 +208,16 @@ class AuthHelper {
             });
         }
         
+        // Clear cache detection session flag so notification can show again after refresh
+        try {
+            sessionStorage.removeItem('mindgraph_cache_detected');
+        } catch (e) {
+            // Ignore errors
+        }
+        
         // Force reload from server, bypassing cache
-        // true parameter tells browser to reload from server, not cache
-        window.location.reload(true);
+        // Modern browsers handle cache bypass automatically with reload()
+        window.location.reload();
     }
 
     /**
@@ -218,6 +225,11 @@ class AuthHelper {
      * 
      * Compares current app version with server version.
      * If different, prompts user to refresh or auto-refreshes.
+     * 
+     * NOTE: This works alongside the template-based cache detection system.
+     * The template system handles initial page load detection, while this handles
+     * periodic checks for long-running sessions. Both use the same localStorage key
+     * to avoid duplicate notifications.
      * 
      * @param {boolean} autoRefresh - If true, refresh without prompting
      * @returns {Promise<boolean>} - True if version changed
@@ -228,6 +240,18 @@ class AuthHelper {
             const currentVersion = window.MINDGRAPH_VERSION;
             if (!currentVersion) {
                 return false;
+            }
+            
+            // Check if template-based cache detection already showed notification this session
+            // This prevents duplicate notifications when both systems detect the same version change
+            try {
+                const cacheDetected = sessionStorage.getItem('mindgraph_cache_detected');
+                if (cacheDetected === 'true') {
+                    // Template system already handled this, skip to avoid duplicate
+                    return false;
+                }
+            } catch (e) {
+                // Ignore errors
             }
             
             // Fetch latest version from server
@@ -242,16 +266,40 @@ class AuthHelper {
             if (serverVersion && serverVersion !== currentVersion) {
                 console.log(`Version changed: ${currentVersion} -> ${serverVersion}`);
                 
+                // Update localStorage version (same key as template system uses)
+                try {
+                    localStorage.setItem('mindgraph_app_version', serverVersion);
+                } catch (e) {
+                    // Ignore errors
+                }
+                
                 if (autoRefresh) {
                     this.hardRefresh();
                     return true;
                 }
                 
+                // Mark that we've detected cache for this session (same flag as template system)
+                try {
+                    sessionStorage.setItem('mindgraph_cache_detected', 'true');
+                } catch (e) {
+                    // Ignore errors
+                }
+                
                 // Show notification to user (with translation support)
+                // Get language preference (check languageManager first, then localStorage)
+                const currentLang = window.languageManager?.getCurrentLanguage?.() 
+                    || localStorage.getItem('language') 
+                    || 'zh';
+                const isZh = currentLang === 'zh';
+                
                 const notifMessage = window.languageManager?.getNotification('newVersionAvailable', serverVersion) 
-                    || `New version available (${serverVersion}). Click here to refresh.`;
+                    || (isZh 
+                        ? `新版本已发布 (${serverVersion})。点击此处刷新。`
+                        : `New version available (${serverVersion}). Click here to refresh.`);
                 const confirmMessage = window.languageManager?.getNotification('newVersionConfirm', serverVersion)
-                    || `A new version (${serverVersion}) is available. Refresh now?`;
+                    || (isZh 
+                        ? `新版本 (${serverVersion}) 已发布，是否立即刷新？`
+                        : `A new version (${serverVersion}) is available. Refresh now?`);
                 
                 if (window.NotificationManager && window.NotificationManager.show) {
                     window.NotificationManager.show(

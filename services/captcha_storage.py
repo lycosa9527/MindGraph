@@ -19,7 +19,7 @@ Features:
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 from sqlalchemy.orm import Session
 from config.database import SessionLocal
@@ -116,7 +116,7 @@ class SQLiteCaptchaStorage:
         finally:
             db.close()
     
-    def verify_and_remove(self, captcha_id: str, user_code: str) -> bool:
+    def verify_and_remove(self, captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
         """
         Verify captcha code and remove it (one-time use).
         
@@ -125,7 +125,8 @@ class SQLiteCaptchaStorage:
             user_code: User-provided captcha code
             
         Returns:
-            True if valid, False otherwise
+            Tuple of (is_valid: bool, error_reason: Optional[str])
+            error_reason can be: "not_found", "expired", "incorrect", or None if valid
         """
         db = self._get_db()
         try:
@@ -133,14 +134,14 @@ class SQLiteCaptchaStorage:
             
             if not captcha:
                 logger.warning(f"[CaptchaStorage] Captcha not found: {captcha_id}")
-                return False
+                return False, "not_found"
             
             # Check expiration
             if datetime.utcnow() > captcha.expires_at:
                 db.delete(captcha)
                 db.commit()
                 logger.warning(f"[CaptchaStorage] Captcha expired: {captcha_id}")
-                return False
+                return False, "expired"
             
             # Verify code (case-insensitive)
             is_valid = captcha.code.upper() == user_code.upper()
@@ -151,15 +152,15 @@ class SQLiteCaptchaStorage:
             
             if not is_valid:
                 logger.warning(f"[CaptchaStorage] Captcha verification failed: {captcha_id}")
+                return False, "incorrect"
             else:
                 logger.debug(f"[CaptchaStorage] Captcha verified: {captcha_id}")
-            
-            return is_valid
+                return True, None
             
         except Exception as e:
             db.rollback()
             logger.error(f"[CaptchaStorage] Failed to verify captcha: {e}")
-            return False
+            return False, "error"
         finally:
             db.close()
     

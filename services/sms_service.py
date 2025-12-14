@@ -373,19 +373,19 @@ class SMSService:
             User-friendly error message
         """
         error_messages = {
-            "LimitExceeded.PhoneNumberDailyLimit": "Daily SMS limit reached for this number",
-            "LimitExceeded.PhoneNumberThirtySecondLimit": "Please wait 30 seconds before requesting again",
-            "LimitExceeded.PhoneNumberOneHourLimit": "Hourly SMS limit reached for this number",
-            "InvalidParameterValue.IncorrectPhoneNumber": "Invalid phone number format",
-            "FailedOperation.PhoneNumberInBlacklist": "Phone number is blocked",
-            "FailedOperation.SignatureIncorrect": "SMS signature configuration error",
-            "FailedOperation.TemplateIncorrect": "SMS template configuration error",
-            "FailedOperation.InsufficientBalanceInSmsPackage": "SMS service balance insufficient",
-            "AuthFailure.SecretIdNotFound": "SMS service authentication error",
-            "AuthFailure.SignatureFailure": "SMS service signature error",
+            "LimitExceeded.PhoneNumberDailyLimit": "Daily SMS limit reached for this phone number. Please try again tomorrow or contact support.",
+            "LimitExceeded.PhoneNumberThirtySecondLimit": "Please wait 30 seconds before requesting a new SMS code.",
+            "LimitExceeded.PhoneNumberOneHourLimit": "Hourly SMS limit reached for this phone number. Please wait and try again later.",
+            "InvalidParameterValue.IncorrectPhoneNumber": "Invalid phone number format. Please check that you entered an 11-digit Chinese mobile number starting with 1.",
+            "FailedOperation.PhoneNumberInBlacklist": "This phone number is blocked from receiving SMS. Please contact support for assistance.",
+            "FailedOperation.SignatureIncorrect": "SMS service configuration error. Please contact support.",
+            "FailedOperation.TemplateIncorrect": "SMS template configuration error. Please contact support.",
+            "FailedOperation.InsufficientBalanceInSmsPackage": "SMS service balance insufficient. Please contact support.",
+            "AuthFailure.SecretIdNotFound": "SMS service authentication error. Please contact support.",
+            "AuthFailure.SignatureFailure": "SMS service authentication error. Please contact support.",
         }
         
-        return error_messages.get(code, f"SMS send failed: {code}")
+        return error_messages.get(code, f"SMS sending failed due to: {code}. Please try again later or contact support if the problem persists.")
 
 
 # Singleton instance

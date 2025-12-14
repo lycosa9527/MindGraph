@@ -457,21 +457,23 @@ class RegisterRequest(BaseModel):
     def validate_phone(cls, v):
         """Validate 11-digit Chinese mobile format"""
         if not v.isdigit():
-            raise ValueError("Phone must contain only digits")
-        if len(v) != 11:
-            raise ValueError("Phone must be exactly 11 digits")
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
         if not v.startswith('1'):
-            raise ValueError("Chinese mobile numbers start with 1")
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
     
     @field_validator('name')
     @classmethod
     def validate_name(cls, v):
         """Validate name has no numbers"""
-        if any(char.isdigit() for char in v):
-            raise ValueError("Name cannot contain numbers")
         if len(v) < 2:
-            raise ValueError("Name must be at least 2 characters")
+            raise ValueError(f"Name is too short ({len(v)} character(s)). Must be at least 2 characters.")
+        if any(char.isdigit() for char in v):
+            raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
         return v
     
     class Config:
@@ -543,11 +545,13 @@ class SendSMSCodeRequest(BaseModel):
     def validate_phone(cls, v):
         """Validate 11-digit Chinese mobile format"""
         if not v.isdigit():
-            raise ValueError("Phone must contain only digits")
-        if len(v) != 11:
-            raise ValueError("Phone must be exactly 11 digits")
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
         if not v.startswith('1'):
-            raise ValueError("Chinese mobile numbers start with 1")
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
     
     @field_validator('purpose')
@@ -581,11 +585,13 @@ class VerifySMSCodeRequest(BaseModel):
     def validate_phone(cls, v):
         """Validate 11-digit Chinese mobile format"""
         if not v.isdigit():
-            raise ValueError("Phone must contain only digits")
-        if len(v) != 11:
-            raise ValueError("Phone must be exactly 11 digits")
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
         if not v.startswith('1'):
-            raise ValueError("Chinese mobile numbers start with 1")
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
     
     @field_validator('code')
@@ -593,9 +599,9 @@ class VerifySMSCodeRequest(BaseModel):
     def validate_code(cls, v):
         """Validate 6-digit SMS code"""
         if not v.isdigit():
-            raise ValueError("Code must contain only digits")
+            raise ValueError("SMS verification code must contain only digits. Please enter the 6-digit code sent to your phone.")
         if len(v) != 6:
-            raise ValueError("Code must be exactly 6 digits")
+            raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
     
     class Config:
@@ -621,21 +627,23 @@ class RegisterWithSMSRequest(BaseModel):
     def validate_phone(cls, v):
         """Validate 11-digit Chinese mobile format"""
         if not v.isdigit():
-            raise ValueError("Phone must contain only digits")
-        if len(v) != 11:
-            raise ValueError("Phone must be exactly 11 digits")
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
         if not v.startswith('1'):
-            raise ValueError("Chinese mobile numbers start with 1")
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
     
     @field_validator('name')
     @classmethod
     def validate_name(cls, v):
         """Validate name has no numbers"""
-        if any(char.isdigit() for char in v):
-            raise ValueError("Name cannot contain numbers")
         if len(v) < 2:
-            raise ValueError("Name must be at least 2 characters")
+            raise ValueError(f"Name is too short ({len(v)} character(s)). Must be at least 2 characters.")
+        if any(char.isdigit() for char in v):
+            raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
         return v
     
     @field_validator('sms_code')
@@ -643,7 +651,9 @@ class RegisterWithSMSRequest(BaseModel):
     def validate_sms_code(cls, v):
         """Validate 6-digit SMS code"""
         if not v.isdigit():
-            raise ValueError("SMS code must contain only digits")
+            raise ValueError("SMS verification code must contain only digits. Please enter the 6-digit code sent to your phone.")
+        if len(v) != 6:
+            raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
     
     class Config:
@@ -668,11 +678,13 @@ class LoginWithSMSRequest(BaseModel):
     def validate_phone(cls, v):
         """Validate 11-digit Chinese mobile format"""
         if not v.isdigit():
-            raise ValueError("Phone must contain only digits")
-        if len(v) != 11:
-            raise ValueError("Phone must be exactly 11 digits")
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
         if not v.startswith('1'):
-            raise ValueError("Chinese mobile numbers start with 1")
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
     
     @field_validator('sms_code')
@@ -680,7 +692,9 @@ class LoginWithSMSRequest(BaseModel):
     def validate_sms_code(cls, v):
         """Validate 6-digit SMS code"""
         if not v.isdigit():
-            raise ValueError("SMS code must contain only digits")
+            raise ValueError("SMS verification code must contain only digits. Please enter the 6-digit code sent to your phone.")
+        if len(v) != 6:
+            raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
     
     class Config:
@@ -703,11 +717,13 @@ class ResetPasswordWithSMSRequest(BaseModel):
     def validate_phone(cls, v):
         """Validate 11-digit Chinese mobile format"""
         if not v.isdigit():
-            raise ValueError("Phone must contain only digits")
-        if len(v) != 11:
-            raise ValueError("Phone must be exactly 11 digits")
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
         if not v.startswith('1'):
-            raise ValueError("Chinese mobile numbers start with 1")
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
     
     @field_validator('sms_code')
@@ -715,7 +731,9 @@ class ResetPasswordWithSMSRequest(BaseModel):
     def validate_sms_code(cls, v):
         """Validate 6-digit SMS code"""
         if not v.isdigit():
-            raise ValueError("SMS code must contain only digits")
+            raise ValueError("SMS verification code must contain only digits. Please enter the 6-digit code sent to your phone.")
+        if len(v) != 6:
+            raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
     
     class Config:

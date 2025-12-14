@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.86] - 2025-12-13 - Button Text Improvements
+
+### Changed
+
+- **Chinese Button Text Updates** (`static/js/editor/language-manager.js`)
+  - Changed "导出" to "导出为图片" (Export → Export as Image)
+  - Changed "保存" to "保存文件" (Save → Save File)
+  - Changed "导入" to "打开文件" (Import → Open File)
+  - Impact: More descriptive button labels improve user understanding of functionality
+
+## [4.28.85] - 2025-12-13 - Cache Detection, Auth Mode Restrictions & System Consolidation
+
+### Added
+
+- **Automatic Cache Detection System** (`templates/auth.html`, `templates/editor.html`, `templates/admin.html`, `templates/demo-login.html`)
+  - Detects when users are using cached JavaScript/CSS files from older versions
+  - Compares stored version in localStorage with server version from VERSION file
+  - Shows bilingual (Chinese/English) notification banner when cache mismatch detected
+  - Provides one-click refresh button for automatic cache clearing
+  - Includes clear keyboard shortcut instructions (Ctrl+Shift+R / Cmd+Shift+R) with visual key indicators
+  - Auto-dismisses after 30 seconds if user doesn't interact
+  - Session-aware: Won't spam users repeatedly in the same session
+  - Impact: Ensures users always have the latest application version, prevents bugs from stale cache
+
+- **Demo/Bayi Mode Authentication Restrictions** (`templates/auth.html`)
+  - Blocks access to login and registration modals in demo/bayi modes
+  - Hides all authentication tabs (login, register) when mode is detected
+  - Shows informative message directing users to passkey authentication at `/demo`
+  - Prevents form submissions and redirects users appropriately
+  - Impact: Prevents confusion, ensures users use correct authentication method for their mode
+
+- **Error Handling for Storage APIs**
+  - Added safe wrappers for localStorage and sessionStorage with try-catch blocks
+  - Gracefully handles cases where storage is disabled or throws errors
+  - Prevents application crashes when storage APIs are unavailable
+  - Impact: Better reliability across different browser configurations
+
+- **Double-Click Prevention**
+  - Added flag to prevent multiple rapid clicks on refresh button
+  - Prevents race conditions and duplicate refresh attempts
+  - Impact: Smoother user experience, prevents potential issues
+
+### Fixed
+
+- **Missing slideOut Animation**
+  - Added missing `@keyframes slideOut` animation for smooth auto-dismiss
+  - Fixes animation error when notification auto-dismisses after 30 seconds
+  - Impact: Better visual feedback when notification disappears
+
+- **Deprecated reload() Parameter**
+  - Updated from `window.location.reload(true)` to `window.location.reload()` in all templates
+  - Updated `hardRefresh()` in `auth-helper.js` to use modern reload method
+  - Modern browsers handle cache bypass automatically
+  - Impact: Uses current web standards, better browser compatibility
+
+- **Chinese Translation for Version Notifications** (`static/js/auth-helper.js`)
+  - Added Chinese translations for version update notifications
+  - Falls back to localStorage language preference if languageManager unavailable
+  - Impact: Chinese users now see translated version update messages
+
+- **Overlapping Cache Detection Systems**
+  - Consolidated `auth-helper.js` periodic version checks with template-based cache detection
+  - Both systems now use same localStorage key (`mindgraph_app_version`)
+  - Both respect same sessionStorage flag (`mindgraph_cache_detected`) to prevent duplicates
+  - `auth-helper.js` checks flag before showing notification to avoid conflicts
+  - Impact: No duplicate notifications, systems work together harmoniously
+
+### Changed
+
+- **Version Tracking Consolidation**
+  - Version now stored in `window.MINDGRAPH_VERSION` for all templates
+  - Consistent version tracking across auth, editor, admin, and demo-login pages
+  - `auth-helper.js` now uses same localStorage key as template system
+  - Impact: Unified version management system, no conflicts between systems
+
+- **Auth Helper Version Check Integration** (`static/js/auth-helper.js`)
+  - `checkVersionAndRefresh()` now respects template cache detection session flag
+  - Updates localStorage version using same key as template system
+  - Sets sessionStorage flag to prevent duplicate notifications
+  - Clears session flag on refresh so notification can show again
+  - Impact: Seamless integration between periodic checks and page-load detection
+
 ## [4.28.84] - 2025-12-13 - Dependency Fixes & Voice Input HTTPS Support
 
 ### Fixed

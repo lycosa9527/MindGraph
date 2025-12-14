@@ -303,9 +303,9 @@ async def editor(request: Request, db: Session = Depends(get_db)):
 async def auth_page(request: Request, db: Session = Depends(get_db)):
     """Authentication page - login/register"""
     try:
-        # Demo mode: /auth doesn't make sense, redirect to /demo
-        if AUTH_MODE == "demo":
-            logger.debug("Demo mode: Redirecting /auth access to /demo")
+        # Demo/Bayi mode: /auth doesn't make sense, redirect to /demo
+        if AUTH_MODE in ["demo", "bayi"]:
+            logger.debug(f"{AUTH_MODE.capitalize()} mode: Redirecting /auth access to /demo")
             return RedirectResponse(url="/demo", status_code=303)
         
         # If already authenticated, redirect to editor

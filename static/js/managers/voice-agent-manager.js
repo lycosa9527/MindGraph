@@ -226,16 +226,23 @@ class VoiceAgentManager {
             }
             
         } catch (error) {
-            this.logger.error('VoiceAgentManager', 'Start failed:', error);
+            // Extract meaningful error message
+            const errorMessage = error instanceof Error 
+                ? error.message 
+                : (typeof error === 'string' 
+                    ? error 
+                    : (error?.message || error?.toString() || 'Unknown error'));
+            
+            this.logger.error('VoiceAgentManager', 'Start failed:', error instanceof Error ? error : new Error(errorMessage));
             
             // Update state
             this.stateManager.updateVoice({ 
                 active: false,
-                error: error.message
+                error: errorMessage
             });
             
             // Emit error event
-            this.eventBus.emit('voice:error', { error: error.message });
+            this.eventBus.emit('voice:error', { error: errorMessage });
             
             if (this.comicBubble) {
                 this.comicBubble.setStatus('error');
@@ -656,10 +663,25 @@ class VoiceAgentManager {
                 }
             };
             
-            this.ws.onerror = (error) => {
-                logger.error('VoiceAgentManager', 'WebSocket error:', error);
+            this.ws.onerror = (event) => {
+                // WebSocket error events don't provide detailed error info
+                // Extract meaningful information from the WebSocket connection state
+                const wsState = this.ws ? {
+                    readyState: this.ws.readyState,
+                    url: this.ws.url,
+                    protocol: this.ws.protocol,
+                    extensions: this.ws.extensions
+                } : null;
+                
+                const errorMessage = `WebSocket connection failed. State: ${wsState ? `readyState=${wsState.readyState} (${['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][wsState.readyState] || 'UNKNOWN'}), url=${wsState.url}` : 'WebSocket not initialized'}`;
+                
+                logger.error('VoiceAgentManager', 'WebSocket error:', new Error(errorMessage));
+                
                 if (this.eventBus) {
-                    this.eventBus.emit('voice:ws_error', { error });
+                    this.eventBus.emit('voice:ws_error', { 
+                        error: errorMessage,
+                        wsState: wsState
+                    });
                 }
                 
                 // Reset UI state on error
@@ -672,23 +694,44 @@ class VoiceAgentManager {
                     this.blackCat.setState('error');
                 }
                 
-                reject(error);
+                reject(new Error(errorMessage));
             };
             
-            this.ws.onclose = () => {
-                logger.info('VoiceAgentManager', 'WebSocket closed');
+            this.ws.onclose = (event) => {
+                // CloseEvent provides code, reason, and wasClean properties
+                const closeInfo = event ? {
+                    code: event.code,
+                    reason: event.reason || 'No reason provided',
+                    wasClean: event.wasClean
+                } : null;
+                
+                if (closeInfo && !closeInfo.wasClean) {
+                    // Unexpected closure - log as error with details
+                    const closeMessage = `WebSocket closed unexpectedly. Code: ${closeInfo.code}, Reason: ${closeInfo.reason}`;
+                    logger.error('VoiceAgentManager', 'WebSocket closed unexpectedly:', new Error(closeMessage));
+                } else {
+                    logger.info('VoiceAgentManager', 'WebSocket closed', closeInfo);
+                }
+                
                 this.isActive = false;
                 this.isVoiceActive = false;
                 
                 if (this.stateManager) {
                     this.stateManager.updateVoice({ 
                         active: false,
-                        stoppedAt: Date.now()
+                        stoppedAt: Date.now(),
+                        closeCode: closeInfo?.code,
+                        closeReason: closeInfo?.reason,
+                        wasClean: closeInfo?.wasClean
                     });
                 }
                 
                 if (this.eventBus) {
-                    this.eventBus.emit('voice:ws_closed', {});
+                    this.eventBus.emit('voice:ws_closed', { 
+                        code: closeInfo?.code,
+                        reason: closeInfo?.reason,
+                        wasClean: closeInfo?.wasClean
+                    });
                 }
                 
                 // Reset UI state
