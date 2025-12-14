@@ -19,8 +19,14 @@
         /* Header */
         .header {
             background: white;
-            padding: 1rem 2rem;
+            padding: 1rem 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -702,20 +708,26 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <div style="display:flex;align-items:center;gap:1rem;">
-            <h1>🎓 MindGraph <span class="lang-zh">管理后台</span><span class="lang-en">Admin Panel</span></h1>
-            <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
-                <span class="lang-en">中文</span>
-                <span class="lang-zh">AZ</span>
-                <span class="lang-az">EN</span>
-            </button>
-        </div>
-        <div class="user-info">
-            <span id="adminName">Admin</span>
-            <button class="btn btn-secondary btn-sm" onclick="logout()">
-                <span class="lang-zh">登出</span>
-                <span class="lang-en">Logout</span>
-            </button>
+        <div class="header-content">
+            <div style="display:flex;align-items:center;gap:1rem;">
+                <h1>🎓 MindGraph <span class="lang-zh">管理后台</span><span class="lang-en">Admin Panel</span></h1>
+                <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
+                    <span class="lang-en">中文</span>
+                    <span class="lang-zh">AZ</span>
+                    <span class="lang-az">EN</span>
+                </button>
+            </div>
+            <div class="user-info">
+                <span id="adminName">Admin</span>
+                <button class="btn btn-secondary btn-sm" onclick="window.location.href='/editor'">
+                    <span class="lang-zh">图库</span>
+                    <span class="lang-en">Gallery</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">
+                    <span class="lang-zh">登出</span>
+                    <span class="lang-en">Logout</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -726,12 +738,12 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('dashboard')"><span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
-            <button class="tab" onclick="switchTab('tokens')"><span class="lang-zh">Token统计</span><span class="lang-en">Tokens</span></button>
-            <button class="tab" onclick="switchTab('schools')"><span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
-            <button class="tab" onclick="switchTab('users')"><span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
-            <button class="tab" onclick="switchTab('apikeys')"><span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
-            <button class="tab" onclick="switchTab('announcement')"><span class="lang-zh">更新公告</span><span class="lang-en">Announcement</span></button>
+            <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard', this)"><span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
+            <button class="tab" data-tab="tokens" onclick="switchTab('tokens', this)"><span class="lang-zh">Token统计</span><span class="lang-en">Tokens</span></button>
+            <button class="tab" data-tab="schools" onclick="switchTab('schools', this)"><span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
+            <button class="tab" data-tab="users" onclick="switchTab('users', this)"><span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
+            <button class="tab" data-tab="apikeys" onclick="switchTab('apikeys', this)"><span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
+            <button class="tab" data-tab="announcement" onclick="switchTab('announcement', this)"><span class="lang-zh">更新公告</span><span class="lang-en">Announcement</span></button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -1768,12 +1780,23 @@ curl -X POST http://your-server/api/generate_graph \
         }
 
         // Tab switching
-        function switchTab(tab) {
-            // Update tabs
+        function switchTab(tab, buttonElement) {
+            // Update tabs - remove active class from all tabs
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             
-            event.target.classList.add('active');
+            // Add active class to the clicked button
+            if (buttonElement) {
+                buttonElement.classList.add('active');
+            } else {
+                // Fallback: find button by data-tab attribute
+                const tabButton = document.querySelector(`.tab[data-tab="${tab}"]`);
+                if (tabButton) {
+                    tabButton.classList.add('active');
+                }
+            }
+            
+            // Show the corresponding tab content
             document.getElementById(tab + '-tab').classList.add('active');
             currentTab = tab;
 
@@ -2963,7 +2986,17 @@ curl -X POST http://your-server/api/generate_graph \
         }
 
         function logout() {
-            if (confirm('确定登出？\nAre you sure to logout?')) {
+            // Show confirmation message in current language only
+            let confirmMessage;
+            if (currentLang === 'zh') {
+                confirmMessage = '确定登出？';
+            } else if (currentLang === 'az') {
+                confirmMessage = 'Çıxış etmək istəyirsiniz?';
+            } else {
+                confirmMessage = 'Are you sure to logout?';
+            }
+            
+            if (confirm(confirmMessage)) {
                 auth.logout();
             }
         }

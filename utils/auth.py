@@ -62,6 +62,37 @@ BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 BAYI_IP_WHITELIST_STR = os.getenv("BAYI_IP_WHITELIST", "").strip()
 BAYI_IP_WHITELIST = set()  # Set of whitelisted IP addresses
 
+# ============================================================================
+# Cookie Security Helpers
+# ============================================================================
+
+def is_https(request: Request) -> bool:
+    """
+    Detect if request is over HTTPS
+    
+    Checks multiple sources:
+    1. X-Forwarded-Proto header (set by reverse proxy like Nginx)
+    2. Request URL scheme
+    3. FORCE_SECURE_COOKIES environment variable (for production)
+    
+    Returns:
+        True if HTTPS detected, False otherwise
+    """
+    # Check X-Forwarded-Proto header (set by reverse proxy)
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "").lower()
+    if forwarded_proto == "https":
+        return True
+    
+    # Check if URL scheme is https
+    if hasattr(request.url, 'scheme') and request.url.scheme == "https":
+        return True
+    
+    # Check environment variable for production mode (force secure cookies)
+    if os.getenv("FORCE_SECURE_COOKIES", "").lower() == "true":
+        return True
+    
+    return False
+
 # Parse IP whitelist on startup (only log if in bayi mode)
 if BAYI_IP_WHITELIST_STR:
     for ip_entry in BAYI_IP_WHITELIST_STR.split(","):

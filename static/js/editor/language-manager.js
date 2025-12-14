@@ -173,6 +173,10 @@ class LanguageManager {
                 shareTooltip: 'Share',
                 logout: 'Logout',
                 logoutTooltip: 'Logout',
+                gallery: 'Gallery',
+                galleryTooltip: 'Gallery',
+                admin: 'Admin',
+                adminTooltip: 'Admin Panel',
                 feedback: 'Feedback',
                 feedbackTooltip: 'Send Feedback',
                 feedbackTitle: 'Send Feedback',
@@ -441,8 +445,12 @@ class LanguageManager {
                 switchLanguageTooltip: '切换语言',
                 share: '分享',
                 shareTooltip: '分享',
-                logout: '退出',
-                logoutTooltip: '退出登录',
+                logout: '注销',
+                logoutTooltip: '注销登录',
+                gallery: '图库',
+                galleryTooltip: '图库',
+                admin: '后台',
+                adminTooltip: '管理后台',
                 feedback: '反馈',
                 feedbackTooltip: '发送反馈',
                 feedbackTitle: '发送反馈',
@@ -711,6 +719,10 @@ class LanguageManager {
                 switchLanguageTooltip: 'Dili Dəyişdir',
                 share: 'Paylaş',
                 shareTooltip: 'Paylaş',
+                gallery: 'Qalereya',
+                galleryTooltip: 'Qalereya',
+                admin: '后台',
+                adminTooltip: 'Admin Paneli',
                 feedback: 'Rəy',
                 feedbackTooltip: 'Rəy Göndər',
                 feedbackTitle: 'Rəy Göndər',
@@ -843,6 +855,7 @@ class LanguageManager {
     initializeEventListeners() {
         // Desktop/main buttons
         const langToggle = document.getElementById('language-toggle');
+        const adminBtn = document.getElementById('admin-btn');
         const feedbackBtn = document.getElementById('feedback-btn');
         const logoutBtn = document.getElementById('logout-btn');
         
@@ -850,6 +863,13 @@ class LanguageManager {
         if (langToggle) {
             langToggle.addEventListener('click', () => {
                 this.toggleLanguage();
+            });
+        }
+        
+        // Add admin button listener
+        if (adminBtn) {
+            adminBtn.addEventListener('click', () => {
+                window.location.href = '/admin';
             });
         }
         
@@ -1113,6 +1133,19 @@ class LanguageManager {
                 langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
             }
             logoutBtn.dataset.tooltip = t.logoutTooltip;
+        }
+        
+        // Update admin button text and language classes
+        const adminBtn = document.getElementById('admin-btn');
+        if (adminBtn) {
+            const langEnSpan = adminBtn.querySelector('.lang-en');
+            const langZhSpan = adminBtn.querySelector('.lang-zh');
+            
+            if (langEnSpan && langZhSpan) {
+                langEnSpan.style.display = this.currentLanguage === 'en' ? 'inline' : 'none';
+                langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
+            }
+            adminBtn.dataset.tooltip = t.adminTooltip;
         }
         
         // Update feedback button text and language classes
@@ -1853,12 +1886,114 @@ class LanguageManager {
         }
         return notif || key;
     }
+    
+    /**
+     * Check if current user is admin and show/hide admin button
+     * SECURITY: Removes button from DOM if not admin (prevents CSS/JS manipulation)
+     */
+    async checkAdminStatus() {
+        const adminBtn = document.getElementById('admin-btn');
+        if (!adminBtn) return;
+        
+        // SECURITY: Default to removing button (fail-secure)
+        let isAdmin = false;
+        
+        // Check if auth helper is available
+        if (typeof auth === 'undefined') {
+            // Auth helper not loaded - remove button for security
+            adminBtn.remove();
+            return;
+        }
+        
+        try {
+            // Check if user is authenticated first
+            const isAuthenticated = await auth.isAuthenticated();
+            if (!isAuthenticated) {
+                // Not authenticated - remove button
+                adminBtn.remove();
+                return;
+            }
+            
+            // SECURITY: Check if user is admin by testing admin endpoint
+            // This endpoint requires valid JWT and admin check on backend
+            const adminCheck = await auth.fetch('/api/auth/admin/stats');
+            
+            if (adminCheck.ok) {
+                // User is admin - verify response is valid JSON
+                try {
+                    const responseData = await adminCheck.json(); // Parse and verify response
+                    // Additional validation: ensure response has expected structure
+                    if (responseData && typeof responseData === 'object') {
+                        isAdmin = true;
+                    } else {
+                        // Invalid response structure - fail secure
+                        isAdmin = false;
+                    }
+                } catch (e) {
+                    // Invalid JSON response - fail secure
+                    isAdmin = false;
+                }
+            } else {
+                // Not admin (403 or other error) - fail secure
+                isAdmin = false;
+            }
+        } catch (error) {
+            // SECURITY: Any error = fail secure (remove button)
+            // Don't log sensitive error details to console in production
+            if (window.VERBOSE_LOGGING) {
+                console.error('Error checking admin status:', error);
+            }
+            isAdmin = false;
+        }
+        
+        // SECURITY: Remove button from DOM if not admin (prevents manipulation)
+        if (!isAdmin) {
+            adminBtn.remove();
+        } else {
+            // User is admin - show button
+            adminBtn.style.display = 'inline-flex';
+        }
+    }
 }
 
 // Initialize when DOM is ready
 if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
         window.languageManager = new LanguageManager();
+        
+        // SECURITY: Check admin status after auth helper is loaded
+        // Use a more robust check that waits for auth helper to be available
+        const checkAdminWhenReady = async () => {
+            // Wait for auth helper to be available (max 3 seconds)
+            let attempts = 0;
+            const maxAttempts = 30; // 30 attempts * 100ms = 3 seconds max
+            
+            while (typeof auth === 'undefined' && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (window.languageManager) {
+                await window.languageManager.checkAdminStatus();
+                
+                // SECURITY: Periodic re-check admin status (every 5 minutes)
+                // Prevents showing admin button if session expires or admin status revoked
+                setInterval(async () => {
+                    if (window.languageManager) {
+                        await window.languageManager.checkAdminStatus();
+                    }
+                }, 5 * 60 * 1000); // 5 minutes
+                
+                // SECURITY: Re-check when page becomes visible (catches session expiration)
+                document.addEventListener('visibilitychange', async () => {
+                    if (!document.hidden && window.languageManager) {
+                        await window.languageManager.checkAdminStatus();
+                    }
+                });
+            }
+        };
+        
+        checkAdminWhenReady();
     });
 }
 

@@ -33,8 +33,10 @@ from utils.auth import (
     get_user_from_cookie, 
     is_admin,
     get_client_ip,
+    is_https,
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
+    ENTERPRISE_DEFAULT_USER_PHONE,
     decrypt_bayi_token,
     validate_bayi_token_body,
     is_ip_whitelisted,
@@ -231,6 +233,9 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                     logger.info(f"Bayi IP whitelist auto-login successful: {client_ip}")
                     
                     # Serve editor with JWT cookie
+                    # SECURITY: Check if bayi IP user is admin (unlikely but check anyway)
+                    user_is_admin = is_admin(bayi_user) if bayi_user else False
+                    
                     response = templates.TemplateResponse(
                         "editor.html",
                         {
@@ -243,14 +248,15 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                             "verbose_logging": config.VERBOSE_LOGGING,
                             "ai_assistant_name": config.AI_ASSISTANT_NAME,
                             "default_language": config.DEFAULT_LANGUAGE,
-                            "wechat_qr_image": config.WECHAT_QR_IMAGE
+                            "wechat_qr_image": config.WECHAT_QR_IMAGE,
+                            "user_is_admin": user_is_admin  # SECURITY: Server-side admin flag
                         }
                     )
                     response.set_cookie(
                         key="access_token",
                         value=jwt_token,
                         httponly=True,
-                        secure=False,
+                        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
                         samesite="lax",
                         max_age=86400
                     )
@@ -261,6 +267,26 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                 return RedirectResponse(url="/demo", status_code=303)
             
             logger.debug(f"Bayi mode: User {user.phone} accessing /editor")
+        
+        # SECURITY: Check if user is admin for server-side button rendering (defense-in-depth)
+        # Note: Client-side check still runs for additional security
+        user_is_admin = False
+        try:
+            # Enterprise mode: get enterprise user directly (network-level auth, no cookies)
+            if AUTH_MODE == "enterprise":
+                enterprise_user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
+                if enterprise_user and is_admin(enterprise_user):
+                    user_is_admin = True
+            else:
+                # Standard/Demo/Bayi modes: check cookie
+                auth_cookie = request.cookies.get("access_token")
+                if auth_cookie:
+                    cookie_user = get_user_from_cookie(auth_cookie, db)
+                    if cookie_user and is_admin(cookie_user):
+                        user_is_admin = True
+        except Exception:
+            # Fail secure - don't show admin button if check fails
+            user_is_admin = False
         
         return templates.TemplateResponse(
             "editor.html",
@@ -274,7 +300,8 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                 "verbose_logging": config.VERBOSE_LOGGING,
                 "ai_assistant_name": config.AI_ASSISTANT_NAME,
                 "default_language": config.DEFAULT_LANGUAGE,
-                "wechat_qr_image": config.WECHAT_QR_IMAGE
+                "wechat_qr_image": config.WECHAT_QR_IMAGE,
+                "user_is_admin": user_is_admin  # SECURITY: Server-side admin flag
             }
         )
     except Exception as e:
@@ -454,7 +481,7 @@ async def login_by_xz(
                 key="access_token",
                 value=jwt_token,
                 httponly=True,
-                secure=False,  # Set to True in production with HTTPS
+                secure=is_https(request),  # SECURITY: Auto-detect HTTPS
                 samesite="lax",
                 max_age=7 * 24 * 60 * 60  # 7 days
             )
@@ -552,7 +579,7 @@ async def login_by_xz(
             key="access_token",
             value=jwt_token,
             httponly=True,
-            secure=False,  # Set to True in production with HTTPS
+            secure=is_https(request),  # SECURITY: Auto-detect HTTPS
             samesite="lax",
             max_age=7 * 24 * 60 * 60  # 7 days
         )
@@ -602,23 +629,27 @@ async def favicon():
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request, db: Session = Depends(get_db)):
-    """Admin management panel"""
+    """Admin management panel - SECURITY: Admin access required in ALL modes"""
     try:
-        # Demo mode and Bayi mode: verify authentication and admin status
-        if AUTH_MODE in ["demo", "bayi"]:
-            auth_cookie = request.cookies.get("access_token")
-            user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
-            
-            if not user:
+        # SECURITY: Check authentication and admin status in ALL auth modes
+        auth_cookie = request.cookies.get("access_token")
+        user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
+        
+        if not user:
+            # Not authenticated - redirect based on auth mode
+            if AUTH_MODE in ["demo", "bayi"]:
                 logger.debug(f"{AUTH_MODE.capitalize()} mode: Redirecting unauthenticated /admin access to /demo")
                 return RedirectResponse(url="/demo", status_code=303)
-            
-            # Check if user is admin
-            if not is_admin(user):
-                logger.warning(f"{AUTH_MODE.capitalize()} mode: Non-admin user {user.phone} attempted to access /admin, redirecting to /editor")
-                return RedirectResponse(url="/editor", status_code=303)
-            
-            logger.debug(f"{AUTH_MODE.capitalize()} mode: Admin {user.phone} accessing /admin")
+            else:
+                logger.debug(f"Standard mode: Redirecting unauthenticated /admin access to /auth")
+                return RedirectResponse(url="/auth", status_code=303)
+        
+        # SECURITY: Check if user is admin (required in ALL modes)
+        if not is_admin(user):
+            logger.warning(f"Non-admin user {user.phone} attempted to access /admin, redirecting to /editor")
+            return RedirectResponse(url="/editor", status_code=303)
+        
+        logger.debug(f"Admin {user.phone} accessing /admin (mode: {AUTH_MODE})")
         
         return templates.TemplateResponse("admin.html", {"request": request, "version": get_app_version()})
     except Exception as e:

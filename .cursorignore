@@ -83,9 +83,19 @@ data/
 captcha_store.json
 
 # Database backups
+backup/
 backups/
 *.backup_*
 *_backup_*.sql
+*.db.*
+mindgraph.db.*
+*.sqlite.*
+*.sqlite3.*
+
+# Environment file backups
+logs/env_backups/
+.env.backup.*
+.env.*.backup
 
 # API Keys and sensitive data
 *API_KEY*.txt

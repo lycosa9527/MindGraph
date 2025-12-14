@@ -265,6 +265,12 @@
             <button id="language-toggle" class="control-btn" data-tooltip="Switch Language">
                 <span class="lang-text">EN</span>
             </button>
+            {% if user_is_admin %}
+            <button id="admin-btn" class="control-btn" data-tooltip="Admin Panel" style="display: none;">
+                <span class="lang-en">Admin</span>
+                <span class="lang-zh">后台</span>
+            </button>
+            {% endif %}
             {% if wechat_qr_image %}
             <button id="feedback-btn" class="control-btn" data-tooltip="Feedback">
                 <span class="lang-en">Feedback</span>
@@ -273,7 +279,7 @@
             {% endif %}
             <button id="logout-btn" class="control-btn" data-tooltip="Logout">
                 <span class="lang-en">Logout</span>
-                <span class="lang-zh">退出</span>
+                <span class="lang-zh">注销</span>
             </button>
         </div>
         

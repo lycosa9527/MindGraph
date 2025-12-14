@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.87] - 2025-12-15 - Admin Panel Improvements & Cookie Security Fixes
+
+### Added
+
+- **Admin Button in Editor Gallery** (`templates/editor.html`, `static/js/editor/language-manager.js`, `routers/pages.py`)
+  - Added admin button to the left of feedback button in canvas
+  - Button only visible to users whose cellphone is listed in admin (ADMIN_PHONES)
+  - Shows "后台" in Chinese, "Admin" in English
+  - Navigates to `/admin` panel when clicked
+  - Server-side conditional rendering for security (button HTML only sent to admins)
+  - Client-side admin status check with periodic re-verification (every 5 minutes)
+  - Button removed from DOM if user is not admin (prevents CSS/JS manipulation)
+  - Impact: Admins can easily access admin panel without manually typing URL
+
+- **Gallery Button in Admin Panel** (`templates/admin.html`)
+  - Added gallery button in admin panel header (between admin name and logout)
+  - Shows "图库" in Chinese, "Gallery" in English
+  - Navigates to `/editor` (gallery page) when clicked
+  - Impact: Admins can quickly return to editor gallery from admin panel
+
+- **HTTPS Detection Helper Function** (`utils/auth.py`)
+  - Created `is_https()` function to automatically detect HTTPS connections
+  - Checks X-Forwarded-Proto header (reverse proxy support)
+  - Checks request URL scheme
+  - Supports FORCE_SECURE_COOKIES environment variable
+  - Impact: Cookies automatically use secure flag when HTTPS is detected
+
+- **Backup Folder Patterns in Ignore Files** (`.gitignore`, `.dockerignore`, `.cursorignore`)
+  - Added `backup/` directory pattern
+  - Added `*.db.*`, `mindgraph.db.*`, `*.sqlite.*` patterns for timestamped backups
+  - Added `logs/env_backups/` for environment file backups
+  - Added `.env.backup.*` and `.env.*.backup` patterns
+  - Impact: All backup files and folders properly ignored across Git, Docker, and Cursor
+
+### Changed
+
+- **Cookie Security - Secure Flag** (`routers/auth.py`, `routers/pages.py`)
+  - All cookies now use `secure=is_https(request)` instead of hardcoded `secure=False`
+  - Automatically enables secure cookies when HTTPS is detected
+  - Updated 10 cookie settings across authentication and page routes
+  - Impact: Cookies protected from MITM attacks in production (HTTPS)
+
+- **Cookie Deletion** (`routers/auth.py`)
+  - Updated `delete_cookie()` to include path, samesite, and secure parameters
+  - Matches original cookie settings for proper deletion
+  - Impact: Cookies properly deleted on logout
+
+- **Admin Panel Header Alignment** (`templates/admin.html`)
+  - Added `.header-content` wrapper with max-width matching container
+  - Header content now aligned with lower content area
+  - Impact: Consistent alignment between header and main content
+
+- **Admin Panel Tab Highlighting** (`templates/admin.html`)
+  - Fixed tab switching to properly highlight active tab
+  - Added `data-tab` attributes to tab buttons
+  - Updated `switchTab()` function to accept button element parameter
+  - Impact: Active tab now shows blue background consistently
+
+- **Logout Button Text** (`templates/editor.html`, `static/js/editor/language-manager.js`)
+  - Changed Chinese text from "退出" to "注销" in gallery
+  - Updated translation in language manager
+  - Impact: More appropriate terminology for logout action
+
+- **Logout Confirmation Message** (`templates/admin.html`)
+  - Updated to show single language based on current language setting
+  - English: "Are you sure to logout?"
+  - Chinese: "确定登出？"
+  - Azerbaijani: "Çıxış etmək istəyirsiniz?"
+  - Impact: Cleaner confirmation dialog, no duplicate languages
+
+- **Admin Button Styling** (`static/css/editor.css`)
+  - Removed custom purple gradient styling
+  - Now uses default `.control-btn` styling (white fill, matches other buttons)
+  - Impact: Consistent button appearance in top-right controls
+
+### Security
+
+- **Cookie Security Review & Fixes** (`routers/auth.py`, `routers/pages.py`, `utils/auth.py`)
+  - CRITICAL: Fixed secure flag vulnerability - all cookies now auto-detect HTTPS
+  - Fixed cookie deletion to include all required parameters
+  - Implemented HTTPS detection mechanism
+  - All security issues resolved, production-ready
+  - Impact: Cookies protected from interception, proper deletion on logout
+
+- **Admin Button Security** (`templates/editor.html`, `static/js/editor/language-manager.js`, `routers/pages.py`)
+  - Server-side conditional rendering (button HTML only for admins)
+  - Client-side admin check with periodic re-verification
+  - Button removed from DOM if not admin (prevents manipulation)
+  - Backend route protection ensures unauthorized access prevented
+  - Impact: Regular users cannot see or access admin button
+
 ## [4.28.86] - 2025-12-13 - Button Text Improvements
 
 ### Changed

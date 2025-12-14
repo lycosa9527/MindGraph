@@ -17,7 +17,7 @@ from typing import Optional, Tuple
 from io import BytesIO
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
@@ -52,6 +52,7 @@ from utils.auth import (
     reset_failed_attempts,
     is_admin,
     get_client_ip,
+    is_https,
     login_attempts,
     ip_attempts,
     captcha_attempts,
@@ -252,7 +253,7 @@ async def register(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -414,7 +415,7 @@ async def login(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -631,7 +632,7 @@ async def generate_captcha(request: Request, response: Response):
         key=CAPTCHA_SESSION_COOKIE_NAME,
         value=session_token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=RATE_LIMIT_WINDOW_MINUTES * 60  # 15 minutes
     )
@@ -1091,7 +1092,7 @@ async def register_with_sms(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -1180,7 +1181,7 @@ async def login_with_sms(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,
+        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60
     )
@@ -1377,7 +1378,7 @@ async def verify_demo(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -1402,15 +1403,20 @@ async def verify_demo(
 # ============================================================================
 
 @router.post("/logout")
-async def logout(response: Response, current_user: User = Depends(get_current_user)):
+async def logout(request: Request, response: Response, current_user: User = Depends(get_current_user)):
     """
     Logout user (client-side token removal)
     
     JWT tokens are stateless, so logout happens on client side
     by removing the token from storage.
     """
-    # Clear the cookie
-    response.delete_cookie(key="access_token")
+    # Clear the cookie (must match original cookie settings)
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        samesite="lax",
+        secure=is_https(request)  # SECURITY: Match original cookie settings
+    )
     
     logger.info(f"User logged out: {current_user.phone}")
     return {"message": "Logged out successfully"}

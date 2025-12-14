@@ -74,9 +74,19 @@ captcha_store.json
 *.sqlite-shm
 
 # Database backups
+backup/
 backups/
 *.backup_*
 *_backup_*.sql
+*.db.*
+mindgraph.db.*
+*.sqlite.*
+*.sqlite3.*
+
+# Environment file backups
+logs/env_backups/
+.env.backup.*
+.env.*.backup
 
 # Node.js
 node_modules/
