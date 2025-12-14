@@ -1278,7 +1278,8 @@ async def get_me(
 
 @router.post("/demo/verify")
 async def verify_demo(
-    request: DemoPasskeyRequest,
+    passkey_request: DemoPasskeyRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -1290,11 +1291,11 @@ async def verify_demo(
     In bayi mode, creates bayi-specific users.
     """
     # Enhanced logging for debugging (without revealing actual passkeys)
-    received_length = len(request.passkey) if request.passkey else 0
+    received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
     expected_length = len(DEMO_PASSKEY)
     logger.info(f"Passkey verification attempt ({AUTH_MODE} mode) - Received: {received_length} chars, Expected: {expected_length} chars")
     
-    if not verify_demo_passkey(request.passkey):
+    if not verify_demo_passkey(passkey_request.passkey):
         logger.warning(f"Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -1302,7 +1303,7 @@ async def verify_demo(
         )
     
     # Check if this is admin demo access
-    is_admin_access = is_admin_demo_passkey(request.passkey)
+    is_admin_access = is_admin_demo_passkey(passkey_request.passkey)
     
     # Determine user phone and name based on mode
     if AUTH_MODE == "bayi":
