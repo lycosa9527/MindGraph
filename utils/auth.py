@@ -57,6 +57,7 @@ ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999").strip()
 # Bayi Mode Configuration
 BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk").strip()
 BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
+BAYI_CLOCK_SKEW_TOLERANCE = int(os.getenv("BAYI_CLOCK_SKEW_TOLERANCE", "10"))  # Allow 10 seconds clock skew tolerance
 
 # Bayi IP Whitelist Configuration (Option 1: Simple In-Memory Set)
 BAYI_IP_WHITELIST_STR = os.getenv("BAYI_IP_WHITELIST", "").strip()
@@ -577,7 +578,7 @@ def validate_bayi_token_body(body: dict) -> bool:
     
     Checks:
     - body.from === 'bayi'
-    - timestamp is within last 5 minutes
+    - timestamp is within last 5 minutes (with clock skew tolerance)
     
     Args:
         body: Decrypted token body
@@ -618,14 +619,21 @@ def validate_bayi_token_body(body: dict) -> bool:
             return False
         
         # Check if timestamp is within last 5 minutes (both in UTC)
+        # Allow small clock skew tolerance for future timestamps (network latency, minor clock differences)
         now = datetime.utcnow()
         time_diff = (now - token_time).total_seconds()
         
         logger.debug(f"Timestamp validation - now (UTC): {now}, token_time (UTC): {token_time}, diff: {time_diff}s ({time_diff/60:.1f} minutes)")
         
-        if time_diff < 0:
-            logger.warning(f"Bayi token validation failed: timestamp is in the future (diff: {time_diff}s, now: {now}, token_time: {token_time})")
+        # Allow tokens slightly in the future (within clock skew tolerance)
+        # This handles minor clock synchronization differences and network latency
+        if time_diff < -BAYI_CLOCK_SKEW_TOLERANCE:
+            logger.warning(f"Bayi token validation failed: timestamp is too far in the future (diff: {time_diff}s, tolerance: {BAYI_CLOCK_SKEW_TOLERANCE}s, now: {now}, token_time: {token_time})")
             return False
+        
+        # Log but allow tokens within clock skew tolerance (future but acceptable)
+        if time_diff < 0:
+            logger.debug(f"Bayi token timestamp is slightly in the future but within tolerance (diff: {time_diff}s, tolerance: {BAYI_CLOCK_SKEW_TOLERANCE}s)")
         
         if time_diff > 300:  # 5 minutes = 300 seconds
             logger.warning(f"Bayi token validation failed: timestamp expired (diff: {time_diff}s = {time_diff/60:.1f} minutes, now: {now}, token_time: {token_time})")
