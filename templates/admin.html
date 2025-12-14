@@ -1430,12 +1430,12 @@ curl -X POST http://your-server/api/generate_graph \
                           autocomplete="off"
                           onclick="this.select()"></textarea>
             </div>
-            <button class="btn btn-primary" onclick="selectShareText()" style="width:100%;">
-                📋 <span class="lang-zh">选中全部文本</span><span class="lang-en">Select All Text</span>
+            <button class="btn btn-primary" onclick="selectAndCopyShareText(this)" style="width:100%;">
+                📋 <span class="lang-zh">选中并复制</span><span class="lang-en">Select and Copy</span>
             </button>
             <small style="display:block;margin-top:1rem;color:#94a3b8;text-align:center;">
-                <span class="lang-zh">点击文本框即可选中，然后按 Ctrl+C (或 Cmd+C) 复制</span>
-                <span class="lang-en">Click the text box to select, then press Ctrl+C (or Cmd+C) to copy</span>
+                <span class="lang-zh">点击文本框即可选中，或点击上方按钮自动复制</span>
+                <span class="lang-en">Click the text box to select, or click the button above to copy automatically</span>
             </small>
         </div>
     </div>
@@ -2169,7 +2169,7 @@ curl -X POST http://your-server/api/generate_graph \
                                 <span class="badge badge-success">${school.invitation_code}</span>
                                 <button class="btn btn-sm" 
                                         onclick="copySchoolInviteInfo('${school.invitation_code}')" 
-                                        title="Copy share info"
+                                        title="复制分享信息"
                                         style="background:transparent;border:none;padding:0.25rem 0.5rem;cursor:pointer;font-size:1.1rem;">
                                     📤
                                 </button>
@@ -2310,7 +2310,11 @@ curl -X POST http://your-server/api/generate_graph \
         }
 
         function copySchoolInviteInfo(invitationCode) {
-            const shareText = `MindGraph专业版\nmg.mindspringedu.cn\n${invitationCode}`;
+            const shareText = `尊敬的校领导，您好！
+诚挚邀请您与学校团队体验 MindGraph —— 我们倾力打造的AI思维图示生成软件，致力于开发思维教学信息化平台。
+贵校的专属邀请码是：${invitationCode}
+请您访问 mg.mingspringedu.com 完成注册，开启高效、直观的思维可视化协作。
+期待能为贵校的教育创新增添一份力量。`;
             
             // Set the text in the modal
             document.getElementById('share-invite-text').value = shareText;
@@ -2319,10 +2323,40 @@ curl -X POST http://your-server/api/generate_graph \
             openModal('share-invite-modal');
         }
         
-        function selectShareText() {
+        async function selectAndCopyShareText(button) {
             const textarea = document.getElementById('share-invite-text');
+            const text = textarea.value;
+            
+            // Select the text
             textarea.select();
             textarea.setSelectionRange(0, 99999); // For mobile devices
+            
+            // Copy to clipboard
+            try {
+                await navigator.clipboard.writeText(text);
+                // Show feedback
+                const originalText = button.innerHTML;
+                button.innerHTML = '✅ <span class="lang-zh">已复制！</span><span class="lang-en">Copied!</span>';
+                button.style.background = '#10b981';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '';
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                try {
+                    document.execCommand('copy');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✅ <span class="lang-zh">已复制！</span><span class="lang-en">Copied!</span>';
+                    button.style.background = '#10b981';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.background = '';
+                    }, 2000);
+                } catch (fallbackErr) {
+                    alert('无法复制，请手动选择并复制文本');
+                }
+            }
         }
 
         // Users
