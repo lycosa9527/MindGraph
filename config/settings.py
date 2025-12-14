@@ -212,6 +212,34 @@ class Config:
         val = self._get_cached_value('DASHSCOPE_RATE_LIMITING_ENABLED', 'true')
         return val.lower() == 'true'
 
+    # ============================================================================
+    # SMS RATE LIMITING (For Tencent Cloud SMS API)
+    # ============================================================================
+
+    @property
+    def SMS_MAX_CONCURRENT_REQUESTS(self):
+        """SMS maximum concurrent API requests"""
+        try:
+            return int(self._get_cached_value('SMS_MAX_CONCURRENT_REQUESTS', '10'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_MAX_CONCURRENT_REQUESTS, using 10")
+            return 10
+
+    @property
+    def SMS_QPM_LIMIT(self):
+        """SMS Queries Per Minute limit"""
+        try:
+            return int(self._get_cached_value('SMS_QPM_LIMIT', '100'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_QPM_LIMIT, using 100")
+            return 100
+
+    @property
+    def SMS_RATE_LIMITING_ENABLED(self):
+        """Enable/disable SMS rate limiting"""
+        val = self._get_cached_value('SMS_RATE_LIMITING_ENABLED', 'true')
+        return val.lower() == 'true'
+
     @property
     def HOST(self):
         """FastAPI application host address."""

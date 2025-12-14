@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.88] - 2025-12-15 - SMS Middleware & WebSocket Consolidation
+
+### Added
+
+- **SMS Middleware** (`services/sms_middleware.py`)
+  - Rate limiting middleware for SMS API requests
+  - Concurrent request limiting (configurable, default: 10)
+  - QPM (Queries Per Minute) limiting (configurable, default: 100)
+  - Performance tracking for SMS requests
+  - Error handling with proper exception wrapping
+  - Prevents API overload when 100+ users request SMS simultaneously
+  - Queues requests automatically when limits reached
+  - Impact: Better resource management, prevents Tencent API rate limit errors
+
+- **SMS Middleware Configuration** (`config/settings.py`, `env.example`)
+  - `SMS_MAX_CONCURRENT_REQUESTS` - Max concurrent SMS API calls (default: 10)
+  - `SMS_QPM_LIMIT` - Queries per minute limit (default: 100)
+  - `SMS_RATE_LIMITING_ENABLED` - Enable/disable middleware (default: true)
+  - Impact: Configurable rate limits for different deployment tiers
+
+- **SMS Native HTTP Implementation Documentation** (`docs/SMS_NATIVE_HTTP_IMPLEMENTATION.md`)
+  - Complete documentation of native HTTP SMS implementation
+  - Comparison with Tencent API Explorer format
+  - Architecture diagrams and middleware pattern explanation
+  - Implementation guide and best practices
+
+### Changed
+
+- **SMS Service Consolidation** (`services/sms_middleware.py`)
+  - Consolidated SMS service and middleware into single module
+  - `SMSService` class (internal) handles HTTP calls
+  - `SMSMiddleware` class (public API) provides rate limiting wrapper
+  - Convenience method `send_verification_code()` handles everything automatically
+  - Removed separate `sms_service.py` file (consolidated into middleware)
+  - Impact: Cleaner codebase, single source of truth for SMS functionality
+
+- **WebSocket Client Consolidation** (`clients/omni_client.py`)
+  - Removed SDK-based `omni_client.py` (DashScope SDK with threading)
+  - Renamed `omni_client_native.py` → `omni_client.py` (native WebSocket)
+  - Updated all imports to use native WebSocket implementation
+  - Native implementation: fully async, no threading, better middleware integration
+  - Impact: Cleaner codebase, better performance, no SDK dependency
+
+- **Auth Router Updates** (`routers/auth.py`)
+  - Updated SMS endpoints to use middleware's convenience method
+  - Simplified SMS sending code (no manual context manager needed)
+  - Fixed `login_sms` endpoint: added `Request` parameter for HTTPS detection
+  - Fixed `register_sms` endpoint: added `Request` parameter for HTTPS detection
+  - Fixed `register` endpoint: added `Request` parameter for HTTPS detection
+  - Fixed `login` endpoint: added `Request` parameter for HTTPS detection
+  - Impact: Bug fixes, cleaner code, proper HTTPS detection
+
+- **Client Manager** (`services/client_manager.py`)
+  - Updated to use native WebSocket OmniClient
+  - Impact: Consistent client usage across application
+
+### Fixed
+
+- **SMS Login Endpoint Bug** (`routers/auth.py`)
+  - Fixed `AttributeError: 'LoginWithSMSRequest' object has no attribute 'headers'`
+  - Added `http_request: Request` parameter to `login_with_sms` endpoint
+  - Updated `is_https()` call to use `http_request` instead of Pydantic model
+  - Impact: SMS login now works correctly, proper HTTPS detection for cookies
+
+- **Preventive Fixes** (`routers/auth.py`)
+  - Fixed same bug pattern in `register_sms`, `register`, and `login` endpoints
+  - All endpoints now properly inject FastAPI `Request` for HTTPS detection
+  - Impact: Prevents similar bugs, ensures secure cookie settings
+
+### Removed
+
+- **Old SMS Service File** (`services/sms_service.py`)
+  - Removed wrapper file after consolidation
+  - All functionality moved to `sms_middleware.py`
+  - Impact: Cleaner codebase, no duplicate code
+
+- **SDK-Based WebSocket Client** (`clients/omni_client.py` - old version)
+  - Removed DashScope SDK-based implementation
+  - Replaced with native WebSocket implementation
+  - Impact: No SDK dependency, better async support
+
+### Documentation
+
+- **SMS Implementation Guide** (`docs/SMS_NATIVE_HTTP_IMPLEMENTATION.md`)
+  - Complete guide to native HTTP SMS implementation
+  - Middleware pattern explanation
+  - API Explorer format comparison
+  - Configuration and usage examples
+
+---
+
 ## [4.28.87] - 2025-12-15 - Admin Panel Improvements & Cookie Security Fixes
 
 ### Added
@@ -375,7 +466,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - One-time use enforcement with `is_used` flag
   - Unique constraint on phone+code+purpose
 
-- **SMS Service** (`services/sms_service.py`)
+- **SMS Service** (`services/sms_middleware.py`)
   - Native async HTTP calls (no SDK dependency)
   - Full Tencent Cloud API v3 signature implementation
   - Rate limiting: 60s cooldown, 5 codes/hour per phone

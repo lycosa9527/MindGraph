@@ -71,9 +71,10 @@ from utils.auth import (
     validate_bayi_token_body
 )
 from services.captcha_storage import get_captcha_storage
-from services.sms_service import (
-    get_sms_service, 
-    SMS_CODE_EXPIRY_MINUTES, 
+from services.sms_middleware import (
+    get_sms_middleware,
+    SMSServiceError,
+    SMS_CODE_EXPIRY_MINUTES,
     SMS_RESEND_INTERVAL_SECONDS,
     SMS_MAX_ATTEMPTS_PER_PHONE,
     SMS_MAX_ATTEMPTS_WINDOW_HOURS
@@ -144,6 +145,7 @@ async def list_organizations(db: Session = Depends(get_db)):
 @router.post("/register")
 async def register(
     request: RegisterRequest,
+    http_request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -253,7 +255,7 @@ async def register(
         key="access_token",
         value=token,
         httponly=True,
-        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
+        secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -279,6 +281,7 @@ async def register(
 @router.post("/login")
 async def login(
     request: LoginRequest,
+    http_request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -415,7 +418,7 @@ async def login(
         key="access_token",
         value=token,
         httponly=True,
-        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
+        secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -734,10 +737,10 @@ async def send_sms_code(
                 detail="Captcha verification failed. Please refresh the captcha image and try again."
             )
     
-    sms_service = get_sms_service()
+    sms_middleware = get_sms_middleware()
     
     # Check if SMS service is available
-    if not sms_service.is_available:
+    if not sms_middleware.is_available:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="SMS service is not configured. Please contact support or use password-based authentication instead."
@@ -811,7 +814,7 @@ async def send_sms_code(
         )
     
     # Generate verification code first
-    code = sms_service.generate_code()
+    code = sms_middleware.generate_code()
     
     # Store verification code in database BEFORE sending SMS
     # This ensures the code is always verifiable if the user receives it.
@@ -837,8 +840,20 @@ async def send_sms_code(
     db.add(sms_verification)
     db.commit()
     
-    # Now send the SMS with pre-generated code
-    success, message, _ = await sms_service.send_verification_code(phone, purpose, code=code)
+    # Now send the SMS with pre-generated code (using middleware's convenience method)
+    try:
+        success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code)
+    except SMSServiceError as e:
+        # SMS middleware error (rate limiting, etc.)
+        # Remove the database record since SMS won't be sent
+        db.query(SMSVerification).filter(
+            SMSVerification.id == sms_verification.id
+        ).delete()
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e)
+        )
     
     if not success:
         # SMS sending failed - remove the database record since user won't receive the code
@@ -999,6 +1014,7 @@ def _verify_and_consume_sms_code(
 @router.post("/register_sms")
 async def register_with_sms(
     request: RegisterWithSMSRequest,
+    http_request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -1092,7 +1108,7 @@ async def register_with_sms(
         key="access_token",
         value=token,
         httponly=True,
-        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
+        secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -1114,6 +1130,7 @@ async def register_with_sms(
 @router.post("/login_sms")
 async def login_with_sms(
     request: LoginWithSMSRequest,
+    http_request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -1181,7 +1198,7 @@ async def login_with_sms(
         key="access_token",
         value=token,
         httponly=True,
-        secure=is_https(request),  # SECURITY: Auto-detect HTTPS
+        secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60
     )

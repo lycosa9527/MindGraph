@@ -754,7 +754,7 @@ async def lifespan(app: FastAPI):
         
         # Shutdown SMS service (close httpx async client)
         try:
-            from services.sms_service import shutdown_sms_service
+            from services.sms_middleware import shutdown_sms_service
             await shutdown_sms_service()
             if worker_id == '0' or not worker_id:
                 logger.info("SMS service shut down")

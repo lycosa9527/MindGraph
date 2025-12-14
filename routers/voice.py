@@ -4,7 +4,7 @@ WebSocket endpoint for VoiceAgent
 
 Integrates with LLM Middleware:
 - Uses LLMService for intent classification (Qwen Turbo)
-- Uses Native WebSocket OmniClient (omni_client_native) for Omni conversation
+- Uses WebSocket OmniClient for Omni conversation
 - Uses WebSocketLLMMiddleware for rate limiting, error handling, token tracking
 - Follows same rate limiting, error handling, timeout patterns
 
@@ -747,7 +747,7 @@ def create_voice_session(
     4. Navigation to gallery (session manager triggers cleanup)
     """
     import uuid
-    from clients.omni_client_native import OmniClient
+    from clients.omni_client import OmniClient
     
     session_id = f"voice_{uuid.uuid4().hex[:12]}"
     
