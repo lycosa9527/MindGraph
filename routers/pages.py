@@ -282,10 +282,16 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                 auth_cookie = request.cookies.get("access_token")
                 if auth_cookie:
                     cookie_user = get_user_from_cookie(auth_cookie, db)
-                    if cookie_user and is_admin(cookie_user):
-                        user_is_admin = True
-        except Exception:
+                    if cookie_user:
+                        # Log admin check for debugging (especially in bayi mode)
+                        admin_status = is_admin(cookie_user)
+                        if AUTH_MODE == "bayi":
+                            logger.debug(f"Bayi mode admin check: user={cookie_user.phone}, is_admin={admin_status}")
+                        if admin_status:
+                            user_is_admin = True
+        except Exception as e:
             # Fail secure - don't show admin button if check fails
+            logger.error(f"Error checking admin status: {e}", exc_info=True)
             user_is_admin = False
         
         return templates.TemplateResponse(
