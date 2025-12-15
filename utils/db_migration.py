@@ -222,18 +222,57 @@ class DatabaseMigrationManager:
             backup_name = f"{db_name}.backup_{timestamp}"
             backup_path = os.path.join(backup_dir, backup_name)
             
-            # Copy database file
-            shutil.copy2(db_path, backup_path)
-            
-            # Also copy WAL and SHM files if they exist
-            wal_path = db_path + "-wal"
-            shm_path = db_path + "-shm"
-            if os.path.exists(wal_path):
-                shutil.copy2(wal_path, backup_path + "-wal")
-            if os.path.exists(shm_path):
-                shutil.copy2(shm_path, backup_path + "-shm")
-            
-            logger.info(f"[DBMigration] Database backup created: {backup_path}")
+            # Use SQLite backup API for safe backup (handles WAL mode correctly)
+            # This ensures we get a consistent snapshot even if database is in use
+            import sqlite3
+            source_conn = None
+            backup_conn = None
+            try:
+                source_conn = sqlite3.connect(db_path, timeout=60.0)
+                backup_conn = sqlite3.connect(backup_path, timeout=60.0)
+                
+                # Disable WAL mode for backup file (backups are standalone snapshots)
+                backup_conn.execute("PRAGMA journal_mode=DELETE")
+                
+                # Use SQLite backup API - handles WAL mode correctly
+                if hasattr(source_conn, 'backup'):
+                    source_conn.backup(backup_conn)
+                else:
+                    # Fallback: dump/restore method
+                    for line in source_conn.iterdump():
+                        backup_conn.executescript(line)
+                    backup_conn.commit()
+                
+                logger.info(f"[DBMigration] Database backup created: {backup_path}")
+            except Exception as e:
+                logger.error(f"[DBMigration] Backup failed: {e}")
+                # Clean up partial backup
+                if os.path.exists(backup_path):
+                    try:
+                        os.unlink(backup_path)
+                    except Exception:
+                        pass
+                return None
+            finally:
+                if backup_conn:
+                    try:
+                        backup_conn.close()
+                    except Exception:
+                        pass
+                if source_conn:
+                    try:
+                        source_conn.close()
+                    except Exception:
+                        pass
+                
+                # Clean up any WAL/SHM files that might have been created
+                for suffix in ["-wal", "-shm"]:
+                    wal_file = backup_path + suffix
+                    if os.path.exists(wal_file):
+                        try:
+                            os.unlink(wal_file)
+                        except Exception:
+                            pass
             
             # Clean old backups (keep last 10)
             self._cleanup_old_backups(backup_dir, max_backups=10)
@@ -299,13 +338,10 @@ class DatabaseMigrationManager:
             # Restore from backup
             shutil.copy2(backup_path, db_path)
             
-            # Restore WAL and SHM files if they exist
-            wal_backup = backup_path + "-wal"
-            shm_backup = backup_path + "-shm"
-            if os.path.exists(wal_backup):
-                shutil.copy2(wal_backup, db_path + "-wal")
-            if os.path.exists(shm_backup):
-                shutil.copy2(shm_backup, db_path + "-shm")
+            # Note: We do NOT restore WAL/SHM files because:
+            # 1. Backup files are standalone snapshots (created with DELETE journal mode)
+            # 2. WAL/SHM files are temporary and will be recreated when database is opened
+            # 3. Restoring old WAL/SHM files could cause corruption
             
             logger.info(f"[DBMigration] Database restored from: {backup_path}")
             return True

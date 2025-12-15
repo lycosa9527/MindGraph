@@ -7,6 +7,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.89] - 2025-12-15 - Backup System Improvements & WAL Checkpoint Coordination
+
+### Fixed
+
+- **Backup WAL/SHM File Creation** (`services/backup_scheduler.py`)
+  - Fixed issue where WAL/SHM files were being created in backup folder
+  - Root cause: SQLite creates WAL files when opening databases in WAL mode
+  - Solution: Set `PRAGMA journal_mode=DELETE` immediately after connection
+  - Added multi-layer cleanup to ensure backups are always standalone `.db` files
+  - Impact: Backups are now clean standalone files, no WAL/SHM files in backup directory
+
+- **Backup Race Condition Protection** (`services/backup_scheduler.py`)
+  - Added `asyncio.Lock` to prevent concurrent backup operations
+  - Prevents race conditions when manual and scheduled backups run simultaneously
+  - Ensures only one backup runs at a time
+  - Impact: Eliminates backup conflicts and file collisions
+
+- **WAL Checkpoint Coordination** (`config/database.py`, `services/backup_scheduler.py`)
+  - Added coordination between WAL checkpoint scheduler and backup system
+  - WAL checkpoint scheduler checks if backup is in progress before checkpointing
+  - Uses thread-safe `threading.Event` flag for coordination
+  - Impact: Prevents unnecessary checkpoint operations during backup (optimization)
+
+- **Backup Standalone Verification** (`services/backup_scheduler.py`)
+  - Added `verify_backup_is_standalone()` function to check for WAL/SHM files
+  - Verifies backup is standalone after creation
+  - Fails backup if WAL/SHM files cannot be removed
+  - Impact: Guarantees backups are standalone `.db` files
+
+- **Backup Cleanup Improvements** (`services/backup_scheduler.py`)
+  - Cleanup of old backups now also removes WAL/SHM files
+  - Pre-connection cleanup removes existing WAL/SHM files
+  - Final safeguard in `finally` block ensures cleanup even on errors
+  - Impact: Backup directory stays clean, no orphaned WAL/SHM files
+
+### Changed
+
+- **Backup Disk Space Calculation** (`services/backup_scheduler.py`)
+  - Improved disk space check to account for actual database size
+  - Calculates required space as: database size + 50MB buffer
+  - Minimum 100MB required (fallback if DB size unavailable)
+  - Impact: More accurate disk space checks, prevents backup failures
+
+- **Backup Timestamp Precision** (`services/backup_scheduler.py`)
+  - Added microsecond precision to backup timestamps
+  - Format: `YYYYMMDD_HHMMSS_ffffff` (was `YYYYMMDD_HHMMSS`)
+  - Prevents filename collisions even with concurrent backup attempts
+  - Impact: Unique backup filenames guaranteed
+
+- **WAL Checkpoint Logging** (`config/database.py`)
+  - Enhanced checkpoint logging to show checkpoint statistics
+  - Logs pages checkpointed and pages remaining
+  - Logs busy status (whether checkpoint waited for readers/writers)
+  - Impact: Better visibility into checkpoint operations
+
+- **Backup Error Handling** (`services/backup_scheduler.py`)
+  - Improved error handling for journal_mode setting failures
+  - Better logging when WAL/SHM files are detected
+  - More detailed error messages for troubleshooting
+  - Impact: Easier debugging of backup issues
+
+### Technical Details
+
+**Backup System Architecture:**
+- Uses SQLite `.backup()` API (Python 3.7+) for atomic snapshots
+- Handles WAL mode correctly - reads main DB + WAL file atomically
+- Creates consistent snapshots even during active writes
+- No manual checkpoint needed - SQLite backup API handles it internally
+
+**WAL Checkpoint System:**
+- Periodic checkpointing every 5 minutes (configurable)
+- Uses `PRAGMA wal_checkpoint(TRUNCATE)` for aggressive checkpointing
+- Coordinates with backup system to skip during backups
+- Shutdown checkpoint ensures clean shutdown
+
+**Coordination Mechanism:**
+- Thread-safe `threading.Event` flag (`_backup_in_progress`)
+- WAL checkpoint scheduler checks flag before checkpointing
+- Backup sets flag at start, clears at end (in finally block)
+- Coordination is optional optimization (backup API works fine either way)
+
+**Standalone Backup Guarantees:**
+1. Pre-connection cleanup removes existing WAL/SHM files
+2. Set `journal_mode=DELETE` immediately after connection
+3. Close connection before checking for WAL files
+4. Verify and remove WAL/SHM files after backup
+5. Verify journal_mode is DELETE
+6. Final cleanup in finally block
+7. Standalone verification function
+
+### Files Modified
+
+- `services/backup_scheduler.py` - Complete backup system improvements
+- `config/database.py` - WAL checkpoint coordination and logging
+- `utils/db_migration.py` - Updated migration backup to use SQLite backup API
+
+---
+
 ## [4.28.88] - 2025-12-15 - SMS Middleware & WebSocket Consolidation
 
 ### Added

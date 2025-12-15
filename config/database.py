@@ -424,9 +424,19 @@ def checkpoint_wal():
     try:
         from sqlalchemy import text
         with engine.connect() as conn:
-            # PRAGMA commands don't need commit - they're immediate
+            # PRAGMA wal_checkpoint(TRUNCATE) - merges WAL pages and truncates WAL file
+            # TRUNCATE mode: More aggressive - waits for all readers/writers to finish
+            # This is safe for periodic checkpointing and shutdown
             result = conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
-        logger.debug("[Database] WAL checkpoint completed")
+            # Checkpoint returns: (busy, log, checkpointed)
+            # busy=0 means checkpoint completed, busy=1 means there were active readers/writers
+            checkpoint_result = result.fetchone()
+            if checkpoint_result:
+                busy, log_pages, checkpointed_pages = checkpoint_result[0], checkpoint_result[1], checkpoint_result[2]
+                if busy == 0:
+                    logger.debug(f"[Database] WAL checkpoint completed: {checkpointed_pages} pages checkpointed, {log_pages} pages remaining")
+                else:
+                    logger.debug(f"[Database] WAL checkpoint busy: {checkpointed_pages} pages checkpointed, {log_pages} pages remaining (some readers/writers active)")
         return True
     except Exception as e:
         logger.warning(f"[Database] WAL checkpoint failed: {e}")
@@ -444,6 +454,11 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
     - Faster recovery if process is force-killed
     - Reduced corruption risk
     
+    COORDINATION WITH BACKUP:
+    - Checks if backup is in progress before checkpointing
+    - If backup is running, skips checkpoint (backup API handles WAL correctly)
+    - This is an optimization - backup API works fine even if checkpoint runs
+    
     Args:
         interval_minutes: How often to checkpoint WAL (default: 5 minutes)
     """
@@ -456,6 +471,17 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
     while True:
         try:
             await asyncio.sleep(interval_seconds)
+            
+            # Check if backup is in progress (coordination with backup system)
+            try:
+                from services.backup_scheduler import is_backup_in_progress
+                if is_backup_in_progress():
+                    logger.debug("[Database] Skipping WAL checkpoint - backup in progress")
+                    continue
+            except ImportError:
+                # Backup scheduler not available, continue anyway
+                pass
+            
             # Run checkpoint in thread pool to avoid blocking event loop
             # checkpoint_wal() handles its own exceptions and returns False on failure
             success = await asyncio.to_thread(checkpoint_wal)
