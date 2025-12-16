@@ -216,6 +216,10 @@ class LanguageManager {
                 fillColor: 'Fill Color',
                 strokeColor: 'Stroke Color',
                 strokeWidth: 'Stroke Width',
+                colors: 'Colors',
+                textColorLabel: 'Text',
+                fillColorLabel: 'Fill',
+                strokeColorLabel: 'Stroke',
                 opacity: 'Opacity',
                 applyAllChanges: 'Apply All Changes',
                 // MindMate AI Panel (uses configurable name from backend)
@@ -490,6 +494,10 @@ class LanguageManager {
                 fillColor: '填充颜色',
                 strokeColor: '边框颜色',
                 strokeWidth: '边框宽度',
+                colors: '颜色',
+                textColorLabel: '文字',
+                fillColorLabel: '填充',
+                strokeColorLabel: '边框',
                 opacity: '透明度',
                 applyAllChanges: '应用所有更改',
                 // MindMate AI Panel (uses configurable name from backend)
@@ -621,7 +629,7 @@ class LanguageManager {
                 fourQuadrant: 'Dörd Kvadrant Analizi',
                 fourQuadrantDesc: 'Elementləri kateqoriyalamaq',
                 selectButton: 'Seç',
-                backToGallery: 'Qalereyaya Qayıt',
+                backToGallery: 'Qalereya',
                 reset: 'Sıfırla',
                 export: 'İxrac Et',
                 exportTooltip: 'PNG kimi ixrac et',
@@ -631,22 +639,22 @@ class LanguageManager {
                 saveTooltip: '.mg faylı kimi saxla',
                 importTooltip: '.mg faylı idxal et',
                 nodes: 'Redaktə',
-                add: 'Əlavə Et',
+                add: 'Əlavə',
                 delete: 'Sil',
                 copy: 'Kopyala',
-                auto: 'Avtomatik',
+                auto: 'Avto',
                 line: 'Xətt',
                 learn: 'Öyrən',
-                thinking: 'Düşüncə Bələdçisi',
-                tools: 'Əməliyyatlar',
+                thinking: 'Düşüncə',
+                tools: 'Əməliyyat',
                 empty: 'Boşalt',
                 undo: 'Geri Al',
-                redo: 'Təkrar Et',
+                redo: 'Təkrar',
                 nodeCount: 'Düyünlər',
                 editMode: 'Redaktə Rejimi: Aktiv',
-                resetView: 'Görünüşü Sıfırla',
+                resetView: 'Sıfırla',
                 resetViewTitle: 'Diaqramı pəncərəyə uyğunlaşdır',
-                nodePalette: 'Düyün Paleti',
+                nodePalette: 'Palet',
                 // LLM Selector
                 aiModel: 'AI Modeli',
                 llmQwen: 'Qwen',
@@ -691,7 +699,7 @@ class LanguageManager {
                 learningModeInputPlaceholder: 'Cavabınızı buraya yazın...',
                 learningModeSubmit: 'Göndər',
                 learningModeHint: 'İpucu',
-                learningModeExit: 'Öyrənmə Rejimindən Çıx',
+                learningModeExit: 'Çıx',
                 learningModeCorrect: 'Düzgündür!',
                 learningModeIncorrect: (correctAnswer) => `Tam düzgün deyil. Düzgün cavab: <strong>${correctAnswer}</strong>`,
                 learningModeEnterAnswer: 'Xahiş edirik cavab daxil edin',
@@ -726,7 +734,7 @@ class LanguageManager {
                 admin: '后台',
                 adminTooltip: 'Admin Paneli',
                 feedback: 'Rəy',
-                feedbackTooltip: 'Rəy Göndər',
+                feedbackTooltip: 'Rəy',
                 feedbackTitle: 'Rəy Göndər',
                 feedbackSubtitle: 'Xətaları bildirin, funksiya təklif edin və ya düşüncələrinizi paylaşın',
                 feedbackType: 'Növ',
@@ -747,24 +755,29 @@ class LanguageManager {
                 strikethroughTooltip: 'Üstündən Xətt',
                 closeTooltip: 'Bağla',
                 // Node Editor
-                editNodeContent: 'Düyün Məzmununu Redaktə Et',
+                editNodeContent: 'Redaktə Et',
                 characters: 'simvollar',
                 cancel: 'Ləğv Et',
-                saveChanges: 'Dəyişiklikləri Saxla',
+                saveChanges: 'Saxla',
                 // Properties Panel
                 properties: 'Xüsusiyyətlər',
                 text: 'Mətn',
                 nodeTextPlaceholder: 'Düyün mətni',
                 apply: 'Tətbiq Et',
-                resetStyles: 'Üslubları Sıfırla',
+                resetStyles: 'Sıfırla',
                 fontSize: 'Şrift Ölçüsü',
+                fontFamily: 'Şrift',
                 textStyle: 'Mətn Üslubu',
                 textColor: 'Mətn Rəngi',
                 fillColor: 'Doldurma Rəngi',
                 strokeColor: 'Kontur Rəngi',
                 strokeWidth: 'Kontur Genişliyi',
+                colors: 'Rənglər',
+                textColorLabel: 'Mətn',
+                fillColorLabel: 'Doldurma',
+                strokeColorLabel: 'Kontur',
                 opacity: 'Şəffaflıq',
-                applyAllChanges: 'Bütün Dəyişiklikləri Tətbiq Et',
+                applyAllChanges: 'Hamısını Tətbiq',
                 // MindMate AI Panel (uses configurable name from backend)
                 mindMateAI: window.AI_ASSISTANT_NAME || 'MindMate AI',
                 online: 'Onlayn',
@@ -1304,15 +1317,39 @@ class LanguageManager {
         const propStrokeColorLabel = document.querySelector('label[for="prop-stroke-color"]');
         if (propStrokeColorLabel) propStrokeColorLabel.textContent = t.strokeColor;
         
-        // Update color button titles (tooltips)
+        // Update color button titles (tooltips) and labels
         const btnTextColor = document.getElementById('btn-text-color');
-        if (btnTextColor) btnTextColor.title = t.textColor;
+        if (btnTextColor) {
+            btnTextColor.title = t.textColor;
+            const textColorLabel = btnTextColor.querySelector('.color-btn-label');
+            if (textColorLabel) textColorLabel.textContent = t.textColorLabel || 'Text';
+        }
         
         const btnFillColor = document.getElementById('btn-fill-color');
-        if (btnFillColor) btnFillColor.title = t.fillColor;
+        if (btnFillColor) {
+            btnFillColor.title = t.fillColor;
+            const fillColorLabel = btnFillColor.querySelector('.color-btn-label');
+            if (fillColorLabel) fillColorLabel.textContent = t.fillColorLabel || 'Fill';
+        }
         
         const btnStrokeColor = document.getElementById('btn-stroke-color');
-        if (btnStrokeColor) btnStrokeColor.title = t.strokeColor;
+        if (btnStrokeColor) {
+            btnStrokeColor.title = t.strokeColor;
+            const strokeColorLabel = btnStrokeColor.querySelector('.color-btn-label');
+            if (strokeColorLabel) strokeColorLabel.textContent = t.strokeColorLabel || 'Stroke';
+        }
+        
+        // Update color group label (the label before color-buttons-row)
+        const colorButtonsRow = document.querySelector('.color-buttons-row');
+        if (colorButtonsRow) {
+            const colorGroup = colorButtonsRow.closest('.property-group');
+            if (colorGroup) {
+                const colorGroupLabel = colorGroup.querySelector('label:not([for])');
+                if (colorGroupLabel) {
+                    colorGroupLabel.textContent = t.colors || 'Colors';
+                }
+            }
+        }
         
         const propStrokeWidthLabel = document.querySelector('label[for="prop-stroke-width"]');
         if (propStrokeWidthLabel) propStrokeWidthLabel.textContent = t.strokeWidth;
