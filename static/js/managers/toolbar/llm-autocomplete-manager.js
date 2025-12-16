@@ -476,7 +476,19 @@ class LLMAutoCompleteManager {
         // Only show notifications if toolbarManager is still available
         if (this.toolbarManager) {
             if (allFailed) {
-                this.logger.error('LLMAutoCompleteManager', 'All LLM models failed');
+                // Log detailed failure information
+                const failedModels = Object.keys(this.results).filter(model => 
+                    !this.results[model]?.success
+                );
+                const errorDetails = failedModels.map(model => {
+                    const result = this.results[model];
+                    return `${model}: ${result?.error || 'Unknown error'}`;
+                }).join('; ');
+                
+                this.logger.error('LLMAutoCompleteManager', `All LLM models failed: ${errorDetails}`, {
+                    failedModels,
+                    results: this.results
+                });
                 this.toolbarManager.showNotification(
                     language === 'zh' ? '生成失败，请重试' : 'Generation failed, please try again',
                     'error'

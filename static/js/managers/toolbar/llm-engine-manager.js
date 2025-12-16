@@ -131,12 +131,16 @@ class LLMEngineManager {
             } else {
                 // Model failed
                 const errorMessage = data.error || 'Unknown error';
+                const isAuthError = errorMessage.includes('401') || errorMessage.includes('Unauthorized');
+                const isNetworkError = errorMessage.includes('network') || errorMessage.includes('NetworkError');
                 
                 this.logger.error('LLMEngineManager', `=== LLM FAILURE: ${modelName.toUpperCase()} ===`, {
                     timestamp: new Date().toISOString(),
                     model: modelName,
                     error: errorMessage,
-                    elapsed: elapsed + 's'
+                    elapsed: elapsed + 's',
+                    isAuthError,
+                    isNetworkError
                 });
                 
                 const result = {
@@ -175,16 +179,31 @@ class LLMEngineManager {
                     reason: 'User navigation or explicit cancellation'
                 });
             } else {
-                this.logger.error('LLMEngineManager', `API error for ${modelName}`, error);
+                const errorMsg = error?.message || String(error) || 'Unknown API error';
+                const isAuthError = errorMsg.includes('401') || errorMsg.includes('Unauthorized') || 
+                                  error?.status === 401;
+                const isNetworkError = error?.name === 'NetworkError' || error?.name === 'TypeError' ||
+                                     errorMsg.includes('network') || errorMsg.includes('fetch');
+                
+                this.logger.error('LLMEngineManager', `API error for ${modelName}: ${errorMsg}`, {
+                    model: modelName,
+                    error: errorMsg,
+                    status: error?.status,
+                    name: error?.name,
+                    stack: error?.stack,
+                    isAuthError,
+                    isNetworkError
+                });
             }
             
             this.activeAbortControllers.delete(abortController);
             
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+            const errorMsg = error?.message || String(error) || 'Unknown error';
             const result = {
                 model: modelName,
                 success: false,
-                error: error.message,
+                error: errorMsg,
                 elapsed: elapsed
             };
             

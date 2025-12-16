@@ -141,11 +141,14 @@ class FlowMapAgent(BaseAgent):
                 spec = response
             else:
                 # Try to extract JSON from string response
-                spec = extract_json_from_response(str(response))
-            
-            if not spec:
-                logger.error("FlowMapAgent: Failed to extract JSON from LLM response")
-                return None
+                response_str = str(response)
+                spec = extract_json_from_response(response_str)
+                
+                if not spec:
+                    # Log the actual response for debugging
+                    response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
+                    logger.error(f"FlowMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
+                    return None
             
             return spec
             

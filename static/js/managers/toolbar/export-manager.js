@@ -108,10 +108,18 @@ class ExportManager {
             }
             
         } catch (error) {
-            this.logger.error('ExportManager', `Export failed: ${error.message}`);
+            // Log detailed error information
+            const errorDetails = {
+                format,
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            };
+            this.logger.error('ExportManager', `Export failed: ${error.message}`, errorDetails);
             this.eventBus.emit('export:error', { 
                 format, 
-                error: error.message 
+                error: error.message,
+                details: errorDetails
             });
         }
     }
@@ -342,22 +350,33 @@ class ExportManager {
                 };
                 
                 img.onerror = (error) => {
-                    this.logger.error('ExportManager', 'Error loading SVG', error);
+                    const errorMsg = error?.message || 'Unknown error loading SVG';
+                    this.logger.error('ExportManager', `Error loading SVG: ${errorMsg}`, {
+                        error: errorMsg,
+                        url: url.substring(0, 100) + '...',
+                        format: 'png'
+                    });
                     URL.revokeObjectURL(url);
                     
                     reject({
                         success: false,
-                        error: 'Failed to load SVG for export'
+                        error: `Failed to load SVG for PNG export: ${errorMsg}`
                     });
                 };
                 
                 img.src = url;
                 
             } catch (error) {
-                this.logger.error('ExportManager', 'Error exporting to PNG', error);
+                const errorMsg = error?.message || 'Unknown error';
+                this.logger.error('ExportManager', `Error exporting to PNG: ${errorMsg}`, {
+                    error: errorMsg,
+                    stack: error?.stack,
+                    name: error?.name,
+                    format: 'png'
+                });
                 reject({
                     success: false,
-                    error: error.message
+                    error: `PNG export failed: ${errorMsg}`
                 });
             }
         });
@@ -432,10 +451,16 @@ class ExportManager {
             };
             
         } catch (error) {
-            this.logger.error('ExportManager', 'Error exporting to SVG', error);
+            const errorMsg = error?.message || 'Unknown error';
+            this.logger.error('ExportManager', `Error exporting to SVG: ${errorMsg}`, {
+                error: errorMsg,
+                stack: error?.stack,
+                name: error?.name,
+                format: 'svg'
+            });
             return {
                 success: false,
-                error: error.message
+                error: `SVG export failed: ${errorMsg}`
             };
         }
     }
@@ -492,10 +517,16 @@ class ExportManager {
             };
             
         } catch (error) {
-            this.logger.error('ExportManager', 'Error exporting to JSON', error);
+            const errorMsg = error?.message || 'Unknown error';
+            this.logger.error('ExportManager', `Error exporting to JSON: ${errorMsg}`, {
+                error: errorMsg,
+                stack: error?.stack,
+                name: error?.name,
+                format: 'json'
+            });
             return {
                 success: false,
-                error: error.message
+                error: `JSON export failed: ${errorMsg}`
             };
         }
     }
@@ -604,11 +635,17 @@ class ExportManager {
             };
             
         } catch (error) {
-            this.logger.error('ExportManager', 'Error exporting to MG', error);
-            this.eventBus.emit('file:mg_export_error', { error: error.message });
+            const errorMsg = error?.message || 'Unknown error';
+            this.logger.error('ExportManager', `Error exporting to MG: ${errorMsg}`, {
+                error: errorMsg,
+                stack: error?.stack,
+                name: error?.name,
+                format: 'mg'
+            });
+            this.eventBus.emit('file:mg_export_error', { error: errorMsg });
             return {
                 success: false,
-                error: error.message
+                error: `MG export failed: ${errorMsg}`
             };
         }
     }

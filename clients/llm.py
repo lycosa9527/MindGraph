@@ -10,11 +10,23 @@ import aiohttp
 import json
 import logging
 import os
+import re
 from typing import Dict, List, Optional, Any, AsyncGenerator
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, APIError, RateLimitError, APIStatusError
 from config.settings import config
-from services.error_handler import LLMRateLimitError, LLMContentFilterError, LLMProviderError
+from services.error_handler import (
+    LLMRateLimitError, 
+    LLMContentFilterError, 
+    LLMProviderError,
+    LLMInvalidParameterError,
+    LLMQuotaExhaustedError,
+    LLMModelNotFoundError,
+    LLMAccessDeniedError,
+    LLMTimeoutError
+)
+from services.dashscope_error_parser import parse_and_raise_dashscope_error
+from services.hunyuan_error_parser import parse_and_raise_hunyuan_error
 
 # Load environment variables for logging configuration
 load_dotenv()
@@ -95,37 +107,23 @@ class QwenClient:
                         error_text = await response.text()
                         logger.error(f"Qwen API error {response.status}: {error_text}")
                         
-                        # Parse error response for specific error types
+                        # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
-                            error_info = error_data.get('error', {})
-                            error_code = error_info.get('code', '')
-                            error_message = error_info.get('message', error_text)
-                            
-                            # Content filter - don't retry
-                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
-                                raise LLMContentFilterError(f"Qwen content filter: {error_message}")
-                            
-                            # Rate limit
-                            if response.status == 429 or error_code in ['Throttling', 'Throttling.RateQuota', 'limit_requests']:
-                                raise LLMRateLimitError(f"Qwen rate limit: {error_message}")
-                            
-                            # Quota exhausted - don't retry
-                            if error_code in ['Throttling.AllocationQuota', 'Arrearage']:
-                                raise LLMProviderError(f"Qwen quota exhausted: {error_message}", provider='qwen', error_code=error_code)
-                            
-                            # Input too long
-                            if 'Range of input length' in error_message:
-                                raise LLMProviderError(f"Input too long: {error_message}", provider='qwen', error_code='input_too_long')
-                            
+                            # This function always raises an exception, never returns
+                            parse_and_raise_dashscope_error(response.status, error_text, error_data)
                         except json.JSONDecodeError:
-                            pass
+                            # Fallback for non-JSON errors
+                            if response.status == 429:
+                                raise LLMRateLimitError(f"Qwen rate limit: {error_text}")
+                            elif response.status == 401:
+                                raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='qwen', error_code='Unauthorized')
+                            else:
+                                raise LLMProviderError(f"Qwen API error ({response.status}): {error_text}", provider='qwen', error_code=f'HTTP{response.status}')
                         
-                        raise Exception(f"Qwen API error: {response.status}")
-                        
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as e:
             logger.error("Qwen API timeout")
-            raise Exception("Qwen API timeout")
+            raise LLMTimeoutError("Qwen API timeout") from e
         except Exception as e:
             logger.error(f"Qwen API error: {e}")
             raise
@@ -185,25 +183,19 @@ class QwenClient:
                         error_text = await response.text()
                         logger.error(f"Qwen stream error {response.status}: {error_text}")
                         
-                        # Parse error response for specific error types
+                        # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
-                            error_info = error_data.get('error', {})
-                            error_code = error_info.get('code', '')
-                            error_message = error_info.get('message', error_text)
-                            
-                            # Content filter - don't retry
-                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
-                                raise LLMContentFilterError(f"Qwen content filter: {error_message}")
-                            
-                            # Rate limit
-                            if response.status == 429 or error_code in ['Throttling', 'Throttling.RateQuota', 'limit_requests']:
-                                raise LLMRateLimitError(f"Qwen rate limit: {error_message}")
-                            
+                            # This function always raises an exception, never returns
+                            parse_and_raise_dashscope_error(response.status, error_text, error_data)
                         except json.JSONDecodeError:
-                            pass
-                        
-                        raise Exception(f"Qwen stream error: {response.status}")
+                            # Fallback for non-JSON errors
+                            if response.status == 429:
+                                raise LLMRateLimitError(f"Qwen rate limit: {error_text}")
+                            elif response.status == 401:
+                                raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='qwen', error_code='Unauthorized')
+                            else:
+                                raise LLMProviderError(f"Qwen stream error ({response.status}): {error_text}", provider='qwen', error_code=f'HTTP{response.status}')
                     
                     # Read SSE stream line by line
                     last_usage = None
@@ -316,29 +308,23 @@ class DeepSeekClient:
                         error_text = await response.text()
                         logger.error(f"DeepSeek API error {response.status}: {error_text}")
                         
-                        # Parse error response for specific error types
+                        # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
-                            error_info = error_data.get('error', {})
-                            error_code = error_info.get('code', '')
-                            error_message = error_info.get('message', error_text)
-                            
-                            # Content filter - don't retry
-                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
-                                raise LLMContentFilterError(f"DeepSeek content filter: {error_message}")
-                            
-                            # Rate limit
-                            if response.status == 429 or error_code in ['Throttling', 'limit_requests']:
-                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_message}")
-                            
+                            # This function always raises an exception, never returns
+                            parse_and_raise_dashscope_error(response.status, error_text, error_data)
                         except json.JSONDecodeError:
-                            pass
+                            # Fallback for non-JSON errors
+                            if response.status == 429:
+                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}")
+                            elif response.status == 401:
+                                raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='deepseek', error_code='Unauthorized')
+                            else:
+                                raise LLMProviderError(f"DeepSeek API error ({response.status}): {error_text}", provider='deepseek', error_code=f'HTTP{response.status}')
                         
-                        raise Exception(f"DeepSeek API error: {response.status}")
-                        
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as e:
             logger.error("DeepSeek API timeout")
-            raise Exception("DeepSeek API timeout")
+            raise LLMTimeoutError("DeepSeek API timeout") from e
         except Exception as e:
             logger.error(f"DeepSeek API error: {e}")
             raise
@@ -396,23 +382,19 @@ class DeepSeekClient:
                         error_text = await response.text()
                         logger.error(f"DeepSeek stream error {response.status}: {error_text}")
                         
-                        # Parse error response for specific error types
+                        # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
-                            error_info = error_data.get('error', {})
-                            error_code = error_info.get('code', '')
-                            error_message = error_info.get('message', error_text)
-                            
-                            if error_code in ['DataInspectionFailed', 'data_inspection_failed']:
-                                raise LLMContentFilterError(f"DeepSeek content filter: {error_message}")
-                            
-                            if response.status == 429 or error_code in ['Throttling', 'limit_requests']:
-                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_message}")
-                            
+                            # This function always raises an exception, never returns
+                            parse_and_raise_dashscope_error(response.status, error_text, error_data)
                         except json.JSONDecodeError:
-                            pass
-                        
-                        raise Exception(f"DeepSeek stream error: {response.status}")
+                            # Fallback for non-JSON errors
+                            if response.status == 429:
+                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}")
+                            elif response.status == 401:
+                                raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='deepseek', error_code='Unauthorized')
+                            else:
+                                raise LLMProviderError(f"DeepSeek stream error ({response.status}): {error_text}", provider='deepseek', error_code=f'HTTP{response.status}')
                     
                     last_usage = None
                     async for line_bytes in response.content:
@@ -507,25 +489,23 @@ class KimiClient:
                         error_text = await response.text()
                         logger.error(f"Kimi API error {response.status}: {error_text}")
                         
-                        # Parse error response for specific error types
+                        # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
-                            error_info = error_data.get('error', {})
-                            error_code = error_info.get('code', '')
-                            error_message = error_info.get('message', error_text)
-                            
-                            # Rate limit (Kimi uses 429 and limit_requests)
-                            if response.status == 429 or error_code == 'limit_requests':
-                                raise LLMRateLimitError(f"Kimi rate limit: {error_message}")
-                            
+                            # This function always raises an exception, never returns
+                            parse_and_raise_dashscope_error(response.status, error_text, error_data)
                         except json.JSONDecodeError:
-                            pass
+                            # Fallback for non-JSON errors
+                            if response.status == 429:
+                                raise LLMRateLimitError(f"Kimi rate limit: {error_text}")
+                            elif response.status == 401:
+                                raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='kimi', error_code='Unauthorized')
+                            else:
+                                raise LLMProviderError(f"Kimi API error ({response.status}): {error_text}", provider='kimi', error_code=f'HTTP{response.status}')
                         
-                        raise Exception(f"Kimi API error: {response.status}")
-                        
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as e:
             logger.error("Kimi API timeout")
-            raise Exception("Kimi API timeout")
+            raise LLMTimeoutError("Kimi API timeout") from e
         except Exception as e:
             logger.error(f"Kimi API error: {e}")
             raise
@@ -583,20 +563,19 @@ class KimiClient:
                         error_text = await response.text()
                         logger.error(f"Kimi stream error {response.status}: {error_text}")
                         
-                        # Parse error response for specific error types
+                        # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
-                            error_info = error_data.get('error', {})
-                            error_code = error_info.get('code', '')
-                            error_message = error_info.get('message', error_text)
-                            
-                            if response.status == 429 or error_code == 'limit_requests':
-                                raise LLMRateLimitError(f"Kimi rate limit: {error_message}")
-                            
+                            # This function always raises an exception, never returns
+                            parse_and_raise_dashscope_error(response.status, error_text, error_data)
                         except json.JSONDecodeError:
-                            pass
-                        
-                        raise Exception(f"Kimi stream error: {response.status}")
+                            # Fallback for non-JSON errors
+                            if response.status == 429:
+                                raise LLMRateLimitError(f"Kimi rate limit: {error_text}")
+                            elif response.status == 401:
+                                raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='kimi', error_code='Unauthorized')
+                            else:
+                                raise LLMProviderError(f"Kimi stream error ({response.status}): {error_text}", provider='kimi', error_code=f'HTTP{response.status}')
                     
                     last_usage = None
                     async for line_bytes in response.content:
@@ -717,33 +696,38 @@ class HunyuanClient:
             error_msg = str(e)
             logger.error(f"Hunyuan API status error: {error_msg}")
             
-            # Check for Hunyuan-specific error codes
-            # Rate limit codes
-            rate_limit_codes = [
-                'LimitExceeded', 'RequestLimitExceeded',
-                'RequestLimitExceeded.IPLimitExceeded',
-                'RequestLimitExceeded.UinLimitExceeded',
-                'FailedOperation.EngineServerLimitExceeded'
-            ]
+            # Try to extract error code from OpenAI SDK error
+            error_code = None
+            if hasattr(e, 'code'):
+                error_code = e.code
+            elif hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_data = e.response.json()
+                    if 'error' in error_data:
+                        error_code = error_data['error'].get('code', 'Unknown')
+                        error_msg = error_data['error'].get('message', error_msg)
+                except:
+                    pass
             
-            # Content filter codes
-            content_filter_codes = [
-                'OperationDenied.TextIllegalDetected',
-                'OperationDenied.ImageIllegalDetected',
-                'FailedOperation.GenerateImageFailed'
-            ]
+            # Try to extract from error message if code not found
+            if not error_code:
+                # Look for common error code patterns in message
+                code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
+                if code_match:
+                    error_code = code_match.group(1)
+                else:
+                    error_code = 'Unknown'
             
-            # Check if any rate limit code is in the error message
-            for code in rate_limit_codes:
-                if code in error_msg or '2003' in error_msg or '请求限频' in error_msg:
-                    raise LLMRateLimitError(f"Hunyuan rate limit: {error_msg}")
-            
-            # Check for content filter
-            for code in content_filter_codes:
-                if code in error_msg:
-                    raise LLMContentFilterError(f"Hunyuan content filter: {error_msg}")
-            
-            raise LLMProviderError(f"Hunyuan API error: {error_msg}", provider='hunyuan')
+            # Parse error using comprehensive Hunyuan error parser
+            try:
+                parse_and_raise_hunyuan_error(error_code, error_msg, status_code=getattr(e, 'status_code', None))
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+                    LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
+                # Re-raise parsed exceptions
+                raise
+            except Exception:
+                # Fallback to generic error if parsing fails
+                raise LLMProviderError(f"Hunyuan API error ({error_code}): {error_msg}", provider='hunyuan', error_code=error_code)
                 
         except Exception as e:
             logger.error(f"Hunyuan API error: {e}")
@@ -815,15 +799,37 @@ class HunyuanClient:
             error_msg = str(e)
             logger.error(f"Hunyuan streaming API error: {error_msg}")
             
-            # Check for rate limit indicators
-            if '2003' in error_msg or '请求限频' in error_msg or 'LimitExceeded' in error_msg:
-                raise LLMRateLimitError(f"Hunyuan rate limit: {error_msg}")
+            # Try to extract error code from OpenAI SDK error
+            error_code = None
+            if hasattr(e, 'code'):
+                error_code = e.code
+            elif hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_data = e.response.json()
+                    if 'error' in error_data:
+                        error_code = error_data['error'].get('code', 'Unknown')
+                        error_msg = error_data['error'].get('message', error_msg)
+                except:
+                    pass
             
-            # Check for content filter
-            if 'TextIllegalDetected' in error_msg or 'ImageIllegalDetected' in error_msg:
-                raise LLMContentFilterError(f"Hunyuan content filter: {error_msg}")
+            # Try to extract from error message if code not found
+            if not error_code:
+                code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
+                if code_match:
+                    error_code = code_match.group(1)
+                else:
+                    error_code = 'Unknown'
             
-            raise LLMProviderError(f"Hunyuan stream error: {error_msg}", provider='hunyuan')
+            # Parse error using comprehensive Hunyuan error parser
+            try:
+                parse_and_raise_hunyuan_error(error_code, error_msg, status_code=getattr(e, 'status_code', None))
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+                    LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
+                # Re-raise parsed exceptions
+                raise
+            except Exception:
+                # Fallback to generic error if parsing fails
+                raise LLMProviderError(f"Hunyuan stream error ({error_code}): {error_msg}", provider='hunyuan', error_code=error_code)
         
         except Exception as e:
             logger.error(f"Hunyuan streaming error: {e}")

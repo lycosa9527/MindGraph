@@ -24,50 +24,125 @@ def extract_json_from_response(response_content):
     """
     Extract JSON from LLM response content.
     
+    Handles legitimate formatting issues:
+    - Markdown code blocks (```json ... ```)
+    - Unicode quote characters (smart quotes)
+    - Trailing commas (common JSON extension)
+    - Basic whitespace/control characters
+    
+    Does NOT attempt to fix malformed or truncated JSON.
+    If JSON is invalid, returns None and logs the error with full context.
+    
     Args:
         response_content (str): Raw response content from LLM
         
     Returns:
         dict or None: Extracted JSON data or None if failed
     """
+    if not response_content:
+        logger.warning("Empty response content provided")
+        return None
+    
     try:
-        # Clean the response content
-        content = response_content.strip()
+        content = str(response_content).strip()
         
-        # Try to find JSON in markdown code blocks
+        # Extract JSON content - try markdown blocks first, then direct content
+        json_content = None
+        
+        # Check for markdown code blocks
         json_match = re.search(r'```(?:json)?\s*\n(.*?)\n```', content, re.DOTALL)
         if json_match:
             json_content = json_match.group(1).strip()
-            try:
-                return json.loads(json_content)
-            except json.JSONDecodeError:
-                pass
+        else:
+            # Try to find JSON object or array in content
+            # Look for { ... } or [ ... ] patterns
+            obj_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+            arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
+            
+            if obj_match:
+                json_content = obj_match.group(0)
+            elif arr_match:
+                json_content = arr_match.group(0)
+            else:
+                # Fallback: try greedy match for { ... }
+                greedy_match = re.search(r'\{.*\}', content, re.DOTALL)
+                if greedy_match:
+                    json_content = greedy_match.group(0)
         
-        # Try to find JSON in the content directly
-        # Look for content that starts with { and ends with }
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            json_content = json_match.group(0)
-            try:
-                return json.loads(json_content)
-            except json.JSONDecodeError:
-                pass
+        if not json_content:
+            # No JSON-like content found
+            content_preview = content[:500] + "..." if len(content) > 500 else content
+            logger.error(f"Failed to extract JSON: No JSON structure found in response. Content: {content_preview}")
+            return None
         
-        # Try to find JSON array
-        json_match = re.search(r'\[.*\]', content, re.DOTALL)
-        if json_match:
-            json_content = json_match.group(0)
-            try:
-                return json.loads(json_content)
-            except json.JSONDecodeError:
-                pass
+        # Clean legitimate formatting issues (not structural problems)
+        cleaned = _clean_json_string(json_content)
         
-        logger.warning("Failed to extract JSON from response content")
-        return None
+        # Try to parse - if it fails, that's a real error
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            # Log the actual error with context
+            error_pos = getattr(e, 'pos', None)
+            error_msg = str(e)
+            content_preview = cleaned[:500] + "..." if len(cleaned) > 500 else cleaned
+            
+            logger.error(
+                f"Failed to parse JSON: {error_msg} "
+                f"(position: {error_pos}). "
+                f"Content preview: {content_preview}"
+            )
+            return None
         
     except Exception as e:
-        logger.error(f"Error extracting JSON from response: {e}")
+        # Unexpected error - log with full context
+        content_preview = str(response_content)[:500] + "..." if len(str(response_content)) > 500 else str(response_content)
+        logger.error(f"Unexpected error extracting JSON: {e}. Content preview: {content_preview}", exc_info=True)
         return None
+
+
+def _clean_json_string(text: str) -> str:
+    """
+    Clean JSON string by fixing legitimate formatting issues.
+    
+    Only fixes issues that don't change JSON semantics:
+    - Unicode quote normalization
+    - Control character removal
+    - Trailing comma removal (common JSON extension)
+    
+    Does NOT attempt to fix structural problems (truncated JSON, missing brackets, etc.)
+    
+    Args:
+        text: Raw JSON text to clean
+        
+    Returns:
+        Cleaned text
+    """
+    # Remove markdown code block markers if still present
+    text = re.sub(r'```(?:json)?\s*\n?', '', text)
+    text = re.sub(r'```\s*\n?', '', text)
+    
+    # Remove leading/trailing whitespace and backticks
+    text = text.strip().strip('`')
+    
+    # Replace smart quotes with ASCII equivalents (legitimate fix)
+    text = text.replace('\u201c', '"').replace('\u201d', '"')
+    text = text.replace('\u2018', "'").replace('\u2019', "'")
+    text = text.replace('"', '"').replace('"', '"')
+    text = text.replace('"', '"').replace('"', '"')
+    
+    # Remove zero-width and control characters (legitimate fix)
+    text = re.sub(r'[\u200B-\u200D\uFEFF]', '', text)
+    text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', text)
+    
+    # Remove JS-style comments (legitimate fix)
+    text = re.sub(r'//.*?$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+    
+    # Remove trailing commas before ] or } (common JSON extension, legitimate fix)
+    text = re.sub(r',\s*(\]|\})', r'\1', text)
+    
+    return text.strip()
 
 
 def parse_topic_extraction_result(result, language='zh'):

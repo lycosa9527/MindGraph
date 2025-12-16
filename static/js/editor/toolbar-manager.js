@@ -1593,6 +1593,19 @@ class ToolbarManager {
         }
         
         try {
+            // Validate file type before reading
+            const fileName = file.name.toLowerCase();
+            const isJsonFile = fileName.endsWith('.json') || fileName.endsWith('.mg');
+            
+            if (!isJsonFile) {
+                logger.error('ToolbarManager', 'Invalid file type - expected .json or .mg file', {
+                    fileName: file.name,
+                    type: file.type
+                });
+                this.showNotification(this.getNotif('invalidFileFormat'), 'error');
+                return;
+            }
+            
             // Read file contents
             const text = await file.text();
             

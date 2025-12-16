@@ -202,6 +202,38 @@ class OperationResult:
         with self._lock:
             return self._error_count
     
+    def get_error_breakdown(self) -> Dict[str, int]:
+        """Get error breakdown by error type (thread-safe snapshot)."""
+        with self._lock:
+            errors = self._errors.copy()
+        
+        error_counts = {}
+        for error in errors:
+            # Errors are already categorized in simulate_user_full_flow
+            # Normalize error types (handle both categorized and raw errors)
+            error_lower = error.lower().strip()
+            
+            if error_lower == "database_locked" or "database is locked" in error_lower or "database locked" in error_lower:
+                error_type = "database_locked"
+            elif error_lower == "timeout" or "timeout" in error_lower or "busy" in error_lower:
+                error_type = "timeout"
+            elif error_lower == "not_found" or "not_found" in error_lower:
+                error_type = "not_found"
+            elif error_lower == "expired" or "expired" in error_lower:
+                error_type = "expired"
+            elif error_lower == "incorrect" or "incorrect" in error_lower:
+                error_type = "incorrect"
+            elif error_lower.startswith("error:"):
+                # Generic errors from exception messages
+                error_type = "other"
+            else:
+                # Use as-is if it's already a known category
+                error_type = error_lower
+            
+            error_counts[error_type] = error_counts.get(error_type, 0) + 1
+        
+        return error_counts
+    
     def get_stats(self) -> Dict:
         """Get statistics for this operation type (thread-safe snapshot)."""
         with self._lock:
@@ -963,6 +995,209 @@ def run_concurrency_test(
             cleanup_test_database(test_db_path)
 
 
+def detect_verification_plateau(phase_results: List[Dict]) -> Optional[Dict]:
+    """
+    Detect when verification operations plateau despite increasing users.
+    
+    Verification is the real capacity indicator - it's the end of the flow.
+    If verification plateaus, that's the actual user capacity limit.
+    
+    Args:
+        phase_results: List of phase result dictionaries
+        
+    Returns:
+        Dict with verification plateau information if detected, None otherwise
+    """
+    if len(phase_results) < 3:
+        return None
+    
+    # Get verification counts and users for each phase
+    phase_metrics = []
+    for phase in phase_results:
+        verified_count = phase.get("verified_count", 0)
+        users = phase["users"]
+        verifications_per_user = phase.get("verifications_per_user", 0)
+        verification_throughput = phase.get("verification_throughput", 0)
+        phase_metrics.append({
+            "users": users,
+            "verified": verified_count,
+            "verified_per_user": verifications_per_user,
+            "throughput": verification_throughput
+        })
+    
+    # Get verification counts across phases
+    verified_counts = [m["verified"] for m in phase_metrics]
+    verified_per_user = [m["verified_per_user"] for m in phase_metrics]
+    users_list = [m["users"] for m in phase_metrics]
+    
+    if len(verified_counts) < 3 or max(verified_counts) == 0:
+        return None
+    
+    # Find the peak verification count
+    peak_idx = verified_counts.index(max(verified_counts))
+    if peak_idx == 0:  # Peak is at the start, not a plateau
+        return None
+    
+    # Check if verifications plateaued after peak
+    peak_verified = verified_counts[peak_idx]
+    recent_verified = verified_counts[peak_idx + 1:]
+    recent_per_user = verified_per_user[peak_idx + 1:]
+    recent_users = users_list[peak_idx + 1:]
+    
+    if not recent_verified or len(recent_verified) < 2:
+        return None
+    
+    # Calculate average decrease after peak
+    avg_recent_verified = sum(recent_verified) / len(recent_verified)
+    avg_recent_per_user = sum(recent_per_user) / len(recent_per_user)
+    peak_per_user = verified_per_user[peak_idx]
+    
+    decrease_percent = ((peak_per_user - avg_recent_per_user) / peak_per_user * 100) if peak_per_user > 0 else 0
+    
+    # Check if verifications are plateauing (not increasing much despite more users)
+    if len(recent_verified) >= 2:
+        verify_growth = (recent_verified[-1] - recent_verified[0]) / recent_verified[0] * 100 if recent_verified[0] > 0 else 0
+        users_growth = (recent_users[-1] - recent_users[0]) / recent_users[0] * 100 if recent_users[0] > 0 else 0
+        
+        # Consider it a plateau if:
+        # 1. Verifications per user decreased significantly (>15%)
+        # 2. Total verifications are not scaling with users (users grew but verifications didn't)
+        # 3. Recent values are relatively stable
+        if decrease_percent > 15 or (users_growth > 20 and verify_growth < users_growth * 0.3):
+            # Check if recent values are stable (low variance)
+            variance = sum((v - avg_recent_verified) ** 2 for v in recent_verified) / len(recent_verified)
+            std_dev = variance ** 0.5
+            cv = (std_dev / avg_recent_verified * 100) if avg_recent_verified > 0 else 100
+            
+            # If coefficient of variation is low (< 30%), values are stable (plateaued)
+            if cv < 30:
+                plateau_phase = phase_metrics[peak_idx]
+                plateau_users = plateau_phase["users"]
+                current_verified = recent_verified[-1]
+                
+                return {
+                    "plateau_users": plateau_users,
+                    "plateau_verified": peak_verified,
+                    "current_verified": current_verified,
+                    "peak_verified_per_user": peak_per_user,
+                    "current_verified_per_user": avg_recent_per_user,
+                    "decrease_percent": decrease_percent,
+                    "verification_growth": verify_growth,
+                    "users_growth": users_growth,
+                    "coefficient_of_variation": cv
+                }
+    
+    return None
+
+
+def detect_operation_plateau(phase_results: List[Dict]) -> Optional[Dict]:
+    """
+    Detect when operations plateau despite increasing users.
+    
+    This identifies bottlenecks where operations stop scaling with user count.
+    A plateau is detected when:
+    1. Operations per user decrease significantly after a peak
+    2. Total operations stay relatively constant despite more users
+    3. Recent values show low variance (stable plateau)
+    
+    Args:
+        phase_results: List of phase result dictionaries
+        
+    Returns:
+        Dict with plateau information if detected, None otherwise
+    """
+    if len(phase_results) < 3:
+        return None
+    
+    # Track operations per user and total operations for each operation type
+    operation_types = ["generate_code", "generate_image", "store", "get", "verify"]
+    
+    # Calculate operations per user and total operations for each phase
+    phase_metrics = []
+    for phase in phase_results:
+        users = phase["users"]
+        op_counts = phase.get("operation_counts", {})
+        metrics = {"users": users}
+        for op_type in operation_types:
+            if op_type in op_counts:
+                metrics[f"{op_type}_per_user"] = op_counts[op_type]["per_user"]
+                metrics[f"{op_type}_total"] = op_counts[op_type]["total"]
+            else:
+                metrics[f"{op_type}_per_user"] = 0.0
+                metrics[f"{op_type}_total"] = 0
+        phase_metrics.append(metrics)
+    
+    # Analyze each operation type for plateau
+    for op_type in operation_types:
+        # Get operations per user and total operations for this operation type
+        ops_per_user = [m[f"{op_type}_per_user"] for m in phase_metrics]
+        ops_total = [m[f"{op_type}_total"] for m in phase_metrics]
+        users_list = [m["users"] for m in phase_metrics]
+        
+        if len(ops_per_user) < 3 or max(ops_total) == 0:
+            continue
+        
+        # Find the peak operations per user
+        peak_idx = ops_per_user.index(max(ops_per_user))
+        if peak_idx == 0:  # Peak is at the start, not a plateau
+            continue
+        
+        # Check if operations per user decreased significantly after peak
+        peak_value = ops_per_user[peak_idx]
+        recent_ops_per_user = ops_per_user[peak_idx + 1:]
+        recent_ops_total = ops_total[peak_idx + 1:]
+        recent_users = users_list[peak_idx + 1:]
+        
+        if not recent_ops_per_user or len(recent_ops_per_user) < 2:
+            continue
+        
+        # Calculate average decrease after peak
+        avg_recent_per_user = sum(recent_ops_per_user) / len(recent_ops_per_user)
+        decrease_percent = ((peak_value - avg_recent_per_user) / peak_value * 100) if peak_value > 0 else 0
+        
+        # Check if total operations are plateauing (not increasing much despite more users)
+        # Calculate growth rate of total operations vs users
+        if len(recent_ops_total) >= 2:
+            ops_growth = (recent_ops_total[-1] - recent_ops_total[0]) / recent_ops_total[0] * 100 if recent_ops_total[0] > 0 else 0
+            users_growth = (recent_users[-1] - recent_users[0]) / recent_users[0] * 100 if recent_users[0] > 0 else 0
+            
+            # If users increased significantly but operations didn't, it's a plateau
+            ops_not_scaling = users_growth > 20 and ops_growth < users_growth * 0.3
+        
+        # Consider it a plateau if:
+        # 1. Operations per user decreased by more than 15% after peak
+        # 2. Recent values are relatively stable (low variance)
+        # 3. Total operations are not scaling with users (optional check)
+        if decrease_percent > 15:
+            # Check if recent values are stable (low variance)
+            variance = sum((v - avg_recent_per_user) ** 2 for v in recent_ops_per_user) / len(recent_ops_per_user)
+            std_dev = variance ** 0.5
+            cv = (std_dev / avg_recent_per_user * 100) if avg_recent_per_user > 0 else 100  # Coefficient of variation
+            
+            # If coefficient of variation is low (< 25%), values are stable (plateaued)
+            # Also check if operations aren't scaling with users
+            if cv < 25 or (len(recent_ops_total) >= 2 and ops_not_scaling):
+                plateau_phase = phase_metrics[peak_idx]
+                plateau_users = plateau_phase["users"]
+                plateau_ops = ops_total[peak_idx]
+                current_ops = recent_ops_total[-1] if recent_ops_total else plateau_ops
+                
+                return {
+                    "bottleneck_operation": op_type,
+                    "plateau_users": plateau_users,
+                    "plateau_operations": plateau_ops,
+                    "current_operations": current_ops,
+                    "peak_ops_per_user": peak_value,
+                    "current_ops_per_user": avg_recent_per_user,
+                    "decrease_percent": decrease_percent,
+                    "coefficient_of_variation": cv,
+                    "operations_growth": ops_growth if len(recent_ops_total) >= 2 else 0,
+                    "users_growth": users_growth if len(recent_users) >= 2 else 0
+                }
+    
+    return None
+
+
 def run_capacity_test(
     start_users: int,
     max_users: int,
@@ -1241,8 +1476,40 @@ def run_capacity_test(
                 # Calculate summary metrics
                 total_ops = sum(r.get_stats()["total_operations"] for r in results.values())
                 total_success = sum(r.get_stats()["success_count"] for r in results.values())
+                total_errors = sum(r.get_stats()["error_count"] for r in results.values())
                 success_rate = (total_success / total_ops * 100) if total_ops > 0 else 0.0
+                error_rate = (total_errors / total_ops * 100) if total_ops > 0 else 0.0
                 ops_per_sec = total_ops / actual_duration if actual_duration > 0 else 0.0
+                
+                # Track operation counts per type
+                operation_counts = {}
+                for op_name, op_result in results.items():
+                    stats = op_result.get_stats()
+                    operation_counts[op_name] = {
+                        "total": stats["total_operations"],
+                        "success": stats["success_count"],
+                        "errors": stats["error_count"],
+                        "per_user": stats["total_operations"] / current_users if current_users > 0 else 0.0
+                    }
+                
+                # Calculate end-to-end flow metrics (the real capacity indicator)
+                # Key insight: Verification is the bottleneck - this is what limits actual user capacity
+                generated_count = operation_counts.get("generate_code", {}).get("total", 0)
+                stored_count = operation_counts.get("store", {}).get("total", 0)
+                verified_count = operation_counts.get("verify", {}).get("success", 0)  # Only successful verifications
+                
+                # End-to-end success rate: how many generated captchas actually get verified
+                # This shows the real capacity - we can generate/store more, but verification is the limit
+                e2e_success_rate = (verified_count / generated_count * 100) if generated_count > 0 else 0.0
+                verification_throughput = verified_count / actual_duration if actual_duration > 0 else 0.0
+                verifications_per_user = verified_count / current_users if current_users > 0 else 0.0
+                
+                # Collect error breakdown by type
+                error_breakdown = {}
+                for op_result in results.values():
+                    op_errors = op_result.get_error_breakdown()
+                    for error_type, count in op_errors.items():
+                        error_breakdown[error_type] = error_breakdown.get(error_type, 0) + count
                 
                 # Store phase results
                 phase_result = {
@@ -1258,11 +1525,63 @@ def run_capacity_test(
                 "disk_write_percent": disk_write_percent,
                 "combined_workload_percent": combined_workload,
                 "total_operations": total_ops,
+                "total_errors": total_errors,
                 "success_rate": success_rate,
+                "error_rate": error_rate,
+                "error_breakdown": error_breakdown,
+                "operation_counts": operation_counts,
+                # End-to-end flow metrics (verification is the real capacity indicator)
+                "generated_count": generated_count,
+                "stored_count": stored_count,
+                "verified_count": verified_count,
+                "e2e_success_rate": e2e_success_rate,
+                "verification_throughput": verification_throughput,
+                "verifications_per_user": verifications_per_user,
                     "operations_per_second": ops_per_sec,
                     "duration": actual_duration,
                 }
                 capacity_results.append(phase_result)
+                
+                # Detect verification plateau (the real capacity limit)
+                if len(capacity_results) >= 3:  # Need at least 3 phases to detect plateau
+                    verify_plateau = detect_verification_plateau(capacity_results)
+                    if verify_plateau:
+                        plateau_users = verify_plateau["plateau_users"]
+                        plateau_verified = verify_plateau["plateau_verified"]
+                        current_verified = verify_plateau.get("current_verified", plateau_verified)
+                        verify_growth = verify_plateau.get("verification_growth", 0)
+                        users_growth = verify_plateau.get("users_growth", 0)
+                        
+                        print(f"\n🔴 CAPACITY LIMIT DETECTED: Verification plateaued at ~{plateau_verified:.0f} verifications")
+                        print(f"   Plateau started at {plateau_users} users")
+                        print(f"   Current verifications: ~{current_verified:.0f} (despite {current_users} users)")
+                        print(f"   Verifications/user decreased by {verify_plateau['decrease_percent']:.1f}%")
+                        if users_growth > 0:
+                            print(f"   Users increased {users_growth:.1f}% but verifications only {verify_growth:.1f}%")
+                        print(f"   → REAL CAPACITY: ~{plateau_verified:.0f} verified captchas per {duration_seconds:.0f}s = ~{plateau_verified/duration_seconds:.1f} verifications/sec")
+                        print(f"   → Adding more users won't increase capacity - verification is the bottleneck")
+                        print(f"   → Consider optimizing verification operations or increasing database concurrency")
+                    
+                    # Also detect general operation plateaus
+                    plateau_info = detect_operation_plateau(capacity_results)
+                    if plateau_info:
+                        bottleneck_op = plateau_info["bottleneck_operation"]
+                        # Only show if it's not verification (already shown above)
+                        if bottleneck_op != "verify":
+                            plateau_users = plateau_info["plateau_users"]
+                            plateau_ops = plateau_info["plateau_operations"]
+                            current_ops = plateau_info.get("current_operations", plateau_ops)
+                            ops_growth = plateau_info.get("operations_growth", 0)
+                            users_growth = plateau_info.get("users_growth", 0)
+                            
+                            print(f"\n⚠️  BOTTLENECK DETECTED: {bottleneck_op.upper()} operations plateaued")
+                            print(f"   Plateau started at {plateau_users} users (~{plateau_ops:.0f} ops)")
+                            print(f"   Current operations: ~{current_ops:.0f} ops (despite {current_users} users)")
+                            print(f"   Operations/user decreased by {plateau_info['decrease_percent']:.1f}%")
+                            if users_growth > 0:
+                                print(f"   Users increased {users_growth:.1f}% but operations only {ops_growth:.1f}% (not scaling)")
+                            print(f"   → This suggests {bottleneck_op} operations are hitting a concurrency limit")
+                            print(f"   → Consider optimizing {bottleneck_op} operations or increasing database concurrency settings")
                 
                 # Print phase status
                 disk_info = f"{net_disk_read:.1f}/{net_disk_write:.1f}"
@@ -1272,7 +1591,23 @@ def run_capacity_test(
                 elif combined_workload > target_workload_percent * 0.9:
                     status = "⚠️  APPROACHING TARGET"
                 
-                print(f"  {len(capacity_results):3d}  | {current_users:5d} | {avg_cpu:5.1f}% | {disk_info:15s} | {combined_workload:6.1f}% | {status}")
+                # Add error indicator if errors occurred
+                error_info = ""
+                if total_errors > 0:
+                    error_types = []
+                    if error_breakdown.get("database_locked", 0) > 0:
+                        error_types.append(f"DB_LOCK:{error_breakdown['database_locked']}")
+                    if error_breakdown.get("timeout", 0) > 0:
+                        error_types.append(f"TIMEOUT:{error_breakdown['timeout']}")
+                    if error_breakdown.get("other", 0) > 0:
+                        error_types.append(f"OTHER:{error_breakdown['other']}")
+                    if error_types:
+                        error_info = f" | ⚠️ Errors: {', '.join(error_types)}"
+                
+                # Show verification capacity (the real limiting factor)
+                verify_info = f" | ✅ Verified: {verified_count:.0f} ({verification_throughput:.1f}/s)"
+                
+                print(f"  {len(capacity_results):3d}  | {current_users:5d} | {avg_cpu:5.1f}% | {disk_info:15s} | {combined_workload:6.1f}% | {status}{error_info}{verify_info}")
                 
                 # Check if we've reached target workload
                 if combined_workload >= target_workload_percent:
@@ -1298,6 +1633,13 @@ def run_capacity_test(
             if diff < min_diff:
                 min_diff = diff
                 target_phase = phase
+        
+        # Detect bottlenecks across all phases
+        bottleneck_info = None
+        verification_plateau_info = None
+        if len(capacity_results) >= 3:
+            bottleneck_info = detect_operation_plateau(capacity_results)
+            verification_plateau_info = detect_verification_plateau(capacity_results)
         
         # Compile final results
         test_results = {
@@ -1331,7 +1673,17 @@ def run_capacity_test(
                 "users_per_worker": target_phase['users'] if target_phase else None,
                 "operations_per_second_at_target": target_phase['operations_per_second'] if target_phase else None,
                 "success_rate_at_target": target_phase['success_rate'] if target_phase else None,
-            }
+                "error_rate_at_target": target_phase.get('error_rate', 0) if target_phase else None,
+                "error_breakdown_at_target": target_phase.get('error_breakdown', {}) if target_phase else None,
+                # Verification capacity (the real limiting factor)
+                "generated_count_at_target": target_phase.get('generated_count', 0) if target_phase else None,
+                "stored_count_at_target": target_phase.get('stored_count', 0) if target_phase else None,
+                "verified_count_at_target": target_phase.get('verified_count', 0) if target_phase else None,
+                "verification_throughput_at_target": target_phase.get('verification_throughput', 0) if target_phase else None,
+                "e2e_success_rate_at_target": target_phase.get('e2e_success_rate', 0) if target_phase else None,
+            },
+            "bottleneck": bottleneck_info,
+            "verification_plateau": verification_plateau_info
         }
         
         return test_results
@@ -1467,6 +1819,23 @@ def print_capacity_results(results: Dict):
     print(f"🎯 CAPACITY FINDINGS")
     print(f"{'='*80}\n")
     
+    # Show verification capacity prominently (the real limiting factor)
+    verification_plateau = results.get("verification_plateau")
+    if verification_plateau:
+        plateau_verified = verification_plateau["plateau_verified"]
+        plateau_users = verification_plateau["plateau_users"]
+        duration = config['duration_seconds']
+        verify_per_sec = plateau_verified / duration
+        
+        print(f"🔴 REAL CAPACITY LIMIT (Based on Verification Bottleneck):")
+        print(f"   Verified Captchas: ~{plateau_verified:.0f} per {duration:.0f}s")
+        print(f"   Verification Throughput: ~{verify_per_sec:.1f} verifications/second")
+        print(f"   Plateau Started At: {plateau_users} users")
+        print(f"   → This is the ACTUAL capacity - verification is the bottleneck")
+        print(f"   → Adding more users won't increase verified captcha count")
+        print(f"   → Estimated concurrent users capacity: ~{plateau_users} users")
+        print()
+    
     if capacity['users_at_target']:
         print(f"✅ Capacity at {config['target_workload_percent']}% Combined Workload:")
         print(f"   Users per Worker: {capacity['users_per_worker']}")
@@ -1476,6 +1845,28 @@ def print_capacity_results(results: Dict):
         print(f"   Disk Write: {capacity['disk_write_at_target']:.2f} MB/s")
         print(f"   Operations per Second: {capacity['operations_per_second_at_target']:.2f}")
         print(f"   Success Rate: {capacity['success_rate_at_target']:.2f}%")
+        
+        # Show verification metrics (the real capacity indicator)
+        if capacity.get('verified_count_at_target'):
+            verified_count = capacity['verified_count_at_target']
+            verify_throughput = capacity.get('verification_throughput_at_target', 0)
+            e2e_rate = capacity.get('e2e_success_rate_at_target', 0)
+            print(f"\n   📊 End-to-End Flow Metrics:")
+            print(f"      Generated: {capacity.get('generated_count_at_target', 'N/A')}")
+            print(f"      Stored: {capacity.get('stored_count_at_target', 'N/A')}")
+            print(f"      ✅ Verified: {verified_count:.0f} (the real capacity limit)")
+            print(f"      Verification Throughput: {verify_throughput:.1f} verifications/sec")
+            print(f"      End-to-End Success Rate: {e2e_rate:.1f}% (verified/generated)")
+        
+        # Show error breakdown if errors occurred
+        if capacity.get('error_rate_at_target', 0) > 0:
+            print(f"\n   ⚠️  Error Rate: {capacity['error_rate_at_target']:.2f}%")
+            error_breakdown = capacity.get('error_breakdown_at_target', {})
+            if error_breakdown:
+                print(f"   Error Breakdown:")
+                for error_type, count in sorted(error_breakdown.items(), key=lambda x: x[1], reverse=True):
+                    error_name = error_type.replace('_', ' ').title()
+                    print(f"     - {error_name}: {count} errors")
     else:
         print(f"⚠️  Target workload ({config['target_workload_percent']}%) not reached")
         print(f"   Maximum users tested: {config['max_users']}")
@@ -1487,15 +1878,29 @@ def print_capacity_results(results: Dict):
     print(f"\n{'='*80}")
     print(f"📊 PHASE DETAILS")
     print(f"{'='*80}\n")
-    print(f"{'Phase':<8} {'Users':<8} {'CPU %':<10} {'Disk R/W':<15} {'Combined %':<12} {'Ops/sec':<12} {'Success %':<12}")
-    print(f"{'─'*80}")
+    print(f"{'Phase':<8} {'Users':<8} {'CPU %':<10} {'Disk R/W':<15} {'Combined %':<12} {'Ops/sec':<12} {'Success %':<12} {'Errors':<12}")
+    print(f"{'─'*100}")
     
     if results['phases']:
         for i, phase in enumerate(results['phases'], 1):
             disk_info = f"{phase.get('net_disk_read_mb_per_sec', 0):.1f}/{phase.get('net_disk_write_mb_per_sec', 0):.1f}"
             combined = phase.get('combined_workload_percent', 0)
+            error_info = ""
+            error_count = phase.get('total_errors', 0)
+            if error_count > 0:
+                error_breakdown = phase.get('error_breakdown', {})
+                error_parts = []
+                if error_breakdown.get('database_locked', 0) > 0:
+                    error_parts.append(f"DB_LOCK:{error_breakdown['database_locked']}")
+                if error_breakdown.get('timeout', 0) > 0:
+                    error_parts.append(f"TO:{error_breakdown['timeout']}")
+                if error_breakdown.get('other', 0) > 0:
+                    error_parts.append(f"OTHER:{error_breakdown['other']}")
+                error_info = ", ".join(error_parts) if error_parts else f"{error_count}"
+            else:
+                error_info = "0"
             print(f"{i:<8} {phase['users']:<8} {phase['cpu_percent']:<10.1f} {disk_info:<15s} {combined:<12.1f} "
-                  f"{phase['operations_per_second']:<12.2f} {phase['success_rate']:<12.2f}")
+                  f"{phase['operations_per_second']:<12.2f} {phase['success_rate']:<12.2f} {error_info:<12}")
     else:
         print("  No phases completed.")
     
@@ -1509,9 +1914,85 @@ def print_capacity_results(results: Dict):
     print(f"💡 ANALYSIS")
     print(f"{'='*80}\n")
     
+    # Emphasize verification capacity as the real limit
+    if verification_plateau:
+        plateau_verified = verification_plateau["plateau_verified"]
+        plateau_users = verification_plateau["plateau_users"]
+        duration = config['duration_seconds']
+        verify_per_sec = plateau_verified / duration
+        
+        print(f"🎯 KEY FINDING: Verification is the bottleneck")
+        print(f"   The system can verify approximately {plateau_verified:.0f} captchas per {duration:.0f}s")
+        print(f"   This translates to ~{verify_per_sec:.1f} verifications/second")
+        print(f"   Capacity limit reached at ~{plateau_users} users")
+        print(f"   → Adding more users won't increase verified captcha count")
+        print(f"   → The system generates/stores more, but verification plateaus")
+        print()
+    
     if capacity['users_at_target']:
         print(f"Based on this test, 1 worker can handle approximately {capacity['users_per_worker']} users")
         print(f"while maintaining {config['target_workload_percent']}% combined workload (CPU + Disk I/O).")
+        print(f"\n⚠️  However, verification capacity is the REAL limit:")
+        if capacity.get('verified_count_at_target'):
+            verify_count = capacity['verified_count_at_target']
+            verify_throughput = capacity.get('verification_throughput_at_target', 0)
+            print(f"   → Maximum verified captchas: ~{verify_count:.0f} per {config['duration_seconds']:.0f}s")
+            print(f"   → Verification throughput: ~{verify_throughput:.1f} verifications/sec")
+            print(f"   → This is the actual concurrent user capacity limit")
+        
+        # Highlight error-related limitations
+        error_rate = capacity.get('error_rate_at_target', 0)
+        error_breakdown = capacity.get('error_breakdown_at_target', {})
+        if error_rate > 0:
+            print(f"\n⚠️  SYSTEM LIMITATIONS DETECTED:")
+            if error_breakdown.get('database_locked', 0) > 0:
+                print(f"  🔴 Database Lock Errors: {error_breakdown['database_locked']} errors")
+                print(f"     → SQLite WAL mode may be hitting concurrency limits")
+                print(f"     → Consider: Increasing busy_timeout, optimizing queries, or using PostgreSQL")
+            if error_breakdown.get('timeout', 0) > 0:
+                print(f"  🔴 Timeout Errors: {error_breakdown['timeout']} errors")
+                print(f"     → System may be overloaded or database connections are timing out")
+            if error_rate > 5.0:
+                print(f"  🔴 High Error Rate: {error_rate:.2f}%")
+                print(f"     → System is experiencing significant failures at this load level")
+                print(f"     → Consider reducing concurrent users or optimizing the system")
+        
+        # Display bottleneck information if detected
+        bottleneck = results.get("bottleneck")
+        if bottleneck:
+            print(f"\n🔴 OPERATION BOTTLENECK DETECTED:")
+            bottleneck_op = bottleneck["bottleneck_operation"]
+            plateau_users = bottleneck["plateau_users"]
+            plateau_ops = bottleneck["plateau_operations"]
+            current_ops = bottleneck.get("current_operations", plateau_ops)
+            decrease_percent = bottleneck["decrease_percent"]
+            ops_growth = bottleneck.get("operations_growth", 0)
+            users_growth = bottleneck.get("users_growth", 0)
+            
+            print(f"  Bottleneck Operation: {bottleneck_op.upper()}")
+            print(f"  Plateau Started: {plateau_users} users (~{plateau_ops:.0f} operations)")
+            print(f"  Current Operations: ~{current_ops:.0f} (despite more users)")
+            print(f"  Operations per User Decrease: {decrease_percent:.1f}%")
+            if users_growth > 0:
+                print(f"  Scaling Issue: Users increased {users_growth:.1f}% but operations only {ops_growth:.1f}%")
+            print(f"\n  💡 This indicates {bottleneck_op} operations are hitting a concurrency limit.")
+            print(f"     The system cannot scale {bottleneck_op} operations beyond ~{plateau_ops:.0f} ops")
+            print(f"     regardless of how many users are added.")
+            print(f"\n  🔧 Recommendations:")
+            if bottleneck_op in ["get", "verify"]:
+                print(f"     - Optimize database read queries (add indexes if needed)")
+                print(f"     - Consider read replicas or caching for {bottleneck_op} operations")
+                print(f"     - Review SQLite WAL mode settings (busy_timeout, etc.)")
+            elif bottleneck_op == "store":
+                print(f"     - Optimize database write operations")
+                print(f"     - Consider batching writes or using write queues")
+                print(f"     - Review SQLite WAL mode settings (busy_timeout, etc.)")
+                print(f"     - Consider PostgreSQL for better write concurrency")
+            else:
+                print(f"     - Review {bottleneck_op} operation implementation")
+                print(f"     - Check for resource contention (CPU, memory, I/O)")
+                print(f"     - Consider optimizing or parallelizing {bottleneck_op} operations")
+        
         print(f"\nFor multi-worker deployments:")
         print(f"  - Per-worker capacity: ~{capacity['users_per_worker']} users")
         print(f"  - Example: With 4 workers, estimated total capacity: ~{capacity['users_per_worker'] * 4} users")

@@ -7,6 +7,135 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.91] - 2025-12-15 - Comprehensive LLM Error Handling System
+
+### Added
+
+- **DashScope Error Parser** (`services/dashscope_error_parser.py`)
+  - Comprehensive error parsing for Alibaba Cloud DashScope API
+  - Handles 50+ error codes covering all HTTP status codes (400, 401, 403, 404, 429, 500)
+  - Maps error codes to specific exception types with user-friendly bilingual messages
+  - Supports parameter validation errors, authentication errors, quota errors, rate limits, timeouts, content filters
+  - Functions: `parse_dashscope_error()`, `parse_and_raise_dashscope_error()`
+
+- **Hunyuan Error Parser** (`services/hunyuan_error_parser.py`)
+  - Comprehensive error parsing for Tencent Cloud Hunyuan API
+  - Handles 40+ error codes covering authentication, parameters, rate limits, quota, content filters, service errors
+  - Maps error codes to specific exception types with user-friendly bilingual messages
+  - Functions: `parse_hunyuan_error()`, `parse_and_raise_hunyuan_error()`
+
+- **Enhanced Exception Classes** (`services/error_handler.py`)
+  - Added `LLMInvalidParameterError` - for parameter validation errors (non-retryable)
+  - Added `LLMQuotaExhaustedError` - for quota/resource exhaustion (non-retryable)
+  - Added `LLMModelNotFoundError` - for model not found errors (non-retryable)
+  - Added `LLMAccessDeniedError` - for access denied errors (non-retryable)
+  - All exceptions support `provider`, `error_code`, and `user_message` attributes
+  - Proper exception hierarchy: `LLMServiceError` → `LLMProviderError` → specific errors
+
+- **Error Handling Verification Tests** (`tests/verify_error_handling.py`)
+  - Comprehensive test suite with 25 test scenarios
+  - Tests DashScope and Hunyuan error parsers
+  - Verifies exception types, attributes, and user messages
+  - 100% test pass rate
+
+- **Error Handling Documentation**
+  - `ERROR_HANDLING_CODE_REVIEW_FINAL.md` - Complete code review and best practices
+  - `LLM_PARSING_ERROR_HANDLING.md` - Guide for handling LLM JSON parsing errors
+
+### Changed
+
+- **LLM Client Error Handling** (`clients/llm.py`)
+  - Integrated comprehensive error parsers into all LLM clients (Qwen, DeepSeek, Kimi, Hunyuan)
+  - All clients now use `parse_and_raise_dashscope_error()` or `parse_and_raise_hunyuan_error()`
+  - Removed redundant exception handling blocks
+  - Added exception chaining (`from e`) for better debugging
+  - Improved error code extraction for Hunyuan API (OpenAI SDK compatibility)
+  - Converted `asyncio.TimeoutError` to `LLMTimeoutError` consistently
+
+- **Router Error Handling** (`routers/thinking.py`, `routers/tab_mode.py`)
+  - Added specific exception handlers for all LLM exception types
+  - Routers now use `getattr(e, 'user_message', None)` to retrieve parser-generated messages
+  - Proper HTTP status codes: 400 (InvalidParameter, ContentFilter), 401 (AccessDenied), 403 (AccessDenied), 404 (ModelNotFound), 429 (RateLimit), 402 (QuotaExhausted), 504 (Timeout), 503 (ServiceError)
+  - Exception handlers ordered from specific to generic (best practice)
+
+- **Language Detection** (`services/dashscope_error_parser.py`, `services/hunyuan_error_parser.py`)
+  - Improved language detection using `_has_chinese_characters()` helper function
+  - Uses regex `[\u4e00-\u9fff]` to detect actual Chinese characters
+  - Replaced fragile `'zh' in error_msg_lower` checks with robust character detection
+
+- **JSON Extraction Error Handling** (`agents/core/agent_utils.py`)
+  - Enhanced `extract_json_from_response()` with better error logging
+  - Logs error position, error message, and content preview (500 chars)
+  - Fail-fast approach: fixes legitimate formatting issues, fails explicitly on structural problems
+  - No "stupid fallback" - invalid JSON means a real problem
+
+### Fixed
+
+- **Hardcoded Provider Bug** (`services/error_handler.py`, `services/dashscope_error_parser.py`, `services/hunyuan_error_parser.py`)
+  - Fixed `LLMInvalidParameterError` hardcoded to `provider='dashscope'`
+  - Now accepts `provider` parameter and correctly sets it for both DashScope and Hunyuan
+
+- **Regex Pattern Matching Bug** (`services/dashscope_error_parser.py`, `services/hunyuan_error_parser.py`)
+  - Fixed incorrect regex patterns in string matching
+  - Replaced regex-like patterns in `in` checks with proper string matching
+
+- **Exception Handling Consistency** (`clients/llm.py`)
+  - All `asyncio.TimeoutError` now converted to `LLMTimeoutError`
+  - Consistent exception handling across all clients
+
+- **Code Quality Improvements**
+  - Removed redundant exception re-raising blocks
+  - Added exception chaining for better debugging
+  - Improved code maintainability
+
+### Technical Details
+
+**Error Coverage:**
+- DashScope: 50+ error codes (InvalidParameter variants, ModelNotFound, InvalidApiKey, Throttling, RequestTimeOut, DataInspectionFailed, etc.)
+- Hunyuan: 40+ error codes (AuthFailure.*, InvalidParameter, RequestLimitExceeded, ResourcePackExhausted, OperationDenied.*, etc.)
+
+**Error Flow:**
+1. API returns error → Client catches `APIStatusError` or HTTP error
+2. Error parser called → `parse_and_raise_*_error()` analyzes error code/message
+3. Exception created → Appropriate exception type with `user_message` attribute
+4. Router catches → Uses `getattr(e, 'user_message', None)` for user-friendly message
+5. Frontend receives → Appropriate HTTP status code with bilingual error message
+
+**Best Practices:**
+- Fail-fast philosophy: No "stupid fallback" for invalid JSON
+- Comprehensive logging: All errors logged with context (status_code, error_code, parameter, user_message)
+- Proper exception hierarchy: Clear distinction between retryable and non-retryable errors
+- User-friendly messages: Bilingual support (Chinese/English) with proper language detection
+- Exception chaining: Preserves original exception context for debugging
+
+### Files Modified
+
+**Error Parsers:**
+- `services/dashscope_error_parser.py` - Comprehensive DashScope error parser (490 lines)
+- `services/hunyuan_error_parser.py` - Comprehensive Hunyuan error parser (379 lines)
+- `services/error_handler.py` - Enhanced exception classes with provider support
+
+**Client Integration:**
+- `clients/llm.py` - Integrated error parsers into QwenClient, DeepSeekClient, KimiClient, HunyuanClient
+
+**Router Updates:**
+- `routers/thinking.py` - Added specific exception handlers, use `user_message` attribute
+- `routers/tab_mode.py` - Added specific exception handlers, use `user_message` attribute
+
+**Documentation:**
+- `ERROR_HANDLING_CODE_REVIEW_FINAL.md` - Complete code review document
+- `LLM_PARSING_ERROR_HANDLING.md` - LLM parsing error handling guide
+- `tests/verify_error_handling.py` - Comprehensive verification tests
+
+### Testing
+
+- ✅ All 25 verification tests passing (100% success rate)
+- ✅ Tests cover DashScope and Hunyuan error scenarios
+- ✅ Tests verify exception types, attributes, and user messages
+- ✅ No linter errors
+
+---
+
 ## [4.28.90] - 2025-12-15 - Feature Flags for Drag-and-Drop and Tab Mode
 
 ### Added

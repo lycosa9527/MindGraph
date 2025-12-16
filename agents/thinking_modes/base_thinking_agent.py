@@ -342,8 +342,29 @@ class BaseThinkingAgent(ABC):
             
         Returns:
             Complete response string
+            
+        Raises:
+            AttributeError: If LLM service is not properly initialized
+            Exception: If LLM call fails
         """
         try:
+            # Validate LLM service is initialized
+            if not hasattr(self, 'llm') or self.llm is None:
+                error_msg = f"[{self.__class__.__name__}] LLM service not initialized. Check __init__ method."
+                logger.error(error_msg)
+                raise AttributeError(error_msg)
+            
+            # Validate LLM service has chat method
+            if not hasattr(self.llm, 'chat'):
+                error_msg = f"[{self.__class__.__name__}] LLM service does not have 'chat' method. Type: {type(self.llm)}"
+                logger.error(error_msg)
+                raise AttributeError(error_msg)
+            
+            # Validate model is set
+            if not hasattr(self, 'model') or not self.model:
+                logger.warning(f"[{self.__class__.__name__}] Model not set, using default 'qwen-plus'")
+                self.model = 'qwen-plus'
+            
             # Get user context from session for token tracking
             user_id = session.get('user_id')
             organization_id = session.get('organization_id')
@@ -363,6 +384,10 @@ class BaseThinkingAgent(ABC):
             
             return response
             
+        except AttributeError as e:
+            # Re-raise AttributeError with better context
+            logger.error(f"[{self.__class__.__name__}] Attribute error in _call_llm: {e}", exc_info=True)
+            raise
         except Exception as e:
             logger.error(f"[{self.__class__.__name__}] LLM call error: {e}", exc_info=True)
             raise

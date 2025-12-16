@@ -49,6 +49,29 @@ class LLMProviderError(LLMServiceError):
         super().__init__(message)
         self.provider = provider
         self.error_code = error_code
+        self.user_message = None  # User-friendly error message
+
+
+class LLMInvalidParameterError(LLMProviderError):
+    """Raised when API parameters are invalid - DO NOT RETRY."""
+    def __init__(self, message: str, parameter: str = None, error_code: str = None, provider: str = None):
+        super().__init__(message, provider=provider, error_code=error_code)
+        self.parameter = parameter
+
+
+class LLMQuotaExhaustedError(LLMProviderError):
+    """Raised when quota is exhausted - DO NOT RETRY."""
+    pass
+
+
+class LLMModelNotFoundError(LLMProviderError):
+    """Raised when model doesn't exist - DO NOT RETRY."""
+    pass
+
+
+class LLMAccessDeniedError(LLMProviderError):
+    """Raised when access is denied - DO NOT RETRY."""
+    pass
 
 
 class ErrorHandler:
@@ -105,6 +128,11 @@ class ErrorHandler:
             except LLMContentFilterError as e:
                 # Content filter - DO NOT RETRY
                 logger.warning(f"[ErrorHandler] Content filter triggered, not retrying: {e}")
+                raise  # Re-raise immediately, no retry
+            
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, LLMAccessDeniedError) as e:
+                # Parameter errors, quota exhausted, model not found, access denied - DO NOT RETRY
+                logger.warning(f"[ErrorHandler] Non-retryable error: {e.__class__.__name__} - {e}")
                 raise  # Re-raise immediately, no retry
             
             except LLMRateLimitError as e:

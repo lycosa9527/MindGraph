@@ -1726,6 +1726,12 @@ async def agent_graph_workflow_with_styles(
         dict: JSON specification with integrated styles for D3.js rendering
     """
     logger.debug("Starting simplified graph workflow")
+    workflow_start_time = time.time()
+    
+    # Initialize timing variables
+    detection_time = 0.0
+    topic_time = 0.0
+    generation_time = 0.0
     
     try:
         # Validate inputs
@@ -1738,6 +1744,7 @@ async def agent_graph_workflow_with_styles(
             logger.debug(f"Using forced diagram type: {diagram_type}")
         else:
             # LLM-based diagram type detection for semantic understanding
+            detection_start = time.time()
             detection_result = await _detect_diagram_type_from_prompt(
                 user_prompt, 
                 language, 
@@ -1748,8 +1755,9 @@ async def agent_graph_workflow_with_styles(
                 request_type=request_type,
                 endpoint_path=endpoint_path
             )
+            detection_time = time.time() - detection_start
             diagram_type = detection_result['diagram_type']
-            logger.debug(f"Detected diagram type: {diagram_type}, clarity: {detection_result['clarity']}")
+            logger.info(f"Diagram type detection completed in {detection_time:.2f}s: {diagram_type} (clarity: {detection_result['clarity']})")
             
             # Check if prompt is too complex/unclear and should show guidance modal
             if detection_result['clarity'] == 'very_unclear' and not detection_result['has_topic']:
@@ -1779,6 +1787,7 @@ async def agent_graph_workflow_with_styles(
             topic_extraction_prompt = get_prompt("topic_extraction", language, "generation")
             topic_extraction_prompt = topic_extraction_prompt.format(user_prompt=user_prompt)
             
+            topic_start = time.time()
             main_topic = await llm_service.chat(
                 prompt=topic_extraction_prompt,
                 model=model,
@@ -1790,10 +1799,13 @@ async def agent_graph_workflow_with_styles(
                 request_type=request_type,
                 endpoint_path=endpoint_path
             )
+            topic_time = time.time() - topic_start
             main_topic = main_topic.strip().strip('"\'')
-            logger.debug(f"Extracted main topic: '{main_topic}'")
+            logger.info(f"Topic extraction completed in {topic_time:.2f}s: '{main_topic}'")
             
             # Return just the topic and diagram type - frontend will load default template
+            total_time = time.time() - workflow_start_time
+            logger.info(f"Prompt-based workflow completed in {total_time:.2f}s (detection={detection_time:.2f}s, topic={topic_time:.2f}s)")
             return {
                 'success': True,
                 'diagram_type': diagram_type,
@@ -1813,6 +1825,7 @@ async def agent_graph_workflow_with_styles(
             logger.debug(f"Using cleaned prompt for generation: '{generation_prompt}'")
         
         # Generate specification using the appropriate agent
+        generation_start = time.time()
         spec = await _generate_spec_with_agent(
             generation_prompt, 
             diagram_type, 
@@ -1829,6 +1842,8 @@ async def agent_graph_workflow_with_styles(
             existing_analogies=existing_analogies,
             fixed_dimension=fixed_dimension
         )
+        generation_time = time.time() - generation_start
+        logger.info(f"Diagram generation completed in {generation_time:.2f}s for {diagram_type}")
         
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Failed to generate spec for {diagram_type}")
@@ -1858,7 +1873,8 @@ async def agent_graph_workflow_with_styles(
             'hidden_node_percentage': hidden_percentage  # NEW
         }
         
-        logger.info(f"Simplified workflow completed successfully, learning sheet: {is_learning_sheet}")
+        total_time = time.time() - workflow_start_time
+        logger.info(f"Simplified workflow completed successfully in {total_time:.2f}s (breakdown: detection={detection_time:.2f}s, topic={topic_time:.2f}s, generation={generation_time:.2f}s), learning sheet: {is_learning_sheet}")
         return result
         
     except ValueError as e:

@@ -188,12 +188,14 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 spec = response
             else:
                 # Try to extract JSON from string response
-                logger.debug(f"TreeMapAgent: Raw LLM response: {str(response)[:500]}...")
-                spec = extract_json_from_response(str(response))
+                response_str = str(response)
+                logger.debug(f"TreeMapAgent: Raw LLM response: {response_str[:500]}...")
+                spec = extract_json_from_response(response_str)
             
             if not spec:
-                logger.error("TreeMapAgent: Failed to extract JSON from LLM response")
-                logger.error(f"TreeMapAgent: Raw response was: {str(response)}")
+                # Log the actual response for debugging
+                response_preview = str(response)[:500] + "..." if len(str(response)) > 500 else str(response)
+                logger.error(f"TreeMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
                 return None
             
             # If fixed_dimension was provided, enforce it regardless of what LLM returned

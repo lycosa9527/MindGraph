@@ -28,7 +28,16 @@ from agents.thinking_modes.node_palette.flow_map_palette import get_flow_map_pal
 from agents.thinking_modes.node_palette.brace_map_palette import get_brace_map_palette_generator
 from agents.thinking_modes.node_palette.bridge_map_palette import get_bridge_map_palette_generator
 from agents.thinking_modes.node_palette.mindmap_palette import get_mindmap_palette_generator
-from services.error_handler import LLMContentFilterError, LLMRateLimitError
+from services.error_handler import (
+    LLMContentFilterError, 
+    LLMRateLimitError,
+    LLMTimeoutError,
+    LLMInvalidParameterError,
+    LLMQuotaExhaustedError,
+    LLMModelNotFoundError,
+    LLMAccessDeniedError,
+    LLMServiceError
+)
 from models.requests import (
     ThinkingModeRequest,
     NodePaletteStartRequest,
@@ -111,43 +120,68 @@ async def thinking_mode_stream(
                     yield f"data: {json.dumps(chunk)}\n\n"
                 
             except LLMContentFilterError as e:
-                # Content filter - don't retry, specific message
+                # Content filter - don't retry, use user_message if available
                 logger.warning(f"[ThinkGuide] Content filter triggered: {e}")
-                if req.language == 'zh':
-                    user_message = "无法处理您的请求，请尝试修改主题描述。"
-                else:
-                    user_message = "Your request couldn't be processed. Please try rephrasing your topic."
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Your request couldn't be processed. Please try rephrasing your topic."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
             
             except LLMRateLimitError as e:
-                # Rate limit - can retry
+                # Rate limit - can retry, use user_message if available
                 logger.warning(f"[ThinkGuide] Rate limit hit: {e}")
-                if req.language == 'zh':
-                    user_message = "AI服务繁忙，请稍后重试。"
-                else:
-                    user_message = "AI service is busy. Please try again in a few seconds."
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please try again in a few seconds."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+            
+            except LLMTimeoutError as e:
+                logger.warning(f"[ThinkGuide] Timeout error: {e}")
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "请求超时，请重试。" if req.language == 'zh' else "Request timed out. Please try again."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'timeout', 'message': user_message})}\n\n"
+            
+            except LLMInvalidParameterError as e:
+                logger.warning(f"[ThinkGuide] Invalid parameter: {e}")
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "参数错误，请检查输入。" if req.language == 'zh' else "Invalid parameter. Please check input."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'invalid_parameter', 'message': user_message})}\n\n"
+            
+            except LLMQuotaExhaustedError as e:
+                logger.warning(f"[ThinkGuide] Quota exhausted: {e}")
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "配额已用完，请检查账户。" if req.language == 'zh' else "Quota exhausted. Please check account."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'quota_exhausted', 'message': user_message})}\n\n"
+            
+            except LLMModelNotFoundError as e:
+                logger.warning(f"[ThinkGuide] Model not found: {e}")
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "模型不存在，请检查配置。" if req.language == 'zh' else "Model not found. Please check configuration."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'model_not_found', 'message': user_message})}\n\n"
+            
+            except LLMAccessDeniedError as e:
+                logger.warning(f"[ThinkGuide] Access denied: {e}")
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "访问被拒绝，请检查权限。" if req.language == 'zh' else "Access denied. Please check permissions."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'access_denied', 'message': user_message})}\n\n"
+            
+            except LLMServiceError as e:
+                logger.error(f"[ThinkGuide] LLM service error: {e}")
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "AI服务错误，请稍后重试。" if req.language == 'zh' else "AI service error. Please try again later."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'service_error', 'message': user_message})}\n\n"
             
             except Exception as e:
                 logger.error(f"[ThinkGuide] Streaming error: {e}", exc_info=True)
-                
-                # Determine error type from exception string
-                error_type = 'unknown'
-                error_str = str(e).lower()
-                
-                if 'timeout' in error_str:
-                    error_type = 'timeout'
-                    if req.language == 'zh':
-                        user_message = "请求超时，请重试。"
-                    else:
-                        user_message = "Request timed out. Please try again."
-                else:
-                    if req.language == 'zh':
-                        user_message = "出现问题，请重试。"
-                    else:
-                        user_message = "Something went wrong. Please try again."
-                
-                yield f"data: {json.dumps({'event': 'error', 'error_type': error_type, 'message': user_message})}\n\n"
+                # Fallback for unknown errors
+                user_message = "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
         
         # Return SSE stream
         return StreamingResponse(
@@ -391,24 +425,73 @@ async def start_node_palette(
             except LLMContentFilterError as e:
                 logger.warning("[NodePalette-API] Content filter | Session: %s | Error: %s", 
                              session_id[:8], str(e))
-                user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Content could not be processed. Please try a different topic."
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Content could not be processed. Please try a different topic."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
             
             except LLMRateLimitError as e:
                 logger.warning("[NodePalette-API] Rate limit | Session: %s | Error: %s", 
                              session_id[:8], str(e))
-                user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please try again in a few seconds."
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please try again in a few seconds."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+            
+            except LLMTimeoutError as e:
+                logger.warning("[NodePalette-API] Timeout | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "请求超时，请重试。" if req.language == 'zh' else "Request timed out. Please try again."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'timeout', 'message': user_message})}\n\n"
+            
+            except LLMInvalidParameterError as e:
+                logger.warning("[NodePalette-API] Invalid parameter | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "参数错误，请检查输入。" if req.language == 'zh' else "Invalid parameter. Please check input."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'invalid_parameter', 'message': user_message})}\n\n"
+            
+            except LLMQuotaExhaustedError as e:
+                logger.warning("[NodePalette-API] Quota exhausted | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "配额已用完，请检查账户。" if req.language == 'zh' else "Quota exhausted. Please check account."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'quota_exhausted', 'message': user_message})}\n\n"
+            
+            except LLMModelNotFoundError as e:
+                logger.warning("[NodePalette-API] Model not found | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "模型不存在，请检查配置。" if req.language == 'zh' else "Model not found. Please check configuration."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'model_not_found', 'message': user_message})}\n\n"
+            
+            except LLMAccessDeniedError as e:
+                logger.warning("[NodePalette-API] Access denied | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "访问被拒绝，请检查权限。" if req.language == 'zh' else "Access denied. Please check permissions."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'access_denied', 'message': user_message})}\n\n"
+            
+            except LLMServiceError as e:
+                logger.error("[NodePalette-API] LLM service error | Session: %s | Error: %s", 
+                            session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "AI服务错误，请稍后重试。" if req.language == 'zh' else "AI service error. Please try again later."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'service_error', 'message': user_message})}\n\n"
             
             except Exception as e:
                 logger.error("[NodePalette-API] Stream error | Session: %s | Error: %s", 
                             session_id[:8], str(e), exc_info=True)
-                error_event = {
-                    'event': 'error',
-                    'error_type': 'unknown',
-                    'message': "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
-                }
-                yield f"data: {json.dumps(error_event)}\n\n"
+                # Fallback for unknown errors
+                user_message = "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
         
         return StreamingResponse(
             generate(),
@@ -545,19 +628,73 @@ async def get_next_batch(
             except LLMContentFilterError as e:
                 logger.warning("[NodePalette-API] Next batch content filter | Session: %s | Error: %s", 
                              session_id[:8], str(e))
-                user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Content could not be processed."
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "无法处理您的请求，请尝试修改主题描述。" if req.language == 'zh' else "Content could not be processed."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
             
             except LLMRateLimitError as e:
                 logger.warning("[NodePalette-API] Next batch rate limit | Session: %s | Error: %s", 
                              session_id[:8], str(e))
-                user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please retry."
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "AI服务繁忙，请稍后重试。" if req.language == 'zh' else "AI service is busy. Please retry."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+            
+            except LLMTimeoutError as e:
+                logger.warning("[NodePalette-API] Next batch timeout | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "请求超时，请重试。" if req.language == 'zh' else "Request timed out. Please try again."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'timeout', 'message': user_message})}\n\n"
+            
+            except LLMInvalidParameterError as e:
+                logger.warning("[NodePalette-API] Next batch invalid parameter | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "参数错误，请检查输入。" if req.language == 'zh' else "Invalid parameter. Please check input."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'invalid_parameter', 'message': user_message})}\n\n"
+            
+            except LLMQuotaExhaustedError as e:
+                logger.warning("[NodePalette-API] Next batch quota exhausted | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "配额已用完，请检查账户。" if req.language == 'zh' else "Quota exhausted. Please check account."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'quota_exhausted', 'message': user_message})}\n\n"
+            
+            except LLMModelNotFoundError as e:
+                logger.warning("[NodePalette-API] Next batch model not found | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "模型不存在，请检查配置。" if req.language == 'zh' else "Model not found. Please check configuration."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'model_not_found', 'message': user_message})}\n\n"
+            
+            except LLMAccessDeniedError as e:
+                logger.warning("[NodePalette-API] Next batch access denied | Session: %s | Error: %s", 
+                             session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "访问被拒绝，请检查权限。" if req.language == 'zh' else "Access denied. Please check permissions."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'access_denied', 'message': user_message})}\n\n"
+            
+            except LLMServiceError as e:
+                logger.error("[NodePalette-API] Next batch LLM service error | Session: %s | Error: %s", 
+                            session_id[:8], str(e))
+                user_message = getattr(e, 'user_message', None)
+                if not user_message:
+                    user_message = "AI服务错误，请稍后重试。" if req.language == 'zh' else "AI service error. Please try again later."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'service_error', 'message': user_message})}\n\n"
             
             except Exception as e:
                 logger.error("[NodePalette-API] Next batch error | Session: %s | Error: %s", 
                             session_id[:8], str(e), exc_info=True)
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': str(e)})}\n\n"
+                # Fallback for unknown errors
+                user_message = "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
+                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
         
         return StreamingResponse(
             generate(),

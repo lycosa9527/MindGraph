@@ -965,8 +965,8 @@ async def log_requests(request: Request, call_next):
     # Monitor slow requests (thresholds based on endpoint type)
     if 'generate_png' in request.url.path and response_time > 20:
         logger.warning(f"Slow PNG generation: {request.method} {request.url.path} took {response_time:.3f}s")
-    elif 'generate_graph' in request.url.path and response_time > 15:
-        # LLM generation can take 5-10s normally, only warn above 15s
+    elif 'generate_graph' in request.url.path and response_time > 5:
+        # LLM generation typically takes 2-8s, warn above 5s to catch slow requests early
         logger.warning(f"Slow graph generation: {request.method} {request.url.path} took {response_time:.3f}s")
     elif 'node_palette' in request.url.path and response_time > 10:
         # Node Palette streams from 4 LLMs, 5-8s is normal

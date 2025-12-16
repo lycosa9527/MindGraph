@@ -337,9 +337,13 @@ class MindMateManager {
             await this.sendMessageToDify(DIFY_OPENER_TRIGGER, false);
             this.logger.info('MindMateManager', 'Conversation opener triggered');
         } catch (error) {
-            this.logger.error('MindMateManager', 'Failed to trigger conversation opener', {
-                error: error.message || String(error),
-                stack: error.stack
+            const errorMsg = error?.message || String(error) || 'Unknown error';
+            const isAuthError = error?.status === 401 || errorMsg.includes('401');
+            this.logger.error('MindMateManager', `Failed to trigger conversation opener: ${errorMsg}`, {
+                error: errorMsg,
+                stack: error?.stack,
+                status: error?.status,
+                isAuthError
             });
             this.showFallbackWelcome();
         }
@@ -443,9 +447,17 @@ class MindMateManager {
                         // Continue reading - RETURNS TO EVENT LOOP ✅
                         readChunk();
                     }).catch(error => {
-                        this.logger.error('MindMateManager', 'Stream error', {
-                            error: error.message || String(error),
-                            stack: error.stack
+                        const errorMsg = error?.message || String(error) || 'Unknown stream error';
+                        const isNetworkError = error?.name === 'NetworkError' || error?.name === 'TypeError';
+                        const isAuthError = error?.status === 401 || errorMsg.includes('401');
+                        
+                        this.logger.error('MindMateManager', `Stream error: ${errorMsg}`, {
+                            error: errorMsg,
+                            stack: error?.stack,
+                            name: error?.name,
+                            status: error?.status,
+                            isNetworkError,
+                            isAuthError
                         });
                         
                         // Remove typing indicator (immediately on error)
@@ -457,9 +469,13 @@ class MindMateManager {
                         // Re-enable input
                         this.setInputEnabled(true);
                         
-                        // Emit error event
+                        // Emit error event with detailed context
                         if (this.eventBus) {
-                            this.eventBus.emit('mindmate:error', { error: error.message });
+                            this.eventBus.emit('mindmate:error', { 
+                                error: errorMsg,
+                                isNetworkError,
+                                isAuthError
+                            });
                         }
                         
                         reject(error);
@@ -469,10 +485,17 @@ class MindMateManager {
                 readChunk(); // Start recursive chain
             })
             .catch(error => {
-                this.logger.error('MindMateManager', 'Fetch error', {
-                    error: error.message || String(error),
-                    stack: error.stack,
-                    status: error.status
+                const errorMsg = error?.message || String(error) || 'Unknown fetch error';
+                const isNetworkError = error?.name === 'NetworkError' || error?.name === 'TypeError';
+                const isAuthError = error?.status === 401 || errorMsg.includes('401');
+                
+                this.logger.error('MindMateManager', `Fetch error: ${errorMsg}`, {
+                    error: errorMsg,
+                    stack: error?.stack,
+                    name: error?.name,
+                    status: error?.status,
+                    isNetworkError,
+                    isAuthError
                 });
                 
                 // Remove typing indicator (immediately on error)
@@ -537,9 +560,15 @@ class MindMateManager {
             const errorType = data.error_type || 'unknown';
             const errorMessage = data.message || data.error || 'An error occurred';
             
-            this.logger.error('MindMateManager', 'Stream error', { 
-                error: data.error,
-                error_type: errorType
+            const errorMsg = data.error || 'Unknown stream error';
+            const isNetworkError = errorType === 'network' || errorMsg.includes('network');
+            const isAuthError = errorMsg.includes('401') || errorMsg.includes('Unauthorized');
+            
+            this.logger.error('MindMateManager', `Stream error: ${errorMsg}`, { 
+                error: errorMsg,
+                error_type: errorType,
+                isNetworkError,
+                isAuthError
             });
             
             if (this.currentStreamingMessage && this.currentStreamingMessage.parentNode) {

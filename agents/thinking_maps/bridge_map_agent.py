@@ -269,7 +269,10 @@ class BridgeMapAgent(BaseAgent):
                 logger.debug(f"JSON extraction result type: {type(spec)}")
             
             if not spec:
-                logger.error("BridgeMapAgent: Failed to extract JSON from LLM response")
+                # Log the actual response for debugging
+                response_str = str(response) if response else "None"
+                response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
+                logger.error(f"BridgeMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
                 return None
             
             logger.debug(f"Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
