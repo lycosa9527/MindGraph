@@ -422,6 +422,110 @@ class NodePaletteFinishRequest(BaseModel):
 
 
 class NodePaletteCleanupRequest(BaseModel):
+    """Request model for /thinking_mode/node_palette/cleanup endpoint"""
+    session_id: str = Field(..., description="Session ID to cleanup")
+
+
+# ============================================================================
+# TAB MODE REQUEST MODELS
+# ============================================================================
+
+class TabSuggestionRequest(BaseModel):
+    """Request model for /api/tab_suggestions endpoint (editing autocomplete)"""
+    mode: str = Field("autocomplete", description="Mode: 'autocomplete' for editing suggestions")
+    diagram_type: DiagramType = Field(..., description="Type of diagram")
+    main_topics: List[str] = Field(..., min_items=1, description="Main topic nodes")
+    node_category: Optional[str] = Field(None, description="Node category")
+    partial_input: str = Field(..., description="User's current partial input")
+    existing_nodes: Optional[List[str]] = Field(None, description="Existing nodes in same category")
+    language: Language = Field(Language.EN, description="Language code")
+    llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
+    cursor_position: Optional[int] = Field(None, description="Cursor position in input")
+    
+    @field_validator('diagram_type', mode='before')
+    @classmethod
+    def normalize_diagram_type(cls, v):
+        """Normalize diagram type aliases (e.g., 'mindmap' -> 'mind_map')"""
+        if v is None:
+            return v
+        
+        # Convert to string if it's already an enum
+        v_str = v.value if hasattr(v, 'value') else str(v)
+        
+        # Normalize known aliases
+        aliases = {
+            'mindmap': 'mind_map',
+        }
+        
+        normalized = aliases.get(v_str, v_str)
+        
+        # Return normalized string (Pydantic will convert to enum)
+        return normalized
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "mode": "autocomplete",
+                "diagram_type": "double_bubble_map",
+                "main_topics": ["apples", "oranges"],
+                "node_category": "similarities",
+                "partial_input": "fru",
+                "existing_nodes": ["vitamin C"],
+                "language": "en",
+                "llm": "qwen"
+            }
+        }
+
+
+class TabExpandRequest(BaseModel):
+    """Request model for /api/tab_expand endpoint (viewing node expansion)"""
+    mode: str = Field("expansion", description="Mode: 'expansion' for node expansion")
+    diagram_type: DiagramType = Field(..., description="Type of diagram")
+    node_id: str = Field(..., description="Node ID to expand")
+    node_text: str = Field(..., description="Text of the node to expand")
+    node_type: str = Field("branch", description="Type of node (branch, category, step, part)")
+    main_topic: Optional[str] = Field(None, description="Main topic/center node text")
+    existing_children: Optional[List[str]] = Field(None, description="Existing children nodes")
+    num_children: int = Field(4, ge=1, le=10, description="Number of children to generate")
+    language: Language = Field(Language.EN, description="Language code")
+    llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
+    session_id: Optional[str] = Field(None, description="Session ID for tracking")
+    
+    @field_validator('diagram_type', mode='before')
+    @classmethod
+    def normalize_diagram_type(cls, v):
+        """Normalize diagram type aliases (e.g., 'mindmap' -> 'mind_map')"""
+        if v is None:
+            return v
+        
+        # Convert to string if it's already an enum
+        v_str = v.value if hasattr(v, 'value') else str(v)
+        
+        # Normalize known aliases
+        aliases = {
+            'mindmap': 'mind_map',
+        }
+        
+        normalized = aliases.get(v_str, v_str)
+        
+        # Return normalized string (Pydantic will convert to enum)
+        return normalized
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "mode": "expansion",
+                "diagram_type": "mindmap",
+                "node_id": "branch_0",
+                "node_text": "Active Learning",
+                "node_type": "branch",
+                "main_topic": "Learning Methods",
+                "existing_children": [],
+                "num_children": 4,
+                "language": "en",
+                "llm": "qwen"
+            }
+        }
     """Request model for /thinking_mode/node_palette/cleanup endpoint
     
     Simplified model for session cleanup - only requires session_id.

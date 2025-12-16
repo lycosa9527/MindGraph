@@ -538,6 +538,225 @@ class MindMapOperations {
     }
     
     /**
+     * Move child node to different branch
+     * @param {Object} spec - Current diagram spec
+     * @param {number} sourceBranchIndex - Source branch index
+     * @param {number} sourceChildIndex - Source child index
+     * @param {number} targetBranchIndex - Target branch index
+     * @returns {Object} Updated spec
+     */
+    moveChildToBranch(spec, sourceBranchIndex, sourceChildIndex, targetBranchIndex) {
+        if (!spec || !Array.isArray(spec.children)) {
+            this.logger.error('MindMapOperations', 'Invalid spec structure');
+            return null;
+        }
+        
+        if (sourceBranchIndex < 0 || sourceBranchIndex >= spec.children.length ||
+            targetBranchIndex < 0 || targetBranchIndex >= spec.children.length) {
+            this.logger.error('MindMapOperations', 'Invalid branch indices', {
+                sourceBranchIndex,
+                targetBranchIndex,
+                totalBranches: spec.children.length
+            });
+            return null;
+        }
+        
+        const sourceBranch = spec.children[sourceBranchIndex];
+        if (!sourceBranch || !Array.isArray(sourceBranch.children)) {
+            this.logger.error('MindMapOperations', 'Invalid source branch structure');
+            return null;
+        }
+        
+        if (sourceChildIndex < 0 || sourceChildIndex >= sourceBranch.children.length) {
+            this.logger.error('MindMapOperations', 'Invalid child index', {
+                sourceChildIndex,
+                totalChildren: sourceBranch.children.length
+            });
+            return null;
+        }
+        
+        // Check if moving to same branch (no-op)
+        if (sourceBranchIndex === targetBranchIndex) {
+            this.logger.debug('MindMapOperations', 'Moving to same branch - no-op');
+            return spec;
+        }
+        
+        // Get child from source branch
+        const child = sourceBranch.children[sourceChildIndex];
+        
+        // Remove from source
+        sourceBranch.children.splice(sourceChildIndex, 1);
+        
+        // Add to target
+        const targetBranch = spec.children[targetBranchIndex];
+        if (!targetBranch.children) {
+            targetBranch.children = [];
+        }
+        targetBranch.children.push(child);
+        
+        // Update child IDs and indices
+        this._updateChildIndices(spec, sourceBranchIndex);
+        this._updateChildIndices(spec, targetBranchIndex);
+        
+        // Invalidate layout for recalculation
+        delete spec._layout;
+        
+        this.logger.debug('MindMapOperations', 'Moved child to branch', {
+            sourceBranchIndex,
+            sourceChildIndex,
+            targetBranchIndex,
+            childId: child.id
+        });
+        
+        // Emit node moved event
+        this.eventBus.emit('diagram:node_moved', {
+            diagramType: 'mindmap',
+            operation: 'move_child_to_branch',
+            sourceBranchIndex,
+            sourceChildIndex,
+            targetBranchIndex,
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'move_child_to_branch',
+            snapshot: JSON.parse(JSON.stringify(spec)),
+            data: {
+                sourceBranchIndex,
+                sourceChildIndex,
+                targetBranchIndex
+            }
+        });
+        
+        // For mind maps, we need to recalculate layout from backend before rendering
+        this.eventBus.emit('mindmap:layout_recalculation_requested', {
+            spec
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Move branch to different position (reorder branches)
+     * @param {Object} spec - Current diagram spec
+     * @param {number} sourceBranchIndex - Source branch index
+     * @param {number} targetBranchIndex - Target branch index (insertion point)
+     * @returns {Object} Updated spec
+     */
+    moveBranch(spec, sourceBranchIndex, targetBranchIndex) {
+        if (!spec || !Array.isArray(spec.children)) {
+            this.logger.error('MindMapOperations', 'Invalid spec structure');
+            return null;
+        }
+        
+        if (sourceBranchIndex < 0 || sourceBranchIndex >= spec.children.length ||
+            targetBranchIndex < 0 || targetBranchIndex > spec.children.length) {
+            this.logger.error('MindMapOperations', 'Invalid branch indices', {
+                sourceBranchIndex,
+                targetBranchIndex,
+                totalBranches: spec.children.length
+            });
+            return null;
+        }
+        
+        // Check if moving to same position (no-op)
+        if (sourceBranchIndex === targetBranchIndex || 
+            (sourceBranchIndex < targetBranchIndex && sourceBranchIndex + 1 === targetBranchIndex)) {
+            this.logger.debug('MindMapOperations', 'Moving to same position - no-op');
+            return spec;
+        }
+        
+        // Remove branch from source position
+        const branch = spec.children.splice(sourceBranchIndex, 1)[0];
+        
+        // Adjust target index if source was before target
+        const adjustedTargetIndex = sourceBranchIndex < targetBranchIndex 
+            ? targetBranchIndex - 1 
+            : targetBranchIndex;
+        
+        // Insert at target position
+        spec.children.splice(adjustedTargetIndex, 0, branch);
+        
+        // Update all branch indices and IDs
+        this._updateAllBranchIndices(spec);
+        
+        // Invalidate layout for recalculation
+        delete spec._layout;
+        
+        this.logger.debug('MindMapOperations', 'Moved branch', {
+            sourceBranchIndex,
+            targetBranchIndex: adjustedTargetIndex,
+            branchId: branch.id
+        });
+        
+        // Emit node moved event
+        this.eventBus.emit('diagram:node_moved', {
+            diagramType: 'mindmap',
+            operation: 'move_branch',
+            sourceBranchIndex,
+            targetBranchIndex: adjustedTargetIndex,
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'move_branch',
+            snapshot: JSON.parse(JSON.stringify(spec)),
+            data: {
+                sourceBranchIndex,
+                targetBranchIndex: adjustedTargetIndex
+            }
+        });
+        
+        // For mind maps, we need to recalculate layout from backend before rendering
+        this.eventBus.emit('mindmap:layout_recalculation_requested', {
+            spec
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Update child indices for a branch
+     * @param {Object} spec - Diagram spec
+     * @param {number} branchIndex - Branch index
+     * @private
+     */
+    _updateChildIndices(spec, branchIndex) {
+        const branch = spec.children[branchIndex];
+        if (!branch || !Array.isArray(branch.children)) {
+            return;
+        }
+        
+        branch.children.forEach((child, index) => {
+            child.id = `sub_${branchIndex}_${index}`;
+        });
+    }
+    
+    /**
+     * Update all branch indices and IDs
+     * @param {Object} spec - Diagram spec
+     * @private
+     */
+    _updateAllBranchIndices(spec) {
+        if (!spec || !Array.isArray(spec.children)) {
+            return;
+        }
+        
+        spec.children.forEach((branch, index) => {
+            branch.id = `branch_${index}`;
+            
+            // Update child indices
+            if (Array.isArray(branch.children)) {
+                branch.children.forEach((child, childIndex) => {
+                    child.id = `sub_${index}_${childIndex}`;
+                });
+            }
+        });
+    }
+    
+    /**
      * Validate Mind Map spec
      * @param {Object} spec - Diagram spec
      * @returns {boolean} Whether spec is valid

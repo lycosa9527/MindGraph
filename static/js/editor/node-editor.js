@@ -44,6 +44,15 @@ class NodeEditor {
         setTimeout(() => {
             if (this.textInput) {
                 this.textInput.select();
+                
+                // Setup Tab Mode autocomplete if enabled
+                if (window.currentEditor?.modules?.tabMode) {
+                    window.currentEditor.modules.tabMode.setupAutocomplete(
+                        this.textInput,
+                        this.nodeData.nodeId,
+                        window.currentEditor?.diagramType
+                    );
+                }
             }
         }, 100);
     }

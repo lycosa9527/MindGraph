@@ -298,6 +298,25 @@ class InteractiveEditor {
             };
             this.eventBus.onWithOwner('diagram:node_updated', this.eventBusListeners.nodeUpdated, this.ownerId);
             
+            // Listen for spec updates (e.g., custom positions saved)
+            this.eventBusListeners.specUpdated = (data) => {
+                // CRITICAL: Check if editor is destroyed before proceeding
+                if (!this.selectionManager) {
+                    logger.debug('InteractiveEditor', 'Ignoring diagram:spec_updated - editor destroyed');
+                    return;
+                }
+                if (data.spec) {
+                    this.currentSpec = data.spec;
+                    logger.info('InteractiveEditor', 'Spec updated, triggering re-render', {
+                        diagramType: this.diagramType,
+                        hasCustomPositions: !!(data.spec._customPositions && Object.keys(data.spec._customPositions).length > 0),
+                        customPositionsCount: data.spec._customPositions ? Object.keys(data.spec._customPositions).length : 0
+                    });
+                    this.renderDiagram();
+                }
+            };
+            this.eventBus.onWithOwner('diagram:spec_updated', this.eventBusListeners.specUpdated, this.ownerId);
+            
             // Listen for Mind Map layout recalculation requests
             this.eventBusListeners.layoutRecalculationRequested = async (data) => {
                 // CRITICAL: Check if editor is destroyed before proceeding

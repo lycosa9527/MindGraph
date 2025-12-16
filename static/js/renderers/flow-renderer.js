@@ -1300,13 +1300,74 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         nodePositions.push(leftPadding + (i + 0.5) * actualSectionWidth);
     }
     
+    // Check for custom positions
+    const customPositions = spec._customPositions || {};
+    const hasCustomPositions = Object.keys(customPositions).length > 0;
+    
+    // Position analogy pairs
+    // If custom positions exist but some pairs don't have positions (new pairs added),
+    // recalculate all positions evenly to maintain proper spacing
+    const pairCount = spec.analogies.length;
+    
+    // Count how many pairs have custom positions (both left and right must exist)
+    let pairsWithCustomPositions = 0;
+    if (hasCustomPositions) {
+        for (let i = 0; i < pairCount; i++) {
+            const leftNodeId = `bridge-left-${i}`;
+            const rightNodeId = `bridge-right-${i}`;
+            const hasLeft = customPositions.hasOwnProperty(leftNodeId) && customPositions[leftNodeId] !== null && customPositions[leftNodeId] !== undefined;
+            const hasRight = customPositions.hasOwnProperty(rightNodeId) && customPositions[rightNodeId] !== null && customPositions[rightNodeId] !== undefined;
+            if (hasLeft && hasRight) {
+                pairsWithCustomPositions++;
+            }
+        }
+    }
+    
+    const hasNewPairsWithoutPositions = hasCustomPositions && pairsWithCustomPositions < pairCount;
+    const shouldRecalculateEvenly = hasNewPairsWithoutPositions;
+    
+    logger.info('[BridgeMap-Renderer] Position detection check', {
+        hasCustomPositions,
+        pairCount,
+        pairsWithCustomPositions,
+        hasNewPairsWithoutPositions,
+        shouldRecalculateEvenly
+    });
+    console.log('[BridgeMap-Renderer] 🔍 Position detection check:', {
+        hasCustomPositions,
+        pairCount,
+        pairsWithCustomPositions,
+        hasNewPairsWithoutPositions,
+        shouldRecalculateEvenly
+    });
+    
+    // Store node references globally for drag operations
+    const bridgeMapNodes = [];
+    
     // Use the max text width limit for wrapping (same as measurement phase)
     const adaptiveMaxTextWidth = maxTextWidthLimit;
     
     // 3. Draw analogy pairs with calculated positions
     spec.analogies.forEach((analogy, i) => {
         
-        const xPos = nodePositions[i]; // Use pre-calculated position based on actual node widths
+        const leftNodeId = `bridge-left-${i}`;
+        const rightNodeId = `bridge-right-${i}`;
+        
+        // Check if custom positions exist and we're not recalculating
+        let leftX, leftY, rightX, rightY;
+        if (hasCustomPositions && customPositions[leftNodeId] && customPositions[rightNodeId] && !shouldRecalculateEvenly) {
+            leftX = customPositions[leftNodeId].x;
+            leftY = customPositions[leftNodeId].y;
+            rightX = customPositions[rightNodeId].x;
+            rightY = customPositions[rightNodeId].y;
+        } else {
+            const xPos = nodePositions[i]; // Use pre-calculated position based on actual node widths
+            leftX = xPos;
+            leftY = height/2 - 30;
+            rightX = xPos;
+            rightY = height/2 + 40;
+        }
+        
         const isFirstPair = i === 0; // Check if this is the first pair
         
         // 3.1 Add upstream item (left) - above the main line
@@ -1341,34 +1402,45 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 rectHeight = Math.max(30, finalLeftLines.length * leftLineHeight + 10); // Adaptive height
             }
             
+            // Store node reference
+            bridgeMapNodes.push({
+                id: i,
+                nodeId: leftNodeId,
+                type: 'left',
+                x: leftX,
+                y: leftY,
+                width: rectWidth,
+                height: rectHeight
+            });
+            
             // Draw rectangle background
             svg.append("rect")
-                .attr("x", xPos - rectWidth/2)
-                .attr("y", height/2 - 30 - rectHeight/2)
+                .attr("x", leftX - rectWidth/2)
+                .attr("y", leftY - rectHeight/2)
                 .attr("width", rectWidth)
                 .attr("height", rectHeight)
                 .attr("rx", 4)
                 .attr("fill", "#1976d2") // Deep blue from mind map
                 .attr("stroke", "#0d47a1")
                 .attr("stroke-width", 2)
-                .attr("data-node-id", `bridge-left-${i}`)
+                .attr("data-node-id", leftNodeId)
                 .attr("data-node-type", "left")
                 .attr("data-pair-index", i)
                 .attr("cursor", "pointer");
             
             // WORKAROUND: Use multiple text elements instead of tspan
-            const leftStartY = height/2 - 30 - (finalLeftLines.length - 1) * leftLineHeight / 2;
+            const leftStartY = leftY - (finalLeftLines.length - 1) * leftLineHeight / 2;
             finalLeftLines.forEach((line, idx) => {
                 svg.append("text")
-                    .attr("x", xPos)
+                    .attr("x", leftX)
                     .attr("y", leftStartY + idx * leftLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .style("font-size", THEME.analogyFontSize)
                     .style("fill", "#ffffff") // White text
                     .style("font-weight", "bold")
-                    .attr("data-text-for", `bridge-left-${i}`)
-                    .attr("data-node-id", `bridge-left-${i}`)
+                    .attr("data-text-for", leftNodeId)
+                    .attr("data-node-id", leftNodeId)
                     .attr("data-node-type", "left")
                     .attr("data-pair-index", i)
                     .attr("cursor", "pointer")
@@ -1376,6 +1448,17 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                     .text(line);
             });
         } else {
+            // Store node reference for regular pairs
+            bridgeMapNodes.push({
+                id: i,
+                nodeId: leftNodeId,
+                type: 'left',
+                x: leftX,
+                y: leftY,
+                width: 0, // Text nodes don't have explicit width
+                height: 0
+            });
+            
             // Render left analogy text - regular pairs - use multiple text elements
             const regLeftText = analogy.left || '';
             const regLeftMaxWidth = adaptiveMaxTextWidth; // Adaptive width based on available space
@@ -1390,17 +1473,17 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             const finalRegLeftLines = regLeftLines.length > 0 ? regLeftLines : [''];
             
             // WORKAROUND: Use multiple text elements instead of tspan
-            const regLeftStartY = height/2 - 30 - (finalRegLeftLines.length - 1) * regLeftLineHeight / 2;
+            const regLeftStartY = leftY - (finalRegLeftLines.length - 1) * regLeftLineHeight / 2;
             finalRegLeftLines.forEach((line, idx) => {
                 svg.append("text")
-                    .attr("x", xPos)
+                    .attr("x", leftX)
                     .attr("y", regLeftStartY + idx * regLeftLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .style("font-size", THEME.analogyFontSize)
                     .style("fill", THEME.analogyTextColor)
                     .style("font-weight", "bold")
-                    .attr("data-node-id", `bridge-left-${i}`)
+                    .attr("data-node-id", leftNodeId)
                     .attr("data-node-type", "left")
                     .attr("data-pair-index", i)
                     .attr("cursor", "pointer")
@@ -1442,26 +1525,37 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             }
             const rectHeight = rightRectHeight; // For backward compatibility with subsequent code
             
+            // Store node reference
+            bridgeMapNodes.push({
+                id: i,
+                nodeId: rightNodeId,
+                type: 'right',
+                x: rightX,
+                y: rightY,
+                width: rightRectWidth,
+                height: rectHeight
+            });
+            
             // Draw rectangle background
             svg.append("rect")
-                .attr("x", xPos - rightRectWidth/2)
-                .attr("y", height/2 + 40 - rectHeight/2)
+                .attr("x", rightX - rightRectWidth/2)
+                .attr("y", rightY - rectHeight/2)
                 .attr("width", rightRectWidth)
                 .attr("height", rectHeight)
                 .attr("rx", 4)
                 .attr("fill", "#1976d2") // Deep blue from mind map
                 .attr("stroke", "#0d47a1")
                 .attr("stroke-width", 2)
-                .attr("data-node-id", `bridge-right-${i}`)
+                .attr("data-node-id", rightNodeId)
                 .attr("data-node-type", "right")
                 .attr("data-pair-index", i)
                 .attr("cursor", "pointer");
             
             // Render right analogy text - first pair (white) - use multiple text elements
-            const rightStartY = height/2 + 40 - (finalRightLines.length - 1) * rightLineHeight / 2;
+            const rightStartY = rightY - (finalRightLines.length - 1) * rightLineHeight / 2;
             finalRightLines.forEach((line, idx) => {
                 svg.append("text")
-                    .attr("x", xPos)
+                    .attr("x", rightX)
                     .attr("y", rightStartY + idx * rightLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
@@ -1491,17 +1585,17 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             const finalRegRightLines = regRightLines.length > 0 ? regRightLines : [''];
             
             // WORKAROUND: Use multiple text elements instead of tspan
-            const regRightStartY = height/2 + 40 - (finalRegRightLines.length - 1) * regRightLineHeight / 2;
+            const regRightStartY = rightY - (finalRegRightLines.length - 1) * regRightLineHeight / 2;
             finalRegRightLines.forEach((line, idx) => {
                 svg.append("text")
-                    .attr("x", xPos)
+                    .attr("x", rightX)
                     .attr("y", regRightStartY + idx * regRightLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .style("font-size", THEME.analogyFontSize)
                     .style("fill", THEME.analogyTextColor)
                     .style("font-weight", "bold")
-                    .attr("data-node-id", `bridge-right-${i}`)
+                    .attr("data-node-id", rightNodeId)
                     .attr("data-node-type", "right")
                     .attr("data-pair-index", i)
                     .attr("cursor", "pointer")
@@ -1512,11 +1606,13 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
         
         // 3.3 Add vertical connection line (made invisible) - EXACTLY as in old renderer
         // These lines are for interaction purposes only and should never be visible
+        // Use average X position for the line
+        const lineX = (leftX + rightX) / 2;
         svg.append("line")
-            .attr("x1", xPos)
-            .attr("y1", height/2 - 20) // Connect to upstream item
-            .attr("x2", xPos)
-            .attr("y2", height/2 + 30) // Connect to downstream item
+            .attr("x1", lineX)
+            .attr("y1", leftY + 10) // Connect to upstream item
+            .attr("x2", lineX)
+            .attr("y2", rightY - 10) // Connect to downstream item
             .attr("stroke", "transparent") // Make vertical lines invisible
             .attr("stroke-width", 3) // Use attr instead of style
             .attr("class", "invisible-connection") // Mark as invisible connection
@@ -1674,6 +1770,34 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             .attr('font-style', 'italic')
             .style('opacity', 0.4)
             .text(placeholderText);
+    }
+    
+    // Store node references globally for drag operations
+    window.bridgeMapNodes = bridgeMapNodes;
+    
+    // If we recalculated evenly (new pairs added), update custom positions silently
+    // This ensures positions are saved for future renders without triggering re-render loop
+    if (shouldRecalculateEvenly) {
+        console.log('[BridgeMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly for', pairCount, 'pairs');
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        // Clear old custom positions for bridge pairs
+        Object.keys(spec._customPositions).forEach(key => {
+            if (key.startsWith('bridge-left-') || key.startsWith('bridge-right-')) {
+                delete spec._customPositions[key];
+            }
+        });
+        
+        // Save all recalculated positions
+        bridgeMapNodes.forEach(node => {
+            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
+        });
+        
+        logger.info('[BridgeMap-Renderer] Updated custom positions with evenly-spaced layout', {
+            updatedPositions: bridgeMapNodes.length
+        });
+        console.log('[BridgeMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('bridge-')).sort());
     }
     
     // Clean up temporary SVG used for text measurement
@@ -1950,15 +2074,149 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     const centerX = fW / 2;
     const centerY = fH / 2;
     
+    // Check for custom positions
+    const customPositions = spec._customPositions || {};
+    const hasCustomPositions = Object.keys(customPositions).length > 0;
+    
+    // Position side nodes with proper spacing
+    // If custom positions exist but some nodes don't have positions (new nodes added),
+    // recalculate all positions evenly to maintain proper spacing
+    const causeCount = causes.length;
+    const effectCount = effects.length;
+    
+    // Count how many causes have custom positions
+    let causesWithCustomPositions = 0;
+    if (hasCustomPositions) {
+        for (let i = 0; i < causeCount; i++) {
+            const nodeId = `multi-flow-cause-${i}`;
+            if (customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined) {
+                causesWithCustomPositions++;
+            }
+        }
+    }
+    
+    // Count how many effects have custom positions
+    let effectsWithCustomPositions = 0;
+    if (hasCustomPositions) {
+        for (let i = 0; i < effectCount; i++) {
+            const nodeId = `multi-flow-effect-${i}`;
+            if (customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined) {
+                effectsWithCustomPositions++;
+            }
+        }
+    }
+    
+    const hasNewCausesWithoutPositions = hasCustomPositions && causesWithCustomPositions < causeCount;
+    const hasNewEffectsWithoutPositions = hasCustomPositions && effectsWithCustomPositions < effectCount;
+    const shouldRecalculateCauses = hasNewCausesWithoutPositions;
+    const shouldRecalculateEffects = hasNewEffectsWithoutPositions;
+    
+    logger.info('[MultiFlowMap-Renderer] Position detection check', {
+        hasCustomPositions,
+        causeCount,
+        causesWithCustomPositions,
+        effectCount,
+        effectsWithCustomPositions,
+        shouldRecalculateCauses,
+        shouldRecalculateEffects
+    });
+    console.log('[MultiFlowMap-Renderer] 🔍 Position detection check:', {
+        hasCustomPositions,
+        causeCount,
+        causesWithCustomPositions,
+        effectCount,
+        effectsWithCustomPositions,
+        shouldRecalculateCauses,
+        shouldRecalculateEffects
+    });
+    
+    // Store node references globally for drag operations
+    const multiFlowNodes = [];
+    
     // Position side nodes with proper spacing
     const causeCX = sideMargin + maxCauseW / 2;
     const effectCX = finalWidth - sideMargin - maxEffectW / 2;
 
-    // Position causes and effects vertically
+    // Position causes and effects vertically (or use custom positions)
     let cy = centerY - totalCauseH / 2;
-    causes.forEach(n => { n.cx = causeCX; n.cy = cy + n.h / 2; cy += n.h + vSpacing; });
+    causes.forEach((n, idx) => {
+        const nodeId = `multi-flow-cause-${idx}`;
+        
+        // Check if custom position exists and we're not recalculating
+        if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateCauses) {
+            n.cx = customPositions[nodeId].x;
+            n.cy = customPositions[nodeId].y;
+        } else {
+            n.cx = causeCX;
+            n.cy = cy + n.h / 2;
+            cy += n.h + vSpacing;
+        }
+        
+        // Store node reference
+        multiFlowNodes.push({
+            id: idx,
+            nodeId: nodeId,
+            type: 'cause',
+            x: n.cx,
+            y: n.cy,
+            width: n.w,
+            height: n.h
+        });
+    });
+    
     let ey = centerY - totalEffectH / 2;
-    effects.forEach(n => { n.cx = effectCX; n.cy = ey + n.h / 2; ey += n.h + vSpacing; });
+    effects.forEach((n, idx) => {
+        const nodeId = `multi-flow-effect-${idx}`;
+        
+        // Check if custom position exists and we're not recalculating
+        if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateEffects) {
+            n.cx = customPositions[nodeId].x;
+            n.cy = customPositions[nodeId].y;
+        } else {
+            n.cx = effectCX;
+            n.cy = ey + n.h / 2;
+            ey += n.h + vSpacing;
+        }
+        
+        // Store node reference
+        multiFlowNodes.push({
+            id: idx,
+            nodeId: nodeId,
+            type: 'effect',
+            x: n.cx,
+            y: n.cy,
+            width: n.w,
+            height: n.h
+        });
+    });
+    
+    // Store node references globally for drag operations
+    window.multiFlowMapNodes = multiFlowNodes;
+    
+    // If we recalculated evenly (new nodes added), update custom positions silently
+    // This ensures positions are saved for future renders without triggering re-render loop
+    if (shouldRecalculateCauses || shouldRecalculateEffects) {
+        console.log('[MultiFlowMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly');
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        // Clear old custom positions for causes/effects
+        Object.keys(spec._customPositions).forEach(key => {
+            if (key.startsWith('multi-flow-cause-') || key.startsWith('multi-flow-effect-')) {
+                delete spec._customPositions[key];
+            }
+        });
+        
+        // Save all recalculated positions
+        multiFlowNodes.forEach(node => {
+            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
+        });
+        
+        logger.info('[MultiFlowMap-Renderer] Updated custom positions with evenly-spaced layout', {
+            updatedPositions: multiFlowNodes.length
+        });
+        console.log('[MultiFlowMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('multi-flow-')).sort());
+    }
 
     // Cleanup temporary SVG
     tempSvg.remove();

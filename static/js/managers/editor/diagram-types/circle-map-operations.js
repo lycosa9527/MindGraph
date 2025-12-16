@@ -274,6 +274,94 @@ class CircleMapOperations {
     }
     
     /**
+     * Save custom position for a node (free-form positioning)
+     * @param {Object} spec - Current diagram spec
+     * @param {string} nodeId - Node ID (e.g., 'context_0')
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @returns {Object} Updated spec
+     */
+    saveCustomPosition(spec, nodeId, x, y, emitEvents = true) {
+        if (!spec) {
+            this.logger.error('CircleMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Initialize _customPositions if it doesn't exist
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        
+        // Save position
+        spec._customPositions[nodeId] = { x, y };
+        
+        this.logger.debug('CircleMapOperations', 'Saved custom position', {
+            nodeId,
+            x,
+            y,
+            emitEvents
+        });
+        
+        // Only emit events if requested (skip when saving multiple positions at once)
+        if (emitEvents) {
+            // Emit position saved event
+            this.eventBus.emit('diagram:position_saved', {
+                diagramType: 'circle_map',
+                nodeId,
+                position: { x, y },
+                spec
+            });
+            
+            // Emit spec updated to trigger re-render
+            this.eventBus.emit('diagram:spec_updated', { spec });
+            
+            // Emit operation completed for history
+            this.eventBus.emit('diagram:operation_completed', {
+                operation: 'save_custom_position',
+                snapshot: JSON.parse(JSON.stringify(spec)),
+                data: {
+                    nodeId,
+                    x,
+                    y
+                }
+            });
+        }
+        
+        return spec;
+    }
+    
+    /**
+     * Clear all custom positions (reset to auto-layout)
+     * @param {Object} spec - Current diagram spec
+     * @returns {Object} Updated spec
+     */
+    clearCustomPositions(spec) {
+        if (!spec) {
+            this.logger.error('CircleMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Clear custom positions
+        delete spec._customPositions;
+        
+        this.logger.debug('CircleMapOperations', 'Cleared custom positions');
+        
+        // Emit positions cleared event
+        this.eventBus.emit('diagram:positions_cleared', {
+            diagramType: 'circle_map',
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'clear_custom_positions',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
+        return spec;
+    }
+    
+    /**
      * Validate Circle Map spec
      * @param {Object} spec - Diagram spec
      * @returns {boolean} Whether spec is valid

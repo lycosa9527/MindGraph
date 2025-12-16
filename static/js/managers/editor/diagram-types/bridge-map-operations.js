@@ -242,6 +242,103 @@ class BridgeMapOperations {
     }
     
     /**
+     * Save custom position for a node (free-form positioning)
+     * @param {Object} spec - Current diagram spec
+     * @param {string} nodeId - Node ID (e.g., 'bridge-left-0', 'bridge-right-0')
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @returns {Object} Updated spec
+     */
+    saveCustomPosition(spec, nodeId, x, y) {
+        if (!spec) {
+            this.logger.error('BridgeMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Initialize _customPositions if it doesn't exist
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        
+        // Save position
+        spec._customPositions[nodeId] = { x, y };
+        
+        // If dragging left node, also move corresponding right node (same pair index)
+        // Extract pair index from nodeId (e.g., 'bridge-left-0' -> 0)
+        const match = nodeId.match(/bridge-(left|right)-(\d+)/);
+        if (match) {
+            const pairIndex = parseInt(match[2]);
+            const side = match[1];
+            
+            // Find corresponding node in the pair
+            const otherSide = side === 'left' ? 'right' : 'left';
+            const otherNodeId = `bridge-${otherSide}-${pairIndex}`;
+            
+            // Calculate offset from center to maintain pair relationship
+            // For now, just save the position - renderer will handle pair positioning
+            // This is a placeholder - full implementation would require renderer updates
+        }
+        
+        this.logger.debug('BridgeMapOperations', 'Saved custom position', {
+            nodeId,
+            x,
+            y
+        });
+        
+        // Emit position saved event
+        this.eventBus.emit('diagram:position_saved', {
+            diagramType: 'bridge_map',
+            nodeId,
+            position: { x, y },
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'save_custom_position',
+            snapshot: JSON.parse(JSON.stringify(spec)),
+            data: {
+                nodeId,
+                x,
+                y
+            }
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Clear all custom positions (reset to auto-layout)
+     * @param {Object} spec - Current diagram spec
+     * @returns {Object} Updated spec
+     */
+    clearCustomPositions(spec) {
+        if (!spec) {
+            this.logger.error('BridgeMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Clear custom positions
+        delete spec._customPositions;
+        
+        this.logger.debug('BridgeMapOperations', 'Cleared custom positions');
+        
+        // Emit positions cleared event
+        this.eventBus.emit('diagram:positions_cleared', {
+            diagramType: 'bridge_map',
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'clear_custom_positions',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
+        return spec;
+    }
+    
+    /**
      * Validate Bridge Map spec
      * @param {Object} spec - Diagram spec
      * @returns {boolean} Whether spec is valid

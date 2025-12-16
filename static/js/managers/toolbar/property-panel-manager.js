@@ -133,6 +133,15 @@ class PropertyPanelManager {
             this.propText.addEventListener('input', (e) => {
                 this.autoResizeTextarea(e.target);
             });
+            
+            // Setup Tab Mode autocomplete if enabled
+            if (window.currentEditor?.modules?.tabMode && this.currentNodeId) {
+                window.currentEditor.modules.tabMode.setupAutocomplete(
+                    this.propText,
+                    this.currentNodeId,
+                    window.currentEditor?.diagramType
+                );
+            }
         }
         
         // TODO: Extract event listener setup from toolbar-manager.js - Day 5
@@ -274,6 +283,15 @@ class PropertyPanelManager {
         }
         
         this.currentNodeId = nodeId;
+        
+        // Setup Tab Mode autocomplete for property panel text input
+        if (this.propText && window.currentEditor?.modules?.tabMode) {
+            window.currentEditor.modules.tabMode.setupAutocomplete(
+                this.propText,
+                nodeId,
+                window.currentEditor?.diagramType
+            );
+        }
         
         // Get node attributes (current values)
         const fill = nodeElement.attr('fill') || '#2196f3';

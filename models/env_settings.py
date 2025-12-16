@@ -255,6 +255,14 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable Voice Agent (Qwen Omni Realtime)"
     )
+    FEATURE_DRAG_AND_DROP: bool = Field(
+        default=False,
+        description="Enable drag and drop functionality for diagram nodes"
+    )
+    FEATURE_TAB_MODE: bool = Field(
+        default=False,
+        description="Enable Tab Mode (autocomplete suggestions and node expansion)"
+    )
 
 
 class DifySettings(BaseModel):

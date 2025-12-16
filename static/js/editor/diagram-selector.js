@@ -544,6 +544,12 @@ class DiagramSelector {
                     new DiagramOperationsLoader(window.eventBus, window.stateManager, logger),
                     'diagramOperationsLoader'
                 ),
+                tabMode: window.FEATURE_TAB_MODE && typeof TabModeManager !== 'undefined'
+                    ? window.sessionLifecycle.register(
+                        new TabModeManager(window.eventBus, window.stateManager, logger),
+                        'tabMode'
+                    )
+                    : null,
                 circleMap: window.sessionLifecycle.register(
                     new CircleMapOperations(window.eventBus, window.stateManager, logger),
                     'circleMap'

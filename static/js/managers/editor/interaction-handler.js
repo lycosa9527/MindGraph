@@ -24,6 +24,18 @@ class InteractionHandler {
         // NEW: Add owner identifier for Event Bus Listener Registry
         this.ownerId = 'InteractionHandler';
         
+        // Initialize DragDropManager (only if feature is enabled)
+        if (window.FEATURE_DRAG_AND_DROP && typeof DragDropManager !== 'undefined') {
+            this.dragDropManager = new DragDropManager(eventBus, stateManager, logger, editor);
+        } else {
+            if (!window.FEATURE_DRAG_AND_DROP) {
+                this.logger.info('InteractionHandler', 'Drag and Drop feature disabled via FEATURE_DRAG_AND_DROP');
+            } else {
+                this.logger.warn('InteractionHandler', 'DragDropManager not available');
+            }
+            this.dragDropManager = null;
+        }
+        
         // GLOBAL double-click tracking by nodeId
         // Uses debounced single-click to distinguish from double-click
         // First click sets a timeout; second click within threshold cancels it and triggers double-click
@@ -35,6 +47,9 @@ class InteractionHandler {
             THRESHOLD: 250, // ms for double-click detection
             DEDUPE_THRESHOLD: 50  // ms to consider as same physical click
         };
+        
+        // Hold-click tracking for drag activation
+        this.holdTimers = new Map(); // Map of nodeId -> hold timer
         
         // Subscribe to events
         this.subscribeToEvents();
@@ -98,10 +113,17 @@ class InteractionHandler {
         const selectionManager = this.editor.selectionManager;
         const diagramType = this.editor.diagramType;
         
+        this.logger.info('InteractionHandler', 'Attaching interaction handlers', {
+            diagramType,
+            hasEditor: !!this.editor,
+            hasSelectionManager: !!selectionManager
+        });
+        
         // Find all node elements (shapes) and add click handlers
         // Filter out background elements and decorative elements
         const allShapes = d3.selectAll('circle, rect, ellipse');
         let attachedCount = 0;
+        let dragHandlersAttached = 0;
         
         allShapes.each((d, i, nodes) => {
             const element = d3.select(nodes[i]);
@@ -119,17 +141,43 @@ class InteractionHandler {
                 element.attr('data-node-id', nodeId);
             }
             
-            // Find associated text
-            const textNode = nodes[i].nextElementSibling;
-            const textElement = (textNode && textNode.tagName === 'text') ? d3.select(textNode) : null;
+            // Find associated text element(s)
+            // For circle maps and bubble maps, text elements use data-text-for attribute
+            // For other diagrams, try nextElementSibling first
+            let textElement = null;
+            
+            if (nodeId) {
+                // Method 1: Check if text has data-text-for attribute (Circle/Bubble Map)
+                const textWithFor = d3.select(`text[data-text-for="${nodeId}"]`);
+                if (!textWithFor.empty()) {
+                    textElement = textWithFor; // Use first matching text element
+                } else {
+                    // Method 2: Fallback to nextElementSibling for other diagrams
+                    const textNode = nodes[i].nextElementSibling;
+                    if (textNode && textNode.tagName === 'text') {
+                        textElement = d3.select(textNode);
+                    }
+                }
+            }
+            
+            // Get node type from element attribute
+            const nodeType = element.attr('data-node-type');
             
             // Determine which interaction method to use
             if (diagramType === 'concept_map') {
                 // Keep existing drag for concept maps (they already have drag)
-            self.addDragBehavior(element, textElement);
+                self.addDragBehavior(element, textElement);
             } else {
-                // Other types: just pointer cursor
-                element.style('cursor', 'pointer');
+                // Universal drag-and-drop for all other diagram types
+                // Add hold-click detection before drag activation
+                // Check if node is draggable before incrementing counter
+                const wasDraggable = self.dragDropManager && 
+                    self.dragDropManager.isNodeDraggable(nodeType, nodeId, diagramType);
+                self.addUniversalDragBehavior(element, textElement, nodeId, nodeType, diagramType);
+                // Only increment if handlers were actually attached (node is draggable)
+                if (wasDraggable) {
+                    dragHandlersAttached++;
+                }
             }
             
             // Add click handler for selection AND double-click detection
@@ -243,9 +291,10 @@ class InteractionHandler {
         });
         
         // Log how many shape handlers were attached
-        this.logger.debug('InteractionHandler', 'Shape handlers attached', {
+        this.logger.info('InteractionHandler', 'Shape handlers attached', {
             totalShapes: allShapes.size(),
             attachedCount: attachedCount,
+            dragHandlersAttached: dragHandlersAttached,
             diagramType: diagramType
         });
         
@@ -797,6 +846,178 @@ class InteractionHandler {
     }
     
     /**
+     * Add universal drag behavior for all diagram types (except concept_map)
+     * Uses hold-click detection (1s) before activating drag mode
+     * Attaches handlers to both shape and text elements
+     */
+    addUniversalDragBehavior(shapeElement, textElement, nodeId, nodeType, diagramType) {
+        if (!this.dragDropManager) {
+            // Fallback to pointer cursor if DragDropManager not available
+            shapeElement.style('cursor', 'pointer');
+            if (textElement && !textElement.empty()) {
+                textElement.style('cursor', 'pointer');
+            }
+            return;
+        }
+        
+        // Check if node is draggable
+        if (!this.dragDropManager.isNodeDraggable(nodeType, nodeId, diagramType)) {
+            this.logger.debug('InteractionHandler', 'Node is not draggable', {
+                nodeId,
+                nodeType,
+                diagramType
+            });
+            shapeElement.style('cursor', 'pointer');
+            if (textElement && !textElement.empty()) {
+                textElement.style('cursor', 'pointer');
+            }
+            return;
+        }
+        
+        this.logger.debug('InteractionHandler', 'Attaching drag handlers', {
+            nodeId,
+            nodeType,
+            diagramType,
+            hasTextElement: !!(textElement && !textElement.empty())
+        });
+        
+        const self = this;
+        
+        // Helper function to attach drag handlers to an element
+        const attachDragHandlers = (element, isTextElement = false) => {
+        let initialMouseX = null;
+        let initialMouseY = null;
+        let holdTimer = null;
+        
+            element
+            .style('cursor', 'grab')
+            .on('mousedown', function(event) {
+                event.stopPropagation();
+                
+                // Store initial mouse position
+                initialMouseX = event.clientX;
+                initialMouseY = event.clientY;
+                
+                // Clear any existing timer for this node
+                if (holdTimer) {
+                    clearTimeout(holdTimer);
+                    self.holdTimers.delete(nodeId);
+                }
+                
+                    // Start hold timer (1 second)
+                holdTimer = setTimeout(() => {
+                    // Check if mouse hasn't moved significantly (10px tolerance)
+                    const currentX = event.clientX;
+                    const currentY = event.clientY;
+                    const distance = Math.sqrt(
+                        Math.pow(currentX - initialMouseX, 2) + 
+                        Math.pow(currentY - initialMouseY, 2)
+                    );
+                    
+                    if (distance < 10) {
+                        // Activate drag mode
+                        self.logger.info('InteractionHandler', 'Hold-click detected, activating drag', {
+                            nodeId,
+                            nodeType,
+                                diagramType,
+                                source: isTextElement ? 'text' : 'shape'
+                        });
+                        
+                            // Always use shapeElement for drag (text element triggers drag on shape)
+                        self.dragDropManager.startDrag(
+                            shapeElement,
+                            textElement,
+                            nodeId,
+                            nodeType,
+                            diagramType
+                        );
+                        
+                            // Change cursor to grabbing on shape and all text elements
+                        shapeElement.style('cursor', 'grabbing');
+                            // Update cursor on all text elements for this node
+                            const allTextElements = d3.selectAll(`text[data-text-for="${nodeId}"]`);
+                            allTextElements.style('cursor', 'grabbing');
+                    }
+                    
+                    self.holdTimers.delete(nodeId);
+                    holdTimer = null;
+                    }, 1000); // 1 second
+                
+                // Store timer for cleanup
+                self.holdTimers.set(nodeId, holdTimer);
+            })
+            .on('mousemove', function(event) {
+                // If mouse moves significantly during hold, cancel timer
+                if (holdTimer && initialMouseX !== null && initialMouseY !== null) {
+                    const distance = Math.sqrt(
+                        Math.pow(event.clientX - initialMouseX, 2) + 
+                        Math.pow(event.clientY - initialMouseY, 2)
+                    );
+                    
+                    if (distance >= 10) {
+                        clearTimeout(holdTimer);
+                        self.holdTimers.delete(nodeId);
+                        holdTimer = null;
+                    }
+                }
+            })
+            .on('mouseup', function(event) {
+                // Cancel hold timer if mouse released before timeout
+                if (holdTimer) {
+                    clearTimeout(holdTimer);
+                    self.holdTimers.delete(nodeId);
+                    holdTimer = null;
+                }
+            })
+            .on('mouseleave', function(event) {
+                // Cancel hold timer if mouse leaves node
+                if (holdTimer) {
+                    clearTimeout(holdTimer);
+                    self.holdTimers.delete(nodeId);
+                    holdTimer = null;
+                }
+            });
+        };
+        
+        // Attach handlers to shape element
+        attachDragHandlers(shapeElement, false);
+        
+        // Attach handlers to text element(s) if they exist
+        // For circle maps and bubble maps, there may be multiple text elements (one per line)
+        // with the same data-text-for attribute, so we need to attach handlers to all of them
+        if (textElement && !textElement.empty()) {
+            // Ensure pointer-events is enabled on text element so it can receive mouse events
+            textElement.style('pointer-events', 'all');
+            attachDragHandlers(textElement, true);
+            
+            // Also attach handlers to all other text elements with the same data-text-for attribute
+            // This handles multi-line text where each line is a separate text element
+            const allTextElements = d3.selectAll(`text[data-text-for="${nodeId}"]`);
+            if (allTextElements.size() > 1) {
+                allTextElements.each(function() {
+                    const textElem = d3.select(this);
+                    if (textElem.node() !== textElement.node()) {
+                        // This is a different text element for the same node
+                        textElem.style('pointer-events', 'all');
+                        attachDragHandlers(textElem, true);
+                    }
+                });
+            }
+        } else {
+            // If textElement wasn't found via the normal method, try finding it by data-text-for
+            // This handles cases where text elements exist but weren't linked properly
+            const textElementsByFor = d3.selectAll(`text[data-text-for="${nodeId}"]`);
+            if (!textElementsByFor.empty()) {
+                textElementsByFor.each(function() {
+                    const textElem = d3.select(this);
+                    textElem.style('pointer-events', 'all');
+                    attachDragHandlers(textElem, true);
+                });
+            }
+        }
+    }
+    
+    /**
      * REMOVED: All drag-and-drop swap functionality has been removed
      */
     
@@ -804,6 +1025,19 @@ class InteractionHandler {
      * Cleanup on destroy
      */
     destroy() {
+        // Clean up hold timers
+        this.holdTimers.forEach((timer, nodeId) => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+        });
+        this.holdTimers.clear();
+        
+        // Destroy DragDropManager
+        if (this.dragDropManager) {
+            this.dragDropManager.destroy();
+            this.dragDropManager = null;
+        }
         this.logger.debug('InteractionHandler', 'Destroying');
         
         // Remove all Event Bus listeners

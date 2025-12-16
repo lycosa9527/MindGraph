@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.90] - 2025-12-15 - Feature Flags for Drag-and-Drop and Tab Mode
+
+### Added
+
+- **Feature Flag: Drag and Drop** (`FEATURE_DRAG_AND_DROP`)
+  - Added environment variable to enable/disable drag-and-drop functionality
+  - Default: `False` (disabled)
+  - Controls initialization of `DragDropManager` in `InteractionHandler`
+  - When disabled, drag handlers return early and nodes show pointer cursor
+  - Configuration: Add `FEATURE_DRAG_AND_DROP=True` to `.env` to enable
+
+- **Feature Flag: Tab Mode** (`FEATURE_TAB_MODE`)
+  - Added environment variable to enable/disable Tab Mode (autocomplete and node expansion)
+  - Default: `False` (disabled)
+  - Controls initialization of `TabModeManager` and visibility of Tab Mode button
+  - When disabled, Tab Mode button is hidden and API endpoints return 403
+  - Configuration: Add `FEATURE_TAB_MODE=True` to `.env` to enable
+
+### Changed
+
+- **Environment Configuration** (`env.example`)
+  - Added `FEATURE_DRAG_AND_DROP=False` setting
+  - Added `FEATURE_TAB_MODE=False` setting
+  - Both features default to disabled for better control
+
+- **Backend Configuration** (`models/env_settings.py`, `config/settings.py`)
+  - Added `FEATURE_DRAG_AND_DROP` and `FEATURE_TAB_MODE` to `FeatureFlagSettings`
+  - Added corresponding properties in `Config` class
+  - Both flags follow same pattern as other feature flags (Learning Mode, ThinkGuide, etc.)
+
+- **Frontend Initialization** (`static/js/managers/editor/interaction-handler.js`, `static/js/editor/diagram-selector.js`)
+  - `DragDropManager` only initialized when `FEATURE_DRAG_AND_DROP` is enabled
+  - `TabModeManager` only initialized when `FEATURE_TAB_MODE` is enabled
+  - Both managers set to `null` when features are disabled
+
+- **Template Rendering** (`templates/editor.html`, `routers/pages.py`)
+  - Tab Mode button conditionally rendered based on `feature_tab_mode` flag
+  - Feature flags passed to template via data attributes
+  - JavaScript variables set: `window.FEATURE_DRAG_AND_DROP` and `window.FEATURE_TAB_MODE`
+
+- **API Protection** (`routers/tab_mode.py`)
+  - Added feature flag checks to `/api/tab_suggestions` endpoint
+  - Added feature flag checks to `/api/tab_expand` endpoint
+  - Both endpoints return 403 error when Tab Mode is disabled
+  - Provides defense-in-depth security layer
+
+### Technical Details
+
+**Feature Flag Pattern:**
+- Follows existing pattern used by `FEATURE_LEARNING_MODE`, `FEATURE_THINKGUIDE`, `FEATURE_MINDMATE`, `FEATURE_VOICE_AGENT`
+- Backend validation via `FeatureFlagSettings` in `models/env_settings.py`
+- Frontend access via `window.FEATURE_*` global variables
+- UI elements conditionally rendered using Jinja2 template conditionals
+
+**Safety Mechanisms:**
+- All existing null checks remain intact (`if (!this.dragDropManager)`, `window.currentEditor?.modules?.tabMode`)
+- Drag handlers gracefully degrade when feature disabled (pointer cursor, no drag behavior)
+- Tab Mode API endpoints protected at route level
+- Tab Mode button hidden when feature disabled (prevents UI confusion)
+
+**Default Behavior:**
+- Both features disabled by default (`False`)
+- Enables administrators to control feature availability
+- Reduces resource usage when features not needed
+- Allows gradual rollout or feature deprecation
+
+### Files Modified
+
+- `models/env_settings.py` - Added feature flags to `FeatureFlagSettings`
+- `config/settings.py` - Added `FEATURE_DRAG_AND_DROP` and `FEATURE_TAB_MODE` properties
+- `env.example` - Added feature flag documentation
+- `routers/pages.py` - Pass feature flags to template
+- `templates/editor.html` - Conditionally render Tab Mode button, read feature flags
+- `static/js/managers/editor/interaction-handler.js` - Conditional `DragDropManager` initialization
+- `static/js/editor/diagram-selector.js` - Conditional `TabModeManager` initialization
+- `routers/tab_mode.py` - Added feature flag checks to API endpoints
+
+---
+
 ## [4.28.89] - 2025-12-15 - Backup System Improvements & WAL Checkpoint Coordination
 
 ### Fixed

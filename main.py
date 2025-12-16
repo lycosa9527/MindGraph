@@ -1050,7 +1050,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, thinking, auth, admin_env, admin_logs, voice, update_notification
+from routers import pages, cache, api, thinking, auth, admin_env, admin_logs, voice, update_notification, tab_mode
 # from routers import learning  # DISABLED - Will be redesigned later
 
 # Register routers
@@ -1064,6 +1064,7 @@ app.include_router(admin_env.router)  # Admin environment settings management
 app.include_router(admin_logs.router)  # Admin log streaming
 app.include_router(voice.router)  # VoiceAgent (real-time voice conversation)
 app.include_router(update_notification.router)  # Update notification system
+app.include_router(tab_mode.router)  # Tab Mode (autocomplete and expansion)
 
 # ============================================================================
 # APPLICATION ENTRY POINT

@@ -369,6 +369,87 @@ class DoubleBubbleMapOperations {
     }
     
     /**
+     * Save custom position for a node (free-form positioning)
+     * @param {Object} spec - Current diagram spec
+     * @param {string} nodeId - Node ID (e.g., 'similarity_0', 'left_diff_0', 'right_diff_0')
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @returns {Object} Updated spec
+     */
+    saveCustomPosition(spec, nodeId, x, y) {
+        if (!spec) {
+            this.logger.error('DoubleBubbleMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Initialize _customPositions if it doesn't exist
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        
+        // Save position
+        spec._customPositions[nodeId] = { x, y };
+        
+        this.logger.debug('DoubleBubbleMapOperations', 'Saved custom position', {
+            nodeId,
+            x,
+            y
+        });
+        
+        // Emit position saved event
+        this.eventBus.emit('diagram:position_saved', {
+            diagramType: 'double_bubble_map',
+            nodeId,
+            position: { x, y },
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'save_custom_position',
+            snapshot: JSON.parse(JSON.stringify(spec)),
+            data: {
+                nodeId,
+                x,
+                y
+            }
+        });
+        
+        return spec;
+    }
+    
+    /**
+     * Clear all custom positions (reset to auto-layout)
+     * @param {Object} spec - Current diagram spec
+     * @returns {Object} Updated spec
+     */
+    clearCustomPositions(spec) {
+        if (!spec) {
+            this.logger.error('DoubleBubbleMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Clear custom positions
+        delete spec._customPositions;
+        
+        this.logger.debug('DoubleBubbleMapOperations', 'Cleared custom positions');
+        
+        // Emit positions cleared event
+        this.eventBus.emit('diagram:positions_cleared', {
+            diagramType: 'double_bubble_map',
+            spec
+        });
+        
+        // Emit operation completed for history
+        this.eventBus.emit('diagram:operation_completed', {
+            operation: 'clear_custom_positions',
+            snapshot: JSON.parse(JSON.stringify(spec))
+        });
+        
+        return spec;
+    }
+    
+    /**
      * Validate Double Bubble Map spec
      * @param {Object} spec - Diagram spec
      * @returns {boolean} Whether spec is valid

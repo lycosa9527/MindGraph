@@ -339,6 +339,16 @@ class Config:
         """Enable Voice Agent (experimental feature)."""
         return self._get_cached_value('FEATURE_VOICE_AGENT', 'False').lower() == 'true'
     
+    @property
+    def FEATURE_DRAG_AND_DROP(self):
+        """Enable drag and drop functionality for diagram nodes."""
+        return self._get_cached_value('FEATURE_DRAG_AND_DROP', 'False').lower() == 'true'
+    
+    @property
+    def FEATURE_TAB_MODE(self):
+        """Enable Tab Mode (autocomplete suggestions and node expansion)."""
+        return self._get_cached_value('FEATURE_TAB_MODE', 'False').lower() == 'true'
+    
     # ============================================================================
     # AI ASSISTANT BRANDING
     # ============================================================================

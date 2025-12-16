@@ -23,6 +23,8 @@
     data-feature-learning-mode="{{ feature_learning_mode | tojson }}"
     data-feature-thinkguide="{{ feature_thinkguide | tojson }}"
     data-feature-voice-agent="{{ feature_voice_agent | tojson }}"
+    data-feature-drag-and-drop="{{ feature_drag_and_drop | tojson }}"
+    data-feature-tab-mode="{{ feature_tab_mode | tojson }}"
     data-ai-assistant-name="{{ ai_assistant_name }}"
     data-default-language="{{ default_language }}"
     data-wechat-qr-image="{{ wechat_qr_image }}">
@@ -34,6 +36,8 @@
         window.FEATURE_LEARNING_MODE = bodyElement.dataset.featureLearningMode === 'true';
         window.FEATURE_THINKGUIDE = bodyElement.dataset.featureThinkguide === 'true';
         window.FEATURE_VOICE_AGENT = bodyElement.dataset.featureVoiceAgent === 'true';
+        window.FEATURE_DRAG_AND_DROP = bodyElement.dataset.featureDragAndDrop === 'true';
+        window.FEATURE_TAB_MODE = bodyElement.dataset.featureTabMode === 'true';
         window.AI_ASSISTANT_NAME = bodyElement.dataset.aiAssistantName || 'MindMate AI';
         window.DEFAULT_LANGUAGE = bodyElement.dataset.defaultLanguage || 'zh';
         window.WECHAT_QR_IMAGE = bodyElement.dataset.wechatQrImage || '';
@@ -1098,6 +1102,11 @@
             </div>
             <div class="status-right">
                 <span id="school-name-display" class="school-name" style="display: none;"></span>
+                {% if feature_tab_mode %}
+                <button id="tab-mode-btn" class="tab-mode-btn" title="Enable Tab Mode (Autocomplete & Expansion)">
+                    <span class="tab-mode-icon">⇥</span> Tab
+                </button>
+                {% endif %}
                 <button id="reset-view-btn" class="reset-view-btn" title="Fit diagram to window">
                     <span class="reset-view-icon">⛶</span> Reset View
                 </button>
@@ -1132,6 +1141,7 @@
     <script src="/static/js/editor/selection-manager.js?v={{ version }}"></script>
     <script src="/static/js/editor/canvas-manager.js?v={{ version }}"></script>
     <script src="/static/js/editor/node-editor.js?v={{ version }}"></script>
+    <script src="/static/js/editor/tab-mode-manager.js?v={{ version }}"></script>
     <script src="/static/js/editor/diagram-validator.js?v={{ version }}"></script>
     <script src="/static/js/editor/learning-mode-manager.js?v={{ version }}"></script>
     
@@ -1156,6 +1166,7 @@
     <script src="/static/js/managers/editor/history-manager.js?v={{ version }}"></script>
     <script src="/static/js/managers/editor/canvas-controller.js?v={{ version }}"></script>
     <script src="/static/js/managers/editor/view-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/drag-drop-manager.js?v={{ version }}"></script>
     <script src="/static/js/managers/editor/interaction-handler.js?v={{ version }}"></script>
     <script src="/static/js/managers/editor/diagram-operations-loader.js?v={{ version }}"></script>
     <!-- Diagram Operations -->

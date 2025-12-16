@@ -26,6 +26,33 @@ if (typeof window.MindGraphUtils === 'undefined') {
 
 function renderBubbleMap(spec, theme = null, dimensions = null) {
     // VERBOSE LOGGING: Template receiving spec
+    console.log('[BubbleMap-Renderer] 🚀 RENDER FUNCTION CALLED - NEW CODE VERSION');
+    
+    // CRITICAL: Set default boundaries IMMEDIATELY at function start
+    // This ensures boundaries are ALWAYS available, even if render fails
+    // Use safe defaults that will be updated once we calculate proper values
+    const defaultCenterX = 350;
+    const defaultCenterY = 250;
+    const defaultTopicR = 30;
+    const defaultNodeR = 31;
+    const defaultTargetDistance = defaultTopicR + defaultNodeR + 50;
+    const defaultMargin = defaultNodeR * 0.2;
+    
+    window.bubbleMapBoundaries = {
+        centerX: defaultCenterX,
+        centerY: defaultCenterY,
+        innerRadius: defaultTopicR + defaultNodeR + 20,
+        outerRadius: defaultTargetDistance + defaultNodeR + defaultMargin
+    };
+    
+    console.log('[BubbleMap-Renderer] 🔵 DEFAULT boundaries set at function start:', {
+        centerX: defaultCenterX,
+        centerY: defaultCenterY,
+        innerRadius: window.bubbleMapBoundaries.innerRadius,
+        outerRadius: window.bubbleMapBoundaries.outerRadius,
+        stored: !!window.bubbleMapBoundaries
+    });
+    
     logger.info('[BubbleMap-Renderer] ========================================');
     logger.info('[BubbleMap-Renderer] RECEIVING SPEC FOR RENDERING');
     logger.info('[BubbleMap-Renderer] ========================================');
@@ -48,6 +75,22 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     // Use typeof check to allow empty string (for empty button functionality)
     if (!spec || typeof spec.topic !== 'string' || !Array.isArray(spec.attributes)) {
         logger.error('[BubbleMap-Renderer]', 'Invalid spec for bubble_map');
+        // Even if spec is invalid, try to set default boundaries to prevent drag errors
+        if (window.bubbleMapSimulation && window.bubbleMapCentralNode) {
+            const centerX = window.bubbleMapCentralNode.x || 350;
+            const centerY = window.bubbleMapCentralNode.y || 250;
+            const topicR = window.bubbleMapCentralNode.radius || 30;
+            const uniformAttributeR = 31;
+            const targetDistance = topicR + uniformAttributeR + 50;
+            const margin = uniformAttributeR * 0.2;
+            window.bubbleMapBoundaries = {
+                centerX: centerX,
+                centerY: centerY,
+                innerRadius: topicR + uniformAttributeR + 20,
+                outerRadius: targetDistance + uniformAttributeR + margin
+            };
+            console.log('[BubbleMap-Renderer] ⚠️ Invalid spec - set fallback boundaries');
+        }
         return;
     }
     
@@ -155,24 +198,141 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     // Calculate even distribution around the topic
     const targetDistance = topicR + uniformAttributeR + 50; // Distance from center
     
+    // Inner radius: prevent nodes from overlapping central topic (donut hole)
+    const innerRadius = topicR + uniformAttributeR + 20; // Minimum distance from center
+    
+    // CRITICAL: Set boundaries IMMEDIATELY after calculating layout parameters
+    // This ensures boundaries are available even if render fails or returns early
+    const margin = uniformAttributeR * 0.2; // 20% of bubble radius as margin
+    const fixedOuterRadius = targetDistance + uniformAttributeR + margin; // Fixed at initial layout size
+    const fixedInnerRadius = innerRadius; // Same as innerRadius
+    
+    window.bubbleMapBoundaries = {
+        centerX: centerX,
+        centerY: centerY,
+        innerRadius: fixedInnerRadius,
+        outerRadius: fixedOuterRadius
+    };
+    
+    console.log('[BubbleMap-Renderer] 🔵 EARLY boundaries set (before node creation):', {
+        centerX: Math.round(centerX),
+        centerY: Math.round(centerY),
+        innerRadius: Math.round(fixedInnerRadius),
+        outerRadius: Math.round(fixedOuterRadius),
+        stored: !!window.bubbleMapBoundaries
+    });
+    
+    // Check for custom positions
+    const customPositions = spec._customPositions || {};
+    const hasCustomPositions = Object.keys(customPositions).length > 0;
+    
+    // Position attribute nodes around the central topic
+    // If custom positions exist but some nodes don't have positions (new nodes added),
+    // recalculate all positions evenly to maintain proper spacing
+    const nodeCount = spec.attributes.length;
+    
+    // Count how many nodes have custom positions by checking each index
+    // Use explicit property check to avoid false positives
+    let nodesWithCustomPositions = 0;
+    const missingPositionIndices = [];
+    const positionCheckDetails = [];
+    if (hasCustomPositions) {
+        for (let i = 0; i < nodeCount; i++) {
+            const nodeId = `attribute_${i}`;
+            const hasPosition = customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined;
+            positionCheckDetails.push({ index: i, nodeId, hasPosition, value: customPositions[nodeId] });
+            if (hasPosition) {
+                nodesWithCustomPositions++;
+            } else {
+                missingPositionIndices.push(i);
+            }
+        }
+    }
+    
+    const hasNewNodesWithoutPositions = hasCustomPositions && nodesWithCustomPositions < nodeCount;
+    
+    // If new nodes were added (some nodes don't have custom positions), recalculate all evenly
+    const shouldRecalculateEvenly = hasNewNodesWithoutPositions;
+    
+    // Debug logging to verify detection - ALWAYS log this (use console.log for visibility)
+    const detectionInfo = {
+        hasCustomPositions,
+        nodeCount,
+        nodesWithCustomPositions,
+        missingPositionIndices,
+        hasNewNodesWithoutPositions,
+        shouldRecalculateEvenly,
+        customPositionKeys: hasCustomPositions ? Object.keys(customPositions).filter(k => k.startsWith('attribute_')).sort() : [],
+        checkResult: hasCustomPositions ? `${nodesWithCustomPositions} < ${nodeCount} = ${nodesWithCustomPositions < nodeCount}` : 'no custom positions',
+        positionChecks: hasCustomPositions && nodeCount <= 15 ? positionCheckDetails : 'too many to show'
+    };
+    logger.info('[BubbleMap-Renderer] Position detection check', detectionInfo);
+    console.log('[BubbleMap-Renderer] 🔍 Position detection check:', detectionInfo);
+    
+    if (shouldRecalculateEvenly) {
+        logger.info('[BubbleMap-Renderer] ✓ New nodes detected without custom positions - recalculating all positions evenly', {
+            totalNodes: nodeCount,
+            nodesWithCustomPositions,
+            nodesWithoutPositions: nodeCount - nodesWithCustomPositions,
+            customPositionKeys: Object.keys(customPositions).filter(k => k.startsWith('attribute_'))
+        });
+        console.log('[BubbleMap-Renderer] ✅ RECALCULATING ALL POSITIONS EVENLY');
+    } else if (hasCustomPositions) {
+        logger.debug('[BubbleMap-Renderer] All nodes have custom positions, using them', {
+            totalNodes: nodeCount,
+            nodesWithCustomPositions,
+            customPositionKeys: Object.keys(customPositions).filter(k => k.startsWith('attribute_'))
+        });
+        console.log('[BubbleMap-Renderer] ⚠️ All nodes have custom positions - NOT recalculating', {
+            nodesWithCustomPositions,
+            nodeCount
+        });
+    }
+    
     // Create nodes for force simulation with uniform radius
     const nodes = spec.attributes.map((attr, i) => {
-        // Calculate even angle distribution around the circle
-        const angle = (i * 360 / spec.attributes.length) - 90; // -90 to start from top
-        const targetX = centerX + targetDistance * Math.cos(angle * Math.PI / 180);
-        const targetY = centerY + targetDistance * Math.sin(angle * Math.PI / 180);
+        const nodeId = `attribute_${i}`;
+        
+        // Check if custom position exists and we're not recalculating
+        let targetX, targetY;
+        if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateEvenly) {
+            // Use custom position (only if not recalculating)
+            // IMPORTANT: Use exact custom position - this is where the node was dragged to
+            targetX = customPositions[nodeId].x;
+            targetY = customPositions[nodeId].y;
+            logger.debug(`[BubbleMap-Renderer] Using custom position for ${nodeId}`, {
+                nodeId,
+                x: Math.round(targetX),
+                y: Math.round(targetY)
+            });
+        } else {
+            // Calculate even angle distribution around the circle
+            const angle = (i * 360 / nodeCount) - 90; // -90 to start from top
+            targetX = centerX + targetDistance * Math.cos(angle * Math.PI / 180);
+            targetY = centerY + targetDistance * Math.sin(angle * Math.PI / 180);
+            
+            if (shouldRecalculateEvenly) {
+                logger.debug(`[BubbleMap-Renderer] Recalculating position for ${nodeId} (even spacing)`, {
+                    nodeId,
+                    angle: Math.round(angle),
+                    x: Math.round(targetX),
+                    y: Math.round(targetY)
+                });
+            }
+        }
         
         // Handle both string and object attributes (attr can be "text" or {text: "text"})
         const attrText = typeof attr === 'object' ? (attr.text || '') : (attr || '');
         
         return {
             id: i,
+            nodeId: nodeId, // Store nodeId for drag operations
             text: attrText,
             radius: uniformAttributeR, // All nodes use the same radius
             targetX: targetX,
             targetY: targetY,
-            x: targetX, // Start at target position
-            y: targetY
+            x: targetX, // Start at target position (custom position or calculated)
+            y: targetY  // This will be used for constraint ring calculation
         };
     });
     
@@ -194,7 +354,8 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         .force('center', d3.forceCenter(centerX, centerY))
         .force('target', function() {
             nodes.forEach(node => {
-                if (node.targetX !== undefined && node.targetY !== undefined) {
+                // Only apply target force if node is not being dragged (no fx/fy)
+                if (node.targetX !== undefined && node.targetY !== undefined && node.fx === undefined && node.fy === undefined) {
                     const dx = node.targetX - node.x;
                     const dy = node.targetY - node.y;
                     node.vx += dx * 0.1; // Pull towards target position
@@ -204,8 +365,66 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
         })
         .stop();
     
+    // Boundaries are already set earlier (right after layout calculation)
+    // Just verify they're still there before simulation runs
+    if (!window.bubbleMapBoundaries) {
+        console.error('[BubbleMap-Renderer] ❌ Boundaries missing before simulation! Re-setting...');
+        const margin = uniformAttributeR * 0.2;
+        const fixedOuterRadius = targetDistance + uniformAttributeR + margin;
+        window.bubbleMapBoundaries = {
+            centerX: centerX,
+            centerY: centerY,
+            innerRadius: innerRadius,
+            outerRadius: fixedOuterRadius
+        };
+    }
+    
+    console.log('[BubbleMap-Renderer] ✅ Boundaries verified before simulation:', {
+        centerX: Math.round(window.bubbleMapBoundaries.centerX),
+        centerY: Math.round(window.bubbleMapBoundaries.centerY),
+        innerRadius: Math.round(window.bubbleMapBoundaries.innerRadius),
+        outerRadius: Math.round(window.bubbleMapBoundaries.outerRadius)
+    });
+    
+    // Store simulation reference globally for drag operations
+    window.bubbleMapSimulation = simulation;
+    window.bubbleMapNodes = nodes;
+    window.bubbleMapCentralNode = centralNode;
+    
     // Run simulation to find optimal positions
-    for (let i = 0; i < 300; ++i) simulation.tick();
+    // If recalculating evenly, run simulation to settle positions
+    // If custom positions exist and NOT recalculating, skip simulation (use exact positions)
+    if (shouldRecalculateEvenly || !hasCustomPositions) {
+        for (let i = 0; i < 300; ++i) simulation.tick();
+    }
+    
+    // If we recalculated evenly (new nodes added), update custom positions silently
+    // This ensures positions are saved for future renders without triggering re-render loop
+    // Must happen AFTER simulation runs so positions are final
+    if (shouldRecalculateEvenly) {
+        console.log('[BubbleMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly for', nodeCount, 'nodes');
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        // Clear old custom positions and save new evenly-spaced positions
+        Object.keys(spec._customPositions).forEach(key => {
+            if (key.startsWith('attribute_')) {
+                delete spec._customPositions[key];
+            }
+        });
+        
+        // Save all recalculated positions (after simulation has run and settled)
+        nodes.forEach(node => {
+            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
+        });
+        
+        logger.info('[BubbleMap-Renderer] Updated custom positions with evenly-spaced layout', {
+            updatedPositions: nodes.length
+        });
+        console.log('[BubbleMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('attribute_')).sort());
+    } else {
+        console.log('[BubbleMap-Renderer] ⏭️ SKIPPING recalculation - shouldRecalculateEvenly =', shouldRecalculateEvenly);
+    }
     
     // Calculate bounds for SVG
     const positions = nodes.map(n => ({ x: n.x, y: n.y, radius: n.radius }));
@@ -238,6 +457,7 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
     
     // Draw connecting lines from topic to attributes
     nodes.forEach(node => {
+        const nodeId = node.nodeId || `attribute_${node.id}`;
         const dx = node.x - centerX;
         const dy = node.y - centerY;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -254,7 +474,8 @@ function renderBubbleMap(spec, theme = null, dimensions = null) {
                 .attr('x2', lineEndX)
                 .attr('y2', lineEndY)
                 .attr('stroke', '#888')
-                .attr('stroke-width', 2);
+                .attr('stroke-width', 2)
+                .attr('data-line-for', nodeId);
         }
     });
     
@@ -602,25 +823,185 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     logger.info('[CircleMap-Renderer] Node positioning calculation:', calculationDetails);
     console.log('[CircleMap-Renderer] 🔵 CIRCLE MAP LAYOUT:', calculationDetails);
     
+    // Check for custom positions
+    // CRITICAL: This code MUST run for circle maps - verify we're in the right function
+    console.log('[CircleMap-Renderer] 🔵 ENTERING CUSTOM POSITIONS CHECK - renderCircleMap function');
+    const customPositions = spec._customPositions || {};
+    const hasCustomPositions = Object.keys(customPositions).length > 0;
+    console.log('[CircleMap-Renderer] 🔵 Custom positions check:', {
+        hasCustomPositions,
+        customPositionsCount: Object.keys(customPositions).length,
+        nodeCount: spec.context.length,
+        specHasCustomPositions: !!spec._customPositions
+    });
+    
+    const customPositionsRead = Object.keys(customPositions).reduce((acc, key) => {
+        acc[key] = {
+            x: Math.round(customPositions[key].x),
+            y: Math.round(customPositions[key].y)
+        };
+        return acc;
+    }, {});
+    
+    const customPositionsList = Object.keys(customPositions).sort().map(key => ({
+        nodeId: key,
+        x: Math.round(customPositions[key].x),
+        y: Math.round(customPositions[key].y)
+    }));
+    
     // Position context circles at calculated radius from center (closer to center, ~half radius gap)
+    // If custom positions exist but some nodes don't have positions (new nodes added),
+    // recalculate all positions evenly to maintain proper spacing
+    const nodeCount = spec.context.length;
+    
+    // ALWAYS log this - use console.log to ensure visibility
+    console.log('[CircleMap-Renderer] 📖 Reading custom positions:', {
+        hasCustomPositions,
+        customPositionsCount: Object.keys(customPositions).length,
+        nodeCount,
+        customPositionKeys: Object.keys(customPositions).filter(k => k.startsWith('context_')).sort(),
+        positions: customPositionsList.map(p => `${p.nodeId}: (${p.x}, ${p.y})`).join(', ')
+    });
+    logger.info('[CircleMap-Renderer] Reading custom positions from spec._customPositions', {
+        hasCustomPositions,
+        customPositionsCount: Object.keys(customPositions).length,
+        nodeCount,
+        positions: customPositionsList.map(p => `${p.nodeId}: (${p.x}, ${p.y})`).join(', ')
+    });
+    customPositionsList.forEach(pos => {
+        logger.info('[CircleMap-Renderer]', `  Reading: ${pos.nodeId}`, { x: pos.x, y: pos.y });
+    });
+    
+    // Count how many nodes have custom positions by checking each index
+    // Use explicit property check to avoid false positives
+    let nodesWithCustomPositions = 0;
+    const missingPositionIndices = [];
+    const positionCheckDetails = [];
+    if (hasCustomPositions) {
+        for (let i = 0; i < nodeCount; i++) {
+            const nodeId = `context_${i}`;
+            const hasPosition = customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined;
+            positionCheckDetails.push({ index: i, nodeId, hasPosition, value: customPositions[nodeId] });
+            if (hasPosition) {
+                nodesWithCustomPositions++;
+            } else {
+                missingPositionIndices.push(i);
+            }
+        }
+    }
+    
+    const hasNewNodesWithoutPositions = hasCustomPositions && nodesWithCustomPositions < nodeCount;
+    
+    // If new nodes were added (some nodes don't have custom positions), recalculate all evenly
+    const shouldRecalculateEvenly = hasNewNodesWithoutPositions;
+    
+    // Debug logging to verify detection - ALWAYS log this (use console.log for visibility)
+    const detectionInfo = {
+        hasCustomPositions,
+        nodeCount,
+        nodesWithCustomPositions,
+        missingPositionIndices,
+        hasNewNodesWithoutPositions,
+        shouldRecalculateEvenly,
+        customPositionKeys: hasCustomPositions ? Object.keys(customPositions).filter(k => k.startsWith('context_')).sort() : [],
+        checkResult: hasCustomPositions ? `${nodesWithCustomPositions} < ${nodeCount} = ${nodesWithCustomPositions < nodeCount}` : 'no custom positions',
+        positionChecks: hasCustomPositions && nodeCount <= 15 ? positionCheckDetails : 'too many to show'
+    };
+    logger.info('[CircleMap-Renderer] Position detection check', detectionInfo);
+    console.log('[CircleMap-Renderer] 🔍 Position detection check:', detectionInfo);
+    
+    if (shouldRecalculateEvenly) {
+        logger.info('[CircleMap-Renderer] ✓ New nodes detected without custom positions - recalculating all positions evenly', {
+            totalNodes: nodeCount,
+            nodesWithCustomPositions,
+            nodesWithoutPositions: nodeCount - nodesWithCustomPositions,
+            customPositionKeys: Object.keys(customPositions).filter(k => k.startsWith('context_'))
+        });
+        console.log('[CircleMap-Renderer] ✅ RECALCULATING ALL POSITIONS EVENLY');
+    } else if (hasCustomPositions) {
+        logger.debug('[CircleMap-Renderer] All nodes have custom positions, using them', {
+            totalNodes: nodeCount,
+            nodesWithCustomPositions,
+            customPositionKeys: Object.keys(customPositions).filter(k => k.startsWith('context_'))
+        });
+        console.log('[CircleMap-Renderer] ⚠️ All nodes have custom positions - NOT recalculating', {
+            nodesWithCustomPositions,
+            nodeCount
+        });
+    }
+    
     const nodes = spec.context.map((ctx, i) => {
-        // Calculate even angle distribution around the circle
-        const angle = (i * 360 / spec.context.length) - 90; // -90 to start from top
-        // Position at childrenRadius from center (this ensures ~half radius gap when possible)
-        const targetX = centerX + childrenRadius * Math.cos(angle * Math.PI / 180);
-        const targetY = centerY + childrenRadius * Math.sin(angle * Math.PI / 180);
+        const nodeId = `context_${i}`;
+        
+        // Check if custom position exists and we're not recalculating
+        let targetX, targetY;
+        if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateEvenly) {
+            // Use custom position (only if not recalculating)
+            targetX = customPositions[nodeId].x;
+            targetY = customPositions[nodeId].y;
+            logger.debug(`[CircleMap-Renderer] Using custom position for ${nodeId}`, {
+                nodeId,
+                x: Math.round(targetX),
+                y: Math.round(targetY)
+            });
+        } else {
+            // Calculate even angle distribution around the circle
+            const angle = (i * 360 / nodeCount) - 90; // -90 to start from top
+            // Position at childrenRadius from center (this ensures ~half radius gap when possible)
+            targetX = centerX + childrenRadius * Math.cos(angle * Math.PI / 180);
+            targetY = centerY + childrenRadius * Math.sin(angle * Math.PI / 180);
+            
+            if (shouldRecalculateEvenly) {
+                logger.debug(`[CircleMap-Renderer] Recalculating position for ${nodeId} (even spacing)`, {
+                    nodeId,
+                    angle: Math.round(angle),
+                    x: Math.round(targetX),
+                    y: Math.round(targetY)
+                });
+            }
+        }
         
         // Handle both string and object context items (ctx can be "text" or {text: "text"})
         const contextItemText = typeof ctx === 'object' ? (ctx.text || '') : (ctx || '');
         
         return {
             id: i,
+            nodeId: nodeId, // Store nodeId for drag operations
             text: contextItemText,
             radius: uniformContextR,
-            x: targetX,
+            targetX: targetX,
+            targetY: targetY,
+            x: targetX, // Start at target position
             y: targetY
         };
     });
+    
+    // If we recalculated evenly (new nodes added), update custom positions silently
+    // This ensures positions are saved for future renders without triggering re-render loop
+    if (shouldRecalculateEvenly) {
+        console.log('[CircleMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly for', nodeCount, 'nodes');
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        // Clear old custom positions and save new evenly-spaced positions
+        Object.keys(spec._customPositions).forEach(key => {
+            if (key.startsWith('context_')) {
+                delete spec._customPositions[key];
+            }
+        });
+        
+        // Save all recalculated positions
+        nodes.forEach(node => {
+            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
+        });
+        
+        logger.info('[CircleMap-Renderer] Updated custom positions with evenly-spaced layout', {
+            updatedPositions: nodes.length
+        });
+        console.log('[CircleMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('context_')).sort());
+    } else {
+        console.log('[CircleMap-Renderer] ⏭️ SKIPPING recalculation - shouldRecalculateEvenly =', shouldRecalculateEvenly);
+    }
     
     logger.info('[CircleMap-Renderer] Node positioning calculated:');
     nodes.forEach((node, idx) => {
@@ -638,12 +1019,316 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     const actualCenterY = actualHeight / 2;
     
     // Update node positions with actual center
-    nodes.forEach(node => {
-        const dx = node.x - centerX;
-        const dy = node.y - centerY;
-        node.x = actualCenterX + dx;
-        node.y = actualCenterY + dy;
+    // If using custom positions, they're already in SVG coordinates, so use them directly
+    // If not using custom positions, adjust for actual center
+    if (!hasCustomPositions) {
+        nodes.forEach(node => {
+            const dx = node.x - centerX;
+            const dy = node.y - centerY;
+            node.x = actualCenterX + dx;
+            node.y = actualCenterY + dy;
+            // Update target positions too
+            node.targetX = actualCenterX + (node.targetX - centerX);
+            node.targetY = actualCenterY + (node.targetY - centerY);
+        });
+    } else {
+        // For custom positions, they're already in SVG coordinates from previous render
+        // Use them directly - they should match the current SVG coordinate system
+        nodes.forEach(node => {
+            // Positions already set from custom positions - use as-is
+            // Update targetX/targetY to match so force simulation doesn't pull them away
+            node.targetX = node.x;
+            node.targetY = node.y;
+        });
+    }
+    
+    // Add central topic as a fixed node for force simulation
+    const centralNode = {
+        id: 'central',
+        text: typeof spec.topic === 'object' ? (spec.topic.text || '') : (spec.topic || ''),
+        radius: topicR,
+        x: actualCenterX,
+        y: actualCenterY,
+        fx: actualCenterX, // Fixed position
+        fy: actualCenterY
+    };
+    
+    // Create force simulation for drag operations
+    // Always enable forces for "marbles in a donut" effect - nodes adapt dynamically
+    // Inner radius: central topic radius + margin (donut hole)
+    // Outer radius: outerCircleR (donut edge)
+    const innerRadius = topicR + uniformContextR + 5; // Inner boundary (donut hole edge)
+    const outerRadius = outerCircleR - uniformContextR - 5; // Outer boundary (donut edge)
+    
+    console.log('[CircleMap-Renderer] 🔵 ABOUT TO CREATE SIMULATION:', {
+        hasNodes: !!nodes,
+        nodeCount: nodes?.length || 0,
+        hasCentralNode: !!centralNode,
+        innerRadius,
+        outerRadius
     });
+    
+    try {
+        const simulation = d3.forceSimulation([centralNode, ...nodes])
+            .force('charge', d3.forceManyBody().strength(-800))
+            .force('collide', d3.forceCollide().radius(d => d.radius + 8).strength(0.9))
+            .force('center', d3.forceCenter(actualCenterX, actualCenterY))
+            .force('donutBoundary', function() {
+                // Constrain nodes to stay within the donut ring (between inner and outer radius)
+                nodes.forEach(node => {
+                    const dx = node.x - actualCenterX;
+                    const dy = node.y - actualCenterY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        // Constrain to outer boundary
+                        if (distance > outerRadius) {
+                            const scale = outerRadius / distance;
+                            node.x = actualCenterX + dx * scale;
+                            node.y = actualCenterY + dy * scale;
+                            // Dampen velocity when hitting boundary
+                            node.vx *= 0.3;
+                            node.vy *= 0.3;
+                        }
+                        
+                        // Constrain to inner boundary (push away from center if too close)
+                        if (distance < innerRadius) {
+                            const scale = innerRadius / distance;
+                            node.x = actualCenterX + dx * scale;
+                            node.y = actualCenterY + dy * scale;
+                            // Push away from center
+                            const pushStrength = (innerRadius - distance) * 0.1;
+                            node.vx += (dx / distance) * pushStrength;
+                            node.vy += (dy / distance) * pushStrength;
+                        }
+                    }
+                });
+            })
+            .force('target', function() {
+                // Apply target force to pull nodes towards their initial positions
+                // But only if they're not being dragged (no fx/fy)
+                // When custom positions exist, use stronger force to lock positions
+                nodes.forEach(node => {
+                    if (node.targetX !== undefined && node.targetY !== undefined && node.fx === undefined && node.fy === undefined) {
+                        const dx = node.targetX - node.x;
+                        const dy = node.targetY - node.y;
+                        // Use stronger target force when custom positions exist to preserve exact positions
+                        const strength = hasCustomPositions ? 0.5 : 0.1;
+                        node.vx += dx * strength;
+                        node.vy += dy * strength;
+                    }
+                });
+            })
+            .stop();
+        
+        // Store simulation reference globally for drag operations
+        // Also store boundary info for drag constraints
+        console.log('[CircleMap-Renderer] 🔵 STORING SIMULATION:', {
+            hasSimulation: !!simulation,
+            hasNodes: !!nodes,
+            nodeCount: nodes?.length || 0,
+            nodeIds: nodes?.map(n => n.nodeId) || []
+        });
+        
+        window.circleMapSimulation = simulation;
+        window.circleMapNodes = nodes;
+        window.circleMapCentralNode = centralNode;
+        window.circleMapBoundaries = {
+            centerX: actualCenterX,
+            centerY: actualCenterY,
+            innerRadius: innerRadius,
+            outerRadius: outerRadius
+        };
+        
+        console.log('[CircleMap-Renderer] 🔵 SIMULATION STORED IN WINDOW:', {
+            hasSimulation: !!window.circleMapSimulation,
+            hasNodes: !!window.circleMapNodes,
+            nodeCount: window.circleMapNodes?.length || 0,
+            nodeIds: window.circleMapNodes?.map(n => n.nodeId) || []
+        });
+        
+        logger.info('[CircleMap-Renderer] Simulation stored globally', {
+            hasSimulation: !!window.circleMapSimulation,
+            hasNodes: !!window.circleMapNodes,
+            nodeCount: window.circleMapNodes?.length || 0,
+            nodeIds: window.circleMapNodes?.map(n => n.nodeId) || []
+        });
+    } catch (error) {
+        console.error('[CircleMap-Renderer] ❌ ERROR creating/storing simulation:', error);
+        logger.error('[CircleMap-Renderer]', 'Error creating/storing simulation', error);
+        // If simulation creation failed, we can't continue - return early
+        return;
+    }
+    
+    // Run simulation to find optimal positions
+    // Always run simulation to resolve overlaps, even with custom positions
+    // Custom positions are used as starting points, then simulation resolves collisions
+    if (window.circleMapSimulation) {
+        // Set nodes to their target positions (custom or calculated)
+        nodes.forEach(node => {
+            node.x = node.targetX;
+            node.y = node.targetY;
+        });
+        
+        if (hasCustomPositions) {
+            // Custom positions exist - preserve user's exact placement
+            // Do NOT run simulation - use saved positions directly
+            // The "marbles" effect only happens during drag, not on re-render
+            nodes.forEach(node => {
+                // Set nodes to their exact saved positions
+                node.x = node.targetX;
+                node.y = node.targetY;
+            });
+            
+            // Only apply boundary constraints if nodes somehow went outside
+            // This should rarely happen since positions are already validated
+            nodes.forEach(node => {
+                const dx = node.x - actualCenterX;
+                const dy = node.y - actualCenterY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    // Constrain to outer boundary
+                    if (distance > outerRadius) {
+                        const scale = outerRadius / distance;
+                        node.x = actualCenterX + dx * scale;
+                        node.y = actualCenterY + dy * scale;
+                    }
+                    
+                    // Constrain to inner boundary
+                    if (distance < innerRadius) {
+                        const scale = innerRadius / distance;
+                        node.x = actualCenterX + dx * scale;
+                        node.y = actualCenterY + dy * scale;
+                    }
+                }
+            });
+            
+            // Update target positions to match final positions (should be same as saved)
+            nodes.forEach(node => {
+                node.targetX = node.x;
+                node.targetY = node.y;
+            });
+            
+            // Compare saved positions vs final rendered positions
+            const customPositionsForComparison = Object.keys(customPositions).reduce((acc, key) => {
+                acc[key] = {
+                    x: Math.round(customPositions[key].x),
+                    y: Math.round(customPositions[key].y)
+                };
+                return acc;
+            }, {});
+            
+            const positionComparison = nodes.map(n => {
+                const saved = customPositionsForComparison[n.nodeId];
+                const final = { x: Math.round(n.x), y: Math.round(n.y) };
+                if (saved) {
+                    const dx = final.x - saved.x;
+                    const dy = final.y - saved.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    return {
+                        nodeId: n.nodeId,
+                        text: n.text,
+                        saved: saved,
+                        final: final,
+                        delta: { x: dx, y: dy, distance: Math.round(distance) }
+                    };
+                }
+                return {
+                    nodeId: n.nodeId,
+                    text: n.text,
+                    saved: null,
+                    final: final,
+                    delta: null
+                };
+            });
+            
+            const finalPositionsList = nodes.map(n => ({
+                nodeId: n.nodeId,
+                text: n.text,
+                x: Math.round(n.x),
+                y: Math.round(n.y),
+                targetX: Math.round(n.targetX),
+                targetY: Math.round(n.targetY)
+            }));
+            
+            logger.info('[CircleMap-Renderer] Final positions after simulation (with custom positions)', {
+                nodeCount: nodes.length,
+                positions: finalPositionsList.map(p => `${p.nodeId}: (${p.x}, ${p.y})`).join(', ')
+            });
+            finalPositionsList.forEach(pos => {
+                logger.info('[CircleMap-Renderer]', `  Final: ${pos.nodeId}`, { x: pos.x, y: pos.y, targetX: pos.targetX, targetY: pos.targetY });
+            });
+            
+            logger.info('[CircleMap-Renderer] Position comparison: Saved → Final', {
+                count: positionComparison.length,
+                summary: positionComparison.map(c => {
+                    if (c.saved) {
+                        return `${c.nodeId}: (${c.saved.x}, ${c.saved.y}) → (${c.final.x}, ${c.final.y}) [Δ${c.delta.distance}px]`;
+                    }
+                    return `${c.nodeId}: (no saved) → (${c.final.x}, ${c.final.y})`;
+                }).join(', ')
+            });
+            positionComparison.forEach(comp => {
+                if (comp.saved) {
+                    logger.info('[CircleMap-Renderer]', `  ${comp.nodeId}`, {
+                        saved: { x: comp.saved.x, y: comp.saved.y },
+                        final: { x: comp.final.x, y: comp.final.y },
+                        delta: { x: comp.delta.x, y: comp.delta.y, distance: comp.delta.distance }
+                    });
+                } else {
+                    logger.info('[CircleMap-Renderer]', `  ${comp.nodeId}`, {
+                        saved: null,
+                        final: { x: comp.final.x, y: comp.final.y }
+                    });
+                }
+            });
+        } else {
+            // No custom positions - run simulation to create nice circular layout
+            // First, ensure nodes start at their calculated target positions
+            nodes.forEach(node => {
+                node.x = node.targetX;
+                node.y = node.targetY;
+            });
+            
+            // Run simulation to create nice circular distribution
+            // The simulation will use the donutBoundary force to keep nodes in the ring
+            // Run enough ticks to ensure good layout
+            for (let i = 0; i < 400; ++i) {
+                window.circleMapSimulation.tick();
+            }
+            
+            // Ensure nodes are within boundaries after simulation
+            nodes.forEach(node => {
+                const dx = node.x - actualCenterX;
+                const dy = node.y - actualCenterY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    // Constrain to outer boundary
+                    if (distance > outerRadius) {
+                        const scale = outerRadius / distance;
+                        node.x = actualCenterX + dx * scale;
+                        node.y = actualCenterY + dy * scale;
+                    }
+                    
+                    // Constrain to inner boundary
+                    if (distance < innerRadius) {
+                        const scale = innerRadius / distance;
+                        node.x = actualCenterX + dx * scale;
+                        node.y = actualCenterY + dy * scale;
+                    }
+                }
+            });
+            
+            // Update target positions to match final simulation positions
+            // This ensures if user drags later, nodes start from good positions
+            nodes.forEach(node => {
+                node.targetX = node.x;
+                node.targetY = node.y;
+            });
+        }
+    }
     
     const minX = actualCenterX - outerCircleR - padding;
     const maxX = actualCenterX + outerCircleR + padding;
@@ -803,6 +1488,24 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     
     logger.info('[CircleMap-Renderer] ========================================');
     logger.info(`[CircleMap-Renderer] ✓ RENDERING COMPLETE: ${spec.context.length} context nodes displayed`);
+    
+    // Log final rendered positions for verification
+    if (hasCustomPositions) {
+        const renderedPositions = nodes.map(n => ({
+            nodeId: n.nodeId,
+            text: n.text,
+            x: Math.round(n.x),
+            y: Math.round(n.y)
+        }));
+        logger.info('[CircleMap-Renderer] Final rendered positions (for verification)', {
+            count: renderedPositions.length,
+            positions: renderedPositions.map(p => `${p.nodeId}: (${p.x}, ${p.y})`).join(', ')
+        });
+        renderedPositions.forEach(pos => {
+            logger.info('[CircleMap-Renderer]', `  Rendered: ${pos.nodeId}`, { x: pos.x, y: pos.y, text: pos.text });
+        });
+    }
+    
     logger.info('[CircleMap-Renderer] ========================================');
 }
 
@@ -1070,7 +1773,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                     .attr('x2', x2L)
                     .attr('y2', y2L)
                     .attr('stroke', '#888')
-                    .attr('stroke-width', 2);
+                    .attr('stroke-width', 2)
+                    .attr('data-line-for', `similarity_${i}`)
+                    .attr('data-line-type', 'left-to-similarity');
             }
             
             // Line from right topic to similarity
@@ -1089,7 +1794,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                     .attr('x2', x2R)
                     .attr('y2', y2R)
                     .attr('stroke', '#888')
-                    .attr('stroke-width', 2);
+                    .attr('stroke-width', 2)
+                    .attr('data-line-for', `similarity_${i}`)
+                    .attr('data-line-type', 'right-to-similarity');
             }
         });
     }
@@ -1115,7 +1822,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                     .attr('x2', x2)
                     .attr('y2', y2)
                     .attr('stroke', '#888')
-                    .attr('stroke-width', 2);
+                    .attr('stroke-width', 2)
+                    .attr('data-line-for', `left_diff_${i}`)
+                    .attr('data-line-type', 'left-to-left-diff');
             }
         });
     }
@@ -1141,7 +1850,9 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
                     .attr('x2', x2)
                     .attr('y2', y2)
                     .attr('stroke', '#888')
-                    .attr('stroke-width', 2);
+                    .attr('stroke-width', 2)
+                    .attr('data-line-for', `right_diff_${i}`)
+                    .attr('data-line-type', 'right-to-right-diff');
                 }
         });
     }
@@ -1220,20 +1931,110 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
             .text(line);
     });
     
+    // Check for custom positions
+    const customPositions = spec._customPositions || {};
+    const hasCustomPositions = Object.keys(customPositions).length > 0;
+    
+    // Position nodes
+    // If custom positions exist but some nodes don't have positions (new nodes added),
+    // recalculate all positions evenly to maintain proper spacing
+    // Note: simCount, leftDiffCount, rightDiffCount are already declared above
+    
+    // Count how many nodes have custom positions for each type
+    let similaritiesWithCustomPositions = 0;
+    let leftDiffsWithCustomPositions = 0;
+    let rightDiffsWithCustomPositions = 0;
+    
+    if (hasCustomPositions) {
+        for (let i = 0; i < simCount; i++) {
+            const nodeId = `similarity_${i}`;
+            if (customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined) {
+                similaritiesWithCustomPositions++;
+            }
+        }
+        for (let i = 0; i < leftDiffCount; i++) {
+            const nodeId = `left_diff_${i}`;
+            if (customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined) {
+                leftDiffsWithCustomPositions++;
+            }
+        }
+        for (let i = 0; i < rightDiffCount; i++) {
+            const nodeId = `right_diff_${i}`;
+            if (customPositions.hasOwnProperty(nodeId) && customPositions[nodeId] !== null && customPositions[nodeId] !== undefined) {
+                rightDiffsWithCustomPositions++;
+            }
+        }
+    }
+    
+    const hasNewSimilaritiesWithoutPositions = hasCustomPositions && similaritiesWithCustomPositions < simCount;
+    const hasNewLeftDiffsWithoutPositions = hasCustomPositions && leftDiffsWithCustomPositions < leftDiffCount;
+    const hasNewRightDiffsWithoutPositions = hasCustomPositions && rightDiffsWithCustomPositions < rightDiffCount;
+    const shouldRecalculateSimilarities = hasNewSimilaritiesWithoutPositions;
+    const shouldRecalculateLeftDiffs = hasNewLeftDiffsWithoutPositions;
+    const shouldRecalculateRightDiffs = hasNewRightDiffsWithoutPositions;
+    
+    logger.info('[DoubleBubbleMap-Renderer] Position detection check', {
+        hasCustomPositions,
+        simCount,
+        similaritiesWithCustomPositions,
+        leftDiffCount,
+        leftDiffsWithCustomPositions,
+        rightDiffCount,
+        rightDiffsWithCustomPositions,
+        shouldRecalculateSimilarities,
+        shouldRecalculateLeftDiffs,
+        shouldRecalculateRightDiffs
+    });
+    console.log('[DoubleBubbleMap-Renderer] 🔍 Position detection check:', {
+        hasCustomPositions,
+        simCount,
+        similaritiesWithCustomPositions,
+        leftDiffCount,
+        leftDiffsWithCustomPositions,
+        rightDiffCount,
+        rightDiffsWithCustomPositions,
+        shouldRecalculateSimilarities,
+        shouldRecalculateLeftDiffs,
+        shouldRecalculateRightDiffs
+    });
+    
+    // Store node references globally for drag operations
+    const doubleBubbleNodes = [];
+    
     // Draw similarities in center column
     if (spec.similarities && Array.isArray(spec.similarities)) {
         const simStartY = topicY - ((simCount - 1) * (simR * 2 + 12)) / 2;
         spec.similarities.forEach((item, i) => {
-            const y = simStartY + i * (simR * 2 + 12);
+            const nodeId = `similarity_${i}`;
+            
+            // Check if custom position exists and we're not recalculating
+            let x, y;
+            if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateSimilarities) {
+                x = customPositions[nodeId].x;
+                y = customPositions[nodeId].y;
+            } else {
+                x = simX;
+                y = simStartY + i * (simR * 2 + 12);
+            }
+            
+            // Store node reference
+            doubleBubbleNodes.push({
+                id: i,
+                nodeId: nodeId,
+                type: 'similarity',
+                x: x,
+                y: y,
+                radius: simR
+            });
             
             svg.append('circle')
-                .attr('cx', simX)
+                .attr('cx', x)
                 .attr('cy', y)
                 .attr('r', simR)
                 .attr('fill', THEME.simFill)
                 .attr('stroke', THEME.simStroke)
                 .attr('stroke-width', THEME.simStrokeWidth)
-                .attr('data-node-id', `similarity_${i}`)
+                .attr('data-node-id', nodeId)
                 .attr('data-node-type', 'similarity')
                 .attr('data-array-index', i);
             
@@ -1250,13 +2051,13 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
             const simTextStartY = y - (finalSimLines.length - 1) * simLineHeight / 2;
             finalSimLines.forEach((line, idx) => {
                 svg.append('text')
-                    .attr('x', simX)
+                    .attr('x', x)
                     .attr('y', simTextStartY + idx * simLineHeight)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.simText)
                     .attr('font-size', THEME.fontSim)
-                    .attr('data-node-id', `similarity_${i}`)
+                    .attr('data-node-id', nodeId)
                     .attr('data-node-type', 'similarity')
                     .attr('data-array-index', i)
                     .attr('data-line-index', idx)
@@ -1269,16 +2070,36 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     if (spec.left_differences && Array.isArray(spec.left_differences)) {
         const leftDiffStartY = topicY - ((leftDiffCount - 1) * (leftDiffR * 2 + 10)) / 2;
         spec.left_differences.forEach((item, i) => {
-            const y = leftDiffStartY + i * (leftDiffR * 2 + 10);
+            const nodeId = `left_diff_${i}`;
+            
+            // Check if custom position exists and we're not recalculating
+            let x, y;
+            if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateLeftDiffs) {
+                x = customPositions[nodeId].x;
+                y = customPositions[nodeId].y;
+            } else {
+                x = leftDiffX;
+                y = leftDiffStartY + i * (leftDiffR * 2 + 10);
+            }
+            
+            // Store node reference
+            doubleBubbleNodes.push({
+                id: i,
+                nodeId: nodeId,
+                type: 'left_difference',
+                x: x,
+                y: y,
+                radius: leftDiffR
+            });
             
             svg.append('circle')
-                .attr('cx', leftDiffX)
+                .attr('cx', x)
                 .attr('cy', y)
                 .attr('r', leftDiffR)
                 .attr('fill', THEME.diffFill)
                 .attr('stroke', THEME.diffStroke)
                 .attr('stroke-width', THEME.diffStrokeWidth)
-                .attr('data-node-id', `left_diff_${i}`)
+                .attr('data-node-id', nodeId)
                 .attr('data-node-type', 'left_difference')
                 .attr('data-array-index', i);
             
@@ -1295,13 +2116,13 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
             const leftDiffTextStartY = y - (finalLeftDiffLines.length - 1) * leftDiffLineHeight / 2;
             finalLeftDiffLines.forEach((line, idx) => {
                 svg.append('text')
-                    .attr('x', leftDiffX)
+                    .attr('x', x)
                     .attr('y', leftDiffTextStartY + idx * leftDiffLineHeight)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.diffText)
                     .attr('font-size', THEME.fontDiff)
-                    .attr('data-node-id', `left_diff_${i}`)
+                    .attr('data-node-id', nodeId)
                     .attr('data-node-type', 'left_difference')
                     .attr('data-array-index', i)
                     .attr('data-line-index', idx)
@@ -1314,16 +2135,36 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
     if (spec.right_differences && Array.isArray(spec.right_differences)) {
         const rightDiffStartY = topicY - ((rightDiffCount - 1) * (rightDiffR * 2 + 10)) / 2;
         spec.right_differences.forEach((item, i) => {
-            const y = rightDiffStartY + i * (rightDiffR * 2 + 10);
+            const nodeId = `right_diff_${i}`;
+            
+            // Check if custom position exists and we're not recalculating
+            let x, y;
+            if (hasCustomPositions && customPositions[nodeId] && !shouldRecalculateRightDiffs) {
+                x = customPositions[nodeId].x;
+                y = customPositions[nodeId].y;
+            } else {
+                x = rightDiffX;
+                y = rightDiffStartY + i * (rightDiffR * 2 + 10);
+            }
+            
+            // Store node reference
+            doubleBubbleNodes.push({
+                id: i,
+                nodeId: nodeId,
+                type: 'right_difference',
+                x: x,
+                y: y,
+                radius: rightDiffR
+            });
             
             svg.append('circle')
-                .attr('cx', rightDiffX)
+                .attr('cx', x)
                 .attr('cy', y)
                 .attr('r', rightDiffR)
                 .attr('fill', THEME.diffFill)
                 .attr('stroke', THEME.diffStroke)
                 .attr('stroke-width', THEME.diffStrokeWidth)
-                .attr('data-node-id', `right_diff_${i}`)
+                .attr('data-node-id', nodeId)
                 .attr('data-node-type', 'right_difference')
                 .attr('data-array-index', i);
             
@@ -1340,19 +2181,150 @@ function renderDoubleBubbleMap(spec, theme = null, dimensions = null) {
             const rightDiffTextStartY = y - (finalRightDiffLines.length - 1) * rightDiffLineHeight / 2;
             finalRightDiffLines.forEach((line, idx) => {
                 svg.append('text')
-                    .attr('x', rightDiffX)
+                    .attr('x', x)
                     .attr('y', rightDiffTextStartY + idx * rightDiffLineHeight)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'middle')
                     .attr('fill', THEME.diffText)
                     .attr('font-size', THEME.fontDiff)
-                    .attr('data-node-id', `right_diff_${i}`)
+                    .attr('data-node-id', nodeId)
                     .attr('data-node-type', 'right_difference')
                     .attr('data-array-index', i)
                     .attr('data-line-index', idx)
                     .text(line);
             });
         });
+    }
+    
+    // Store node references globally for drag operations
+    window.doubleBubbleMapNodes = doubleBubbleNodes;
+    
+    // Create force simulation for drag operations (marbles effect)
+    // Add central topics as fixed nodes
+    const leftTopicNode = {
+        id: 'topic_left',
+        nodeId: 'topic_left',
+        type: 'left',
+        x: leftTopicX,
+        y: topicY,
+        radius: topicR,
+        fx: leftTopicX, // Fixed position
+        fy: topicY
+    };
+    
+    const rightTopicNode = {
+        id: 'topic_right',
+        nodeId: 'topic_right',
+        type: 'right',
+        x: rightTopicX,
+        y: topicY,
+        radius: topicR,
+        fx: rightTopicX, // Fixed position
+        fy: topicY
+    };
+    
+    // Create force simulation with all nodes
+    const simulation = d3.forceSimulation([leftTopicNode, rightTopicNode, ...doubleBubbleNodes])
+        .force('charge', d3.forceManyBody().strength(-600))
+        .force('collide', d3.forceCollide().radius(d => d.radius + 5))
+        .force('x', d3.forceX().strength(0.3).x(d => {
+            // Constrain nodes to their columns
+            if (d.type === 'similarity') return simX;
+            if (d.type === 'left_difference') return leftDiffX;
+            if (d.type === 'right_difference') return rightDiffX;
+            return d.x; // Keep central topics fixed
+        }))
+        .force('y', d3.forceY().strength(0.1).y(topicY)) // Slight pull towards center Y
+        .stop();
+    
+    // Only run simulation if we're recalculating or if no custom positions exist
+    // If custom positions exist and we're not recalculating, use exact positions
+    const shouldRunSimulation = shouldRecalculateSimilarities || shouldRecalculateLeftDiffs || shouldRecalculateRightDiffs || !hasCustomPositions;
+    
+    if (shouldRunSimulation) {
+        // Run simulation to settle initial positions
+        for (let i = 0; i < 300; ++i) simulation.tick();
+    } else {
+        // If using custom positions, ensure nodes are at exact positions
+        // Don't fix with fx/fy - we want them draggable, just ensure positions match
+        doubleBubbleNodes.forEach(node => {
+            // Positions should already be set from custom positions during node creation
+            // Just verify they match (simulation will use these as starting positions)
+            if (customPositions[node.nodeId]) {
+                node.x = customPositions[node.nodeId].x;
+                node.y = customPositions[node.nodeId].y;
+                // Don't set fx/fy - nodes need to be draggable
+            }
+        });
+    }
+    
+    // Log node positions after simulation/position setting
+    console.log('[DoubleBubbleMap-Renderer] 🔵 Node positions after setup:', {
+        shouldRunSimulation,
+        hasCustomPositions,
+        nodePositions: doubleBubbleNodes.map(n => ({
+            nodeId: n.nodeId,
+            type: n.type,
+            x: Math.round(n.x),
+            y: Math.round(n.y),
+            fx: n.fx,
+            fy: n.fy
+        }))
+    });
+    
+    // Store simulation globally for drag operations
+    window.doubleBubbleMapSimulation = simulation;
+    window.doubleBubbleMapCentralNodes = {
+        left: leftTopicNode,
+        right: rightTopicNode
+    };
+    
+    // Store column positions globally for drag constraints
+    window.doubleBubbleMapColumns = {
+        simX: simX,
+        leftDiffX: leftDiffX,
+        rightDiffX: rightDiffX,
+        leftTopicX: leftTopicX,
+        rightTopicX: rightTopicX,
+        topicY: topicY
+    };
+    
+    console.log('[DoubleBubbleMap-Renderer] 🔵 Force simulation created:', {
+        hasSimulation: !!simulation,
+        nodeCount: doubleBubbleNodes.length,
+        similarities: doubleBubbleNodes.filter(n => n.type === 'similarity').length,
+        leftDiffs: doubleBubbleNodes.filter(n => n.type === 'left_difference').length,
+        rightDiffs: doubleBubbleNodes.filter(n => n.type === 'right_difference').length,
+        columns: {
+            simX: Math.round(simX),
+            leftDiffX: Math.round(leftDiffX),
+            rightDiffX: Math.round(rightDiffX)
+        }
+    });
+    
+    // If we recalculated evenly (new nodes added), update custom positions silently
+    // This ensures positions are saved for future renders without triggering re-render loop
+    if (shouldRecalculateSimilarities || shouldRecalculateLeftDiffs || shouldRecalculateRightDiffs) {
+        console.log('[DoubleBubbleMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly');
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        // Clear old custom positions for double bubble nodes
+        Object.keys(spec._customPositions).forEach(key => {
+            if (key.startsWith('similarity_') || key.startsWith('left_diff_') || key.startsWith('right_diff_')) {
+                delete spec._customPositions[key];
+            }
+        });
+        
+        // Save all recalculated positions
+        doubleBubbleNodes.forEach(node => {
+            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
+        });
+        
+        logger.info('[DoubleBubbleMap-Renderer] Updated custom positions with evenly-spaced layout', {
+            updatedPositions: doubleBubbleNodes.length
+        });
+        console.log('[DoubleBubbleMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('similarity_') || k.startsWith('left_diff_') || k.startsWith('right_diff_')).sort());
     }
     
     // Apply learning sheet text knockout if needed
