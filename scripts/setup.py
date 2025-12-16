@@ -28,7 +28,10 @@ import platform
 import os
 import importlib
 import time
-from typing import List, Dict
+import shutil
+import zipfile
+from pathlib import Path
+from typing import List, Dict, Optional
 
 
 # Constants
@@ -38,6 +41,8 @@ CORE_DEPENDENCIES = {
     'uvicorn': 'Uvicorn',
     'starlette': 'starlette',
     'pydantic': 'pydantic',
+    'pydantic_settings': 'pydantic-settings',
+    'email_validator': 'email-validator',
     'jinja2': 'jinja2',
     
     # HTTP and networking (async)
@@ -52,7 +57,9 @@ CORE_DEPENDENCIES = {
     'langchain': 'langchain',
     'langchain_community': 'langchain-community',
     'langchain_core': 'langchain-core',
+    'langchain_openai': 'langchain-openai',
     'langgraph': 'langgraph',
+    'langgraph_checkpoint': 'langgraph-checkpoint',
     'dashscope': 'dashscope',
     
     # Configuration and environment
@@ -113,6 +120,10 @@ ESSENTIAL_DIRECTORIES = [
     "services",
     "config"
 ]
+
+# Offline Chromium installation directory
+BROWSERS_DIR = "browsers"
+CHROMIUM_DIR = os.path.join(BROWSERS_DIR, "chromium")
 
 
 class SetupError(Exception):
@@ -386,6 +397,14 @@ def check_dependencies_already_installed() -> bool:
                 from Crypto import Cipher
             elif module_name == 'jose':
                 from jose import jwt
+            elif module_name == 'pydantic_settings':
+                import pydantic_settings
+            elif module_name == 'email_validator':
+                import email_validator
+            elif module_name == 'langchain_openai':
+                import langchain_openai
+            elif module_name == 'langgraph_checkpoint':
+                import langgraph_checkpoint
             else:
                 importlib.import_module(module_name)
                 
@@ -550,6 +569,251 @@ def install_playwright() -> bool:
     return True
 
 
+def get_local_chromium_executable() -> Optional[str]:
+    """
+    Get the path to local Chromium executable if available.
+    
+    Returns:
+        str or None: Path to Chromium executable, or None if not found
+    """
+    system = platform.system().lower()
+    chromium_path = Path(CHROMIUM_DIR)
+    
+    if not chromium_path.exists():
+        return None
+    
+    if system == "windows":
+        exe_path = chromium_path / "chrome.exe"
+        return str(exe_path) if exe_path.exists() else None
+    elif system == "darwin":  # macOS
+        possible_paths = [
+            chromium_path / "chrome-mac" / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
+            chromium_path / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
+            chromium_path / "chrome"
+        ]
+        for path in possible_paths:
+            if path.exists():
+                return str(path)
+        return None
+    else:  # Linux
+        possible_paths = [
+            chromium_path / "chrome-linux" / "chrome",
+            chromium_path / "chrome"
+        ]
+        for path in possible_paths:
+            if path.exists():
+                return str(path)
+        return None
+
+
+def check_offline_chromium_installed() -> bool:
+    """
+    Check if offline Chromium is already installed in browsers/chromium/.
+    
+    Returns:
+        True if offline Chromium is installed and working, False otherwise
+    """
+    local_chromium = get_local_chromium_executable()
+    
+    if not local_chromium or not os.path.exists(local_chromium):
+        return False
+    
+    # Try to verify the executable works
+    try:
+        result = subprocess.run(
+            [local_chromium, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            version = result.stdout.strip()
+            print(f"[INFO] Found offline Chromium: {version}")
+            return True
+    except Exception:
+        pass
+    
+    return False
+
+
+def get_platform_name():
+    """Get platform name for zip extraction"""
+    system = platform.system().lower()
+    if system == "windows":
+        return "windows"
+    elif system == "darwin":
+        return "mac"
+    elif system == "linux":
+        return "linux"
+    else:
+        return system
+
+def extract_chromium_zip() -> bool:
+    """
+    Extract Chromium from multi-platform zip file if it exists.
+    Extracts only the platform-specific folder from chromium.zip.
+    
+    Returns:
+        True if extraction succeeded or zip doesn't exist, False on error
+    """
+    zip_path = Path(BROWSERS_DIR) / "chromium.zip"
+    chromium_dest_dir = Path(CHROMIUM_DIR)
+    platform_name = get_platform_name()
+    
+    # Check if zip exists
+    if not zip_path.exists():
+        return False
+    
+    print(f"\n[INFO] Found Chromium zip file: {zip_path.name}")
+    print(f"[INFO] Extracting {platform_name} platform for: {platform.system()}")
+    
+    # Check if already extracted
+    if check_offline_chromium_installed():
+        print("[INFO] Chromium already extracted - skipping")
+        return True
+    
+    try:
+        # Create browsers directory if it doesn't exist
+        browsers_path = Path(BROWSERS_DIR)
+        browsers_path.mkdir(exist_ok=True)
+        
+        # Remove existing chromium directory if it exists
+        if chromium_dest_dir.exists():
+            print("[INFO] Removing existing Chromium installation...")
+            shutil.rmtree(chromium_dest_dir)
+        
+        # Check what platforms are available in zip
+        with zipfile.ZipFile(zip_path, 'r') as zipf:
+            available_platforms = set()
+            for name in zipf.namelist():
+                if '/' in name:
+                    platform_in_zip = name.split('/')[0]
+                    if platform_in_zip in ['windows', 'linux', 'mac']:
+                        available_platforms.add(platform_in_zip)
+            
+            if available_platforms:
+                print(f"[INFO] Zip contains platforms: {', '.join(sorted(available_platforms))}")
+            
+            if platform_name not in available_platforms:
+                print(f"[ERROR] {platform_name} platform not found in zip file")
+                print(f"[INFO] Available platforms in zip: {', '.join(sorted(available_platforms))}")
+                print(f"[INFO] Your platform ({platform.system()}) requires: {platform_name}")
+                print(f"[INFO] Falling back to Playwright download...")
+                return False
+        
+        # Extract zip file (only platform-specific folder)
+        print(f"[INFO] Extracting {platform_name} platform from zip...")
+        print("    This may take a few minutes (~150MB)...")
+        
+        with zipfile.ZipFile(zip_path, 'r') as zipf:
+            # Get files for current platform
+            platform_files = [f for f in zipf.namelist() if f.startswith(f'{platform_name}/')]
+            total_files = len(platform_files)
+            extracted = 0
+            
+            # Extract only platform-specific files
+            for member in platform_files:
+                # Remove platform prefix from path
+                target_path = member[len(f'{platform_name}/'):]
+                if target_path:  # Skip empty paths
+                    # Extract to chromium directory
+                    full_path = chromium_dest_dir / target_path
+                    full_path.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Extract file (use copyfileobj for better memory efficiency)
+                    with zipf.open(member) as source:
+                        full_path.parent.mkdir(parents=True, exist_ok=True)
+                        with open(full_path, 'wb') as target:
+                            shutil.copyfileobj(source, target)
+                    
+                    extracted += 1
+                    if extracted % 100 == 0:
+                        print(f"    Progress: {extracted}/{total_files} files...", end='\r')
+        
+        # Clear progress line and print completion
+        print(f"    Progress: {extracted}/{total_files} files...")
+        print(f"\n[SUCCESS] Chromium extracted successfully!")
+        
+        # Verify installation
+        if check_offline_chromium_installed():
+            print(f"[INFO] Chromium is now available at: {CHROMIUM_DIR}")
+            return True
+        else:
+            print("[WARNING] Chromium extracted but verification failed")
+            return False
+            
+    except Exception as e:
+        print(f"[ERROR] Failed to extract Chromium zip: {e}")
+        return False
+
+
+def copy_playwright_chromium_to_offline() -> bool:
+    """
+    Copy Playwright's installed Chromium to browsers/chromium/ for offline use.
+    This is a fallback if zip extraction is not available.
+    
+    Returns:
+        True if copy succeeded, False otherwise
+    """
+    print("\n[INFO] Setting up offline Chromium installation...")
+    
+    # Check if already installed
+    if check_offline_chromium_installed():
+        print("[INFO] Offline Chromium already installed - skipping")
+        return True
+    
+    # Get Playwright's Chromium path
+    try:
+        from playwright.sync_api import sync_playwright
+        
+        with sync_playwright() as p:
+            playwright_chromium_path = p.chromium.executable_path
+            if not playwright_chromium_path or not os.path.exists(playwright_chromium_path):
+                print("[WARNING] Playwright Chromium not found - skipping offline copy")
+                return False
+            
+            print(f"[INFO] Found Playwright Chromium at: {playwright_chromium_path}")
+            
+            # Find the Chromium directory (parent of executable)
+            chromium_source_dir = os.path.dirname(playwright_chromium_path)
+            
+            # On macOS, Chromium.app is a bundle
+            if platform.system().lower() == "darwin" and chromium_source_dir.endswith(".app"):
+                chromium_source_dir = os.path.dirname(chromium_source_dir)
+            
+            # Create browsers directory if it doesn't exist
+            browsers_path = Path(BROWSERS_DIR)
+            browsers_path.mkdir(exist_ok=True)
+            
+            # Remove existing chromium directory if it exists
+            chromium_dest_dir = Path(CHROMIUM_DIR)
+            if chromium_dest_dir.exists():
+                print("[INFO] Removing existing Chromium installation...")
+                shutil.rmtree(chromium_dest_dir)
+            
+            # Copy Chromium directory
+            print(f"[INFO] Copying Chromium to {CHROMIUM_DIR}...")
+            print("    This may take a few minutes (~150MB)...")
+            
+            shutil.copytree(chromium_source_dir, chromium_dest_dir)
+            
+            # Verify installation
+            if check_offline_chromium_installed():
+                print("[SUCCESS] Offline Chromium installation complete!")
+                print(f"[INFO] Chromium is now available at: {CHROMIUM_DIR}")
+                return True
+            else:
+                print("[WARNING] Chromium copied but verification failed")
+                return False
+                
+    except ImportError:
+        print("[WARNING] Playwright not available - cannot copy Chromium")
+        return False
+    except Exception as e:
+        print(f"[WARNING] Failed to copy Chromium for offline use: {e}")
+        return False
+
+
 
 
 
@@ -599,6 +863,18 @@ def verify_dependencies() -> bool:
             elif module_name == 'jose':
                 from jose import jwt
                 version = get_package_version('python-jose')
+            elif module_name == 'pydantic_settings':
+                import pydantic_settings
+                version = get_package_version('pydantic-settings')
+            elif module_name == 'email_validator':
+                import email_validator
+                version = get_package_version('email-validator')
+            elif module_name == 'langchain_openai':
+                import langchain_openai
+                version = get_package_version('langchain-openai')
+            elif module_name == 'langgraph_checkpoint':
+                import langgraph_checkpoint
+                version = get_package_version('langgraph-checkpoint')
             else:
                 module = importlib.import_module(module_name)
                 version = get_package_version(package_name)
@@ -960,6 +1236,13 @@ def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
     else:
         print("    ⏭️  Playwright browser - Already installed (skipped)")
         
+    if setup_summary.get('offline_chromium', False):
+        print("    ✅ Offline Chromium - Installed in browsers/chromium/")
+    elif check_offline_chromium_installed():
+        print("    ⏭️  Offline Chromium - Already installed (skipped)")
+    else:
+        print("    ⏭️  Offline Chromium - Not installed (optional)")
+        
     if setup_summary['logs']:
         print("    ✅ Logging system - Configured")
     else:
@@ -973,12 +1256,14 @@ def print_next_steps() -> None:
     print("    2. Run: python run_server.py")
     print("    3. Open http://localhost:9527 in your browser")
     
-    # Show systemd hint for Linux users
+    # Show platform-specific hints
     os_name = platform.system().lower()
     if os_name == "linux":
-        print("\n[INFO] For production deployment (Linux):")
-        print("    Run: ./scripts/setup_systemd.sh")
-        print("    Then use: sudo systemctl start/stop/restart mindgraph")
+        print("\n[INFO] For Linux deployment:")
+        print("    - System dependencies: sudo bash scripts/install_linux_dependencies.sh")
+        print("    - Production deployment: ./scripts/setup_systemd.sh")
+        print("    - Then use: sudo systemctl start/stop/restart mindgraph")
+        print("    - See docs/LINUX_DEPLOYMENT.md for detailed instructions")
     
     print("\n[INFO] For more information, see README.md")
 
@@ -1023,7 +1308,8 @@ def main() -> None:
     setup_summary = {
         'python_deps': False,
         'playwright': False,
-        'logs': False
+        'logs': False,
+        'offline_chromium': False
     }
     
     try:
@@ -1041,8 +1327,38 @@ def main() -> None:
         
         # Step 3: Install Playwright
         print(f"\n[STEP 3/{SETUP_STEPS}] Playwright browser...")
-        if install_playwright():
-            setup_summary['playwright'] = True
+        
+        # First, try to extract from zip if available (fastest option)
+        chromium_from_zip = False
+        zip_path = Path(BROWSERS_DIR) / "chromium.zip"
+        
+        if zip_path.exists():
+            print(f"[INFO] Found chromium.zip - attempting extraction...")
+            try:
+                if extract_chromium_zip():
+                    chromium_from_zip = True
+                    setup_summary['offline_chromium'] = True
+                    print("[SUCCESS] Using Chromium from zip file - skipping Playwright download")
+                else:
+                    print("[WARNING] Zip extraction failed, falling back to Playwright download")
+            except Exception as e:
+                print(f"[WARNING] Error extracting zip: {e}")
+                print("[INFO] Falling back to Playwright download...")
+        else:
+            print("[INFO] No chromium.zip found - will download via Playwright")
+        
+        # If zip extraction didn't work, install via Playwright
+        if not chromium_from_zip:
+            if install_playwright():
+                setup_summary['playwright'] = True
+                
+                # Copy Chromium for offline use (optional, non-blocking)
+                try:
+                    if copy_playwright_chromium_to_offline():
+                        setup_summary['offline_chromium'] = True
+                except Exception as e:
+                    print(f"[WARNING] Offline Chromium setup skipped: {e}")
+                    print("[INFO] You can run this manually later if needed")
         
         # Step 4: Setup logging and data directories
         print(f"\n[STEP 4/{SETUP_STEPS}] Directory setup...")

@@ -101,6 +101,85 @@ def extract_json_from_response(response_content):
         return None
 
 
+def _remove_js_comments_safely(text: str) -> str:
+    """
+    Remove JavaScript-style comments from JSON, but only outside of string values.
+    
+    This function respects JSON string boundaries to avoid corrupting URLs,
+    file paths, or other string values that contain // or /* */ sequences.
+    
+    Args:
+        text: JSON text that may contain comments
+        
+    Returns:
+        Text with comments removed, but string values preserved
+    """
+    result = []
+    i = 0
+    in_string = False
+    escape_next = False
+    
+    while i < len(text):
+        char = text[i]
+        
+        if escape_next:
+            # Escaped character - add as-is and reset escape flag
+            result.append(char)
+            escape_next = False
+            i += 1
+            continue
+        
+        if char == '\\':
+            # Escape character - next char is escaped
+            result.append(char)
+            escape_next = True
+            i += 1
+            continue
+        
+        if char == '"':
+            # Toggle string state
+            in_string = not in_string
+            result.append(char)
+            i += 1
+            continue
+        
+        if in_string:
+            # Inside string - add character as-is
+            result.append(char)
+            i += 1
+            continue
+        
+        # Outside string - check for comments
+        if i < len(text) - 1 and text[i:i+2] == '//':
+            # Single-line comment - skip until end of line
+            while i < len(text) and text[i] != '\n':
+                i += 1
+            # Keep the newline if present
+            if i < len(text) and text[i] == '\n':
+                result.append('\n')
+                i += 1
+        elif i < len(text) - 1 and text[i:i+2] == '/*':
+            # Multi-line comment - skip until */
+            i += 2
+            # Continue until we find */ or reach the end of text
+            # Match single-line comment handler pattern: loop until end, always consume chars
+            while i < len(text):
+                # Check if we can look ahead for */ (need at least 2 chars: current + next)
+                # Use i + 1 < len(text) for clarity (equivalent to i < len(text) - 1)
+                if i + 1 < len(text) and text[i:i+2] == '*/':
+                    i += 2
+                    break
+                # Always consume current character (even if it's the last one)
+                # This ensures we properly skip all characters in unclosed comments
+                i += 1
+        else:
+            # Regular character - add as-is
+            result.append(char)
+            i += 1
+    
+    return ''.join(result)
+
+
 def _clean_json_string(text: str) -> str:
     """
     Clean JSON string by fixing legitimate formatting issues.
@@ -109,6 +188,7 @@ def _clean_json_string(text: str) -> str:
     - Unicode quote normalization
     - Control character removal
     - Trailing comma removal (common JSON extension)
+    - JS-style comments (only outside string values)
     
     Does NOT attempt to fix structural problems (truncated JSON, missing brackets, etc.)
     
@@ -135,9 +215,8 @@ def _clean_json_string(text: str) -> str:
     text = re.sub(r'[\u200B-\u200D\uFEFF]', '', text)
     text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', text)
     
-    # Remove JS-style comments (legitimate fix)
-    text = re.sub(r'//.*?$', '', text, flags=re.MULTILINE)
-    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+    # Remove JS-style comments (only outside string values to avoid corrupting URLs/paths)
+    text = _remove_js_comments_safely(text)
     
     # Remove trailing commas before ] or } (common JSON extension, legitimate fix)
     text = re.sub(r',\s*(\]|\})', r'\1', text)

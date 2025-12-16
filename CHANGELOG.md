@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.92] - 2025-12-16 - JSON Comment Removal Bug Fix
+
+### Fixed
+
+- **JavaScript Comment Removal** (`agents/core/agent_utils.py`)
+  - Fixed edge case in `_remove_js_comments_safely()` where unclosed multi-line comments could leave the last character unconsumed
+  - Changed condition from `i < len(text) - 1` to `i + 1 < len(text)` for clarity (functionally equivalent but more explicit)
+  - Improved comments to match single-line comment handler pattern for consistency
+  - Ensures all characters in unclosed `/*...` comments are properly skipped, preventing any characters from incorrectly appearing in output
+  - Verified with comprehensive test suite covering all edge cases (unclosed comments, comments in strings, multiple comments, etc.)
+
+---
+
 ## [4.28.91] - 2025-12-15 - Comprehensive LLM Error Handling System
 
 ### Added
