@@ -969,7 +969,7 @@ def run_capacity_test(
     duration_seconds: float,
     operations_per_user: int,
     target_workload_percent: float = 60.0,
-    step_size: int = 5,
+    step_size: int = 100,
     stabilization_time: float = 5.0,
     cleanup_after: bool = True
 ) -> Dict:
@@ -1080,8 +1080,9 @@ def run_capacity_test(
         print(f"\n{'='*80}")
         print(f"🚀 Starting Capacity Test...")
         print(f"{'='*80}\n")
+        print(f"Phase Summary Table:")
         print(f"Phase | Users | CPU % | Disk R/W MB/s | Combined % | Status")
-        print(f"{'─'*80}")
+        print(f"{'─'*80}\n")
         
         while current_users <= max_users:
             # Initialize results tracking for this phase
@@ -1116,6 +1117,28 @@ def run_capacity_test(
             disk_read_percent = 0.0
             disk_write_percent = 0.0
             combined_workload = 0.0
+            
+            # Print phase header with progress indicator
+            print(f"\n{'─'*80}")
+            print(f"📊 Phase {len(capacity_results) + 1}: Testing with {current_users} users")
+            print(f"{'─'*80}")
+            print("📊 Real-time Progress:")
+            print(f"{'─'*80}\n")
+            
+            # Start progress update thread for real-time display
+            stop_progress = threading.Event()
+            
+            def update_progress():
+                """Update progress display periodically."""
+                while not stop_progress.is_set():
+                    print_progress_bar(progress, results)
+                    time.sleep(0.5)  # Update every 0.5 seconds
+            
+            progress_thread = threading.Thread(target=update_progress, daemon=True)
+            progress_thread.start()
+            
+            # Print initial empty lines for progress display (2 lines: progress bar + system stats)
+            print("\n")
             
             # Run test phase
             phase_success = False
@@ -1194,6 +1217,20 @@ def run_capacity_test(
                 logger.error(f"Test phase failed: {e}")
                 # If phase failed, skip storing results and break
                 break
+            finally:
+                # Stop progress updates
+                stop_progress.set()
+                try:
+                    progress_thread.join(timeout=2)
+                except Exception:
+                    pass  # Thread may have already finished
+                
+                # Final progress update
+                try:
+                    print_progress_bar(progress, results)
+                    print("\n\n")  # New lines after progress bar
+                except Exception:
+                    pass  # Fallback if progress bar fails
             
             # Only store phase results if phase completed successfully
             if phase_success:
@@ -1553,46 +1590,21 @@ def main():
                 print("It will report how many users 1 worker can handle at that workload.")
                 print(f"{'='*80}\n")
                 
-                start_users = get_user_input(
-                    "Enter starting number of users",
-                    default=10,
-                    min_val=1,
-                    max_val=100
-                )
+                # Use default values - no prompts
+                start_users = 100
+                max_users = 2000
+                duration = 20
+                operations = 30
+                step_size = 100
+                target_workload = 60.0
                 
-                max_users = get_user_input(
-                    "Enter maximum users to test (safety limit)",
-                    default=200,
-                    min_val=start_users,
-                    max_val=1000
-                )
-                
-                duration = get_user_input(
-                    "Enter test duration per phase in seconds",
-                    default=15,
-                    min_val=5,
-                    max_val=120
-                )
-                
-                operations = get_user_input(
-                    "Enter maximum operations per user",
-                    default=20,
-                    min_val=1,
-                    max_val=1000
-                )
-                
-                step_size_input = input(f"Enter step size (users to add per increment, default: 5): ").strip()
-                step_size = int(step_size_input) if step_size_input.isdigit() else 5
-                if step_size < 1 or step_size > 50:
-                    print(f"Invalid step_size, using default: 5")
-                    step_size = 5
-                
-                target_workload_input = input(f"Enter target workload percentage (default: 60): ").strip()
-                target_workload = float(target_workload_input) if target_workload_input.replace('.', '').isdigit() else 60.0
-                if target_workload < 10 or target_workload > 90:
-                    print(f"Invalid target workload, using default: 60%")
-                    target_workload = 60.0
-                
+                print(f"Using default parameters:")
+                print(f"  Starting users: {start_users}")
+                print(f"  Maximum users: {max_users}")
+                print(f"  Duration per phase: {duration} seconds")
+                print(f"  Operations per user: {operations}")
+                print(f"  Step size: {step_size}")
+                print(f"  Target workload: {target_workload}%")
                 print(f"\n{'='*80}")
                 print("Starting capacity test...")
                 print(f"{'='*80}\n")
