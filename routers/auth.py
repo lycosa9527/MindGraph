@@ -282,6 +282,16 @@ async def register(
         max_age=7 * 24 * 60 * 60  # 7 days
     )
     
+    # Set flag cookie to indicate new login session (for AI disclaimer notification)
+    response.set_cookie(
+        key="show_ai_disclaimer",
+        value="true",
+        httponly=False,  # Allow JavaScript to read it
+        secure=is_https(http_request),
+        samesite="lax",
+        max_age=60 * 60  # 1 hour (should be cleared after showing notification)
+    )
+    
     logger.info(f"User registered: {new_user.phone} (Org: {org.code})")
     
     return {
@@ -467,6 +477,16 @@ async def login(
         secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
+    )
+    
+    # Set flag cookie to indicate new login session (for AI disclaimer notification)
+    response.set_cookie(
+        key="show_ai_disclaimer",
+        value="true",
+        httponly=False,  # Allow JavaScript to read it
+        secure=is_https(http_request),
+        samesite="lax",
+        max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
     logger.info(f"User logged in: {user.phone}")
@@ -1291,6 +1311,16 @@ async def register_with_sms(
         max_age=7 * 24 * 60 * 60  # 7 days
     )
     
+    # Set flag cookie to indicate new login session (for AI disclaimer notification)
+    response.set_cookie(
+        key="show_ai_disclaimer",
+        value="true",
+        httponly=False,  # Allow JavaScript to read it
+        secure=is_https(http_request),
+        samesite="lax",
+        max_age=60 * 60  # 1 hour (should be cleared after showing notification)
+    )
+    
     logger.info(f"User registered via SMS: {new_user.phone} (Org: {org.code})")
     
     return {
@@ -1388,6 +1418,16 @@ async def login_with_sms(
         secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60
+    )
+    
+    # Set flag cookie to indicate new login session (for AI disclaimer notification)
+    response.set_cookie(
+        key="show_ai_disclaimer",
+        value="true",
+        httponly=False,  # Allow JavaScript to read it
+        secure=is_https(http_request),
+        samesite="lax",
+        max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
     logger.info(f"User logged in via SMS: {user.phone}")
@@ -1604,6 +1644,16 @@ async def verify_demo(
         secure=is_https(request),  # SECURITY: Auto-detect HTTPS
         samesite="lax",
         max_age=7 * 24 * 60 * 60  # 7 days
+    )
+    
+    # Set flag cookie to indicate new login session (for AI disclaimer notification)
+    response.set_cookie(
+        key="show_ai_disclaimer",
+        value="true",
+        httponly=False,  # Allow JavaScript to read it
+        secure=is_https(request),
+        samesite="lax",
+        max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
     log_msg = f"{AUTH_MODE.upper()} {'ADMIN' if is_admin_access else ''} access granted"

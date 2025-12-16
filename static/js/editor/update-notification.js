@@ -370,7 +370,7 @@ updateNotificationStyles.textContent = `
         font-size: 24px;
         font-weight: 700;
         margin: 0 0 8px 0;
-        font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+        font-family: 'Inter', 'Source Han Sans SC', 'Noto Sans SC', sans-serif;
     }
     
     .update-notification-version {
@@ -404,7 +404,7 @@ updateNotificationStyles.textContent = `
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
-        font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+        font-family: 'Inter', 'Source Han Sans SC', 'Noto Sans SC', sans-serif;
     }
     
     .update-notification-close-btn:hover {

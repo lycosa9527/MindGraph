@@ -348,7 +348,7 @@ class NodePropertyOperationsManager {
         // Standard defaults used across all diagram types
         const standardDefaults = {
             fontSize: '14',
-            fontFamily: "'Microsoft YaHei', sans-serif",
+            fontFamily: "Inter, sans-serif",
             textColor: '#000000',
             fillColor: '#2196f3',
             strokeColor: '#1976d2',

@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.95] - 2025-12-17 - AI Disclaimer Notification & Font Compliance Updates
+
+### Added
+
+- **AI Disclaimer Notification** (`static/js/editor/ai-disclaimer-notification.js`)
+  - Small notification popup displayed when users re-login to gallery page
+  - Shows message: "本产品内容由AI自动生成，请您根据国家法律法规规范使用。"
+  - Appears in bottom-right corner with smooth fade-in animation
+  - Auto-dismisses after 5 seconds or can be manually closed
+  - Uses cookie-based tracking (`show_ai_disclaimer`) to show once per login session
+  - Works for all login methods (regular login, demo login, SMS login, Bayi login)
+  - Styled with light background matching application theme
+
+- **ICP License Footer** (`templates/auth.html`, `templates/demo-login.html`)
+  - Added ICP license number footer at bottom of authentication pages
+  - Displays: "京ICP备2025126228号-1"
+  - Styled with gradient background blending into page theme
+  - Fixed position at bottom, responsive design for mobile devices
+
+- **Font License Attribution** (`NOTICE`)
+  - Added Inter font attribution to comply with SIL Open Font License requirements
+  - Includes copyright notice: "Copyright 2020 The Inter Project Authors"
+  - Links to Inter font project repository
+
+### Changed
+
+- **Font Default Values** (`static/js/editor/toolbar-manager.js`, `static/js/managers/toolbar/property-panel-manager.js`, `static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Changed default font from `'Microsoft YaHei', sans-serif` to `Inter, sans-serif`
+  - Updated all font fallback defaults to use Inter font
+  - Ensures consistent font rendering across all platforms
+
+- **Property Panel Font Selection** (`templates/editor.html`)
+  - Removed "微软雅黑" (Microsoft YaHei) option from font dropdown
+  - Added `selected` attribute to Inter option as default value
+  - Font dropdown now shows Inter as default selection
+
+- **Login Cookie Tracking** (`routers/auth.py`, `routers/pages.py`)
+  - Added `show_ai_disclaimer` cookie flag on all login endpoints
+  - Cookie set to `true` when user authenticates (1 hour expiration)
+  - Cleared by client-side notification manager after displaying
+  - Ensures notification shows once per login session
+
+### Fixed
+
+- **Font Copyright Compliance**
+  - Verified all fonts are properly licensed
+  - Inter font: SIL Open Font License (compliant)
+  - Microsoft YaHei: Used only as CSS fallback (compliant)
+  - System fonts: Used only as fallbacks (compliant)
+  - No copyright issues detected
+
+---
+
 ## [4.28.94] - 2025-12-17 - Comprehensive SMS Error Handling & Multi-Language Support
 
 ### Added

@@ -829,7 +829,6 @@
                         <label for="prop-font-family">字体</label>
                         <select id="prop-font-family" name="prop-font-family" class="prop-select">
                             <optgroup label="中文字体">
-                                <option value="'Microsoft YaHei', sans-serif">微软雅黑</option>
                                 <option value="'Source Han Sans SC', 'Noto Sans SC', sans-serif">思源黑体</option>
                                 <option value="'Source Han Serif SC', 'Noto Serif SC', serif">思源宋体</option>
                                 <option value="'Alibaba PuHuiTi', sans-serif">阿里巴巴普惠体</option>
@@ -839,7 +838,7 @@
                                 <option value="'FangSong', serif">仿宋</option>
                             </optgroup>
                             <optgroup label="英文字体">
-                                <option value="Inter, sans-serif">Inter</option>
+                                <option value="Inter, sans-serif" selected>Inter</option>
                                 <option value="Arial, sans-serif">Arial</option>
                                 <option value="Georgia, serif">Georgia</option>
                                 <option value="'Courier New', monospace">Courier New</option>
@@ -1217,6 +1216,9 @@
     
     <!-- Update Notification (shows modal after login if there's an update) -->
     <script src="/static/js/editor/update-notification.js?v={{ version }}"></script>
+    
+    <!-- AI Disclaimer Notification (shows small popup when user re-logins) -->
+    <script src="/static/js/editor/ai-disclaimer-notification.js?v={{ version }}"></script>
     
     <!-- Black Cat VoiceAgent Initialization -->
     <script>

@@ -74,6 +74,12 @@ D3.js - BSD 3-Clause License
   Copyright (c) 2010-2023, Michael Bostock
   https://d3js.org/
 
+Inter Font Family - SIL Open Font License v1.1
+  Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+  https://rsms.me/inter/
+  Licensed under SIL Open Font License v1.1
+  Font files located in: static/fonts/
+
 For a complete list of dependencies, see requirements.txt
 
 ===============================================================================

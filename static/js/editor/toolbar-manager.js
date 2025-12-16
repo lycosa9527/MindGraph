@@ -663,7 +663,7 @@ class ToolbarManager {
         
         // Reset font properties to defaults
         if (this.propFontSize) this.propFontSize.value = 14;
-        if (this.propFontFamily) this.propFontFamily.value = "'Microsoft YaHei', sans-serif";
+        if (this.propFontFamily) this.propFontFamily.value = "Inter, sans-serif";
         
         // Reset colors to defaults
         if (this.propTextColor) this.propTextColor.value = '#000000';
@@ -762,7 +762,7 @@ class ToolbarManager {
         
         // Get text attributes (with fallbacks if text element not found)
         const fontSize = textElement && !textElement.empty() ? (textElement.attr('font-size') || '14') : '14';
-        const fontFamily = textElement && !textElement.empty() ? (textElement.attr('font-family') || "'Microsoft YaHei', sans-serif") : "'Microsoft YaHei', sans-serif";
+        const fontFamily = textElement && !textElement.empty() ? (textElement.attr('font-family') || "Inter, sans-serif") : "Inter, sans-serif";
         const textColor = textElement && !textElement.empty() ? (textElement.attr('fill') || '#000000') : '#000000';
         const fontWeight = textElement && !textElement.empty() ? (textElement.attr('font-weight') || 'normal') : 'normal';
         const fontStyle = textElement && !textElement.empty() ? (textElement.attr('font-style') || 'normal') : 'normal';

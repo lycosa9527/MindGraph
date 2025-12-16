@@ -495,6 +495,15 @@ async def login_by_xz(
                 samesite="lax",
                 max_age=7 * 24 * 60 * 60  # 7 days
             )
+            # Set flag cookie to indicate new login session (for AI disclaimer notification)
+            redirect_response.set_cookie(
+                key="show_ai_disclaimer",
+                value="true",
+                httponly=False,  # Allow JavaScript to read it
+                secure=is_https(request),
+                samesite="lax",
+                max_age=60 * 60  # 1 hour (should be cleared after showing notification)
+            )
             return redirect_response
         
         # Priority 2: Token authentication (existing flow)
@@ -592,6 +601,15 @@ async def login_by_xz(
             secure=is_https(request),  # SECURITY: Auto-detect HTTPS
             samesite="lax",
             max_age=7 * 24 * 60 * 60  # 7 days
+        )
+        # Set flag cookie to indicate new login session (for AI disclaimer notification)
+        redirect_response.set_cookie(
+            key="show_ai_disclaimer",
+            value="true",
+            httponly=False,  # Allow JavaScript to read it
+            secure=is_https(request),
+            samesite="lax",
+            max_age=60 * 60  # 1 hour (should be cleared after showing notification)
         )
         return redirect_response
         
