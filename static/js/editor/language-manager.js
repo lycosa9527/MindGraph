@@ -719,6 +719,8 @@ class LanguageManager {
                 switchLanguageTooltip: 'Dili Dəyişdir',
                 share: 'Paylaş',
                 shareTooltip: 'Paylaş',
+                logout: 'Çıxış',
+                logoutTooltip: 'Çıxış',
                 gallery: 'Qalereya',
                 galleryTooltip: 'Qalereya',
                 admin: '后台',
@@ -1127,10 +1129,16 @@ class LanguageManager {
         if (logoutBtn) {
             const langEnSpan = logoutBtn.querySelector('.lang-en');
             const langZhSpan = logoutBtn.querySelector('.lang-zh');
+            const langAzSpan = logoutBtn.querySelector('.lang-az');
             
-            if (langEnSpan && langZhSpan) {
+            if (langEnSpan) {
                 langEnSpan.style.display = this.currentLanguage === 'en' ? 'inline' : 'none';
+            }
+            if (langZhSpan) {
                 langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
+            }
+            if (langAzSpan) {
+                langAzSpan.style.display = this.currentLanguage === 'az' ? 'inline' : 'none';
             }
             logoutBtn.dataset.tooltip = t.logoutTooltip;
         }
