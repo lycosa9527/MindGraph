@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.93] - 2025-12-17 - Multi-Platform Chromium Zip Support & Version Detection
+
+### Added
+
+- **Multi-Platform Chromium Zip Support** (`scripts/setup.py`)
+  - Added `extract_chromium_zip()` function to extract platform-specific Chromium from multi-platform zip
+  - Supports Windows, Linux, and macOS platforms in a single `chromium.zip` file
+  - Automatic platform detection and extraction (only extracts needed platform)
+  - Fast offline installation (~30 seconds vs 5-10 minutes download)
+  - Falls back to Playwright download if zip not found or extraction fails
+  - Verifies installation after extraction
+
+- **Browser Version Detection & Comparison** (`services/browser.py`)
+  - Added `_get_chromium_version()` function with multiple fallback methods:
+    - Playwright browser launch (most reliable)
+    - `--version` flag execution
+    - Revision number extraction from path (fallback)
+  - Added `_compare_versions()` function to compare version strings and revision numbers
+  - Added `_get_best_chromium_executable()` function to automatically select newer browser
+  - Compares local packed browser vs Playwright's managed browser
+  - Prefers newer version automatically
+  - Handles both full version strings (e.g., "141.0.7390.37") and revision numbers (e.g., "1194")
+  - Logs which browser is selected and why
+
+- **Browser Packaging Script** (`scripts/package_browsers.py`)
+  - Creates single multi-platform `chromium.zip` containing Windows, Linux, and macOS binaries
+  - Downloads browsers for all platforms from Playwright CDN
+  - Platform-specific folders in zip (windows/, linux/, mac/)
+  - Updates existing zip files by replacing platform-specific folders
+  - Progress indicators during packaging
+
+- **Linux Dependencies Installer** (`scripts/install_linux_dependencies.sh`)
+  - Standalone script for manual Linux dependency installation
+  - Supports Debian/Ubuntu, RHEL/CentOS/Fedora, and Arch Linux
+  - Detects distribution automatically
+  - Falls back to Playwright's `install-deps` for unsupported distros
+  - Useful when Playwright's automatic installer fails
+
+- **Documentation**
+  - `docs/MULTI_PLATFORM_ZIP_GUIDE.md` - Guide for creating and using multi-platform zip
+  - `docs/LINUX_DEPLOYMENT.md` - Updated Linux deployment guide
+  - `docs/OFFLINE_BROWSER_INSTALLATION.md` - Offline browser installation documentation
+
+### Changed
+
+- **Setup Script** (`scripts/setup.py`)
+  - Now checks for `chromium.zip` first before downloading via Playwright
+  - Improved error messages and fallback handling
+  - Optimized zip extraction using `shutil.copyfileobj()` for better memory efficiency
+  - Better progress indicators during extraction
+
+- **Browser Manager** (`services/browser.py`)
+  - Now uses `_get_best_chromium_executable()` instead of just checking for local browser
+  - Automatically selects best available browser (newer version preferred)
+  - Improved logging for browser selection
+
+- **Gitignore** (`.gitignore`)
+  - Added `browsers/` directory to ignore extracted Chromium binaries
+  - Added `browsers/*.zip` to ignore zip files
+  - Added `chromium.zip` explicitly
+
+### Removed
+
+- **Redundant Script** (`scripts/download_chromium.py`)
+  - Removed as functionality is now integrated into `setup.py`
+  - `copy_playwright_chromium_to_offline()` in `setup.py` provides same functionality
+  - Updated all documentation references
+
+### Fixed
+
+- **Code Quality Improvements**
+  - Fixed comment numbering in version detection (Method 3 → Method 2)
+  - Removed duplicate version retrieval logic
+  - Fixed progress indicator completion in zip extraction
+  - Improved error handling and logging
+
+---
+
 ## [4.28.92] - 2025-12-16 - JSON Comment Removal Bug Fix
 
 ### Fixed
