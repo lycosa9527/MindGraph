@@ -402,9 +402,9 @@ def check_dependencies_already_installed() -> bool:
             elif module_name == 'email_validator':
                 import email_validator
             elif module_name == 'langchain_openai':
-                import langchain_openai
+                importlib.import_module('langchain_openai')
             elif module_name == 'langgraph_checkpoint':
-                import langgraph_checkpoint
+                importlib.import_module('langgraph_checkpoint')
             else:
                 importlib.import_module(module_name)
                 
@@ -870,10 +870,10 @@ def verify_dependencies() -> bool:
                 import email_validator
                 version = get_package_version('email-validator')
             elif module_name == 'langchain_openai':
-                import langchain_openai
+                importlib.import_module('langchain_openai')
                 version = get_package_version('langchain-openai')
             elif module_name == 'langgraph_checkpoint':
-                import langgraph_checkpoint
+                importlib.import_module('langgraph_checkpoint')
                 version = get_package_version('langgraph-checkpoint')
             else:
                 module = importlib.import_module(module_name)
