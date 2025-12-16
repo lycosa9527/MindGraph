@@ -1075,7 +1075,6 @@ def run_capacity_test(
         
         current_users = start_users
         capacity_results = []
-        max_workers = 1  # Testing with 1 worker
         
         print(f"\n{'='*80}")
         print(f"🚀 Starting Capacity Test...")
@@ -1085,6 +1084,8 @@ def run_capacity_test(
         print(f"{'─'*80}\n")
         
         while current_users <= max_users:
+            # Allow all users to run concurrently to properly test concurrent load
+            max_workers = current_users
             # Initialize results tracking for this phase
             results = {
                 "generate_code": OperationResult("generate_code"),
