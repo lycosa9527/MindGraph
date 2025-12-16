@@ -89,7 +89,7 @@ class LanguageManager {
                 auto: 'Auto',
                 line: 'Line',
                 learn: 'Learn',
-                thinking: 'ThinkGuide',
+                thinking: 'Node Palette',
                 tools: 'Actions',
                 empty: 'Empty',
                 undo: 'Undo',
@@ -129,10 +129,40 @@ class LanguageManager {
                 autoCompleteTooltip: 'Auto-complete diagram with AI',
                 lineModeTooltip: 'Toggle black & white line mode',
                 learningModeTooltip: 'Start Interactive Learning Mode',
-                thinkingModeTooltip: 'Start Socratic Thinking Mode',
+                thinkingModeTooltip: 'Explore more node ideas with AI',
                 nodePaletteTooltip: 'Open Node Palette to brainstorm nodes with AI',
-                thinkingModeTitle: 'ThinkGuide - Thinking Guide',
+                thinkingModeTitle: 'Node Palette',
                 thinkingInputPlaceholder: 'Type your response...',
+                // Node Palette UI
+                nodePaletteSelected: 'Selected',
+                nodePaletteCancel: 'Cancel',
+                nodePaletteNext: 'Next',
+                nodePaletteNextSelected: (count) => `Next (${count} selected)`,
+                nodePaletteFinishSelection: 'Finish Selection',
+                nodePaletteNextSelectDimension: '📐 Next: Select Dimension →',
+                nodePaletteNextSelectCategories: '📂 Next: Select Categories →',
+                nodePaletteNextSelectParts: '🧩 Next: Select Parts →',
+                nodePaletteNextSelectBranches: '🌿 Next: Select Branches →',
+                nodePaletteNextSelectSteps: '📝 Next: Select Steps →',
+                nodePalettePairs: ' pairs',
+                nodePaletteStage: (stageNum) => `Stage ${stageNum}: `,
+                nodePaletteTabSimilarities: 'Similarities',
+                nodePaletteTabDifferences: 'Differences',
+                nodePaletteTabDimensions: 'Dimensions',
+                nodePaletteTabCategories: 'Categories',
+                nodePaletteTabChildren: 'Children',
+                nodePaletteTabParts: 'Parts',
+                nodePaletteTabSubparts: 'Subparts',
+                nodePaletteTabBranches: 'Branches',
+                nodePaletteTabSteps: 'Steps',
+                nodePaletteTabSubsteps: 'Substeps',
+                nodePaletteTabCauses: 'Causes',
+                nodePaletteTabEffects: 'Effects',
+                nodePaletteStage2GenerateCategories: 'Stage 2: Generate Categories',
+                nodePaletteStage3AddItems: (count) => `Stage 3: Add Items to ${count} Categories`,
+                nodePaletteStage2GenerateParts: 'Stage 2: Generate Parts',
+                nodePaletteStage3AddSubparts: (count) => `Stage 3: Add Subparts to ${count} Parts`,
+                nodePaletteStage2AddChildren: (count) => `Stage 2: Add Children to ${count} Branches`,
                 // Learning Mode UI
                 learningModeTitle: 'Learning Mode',
                 learningModeProgress: (current, total) => `Question <strong>${current}</strong> of <strong>${total}</strong>`,
@@ -367,7 +397,7 @@ class LanguageManager {
                 auto: '自动',
                 line: '线稿',
                 learn: '学习',
-                thinking: '思维向导',
+                thinking: '瀑布流',
                 tools: '操作',
                 empty: '清空',
                 undo: '撤销',
@@ -407,10 +437,40 @@ class LanguageManager {
                 autoCompleteTooltip: '使用AI自动完成图示',
                 lineModeTooltip: '切换黑白线稿模式',
                 learningModeTooltip: '开始交互式学习模式',
-                thinkingModeTooltip: '开始苏格拉底式思维模式',
+                thinkingModeTooltip: '使用AI探索更多节点想法',
                 nodePaletteTooltip: '打开瀑布流，AI为您头脑风暴更多节点',
-                thinkingModeTitle: '思维向导',
+                thinkingModeTitle: '瀑布流',
                 thinkingInputPlaceholder: '输入你的回答...',
+                // Node Palette UI | 节点选择板界面
+                nodePaletteSelected: '已选择',
+                nodePaletteCancel: '取消',
+                nodePaletteNext: '下一步',
+                nodePaletteNextSelected: (count) => `下一步 (已选择 ${count})`,
+                nodePaletteFinishSelection: '完成选择',
+                nodePaletteNextSelectDimension: '📐 下一步：选择维度 →',
+                nodePaletteNextSelectCategories: '📂 下一步：选择类别 →',
+                nodePaletteNextSelectParts: '🧩 下一步：选择部分 →',
+                nodePaletteNextSelectBranches: '🌿 下一步：选择分支 →',
+                nodePaletteNextSelectSteps: '📝 下一步：选择步骤 →',
+                nodePalettePairs: '对',
+                nodePaletteStage: (stageNum) => `阶段 ${stageNum}：`,
+                nodePaletteTabSimilarities: '相似点',
+                nodePaletteTabDifferences: '差异点',
+                nodePaletteTabDimensions: '维度',
+                nodePaletteTabCategories: '类别',
+                nodePaletteTabChildren: '子项',
+                nodePaletteTabParts: '部分',
+                nodePaletteTabSubparts: '子部分',
+                nodePaletteTabBranches: '分支',
+                nodePaletteTabSteps: '步骤',
+                nodePaletteTabSubsteps: '子步骤',
+                nodePaletteTabCauses: '原因',
+                nodePaletteTabEffects: '结果',
+                nodePaletteStage2GenerateCategories: '阶段 2：生成类别',
+                nodePaletteStage3AddItems: (count) => `阶段 3：向 ${count} 个类别添加项目`,
+                nodePaletteStage2GenerateParts: '阶段 2：生成部分',
+                nodePaletteStage3AddSubparts: (count) => `阶段 3：向 ${count} 个部分添加子部分`,
+                nodePaletteStage2AddChildren: (count) => `阶段 2：向 ${count} 个分支添加子项`,
                 // Learning Mode UI | 学习模式界面
                 learningModeTitle: '学习模式',
                 learningModeProgress: (current, total) => `问题 <strong>${current}</strong> / <strong>${total}</strong>`,
@@ -1276,7 +1336,7 @@ class LanguageManager {
         // Update Node Palette title
         const nodePaletteTitle = document.querySelector('.node-palette-title h3');
         if (nodePaletteTitle) {
-            nodePaletteTitle.textContent = t.nodePalette;
+            nodePaletteTitle.textContent = t.nodePalette || t.thinkingModeTitle;
         }
         
         // Update Node Palette button text and tooltip
@@ -1287,6 +1347,23 @@ class LanguageManager {
         const nodePaletteTooltip = document.getElementById('node-palette-tooltip');
         if (nodePaletteTooltip) {
             nodePaletteTooltip.textContent = t.nodePaletteTooltip;
+        }
+        
+        // Update Node Palette buttons
+        const cancelPaletteBtn = document.getElementById('cancel-palette-btn');
+        if (cancelPaletteBtn && (!cancelPaletteBtn.textContent || cancelPaletteBtn.textContent.trim() === '')) {
+            cancelPaletteBtn.textContent = t.nodePaletteCancel;
+        }
+        
+        const finishSelectionBtn = document.getElementById('finish-selection-btn');
+        if (finishSelectionBtn && (!finishSelectionBtn.textContent || finishSelectionBtn.textContent.trim() === '')) {
+            finishSelectionBtn.textContent = t.nodePaletteNext;
+        }
+        
+        // Update selection counter initial text
+        const selectionCounter = document.getElementById('selection-counter');
+        if (selectionCounter && (!selectionCounter.textContent || selectionCounter.textContent.trim() === '')) {
+            selectionCounter.textContent = `${t.nodePaletteSelected}: 0/0`;
         }
         
         // Update Properties Panel

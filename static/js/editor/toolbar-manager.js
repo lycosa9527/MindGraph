@@ -110,7 +110,7 @@ class ToolbarManager {
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.lineModeBtn = document.getElementById('line-mode-btn');
         this.learningBtn = document.getElementById('learning-btn');  // 🆕 Learning Mode button
-        this.thinkingBtn = document.getElementById('thinking-btn');  // 🆕 ThinkGuide button
+        this.thinkingBtn = document.getElementById('thinking-btn');  // 🆕 Node Palette button
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.emptyNodeBtn = document.getElementById('empty-node-btn');
         this.flowMapOrientationBtn = document.getElementById('flow-map-orientation-btn');
@@ -1722,11 +1722,11 @@ class ToolbarManager {
     }
     
     /**
-     * Handle Thinking Mode (ThinkGuide) button click - EVENT BUS WRAPPER
+     * Handle Node Palette button click - EVENT BUS WRAPPER
      */
     async handleThinkingMode() {
         window.eventBus.emit('thinking_mode:toggle_requested', {});
-        logger.debug('ToolbarManager', 'Thinking mode toggle requested via Event Bus');
+        logger.debug('ToolbarManager', 'Node Palette toggle requested via Event Bus');
     }
     
     /**

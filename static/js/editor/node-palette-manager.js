@@ -26,6 +26,8 @@ class NodePaletteManager {
         this.diagramData = null;
         this.diagramType = null;  // Track diagram type
         this.isLoadingBatch = false;  // Prevent duplicate batch requests
+        this.lastNodeReceivedTime = null;  // Track when last node was received
+        this.nodeStreamingTimeout = null;  // Timeout to detect when streaming stops
         
         // Tab management for double bubble map and multi flow map
         this.currentTab = null;  // Will be set dynamically based on diagram type
@@ -365,7 +367,7 @@ class NodePaletteManager {
             this.currentBatch = 0;
             
             // Show stage transition animation
-            this.showStageTransition('Stage 2: Generate Categories');
+            this.showStageTransition(this.getTranslation('nodePaletteStage2GenerateCategories'));
             
             // Update button text
             this.updateStageProgressButton();
@@ -445,7 +447,7 @@ class NodePaletteManager {
             this.attachTabButtonListeners();
             
             // Show stage transition animation
-            this.showStageTransition(`Stage 3: Add Items to ${selectedCategories.length} Categories`);
+            this.showStageTransition(this.getTranslation('nodePaletteStage3AddItems', selectedCategories.length));
             
             // Update button text
             this.updateStageProgressButton();
@@ -532,7 +534,7 @@ class NodePaletteManager {
             this.currentBatch = 0;
             
             // Show stage transition animation
-            this.showStageTransition('Stage 2: Generate Parts');
+            this.showStageTransition(this.getTranslation('nodePaletteStage2GenerateParts'));
             
             // Update button text
             this.updateStageProgressButton();
@@ -889,6 +891,52 @@ class NodePaletteManager {
     }
     
     /**
+     * Get translation function
+     */
+    getTranslation(key, ...args) {
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        const t = window.languageManager?.translations[lang];
+        if (!t || !t[key]) {
+            console.warn(`[NodePalette] Translation missing for key: ${key}`);
+            return key;
+        }
+        return typeof t[key] === 'function' ? t[key](...args) : t[key];
+    }
+    
+    /**
+     * Get tab label translation
+     */
+    getTabLabelTranslation(tabName) {
+        const translationKey = `nodePaletteTab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`;
+        const translation = this.getTranslation(translationKey);
+        // If translation not found, return capitalized tab name
+        return translation !== translationKey ? translation : tabName.charAt(0).toUpperCase() + tabName.slice(1);
+    }
+    
+    /**
+     * Get tab label with emoji
+     */
+    getTabLabelWithEmoji(tabName) {
+        const emojiMap = {
+            'similarities': '🔗',
+            'differences': '⚖️',
+            'dimensions': '📐',
+            'categories': '📂',
+            'children': '📄',
+            'parts': '🧩',
+            'subparts': '🔧',
+            'branches': '🌿',
+            'steps': '📝',
+            'substeps': '▶️',
+            'causes': '⬅️',
+            'effects': '➡️'
+        };
+        const emoji = emojiMap[tabName] || '';
+        const label = this.getTabLabelTranslation(tabName);
+        return `${emoji} ${label}`;
+    }
+    
+    /**
      * Update the Finish/Next button based on current stage
      */
     updateStageProgressButton() {
@@ -897,33 +945,33 @@ class NodePaletteManager {
         
         if (this.diagramType === 'tree_map') {
             if (this.currentStage === 'dimensions') {
-                finishBtn.textContent = '📐 Next: Select Dimension →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectDimension');
             } else if (this.currentStage === 'categories') {
-                finishBtn.textContent = '📂 Next: Select Categories →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectCategories');
             } else if (this.currentStage === 'children') {
-                finishBtn.textContent = '✅ Finish Selection';
+                finishBtn.textContent = this.getTranslation('nodePaletteFinishSelection');
             }
         } else if (this.diagramType === 'brace_map') {
             if (this.currentStage === 'dimensions') {
-                finishBtn.textContent = '📐 Next: Select Dimension →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectDimension');
             } else if (this.currentStage === 'parts') {
-                finishBtn.textContent = '🧩 Next: Select Parts →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectParts');
             } else if (this.currentStage === 'subparts') {
-                finishBtn.textContent = '✅ Finish Selection';
+                finishBtn.textContent = this.getTranslation('nodePaletteFinishSelection');
             }
         } else if (this.diagramType === 'mindmap') {
             if (this.currentStage === 'branches') {
-                finishBtn.textContent = '🌿 Next: Select Branches →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectBranches');
             } else if (this.currentStage === 'children') {
-                finishBtn.textContent = '✅ Finish Selection';
+                finishBtn.textContent = this.getTranslation('nodePaletteFinishSelection');
             }
         } else if (this.diagramType === 'flow_map') {
             if (this.currentStage === 'dimensions') {
-                finishBtn.textContent = '📐 Next: Select Dimension →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectDimension');
             } else if (this.currentStage === 'steps') {
-                finishBtn.textContent = '📝 Next: Select Steps →';
+                finishBtn.textContent = this.getTranslation('nodePaletteNextSelectSteps');
             } else if (this.currentStage === 'substeps') {
-                finishBtn.textContent = '✅ Finish Selection';
+                finishBtn.textContent = this.getTranslation('nodePaletteFinishSelection');
             }
         }
     }
@@ -1188,7 +1236,7 @@ class NodePaletteManager {
                 // Add suffix for differences tab in double bubble map
                 let suffix = '';
                 if (this.diagramType === 'double_bubble_map' && tabName === 'differences') {
-                    suffix = ' pairs';
+                    suffix = this.getTranslation('nodePalettePairs');
                 }
                 
                 countElement.textContent = count > 0 ? `${count}${suffix}` : `0${suffix}`;
@@ -1247,33 +1295,33 @@ class NodePaletteManager {
         let tabs = [];
         if (this.diagramType === 'double_bubble_map') {
             tabs = [
-                { id: 'similarities', label: '🔗 Similarities', counterId: 'count-similarities', counterSuffix: '' },
-                { id: 'differences', label: '⚖️ Differences', counterId: 'count-differences', counterSuffix: ' pairs' }
+                { id: 'similarities', label: this.getTabLabelWithEmoji('similarities'), counterId: 'count-similarities', counterSuffix: '' },
+                { id: 'differences', label: this.getTabLabelWithEmoji('differences'), counterId: 'count-differences', counterSuffix: this.getTranslation('nodePalettePairs') }
             ];
         } else if (this.diagramType === 'multi_flow_map') {
             tabs = [
-                { id: 'causes', label: '⬅️ Causes', counterId: 'count-causes', counterSuffix: '' },
-                { id: 'effects', label: '➡️ Effects', counterId: 'count-effects', counterSuffix: '' }
+                { id: 'causes', label: this.getTabLabelWithEmoji('causes'), counterId: 'count-causes', counterSuffix: '' },
+                { id: 'effects', label: this.getTabLabelWithEmoji('effects'), counterId: 'count-effects', counterSuffix: '' }
             ];
         } else if (this.diagramType === 'tree_map') {
             tabs = [
-                { id: 'dimensions', label: '📐 Dimensions', counterId: 'count-dimensions', counterSuffix: '' },
-                { id: 'categories', label: '📂 Categories', counterId: 'count-categories', counterSuffix: '' },
-                { id: 'children', label: '📄 Items', counterId: 'count-children', counterSuffix: '' }
+                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '' },
+                { id: 'categories', label: this.getTabLabelWithEmoji('categories'), counterId: 'count-categories', counterSuffix: '' },
+                { id: 'children', label: this.getTabLabelWithEmoji('children'), counterId: 'count-children', counterSuffix: '' }
             ];
         } else if (this.diagramType === 'brace_map') {
             tabs = [
-                { id: 'dimensions', label: '📐 Dimensions', counterId: 'count-dimensions', counterSuffix: '' },
-                { id: 'parts', label: '🧩 Parts', counterId: 'count-parts', counterSuffix: '' }
+                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '' },
+                { id: 'parts', label: this.getTabLabelWithEmoji('parts'), counterId: 'count-parts', counterSuffix: '' }
             ];
         } else if (this.diagramType === 'mindmap') {
             tabs = [
-                { id: 'branches', label: '🌿 Branches', counterId: 'count-branches', counterSuffix: '' }
+                { id: 'branches', label: this.getTabLabelWithEmoji('branches'), counterId: 'count-branches', counterSuffix: '' }
             ];
         } else if (this.diagramType === 'flow_map') {
             tabs = [
-                { id: 'dimensions', label: '📐 Dimensions', counterId: 'count-dimensions', counterSuffix: '' },
-                { id: 'steps', label: '📝 Steps', counterId: 'count-steps', counterSuffix: '' }
+                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '' },
+                { id: 'steps', label: this.getTabLabelWithEmoji('steps'), counterId: 'count-steps', counterSuffix: '' }
             ];
         } else {
             console.warn('[NodePalette] Unknown diagram type for tabs:', this.diagramType);
@@ -1325,31 +1373,31 @@ class NodePaletteManager {
         if (this.diagramType === 'tree_map') {
             // Tree Map: Dimensions (locked) + Categories (locked) + Category tabs (active)
             tabs = [
-                { id: 'dimensions', label: '📐 Dimensions', counterId: 'count-dimensions', counterSuffix: '', locked: true },
-                { id: 'categories', label: '📂 Categories', counterId: 'count-categories', counterSuffix: '', locked: true }
+                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '', locked: true },
+                { id: 'categories', label: this.getTabLabelWithEmoji('categories'), counterId: 'count-categories', counterSuffix: '', locked: true }
             ];
             dynamicLabel = '📄';
             logPrefix = 'TreeMap';
         } else if (this.diagramType === 'brace_map') {
             // Brace Map: Dimensions (locked) + Parts (locked) + Part tabs (active)
             tabs = [
-                { id: 'dimensions', label: '📐 Dimensions', counterId: 'count-dimensions', counterSuffix: '', locked: true },
-                { id: 'parts', label: '🧩 Parts', counterId: 'count-parts', counterSuffix: '', locked: true }
+                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '', locked: true },
+                { id: 'parts', label: this.getTabLabelWithEmoji('parts'), counterId: 'count-parts', counterSuffix: '', locked: true }
             ];
             dynamicLabel = '🔧';
             logPrefix = 'BraceMap';
         } else if (this.diagramType === 'mindmap') {
             // Mindmap: Branches (locked) + Branch tabs (active)
             tabs = [
-                { id: 'branches', label: '🌿 Branches', counterId: 'count-branches', counterSuffix: '', locked: true }
+                { id: 'branches', label: this.getTabLabelWithEmoji('branches'), counterId: 'count-branches', counterSuffix: '', locked: true }
             ];
             dynamicLabel = '🌱';
             logPrefix = 'Mindmap';
         } else if (this.diagramType === 'flow_map') {
             // Flow Map: Dimensions (locked) + Steps (locked) + Step tabs (active)
             tabs = [
-                { id: 'dimensions', label: '📐 Dimensions', counterId: 'count-dimensions', counterSuffix: '', locked: true },
-                { id: 'steps', label: '📝 Steps', counterId: 'count-steps', counterSuffix: '', locked: true }
+                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '', locked: true },
+                { id: 'steps', label: this.getTabLabelWithEmoji('steps'), counterId: 'count-steps', counterSuffix: '', locked: true }
             ];
             dynamicLabel = '▶️';
             logPrefix = 'FlowMap';
@@ -3424,6 +3472,15 @@ class NodePaletteManager {
                             
                             nodeCount++;
                             
+                            // Track when last node was received (for detecting end of streaming)
+                            this.lastNodeReceivedTime = Date.now();
+                            
+                            // Clear any existing timeout (we're still receiving nodes)
+                            if (this.nodeStreamingTimeout) {
+                                clearTimeout(this.nodeStreamingTimeout);
+                                this.nodeStreamingTimeout = null;
+                            }
+                            
                             // Update loading animation with live count
                             const lang = window.languageManager?.getCurrentLanguage() || 'en';
                             const genMsg = lang === 'zh' 
@@ -3477,6 +3534,27 @@ class NodePaletteManager {
                                 // If this is the CURRENT tab, also render it
                                 if (targetMode === this.currentTab) {
                                     this.nodes.push(node);
+                                    
+                                    // Track when node is appended (for detecting end of streaming)
+                                    this.lastNodeReceivedTime = Date.now();
+                                    
+                                    // If loading animation is scheduled to hide, cancel it (we're still receiving nodes)
+                                    if (this.nodeStreamingTimeout) {
+                                        clearTimeout(this.nodeStreamingTimeout);
+                                        this.nodeStreamingTimeout = null;
+                                        
+                                        // Show loading animation again if it was hidden
+                                        const loader = document.getElementById('catapult-loader');
+                                        if (!loader || loader.style.opacity === '0') {
+                                            this.showCatapultLoading();
+                                            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                                            const genMsg = lang === 'zh' 
+                                                ? `正在接收节点... 已收到 ${this.nodes.length} 个` 
+                                                : `Receiving nodes... ${this.nodes.length} received`;
+                                            this.updateCatapultLoading(genMsg, 4, 4);
+                                        }
+                                    }
+                                    
                                     this.renderNodeCardOnly(node);
                                 }
                                 
@@ -3533,8 +3611,34 @@ class NodePaletteManager {
                                     ? `完成！${data.new_unique_nodes} 个新创意` 
                                     : `Complete! ${data.new_unique_nodes} new ideas`;
                                 this.updateCatapultLoading(doneMsg, 4, 4);
-                                // Hide catapult loading animation after brief delay
-                                setTimeout(() => this.hideCatapultLoading(), 800);
+                                
+                                // Wait for any remaining nodes to arrive before hiding
+                                // Check if we received nodes recently (within last 500ms)
+                                const timeSinceLastNode = this.lastNodeReceivedTime 
+                                    ? Date.now() - this.lastNodeReceivedTime 
+                                    : Infinity;
+                                
+                                if (timeSinceLastNode < 500) {
+                                    // Nodes were received recently, wait a bit more
+                                    console.log('[NodePalette] Nodes received recently, waiting for stream to finish...');
+                                    this.nodeStreamingTimeout = setTimeout(() => {
+                                        // Check again after delay - if no new nodes, hide animation
+                                        const finalTimeSinceLastNode = this.lastNodeReceivedTime 
+                                            ? Date.now() - this.lastNodeReceivedTime 
+                                            : Infinity;
+                                        
+                                        if (finalTimeSinceLastNode >= 500) {
+                                            console.log('[NodePalette] No new nodes received, hiding loading animation');
+                                            this.hideCatapultLoading();
+                                        } else {
+                                            // Still receiving nodes, wait more
+                                            console.log('[NodePalette] Still receiving nodes, keeping animation visible');
+                                        }
+                                    }, 1000); // Wait 1 second after batch_complete
+                                } else {
+                                    // No recent nodes, safe to hide immediately
+                                    setTimeout(() => this.hideCatapultLoading(), 800);
+                                }
                             }
                             
                         } else if (data.event === 'error') {
@@ -3595,6 +3699,14 @@ class NodePaletteManager {
         
         console.log(`[NodePalette] CATAPULT batch #${this.currentBatch} (4 LLMs launching)...`);
         
+        // Show loading animation immediately
+        const lang = window.languageManager?.getCurrentLanguage() || 'en';
+        const loadingMsg = lang === 'zh' 
+            ? '正在加载节点...' 
+            : 'Loading nodes...';
+        this.showCatapultLoading();
+        this.updateCatapultLoading(loadingMsg, 0, 4);
+        
         // Determine URL based on batch number
         const url = this.currentBatch === 1
             ? '/thinking_mode/node_palette/start'
@@ -3651,13 +3763,15 @@ class NodePaletteManager {
             // CATAPULT! Fire 4 LLMs concurrently (works for infinite batches)
             // For double bubble: targetMode determines which tab's nodes to update
             const targetMode = this.usesTabs() ? this.currentTab : null;
-            await this.catapult(url, payload, targetMode);
+            await this.catapult(url, payload, targetMode, true);
             
             // Show elegant loading animation - ready for next batch when user scrolls!
             this.showBatchTransition();
             
         } catch (error) {
             console.error(`[NodePalette] CATAPULT batch ${this.currentBatch} error:`, error);
+            // Hide loading animation on error
+            this.hideCatapultLoading();
         } finally {
             this.isLoadingBatch = false;  // Allow next CATAPULT when user scrolls more
         }
@@ -3684,6 +3798,26 @@ class NodePaletteManager {
         });
         
         this.nodes.push(node);
+        
+        // Track when node is appended (for detecting end of streaming)
+        this.lastNodeReceivedTime = Date.now();
+        
+        // If loading animation is scheduled to hide, cancel it (we're still receiving nodes)
+        if (this.nodeStreamingTimeout) {
+            clearTimeout(this.nodeStreamingTimeout);
+            this.nodeStreamingTimeout = null;
+            
+            // Show loading animation again if it was hidden
+            const loader = document.getElementById('catapult-loader');
+            if (!loader || loader.style.opacity === '0') {
+                this.showCatapultLoading();
+                const lang = window.languageManager?.getCurrentLanguage() || 'en';
+                const genMsg = lang === 'zh' 
+                    ? `正在接收节点... 已收到 ${this.nodes.length} 个` 
+                    : `Receiving nodes... ${this.nodes.length} received`;
+                this.updateCatapultLoading(genMsg, 4, 4);
+            }
+        }
         
         console.log(`[NodePalette-Append] After push: this.nodes.length = ${this.nodes.length} ${metadata.nodeNamePlural}`);
         
@@ -4067,9 +4201,10 @@ class NodePaletteManager {
                 // Show per-tab breakdown
                 const tabBreakdown = tabNames.map(tabName => {
                     const selected = this.tabSelectedNodes[tabName]?.size || 0;
-                    return `${tabName.charAt(0).toUpperCase() + tabName.slice(0, 3)}: ${selected}`;
+                    const tabLabel = this.getTabLabelTranslation(tabName);
+                    return `${tabLabel}: ${selected}`;
                 }).join(', ');
-                counter.textContent = `Selected: ${totalSelected}/${totalNodes} (${tabBreakdown})`;
+                counter.textContent = `${this.getTranslation('nodePaletteSelected')}: ${totalSelected}/${totalNodes} (${tabBreakdown})`;
             }
         } else {
             // Single-tab diagram
@@ -4077,7 +4212,7 @@ class NodePaletteManager {
             totalNodes = this.nodes.length;
             
             if (counter) {
-                counter.textContent = `Selected: ${totalSelected}/${totalNodes}`;
+                counter.textContent = `${this.getTranslation('nodePaletteSelected')}: ${totalSelected}/${totalNodes}`;
             }
         }
         
@@ -4085,9 +4220,12 @@ class NodePaletteManager {
         if (finishBtn) {
             const wasDisabled = finishBtn.disabled;
             finishBtn.disabled = totalSelected === 0;
-            finishBtn.textContent = totalSelected > 0 
-                ? `Next (${totalSelected} selected)` 
-                : 'Next';
+            // Only update if not a stage progression button
+            if (!finishBtn.classList.contains('node-palette-finish-btn')) {
+                finishBtn.textContent = totalSelected > 0 
+                    ? this.getTranslation('nodePaletteNextSelected', totalSelected)
+                    : this.getTranslation('nodePaletteNext');
+            }
             
             // Log button state change
             if (wasDisabled && !finishBtn.disabled) {

@@ -86,18 +86,12 @@ class PanelManager {
             }
         });
         
-        // Register ThinkGuide Panel
+        // Register ThinkGuide Panel (still exists, but button now opens Node Palette)
         this.registerPanel('thinkguide', {
             element: thinkingPanel,
             type: 'class', // Uses collapsed class
-            button: thinkingBtn,
             manager: () => window.currentEditor?.thinkGuide,
-            closeCallback: () => {
-                if (thinkingBtn) thinkingBtn.classList.remove('active');
-            },
-            openCallback: () => {
-                if (thinkingBtn) thinkingBtn.classList.add('active');
-            }
+            // No button - thinking-btn now opens Node Palette instead
         });
         
         // Register MindMate Panel
@@ -114,11 +108,12 @@ class PanelManager {
             }
         });
         
-        // Register Node Palette Panel
+        // Register Node Palette Panel (thinking-btn now opens this)
         const nodePalettePanel = document.getElementById('node-palette-panel');
         this.registerPanel('nodePalette', {
             element: nodePalettePanel,
             type: 'style', // Uses style.display
+            button: thinkingBtn, // thinking-btn now controls Node Palette
             manager: () => window.currentEditor?.nodePalette,
             closeCallback: () => {
                 // Hide panel and clean up
@@ -126,12 +121,14 @@ class PanelManager {
                     nodePalettePanel.style.display = 'none';
                     nodePalettePanel.classList.remove('thinkguide-visible');
                 }
+                if (thinkingBtn) thinkingBtn.classList.remove('active');
             },
             openCallback: () => {
                 // Show panel using NodePaletteManager's method
                 if (window.currentEditor?.nodePalette) {
                     window.currentEditor.nodePalette.showPalettePanel();
                 }
+                if (thinkingBtn) thinkingBtn.classList.add('active');
             }
         });
         

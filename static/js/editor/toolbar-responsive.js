@@ -246,7 +246,7 @@ class ToolbarResponsiveManager {
             learningBtn.textContent = currentLang === 'zh' ? '学习' : 'Learn';
         }
         if (thinkingBtn) {
-            thinkingBtn.textContent = currentLang === 'zh' ? '思维向导' : 'ThinkGuide';
+            thinkingBtn.textContent = currentLang === 'zh' ? '瀑布流' : 'Node Palette';
         }
         if (mindmateBtn) {
             const fullName = window.AI_ASSISTANT_NAME || 'MindMate AI';

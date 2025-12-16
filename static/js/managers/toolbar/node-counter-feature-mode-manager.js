@@ -3,7 +3,7 @@
  * ===================================
  * 
  * Handles node counting (MutationObserver), session validation, and feature modes.
- * Manages Learning Mode and Thinking Mode (ThinkGuide) activation.
+ * Manages Learning Mode and Node Palette activation.
  * 
  * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
  * All Rights Reserved
@@ -239,89 +239,154 @@ class NodeCounterFeatureModeManager {
     }
     
     /**
-     * Handle Thinking Mode (ThinkGuide) button click
-     * EXTRACTED FROM: toolbar-manager.js lines 2955-3106
+     * Extract center topic from diagram spec based on diagram type
+     * @param {string} diagramType - The diagram type
+     * @param {Object} diagramSpec - The diagram spec object
+     * @returns {string} The center topic
+     */
+    extractCenterTopic(diagramType, diagramSpec) {
+        if (['tree_map', 'mindmap'].includes(diagramType)) {
+            return diagramSpec.topic || '';
+        } else if (diagramType === 'flow_map') {
+            return diagramSpec.title || '';
+        } else if (diagramType === 'brace_map') {
+            return diagramSpec.whole || '';
+        } else if (diagramType === 'double_bubble_map') {
+            return `${diagramSpec.left || ''} vs ${diagramSpec.right || ''}`;
+        } else if (diagramType === 'multi_flow_map') {
+            return diagramSpec.event || '';
+        } else if (diagramType === 'bridge_map') {
+            return diagramSpec.dimension || '';
+        } else if (diagramType === 'circle_map') {
+            return diagramSpec.topic || '';
+        } else if (diagramType === 'bubble_map') {
+            return diagramSpec.topic || '';
+        } else {
+            // Generic fallback
+            return diagramSpec.center?.text || diagramSpec.topic || '';
+        }
+    }
+    
+    /**
+     * Extract educational context from current diagram
+     * @returns {Object} Educational context object
+     */
+    extractEducationalContext() {
+        // Try to get from ThinkGuide if available, otherwise return empty context
+        const thinkGuide = window.currentEditor?.thinkGuide;
+        if (thinkGuide && typeof thinkGuide.extractEducationalContext === 'function') {
+            return thinkGuide.extractEducationalContext();
+        }
+        return {};
+    }
+    
+    /**
+     * Handle Node Palette button click (formerly Thinking Mode / ThinkGuide button)
+     * Opens Node Palette directly for brainstorming nodes with AI
      */
     async handleThinkingMode() {
-        this.logger.info('NodeCounterFeatureModeManager', 'ThinkGuide Mode initiated - BUTTON CLICKED');
+        this.logger.info('NodeCounterFeatureModeManager', 'Node Palette button clicked');
         
-        // Check if panel is already open - toggle behavior like MindMate
-        const thinkPanel = document.getElementById('thinking-panel');
-        const isPanelOpen = thinkPanel && !thinkPanel.classList.contains('collapsed');
+        // Check if node palette panel is already open - toggle behavior
+        const palettePanel = document.getElementById('node-palette-panel');
+        const isPaletteOpen = palettePanel && palettePanel.style.display !== 'none';
         
-        this.logger.info('NodeCounterFeatureModeManager', 'Initial panel state:', {
-            thinkPanelCollapsed: thinkPanel?.classList.contains('collapsed'),
-            isPanelOpen: isPanelOpen,
+        this.logger.info('NodeCounterFeatureModeManager', 'Initial palette state:', {
+            isPaletteOpen: isPaletteOpen,
             currentPanel: window.panelManager?.getCurrentPanel()
         });
         
-        // If panel is already open, close it (toggle behavior)
-        if (isPanelOpen) {
-            this.logger.info('NodeCounterFeatureModeManager', 'ThinkGuide panel already open - closing it');
+        // If palette is already open, close it (toggle behavior)
+        if (isPaletteOpen) {
+            this.logger.info('NodeCounterFeatureModeManager', 'Node Palette already open - closing it');
             if (window.panelManager) {
-                window.panelManager.closeThinkGuidePanel();
-                this.logger.info('NodeCounterFeatureModeManager', 'ThinkGuide panel closed');
+                window.panelManager.closePanel('nodePalette');
+                this.logger.info('NodeCounterFeatureModeManager', 'Node Palette closed');
             }
             return;
         }
         
-        // Check if diagram type is supported by ThinkGuide BEFORE opening panel
-        const diagramType = this.editor.diagramType;
-        const supportedTypes = [
-            'circle_map',
-            'bubble_map', 
-            'double_bubble_map',
-            'tree_map',
-            'flow_map',
-            'multi_flow_map',
-            'brace_map',
-            'bridge_map',
-            'mindmap'
-        ];
-        
-        if (!supportedTypes.includes(diagramType)) {
-            this.logger.warn('NodeCounterFeatureModeManager', `ThinkGuide not yet implemented for ${diagramType}`);
+        // Get current diagram data
+        const diagramData = this.editor?.getCurrentDiagramData();
+        if (!diagramData) {
+            this.logger.error('NodeCounterFeatureModeManager', 'No diagram data available');
             const lang = window.languageManager?.getCurrentLanguage() || 'en';
             const message = lang === 'zh' 
-                ? `${diagramType} 暂不支持思考导航功能` 
-                : `ThinkGuide is not yet available for ${diagramType}`;
+                ? '无法获取图表数据，请重试' 
+                : 'Unable to get diagram data. Please try again.';
+            this.toolbarManager.showNotification(message, 'error');
+            return;
+        }
+        
+        // Extract spec from diagram data structure
+        const diagramSpec = diagramData.spec || diagramData;
+        const diagramType = this.editor.diagramType;
+        
+        // Extract center topic based on diagram type
+        const centerTopic = this.extractCenterTopic(diagramType, diagramSpec);
+        
+        if (!centerTopic) {
+            this.logger.warn('NodeCounterFeatureModeManager', 'No center topic found');
+            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+            const message = lang === 'zh' 
+                ? '无法获取中心主题，请确保图表已正确创建' 
+                : 'Unable to get center topic. Please ensure the diagram is properly created.';
             this.toolbarManager.showNotification(message, 'warning');
             return;
         }
         
-        // Panel not open AND diagram type supported - start thinking mode
-        this.logger.info('NodeCounterFeatureModeManager', 'Starting ThinkGuide mode...');
+        // Generate session ID (use timestamp-based ID)
+        const sessionId = `node-palette-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
-        // ThinkGuide manager is registered as window.currentEditor.thinkGuide
-        const thinkGuideManager = window.currentEditor?.thinkGuide;
+        this.logger.info('NodeCounterFeatureModeManager', 'Opening Node Palette', {
+            diagramType,
+            centerTopic,
+            sessionId
+        });
         
-        if (thinkGuideManager) {
+        // Open panel first
+        if (window.panelManager) {
+            window.panelManager.openPanel('nodePalette');
+        } else {
+            this.eventBus.emit('panel:open_requested', { panel: 'nodePalette' });
+        }
+        
+        // Start Node Palette Manager
+        const nodePalette = window.currentEditor?.nodePalette;
+        if (nodePalette) {
             try {
-                // Get current diagram data
-                const diagramData = this.editor?.getCurrentDiagramData();
-                if (!diagramData) {
-                    this.logger.error('NodeCounterFeatureModeManager', 'No diagram data available');
-                    return;
-                }
+                // Extract educational context
+                const educationalContext = this.extractEducationalContext();
                 
-                // Start thinking mode (this opens panel + sends greeting + preloads palette)
-                await thinkGuideManager.startThinkingMode(diagramType, diagramData);
+                // Start node palette
+                await nodePalette.start(
+                    centerTopic,
+                    diagramSpec,
+                    sessionId,
+                    educationalContext,
+                    diagramType
+                );
                 
-                this.logger.info('NodeCounterFeatureModeManager', 'ThinkGuide mode started successfully', {
-                    diagramType: diagramType,
-                    panelState: thinkPanel?.classList.contains('collapsed') ? 'collapsed' : 'open'
+                this.logger.info('NodeCounterFeatureModeManager', 'Node Palette opened successfully', {
+                    diagramType,
+                    centerTopic
                 });
                 
             } catch (error) {
-                this.logger.error('NodeCounterFeatureModeManager', 'Failed to start ThinkGuide mode', error);
+                this.logger.error('NodeCounterFeatureModeManager', 'Failed to open Node Palette', error);
                 const lang = window.languageManager?.getCurrentLanguage() || 'en';
                 const message = lang === 'zh' 
-                    ? '无法启动思考导航，请重试' 
-                    : 'Failed to start ThinkGuide. Please try again.';
+                    ? '无法打开节点选择板，请重试' 
+                    : 'Failed to open Node Palette. Please try again.';
                 this.toolbarManager.showNotification(message, 'error');
             }
         } else {
-            this.logger.error('NodeCounterFeatureModeManager', 'ThinkGuideManager not available at window.currentEditor.thinkGuide');
+            this.logger.error('NodeCounterFeatureModeManager', 'NodePaletteManager not available at window.currentEditor.nodePalette');
+            const lang = window.languageManager?.getCurrentLanguage() || 'en';
+            const message = lang === 'zh' 
+                ? '节点选择板功能不可用' 
+                : 'Node Palette feature is not available.';
+            this.toolbarManager.showNotification(message, 'error');
         }
     }
     
@@ -351,4 +416,5 @@ class NodeCounterFeatureModeManager {
 if (typeof window !== 'undefined') {
     window.NodeCounterFeatureModeManager = NodeCounterFeatureModeManager;
 }
+
 

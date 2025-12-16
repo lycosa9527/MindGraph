@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.96] - 2025-12-17 - Node Palette Button Replacement & Chinese Translations
+
+### Added
+
+- **Node Palette Direct Access** (`templates/editor.html`, `static/js/managers/toolbar/node-counter-feature-mode-manager.js`)
+  - Replaced ThinkGuide button (思维向导) with Node Palette button directly in toolbar
+  - Users can now access Node Palette immediately without opening ThinkGuide first
+  - Button displays "瀑布流" in Chinese and "Node Palette" in English
+  - Tooltip: "使用AI探索更多节点想法" (Chinese) / "Explore more node ideas with AI" (English)
+
+- **Comprehensive Chinese Translations for Node Palette** (`static/js/editor/language-manager.js`)
+  - Added translations for all Node Palette UI elements:
+    - Selection counter: "已选择" (Selected)
+    - Buttons: "取消" (Cancel), "下一步" (Next), "完成选择" (Finish Selection)
+    - Stage progression buttons with emojis
+    - Tab labels: "相似点" (Similarities), "差异点" (Differences), "维度" (Dimensions), "类别" (Categories), "部分" (Parts), "子项" (Children), "分支" (Branches), "步骤" (Steps), "原因" (Causes), "结果" (Effects)
+    - Stage transition messages
+    - "对" (pairs) suffix for differences tab
+
+- **Smart Loading Animation Logic** (`static/js/editor/node-palette-manager.js`)
+  - Loading animation now shows immediately when batch loading starts
+  - Animation remains visible while nodes are streaming in
+  - Tracks last node received time to detect when streaming stops
+  - Animation stays visible even after batch_complete event if nodes are still arriving
+  - Only hides when no new nodes received for 500ms
+  - Handles edge case where nodes fill grid after batch completion
+
+### Changed
+
+- **Toolbar Button Functionality** (`static/js/managers/toolbar/node-counter-feature-mode-manager.js`)
+  - `handleThinkingMode()` now opens Node Palette directly instead of ThinkGuide
+  - Added helper methods: `extractCenterTopic()`, `extractEducationalContext()`
+  - Removed ThinkGuide panel opening logic from button handler
+  - Button now has toggle behavior (closes if already open)
+
+- **Panel Manager Registration** (`static/js/managers/panel-manager.js`)
+  - Registered `thinking-btn` as Node Palette button instead of ThinkGuide
+  - ThinkGuide panel registration remains but without button association
+  - Node Palette panel now properly associated with thinking-btn for active state
+
+- **Language Manager Updates** (`static/js/editor/language-manager.js`)
+  - Added `applyTranslations()` code to update Node Palette UI elements
+  - Updates title, buttons, and selection counter on language change
+  - Handles both Chinese and English translations dynamically
+
+- **Node Palette Manager Translations** (`static/js/editor/node-palette-manager.js`)
+  - Added `getTranslation()` helper method for accessing translations
+  - Added `getTabLabelTranslation()` and `getTabLabelWithEmoji()` helpers
+  - All tab labels, buttons, counters, and stage messages now use translations
+  - Stage progression buttons use translated text with emojis
+
+- **HTML Template Updates** (`templates/editor.html`)
+  - Removed hardcoded "Selected: 0/0" text from selection counter
+  - Removed hardcoded "Cancel" and "Next" button text
+  - Removed hardcoded "Node Palette" title
+  - All text now populated dynamically by language manager
+
+- **Default AI Assistant Name** (`env.example`)
+  - Changed default `AI_ASSISTANT_NAME` from "MindMate AI" to "教学设计"
+
+### Fixed
+
+- **Loading Animation Visibility** (`static/js/editor/node-palette-manager.js`)
+  - Fixed missing loading animation when waiting for nodes to fill grid
+  - Animation now shows immediately when `loadNextBatch()` is called
+  - Properly tracks node streaming to keep animation visible until completion
+  - Handles case where nodes arrive after batch_complete event
+
+- **Chinese Translation Coverage** (`static/js/editor/language-manager.js`, `static/js/editor/toolbar-responsive.js`)
+  - Fixed missing Chinese translations for Node Palette button text
+  - Fixed missing translations for Node Palette tabs, buttons, and counters
+  - All Node Palette UI elements now properly translated
+
+---
+
 ## [4.28.95] - 2025-12-17 - AI Disclaimer Notification & Font Compliance Updates
 
 ### Added
