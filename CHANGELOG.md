@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.94] - 2025-12-17 - Comprehensive SMS Error Handling & Multi-Language Support
+
+### Added
+
+- **Comprehensive SMS Error Code Handling** (`services/sms_middleware.py`)
+  - Added complete error handling for all 50+ Tencent Cloud SMS API error codes
+  - Covers all error categories: FailedOperation, InternalError, InvalidParameterValue, LimitExceeded, MissingParameter, UnauthorizedOperation, UnsupportedOperation
+  - Error codes mapped to user-friendly messages via Messages system
+  - Improved HTTP status code checking and JSON parsing error handling
+  - Better error logging with error codes and messages for debugging
+
+- **Multi-Language SMS Error Messages** (`models/messages.py`)
+  - Added 40+ SMS error message keys with translations in Chinese, English, and Azerbaijani
+  - Error messages organized by category (FailedOperation, InternalError, InvalidParameterValue, LimitExceeded, etc.)
+  - Generic fallback message for unknown error codes
+  - All error messages follow consistent format and tone
+
+### Changed
+
+- **SMS Service Error Translation** (`services/sms_middleware.py`)
+  - `_translate_error_code()` now uses Messages system instead of hardcoded English messages
+  - Added `lang` parameter to `send_verification_code()` methods for multi-language support
+  - Error messages automatically localized based on user's language preference
+  - Error codes mapped to Messages keys for centralized management
+
+- **SMS API Error Handling** (`services/sms_middleware.py`)
+  - Enhanced response parsing with HTTP status code validation
+  - Added JSON parsing error handling with try-catch blocks
+  - Improved error messages for edge cases (invalid response structure, parsing failures)
+  - Better error context in logs (error codes and messages logged together)
+
+- **SMS Endpoint Integration** (`routers/auth.py`)
+  - Updated `send_sms_code()` to pass language parameter to SMS service
+  - All SMS-related endpoints now return localized error messages
+  - Consistent error handling across all SMS functions (login, register, reset password)
+
+### Fixed
+
+- **Error Message Localization**
+  - Fixed SMS error messages being hardcoded in English
+  - All SMS errors now properly localized based on user's Accept-Language header
+  - Error messages sent to frontend are now in user's preferred language
+
+---
+
 ## [4.28.93] - 2025-12-17 - Multi-Platform Chromium Zip Support & Version Detection
 
 ### Added

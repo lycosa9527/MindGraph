@@ -12,18 +12,20 @@ import uuid
 import base64
 import random
 import string
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 from io import BytesIO
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body, Request, Header
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from config.database import get_db
+from models.messages import Messages, get_request_language, Language
 from utils.invitations import normalize_or_generate, INVITE_PATTERN
 from models.auth import User, Organization, SMSVerification
 from models.requests import (
@@ -147,7 +149,8 @@ async def register(
     request: RegisterRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Register new user (K12 teacher)
@@ -165,36 +168,51 @@ async def register(
     Registration is only available in standard and enterprise modes.
     Demo and bayi modes use passkey authentication instead.
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Check authentication mode - registration not allowed in demo/bayi modes
     if AUTH_MODE in ["demo", "bayi"]:
+        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Registration is not available in {AUTH_MODE} mode. Please use passkey authentication instead."
+            detail=error_msg
         )
     
     # Validate captcha first (anti-bot protection)
-    # Use verify_and_remove() for consistency with login and to prevent race conditions
-    captcha_valid, captcha_error = verify_captcha(request.captcha_id, request.captcha)
+    # Use verify_captcha_with_retry() for better database lock handling
+    captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
         if captcha_error == "expired":
+            error_msg = Messages.error("captcha_expired", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha code has expired. Please refresh the captcha image and try again."
+                detail=error_msg
             )
         elif captcha_error == "not_found":
+            error_msg = Messages.error("captcha_not_found", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha session not found. Please refresh the captcha image and try again."
+                detail=error_msg
             )
         elif captcha_error == "incorrect":
+            error_msg = Messages.error("captcha_incorrect", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha code is incorrect. Please check the code and try again, or refresh for a new code."
+                detail=error_msg
+            )
+        elif captcha_error == "database_locked":
+            error_msg = Messages.error("captcha_database_unavailable", lang)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_msg
             )
         else:
+            error_msg = Messages.error("captcha_verify_failed", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha verification failed. Please refresh the captcha image and try again."
+                detail=error_msg
             )
     
     logger.debug(f"Captcha verified for registration: {request.phone}")
@@ -202,24 +220,27 @@ async def register(
     # Check if phone already exists
     existing_user = db.query(User).filter(User.phone == request.phone).first()
     if existing_user:
+        error_msg = Messages.error("phone_already_registered", lang)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="This phone number is already registered. Please use login instead or try a different phone number."
+            detail=error_msg
         )
     
     # Find organization by invitation code (each invitation code is unique)
     provided_invite = (request.invitation_code or "").strip().upper()
     if not provided_invite:
+        error_msg = Messages.error("invitation_code_required", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invitation code is required. Please enter the invitation code provided by your school administrator."
+            detail=error_msg
         )
     
     # Validate invitation code format (AAAA-XXXXX pattern)
     if not INVITE_PATTERN.match(provided_invite):
+        error_msg = Messages.error("invitation_code_invalid_format", lang, request.invitation_code)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid invitation code format. Expected format: AAAA-XXXXX (4 letters, dash, 5 alphanumeric characters). You entered: {request.invitation_code}"
+            detail=error_msg
         )
     
     org = db.query(Organization).filter(
@@ -227,9 +248,10 @@ async def register(
     ).first()
     
     if not org:
+        error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Invitation code '{request.invitation_code}' is not valid or does not exist. Please check the code provided by your school administrator, or contact support if you believe this is an error."
+            detail=error_msg
         )
     
     logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
@@ -283,7 +305,8 @@ async def login(
     request: LoginRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     User login with captcha verification
@@ -294,6 +317,10 @@ async def login(
     - Account lockout: 5 minutes after 10 failed attempts
     - Failed attempt tracking in database
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Check rate limit by phone
     is_allowed, rate_limit_msg = check_rate_limit(
         request.phone, login_attempts, MAX_LOGIN_ATTEMPTS
@@ -314,14 +341,16 @@ async def login(
         recent_attempts = [t for t in login_attempts.get(request.phone, []) if t > time.time() - (RATE_LIMIT_WINDOW_MINUTES * 60)]
         attempts_left = MAX_LOGIN_ATTEMPTS - len(recent_attempts)
         if attempts_left > 0:
+            error_msg = Messages.error("login_failed_phone_not_found", lang, attempts_left)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Login failed. Phone number not found or password incorrect. {attempts_left} attempt(s) remaining."
+                detail=error_msg
             )
         else:
+            error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Too many failed login attempts. Please try again in {RATE_LIMIT_WINDOW_MINUTES} minutes."
+                detail=error_msg
             )
     
     # Check account lockout
@@ -333,33 +362,46 @@ async def login(
         )
     
     # Verify captcha
-    captcha_valid, captcha_error = verify_captcha(request.captcha_id, request.captcha)
+    captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
+        # Check for database lock first - don't count as failed attempt
+        if captcha_error == "database_locked":
+            # Database lock - don't count as failed attempt, return 503
+            error_msg = Messages.error("captcha_database_unavailable", lang)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_msg
+            )
+        
+        # For all other captcha errors, record failed attempt
         record_failed_attempt(request.phone, login_attempts)
         increment_failed_attempts(user, db)
         attempts_left = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
         
-        # Provide specific captcha error message
+        # Provide specific captcha error message with retry suggestions (bilingual)
         if captcha_error == "expired":
-            captcha_msg = "Captcha code has expired. Please refresh the captcha image"
+            captcha_msg = Messages.error("captcha_expired", lang)
         elif captcha_error == "not_found":
-            captcha_msg = "Captcha session not found. Please refresh the captcha image"
+            captcha_msg = Messages.error("captcha_not_found", lang)
         elif captcha_error == "incorrect":
-            captcha_msg = "Captcha code is incorrect. Please check the code or refresh for a new one"
+            captcha_msg = Messages.error("captcha_incorrect", lang)
         else:
-            captcha_msg = "Captcha verification failed. Please refresh the captcha image"
+            captcha_msg = Messages.error("captcha_verify_failed", lang)
         
         if attempts_left > 0:
+            # Bilingual attempt counter message
+            attempts_msg = Messages.error("captcha_retry_attempts", lang, attempts_left)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"{captcha_msg} and try again. {attempts_left} attempt(s) remaining before account lockout."
+                detail=f"{captcha_msg}{attempts_msg}"
             )
         else:
-            # Account is now locked
+            # Account is now locked - bilingual message
             minutes_left = LOCKOUT_DURATION_MINUTES
+            lockout_msg = Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
-                detail=f"Account temporarily locked due to {MAX_LOGIN_ATTEMPTS} failed attempts. Please try again in {minutes_left} minutes."
+                detail=lockout_msg
             )
     
     # Verify password
@@ -369,16 +411,18 @@ async def login(
         
         attempts_left = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
         if attempts_left > 0:
+            error_msg = Messages.error("invalid_password", lang, attempts_left)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Invalid password. Please check your password and try again. {attempts_left} attempt(s) remaining before account lockout."
+                detail=error_msg
             )
         else:
             # Account is now locked
             minutes_left = LOCKOUT_DURATION_MINUTES
+            error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
-                detail=f"Account temporarily locked due to {MAX_LOGIN_ATTEMPTS} failed login attempts. Please try again in {minutes_left} minutes."
+                detail=error_msg
             )
     
     # Successful login
@@ -394,9 +438,10 @@ async def login(
         is_active = org.is_active if hasattr(org, 'is_active') else True
         if not is_active:
             logger.warning(f"Login blocked: Organization {org.code} is locked")
+            error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Your school account ({org.name}) has been locked by the administrator. Please contact your school administrator or support for assistance."
+                detail=error_msg
             )
         
         # Check if organization subscription has expired
@@ -405,9 +450,10 @@ async def login(
             if org.expires_at < datetime.now(timezone.utc):
                 logger.warning(f"Login blocked: Organization {org.code} expired on {org.expires_at}")
                 expired_date = org.expires_at.strftime("%Y-%m-%d")
+                error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Your school subscription ({org.name}) expired on {expired_date}. Please contact your school administrator to renew the subscription."
+                    detail=error_msg
                 )
     
     # Generate JWT token
@@ -588,7 +634,11 @@ def _generate_custom_captcha(code: str) -> BytesIO:
 
 
 @router.get("/captcha/generate")
-async def generate_captcha(request: Request, response: Response):
+async def generate_captcha(
+    request: Request, 
+    response: Response,
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
     """
     Generate custom captcha image with larger letters and different colors per character
     
@@ -654,8 +704,21 @@ async def generate_captcha(request: Request, response: Response):
     # Generate unique session ID
     session_id = str(uuid.uuid4())
     
+    # Detect user language from headers
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Store code with expiration (5 minutes)
-    captcha_storage.store(session_id, code, expires_in_seconds=300)
+    # Retry logic handles transient database locks automatically
+    try:
+        captcha_storage.store(session_id, code, expires_in_seconds=300)
+    except Exception as e:
+        logger.error(f"Failed to store captcha {session_id} after retries: {e}")
+        error_msg = Messages.error("captcha_generate_failed", lang)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=error_msg
+        )
     
     logger.debug(f"Generated captcha: {session_id} for session: {session_token[:8]}...")
     
@@ -667,17 +730,75 @@ async def generate_captcha(request: Request, response: Response):
 
 def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
     """
-    Verify captcha code
+    Verify captcha code (synchronous wrapper for storage layer).
     
     Note: Verification is CASE-INSENSITIVE for better user experience.
     Users can enter captcha in any case (upper/lower/mixed).
     
     Returns:
         Tuple of (is_valid: bool, error_reason: Optional[str])
-        error_reason can be: "not_found", "expired", "incorrect", or None if valid
+        error_reason can be: "not_found", "expired", "incorrect", "database_locked", "error", or None if valid
     Removes captcha after verification (one-time use)
     """
     return captcha_storage.verify_and_remove(captcha_id, user_code)
+
+
+async def verify_captcha_with_retry(
+    captcha_id: str, 
+    user_code: str, 
+    max_endpoint_retries: int = 2
+) -> Tuple[bool, Optional[str]]:
+    """
+    Verify captcha with endpoint-level retry for database lock errors.
+    
+    This provides an additional retry layer beyond storage-level retries (8 retries).
+    Uses async sleep to avoid blocking the event loop, allowing other requests to be processed.
+    
+    Flow:
+    1. Call storage layer (which has 8 retries, ~1.5s worst-case)
+    2. If database lock error, retry with async sleep (non-blocking)
+    3. Total: 8 storage retries + 2 endpoint retries = 10 effective retries (~1.8s worst-case)
+    
+    Args:
+        captcha_id: Unique captcha identifier
+        user_code: User-provided captcha code
+        max_endpoint_retries: Maximum endpoint-level retries (default: 2)
+    
+    Returns:
+        Tuple of (is_valid: bool, error_reason: Optional[str])
+        error_reason can be: "not_found", "expired", "incorrect", "database_locked", "error", or None if valid
+    """
+    for attempt in range(max_endpoint_retries):
+        # Call storage layer (which has its own 8 retries)
+        captcha_valid, captcha_error = verify_captcha(captcha_id, user_code)
+        
+        # If successful, return immediately
+        if captcha_valid:
+            return captcha_valid, captcha_error
+        
+        # If error is NOT database-related, don't retry
+        # Only retry on database_locked errors (not generic "error" which could be non-database)
+        if captcha_error != "database_locked":
+            return captcha_valid, captcha_error
+        
+        # Database lock error - retry with exponential backoff (async, non-blocking)
+        if attempt < max_endpoint_retries - 1:
+            delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s
+            logger.warning(
+                f"[Auth] Database lock in verify_captcha, "
+                f"endpoint retry {attempt + 1}/{max_endpoint_retries} after {delay}s delay. "
+                f"Captcha ID: {captcha_id[:8]}..."
+            )
+            await asyncio.sleep(delay)  # Non-blocking async sleep
+        else:
+            # All endpoint retries exhausted
+            logger.error(
+                f"[Auth] Database lock persists after {max_endpoint_retries} endpoint retries. "
+                f"Captcha ID: {captcha_id[:8]}..."
+            )
+            return False, "database_locked"
+    
+    return False, "database_locked"
 
 
 # ============================================================================
@@ -687,7 +808,9 @@ def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]
 @router.post("/sms/send")
 async def send_sms_code(
     request: SendSMSCodeRequest,
-    db: Session = Depends(get_db)
+    http_request: Request,
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Send SMS verification code
@@ -706,44 +829,60 @@ async def send_sms_code(
     - 60 seconds cooldown between requests for same phone/purpose
     - Maximum 5 codes per hour per phone number
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Check authentication mode - registration SMS not allowed in demo/bayi modes
     if request.purpose == "register" and AUTH_MODE in ["demo", "bayi"]:
+        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Registration is not available in {AUTH_MODE} mode. Please use passkey authentication instead."
+            detail=error_msg
         )
     
     # Verify captcha first (anti-bot protection)
-    captcha_valid, captcha_error = verify_captcha(request.captcha_id, request.captcha)
+    captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
         if captcha_error == "expired":
+            error_msg = Messages.error("captcha_expired", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha code has expired. Please refresh the captcha image and try again."
+                detail=error_msg
             )
         elif captcha_error == "not_found":
+            error_msg = Messages.error("captcha_not_found", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha session not found. Please refresh the captcha image and try again."
+                detail=error_msg
             )
         elif captcha_error == "incorrect":
+            error_msg = Messages.error("captcha_incorrect", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha code is incorrect. Please check the code and try again, or refresh for a new code."
+                detail=error_msg
+            )
+        elif captcha_error == "database_locked":
+            error_msg = Messages.error("captcha_database_unavailable", lang)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_msg
             )
         else:
+            error_msg = Messages.error("captcha_verify_failed", lang)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha verification failed. Please refresh the captcha image and try again."
+                detail=error_msg
             )
     
     sms_middleware = get_sms_middleware()
     
     # Check if SMS service is available
     if not sms_middleware.is_available:
+        error_msg = Messages.error("sms_service_not_configured", lang)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="SMS service is not configured. Please contact support or use password-based authentication instead."
+            detail=error_msg
         )
     
     phone = request.phone
@@ -753,9 +892,10 @@ async def send_sms_code(
     if purpose == "register":
         existing_user = db.query(User).filter(User.phone == phone).first()
         if existing_user:
+            error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This phone number is already registered. Please use login instead or try a different phone number."
+                detail=error_msg
             )
     
     # For login and reset_password, check if user exists
@@ -763,14 +903,16 @@ async def send_sms_code(
         existing_user = db.query(User).filter(User.phone == phone).first()
         if not existing_user:
             if purpose == "login":
+                error_msg = Messages.error("phone_not_registered_login", lang)
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="This phone number is not registered. Please check your phone number or register a new account."
+                    detail=error_msg
                 )
             else:  # reset_password
+                error_msg = Messages.error("phone_not_registered_reset", lang)
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="This phone number is not registered. Please check your phone number or contact support."
+                    detail=error_msg
                 )
     
     # Check rate limiting: cooldown between requests
@@ -788,14 +930,16 @@ async def send_sms_code(
         wait_seconds = SMS_RESEND_INTERVAL_SECONDS - int((now - recent_code.created_at).total_seconds())
         wait_minutes = (wait_seconds // 60) + 1 if wait_seconds >= 60 else 0
         if wait_minutes > 0:
+            error_msg = Messages.error("sms_cooldown_minutes", lang, wait_minutes)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Please wait {wait_minutes} minute(s) before requesting a new SMS code. A code was recently sent to this number."
+                detail=error_msg
             )
         else:
+            error_msg = Messages.error("sms_cooldown_seconds", lang, wait_seconds)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Please wait {wait_seconds} second(s) before requesting a new SMS code. A code was recently sent to this number."
+                detail=error_msg
             )
     
     # Check rate limit within time window
@@ -808,9 +952,10 @@ async def send_sms_code(
     ).count()
     
     if window_count >= SMS_MAX_ATTEMPTS_PER_PHONE:
+        error_msg = Messages.error("too_many_sms_requests", lang, window_count, SMS_MAX_ATTEMPTS_WINDOW_HOURS)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many SMS verification code requests ({window_count} requests in {SMS_MAX_ATTEMPTS_WINDOW_HOURS} hour(s)). Please try again later."
+            detail=error_msg
         )
     
     # Generate verification code first
@@ -842,7 +987,7 @@ async def send_sms_code(
     
     # Now send the SMS with pre-generated code (using middleware's convenience method)
     try:
-        success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code)
+        success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code, lang=lang)
     except SMSServiceError as e:
         # SMS middleware error (rate limiting, etc.)
         # Remove the database record since SMS won't be sent
@@ -862,7 +1007,10 @@ async def send_sms_code(
         ).delete()
         db.commit()
         # Provide more specific error message
-        error_detail = message if message and message != "SMS service not available" else "SMS service is temporarily unavailable. Please try again later or contact support if the problem persists."
+        if message and message != "SMS service not available":
+            error_detail = message
+        else:
+            error_detail = Messages.error("sms_service_temporarily_unavailable", lang)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_detail
@@ -871,7 +1019,7 @@ async def send_sms_code(
     logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
     
     return {
-        "message": "Verification code sent successfully",
+        "message": Messages.success("verification_code_sent", lang),
         "expires_in": SMS_CODE_EXPIRY_MINUTES * 60,  # in seconds
         "resend_after": SMS_RESEND_INTERVAL_SECONDS  # in seconds
     }
@@ -880,7 +1028,9 @@ async def send_sms_code(
 @router.post("/sms/verify")
 async def verify_sms_code(
     request: VerifySMSCodeRequest,
-    db: Session = Depends(get_db)
+    http_request: Request,
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Verify SMS code (standalone verification)
@@ -892,6 +1042,10 @@ async def verify_sms_code(
     endpoints (register_sms, login_sms, reset_password) will
     consume it.
     """
+    # Detect user language from headers
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     phone = request.phone
     code = request.code
     purpose = request.purpose
@@ -916,14 +1070,16 @@ async def verify_sms_code(
         ).first()
         
         if expired and expired.expires_at <= now:
+            error_msg = Messages.error("sms_code_expired", lang, SMS_CODE_EXPIRY_MINUTES)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"SMS verification code has expired. Codes are valid for {SMS_CODE_EXPIRY_MINUTES} minutes. Please request a new code."
+                detail=error_msg
             )
         
+        error_msg = Messages.error("sms_code_invalid", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid SMS verification code. Please check the code and try again, or request a new code."
+            detail=error_msg
         )
     
     # Increment attempt count (for tracking)
@@ -932,7 +1088,7 @@ async def verify_sms_code(
     
     return {
         "valid": True,
-        "message": "Verification code is valid"
+        "message": Messages.success("verification_code_valid", lang)
     }
 
 
@@ -940,7 +1096,8 @@ def _verify_and_consume_sms_code(
     phone: str, 
     code: str, 
     purpose: str, 
-    db: Session
+    db: Session,
+    lang: Language = "en"
 ) -> bool:
     """
     Internal helper to verify and consume SMS code
@@ -950,6 +1107,13 @@ def _verify_and_consume_sms_code(
     Uses atomic UPDATE with rowcount check to prevent race conditions.
     This approach works with both SQLite (which ignores SELECT FOR UPDATE)
     and PostgreSQL/MySQL. Only one concurrent request can succeed.
+    
+    Args:
+        phone: Phone number
+        code: SMS verification code
+        purpose: Purpose of verification (register, login, reset_password)
+        db: Database session
+        lang: Language for error messages (default: "en")
     """
     now = datetime.now(timezone.utc)
     
@@ -986,9 +1150,10 @@ def _verify_and_consume_sms_code(
     ).first()
     
     if expired and expired.expires_at <= now:
+        error_msg = Messages.error("sms_code_expired", lang, SMS_CODE_EXPIRY_MINUTES)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"SMS verification code has expired. Codes are valid for {SMS_CODE_EXPIRY_MINUTES} minutes. Please request a new code."
+            detail=error_msg
         )
     
     # Check if code was already used (race condition - another request consumed it)
@@ -1000,14 +1165,16 @@ def _verify_and_consume_sms_code(
     ).first()
     
     if already_used:
+        error_msg = Messages.error("sms_code_already_used", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This SMS verification code has already been used. Each code can only be used once. Please request a new code."
+            detail=error_msg
         )
     
+    error_msg = Messages.error("sms_code_invalid", lang)
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid SMS verification code. Please check the code and try again, or request a new code."
+        detail=error_msg
     )
 
 
@@ -1016,7 +1183,8 @@ async def register_with_sms(
     request: RegisterWithSMSRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Register new user with SMS verification
@@ -1034,11 +1202,16 @@ async def register_with_sms(
     Registration is only available in standard and enterprise modes.
     Demo and bayi modes use passkey authentication instead.
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Check authentication mode - registration not allowed in demo/bayi modes
     if AUTH_MODE in ["demo", "bayi"]:
+        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Registration is not available in {AUTH_MODE} mode. Please use passkey authentication instead."
+            detail=error_msg
         )
     
     # Validate all prerequisites BEFORE consuming SMS code
@@ -1047,24 +1220,27 @@ async def register_with_sms(
     # Check if phone already exists
     existing_user = db.query(User).filter(User.phone == request.phone).first()
     if existing_user:
+        error_msg = Messages.error("phone_already_registered", lang)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="This phone number is already registered. Please use login instead or try a different phone number."
+            detail=error_msg
         )
     
     # Find organization by invitation code
     provided_invite = (request.invitation_code or "").strip().upper()
     if not provided_invite:
+        error_msg = Messages.error("invitation_code_required", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invitation code is required. Please enter the invitation code provided by your school administrator."
+            detail=error_msg
         )
     
     # Validate invitation code format (AAAA-XXXXX pattern)
     if not INVITE_PATTERN.match(provided_invite):
+        error_msg = Messages.error("invitation_code_invalid_format", lang, request.invitation_code)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid invitation code format. Expected format: AAAA-XXXXX (4 letters, dash, 5 alphanumeric characters). You entered: {request.invitation_code}"
+            detail=error_msg
         )
     
     org = db.query(Organization).filter(
@@ -1072,9 +1248,10 @@ async def register_with_sms(
     ).first()
     
     if not org:
+        error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Invitation code '{request.invitation_code}' is not valid or does not exist. Please check the code provided by your school administrator, or contact support if you believe this is an error."
+            detail=error_msg
         )
     
     # All validations passed - now consume the SMS code
@@ -1082,7 +1259,8 @@ async def register_with_sms(
         request.phone, 
         request.sms_code, 
         "register", 
-        db
+        db,
+        lang
     )
     
     logger.debug(f"User registering with SMS for organization: {org.code} ({org.name})")
@@ -1132,7 +1310,8 @@ async def login_with_sms(
     request: LoginWithSMSRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Login with SMS verification
@@ -1145,6 +1324,10 @@ async def login_with_sms(
     - Bypasses account lockout
     - Quick verification
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Validate all prerequisites BEFORE consuming SMS code
     # This prevents wasting codes on validation failures
     
@@ -1152,9 +1335,10 @@ async def login_with_sms(
     user = db.query(User).filter(User.phone == request.phone).first()
     
     if not user:
+        error_msg = Messages.error("phone_not_registered_login", lang)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Phone number not registered"
+            detail=error_msg
         )
     
     # Get organization and check status BEFORE consuming code
@@ -1165,18 +1349,20 @@ async def login_with_sms(
         is_active = org.is_active if hasattr(org, 'is_active') else True
         if not is_active:
             logger.warning(f"SMS login blocked: Organization {org.code} is locked")
+            error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Your school account ({org.name}) has been locked by the administrator. Please contact your school administrator or support for assistance."
+                detail=error_msg
             )
         
         if hasattr(org, 'expires_at') and org.expires_at:
             if org.expires_at < datetime.now(timezone.utc):
                 logger.warning(f"SMS login blocked: Organization {org.code} expired")
                 expired_date = org.expires_at.strftime("%Y-%m-%d")
+                error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Your school subscription ({org.name}) expired on {expired_date}. Please contact your school administrator to renew the subscription."
+                    detail=error_msg
                 )
     
     # All validations passed - now consume the SMS code
@@ -1184,7 +1370,8 @@ async def login_with_sms(
         request.phone,
         request.sms_code,
         "login",
-        db
+        db,
+        lang
     )
     
     # Reset any failed attempts (SMS login is verified)
@@ -1220,7 +1407,9 @@ async def login_with_sms(
 @router.post("/reset_password")
 async def reset_password_with_sms(
     request: ResetPasswordWithSMSRequest,
-    db: Session = Depends(get_db)
+    http_request: Request,
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Reset password with SMS verification
@@ -1228,13 +1417,18 @@ async def reset_password_with_sms(
     Allows users to reset their password using SMS verification.
     Also unlocks the account if it was locked.
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Find user
     user = db.query(User).filter(User.phone == request.phone).first()
     
     if not user:
+        error_msg = Messages.error("phone_not_registered_reset", lang)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="This phone number is not registered. Please check your phone number or contact support."
+            detail=error_msg
         )
     
     # Verify SMS code
@@ -1242,7 +1436,8 @@ async def reset_password_with_sms(
         request.phone,
         request.sms_code,
         "reset_password",
-        db
+        db,
+        lang
     )
     
     # Update password
@@ -1254,7 +1449,7 @@ async def reset_password_with_sms(
     logger.info(f"Password reset via SMS for user: {user.phone}")
     
     return {
-        "message": "Password reset successfully",
+        "message": Messages.success("password_reset_success", lang),
         "phone": user.phone[:3] + "****" + user.phone[-4:]
     }
 
@@ -1298,7 +1493,8 @@ async def verify_demo(
     passkey_request: DemoPasskeyRequest,
     request: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     Verify demo/bayi passkey and return JWT token
@@ -1307,6 +1503,10 @@ async def verify_demo(
     Supports both regular demo access and admin demo access.
     In bayi mode, creates bayi-specific users.
     """
+    # Detect user language from headers (needed for all error messages)
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Enhanced logging for debugging (without revealing actual passkeys)
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
     expected_length = len(DEMO_PASSKEY)
@@ -1314,9 +1514,10 @@ async def verify_demo(
     
     if not verify_demo_passkey(passkey_request.passkey):
         logger.warning(f"Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
+        error_msg = Messages.error("invalid_passkey", lang)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid passkey"
+            detail=error_msg
         )
     
     # Check if this is admin demo access
@@ -1357,9 +1558,11 @@ async def verify_demo(
             # Demo mode: use first available organization
             org = db.query(Organization).first()
             if not org:
+                # Note: This is an internal error in demo mode, default to English
+                error_msg = Messages.error("no_organizations_available", "en")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="No organizations available"
+                    detail=error_msg
                 )
         
         try:
@@ -1383,9 +1586,11 @@ async def verify_demo(
             # Try to get the user again in case it was created by another request
             auth_user = db.query(User).filter(User.phone == user_phone).first()
             if not auth_user:
+                # Note: This is an internal error, default to English
+                error_msg = Messages.error("user_creation_failed", "en", str(e))
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"User creation failed: {str(e)}"
+                    detail=error_msg
                 )
     
     # Generate JWT token
@@ -1421,13 +1626,22 @@ async def verify_demo(
 # ============================================================================
 
 @router.post("/logout")
-async def logout(request: Request, response: Response, current_user: User = Depends(get_current_user)):
+async def logout(
+    request: Request, 
+    response: Response, 
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
     """
     Logout user (client-side token removal)
     
     JWT tokens are stateless, so logout happens on client side
     by removing the token from storage.
     """
+    # Detect user language from headers
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     # Clear the cookie (must match original cookie settings)
     response.delete_cookie(
         key="access_token",
@@ -1437,7 +1651,7 @@ async def logout(request: Request, response: Response, current_user: User = Depe
     )
     
     logger.info(f"User logged out: {current_user.phone}")
-    return {"message": "Logged out successfully"}
+    return {"message": Messages.success("logged_out", lang)}
 
 
 # ============================================================================
@@ -1446,12 +1660,18 @@ async def logout(request: Request, response: Response, current_user: User = Depe
 
 @router.get("/admin/organizations", dependencies=[Depends(get_current_user)])
 async def list_organizations_admin(
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """List all organizations (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     orgs = db.query(Organization).all()
     result = []
@@ -1515,19 +1735,27 @@ async def list_organizations_admin(
 @router.post("/admin/organizations", dependencies=[Depends(get_current_user)])
 async def create_organization_admin(
     request: dict,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Create new organization (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     if not all(k in request for k in ["code", "name"]):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required fields: code, name")
+        error_msg = Messages.error("missing_required_fields", lang, "code, name")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     existing = db.query(Organization).filter(Organization.code == request["code"]).first()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Organization '{request['code']}' exists")
+        error_msg = Messages.error("organization_exists", lang, request["code"])
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
     
     # Prepare invitation code: accept provided if valid, otherwise auto-generate following pattern
     provided_invite = request.get("invitation_code")
@@ -1544,7 +1772,8 @@ async def create_organization_admin(
                 break
             attempts += 1
         if attempts == 5:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate unique invitation code")
+            error_msg = Messages.error("failed_generate_invitation_code", lang)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
 
     new_org = Organization(
         code=request["code"],
@@ -1570,28 +1799,38 @@ async def create_organization_admin(
 async def update_organization_admin(
     org_id: int,
     request: dict,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Update organization (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Organization ID {org_id} not found")
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     # Update code (if provided)
     if "code" in request:
         new_code = (request["code"] or "").strip()
         if not new_code:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization code cannot be empty")
+            error_msg = Messages.error("organization_code_empty", lang)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if len(new_code) > 50:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization code too long (max 50)")
+            error_msg = Messages.error("organization_code_too_long", lang)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if new_code != org.code:
             conflict = db.query(Organization).filter(Organization.code == new_code).first()
             if conflict:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Organization '{new_code}' exists")
+                error_msg = Messages.error("organization_exists", lang, new_code)
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             org.code = new_code
 
     if "name" in request:
@@ -1617,7 +1856,8 @@ async def update_organization_admin(
                     break
                 attempts += 1
             if attempts == 5:
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate unique invitation code")
+                error_msg = Messages.error("failed_generate_invitation_code", lang)
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
         org.invitation_code = normalized
     
     # Update expiration date (if provided)
@@ -1629,7 +1869,8 @@ async def update_organization_admin(
                 # Parse ISO format date string
                 org.expires_at = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
             except ValueError:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format. Use ISO format (YYYY-MM-DD)")
+                error_msg = Messages.error("invalid_date_format", lang)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         else:
             org.expires_at = None
     
@@ -1655,27 +1896,34 @@ async def update_organization_admin(
 @router.delete("/admin/organizations/{org_id}", dependencies=[Depends(get_current_user)])
 async def delete_organization_admin(
     org_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Delete organization (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Organization ID {org_id} not found")
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     user_count = db.query(User).filter(User.organization_id == org_id).count()
     if user_count > 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                          detail=f"Cannot delete organization with {user_count} users")
+        error_msg = Messages.error("cannot_delete_organization_with_users", lang, user_count)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     db.delete(org)
     db.commit()
     
     logger.warning(f"Admin {current_user.phone} deleted organization: {org.code}")
-    return {"message": f"Organization {org.code} deleted successfully"}
+    return {"message": Messages.success("organization_deleted", lang, org.code)}
 
 
 # ============================================================================
@@ -1684,12 +1932,14 @@ async def delete_organization_admin(
 
 @router.get("/admin/users", dependencies=[Depends(get_current_user)])
 async def list_users_admin(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = 1,
     page_size: int = 50,
     search: str = "",
-    organization_id: int = None
+    organization_id: int = None,
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """
     List users with pagination and filtering (ADMIN ONLY)
@@ -1700,8 +1950,12 @@ async def list_users_admin(
     - search: Search by name or phone number
     - organization_id: Filter by organization
     """
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     # Build base query
     query = db.query(User)
@@ -1801,43 +2055,51 @@ async def list_users_admin(
 async def update_user_admin(
     user_id: int,
     request: dict,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Update user information (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     # Update phone (with validation)
     if "phone" in request:
         new_phone = request["phone"].strip()
         if not new_phone:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phone cannot be empty")
+            error_msg = Messages.error("phone_cannot_be_empty", lang)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith('1'):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                              detail="Phone must be 11 digits starting with 1")
+            error_msg = Messages.error("phone_format_invalid", lang)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         
         # Check if phone already exists (for another user)
         if new_phone != user.phone:
             existing = db.query(User).filter(User.phone == new_phone).first()
             if existing:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, 
-                                  detail=f"Phone number {new_phone} is already registered by another user")
+                error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
         user.phone = new_phone
     
     # Update name (with validation)
     if "name" in request:
         new_name = request["name"].strip()
         if not new_name or len(new_name) < 2:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                              detail="Name must be at least 2 characters")
+            error_msg = Messages.error("name_too_short", lang)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if any(char.isdigit() for char in new_name):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                              detail="Name cannot contain numbers")
+            error_msg = Messages.error("name_cannot_contain_numbers", lang)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         user.name = new_name
     
     # Update organization
@@ -1846,8 +2108,8 @@ async def update_user_admin(
         if org_id:
             org = db.query(Organization).filter(Organization.id == org_id).first()
             if not org:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                                  detail=f"Organization ID {org_id} not found")
+                error_msg = Messages.error("organization_not_found", lang, org_id)
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
             user.organization_id = org_id
     
     db.commit()
@@ -1859,7 +2121,7 @@ async def update_user_admin(
     logger.info(f"Admin {current_user.phone} updated user: {user.phone}")
     
     return {
-        "message": "User updated successfully",
+        "message": Messages.success("user_updated", lang),
         "user": {
             "id": user.id,
             "phone": user.phone,
@@ -1873,58 +2135,74 @@ async def update_user_admin(
 @router.delete("/admin/users/{user_id}", dependencies=[Depends(get_current_user)])
 async def delete_user_admin(
     user_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Delete user (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     # Prevent deleting self
     if user.id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                          detail="Cannot delete your own account")
+        error_msg = Messages.error("cannot_delete_own_account", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     user_phone = user.phone
     db.delete(user)
     db.commit()
     
     logger.warning(f"Admin {current_user.phone} deleted user: {user_phone}")
-    return {"message": f"User {user_phone} deleted successfully"}
+    return {"message": Messages.success("user_deleted", lang, user_phone)}
 
 
 @router.put("/admin/users/{user_id}/unlock", dependencies=[Depends(get_current_user)])
 async def unlock_user_admin(
     user_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Unlock user account (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     user.failed_login_attempts = 0
     user.locked_until = None
     db.commit()
     
     logger.info(f"Admin {current_user.phone} unlocked user: {user.phone}")
-    return {"message": f"User {user.phone} unlocked successfully"}
+    return {"message": Messages.success("user_unlocked", lang, user.phone)}
 
 
 @router.put("/admin/users/{user_id}/reset-password", dependencies=[Depends(get_current_user)])
 async def reset_user_password_admin(
     user_id: int,
     request: Optional[dict] = Body(None),
+    http_request: Request = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Reset user password (ADMIN ONLY)
     
@@ -1938,16 +2216,26 @@ async def reset_user_password_admin(
         - Cannot reset own password
         - Also unlocks account if locked
     """
+    # Get language from request if available
+    if http_request:
+        accept_language = http_request.headers.get("Accept-Language", "")
+        lang: Language = get_request_language(x_language, accept_language)
+    else:
+        lang: Language = "en"  # Default fallback
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ID {user_id} not found")
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     # Prevent admin from resetting their own password this way
     if user.id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot reset your own password")
+        error_msg = Messages.error("cannot_reset_own_password", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     # Get password from request body, default to '12345678' if not provided
     password = request.get("password") if request and isinstance(request, dict) else None
@@ -1955,9 +2243,11 @@ async def reset_user_password_admin(
     
     # Validate password length (minimum 8 characters as per system requirement)
     if not new_password or len(new_password.strip()) == 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password cannot be empty")
+        error_msg = Messages.error("password_cannot_be_empty", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     if len(new_password.strip()) < 8:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters long")
+        error_msg = Messages.error("password_too_short", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     # Reset password
     user.password_hash = hash_password(new_password)
@@ -1966,7 +2256,7 @@ async def reset_user_password_admin(
     db.commit()
     
     logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
-    return {"message": f"Password reset successfully for user {user.phone}"}
+    return {"message": Messages.success("password_reset_for_user", lang, user.phone)}
 
 
 # ============================================================================
@@ -1974,10 +2264,18 @@ async def reset_user_password_admin(
 # ============================================================================
 
 @router.get("/admin/settings", dependencies=[Depends(get_current_user)])
-async def get_settings_admin(current_user: User = Depends(get_current_user)):
+async def get_settings_admin(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
     """Get system settings from .env (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     env_path = ".env"
     settings = {}
@@ -2005,17 +2303,23 @@ async def get_settings_admin(current_user: User = Depends(get_current_user)):
 @router.put("/admin/settings", dependencies=[Depends(get_current_user)])
 async def update_settings_admin(
     request: dict,
-    current_user: User = Depends(get_current_user)
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Update system settings in .env (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     forbidden_keys = ['JWT_SECRET_KEY', 'DATABASE_URL']
     for key in request:
         if key in forbidden_keys:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                              detail=f"Cannot modify {key} via API")
+            error_msg = Messages.error("cannot_modify_field_via_api", lang, key)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     env_path = ".env"
     lines = []
@@ -2043,20 +2347,26 @@ async def update_settings_admin(
     logger.warning(f"Admin {current_user.phone} updated .env settings: {list(request.keys())}")
     
     return {
-        "message": "Settings updated successfully",
-        "warning": "⚠️ Server restart required for changes to take effect!",
+        "message": Messages.success("settings_updated", lang),
+        "warning": Messages.warning("server_restart_required", lang),
         "updated_keys": list(request.keys())
     }
 
 
 @router.get("/admin/stats", dependencies=[Depends(get_current_user)])
 async def get_stats_admin(
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Get system statistics (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     total_users = db.query(User).count()
     total_orgs = db.query(Organization).count()
@@ -2154,12 +2464,18 @@ async def get_stats_admin(
 
 @router.get("/admin/token-stats", dependencies=[Depends(get_current_user)])
 async def get_token_stats_admin(
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Get detailed token usage statistics (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -2301,12 +2617,18 @@ async def get_token_stats_admin(
 
 @router.get("/admin/api_keys", dependencies=[Depends(get_current_user)])
 async def list_api_keys_admin(
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """List all API keys with usage stats (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     from models.auth import APIKey
     
@@ -2330,12 +2652,18 @@ async def list_api_keys_admin(
 @router.post("/admin/api_keys", dependencies=[Depends(get_current_user)])
 async def create_api_key_admin(
     request: dict,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Create new API key (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     from utils.auth import generate_api_key
     from datetime import datetime as dt, timedelta
@@ -2346,7 +2674,8 @@ async def create_api_key_admin(
     expires_days = request.get("expires_days")  # Optional: days until expiration
     
     if not name:
-        raise HTTPException(status_code=400, detail="Name is required")
+        error_msg = Messages.error("name_required", lang)
+        raise HTTPException(status_code=400, detail=error_msg)
     
     # Generate the API key
     key = generate_api_key(name, description, quota_limit, db)
@@ -2360,11 +2689,11 @@ async def create_api_key_admin(
             db.commit()
     
     return {
-        "message": "API key created successfully",
+        "message": Messages.success("api_key_created", lang),
         "key": key,
         "name": name,
         "quota_limit": quota_limit or "unlimited",
-        "warning": "⚠️ Save this key securely - it won't be shown again!"
+        "warning": Messages.warning("api_key_save_warning", lang)
     }
 
 
@@ -2372,18 +2701,25 @@ async def create_api_key_admin(
 async def update_api_key_admin(
     key_id: int,
     request: dict,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Update API key settings (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     from models.auth import APIKey
     
     key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
     if not key_record:
-        raise HTTPException(status_code=404, detail="API key not found")
+        error_msg = Messages.error("api_key_not_found", lang)
+        raise HTTPException(status_code=404, detail=error_msg)
     
     # Update fields if provided
     if "name" in request:
@@ -2400,7 +2736,7 @@ async def update_api_key_admin(
     db.commit()
     
     return {
-        "message": "API key updated successfully",
+        "message": Messages.success("api_key_updated", lang),
         "key": {
             "id": key_record.id,
             "name": key_record.name,
@@ -2414,18 +2750,25 @@ async def update_api_key_admin(
 @router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(get_current_user)])
 async def delete_api_key_admin(
     key_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Delete/revoke API key (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     from models.auth import APIKey
     
     key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
     if not key_record:
-        raise HTTPException(status_code=404, detail="API key not found")
+        error_msg = Messages.error("api_key_not_found", lang)
+        raise HTTPException(status_code=404, detail=error_msg)
     
     key_name = key_record.name
     db.delete(key_record)
@@ -2439,26 +2782,36 @@ async def delete_api_key_admin(
 @router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(get_current_user)])
 async def toggle_api_key_admin(
     key_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
 ):
     """Toggle API key active status (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
     if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
     from models.auth import APIKey
     
     key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
     if not key_record:
-        raise HTTPException(status_code=404, detail="API key not found")
+        error_msg = Messages.error("api_key_not_found", lang)
+        raise HTTPException(status_code=404, detail=error_msg)
     
     key_record.is_active = not key_record.is_active
     db.commit()
     
-    status_text = "activated" if key_record.is_active else "deactivated"
+    if key_record.is_active:
+        message = Messages.success("api_key_activated", lang, key_record.name)
+    else:
+        message = Messages.success("api_key_deactivated", lang, key_record.name)
     
     return {
-        "message": f"API key '{key_record.name}' {status_text}",
+        "message": message,
         "is_active": key_record.is_active
     }
 

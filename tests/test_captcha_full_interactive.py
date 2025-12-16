@@ -1,9 +1,12 @@
 """
-Interactive Captcha Full Flow Concurrency Test
-==============================================
+Captcha Storage Capacity Test Tool
+==================================
 
+Capacity testing tool that finds how many concurrent users the system can handle.
 Tests the complete captcha flow: generation (with image), storage, and verification.
-Interactive mode - prompts for test parameters instead of command-line arguments.
+
+This tool incrementally increases concurrent users until reaching 60% combined workload
+(60% CPU + 20% Disk Read + 20% Disk Write) and reports the concurrent user capacity.
 
 IMPORTANT: This test uses ACTUAL production code:
 - Uses real captcha generation function from routers/auth.py
@@ -18,8 +21,18 @@ SAFETY: Test database is created in tests/ folder (tests/test_captcha.db)
 
 This ensures the test accurately reflects production behavior and performance.
 
+Key Features:
+- Incremental capacity testing (starts at 500 users, increases by 100)
+- Real-time progress monitoring with CPU and Disk I/O metrics
+- Automatic detection of verification bottlenecks (the real capacity limit)
+- Comprehensive analysis of operation plateaus and bottlenecks
+
 Usage:
     python tests/test_captcha_full_interactive.py
+
+Requirements:
+    psutil - Required for system monitoring (CPU and Disk I/O)
+    Install with: pip install psutil
 """
 
 import time
@@ -46,13 +59,18 @@ except ImportError:
 # Add parent directory to path to import project modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from services.captcha_storage import SQLiteCaptchaStorage
-from config.database import init_db, DATABASE_URL
+# Import these at module level, but they may be reloaded later for test database
+from config.database import init_db, DATABASE_URL, engine
+from models.auth import Captcha  # Ensure Captcha model is imported for table creation
+from sqlalchemy import inspect
 import logging
 import shutil
 
 # Import actual captcha generation from routers/auth.py
 from routers.auth import _generate_custom_captcha
+
+# Note: SQLiteCaptchaStorage will be imported AFTER database setup to ensure
+# it uses the test database connection
 
 # Configure logging
 logging.basicConfig(
@@ -96,6 +114,7 @@ class ProgressTracker:
         self.total_users = total_users
         self.duration_seconds = duration_seconds
         self.completed_users = 0
+        self.started_users = 0  # Track how many users have started
         self.start_time = None
         self.lock = threading.Lock()
         self.operation_counts = defaultdict(int)
@@ -108,6 +127,11 @@ class ProgressTracker:
         self.disk_write_mb_per_sec = 0.0
         self.last_disk_io = None
         self.last_cpu_time = None
+    
+    def user_started(self):
+        """Mark a user as started (called at the beginning of simulate_user_full_flow)."""
+        with self.lock:
+            self.started_users += 1
     
     def user_completed(self):
         """Mark a user as completed."""
@@ -150,8 +174,11 @@ class ProgressTracker:
             elapsed = time.time() - self.start_time if self.start_time else 0
             total_ops = sum(self.operation_counts.values())
             ops_per_sec = total_ops / elapsed if elapsed > 0 else 0
+            active_users = self.started_users - self.completed_users
             return {
+                "started_users": self.started_users,
                 "completed_users": self.completed_users,
+                "active_users": active_users,
                 "total_users": self.total_users,
                 "elapsed": elapsed,
                 "duration_seconds": self.duration_seconds,
@@ -277,27 +304,86 @@ class OperationResult:
         }
 
 
+# Global counter for database lock attempts (even if retried successfully)
+_db_lock_attempts = {"count": 0}
+_db_lock_lock = threading.Lock()
+
+def retry_database_operation(operation_func, max_retries=3, base_delay=0.01):
+    """
+    Retry database operations with exponential backoff for 'database is locked' errors.
+    
+    This helps find the true capacity limit by retrying operations that fail due to
+    temporary database locks, only failing after multiple retries.
+    
+    Also tracks database lock attempts (even if retried successfully) to detect when
+    locks start occurring.
+    
+    Args:
+        operation_func: Function to execute (should be a callable that returns a value)
+        max_retries: Maximum number of retry attempts (default: 3)
+        base_delay: Base delay in seconds for exponential backoff (default: 0.01s)
+    
+    Returns:
+        Result from operation_func if successful
+    
+    Raises:
+        Exception: If all retries fail
+    """
+    for attempt in range(max_retries):
+        try:
+            return operation_func()
+        except Exception as e:
+            error_msg = str(e).lower()
+            is_db_lock = "database is locked" in error_msg or "database locked" in error_msg
+            
+            if is_db_lock:
+                # Track lock attempt (even if we'll retry)
+                with _db_lock_lock:
+                    _db_lock_attempts["count"] += 1
+                
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 0.01s, 0.02s, 0.04s, etc.
+                    delay = base_delay * (2 ** attempt)
+                    # Add small random jitter to avoid thundering herd
+                    jitter = random.uniform(0, delay * 0.1)
+                    time.sleep(delay + jitter)
+                    continue
+            
+            # Not a database lock error, or all retries exhausted
+            raise
+
+def get_db_lock_attempts():
+    """Get the total number of database lock attempts (thread-safe)."""
+    with _db_lock_lock:
+        return _db_lock_attempts["count"]
+
+def reset_db_lock_attempts():
+    """Reset the database lock attempts counter (thread-safe)."""
+    with _db_lock_lock:
+        _db_lock_attempts["count"] = 0
+
+
 def simulate_user_full_flow(
     user_id: int,
-    storage: SQLiteCaptchaStorage,
+    storage,  # SQLiteCaptchaStorage - type hint removed to avoid import issue
     operations_per_user: int,
     duration_seconds: float,
     results: Dict[str, OperationResult],
     progress: Optional[ProgressTracker] = None
 ) -> Dict[str, int]:
     """
-    Simulate a single user performing random captcha operations concurrently.
-    This creates realistic stress testing by mixing all operations randomly.
+    Simulate a single user performing the full captcha workflow: Generate → Store → Verify
     
-    Operations performed:
-    1. Generate captcha code + image (together)
-    2. Store captcha
-    3. Get captcha
-    4. Verify captcha
+    This is a simple, focused test to find concurrent user capacity before database locks occur.
+    Each user continuously performs: Generate captcha → Store captcha → Verify captcha (repeat)
     
     Returns:
         Dict with operation counts
     """
+    # Mark user as started (for tracking concurrent users)
+    if progress:
+        progress.user_started()
+    
     end_time = time.time() + duration_seconds
     operation_counts = {
         "generate_code": 0,
@@ -308,143 +394,89 @@ def simulate_user_full_flow(
         "errors": 0
     }
     
-    # Store captcha IDs and codes for this user (for get/verify operations)
-    user_captchas = {}  # {captcha_id: code}
-    
-    # Operation weights (higher = more frequent)
-    # This simulates realistic usage: more generates/stores than gets/verifies
-    operation_weights = {
-        "generate_and_store": 40,  # Most common: new captcha generation
-        "get": 25,                  # Retrieve existing captcha
-        "verify": 25,                # Verify existing captcha
-        "generate_only": 10,         # Just generate (no store)
-    }
-    
     total_ops = 0
     
     while time.time() < end_time and total_ops < operations_per_user:
         try:
-            # Randomly choose operation type based on weights
-            rand = random.random() * sum(operation_weights.values())
-            cumulative = 0
-            chosen_op = None
+            # Simple workflow: Generate → Store → Verify (repeat)
+            # This tests concurrent user capacity before database locks occur
             
-            for op, weight in operation_weights.items():
-                cumulative += weight
-                if rand <= cumulative:
-                    chosen_op = op
-                    break
+            # Step 1: Generate captcha code + image
+            start = time.time()
+            code = generate_captcha_code()
+            code_latency = (time.time() - start) * 1000
+            results["generate_code"].add_success(code_latency)
+            operation_counts["generate_code"] += 1
+            if progress:
+                progress.add_operation("generate_code")
             
-            if chosen_op == "generate_and_store":
-                # Generate code + image + store (most common flow)
-                start = time.time()
-                code = generate_captcha_code()
-                code_latency = (time.time() - start) * 1000
-                results["generate_code"].add_success(code_latency)
-                operation_counts["generate_code"] += 1
-                if progress:
-                    progress.add_operation("generate_code")
-                
-                start = time.time()
-                img_bytes = generate_captcha_image(code)
-                # Image is generated but not used (simulating real flow)
-                _ = base64.b64encode(img_bytes.getvalue()).decode()  # Simulate encoding
-                img_latency = (time.time() - start) * 1000
-                results["generate_image"].add_success(img_latency)
-                operation_counts["generate_image"] += 1
-                if progress:
-                    progress.add_operation("generate_image")
-                
-                captcha_id = str(uuid.uuid4())
-                start = time.time()
-                storage.store(captcha_id, code, expires_in_seconds=300)
+            start = time.time()
+            img_bytes = generate_captcha_image(code)
+            _ = base64.b64encode(img_bytes.getvalue()).decode()  # Simulate encoding
+            img_latency = (time.time() - start) * 1000
+            results["generate_image"].add_success(img_latency)
+            operation_counts["generate_image"] += 1
+            if progress:
+                progress.add_operation("generate_image")
+            
+            # Step 2: Store captcha
+            captcha_id = str(uuid.uuid4())
+            start = time.time()
+            try:
+                retry_database_operation(
+                    lambda: storage.store(captcha_id, code, expires_in_seconds=300),
+                    max_retries=3,
+                    base_delay=0.01
+                )
                 store_latency = (time.time() - start) * 1000
                 results["store"].add_success(store_latency)
                 operation_counts["store"] += 1
                 if progress:
                     progress.add_operation("store")
-                
-                # Store for later get/verify operations
-                user_captchas[captcha_id] = code
-                total_ops += 1
-                
-            elif chosen_op == "get" and user_captchas:
-                # Get an existing captcha
-                captcha_id = random.choice(list(user_captchas.keys()))
-                expected_code = user_captchas[captcha_id]
-                start = time.time()
-                result = storage.get(captcha_id)
-                latency = (time.time() - start) * 1000
-                
-                if result and result.get("code"):
-                    # Verify the code matches
-                    # Storage stores codes in uppercase (see captcha_storage.py line 64, 69)
-                    # result["code"] is already uppercase, but we compare case-insensitively for safety
-                    if result["code"].upper() == expected_code.upper():
-                        results["get"].add_success(latency)
-                        operation_counts["get"] += 1
-                    else:
-                        results["get"].add_error("code_mismatch", latency)
-                        operation_counts["errors"] += 1
-                        user_captchas.pop(captcha_id, None)
+            except Exception as e:
+                # Store operation failed after retries
+                store_latency = (time.time() - start) * 1000
+                error_msg = str(e).lower()
+                if "database is locked" in error_msg or "database locked" in error_msg:
+                    results["store"].add_error("database_locked", store_latency)
                 else:
-                    results["get"].add_error("not_found", latency)
-                    operation_counts["errors"] += 1
-                    # Remove if not found (might have expired)
-                    user_captchas.pop(captcha_id, None)
-                
-                if progress:
-                    progress.add_operation("get")
-                total_ops += 1
-                
-            elif chosen_op == "verify" and user_captchas:
-                # Verify an existing captcha
-                # Note: verify_and_remove does case-insensitive comparison
-                # and removes the captcha after verification (one-time use)
-                captcha_id = random.choice(list(user_captchas.keys()))
-                code = user_captchas[captcha_id]
-                start = time.time()
-                is_valid, error = storage.verify_and_remove(captcha_id, code)
+                    results["store"].add_error(f"error: {str(e)[:50]}", store_latency)
+                operation_counts["errors"] += 1
+                # Continue to verify attempt even if store failed (to test full flow)
+            
+            # Step 3: Verify captcha
+            start = time.time()
+            try:
+                is_valid, error = retry_database_operation(
+                    lambda: storage.verify_and_remove(captcha_id, code),
+                    max_retries=3,
+                    base_delay=0.01
+                )
                 latency = (time.time() - start) * 1000
                 
                 if is_valid:
                     results["verify"].add_success(latency)
                     operation_counts["verify"] += 1
                 else:
-                    # Error could be: "not_found", "expired", "incorrect", or "error"
                     results["verify"].add_error(error or "unknown", latency)
                     operation_counts["errors"] += 1
                 
-                # Remove from our list (one-time use - captcha is deleted by verify_and_remove)
-                user_captchas.pop(captcha_id, None)
                 if progress:
                     progress.add_operation("verify")
                 total_ops += 1
-                
-            elif chosen_op == "generate_only":
-                # Just generate code + image (no store) - simulates failed generation
-                start = time.time()
-                code = generate_captcha_code()
-                code_latency = (time.time() - start) * 1000
-                results["generate_code"].add_success(code_latency)
-                operation_counts["generate_code"] += 1
-                if progress:
-                    progress.add_operation("generate_code")
-                
-                start = time.time()
-                img_bytes = generate_captcha_image(code)
-                # Image is generated but not used (simulating real flow)
-                _ = base64.b64encode(img_bytes.getvalue()).decode()  # Simulate encoding
-                img_latency = (time.time() - start) * 1000
-                results["generate_image"].add_success(img_latency)
-                operation_counts["generate_image"] += 1
-                if progress:
-                    progress.add_operation("generate_image")
-                
-                total_ops += 1
+            except Exception as e:
+                # Verify operation failed after retries
+                latency = (time.time() - start) * 1000
+                error_msg = str(e).lower()
+                if "database is locked" in error_msg or "database locked" in error_msg:
+                    results["verify"].add_error("database_locked", latency)
+                else:
+                    results["verify"].add_error(f"error: {str(e)[:50]}", latency)
+                operation_counts["errors"] += 1
+                total_ops += 1  # Count as operation even if failed
             
-            # Small random delay to avoid overwhelming the database
-            time.sleep(random.uniform(0.005, 0.02))
+            # Small delay between cycles
+            time.sleep(random.uniform(0.01, 0.05))
             
         except Exception as e:
             operation_counts["errors"] += 1
@@ -452,11 +484,8 @@ def simulate_user_full_flow(
             
             # Categorize errors appropriately
             if "database is locked" in error_msg or "database locked" in error_msg:
-                # Try to attribute to the right operation type
-                if not user_captchas or "store" in error_msg:
-                    results["store"].add_error("database_locked", 0)
-                else:
-                    results["get"].add_error("database_locked", 0)
+                # Default to store error (most common in generate-store-verify flow)
+                results["store"].add_error("database_locked", 0)
             elif "timeout" in error_msg or "busy" in error_msg:
                 results["store"].add_error("timeout", 0)
             else:
@@ -524,11 +553,37 @@ def print_progress_bar(progress: ProgressTracker, results: Dict[str, OperationRe
         # Fallback for terminals that don't support ANSI codes
         print("\n", end="")
     
-    # Main progress bar
+    # Main progress bar - show active users and completed users
+    active_users = stats.get('active_users', 0)
+    started_users = stats.get('started_users', 0)
+    completed_users = stats['completed_users']
+    total_users = stats['total_users']
+    
+    # Calculate database lock errors for display
+    db_lock_errors = 0
+    for op_result in results.values():
+        error_breakdown = op_result.get_error_breakdown()
+        db_lock_errors += error_breakdown.get('database_locked', 0)
+    
+    # Show: Active/Started/Total (Completed)
+    # Active = Currently running user simulations
+    # Completed = User simulations that finished their full workflow
+    if started_users == total_users:
+        # All users have started - show active and completed
+        user_status = f"Active: {active_users} | Completed: {completed_users}/{total_users} ({user_progress:.1f}%)"
+    else:
+        # Still starting users - show started count
+        user_status = f"Started: {started_users}/{total_users} | Active: {active_users} | Completed: {completed_users}"
+    
+    # Add database lock indicator if locks occurred
+    lock_indicator = ""
+    if db_lock_errors > 0:
+        lock_indicator = f" | 🔴 DB_Locks: {db_lock_errors}"
+    
     print(f"[{bar}] {time_progress:.1f}% | "
-          f"Users: {stats['completed_users']}/{stats['total_users']} ({user_progress:.1f}%) | "
+          f"{user_status} | "
           f"Generate: {generate_count} | Store: {store_count} | Get: {get_count} | Verify: {verify_count} | "
-          f"Success: {success_rate:.1f}% | "
+          f"Success: {success_rate:.1f}%{lock_indicator} | "
           f"Time: {elapsed_str}/{stats['duration_seconds']:.1f}s (Remaining: {remaining_str})")
     
     # System resources (CPU and Disk I/O)
@@ -761,8 +816,15 @@ def verify_wal_mode() -> Dict[str, any]:
         }
 
 
+# Deprecated: get_user_input is no longer used (was for mode 1)
+# Keeping for potential future use or reference
 def get_user_input(prompt: str, default: int = None, min_val: int = 1, max_val: int = None) -> int:
-    """Get integer input from user with validation."""
+    """
+    Get integer input from user with validation.
+    
+    DEPRECATED: This function is no longer used. The capacity test uses default parameters.
+    Kept for potential future use or reference.
+    """
     while True:
         try:
             if default is not None:
@@ -791,6 +853,8 @@ def get_user_input(prompt: str, default: int = None, min_val: int = 1, max_val: 
             sys.exit(0)
 
 
+# Deprecated: run_concurrency_test is no longer used (was for mode 1)
+# Keeping for potential future use or reference
 def run_concurrency_test(
     num_users: int,
     duration_seconds: float,
@@ -800,6 +864,9 @@ def run_concurrency_test(
 ) -> Dict:
     """
     Run concurrent captcha full flow test.
+    
+    DEPRECATED: This function is no longer used. The tool now uses run_capacity_test().
+    Kept for potential future use or reference.
     
     Args:
         num_users: Number of concurrent users to simulate
@@ -850,7 +917,8 @@ def run_concurrency_test(
         if wal_before['shm_exists']:
             print(f"  SHM size: {wal_before['shm_size_mb']:.2f} MB")
         
-        # Initialize storage
+        # Initialize storage (import after database setup)
+        from services.captcha_storage import SQLiteCaptchaStorage
         storage = SQLiteCaptchaStorage()
         
         # Initialize results tracking
@@ -993,6 +1061,102 @@ def run_concurrency_test(
         # Clean up test database if requested (always runs, even on error)
         if should_cleanup:
             cleanup_test_database(test_db_path)
+
+
+def detect_completed_users_plateau(phase_results: List[Dict]) -> Optional[Dict]:
+    """
+    Detect when completed users plateau despite increasing total users.
+    
+    This is the REAL concurrent user capacity indicator - how many users can
+    actually complete their full workflow successfully. When completed users
+    stabilizes, that's the actual concurrent user capacity limit.
+    
+    Args:
+        phase_results: List of phase result dictionaries
+        
+    Returns:
+        Dict with completed users plateau information if detected, None otherwise
+    """
+    if len(phase_results) < 3:
+        return None
+    
+    # Get completed users counts for each phase
+    phase_metrics = []
+    for phase in phase_results:
+        users = phase["users"]
+        completed_users = phase.get("completed_users", 0)
+        completion_rate = phase.get("completion_rate", 0)
+        completion_throughput = phase.get("completion_throughput", 0)
+        phase_metrics.append({
+            "users": users,
+            "completed": completed_users,
+            "completion_rate": completion_rate,
+            "completion_throughput": completion_throughput
+        })
+    
+    # Get completed users counts across phases
+    completed_counts = [m["completed"] for m in phase_metrics]
+    completion_rates = [m["completion_rate"] for m in phase_metrics]
+    users_list = [m["users"] for m in phase_metrics]
+    
+    if len(completed_counts) < 3 or max(completed_counts) == 0:
+        return None
+    
+    # Find the peak completed users count
+    peak_idx = completed_counts.index(max(completed_counts))
+    if peak_idx == 0:  # Peak is at the start, not a plateau
+        return None
+    
+    # Check if completed users plateaued after peak
+    peak_completed = completed_counts[peak_idx]
+    recent_completed = completed_counts[peak_idx + 1:]
+    recent_completion_rates = completion_rates[peak_idx + 1:]
+    recent_users = users_list[peak_idx + 1:]
+    
+    if not recent_completed or len(recent_completed) < 2:
+        return None
+    
+    # Calculate average after peak
+    avg_recent_completed = sum(recent_completed) / len(recent_completed)
+    avg_recent_rate = sum(recent_completion_rates) / len(recent_completion_rates)
+    peak_rate = completion_rates[peak_idx]
+    
+    decrease_percent = ((peak_rate - avg_recent_rate) / peak_rate * 100) if peak_rate > 0 else 0
+    
+    # Check if completed users are plateauing (not increasing much despite more total users)
+    if len(recent_completed) >= 2:
+        completed_growth = (recent_completed[-1] - recent_completed[0]) / recent_completed[0] * 100 if recent_completed[0] > 0 else 0
+        users_growth = (recent_users[-1] - recent_users[0]) / recent_users[0] * 100 if recent_users[0] > 0 else 0
+        
+        # Consider it a plateau if:
+        # 1. Completion rate decreased significantly (>10%)
+        # 2. Completed users are not scaling with total users (users grew but completed didn't)
+        # 3. Recent values are relatively stable
+        if decrease_percent > 10 or (users_growth > 20 and completed_growth < users_growth * 0.3):
+            # Check if recent values are stable (low variance)
+            variance = sum((v - avg_recent_completed) ** 2 for v in recent_completed) / len(recent_completed)
+            std_dev = variance ** 0.5
+            cv = (std_dev / avg_recent_completed * 100) if avg_recent_completed > 0 else 100
+            
+            # If coefficient of variation is low (< 25%), values are stable (plateaued)
+            if cv < 25:
+                plateau_phase = phase_metrics[peak_idx]
+                plateau_users = plateau_phase["users"]
+                current_completed = recent_completed[-1]
+                
+                return {
+                    "plateau_users": plateau_users,
+                    "plateau_completed": peak_completed,
+                    "current_completed": current_completed,
+                    "peak_completion_rate": peak_rate,
+                    "current_completion_rate": avg_recent_rate,
+                    "decrease_percent": decrease_percent,
+                    "completed_growth": completed_growth,
+                    "users_growth": users_growth,
+                    "coefficient_of_variation": cv
+                }
+    
+    return None
 
 
 def detect_verification_plateau(phase_results: List[Dict]) -> Optional[Dict]:
@@ -1206,7 +1370,8 @@ def run_capacity_test(
     target_workload_percent: float = 60.0,
     step_size: int = 100,
     stabilization_time: float = 5.0,
-    cleanup_after: bool = True
+    cleanup_after: bool = True,
+    max_workers: int = None  # None = auto-calculate, otherwise use specified value
 ) -> Dict:
     """
     Run capacity test to find how many users 1 worker can handle at target workload.
@@ -1233,22 +1398,54 @@ def run_capacity_test(
     # Set up test database
     test_db_path, should_cleanup = setup_test_database(cleanup_after)
     
+    # Check if single-phase mode (stability test at fixed user count)
+    single_phase_mode = (start_users == max_users and step_size == 0)
+    
     try:
-        print(f"\n{'='*80}")
-        print(f"CAPACITY TEST: Finding Users per Worker at {target_workload_percent}% Workload")
-        print(f"{'='*80}")
-        print(f"Test Database: {test_db_path}")
-        print(f"Target Workload: {target_workload_percent}% (CPU + Disk I/O combined)")
-        print(f"Starting Users: {start_users}")
-        print(f"Max Users: {max_users}")
-        print(f"Step Size: {step_size} users per increment")
-        print(f"Test Duration per Phase: {duration_seconds} seconds")
-        print(f"Stabilization Time: {stabilization_time} seconds")
-        print(f"{'='*80}\n")
+        if single_phase_mode:
+            print(f"\n{'='*80}")
+            print(f"STABILITY TEST: Observing Generation-Verify Workflow at {start_users} Users")
+            print(f"{'='*80}")
+            print(f"Test Database: {test_db_path}")
+            print(f"Fixed Users: {start_users}")
+            print(f"Test Duration: {duration_seconds} seconds")
+            print(f"Goal: Find stable generation-verify workflow pattern")
+            print(f"{'='*80}\n")
+        else:
+            print(f"\n{'='*80}")
+            print(f"CAPACITY TEST: Finding Users per Worker at {target_workload_percent}% Workload")
+            print(f"{'='*80}")
+            print(f"Test Database: {test_db_path}")
+            print(f"Target Workload: {target_workload_percent}% (CPU + Disk I/O combined)")
+            print(f"Starting Users: {start_users}")
+            print(f"Max Users: {max_users}")
+            print(f"Step Size: {step_size} users per increment")
+            print(f"Test Duration per Phase: {duration_seconds} seconds")
+            print(f"Stabilization Time: {stabilization_time} seconds")
+            print(f"{'='*80}\n")
         
         # Initialize database
         print("Initializing test database...")
+        # Ensure Captcha model is imported before init_db() to register it with Base.metadata
+        from models.auth import Captcha
+        # Re-import engine after database setup to ensure we're using the test database
+        from config.database import engine as test_engine, init_db
         init_db()
+        
+        # CRITICAL: Reload captcha_storage module to ensure it uses the new database connection
+        # SQLiteCaptchaStorage imports SessionLocal at module load time, so we need to reload it
+        # after the database URL has been changed
+        import importlib
+        import services.captcha_storage
+        importlib.reload(services.captcha_storage)
+        
+        # Verify captchas table exists before starting test
+        print("Verifying captchas table exists...")
+        inspector = inspect(test_engine)
+        existing_tables = inspector.get_table_names()
+        if "captchas" not in existing_tables:
+            raise RuntimeError("CRITICAL: captchas table was not created! Database initialization failed.")
+        print(f"✅ Verified: captchas table exists")
         
         # Verify WAL mode is enabled
         wal_mode_status = verify_wal_mode()
@@ -1271,7 +1468,8 @@ def run_capacity_test(
         if wal_before['shm_exists']:
             print(f"  SHM size: {wal_before['shm_size_mb']:.2f} MB")
         
-        # Initialize storage
+        # Initialize storage AFTER reloading the module to ensure it uses the test database
+        from services.captcha_storage import SQLiteCaptchaStorage
         storage = SQLiteCaptchaStorage()
         
         # Baseline measurements (idle)
@@ -1311,155 +1509,244 @@ def run_capacity_test(
         current_users = start_users
         capacity_results = []
         
-        print(f"\n{'='*80}")
-        print(f"🚀 Starting Capacity Test...")
-        print(f"{'='*80}\n")
-        print(f"Phase Summary Table:")
-        print(f"Phase | Users | CPU % | Disk R/W MB/s | Combined % | Status")
-        print(f"{'─'*80}\n")
+        # Use a reasonable fixed number of workers instead of one per user
+        # This prevents creating hundreds/thousands of threads which can hang the system
+        # ThreadPoolExecutor will queue tasks and execute them efficiently with available workers
+        cpu_count = os.cpu_count() or 4
+        if max_workers is None:
+            # Auto-calculate reasonable worker limit based on:
+            # 1. SQLite WAL mode: Can handle ~100-200 concurrent users comfortably
+            # 2. Single writer limitation: Only one write at a time (even with WAL)
+            # 3. I/O-bound operations: Can use more threads than CPU cores
+            # 4. Lock contention: Too many threads increases database lock errors
+            # 
+            # Formula: CPU_count * 4-6 for I/O-bound, capped at reasonable limit
+            # This balances concurrency testing with SQLite's limitations
+            max_workers = min(150, cpu_count * 6)  # Cap at 150 workers (optimal for SQLite)
+            # Note: Can be overridden by passing max_workers parameter
+            # For testing higher limits, use max_workers=200 or higher explicitly
+        # else: Use specified max_workers value (already set)
         
-        while current_users <= max_users:
-            # Allow all users to run concurrently to properly test concurrent load
-            max_workers = current_users
-            # Initialize results tracking for this phase
-            results = {
-                "generate_code": OperationResult("generate_code"),
-                "generate_image": OperationResult("generate_image"),
-                "store": OperationResult("store"),
-                "get": OperationResult("get"),
-                "verify": OperationResult("verify"),
-            }
-            
-            # Initialize progress tracker
-            progress = ProgressTracker(current_users, duration_seconds)
-            
-            # Initialize system monitoring baseline
-            try:
-                progress.last_disk_io = psutil.disk_io_counters()
-                progress.last_cpu_time = time.time()
-            except Exception:
-                pass
-            
-            start_time = time.time()
-            progress.start_time = start_time
-            
-            # Initialize variables in case of early exception
-            avg_cpu = 0.0
-            net_cpu = 0.0
-            avg_disk_read_mb_per_sec = 0.0
-            avg_disk_write_mb_per_sec = 0.0
-            net_disk_read = 0.0
-            net_disk_write = 0.0
-            disk_read_percent = 0.0
-            disk_write_percent = 0.0
-            combined_workload = 0.0
-            
-            # Print phase header with progress indicator
-            print(f"\n{'─'*80}")
-            print(f"📊 Phase {len(capacity_results) + 1}: Testing with {current_users} users")
-            print(f"{'─'*80}")
-            print("📊 Real-time Progress:")
+        if single_phase_mode:
+            print(f"\n{'='*80}")
+            print(f"🚀 Starting Stability Test at {start_users} Users...")
+            print(f"{'='*80}\n")
+            print(f"Using {max_workers} worker threads (CPU count: {cpu_count})")
+            print(f"Tasks will be queued and executed efficiently by the thread pool")
+            print(f"\nGoal: Observe generation-verify workflow stability over {duration_seconds}s")
+            print(f"Monitoring: Operation throughput, error rates, and workflow patterns")
+            print(f"\n{'─'*80}\n")
+            sys.stdout.flush()
+        else:
+            print(f"\n{'='*80}")
+            print(f"🚀 Starting Capacity Test...")
+            print(f"{'='*80}\n")
+            print(f"Using {max_workers} worker threads (CPU count: {cpu_count})")
+            print(f"Tasks will be queued and executed efficiently by the thread pool")
+            print(f"\nPhase Summary Table:")
+            print(f"Phase | Users | CPU % | Disk R/W MB/s | Combined % | Status")
             print(f"{'─'*80}\n")
-            
-            # Start progress update thread for real-time display
-            stop_progress = threading.Event()
-            
-            def update_progress():
-                """Update progress display periodically."""
-                while not stop_progress.is_set():
-                    print_progress_bar(progress, results)
-                    time.sleep(0.5)  # Update every 0.5 seconds
-            
-            progress_thread = threading.Thread(target=update_progress, daemon=True)
-            progress_thread.start()
-            
-            # Print initial empty lines for progress display (2 lines: progress bar + system stats)
-            print("\n")
-            
-            # Run test phase
-            phase_success = False
-            try:
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    futures = []
-                    for user_id in range(current_users):
-                        future = executor.submit(
-                            simulate_user_full_flow,
-                            user_id,
-                            storage,
-                            operations_per_user,
-                            duration_seconds,
-                            results,
-                            progress
-                        )
-                        futures.append(future)
-                    
-                    # Wait for stabilization period, then measure system metrics
-                    time.sleep(stabilization_time)
-                    
-                    # Measure CPU and disk I/O during active load
-                    cpu_samples = []
-                    disk_read_samples = []
-                    disk_write_samples = []
-                    
-                    # Get initial disk I/O counter
-                    disk_io_start = psutil.disk_io_counters()
-                    measurement_start_time = time.time()
-                    
-                    for _ in range(10):  # Sample 10 times over 5 seconds
-                        cpu_percent = psutil.cpu_percent(interval=0.5)
-                        cpu_samples.append(cpu_percent)
-                        progress.update_system_stats()
-                    
-                    # Get final disk I/O counter
-                    disk_io_end = psutil.disk_io_counters()
-                    measurement_duration = time.time() - measurement_start_time
-                    
-                    # Calculate average CPU
-                    avg_cpu = statistics.mean(cpu_samples)
-                    
-                    # Calculate disk I/O rates
-                    avg_disk_read_mb_per_sec = 0.0
-                    avg_disk_write_mb_per_sec = 0.0
-                    if disk_io_start and disk_io_end and measurement_duration > 0:
-                        read_diff = disk_io_end.read_bytes - disk_io_start.read_bytes
-                        write_diff = disk_io_end.write_bytes - disk_io_start.write_bytes
-                        avg_disk_read_mb_per_sec = (read_diff / (1024 * 1024)) / measurement_duration
-                        avg_disk_write_mb_per_sec = (write_diff / (1024 * 1024)) / measurement_duration
-                    
-                    # Calculate net disk I/O (excluding baseline)
-                    net_disk_read = max(0, avg_disk_read_mb_per_sec - baseline_disk_read_mb_per_sec)
-                    net_disk_write = max(0, avg_disk_write_mb_per_sec - baseline_disk_write_mb_per_sec)
-                    
-                    # Calculate normalized disk usage (0-100%)
-                    disk_read_percent = min(100, (net_disk_read / MAX_DISK_READ_MB_PER_SEC) * 100) if MAX_DISK_READ_MB_PER_SEC > 0 else 0
-                    disk_write_percent = min(100, (net_disk_write / MAX_DISK_WRITE_MB_PER_SEC) * 100) if MAX_DISK_WRITE_MB_PER_SEC > 0 else 0
-                    
-                    # Calculate combined workload (weighted: 60% CPU, 20% disk read, 20% disk write)
-                    # Net CPU (excluding baseline)
-                    net_cpu = max(0, avg_cpu - baseline_cpu)
-                    combined_workload = (net_cpu * 0.6) + (disk_read_percent * 0.2) + (disk_write_percent * 0.2)
-                    
-                    # Wait for all users to complete
-                    user_results = []
-                    for future in as_completed(futures):
-                        try:
-                            user_result = future.result(timeout=duration_seconds + 10)
-                            user_results.append(user_result)
-                        except Exception as e:
-                            logger.error(f"User simulation failed: {e}")
+            sys.stdout.flush()
+        
+        try:
+            # Single phase mode: run once at fixed user count
+            # Multi-phase mode: incrementally increase users
+            while current_users <= max_users:
                 
-                phase_success = True
-            except Exception as e:
-                logger.error(f"Test phase failed: {e}")
-                # If phase failed, skip storing results and break
-                break
-            finally:
-                # Stop progress updates
-                stop_progress.set()
+                # Debug: Print phase start
+                print(f"\n{'─'*80}")
+                print(f"📊 Phase {len(capacity_results) + 1}: Starting with {current_users} users...")
+                print(f"{'─'*80}")
+                
+                # Initialize results tracking for this phase
+                results = {
+                    "generate_code": OperationResult("generate_code"),
+                    "generate_image": OperationResult("generate_image"),
+                    "store": OperationResult("store"),
+                    "get": OperationResult("get"),
+                    "verify": OperationResult("verify"),
+                }
+                
+                # Initialize progress tracker
+                progress = ProgressTracker(current_users, duration_seconds)
+                
+                # Initialize system monitoring baseline
                 try:
-                    progress_thread.join(timeout=2)
+                    progress.last_disk_io = psutil.disk_io_counters()
+                    progress.last_cpu_time = time.time()
                 except Exception:
-                    pass  # Thread may have already finished
+                    pass
+                
+                start_time = time.time()
+                progress.start_time = start_time
+                
+                # Initialize variables in case of early exception
+                avg_cpu = 0.0
+                net_cpu = 0.0
+                avg_disk_read_mb_per_sec = 0.0
+                avg_disk_write_mb_per_sec = 0.0
+                net_disk_read = 0.0
+                net_disk_write = 0.0
+                disk_read_percent = 0.0
+                disk_write_percent = 0.0
+                combined_workload = 0.0
+                
+                # Print phase header with progress indicator
+                print("📊 Real-time Progress:")
+                print(f"{'─'*80}\n")
+                
+                # Initialize stop_progress BEFORE starting the thread
+                stop_progress = threading.Event()
+                
+                def update_progress():
+                    """Update progress display periodically."""
+                    try:
+                        while not stop_progress.is_set():
+                            print_progress_bar(progress, results)
+                            time.sleep(0.5)  # Update every 0.5 seconds
+                    except Exception as e:
+                        # Silently handle errors in progress thread (don't spam console)
+                        logger.debug(f"Progress update error: {e}")
+                
+                progress_thread = threading.Thread(target=update_progress, daemon=True)
+                progress_thread.start()
+                
+                # Print initial empty lines for progress display (2 lines: progress bar + system stats)
+                print("\n")
+                
+                # Run test phase
+                # Initialize phase_success before try block to ensure it's always defined
+                phase_success = False
+                # Note: stop_progress is already initialized above (line 1428) before thread starts
+                try:
+                    print(f"Creating ThreadPoolExecutor with {max_workers} workers...")
+                    sys.stdout.flush()
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        print(f"Submitting {current_users} user simulation tasks...")
+                        sys.stdout.flush()
+                        futures = []
+                        for user_id in range(current_users):
+                            future = executor.submit(
+                                simulate_user_full_flow,
+                                user_id,
+                                storage,
+                                operations_per_user,
+                                duration_seconds,
+                                results,
+                                progress
+                            )
+                            futures.append(future)
+                        
+                        print(f"✅ All {len(futures)} tasks submitted to thread pool.")
+                        print(f"   ⚠️  CONCURRENCY MODEL:")
+                        print(f"      → Only {max_workers} user simulations run concurrently (ThreadPoolExecutor limit)")
+                        print(f"      → Remaining {current_users - max_workers} tasks queue and execute as workers free up")
+                        print(f"      → This simulates realistic concurrency and helps identify database bottlenecks")
+                        print(f"   📊 PROGRESS INDICATORS:")
+                        print(f"      → Started: How many user tasks have begun executing")
+                        print(f"      → Active: Currently running = Started - Completed")
+                        print(f"      → Completed: How many user tasks finished their full workflow")
+                        print(f"   🔴 DATABASE LOCKS:")
+                        print(f"      → Lock errors are retried up to 3 times")
+                        print(f"      → Success rate shows operations that eventually succeeded (after retries)")
+                        print(f"      → Database locks ARE the bottleneck we're testing - this is expected!")
+                        print(f"   Waiting {stabilization_time}s for stabilization...")
+                        sys.stdout.flush()
+                        
+                        # Give tasks a moment to start (all should start immediately, but verify)
+                        time.sleep(0.5)
+                        
+                        # Wait for remaining stabilization period
+                        time.sleep(stabilization_time - 0.5)
+                        
+                        # Measure CPU and disk I/O during active load
+                        cpu_samples = []
+                        disk_read_samples = []
+                        disk_write_samples = []
+                        
+                        # Get initial disk I/O counter
+                        disk_io_start = psutil.disk_io_counters()
+                        measurement_start_time = time.time()
+                        
+                        for _ in range(10):  # Sample 10 times over 5 seconds
+                            try:
+                                cpu_percent = psutil.cpu_percent(interval=0.5)
+                                cpu_samples.append(cpu_percent)
+                                progress.update_system_stats()
+                            except KeyboardInterrupt:
+                                # Cancel all futures and stop progress
+                                stop_progress.set()
+                                for future in futures:
+                                    future.cancel()
+                                raise
+                        
+                        # Get final disk I/O counter
+                        disk_io_end = psutil.disk_io_counters()
+                        measurement_duration = time.time() - measurement_start_time
+                        
+                        # Calculate average CPU
+                        avg_cpu = statistics.mean(cpu_samples)
+                        
+                        # Calculate disk I/O rates
+                        avg_disk_read_mb_per_sec = 0.0
+                        avg_disk_write_mb_per_sec = 0.0
+                        if disk_io_start and disk_io_end and measurement_duration > 0:
+                            read_diff = disk_io_end.read_bytes - disk_io_start.read_bytes
+                            write_diff = disk_io_end.write_bytes - disk_io_start.write_bytes
+                            avg_disk_read_mb_per_sec = (read_diff / (1024 * 1024)) / measurement_duration
+                            avg_disk_write_mb_per_sec = (write_diff / (1024 * 1024)) / measurement_duration
+                        
+                        # Calculate net disk I/O (excluding baseline)
+                        net_disk_read = max(0, avg_disk_read_mb_per_sec - baseline_disk_read_mb_per_sec)
+                        net_disk_write = max(0, avg_disk_write_mb_per_sec - baseline_disk_write_mb_per_sec)
+                        
+                        # Calculate normalized disk usage (0-100%)
+                        disk_read_percent = min(100, (net_disk_read / MAX_DISK_READ_MB_PER_SEC) * 100) if MAX_DISK_READ_MB_PER_SEC > 0 else 0
+                        disk_write_percent = min(100, (net_disk_write / MAX_DISK_WRITE_MB_PER_SEC) * 100) if MAX_DISK_WRITE_MB_PER_SEC > 0 else 0
+                        
+                        # Calculate combined workload (weighted: 60% CPU, 20% disk read, 20% disk write)
+                        # Net CPU (excluding baseline)
+                        net_cpu = max(0, avg_cpu - baseline_cpu)
+                        combined_workload = (net_cpu * 0.6) + (disk_read_percent * 0.2) + (disk_write_percent * 0.2)
+                        
+                        # Wait for all users to complete
+                        user_results = []
+                        for future in as_completed(futures):
+                            try:
+                                user_result = future.result(timeout=duration_seconds + 10)
+                                user_results.append(user_result)
+                            except KeyboardInterrupt:
+                                # Cancel remaining futures and stop progress
+                                stop_progress.set()
+                                for f in futures:
+                                    f.cancel()
+                                raise
+                            except Exception as e:
+                                logger.error(f"User simulation failed: {e}")
+                    
+                    phase_success = True
+                except KeyboardInterrupt:
+                    # Stop progress updates and re-raise to exit
+                    stop_progress.set()
+                    print(f"\n\n{'─'*80}")
+                    print("⚠️  Test interrupted by user (Ctrl+C)")
+                    print(f"{'─'*80}")
+                    print("Stopping test and cleaning up...")
+                    raise
+                except Exception as e:
+                    logger.error(f"Test phase failed: {e}")
+                    # If phase failed, skip storing results
+                    phase_success = False
+                    # Exit the while loop by setting current_users beyond max
+                    current_users = max_users + 1
+                finally:
+                    # Stop progress updates (safely check if stop_progress was initialized)
+                    if stop_progress is not None:
+                        stop_progress.set()
+                    try:
+                        progress_thread.join(timeout=2)
+                    except Exception:
+                        pass  # Thread may have already finished
                 
                 # Final progress update
                 try:
@@ -1467,160 +1754,271 @@ def run_capacity_test(
                     print("\n\n")  # New lines after progress bar
                 except Exception:
                     pass  # Fallback if progress bar fails
-            
-            # Only store phase results if phase completed successfully
-            if phase_success:
-                end_time = time.time()
-                actual_duration = end_time - start_time
                 
-                # Calculate summary metrics
-                total_ops = sum(r.get_stats()["total_operations"] for r in results.values())
-                total_success = sum(r.get_stats()["success_count"] for r in results.values())
-                total_errors = sum(r.get_stats()["error_count"] for r in results.values())
-                success_rate = (total_success / total_ops * 100) if total_ops > 0 else 0.0
-                error_rate = (total_errors / total_ops * 100) if total_ops > 0 else 0.0
-                ops_per_sec = total_ops / actual_duration if actual_duration > 0 else 0.0
-                
-                # Track operation counts per type
-                operation_counts = {}
-                for op_name, op_result in results.items():
-                    stats = op_result.get_stats()
-                    operation_counts[op_name] = {
-                        "total": stats["total_operations"],
-                        "success": stats["success_count"],
-                        "errors": stats["error_count"],
-                        "per_user": stats["total_operations"] / current_users if current_users > 0 else 0.0
-                    }
-                
-                # Calculate end-to-end flow metrics (the real capacity indicator)
-                # Key insight: Verification is the bottleneck - this is what limits actual user capacity
-                generated_count = operation_counts.get("generate_code", {}).get("total", 0)
-                stored_count = operation_counts.get("store", {}).get("total", 0)
-                verified_count = operation_counts.get("verify", {}).get("success", 0)  # Only successful verifications
-                
-                # End-to-end success rate: how many generated captchas actually get verified
-                # This shows the real capacity - we can generate/store more, but verification is the limit
-                e2e_success_rate = (verified_count / generated_count * 100) if generated_count > 0 else 0.0
-                verification_throughput = verified_count / actual_duration if actual_duration > 0 else 0.0
-                verifications_per_user = verified_count / current_users if current_users > 0 else 0.0
-                
-                # Collect error breakdown by type
-                error_breakdown = {}
-                for op_result in results.values():
-                    op_errors = op_result.get_error_breakdown()
-                    for error_type, count in op_errors.items():
-                        error_breakdown[error_type] = error_breakdown.get(error_type, 0) + count
-                
-                # Store phase results
-                phase_result = {
-                "users": current_users,
-                "cpu_percent": avg_cpu,
-                "baseline_cpu": baseline_cpu,
-                "net_cpu": net_cpu,
-                "disk_read_mb_per_sec": avg_disk_read_mb_per_sec,
-                "disk_write_mb_per_sec": avg_disk_write_mb_per_sec,
-                "net_disk_read_mb_per_sec": net_disk_read,
-                "net_disk_write_mb_per_sec": net_disk_write,
-                "disk_read_percent": disk_read_percent,
-                "disk_write_percent": disk_write_percent,
-                "combined_workload_percent": combined_workload,
-                "total_operations": total_ops,
-                "total_errors": total_errors,
-                "success_rate": success_rate,
-                "error_rate": error_rate,
-                "error_breakdown": error_breakdown,
-                "operation_counts": operation_counts,
-                # End-to-end flow metrics (verification is the real capacity indicator)
-                "generated_count": generated_count,
-                "stored_count": stored_count,
-                "verified_count": verified_count,
-                "e2e_success_rate": e2e_success_rate,
-                "verification_throughput": verification_throughput,
-                "verifications_per_user": verifications_per_user,
-                    "operations_per_second": ops_per_sec,
-                    "duration": actual_duration,
-                }
-                capacity_results.append(phase_result)
-                
-                # Detect verification plateau (the real capacity limit)
-                if len(capacity_results) >= 3:  # Need at least 3 phases to detect plateau
-                    verify_plateau = detect_verification_plateau(capacity_results)
-                    if verify_plateau:
-                        plateau_users = verify_plateau["plateau_users"]
-                        plateau_verified = verify_plateau["plateau_verified"]
-                        current_verified = verify_plateau.get("current_verified", plateau_verified)
-                        verify_growth = verify_plateau.get("verification_growth", 0)
-                        users_growth = verify_plateau.get("users_growth", 0)
-                        
-                        print(f"\n🔴 CAPACITY LIMIT DETECTED: Verification plateaued at ~{plateau_verified:.0f} verifications")
-                        print(f"   Plateau started at {plateau_users} users")
-                        print(f"   Current verifications: ~{current_verified:.0f} (despite {current_users} users)")
-                        print(f"   Verifications/user decreased by {verify_plateau['decrease_percent']:.1f}%")
-                        if users_growth > 0:
-                            print(f"   Users increased {users_growth:.1f}% but verifications only {verify_growth:.1f}%")
-                        print(f"   → REAL CAPACITY: ~{plateau_verified:.0f} verified captchas per {duration_seconds:.0f}s = ~{plateau_verified/duration_seconds:.1f} verifications/sec")
-                        print(f"   → Adding more users won't increase capacity - verification is the bottleneck")
-                        print(f"   → Consider optimizing verification operations or increasing database concurrency")
+                # Only store phase results if phase completed successfully
+                if phase_success:
+                    end_time = time.time()
+                    actual_duration = end_time - start_time
                     
-                    # Also detect general operation plateaus
-                    plateau_info = detect_operation_plateau(capacity_results)
-                    if plateau_info:
-                        bottleneck_op = plateau_info["bottleneck_operation"]
-                        # Only show if it's not verification (already shown above)
-                        if bottleneck_op != "verify":
-                            plateau_users = plateau_info["plateau_users"]
-                            plateau_ops = plateau_info["plateau_operations"]
-                            current_ops = plateau_info.get("current_operations", plateau_ops)
-                            ops_growth = plateau_info.get("operations_growth", 0)
-                            users_growth = plateau_info.get("users_growth", 0)
+                    # Calculate summary metrics
+                    total_ops = sum(r.get_stats()["total_operations"] for r in results.values())
+                    total_success = sum(r.get_stats()["success_count"] for r in results.values())
+                    total_errors = sum(r.get_stats()["error_count"] for r in results.values())
+                    success_rate = (total_success / total_ops * 100) if total_ops > 0 else 0.0
+                    error_rate = (total_errors / total_ops * 100) if total_ops > 0 else 0.0
+                    ops_per_sec = total_ops / actual_duration if actual_duration > 0 else 0.0
+                    
+                    # Track operation counts per type
+                    operation_counts = {}
+                    for op_name, op_result in results.items():
+                        stats = op_result.get_stats()
+                        operation_counts[op_name] = {
+                            "total": stats["total_operations"],
+                            "success": stats["success_count"],
+                            "errors": stats["error_count"],
+                            "per_user": stats["total_operations"] / current_users if current_users > 0 else 0.0
+                        }
+                    
+                    # Calculate end-to-end flow metrics (the real capacity indicator)
+                    # Key insight: Verification is the bottleneck - this is what limits actual user capacity
+                    generated_count = operation_counts.get("generate_code", {}).get("total", 0)
+                    stored_count = operation_counts.get("store", {}).get("total", 0)
+                    verified_count = operation_counts.get("verify", {}).get("success", 0)  # Only successful verifications
+                    
+                    # End-to-end success rate: how many generated captchas actually get verified
+                    # This shows the real capacity - we can generate/store more, but verification is the limit
+                    e2e_success_rate = (verified_count / generated_count * 100) if generated_count > 0 else 0.0
+                    verification_throughput = verified_count / actual_duration if actual_duration > 0 else 0.0
+                    verifications_per_user = verified_count / current_users if current_users > 0 else 0.0
+                    
+                    # Collect error breakdown by type (aggregated)
+                    error_breakdown = {}
+                    # Also collect per-operation error breakdowns for detailed reporting
+                    per_operation_errors = {}
+                    for op_name, op_result in results.items():
+                        op_errors = op_result.get_error_breakdown()
+                        per_operation_errors[op_name] = op_errors.copy()
+                        for error_type, count in op_errors.items():
+                            error_breakdown[error_type] = error_breakdown.get(error_type, 0) + count
+                    
+                    # Get completed users count from progress tracker
+                    completed_users_count = progress.completed_users if progress else 0
+                    started_users_count = progress.started_users if progress else current_users
+                    
+                    # Calculate completion rate (users that successfully finished their workflow)
+                    completion_rate = (completed_users_count / current_users * 100) if current_users > 0 else 0.0
+                    completion_throughput = completed_users_count / actual_duration if actual_duration > 0 else 0.0
+                    
+                    # Store phase results
+                    phase_result = {
+                        "users": current_users,
+                        "started_users": started_users_count,
+                        "completed_users": completed_users_count,
+                        "completion_rate": completion_rate,
+                        "completion_throughput": completion_throughput,  # users completed per second
+                        "cpu_percent": avg_cpu,
+                        "baseline_cpu": baseline_cpu,
+                        "net_cpu": net_cpu,
+                        "disk_read_mb_per_sec": avg_disk_read_mb_per_sec,
+                        "disk_write_mb_per_sec": avg_disk_write_mb_per_sec,
+                        "net_disk_read_mb_per_sec": net_disk_read,
+                        "net_disk_write_mb_per_sec": net_disk_write,
+                        "disk_read_percent": disk_read_percent,
+                        "disk_write_percent": disk_write_percent,
+                        "combined_workload_percent": combined_workload,
+                        "total_operations": total_ops,
+                        "total_errors": total_errors,
+                        "success_rate": success_rate,
+                        "error_rate": error_rate,
+                        "error_breakdown": error_breakdown,
+                        "per_operation_errors": per_operation_errors,  # Per-operation error breakdowns
+                        "operation_counts": operation_counts,
+                        # End-to-end flow metrics (verification is the real capacity indicator)
+                        "generated_count": generated_count,
+                        "stored_count": stored_count,
+                        "verified_count": verified_count,
+                        "e2e_success_rate": e2e_success_rate,
+                        "verification_throughput": verification_throughput,
+                        "verifications_per_user": verifications_per_user,
+                        "operations_per_second": ops_per_sec,
+                        "duration": actual_duration,
+                    }
+                    capacity_results.append(phase_result)
+                    
+                    # Detect completed users plateau (THE REAL concurrent user capacity indicator)
+                    # This shows how many users can actually complete their workflow successfully
+                    completed_users_plateau_detected = False
+                    completed_plateau = None
+                    if len(capacity_results) >= 3:  # Need at least 3 phases to detect plateau
+                        completed_plateau = detect_completed_users_plateau(capacity_results)
+                        if completed_plateau:
+                            completed_users_plateau_detected = True
+                            plateau_users = completed_plateau["plateau_users"]
+                            plateau_completed = completed_plateau["plateau_completed"]
+                            current_completed = completed_plateau.get("current_completed", plateau_completed)
+                            completed_growth = completed_plateau.get("completed_growth", 0)
+                            users_growth = completed_plateau.get("users_growth", 0)
                             
-                            print(f"\n⚠️  BOTTLENECK DETECTED: {bottleneck_op.upper()} operations plateaued")
-                            print(f"   Plateau started at {plateau_users} users (~{plateau_ops:.0f} ops)")
-                            print(f"   Current operations: ~{current_ops:.0f} ops (despite {current_users} users)")
-                            print(f"   Operations/user decreased by {plateau_info['decrease_percent']:.1f}%")
+                            print(f"\n🎯 CONCURRENT USER CAPACITY LIMIT DETECTED:")
+                            print(f"   Completed Users Plateaued at ~{plateau_completed:.0f} users")
+                            print(f"   Plateau started at {plateau_users} total users")
+                            print(f"   Current completed: ~{current_completed:.0f} users (despite {current_users} total users)")
+                            print(f"   Completion rate decreased by {completed_plateau['decrease_percent']:.1f}%")
                             if users_growth > 0:
-                                print(f"   Users increased {users_growth:.1f}% but operations only {ops_growth:.1f}% (not scaling)")
-                            print(f"   → This suggests {bottleneck_op} operations are hitting a concurrency limit")
-                            print(f"   → Consider optimizing {bottleneck_op} operations or increasing database concurrency settings")
-                
-                # Print phase status
-                disk_info = f"{net_disk_read:.1f}/{net_disk_write:.1f}"
-                status = "✅ OK"
-                if combined_workload >= target_workload_percent:
-                    status = f"🎯 TARGET REACHED ({target_workload_percent}%)"
-                elif combined_workload > target_workload_percent * 0.9:
-                    status = "⚠️  APPROACHING TARGET"
-                
-                # Add error indicator if errors occurred
-                error_info = ""
-                if total_errors > 0:
-                    error_types = []
-                    if error_breakdown.get("database_locked", 0) > 0:
-                        error_types.append(f"DB_LOCK:{error_breakdown['database_locked']}")
-                    if error_breakdown.get("timeout", 0) > 0:
-                        error_types.append(f"TIMEOUT:{error_breakdown['timeout']}")
-                    if error_breakdown.get("other", 0) > 0:
-                        error_types.append(f"OTHER:{error_breakdown['other']}")
-                    if error_types:
-                        error_info = f" | ⚠️ Errors: {', '.join(error_types)}"
-                
-                # Show verification capacity (the real limiting factor)
-                verify_info = f" | ✅ Verified: {verified_count:.0f} ({verification_throughput:.1f}/s)"
-                
-                print(f"  {len(capacity_results):3d}  | {current_users:5d} | {avg_cpu:5.1f}% | {disk_info:15s} | {combined_workload:6.1f}% | {status}{error_info}{verify_info}")
-                
-                # Check if we've reached target workload
-                if combined_workload >= target_workload_percent:
-                    print(f"\n{'─'*80}")
-                    print(f"✅ Target workload ({target_workload_percent}%) reached at {current_users} users!")
-                    print(f"   CPU: {avg_cpu:.1f}% | Disk Read: {net_disk_read:.2f} MB/s | Disk Write: {net_disk_write:.2f} MB/s")
-                    break
-                
-                # Increment users for next phase
-                current_users += step_size
-                
-                # Small delay between phases
-                time.sleep(1)
+                                print(f"   Total users increased {users_growth:.1f}% but completed users only {completed_growth:.1f}%")
+                            print(f"   → REAL CONCURRENT CAPACITY: ~{plateau_completed:.0f} users can complete their workflow")
+                            print(f"   → This is the actual concurrent user capacity limit for the captcha solution")
+                            print(f"   → Adding more users won't increase completed users - system is at capacity")
+                            print(f"   → Consider: Optimizing database operations, reducing database locks, or using PostgreSQL")
+                    
+                    # Detect verification plateau (secondary indicator - shows workflow bottleneck)
+                    # Stop test if verification workflow has stabilized (reached maximum efficiency)
+                    verification_plateau_detected = False
+                    if len(capacity_results) >= 3:  # Need at least 3 phases to detect plateau
+                        verify_plateau = detect_verification_plateau(capacity_results)
+                        if verify_plateau:
+                            verification_plateau_detected = True
+                            plateau_users = verify_plateau["plateau_users"]
+                            plateau_verified = verify_plateau["plateau_verified"]
+                            current_verified = verify_plateau.get("current_verified", plateau_verified)
+                            verify_growth = verify_plateau.get("verification_growth", 0)
+                            users_growth = verify_plateau.get("users_growth", 0)
+                            
+                            print(f"\n🔴 CAPACITY LIMIT DETECTED: Verification plateaued at ~{plateau_verified:.0f} verifications")
+                            print(f"   Plateau started at {plateau_users} users")
+                            print(f"   Current verifications: ~{current_verified:.0f} (despite {current_users} users)")
+                            print(f"   Verifications/user decreased by {verify_plateau['decrease_percent']:.1f}%")
+                            if users_growth > 0:
+                                print(f"   Users increased {users_growth:.1f}% but verifications only {verify_growth:.1f}%")
+                            print(f"   → REAL CAPACITY: ~{plateau_verified:.0f} verified captchas per {duration_seconds:.0f}s = ~{plateau_verified/duration_seconds:.1f} verifications/sec")
+                            print(f"   → Adding more users won't increase capacity - verification is the bottleneck")
+                            print(f"   → Maximum efficiency reached: generate-to-verify workflow has stabilized")
+                            print(f"   → Consider optimizing verification operations or increasing database concurrency")
+                        
+                        # Also detect general operation plateaus
+                        plateau_info = detect_operation_plateau(capacity_results)
+                        if plateau_info:
+                            bottleneck_op = plateau_info["bottleneck_operation"]
+                            # Only show if it's not verification (already shown above)
+                            if bottleneck_op != "verify":
+                                plateau_users = plateau_info["plateau_users"]
+                                plateau_ops = plateau_info["plateau_operations"]
+                                current_ops = plateau_info.get("current_operations", plateau_ops)
+                                ops_growth = plateau_info.get("operations_growth", 0)
+                                users_growth = plateau_info.get("users_growth", 0)
+                                
+                                print(f"\n⚠️  BOTTLENECK DETECTED: {bottleneck_op.upper()} operations plateaued")
+                                print(f"   Plateau started at {plateau_users} users (~{plateau_ops:.0f} ops)")
+                                print(f"   Current operations: ~{current_ops:.0f} ops (despite {current_users} users)")
+                                print(f"   Operations/user decreased by {plateau_info['decrease_percent']:.1f}%")
+                                if users_growth > 0:
+                                    print(f"   Users increased {users_growth:.1f}% but operations only {ops_growth:.1f}% (not scaling)")
+                                print(f"   → This suggests {bottleneck_op} operations are hitting a concurrency limit")
+                                print(f"   → Consider optimizing {bottleneck_op} operations or increasing database concurrency settings")
+                    
+                    # Print phase status
+                    disk_info = f"{net_disk_read:.1f}/{net_disk_write:.1f}"
+                    status = "✅ OK"
+                    if combined_workload >= target_workload_percent:
+                        status = f"🎯 TARGET REACHED ({target_workload_percent}%)"
+                    elif combined_workload > target_workload_percent * 0.9:
+                        status = "⚠️  APPROACHING TARGET"
+                    
+                    # Add error indicator if errors occurred
+                    error_info = ""
+                    if total_errors > 0:
+                        error_types = []
+                        db_lock_count = error_breakdown.get("database_locked", 0)
+                        if db_lock_count > 0:
+                            db_lock_rate = (db_lock_count / total_ops * 100) if total_ops > 0 else 0.0
+                            error_types.append(f"DB_LOCK:{db_lock_count} ({db_lock_rate:.1f}%)")
+                        if error_breakdown.get("timeout", 0) > 0:
+                            timeout_count = error_breakdown.get("timeout", 0)
+                            timeout_rate = (timeout_count / total_ops * 100) if total_ops > 0 else 0.0
+                            error_types.append(f"TIMEOUT:{timeout_count} ({timeout_rate:.1f}%)")
+                        if error_breakdown.get("other", 0) > 0:
+                            other_count = error_breakdown.get("other", 0)
+                            other_rate = (other_count / total_ops * 100) if total_ops > 0 else 0.0
+                            error_types.append(f"OTHER:{other_count} ({other_rate:.1f}%)")
+                        if error_types:
+                            error_info = f" | ⚠️ Errors: {', '.join(error_types)}"
+                    
+                    # Show verification capacity (the real limiting factor)
+                    verify_info = f" | ✅ Verified: {verified_count:.0f} ({verification_throughput:.1f}/s)"
+                    
+                    print(f"  {len(capacity_results):3d}  | {current_users:5d} | {avg_cpu:5.1f}% | {disk_info:15s} | {combined_workload:6.1f}% | {status}{error_info}{verify_info}")
+                    
+                    # Calculate database lock error rate
+                    db_lock_errors = error_breakdown.get("database_locked", 0)
+                    db_lock_error_rate = (db_lock_errors / total_ops * 100) if total_ops > 0 else 0.0
+                    
+                    # Stop test if any of these conditions are met:
+                    # 1. Single phase mode: exit after one test
+                    # 2. Target workload reached (60% combined CPU + Disk I/O)
+                    # 3. Completed users plateau detected (concurrent user capacity reached)
+                    # 4. Verification plateau detected (generate-to-verify workflow stabilized - maximum efficiency)
+                    # 5. Database lock error rate exceeds threshold (10% = system overwhelmed)
+                    
+                    should_stop = False
+                    
+                    if single_phase_mode:
+                        # Single phase mode: exit after one test
+                        print(f"\n{'─'*80}")
+                        print(f"✅ Stability test completed at {current_users} users!")
+                        print(f"   Completed Users: {completed_users_count}/{current_users} ({completion_rate:.1f}%)")
+                        print(f"   Verification Throughput: {verification_throughput:.1f} verifications/sec")
+                        should_stop = True
+                    elif combined_workload >= target_workload_percent:
+                        print(f"\n{'─'*80}")
+                        print(f"✅ Target workload ({target_workload_percent}%) reached at {current_users} users!")
+                        print(f"   CPU: {avg_cpu:.1f}% | Disk Read: {net_disk_read:.2f} MB/s | Disk Write: {net_disk_write:.2f} MB/s")
+                        should_stop = True
+                    elif completed_users_plateau_detected:
+                        print(f"\n{'─'*80}")
+                        print(f"✅ CONCURRENT USER CAPACITY REACHED: Completed users stabilized at ~{completed_plateau['plateau_completed']:.0f} users!")
+                        print(f"   This is the actual concurrent user capacity limit for the captcha solution.")
+                        print(f"   Adding more users won't increase completed users - system is at capacity.")
+                        should_stop = True
+                    elif verification_plateau_detected:
+                        print(f"\n{'─'*80}")
+                        print(f"✅ Maximum efficiency reached: Verification workflow stabilized at {current_users} users!")
+                        print(f"   Generate-to-verify workflow has reached its capacity limit.")
+                        print(f"   Adding more users won't increase throughput - system is at maximum efficiency.")
+                        should_stop = True
+                    elif db_lock_error_rate > 10.0:  # More than 10% database lock errors
+                        print(f"\n{'─'*80}")
+                        print(f"🔴 Database concurrency limit reached at {current_users} users!")
+                        print(f"   Database lock error rate: {db_lock_error_rate:.1f}% ({db_lock_errors} errors)")
+                        print(f"   SQLite is overwhelmed - too many concurrent write operations.")
+                        print(f"   This indicates the maximum concurrent user capacity for this database configuration.")
+                        print(f"   → Consider: Increasing busy_timeout, optimizing queries, or using PostgreSQL")
+                        should_stop = True
+                    
+                    if should_stop:
+                        # Exit the while loop by setting current_users beyond max
+                        current_users = max_users + 1
+                    elif current_users <= max_users:
+                        # Multi-phase mode: increment users for next phase
+                        current_users += step_size
+                        
+                        # Small delay between phases
+                        try:
+                            time.sleep(1)
+                        except KeyboardInterrupt:
+                            print(f"\n\n{'─'*80}")
+                            print("⚠️  Test interrupted by user (Ctrl+C)")
+                            print(f"{'─'*80}")
+                            print("Stopping test and cleaning up...")
+                            raise
+        except KeyboardInterrupt:
+            print(f"\n\n{'─'*80}")
+            print("⚠️  Test interrupted by user (Ctrl+C)")
+            print(f"{'─'*80}")
+            print("Stopping test and cleaning up...")
+            # Ensure progress threads are stopped
+            if 'stop_progress' in locals():
+                stop_progress.set()
+            raise
         
         # Check WAL status after test
         wal_after = check_wal_status()
@@ -1693,8 +2091,15 @@ def run_capacity_test(
             cleanup_test_database(test_db_path)
 
 
+# Deprecated: print_results is no longer used (was for mode 1)
+# Keeping for potential future use or reference
 def print_results(results: Dict):
-    """Print test results in a readable format."""
+    """
+    Print test results in a readable format.
+    
+    DEPRECATED: This function is no longer used. The tool now uses print_capacity_results().
+    Kept for potential future use or reference.
+    """
     print(f"\n{'='*80}")
     print(f"📋 TEST RESULTS")
     print(f"{'='*80}\n")
@@ -1819,6 +2224,117 @@ def print_capacity_results(results: Dict):
     print(f"🎯 CAPACITY FINDINGS")
     print(f"{'='*80}\n")
     
+    # ========================================================================
+    # CLEAR DIRECT SUMMARY - Key Metrics
+    # ========================================================================
+    print(f"📊 KEY METRICS SUMMARY")
+    print(f"{'─'*80}\n")
+    
+    # Get data from the most recent phase (or target phase)
+    phase_data = None
+    if capacity.get('users_at_target') and results.get('phases'):
+        # Find the phase matching target
+        for phase in results['phases']:
+            if phase['users'] == capacity['users_per_worker']:
+                phase_data = phase
+                break
+    elif results.get('phases') and len(results['phases']) > 0:
+        # Use the last phase (most recent)
+        phase_data = results['phases'][-1]
+    
+    if phase_data:
+        # Verification failure metrics
+        generated_count = phase_data.get('generated_count', 0)
+        verified_count = phase_data.get('verified_count', 0)
+        operation_counts = phase_data.get('operation_counts', {})
+        verify_result = operation_counts.get('verify', {})
+        verify_attempts = verify_result.get('total', 0)  # Total verify attempts (success + failures)
+        verify_successes = verify_result.get('success', 0)  # Successful verifications
+        verify_errors = verify_result.get('errors', 0)  # Failed verification attempts
+        
+        # End-to-end failure rate: captchas generated but never verified
+        e2e_failures = generated_count - verified_count
+        e2e_failure_rate = (e2e_failures / generated_count * 100) if generated_count > 0 else 0.0
+        
+        # Actual verification attempt failure rate: verification attempts that failed
+        verify_attempt_failure_rate = (verify_errors / verify_attempts * 100) if verify_attempts > 0 else 0.0
+        
+        print(f"🔴 VERIFICATION METRICS:")
+        print(f"   Generated Captchas: {generated_count:.0f}")
+        print(f"   Verification Attempts: {verify_attempts:.0f}")
+        print(f"   Successfully Verified: {verified_count:.0f}")
+        print(f"   Failed Verification Attempts: {verify_errors:.0f}")
+        print(f"   → VERIFICATION ATTEMPT FAILURE RATE: {verify_attempt_failure_rate:.1f}%")
+        print(f"   → END-TO-END FAILURE RATE: {e2e_failure_rate:.1f}% (generated but never verified)")
+        if e2e_failure_rate > 20:
+            print(f"      Note: High E2E rate may indicate captchas expiring before verification")
+            print(f"      or test design not matching real usage patterns")
+        print()
+        
+        # Database lock metrics
+        error_breakdown = phase_data.get('error_breakdown', {})
+        db_lock_count = error_breakdown.get('database_locked', 0)
+        total_operations = phase_data.get('total_operations', 0)
+        db_lock_rate = (db_lock_count / total_operations * 100) if total_operations > 0 else 0.0
+        
+        print(f"🔴 DATABASE LOCK METRICS:")
+        print(f"   Database Lock Count: {db_lock_count} times")
+        print(f"   Total Operations: {total_operations:.0f}")
+        print(f"   → DATABASE LOCK RATE: {db_lock_rate:.2f}% of all operations")
+        print()
+        
+        # Breakdown by operation type
+        per_operation_errors = phase_data.get('per_operation_errors', {})
+        store_locks = per_operation_errors.get('store', {}).get('database_locked', 0)
+        verify_locks = per_operation_errors.get('verify', {}).get('database_locked', 0)
+        get_locks = per_operation_errors.get('get', {}).get('database_locked', 0)
+        
+        if db_lock_count > 0:
+            print(f"   Breakdown by Operation Type:")
+            print(f"      Store operations: {store_locks} lock errors")
+            print(f"      Verify operations: {verify_locks} lock errors")
+            print(f"      Get operations: {get_locks} lock errors")
+            print()
+        
+        # Overall assessment
+        print(f"📋 ASSESSMENT:")
+        if verify_attempt_failure_rate > 50:
+            print(f"   ⚠️  CRITICAL: {verify_attempt_failure_rate:.1f}% verification attempt failure rate")
+            print(f"      → More than half of verification attempts are failing")
+            print(f"      → This indicates serious issues with captcha verification")
+        elif verify_attempt_failure_rate > 20:
+            print(f"   ⚠️  HIGH: {verify_attempt_failure_rate:.1f}% verification attempt failure rate")
+            print(f"      → Significant portion of verification attempts are failing")
+            print(f"      → Check for expired captchas, database locks, or timing issues")
+        elif verify_attempt_failure_rate > 5:
+            print(f"   ⚠️  MODERATE: {verify_attempt_failure_rate:.1f}% verification attempt failure rate")
+            print(f"      → Some verification attempts are failing")
+            print(f"      → May indicate captcha expiration or occasional database contention")
+        else:
+            print(f"   ✅ LOW: {verify_attempt_failure_rate:.1f}% verification attempt failure rate")
+            print(f"      → Most verification attempts succeed")
+        
+        if e2e_failure_rate > 30:
+            print(f"   ⚠️  NOTE: {e2e_failure_rate:.1f}% end-to-end failure rate")
+            print(f"      → Many captchas generated but never verified")
+            print(f"      → Possible causes: captchas expiring, test timing issues, or abandoned sessions")
+            print(f"      → Focus on verification attempt failure rate above for actual verification issues")
+        
+        if db_lock_rate > 10:
+            print(f"   ⚠️  CRITICAL: {db_lock_rate:.2f}% database lock rate")
+            print(f"      → SQLite is overwhelmed, consider PostgreSQL or reducing concurrency")
+        elif db_lock_rate > 5:
+            print(f"   ⚠️  HIGH: {db_lock_rate:.2f}% database lock rate")
+            print(f"      → Database locks are impacting performance")
+        elif db_lock_rate > 1:
+            print(f"   ⚠️  MODERATE: {db_lock_rate:.2f}% database lock rate")
+            print(f"      → Some database contention detected")
+        else:
+            print(f"   ✅ LOW: {db_lock_rate:.2f}% database lock rate")
+            print(f"      → Minimal database contention")
+        
+        print(f"\n{'─'*80}\n")
+    
     # Show verification capacity prominently (the real limiting factor)
     verification_plateau = results.get("verification_plateau")
     if verification_plateau:
@@ -1858,16 +2374,129 @@ def print_capacity_results(results: Dict):
             print(f"      Verification Throughput: {verify_throughput:.1f} verifications/sec")
             print(f"      End-to-End Success Rate: {e2e_rate:.1f}% (verified/generated)")
         
-        # Show error breakdown if errors occurred
-        if capacity.get('error_rate_at_target', 0) > 0:
-            print(f"\n   ⚠️  Error Rate: {capacity['error_rate_at_target']:.2f}%")
-            error_breakdown = capacity.get('error_breakdown_at_target', {})
-            if error_breakdown:
-                print(f"   Error Breakdown:")
-                for error_type, count in sorted(error_breakdown.items(), key=lambda x: x[1], reverse=True):
-                    error_name = error_type.replace('_', ' ').title()
-                    print(f"     - {error_name}: {count} errors")
+        # Show detailed error breakdown if errors occurred
+        error_breakdown = capacity.get('error_breakdown_at_target', {})
+        if error_breakdown:
+            print(f"\n   ⚠️  Error Breakdown:")
+            total_errors = sum(error_breakdown.values())
+            for error_type, count in sorted(error_breakdown.items(), key=lambda x: x[1], reverse=True):
+                error_pct = (count / total_errors * 100) if total_errors > 0 else 0.0
+                print(f"      {error_type}: {count} ({error_pct:.1f}% of errors)")
+        
+        # Detailed database lock analysis
+        db_lock_errors = error_breakdown.get('database_locked', 0)
+        if db_lock_errors > 0:
+            total_ops_at_target = capacity.get('total_operations_at_target', 0)
+            if total_ops_at_target:
+                db_lock_rate = (db_lock_errors / total_ops_at_target * 100)
+                print(f"\n   🔴 Database Lock Analysis:")
+                print(f"      Total Database Lock Errors: {db_lock_errors}")
+                print(f"      Lock Error Rate: {db_lock_rate:.2f}% of all operations")
+                print(f"      → SQLite WAL mode is hitting concurrency limits")
+                print(f"      → Consider: Increasing busy_timeout, optimizing queries, or using PostgreSQL")
+        
+        # Verification failure analysis
+        verified_count = capacity.get('verified_count_at_target', 0)
+        generated_count = capacity.get('generated_count_at_target', 0)
+        if generated_count > 0:
+            verification_failure_rate = ((generated_count - verified_count) / generated_count * 100)
+            if verification_failure_rate > 5.0:
+                print(f"\n   ⚠️  Verification Failure Analysis:")
+                print(f"      Generated: {generated_count:.0f}")
+                print(f"      Verified: {verified_count:.0f}")
+                print(f"      Failed to Verify: {generated_count - verified_count:.0f} ({verification_failure_rate:.1f}%)")
+                print(f"      → Many generated captchas never got verified (likely due to database locks)")
+    
     else:
+        # Single phase mode - show results from the single phase
+        if results.get('phases') and len(results['phases']) > 0:
+            phase = results['phases'][0]
+            print(f"✅ Single Phase Test Results:")
+            print(f"   Users: {phase['users']}")
+            print(f"   Combined Workload: {phase['combined_workload_percent']:.1f}%")
+            print(f"   CPU Usage: {phase['cpu_percent']:.1f}%")
+            print(f"   Disk Read: {phase['net_disk_read_mb_per_sec']:.2f} MB/s")
+            print(f"   Disk Write: {phase['net_disk_write_mb_per_sec']:.2f} MB/s")
+            print(f"   Operations per Second: {phase.get('operations_per_second', 0):.2f}")
+            print(f"   Success Rate: {phase['success_rate']:.2f}%")
+            
+            # Show verification metrics
+            verified_count = phase.get('verified_count', 0)
+            generated_count = phase.get('generated_count', 0)
+            verify_throughput = phase.get('verification_throughput', 0)
+            e2e_rate = phase.get('e2e_success_rate', 0)
+            if generated_count > 0:
+                print(f"\n   📊 End-to-End Flow Metrics:")
+                print(f"      Generated: {generated_count:.0f}")
+                print(f"      Stored: {phase.get('stored_count', 0):.0f}")
+                print(f"      ✅ Verified: {verified_count:.0f}")
+                print(f"      Verification Throughput: {verify_throughput:.1f} verifications/sec")
+                print(f"      End-to-End Success Rate: {e2e_rate:.1f}% (verified/generated)")
+            
+            # Detailed error breakdown
+            error_breakdown = phase.get('error_breakdown', {})
+            if error_breakdown:
+                print(f"\n   ⚠️  Error Breakdown:")
+                total_errors = sum(error_breakdown.values())
+                total_ops = phase.get('total_operations', 0)
+                for error_type, count in sorted(error_breakdown.items(), key=lambda x: x[1], reverse=True):
+                    error_pct = (count / total_errors * 100) if total_errors > 0 else 0.0
+                    ops_pct = (count / total_ops * 100) if total_ops > 0 else 0.0
+                    print(f"      {error_type}: {count} ({error_pct:.1f}% of errors, {ops_pct:.2f}% of all ops)")
+            
+            # Detailed database lock analysis
+            db_lock_errors = error_breakdown.get('database_locked', 0)
+            if db_lock_errors > 0:
+                total_ops = phase.get('total_operations', 0)
+                if total_ops > 0:
+                    db_lock_rate = (db_lock_errors / total_ops * 100)
+                    print(f"\n   🔴 Database Lock Analysis:")
+                    print(f"      Total Database Lock Errors: {db_lock_errors}")
+                    print(f"      Lock Error Rate: {db_lock_rate:.2f}% of all operations")
+                    
+                    # Break down by operation type
+                    op_counts = phase.get('operation_counts', {})
+                    store_locks = op_counts.get('store', {}).get('errors', 0)
+                    verify_locks = op_counts.get('verify', {}).get('errors', 0)
+                    get_locks = op_counts.get('get', {}).get('errors', 0)
+                    
+                    print(f"      Breakdown by Operation:")
+                    print(f"         Store operations: {store_locks} lock errors")
+                    print(f"         Verify operations: {verify_locks} lock errors")
+                    print(f"         Get operations: {get_locks} lock errors")
+                    
+                    print(f"\n      💡 Recommendations:")
+                    if db_lock_rate > 10.0:
+                        print(f"         → CRITICAL: {db_lock_rate:.1f}% lock rate indicates SQLite is overwhelmed")
+                        print(f"         → Consider: PostgreSQL, connection pooling, or reducing concurrent users")
+                    elif db_lock_rate > 5.0:
+                        print(f"         → HIGH: {db_lock_rate:.1f}% lock rate suggests concurrency limits")
+                        print(f"         → Consider: Increasing busy_timeout, optimizing queries, or reducing users")
+                    else:
+                        print(f"         → MODERATE: {db_lock_rate:.1f}% lock rate is acceptable but could be improved")
+                        print(f"         → Consider: Fine-tuning busy_timeout or query optimization")
+            
+            # Verification failure analysis
+            if generated_count > 0:
+                verification_failures = generated_count - verified_count
+                verification_failure_rate = (verification_failures / generated_count * 100)
+                if verification_failures > 0:
+                    print(f"\n   ⚠️  Verification Failure Analysis:")
+                    print(f"      Generated Captchas: {generated_count:.0f}")
+                    print(f"      Successfully Verified: {verified_count:.0f}")
+                    print(f"      Failed to Verify: {verification_failures:.0f} ({verification_failure_rate:.1f}%)")
+                    if verification_failure_rate > 10.0:
+                        print(f"      → HIGH FAILURE RATE: {verification_failure_rate:.1f}% of generated captchas never verified")
+                        print(f"      → Likely cause: Database locks preventing verification operations")
+                    elif verification_failure_rate > 5.0:
+                        print(f"      → MODERATE FAILURE RATE: {verification_failure_rate:.1f}% verification failures")
+                        print(f"      → Some captchas are timing out or failing due to database contention")
+                    else:
+                        print(f"      → LOW FAILURE RATE: {verification_failure_rate:.1f}% verification failures")
+                        print(f"      → Most captchas are successfully verified")
+    
+    if not capacity.get('users_at_target'):
+        # Target workload not reached
         print(f"⚠️  Target workload ({config['target_workload_percent']}%) not reached")
         print(f"   Maximum users tested: {config['max_users']}")
         if results['phases']:
@@ -1921,12 +2550,11 @@ def print_capacity_results(results: Dict):
         duration = config['duration_seconds']
         verify_per_sec = plateau_verified / duration
         
-        print(f"🎯 KEY FINDING: Verification is the bottleneck")
+        print(f"⚠️  SECONDARY FINDING: Verification workflow bottleneck")
         print(f"   The system can verify approximately {plateau_verified:.0f} captchas per {duration:.0f}s")
         print(f"   This translates to ~{verify_per_sec:.1f} verifications/second")
         print(f"   Capacity limit reached at ~{plateau_users} users")
-        print(f"   → Adding more users won't increase verified captcha count")
-        print(f"   → The system generates/stores more, but verification plateaus")
+        print(f"   → This shows workflow throughput, but completed users is the real capacity indicator")
         print()
     
     if capacity['users_at_target']:
@@ -2013,7 +2641,7 @@ def print_capacity_results(results: Dict):
 
 
 def print_banner():
-    """Display the MindGraph ASCII banner for the test tool."""
+    """Display the MindGraph ASCII banner for the capacity test tool."""
     banner = """
     ███╗   ███╗██╗███╗   ██╗██████╗ ███╗   ███╗ █████╗ ████████╗███████╗
     ████╗ ████║██║████╗  ██║██╔══██╗████╗ ████║██╔══██╗╚══██╔══╝██╔════╝
@@ -2022,128 +2650,178 @@ def print_banner():
     ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝██║ ╚═╝ ██║██║  ██║   ██║   ███████╗
     ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
 ================================================================================
-    Captcha Storage Concurrency Stress Test Tool
-    ============================================
-    SQLite WAL Mode Performance Testing & Capacity Analysis
+    Captcha Storage Capacity Test Tool
+    ==================================
+    Find Concurrent User Capacity - SQLite WAL Mode Performance Testing
     """
     print(banner)
 
 
 def main():
-    """Main entry point with interactive prompts."""
+    """Main entry point for capacity testing tool."""
     # Print banner
     print_banner()
     
-    print("\nThis test simulates the complete captcha flow:")
-    print("  1. Generate captcha code")
-    print("  2. Generate captcha image")
-    print("  3. Store captcha in database")
-    print("  4. Get captcha from database")
-    print("  5. Verify captcha code")
+    print("\nThis test simulates concurrent users performing the full captcha workflow:")
+    print("  Each user: Generate → Store → Verify (repeat)")
+    print("  Goal: Find maximum concurrent users before database locks occur")
+    print("  Method: Run 5 rounds, each starting fresh, until locks occur")
+    print("  Expected: Similar lockup points across all 5 rounds")
     print("\n" + "-"*80 + "\n")
     
     try:
-        # Choose test mode
-        print("Test Modes:")
-        print("  1. Standard Concurrency Test (fixed number of users)")
-        print("  2. Capacity Test (find users per worker at 60% workload - CPU + Disk I/O)")
-        print()
+        # Capacity Test: Find how many concurrent users the system can handle
+        # Incrementally increases users until reaching 60% combined workload
         
-        test_mode_input = input("Select test mode (1 or 2, default: 1): ").strip()
-        test_mode = int(test_mode_input) if test_mode_input.isdigit() else 1
+        if not PSUTIL_AVAILABLE:
+            print("\nERROR: Capacity test requires psutil.")
+            print("Install it with: pip install psutil")
+            print("\nExiting...")
+            sys.exit(1)
         
-        if test_mode not in [1, 2]:
-            print("Invalid selection, using default: Standard Concurrency Test")
-            test_mode = 1
+        print(f"\n{'='*80}")
+        print("DATABASE LOCKUP TEST MODE")
+        print(f"{'='*80}")
+        print("This test runs 5 rounds to find when database locks occur.")
+        print("Each round starts fresh with the same user count.")
+        print("The test measures database lock frequency as users perform Generate→Store→Verify cycles.")
+        print("Expected: Consistent lockup points across all 5 rounds.")
+        print(f"{'='*80}\n")
         
-        if test_mode == 2:
-            # Capacity test mode
-            if not PSUTIL_AVAILABLE:
-                print("\nERROR: Capacity test requires psutil.")
-                print("Install it with: pip install psutil")
-                print("\nFalling back to standard concurrency test...")
-                test_mode = 1
-            else:
-                print(f"\n{'='*80}")
-                print("CAPACITY TEST MODE")
-                print(f"{'='*80}")
-                print("This test will incrementally increase users until server reaches 60% combined workload.")
-                print("Workload is calculated as: 60% CPU + 20% Disk Read + 20% Disk Write")
-                print("It will report how many users 1 worker can handle at that workload.")
-                print(f"{'='*80}\n")
-                
-                # Use default values - no prompts
-                start_users = 100
-                max_users = 2000
-                duration = 20
-                operations = 30
-                step_size = 100
-                target_workload = 60.0
-                
-                print(f"Using default parameters:")
-                print(f"  Starting users: {start_users}")
-                print(f"  Maximum users: {max_users}")
-                print(f"  Duration per phase: {duration} seconds")
-                print(f"  Operations per user: {operations}")
-                print(f"  Step size: {step_size}")
-                print(f"  Target workload: {target_workload}%")
-                print(f"\n{'='*80}")
-                print("Starting capacity test...")
-                print(f"{'='*80}\n")
-                
-                results = run_capacity_test(
-                    start_users=start_users,
-                    max_users=max_users,
-                    duration_seconds=float(duration),
-                    operations_per_user=operations,
-                    target_workload_percent=target_workload,
-                    step_size=step_size
-                )
-                
-                print_capacity_results(results)
+        # 5-Round Incremental Database Lockup Test
+        # Each round: Start at 100 users → Increase by 50 if no locks for 10s → Find lockup point
+        start_users = 100
+        step_size = 50  # Increase by 50 users each step
+        check_duration = 10  # Check for locks every 10 seconds
+        max_users = 500  # Maximum users to test
+        operations = 1000  # Many operations to stress the system
         
-        if test_mode == 1:
-            # Standard concurrency test mode
-            num_users = get_user_input(
-                "Enter number of concurrent users to simulate",
-                default=50,
-                min_val=1,
-                max_val=1000
-            )
-            
-            duration = get_user_input(
-                "Enter test duration in seconds",
-                default=30,
-                min_val=5,
-                max_val=300
-            )
-            
-            operations = get_user_input(
-                "Enter maximum operations per user",
-                default=20,
-                min_val=1,
-                max_val=1000
-            )
-            
-            max_workers_input = input(f"Enter max thread pool workers (default: {num_users}, press Enter to use default): ").strip()
-            max_workers = int(max_workers_input) if max_workers_input else None
-            
-            if max_workers is not None and (max_workers < 1 or max_workers > 1000):
-                print(f"Invalid max_workers, using default: {num_users}")
-                max_workers = None
-            
+        print(f"Using default parameters:")
+        print(f"  Starting users: {start_users}")
+        print(f"  Step size: +{step_size} users")
+        print(f"  Check duration: {check_duration} seconds per step")
+        print(f"  Max users: {max_users}")
+        print(f"  Operations per user: {operations}")
+        print(f"  Number of rounds: 5")
+        print(f"  Goal: Find when database locks occur (should be consistent across rounds)")
+        print(f"\n{'='*80}")
+        print("Starting 5-round incremental database lockup test...")
+        print(f"{'='*80}\n")
+        
+        # Run 5 rounds
+        round_results = []
+        for round_num in range(1, 6):
             print(f"\n{'='*80}")
-            print("Starting test...")
+            print(f"🔄 ROUND {round_num}/5")
             print(f"{'='*80}\n")
             
-            results = run_concurrency_test(
-                num_users=num_users,
-                duration_seconds=float(duration),
-                operations_per_user=operations,
-                max_workers=max_workers
-            )
+            # Reset lock counter at start of each round
+            reset_db_lock_attempts()
             
-            print_results(results)
+            # Incremental test: Start at 100, increase until locks occur
+            current_users = start_users
+            lockup_found = False
+            lockup_users = None
+            
+            while current_users <= max_users and not lockup_found:
+                print(f"\n📊 Testing {current_users} users for {check_duration} seconds...")
+                
+                # Reset lock counter before this test
+                reset_db_lock_attempts()
+                
+                # Run test for check_duration seconds
+                results = run_capacity_test(
+                    start_users=current_users,
+                    max_users=current_users,  # Single phase at current user count
+                    duration_seconds=float(check_duration),
+                    operations_per_user=operations,
+                    target_workload_percent=100.0,  # High threshold so we don't stop early
+                    step_size=0  # No incrementing - stay at current users
+                )
+                
+                # Check if database locks occurred (using lock attempts counter)
+                db_lock_attempts = get_db_lock_attempts()
+                
+                if results.get('phases') and len(results['phases']) > 0:
+                    phase = results['phases'][0]
+                    total_ops = phase.get('total_operations', 0)
+                    db_lock_rate = (db_lock_attempts / total_ops * 100) if total_ops > 0 else 0.0
+                    
+                    print(f"   → Database lock attempts: {db_lock_attempts} ({db_lock_rate:.2f}% of operations)")
+                    
+                    # If locks occurred (even if retried successfully), record lockup point
+                    if db_lock_attempts > 0:
+                        lockup_found = True
+                        lockup_users = current_users
+                        print(f"   🔴 LOCKUP DETECTED at {current_users} users!")
+                        print(f"      ({db_lock_attempts} lock attempts occurred, even if retried successfully)")
+                        
+                        round_results.append({
+                            'round': round_num,
+                            'lockup_users': lockup_users,
+                            'db_lock_attempts': db_lock_attempts,
+                            'total_operations': total_ops,
+                            'db_lock_rate': db_lock_rate,
+                            'verified_count': phase.get('verified_count', 0),
+                            'generated_count': phase.get('generated_count', 0),
+                        })
+                    else:
+                        print(f"   ✅ No locks detected - increasing to {current_users + step_size} users...")
+                        current_users += step_size
+                        time.sleep(2)  # Brief pause before next increment
+            
+            if not lockup_found:
+                print(f"\n⚠️  No lockup detected up to {max_users} users")
+                round_results.append({
+                    'round': round_num,
+                    'lockup_users': None,
+                    'db_lock_attempts': 0,
+                    'total_operations': 0,
+                    'db_lock_rate': 0.0,
+                    'verified_count': 0,
+                    'generated_count': 0,
+                })
+            
+            # Brief pause between rounds
+            if round_num < 5:
+                print(f"\n⏸️  Waiting 5 seconds before next round...")
+                time.sleep(5)
+        
+        # Compare results across all 5 rounds
+        print(f"\n{'='*80}")
+        print(f"📊 5-ROUND COMPARISON")
+        print(f"{'='*80}\n")
+        print(f"{'Round':<8} {'Lockup Users':<15} {'Lock Attempts':<15} {'Lock Rate':<12} {'Verified':<12} {'Generated':<12}")
+        print(f"{'─'*95}")
+        
+        lockup_points = []
+        for r in round_results:
+            lockup_users_str = f"{r['lockup_users']}" if r['lockup_users'] else "N/A"
+            lock_attempts = r.get('db_lock_attempts', 0)
+            print(f"{r['round']:<8} {lockup_users_str:<15} {lock_attempts:<15} "
+                  f"{r['db_lock_rate']:<12.2f}% {r['verified_count']:<12.0f} {r['generated_count']:<12.0f}")
+            if r['lockup_users']:
+                lockup_points.append(r['lockup_users'])
+        
+        # Calculate averages
+        if lockup_points:
+            avg_lockup = statistics.mean(lockup_points)
+            std_lockup = statistics.stdev(lockup_points) if len(lockup_points) > 1 else 0.0
+            
+            print(f"\n{'─'*90}")
+            print(f"Average Lockup Point: {avg_lockup:.0f} users (±{std_lockup:.0f})")
+            
+            if std_lockup < avg_lockup * 0.1:  # Less than 10% variation
+                print(f"✅ CONSISTENT: Lockup points are very similar across rounds (±{std_lockup:.0f} users)")
+                print(f"   → Concurrent user capacity: ~{avg_lockup:.0f} users")
+            elif std_lockup < avg_lockup * 0.2:  # Less than 20% variation
+                print(f"✅ REASONABLE: Lockup points are similar across rounds (±{std_lockup:.0f} users)")
+                print(f"   → Concurrent user capacity: ~{avg_lockup:.0f} users (±{std_lockup:.0f})")
+            else:
+                print(f"⚠️  VARIABLE: Lockup points vary significantly (±{std_lockup:.0f} users)")
+                print(f"   → Range: {min(lockup_points)} - {max(lockup_points)} users")
+        else:
+            print(f"\n⚠️  No lockup detected in any round (tested up to {max_users} users)")
         
         # Ask if user wants to run another test
         print("\n" + "-"*80)

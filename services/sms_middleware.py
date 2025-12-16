@@ -35,6 +35,7 @@ import httpx
 from services.rate_limiter import DashscopeRateLimiter
 from services.performance_tracker import performance_tracker
 from config.settings import config
+from models.messages import Messages, Language
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +263,8 @@ class SMSService:
         self,
         phone: str,
         purpose: str,
-        code: Optional[str] = None
+        code: Optional[str] = None,
+        lang: Language = "en"
     ) -> Tuple[bool, str, Optional[str]]:
         """
         Send SMS verification code (native async)
@@ -274,6 +276,7 @@ class SMSService:
             phone: 11-digit Chinese mobile number
             purpose: 'register', 'login', or 'reset_password'
             code: Optional pre-generated code (will generate if not provided)
+            lang: Language code ('zh', 'en', or 'az') for error messages
             
         Returns:
             Tuple of (success, message, code_if_success)
@@ -333,23 +336,32 @@ class SMSService:
                 headers=headers
             )
             
+            # Check HTTP status code
+            if response.status_code != 200:
+                logger.error(f"SMS API returned non-200 status: {response.status_code} - {response.text[:200]}")
+                return False, "SMS service error. Please try again later or contact support.", None
+            
             # Parse response
-            result = response.json()
+            try:
+                result = response.json()
+            except (ValueError, json.JSONDecodeError) as e:
+                logger.error(f"Failed to parse SMS response as JSON: {e} - Response: {response.text[:200]}")
+                return False, "SMS service error. Please try again later or contact support.", None
             
             if "Response" not in result:
-                logger.error(f"Invalid SMS response: {result}")
-                return False, "Invalid SMS response", None
+                logger.error(f"Invalid SMS response structure: {result}")
+                return False, "Invalid SMS response. Please try again later or contact support.", None
             
             resp_data = result["Response"]
             
-            # Check for API error
+            # Check for API error in Response.Error
             if "Error" in resp_data:
                 error_code = resp_data["Error"].get("Code", "Unknown")
                 error_msg = resp_data["Error"].get("Message", "Unknown error")
                 logger.error(f"SMS API error: {error_code} - {error_msg}")
-                return False, self._translate_error_code(error_code), None
+                return False, self._translate_error_code(error_code, lang), None
             
-            # Check send status
+            # Check send status in SendStatusSet
             send_status = resp_data.get("SendStatusSet", [])
             if send_status and len(send_status) > 0:
                 status = send_status[0]
@@ -358,10 +370,12 @@ class SMSService:
                     return True, "Verification code sent successfully", code
                 else:
                     error_code = status.get("Code", "Unknown")
-                    logger.error(f"SMS send failed: {error_code} - {status.get('Message')}")
-                    return False, self._translate_error_code(error_code), None
+                    error_msg = status.get("Message", "Unknown error")
+                    logger.error(f"SMS send failed: {error_code} - {error_msg}")
+                    return False, self._translate_error_code(error_code, lang), None
             
-            return False, "Unknown SMS response", None
+            logger.error(f"Unexpected SMS response structure: {resp_data}")
+            return False, "Unknown SMS response. Please try again later or contact support.", None
             
         except httpx.TimeoutException:
             logger.error("SMS request timeout")
@@ -376,30 +390,117 @@ class SMSService:
             logger.error(f"Unexpected SMS error: {e}")
             return False, "SMS service error. Please try again later.", None
     
-    def _translate_error_code(self, code: str) -> str:
+    def _translate_error_code(self, code: str, lang: Language = "en") -> str:
         """
-        Translate Tencent SMS error codes to user-friendly messages
+        Translate Tencent SMS error codes to user-friendly messages using Messages system
+        
+        Comprehensive error handling for all Tencent Cloud SMS API error codes.
+        Errors are categorized into:
+        - User-actionable: Rate limits, invalid input (user can retry/fix)
+        - Configuration: Signature, template issues (admin action needed)
+        - System: Timeout, internal errors (retry or contact support)
         
         Args:
             code: Tencent SMS error code
+            lang: Language code ('zh', 'en', or 'az')
             
         Returns:
-            User-friendly error message
+            User-friendly error message in the specified language
         """
-        error_messages = {
-            "LimitExceeded.PhoneNumberDailyLimit": "Daily SMS limit reached for this phone number. Please try again tomorrow or contact support.",
-            "LimitExceeded.PhoneNumberThirtySecondLimit": "Please wait 30 seconds before requesting a new SMS code.",
-            "LimitExceeded.PhoneNumberOneHourLimit": "Hourly SMS limit reached for this phone number. Please wait and try again later.",
-            "InvalidParameterValue.IncorrectPhoneNumber": "Invalid phone number format. Please check that you entered an 11-digit Chinese mobile number starting with 1.",
-            "FailedOperation.PhoneNumberInBlacklist": "This phone number is blocked from receiving SMS. Please contact support for assistance.",
-            "FailedOperation.SignatureIncorrect": "SMS service configuration error. Please contact support.",
-            "FailedOperation.TemplateIncorrect": "SMS template configuration error. Please contact support.",
-            "FailedOperation.InsufficientBalanceInSmsPackage": "SMS service balance insufficient. Please contact support.",
-            "AuthFailure.SecretIdNotFound": "SMS service authentication error. Please contact support.",
-            "AuthFailure.SignatureFailure": "SMS service authentication error. Please contact support.",
+        # Map error codes to Messages system keys
+        error_code_map = {
+            # ====================================================================
+            # FailedOperation - Operation Failed Errors
+            # ====================================================================
+            "FailedOperation.ContainSensitiveWord": "sms_error_contain_sensitive_word",
+            "FailedOperation.FailResolvePacket": "sms_error_fail_resolve_packet",
+            "FailedOperation.InsufficientBalanceInSmsPackage": "sms_error_insufficient_balance",
+            "FailedOperation.JsonParseFail": "sms_error_fail_resolve_packet",
+            "FailedOperation.MarketingSendTimeConstraint": "sms_error_marketing_time_constraint",
+            "FailedOperation.PhoneNumberInBlacklist": "sms_error_phone_in_blacklist",
+            "FailedOperation.SignatureIncorrectOrUnapproved": "sms_error_signature_config",
+            "FailedOperation.TemplateIncorrectOrUnapproved": "sms_error_template_config",
+            "FailedOperation.TemplateParamSetNotMatchApprovedTemplate": "sms_error_template_params_mismatch",
+            "FailedOperation.TemplateUnapprovedOrNotExist": "sms_error_template_unapproved",
+            
+            # ====================================================================
+            # InternalError - Internal Server Errors
+            # ====================================================================
+            "InternalError.OtherError": "sms_error_internal_other",
+            "InternalError.RequestTimeException": "sms_error_request_time",
+            "InternalError.RestApiInterfaceNotExist": "sms_error_api_interface",
+            "InternalError.SendAndRecvFail": "sms_error_timeout",
+            "InternalError.SigFieldMissing": "sms_error_auth_failed",
+            "InternalError.SigVerificationFail": "sms_error_auth_failed",
+            "InternalError.Timeout": "sms_error_timeout",
+            "InternalError.UnknownError": "sms_error_unknown",
+            
+            # ====================================================================
+            # InvalidParameterValue - Invalid Parameter Errors
+            # ====================================================================
+            "InvalidParameterValue.ContentLengthLimit": "sms_error_content_too_long",
+            "InvalidParameterValue.IncorrectPhoneNumber": "sms_error_invalid_phone",
+            "InvalidParameterValue.ProhibitedUseUrlInTemplateParameter": "sms_error_url_prohibited",
+            "InvalidParameterValue.SdkAppIdNotExist": "sms_error_sdk_app_id_not_exist",
+            "InvalidParameterValue.TemplateParameterFormatError": "sms_error_template_param_format",
+            "InvalidParameterValue.TemplateParameterLengthLimit": "sms_error_template_param_length",
+            
+            # ====================================================================
+            # LimitExceeded - Rate Limit Errors
+            # ====================================================================
+            "LimitExceeded.AppCountryOrRegionDailyLimit": "sms_error_daily_limit_country",
+            "LimitExceeded.AppCountryOrRegionInBlacklist": "sms_error_country_restricted",
+            "LimitExceeded.AppDailyLimit": "sms_error_daily_limit",
+            "LimitExceeded.AppGlobalDailyLimit": "sms_error_international_daily_limit",
+            "LimitExceeded.AppMainlandChinaDailyLimit": "sms_error_mainland_daily_limit",
+            "LimitExceeded.DailyLimit": "sms_error_daily_limit",
+            "LimitExceeded.DeliveryFrequencyLimit": "sms_error_frequency_limit",
+            "LimitExceeded.PhoneNumberCountLimit": "sms_error_phone_count_limit",
+            "LimitExceeded.PhoneNumberDailyLimit": "sms_error_phone_daily_limit",
+            "LimitExceeded.PhoneNumberOneHourLimit": "sms_error_phone_hourly_limit",
+            "LimitExceeded.PhoneNumberSameContentDailyLimit": "sms_error_phone_same_content_daily",
+            "LimitExceeded.PhoneNumberThirtySecondLimit": "sms_error_phone_thirty_second_limit",
+            
+            # ====================================================================
+            # MissingParameter - Missing Parameter Errors
+            # ====================================================================
+            "MissingParameter.EmptyPhoneNumberSet": "sms_error_empty_phone_list",
+            
+            # ====================================================================
+            # UnauthorizedOperation - Authorization Errors
+            # ====================================================================
+            "UnauthorizedOperation.IndividualUserMarketingSmsPermissionDeny": "sms_error_marketing_permission_denied",
+            "UnauthorizedOperation.RequestIpNotInWhitelist": "sms_error_ip_not_whitelisted",
+            "UnauthorizedOperation.RequestPermissionDeny": "sms_error_permission_denied",
+            "UnauthorizedOperation.SdkAppIdIsDisabled": "sms_error_service_disabled",
+            "UnauthorizedOperation.ServiceSuspendDueToArrears": "sms_error_service_suspended",
+            "UnauthorizedOperation.SmsSdkAppIdVerifyFail": "sms_error_auth_verify_failed",
+            
+            # ====================================================================
+            # UnsupportedOperation - Unsupported Operation Errors
+            # ====================================================================
+            "UnsupportedOperation": "sms_error_operation_not_supported",
+            "UnsupportedOperation.ChineseMainlandTemplateToGlobalPhone": "sms_error_template_mismatch_domestic",
+            "UnsupportedOperation.ContainDomesticAndInternationalPhoneNumber": "sms_error_mixed_phone_types",
+            "UnsupportedOperation.GlobalTemplateToChineseMainlandPhone": "sms_error_template_mismatch_international",
+            "UnsupportedOperation.UnsupportedRegion": "sms_error_region_not_supported",
+            
+            # ====================================================================
+            # Legacy/Alternative Error Code Formats (for backward compatibility)
+            # ====================================================================
+            "FailedOperation.SignatureIncorrect": "sms_error_signature_config",
+            "FailedOperation.TemplateIncorrect": "sms_error_template_config",
+            "AuthFailure.SecretIdNotFound": "sms_error_auth_verify_failed",
+            "AuthFailure.SignatureFailure": "sms_error_auth_verify_failed",
         }
         
-        return error_messages.get(code, f"SMS sending failed due to: {code}. Please try again later or contact support if the problem persists.")
+        # Get Messages key for this error code
+        message_key = error_code_map.get(code)
+        if message_key:
+            return Messages.error(message_key, lang)
+        
+        # Fallback for unknown error codes
+        return Messages.error("sms_error_generic", lang, code)
 
 
 class SMSMiddleware:
@@ -600,7 +701,8 @@ class SMSMiddleware:
         purpose: str,
         code: Optional[str] = None,
         user_id: Optional[int] = None,
-        organization_id: Optional[int] = None
+        organization_id: Optional[int] = None,
+        lang: Language = "en"
     ) -> Tuple[bool, str, Optional[str]]:
         """
         Send SMS verification code with middleware (recommended method).
@@ -613,12 +715,13 @@ class SMSMiddleware:
             code: Optional pre-generated code (will generate if not provided)
             user_id: User ID for tracking
             organization_id: Organization ID for tracking
+            lang: Language code ('zh', 'en', or 'az') for error messages
             
         Returns:
             Tuple of (success, message, code_if_success)
         """
         async with self.request_context(phone, purpose, user_id, organization_id):
-            return await self._sms_service.send_verification_code(phone, purpose, code)
+            return await self._sms_service.send_verification_code(phone, purpose, code, lang)
     
     def _track_performance(
         self,
