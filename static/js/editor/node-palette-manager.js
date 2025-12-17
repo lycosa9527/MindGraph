@@ -2347,30 +2347,18 @@ class NodePaletteManager {
                 // Update button text for mindmap stages
                 this.updateStageProgressButton();
                 
-                // For Stage 2 (children), load the current branch tab
+                // For Stage 2 (children), load ALL branch tabs in parallel (reopen case)
                 if (this.currentStage === 'children' && this.stageData.branches && this.stageData.branches.length > 0) {
-                    console.log(`[NodePalette-Mindmap] Stage 2: Loading current branch tab "${this.currentTab}"`);
-                    
-                    // Set loading state and show catapult animation
-                    this.isLoadingBatch = true;
-                    this.currentBatch = 1;
-                    this.showCatapultLoading();
-                    
-                    const lang = window.languageManager?.getCurrentLanguage() || 'en';
-                    const loadingMsg = lang === 'zh' ? 
-                        `正在为「${this.currentTab}」生成子节点 (4个AI模型)...` : 
-                        `Generating children for "${this.currentTab}" (4 AI models)...`;
-                    this.updateCatapultLoading(loadingMsg, 0, 4);
+                    console.log(`[NodePalette-Mindmap] Stage 2: Reopening - Loading ALL ${this.stageData.branches.length} branch tabs in parallel`);
                     
                     try {
-                        await this.loadCategoryTabBatch(this.currentTab);
-                        this.hideCatapultLoading();
+                        // Load all branch tabs simultaneously (same as Stage 1 → Stage 2 progression)
+                        await this.loadAllBranchTabsInitial(this.stageData.branches);
                     } catch (error) {
-                        console.error(`[NodePalette-Mindmap] Error loading branch tab "${this.currentTab}":`, error);
+                        console.error(`[NodePalette-Mindmap] Error loading branch tabs:`, error);
                         this.hideCatapultLoading();
+                        this.isLoadingBatch = false;
                     }
-                    
-                    this.isLoadingBatch = false;
                 } else {
                     // For Stage 1, use normal batch loading
                     await this.loadNextBatch();
