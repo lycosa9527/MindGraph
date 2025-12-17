@@ -85,6 +85,11 @@ pycryptodome>=3.20.0  # AES decryption for bayi mode
 # Note: Tencent SMS uses native async httpx calls (no SDK needed)
 
 # ============================================================================
+# CLOUD STORAGE (Optional)
+# ============================================================================
+cos-python-sdk-v5>=1.9.27  # Tencent Cloud Object Storage (COS) SDK for online backups
+
+# ============================================================================
 # PRODUCTION DEPLOYMENT (Optional but Recommended)
 # ============================================================================
 # gunicorn>=24.0.0  # WSGI server (not needed - uvicorn is async)

@@ -32,10 +32,23 @@ logger = logging.getLogger(__name__)
 
 # Import backup configuration
 try:
-    from services.backup_scheduler import BACKUP_DIR, get_database_path
+    from services.backup_scheduler import (
+        BACKUP_DIR, 
+        get_database_path,
+        list_cos_backups,
+        COS_BACKUP_ENABLED,
+        COS_BUCKET,
+        COS_REGION,
+        COS_KEY_PREFIX
+    )
 except ImportError:
     BACKUP_DIR = Path("backup")
     get_database_path = None
+    list_cos_backups = None
+    COS_BACKUP_ENABLED = False
+    COS_BUCKET = ""
+    COS_REGION = ""
+    COS_KEY_PREFIX = ""
 
 
 # Minimum percentage of records to consider a backup valid compared to previous
@@ -198,28 +211,155 @@ class DatabaseRecovery:
         
         return stats
     
-    def list_backups(self) -> List[Dict[str, Any]]:
+    def download_cos_backup(self, cos_key: str, local_path: Path) -> Tuple[bool, str]:
+        """
+        Download a backup from COS to local temporary location for comparison.
+        
+        IMPORTANT: Only downloads backups with the configured COS_KEY_PREFIX to prevent
+        cross-environment access (e.g., dev vs production).
+        
+        Args:
+            cos_key: COS object key (e.g., "backups/mindgraph/mindgraph.db.20251217_081113")
+            local_path: Local path to save the downloaded backup
+            
+        Returns:
+            tuple: (success, message)
+        """
+        if not COS_BACKUP_ENABLED or not list_cos_backups:
+            return False, "COS backup not enabled"
+        
+        # SECURITY: Validate that the key uses the configured prefix
+        # This prevents accidentally downloading backups from other environments
+        # (e.g., dev machine downloading production backups or vice versa)
+        normalized_prefix = COS_KEY_PREFIX.rstrip('/')
+        normalized_key = cos_key.lstrip('/')
+        
+        if not normalized_key.startswith(normalized_prefix):
+            logger.error(
+                f"[Recovery] SECURITY: COS key '{cos_key}' does not match configured prefix '{COS_KEY_PREFIX}'. "
+                f"Refusing to download to prevent cross-environment access."
+            )
+            return False, f"Key does not match configured prefix '{COS_KEY_PREFIX}'"
+        
+        try:
+            from qcloud_cos import CosConfig, CosS3Client
+            from qcloud_cos.cos_exception import CosClientError, CosServiceError
+            
+            # Get credentials from backup_scheduler
+            from services.backup_scheduler import COS_SECRET_ID, COS_SECRET_KEY
+            
+            if not COS_SECRET_ID or not COS_SECRET_KEY or not COS_BUCKET:
+                return False, "COS credentials not configured"
+            
+            # Initialize COS client
+            config = CosConfig(
+                Region=COS_REGION,
+                SecretId=COS_SECRET_ID,
+                SecretKey=COS_SECRET_KEY,
+                Scheme='https'
+            )
+            client = CosS3Client(config)
+            
+            # Ensure local directory exists
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Download from COS
+            logger.info(f"[Recovery] Downloading COS backup: {cos_key} (prefix: {COS_KEY_PREFIX})")
+            response = client.get_object(
+                Bucket=COS_BUCKET,
+                Key=cos_key
+            )
+            
+            # Save to local file
+            response['Body'].get_stream_to_file(str(local_path))
+            
+            logger.info(f"[Recovery] Downloaded COS backup to: {local_path}")
+            return True, f"Downloaded from COS: {cos_key}"
+            
+        except ImportError:
+            return False, "COS SDK not installed"
+        except CosClientError as e:
+            logger.error(f"[Recovery] COS client error downloading backup: {e}")
+            return False, f"COS client error: {e}"
+        except CosServiceError as e:
+            error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'
+            logger.error(f"[Recovery] COS service error downloading backup: {error_code}")
+            return False, f"COS service error: {error_code}"
+        except Exception as e:
+            logger.error(f"[Recovery] Error downloading COS backup: {e}", exc_info=True)
+            return False, f"Download failed: {e}"
+    
+    def list_backups(self, include_cos: bool = True) -> List[Dict[str, Any]]:
         """
         List all available backups with their statistics.
+        Includes both local backups and COS backups (if enabled).
+        
+        Args:
+            include_cos: Whether to include COS backups (default: True)
         
         Returns:
             List of backup info dicts, sorted by date (newest first)
+            Each backup dict includes a 'source' field: 'local' or 'cos'
         """
         backups = []
         
-        if not self.backup_dir.exists():
-            return backups
+        # List local backups
+        if self.backup_dir.exists():
+            for backup_file in self.backup_dir.glob("mindgraph.db.*"):
+                if not backup_file.is_file():
+                    continue
+                
+                stats = self.get_database_stats(backup_file)
+                stats["filename"] = backup_file.name
+                stats["source"] = "local"
+                stats["path"] = str(backup_file)
+                backups.append(stats)
         
-        for backup_file in self.backup_dir.glob("mindgraph.db.*"):
-            if not backup_file.is_file():
-                continue
-            
-            stats = self.get_database_stats(backup_file)
-            stats["filename"] = backup_file.name
-            backups.append(stats)
+        # List COS backups if enabled
+        if include_cos and COS_BACKUP_ENABLED and list_cos_backups:
+            try:
+                cos_backups = list_cos_backups()
+                for cos_backup in cos_backups:
+                    # Create a temporary stats entry for COS backup
+                    # We'll download it later if user wants to compare/restore
+                    stats = {
+                        "filename": cos_backup['key'].split('/')[-1],  # Extract filename from key
+                        "source": "cos",
+                        "cos_key": cos_backup['key'],
+                        "size_mb": round(cos_backup['size'] / (1024 * 1024), 2) if isinstance(cos_backup['size'], (int, float)) else 0,
+                        "modified": cos_backup.get('last_modified', ''),
+                        "path": None,  # Will be set when downloaded
+                        "tables": {},  # Will be populated after download
+                        "total_rows": 0,
+                        "healthy": None,  # Unknown until downloaded
+                        "downloaded": False
+                    }
+                    backups.append(stats)
+            except Exception as e:
+                logger.warning(f"[Recovery] Error listing COS backups: {e}")
         
         # Sort by modification time (newest first)
-        backups.sort(key=lambda x: x.get("modified", ""), reverse=True)
+        # For COS backups, parse the timestamp
+        def get_sort_key(backup):
+            modified = backup.get("modified", "")
+            if isinstance(modified, str) and modified:
+                try:
+                    # Try to parse various timestamp formats
+                    if 'T' in modified:
+                        # ISO format
+                        modified = modified.replace('Z', '')
+                        if '.' in modified:
+                            return datetime.strptime(modified.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+                        else:
+                            return datetime.strptime(modified, '%Y-%m-%dT%H:%M:%S')
+                    else:
+                        # Format: "2025-12-17 08:11:13"
+                        return datetime.strptime(modified, '%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    pass
+            return datetime.min
+        
+        backups.sort(key=get_sort_key, reverse=True)
         
         return backups
     
@@ -507,9 +647,16 @@ class DatabaseRecovery:
     
     def print_comparison(self, current_stats: Dict, backups: List[Dict], anomalies: List[Dict] = None) -> None:
         """Print a comparison table of current database and backups."""
-        print("\n" + "=" * 80)
+        print("\n" + "=" * 100)
         print("DATABASE RECOVERY - Backup Comparison")
-        print("=" * 80)
+        print("=" * 100)
+        
+        # Separate local and COS backups
+        local_backups = [b for b in backups if b.get("source") == "local"]
+        cos_backups = [b for b in backups if b.get("source") == "cos"]
+        
+        # Limit to 2 most recent local backups
+        local_backups = sorted(local_backups, key=lambda x: x.get("modified", ""), reverse=True)[:2]
         
         # Current database status
         print("\n[CURRENT DATABASE]")
@@ -521,38 +668,84 @@ class DatabaseRecovery:
         print(f"  Size: {current_stats.get('size_mb', 0)} MB")
         print(f"  Modified: {current_stats.get('modified', 'N/A')}")
         
-        if current_stats.get("tables"):
-            print(f"  Tables:")
-            for table, count in current_stats["tables"].items():
-                print(f"    - {table}: {count} rows")
+        # Print comparison table
+        print("\n" + "-" * 100)
+        print("BACKUP COMPARISON TABLE")
+        print("-" * 100)
         
-        # Available backups
-        print("\n[AVAILABLE BACKUPS]")
-        if not backups:
-            print("  No backups found in backup/ directory")
-        else:
-            for i, backup in enumerate(backups, 1):
+        # Table header
+        print(f"{'Source':<10} {'Filename':<40} {'Status':<12} {'Size (MB)':<12} {'Users':<10} {'Modified':<20}")
+        print("-" * 100)
+        
+        # Current database row
+        current_status = "HEALTHY" if current_stats.get("healthy") else "CORRUPTED"
+        current_users = current_stats.get("tables", {}).get("users", "?")
+        print(f"{'CURRENT':<10} {'(current database)':<40} {current_status:<12} {current_stats.get('size_mb', 0):<12.2f} {str(current_users):<10} {current_stats.get('modified', 'N/A'):<20}")
+        
+        # Local backups (limit to 2)
+        for backup in local_backups:
+            status = "HEALTHY" if backup.get("healthy") else "CORRUPTED"
+            users = backup.get("tables", {}).get("users", "?")
+            filename = backup.get("filename", "unknown")[:38]  # Truncate if too long
+            print(f"{'LOCAL':<10} {filename:<40} {status:<12} {backup.get('size_mb', 0):<12.2f} {str(users):<10} {backup.get('modified', 'N/A'):<20}")
+        
+        # COS backups
+        for backup in cos_backups:
+            status = "COS" if backup.get("healthy") is None else ("HEALTHY" if backup.get("healthy") else "CORRUPTED")
+            if backup.get("healthy") is None:
+                status = "COS (not downloaded)"
+            users = backup.get("tables", {}).get("users", "?")
+            filename = backup.get("filename", "unknown")[:38]
+            print(f"{'COS':<10} {filename:<40} {status:<12} {backup.get('size_mb', 0):<12.2f} {str(users):<10} {backup.get('modified', 'N/A'):<20}")
+        
+        print("-" * 100)
+        
+        # Detailed table information
+        print("\n[DETAILED BACKUP INFORMATION]")
+        
+        # Local backups details
+        if local_backups:
+            print("\n  Local Backups:")
+            for i, backup in enumerate(local_backups, 1):
                 status = "HEALTHY" if backup["healthy"] else "CORRUPTED"
-                print(f"\n  [{i}] {backup['filename']}")
-                print(f"      Status: {status}")
-                print(f"      Size: {backup['size_mb']} MB")
-                print(f"      Modified: {backup['modified']}")
+                print(f"\n    [{i}] {backup['filename']} ({status})")
+                print(f"        Size: {backup['size_mb']} MB")
+                print(f"        Modified: {backup['modified']}")
                 if backup["tables"] and backup["healthy"]:
-                    # Show key tables
+                    print(f"        Key Tables:")
                     for table in ["users", "organizations", "api_keys", "token_usage"]:
                         if table in backup["tables"]:
-                            print(f"      {table}: {backup['tables'][table]} rows")
+                            print(f"          - {table}: {backup['tables'][table]} rows")
+        
+        # COS backups details
+        if cos_backups:
+            print("\n  COS Backups:")
+            for i, backup in enumerate(cos_backups, len(local_backups) + 1):
+                cos_key = backup.get("cos_key", "unknown")
+                downloaded = backup.get("downloaded", False)
+                status_note = " (downloaded)" if downloaded else " (will download for comparison)"
+                print(f"\n    [{i}] {backup['filename']} - COS{status_note}")
+                print(f"        COS Key: {cos_key}")
+                print(f"        Size: {backup['size_mb']} MB")
+                print(f"        Modified: {backup['modified']}")
+                if backup.get("tables") and backup.get("healthy"):
+                    print(f"        Key Tables:")
+                    for table in ["users", "organizations", "api_keys", "token_usage"]:
+                        if table in backup["tables"]:
+                            print(f"          - {table}: {backup['tables'][table]} rows")
+                elif not downloaded:
+                    print(f"        Note: Download from COS to see detailed statistics")
         
         # Show anomalies/warnings
         if anomalies:
-            print("\n" + "-" * 80)
+            print("\n" + "-" * 100)
             print("[DATA ANOMALIES DETECTED]")
             for anomaly in anomalies:
                 if anomaly.get("table") == "users":
                     print(f"\n  WARNING: {anomaly['message']}")
                     print(f"           Consider using MERGE to combine both backups.")
         
-        print("\n" + "=" * 80)
+        print("\n" + "=" * 100)
     
     def interactive_recovery(self) -> bool:
         """
@@ -573,14 +766,53 @@ class DatabaseRecovery:
         
         # Get stats and backups
         current_stats = self.get_database_stats(self.db_path) if self.db_path else {}
-        backups = self.list_backups()
-        healthy_backups = [b for b in backups if b["healthy"]]
+        backups = self.list_backups(include_cos=True)
+        
+        # Download COS backups for comparison (limit to most recent ones)
+        cos_backups = [b for b in backups if b.get("source") == "cos"]
+        local_backups = [b for b in backups if b.get("source") == "local"]
+        
+        # Limit to 2 most recent local backups
+        local_backups = sorted(local_backups, key=lambda x: x.get("modified", ""), reverse=True)[:2]
+        
+        # Download COS backups to get their stats
+        print("\n[Downloading COS backups for comparison...]")
+        temp_cos_dir = self.backup_dir / ".cos_temp"
+        temp_cos_dir.mkdir(exist_ok=True)
+        
+        for cos_backup in cos_backups[:5]:  # Limit to 5 most recent COS backups
+            cos_key = cos_backup.get("cos_key")
+            if not cos_key:
+                continue
+            
+            temp_path = temp_cos_dir / cos_backup["filename"]
+            if not temp_path.exists():
+                success, msg = self.download_cos_backup(cos_key, temp_path)
+                if success:
+                    logger.info(f"[Recovery] {msg}")
+                    # Get stats for downloaded backup
+                    stats = self.get_database_stats(temp_path)
+                    cos_backup.update(stats)
+                    cos_backup["path"] = str(temp_path)
+                    cos_backup["downloaded"] = True
+                else:
+                    logger.warning(f"[Recovery] Failed to download COS backup {cos_key}: {msg}")
+            else:
+                # Already downloaded, just get stats
+                stats = self.get_database_stats(temp_path)
+                cos_backup.update(stats)
+                cos_backup["path"] = str(temp_path)
+                cos_backup["downloaded"] = True
+        
+        # Combine all backups (local + COS)
+        all_backups = local_backups + cos_backups
+        healthy_backups = [b for b in all_backups if b.get("healthy") and b.get("path")]
         
         # Detect anomalies between backups
         anomalies = self.detect_anomalies(healthy_backups)
         
         # Print comparison with anomalies
-        self.print_comparison(current_stats, backups, anomalies)
+        self.print_comparison(current_stats, all_backups, anomalies)
         
         if not healthy_backups:
             print("\nERROR: No healthy backups available for recovery!")
@@ -615,8 +847,10 @@ class DatabaseRecovery:
         # Healthy backups available
         print("\nOptions:")
         for i, backup in enumerate(healthy_backups, 1):
-            users = backup["tables"].get("users", "?")
-            print(f"  [{i}] Restore from {backup['filename']} ({users} users, {backup['size_mb']} MB)")
+            source = backup.get("source", "local").upper()
+            users = backup.get("tables", {}).get("users", "?")
+            size_mb = backup.get("size_mb", 0)
+            print(f"  [{i}] Restore from {backup['filename']} ({source}, {users} users, {size_mb} MB)")
         
         if can_merge:
             print(f"  [M] MERGE backups (combine data from multiple backups)")
@@ -644,12 +878,31 @@ class DatabaseRecovery:
                     idx = int(choice)
                     if 1 <= idx <= len(healthy_backups):
                         backup = healthy_backups[idx - 1]
-                        backup_path = self.backup_dir / backup["filename"]
                         
-                        print(f"\nRestoring from: {backup['filename']}")
+                        # Determine backup path (local or downloaded COS)
+                        if backup.get("source") == "cos":
+                            backup_path = Path(backup.get("path", ""))
+                            if not backup_path or not backup_path.exists():
+                                # Need to download it
+                                cos_key = backup.get("cos_key")
+                                if cos_key:
+                                    temp_cos_dir = self.backup_dir / ".cos_temp"
+                                    temp_cos_dir.mkdir(exist_ok=True)
+                                    backup_path = temp_cos_dir / backup["filename"]
+                                    success, msg = self.download_cos_backup(cos_key, backup_path)
+                                    if not success:
+                                        print(f"\nFailed to download COS backup: {msg}")
+                                        continue
+                                else:
+                                    print(f"\nCannot restore: COS backup key not found")
+                                    continue
+                        else:
+                            backup_path = self.backup_dir / backup["filename"]
+                        
+                        print(f"\nRestoring from: {backup['filename']} ({backup.get('source', 'local').upper()})")
                         print(f"  Size: {backup['size_mb']} MB")
                         print(f"  Modified: {backup['modified']}")
-                        print(f"  Users: {backup['tables'].get('users', '?')}")
+                        print(f"  Users: {backup.get('tables', {}).get('users', '?')}")
                         
                         confirm = input("\nConfirm restore? (yes/no): ").strip().lower()
                         if confirm == "yes":
@@ -657,6 +910,15 @@ class DatabaseRecovery:
                             if success:
                                 print(f"\n{msg}")
                                 print("Database restored successfully. Continuing startup...")
+                                
+                                # Clean up temporary COS downloads
+                                temp_cos_dir = self.backup_dir / ".cos_temp"
+                                if temp_cos_dir.exists():
+                                    try:
+                                        shutil.rmtree(temp_cos_dir)
+                                    except Exception:
+                                        pass
+                                
                                 return True
                             else:
                                 print(f"\nRestore failed: {msg}")

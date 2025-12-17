@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.97] - 2025-12-17 - Tencent Cloud Object Storage (COS) Online Backup Integration
+
+### Added
+
+- **Tencent Cloud Object Storage (COS) Online Backup** (`services/backup_scheduler.py`)
+  - Automatic upload of local backups to Tencent COS after successful local backup creation
+  - Uses advanced multipart upload interface supporting large files and resumable uploads
+  - Reuses Tencent Cloud credentials from SMS module (TENCENT_SMS_SECRET_ID/SECRET_KEY)
+  - Configurable via environment variables: COS_BACKUP_ENABLED, COS_BUCKET, COS_REGION, COS_KEY_PREFIX
+  - Comprehensive error handling with detailed logging for CosClientError and CosServiceError
+  - Follows official Tencent COS SDK patterns and documentation
+
+- **COS Backup Listing & Management** (`services/backup_scheduler.py`)
+  - `list_cos_backups()` function to list all backups in COS bucket with configured prefix
+  - Handles pagination for large backup sets
+  - Filters backups by prefix and filename pattern (mindgraph.db.*)
+  - Returns backup metadata: key, size, last_modified timestamp
+
+- **COS Backup Retention Policy** (`services/backup_scheduler.py`)
+  - `cleanup_old_cos_backups()` function with time-based retention (default: 2 days)
+  - Automatically deletes backups older than retention period
+  - Runs after each successful COS upload
+  - Handles timestamp parsing for multiple formats (ISO, datetime objects)
+
+- **Environment Isolation via Prefix** (`services/backup_scheduler.py`, `services/database_recovery.py`)
+  - Prefix-based security to prevent cross-environment access
+  - Development machines use `backups/mindgraph-Test` prefix
+  - Production servers use `backups/mindgraph-Master` prefix
+  - All COS operations (upload, list, download, cleanup) filtered by configured prefix
+  - Validation prevents downloading backups from other environments
+
+- **COS Backup Integration in Recovery Module** (`services/database_recovery.py`)
+  - `download_cos_backup()` function to download backups from COS for comparison
+  - Enhanced `list_backups()` to include COS backups alongside local backups
+  - Downloads COS backups automatically during recovery for statistics
+  - Shows COS backups in comparison table with source indicator
+  - Allows restoring from COS backups with same workflow as local backups
+  - Temporary download cleanup after recovery
+
+- **Enhanced Recovery Comparison Table** (`services/database_recovery.py`)
+  - Shows current database + 2 most recent local backups + COS backups
+  - Table format: Source | Filename | Status | Size (MB) | Users | Modified
+  - Detailed information section with key table statistics
+  - Visual distinction between LOCAL and COS backup sources
+  - Anomaly detection warnings for data inconsistencies
+
+- **COS Backup Test Script** (`scripts/test_cos_backup.py`)
+  - Standalone script to manually trigger backup and COS upload
+  - Displays current COS configuration
+  - Shows existing local and COS backups
+  - Tests full backup cycle: local backup → COS upload → COS cleanup
+  - Windows encoding compatibility fixes
+
+- **COS SDK Dependency** (`requirements.txt`)
+  - Added `cos-python-sdk-v5>=1.9.27` for Tencent Cloud Object Storage integration
+
+- **COS Configuration Documentation** (`env.example`)
+  - Comprehensive COS configuration section with examples
+  - Multi-environment prefix guidance (Test, Master, Staging)
+  - Security notes about prefix isolation
+  - Links to Tencent Cloud documentation and console
+
+### Changed
+
+- **Backup Workflow Integration** (`services/backup_scheduler.py`)
+  - `create_backup()` now uploads to COS after successful local backup
+  - COS upload failure doesn't fail local backup (local backup still succeeds)
+  - Automatic COS cleanup runs after successful upload
+  - Enhanced logging includes COS configuration (bucket, region, prefix)
+
+- **Recovery Module Backup Listing** (`services/database_recovery.py`)
+  - `list_backups()` now accepts `include_cos` parameter (default: True)
+  - Returns backups with 'source' field: 'local' or 'cos'
+  - COS backups include 'cos_key' field for download reference
+  - Sorting handles both local and COS backup timestamps
+
+- **Prefix Normalization** (`services/backup_scheduler.py`, `services/database_recovery.py`)
+  - Consistent prefix normalization (removes trailing slashes)
+  - Prevents double slashes in object keys
+  - Handles prefix variations (with/without trailing slash)
+
+### Fixed
+
+- **Cross-Environment Backup Access Prevention** (`services/database_recovery.py`)
+  - Added prefix validation in `download_cos_backup()` before download
+  - Prevents dev machines from accessing production backups
+  - Security logging for prefix mismatch violations
+
+- **Object Key Construction** (`services/backup_scheduler.py`)
+  - Fixed prefix normalization in upload function to handle trailing slashes
+  - Ensures consistent object key format: `{prefix}/mindgraph.db.{timestamp}`
+
+---
+
 ## [4.28.96] - 2025-12-17 - Node Palette Button Replacement & Chinese Translations
 
 ### Added
