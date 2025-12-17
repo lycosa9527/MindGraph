@@ -120,9 +120,9 @@ class Messages:
             "az": "Verilənlər bazası müvəqqəti olaraq məşğuldur, captcha yoxlanışı uğursuz oldu. Sistem avtomatik olaraq yenidən cəhd edir. Bir az gözləyin və yenidən cəhd edin."
         },
         "captcha_retry_attempts": {
-            "zh": "后重试。账户锁定前还有 {} 次尝试机会。",
-            "en": " and try again. {} attempt(s) remaining before account lockout.",
-            "az": " və yenidən cəhd edin. Hesab kilidlənməsindən əvvəl {} cəhd qalıb."
+            "zh": "账户锁定前还有 {} 次尝试机会。",
+            "en": " {} attempt(s) remaining before account lockout.",
+            "az": "Hesab kilidlənməsindən əvvəl {} cəhd qalıb."
         },
         "captcha_account_locked": {
             "zh": "账户因 {} 次失败尝试而暂时锁定。请在 {} 分钟后重试。",

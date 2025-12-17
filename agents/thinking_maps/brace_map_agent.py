@@ -460,19 +460,19 @@ class BlockBasedPositioningSystem:
         # Calculate complexity score
         complexity_score = total_parts * 2 + total_subparts * 1.5
         
-        # Dynamic spacing based on complexity (reduced values to prevent excessive Y coordinates)
+        # Dynamic spacing based on complexity - tightened for more compact layout
         if complexity_score > 50:
-            block_spacing = 20.0  # Reduced from 40.0
-            unit_spacing = 30.0   # Reduced from 60.0
-            brace_padding = 40.0  # Reduced from 80.0
+            block_spacing = 12.0  # Reduced from 20.0 for tighter spacing
+            unit_spacing = 18.0   # Reduced from 30.0 for tighter spacing
+            brace_padding = 30.0  # Reduced from 40.0 for tighter spacing
         elif complexity_score > 25:
-            block_spacing = 15.0  # Reduced from 30.0
-            unit_spacing = 25.0   # Reduced from 45.0
-            brace_padding = 30.0  # Reduced from 60.0
+            block_spacing = 10.0  # Reduced from 15.0 for tighter spacing
+            unit_spacing = 15.0   # Reduced from 25.0 for tighter spacing
+            brace_padding = 24.0  # Reduced from 30.0 for tighter spacing
         else:
-            block_spacing = 12.0  # Reduced from 25.0
-            unit_spacing = 20.0   # Reduced from 35.0
-            brace_padding = 25.0  # Reduced from 50.0
+            block_spacing = 8.0   # Reduced from 12.0 for tighter spacing
+            unit_spacing = 12.0   # Reduced from 20.0 for tighter spacing
+            brace_padding = 20.0  # Reduced from 25.0 for tighter spacing
         
         # Calculate available space
         available_width = dimensions['width'] - 2 * dimensions['padding']
@@ -504,11 +504,11 @@ class BlockBasedPositioningSystem:
         const_main_brace_visual_width = 16.0
         const_small_brace_visual_width = 12.0
 
-        # Gaps around braces - increased to prevent overlap
-        gap_topic_to_main_brace = 50.0  # Increased from 30.0
-        gap_main_brace_to_part = 60.0   # Increased from 40.0 for better spacing
-        gap_part_to_small_brace = 40.0  # Increased from 30.0
-        gap_small_brace_to_subpart = 40.0  # Increased from 30.0
+        # Gaps around braces - minimized to move braces closer to nodes on both sides
+        gap_topic_to_main_brace = 16.0  # Reduced from 24.0 to move brace closer to topic
+        gap_main_brace_to_part = 18.0   # Reduced from 28.0 to move brace closer to parts
+        gap_part_to_small_brace = 14.0  # Reduced from 22.0 to move brace closer to parts
+        gap_small_brace_to_subpart = 14.0  # Reduced from 22.0 to move brace closer to subparts
         
         # Increased vertical spacing for arc display
         vertical_padding_top = 80.0  # Increased from 50.0
@@ -531,7 +531,7 @@ class BlockBasedPositioningSystem:
 
         # Column 1: Topic center (moved further left for brace space). Approximate topic width from part widths if unavailable.
         approx_topic_width = max(60.0, max_topic_block_width)
-        topic_column_x = padding + approx_topic_width / 2.0 - 20.0  # Move left by 20px
+        topic_column_x = padding + approx_topic_width / 2.0 - 12.0  # Reduced from 20px for tighter horizontal spacing
 
         # Estimate curly brace corridor widths (adaptive, conservative so parts never overlap brace)
         estimated_main_depth = min(max(24.0, canvas_width * 0.08), 100.0)
@@ -542,9 +542,9 @@ class BlockBasedPositioningSystem:
             topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth / 2.0
         )
 
-        # Column 3: Parts center depends on estimated brace depth + gap + half of max part width (increased spacing)
+        # Column 3: Parts center depends on estimated brace depth + gap + half of max part width (minimized)
         part_column_x = (
-            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth + gap_main_brace_to_part + 30.0 + max_part_block_width / 2.0  # Extra 30px spacing
+            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth + gap_main_brace_to_part + 6.0 + max_part_block_width / 2.0  # Reduced from 12px to move parts closer to brace
         )
 
         # Column 4: Small brace X (use estimated small depth/2 past part-right + gap)
@@ -570,8 +570,8 @@ class BlockBasedPositioningSystem:
             # Calculate subparts range center for part positioning
             if unit.subpart_blocks:
                 # Calculate the vertical range of subparts for this part
-                subparts_start_y = unit.y + unit.part_block.height + 20
-                subparts_end_y = subparts_start_y + (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) + ((len(unit.subpart_blocks) - 1) * 10) - 10
+                subparts_start_y = unit.y + unit.part_block.height + 12  # Reduced from 20 for tighter spacing
+                subparts_end_y = subparts_start_y + (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) + ((len(unit.subpart_blocks) - 1) * 7) - 7  # Reduced from 10 for tighter spacing
                 subparts_range_center_y = (subparts_start_y + subparts_end_y) / 2
                 
                 # Position part at subparts range center
@@ -682,7 +682,7 @@ class FlexibleLayoutCalculator:
         """Calculate dynamic unit spacing based on content analysis"""
         total_units = len(units)
         if total_units <= 1:
-            return 30.0  # Minimum spacing
+            return 18.0  # Reduced minimum spacing from 30.0 for tighter layout
         
         # Analyze content complexity dynamically
         total_subparts = 0
@@ -712,25 +712,25 @@ class FlexibleLayoutCalculator:
         height_factor = max_unit_height / 100.0  # Normalize to 100px baseline
         complexity_factor = min(2.5, content_density * height_factor)
         
-        # Base spacing that scales with content complexity
-        base_spacing = 30.0 * complexity_factor
+        # Base spacing that scales with content complexity - reduced for tighter layout
+        base_spacing = 18.0 * complexity_factor  # Reduced from 30.0
         
-        # Additional spacing for complex diagrams
+        # Additional spacing for complex diagrams - reduced for tighter layout
         if total_units > 3:
-            base_spacing += 10.0 * (total_units - 3)
+            base_spacing += 6.0 * (total_units - 3)  # Reduced from 10.0
         if total_subparts > total_units * 2:
-            base_spacing += 15.0  # Extra spacing for parts with many subparts
+            base_spacing += 9.0  # Reduced from 15.0 - Extra spacing for parts with many subparts
         
-        return max(30.0, base_spacing)  # Ensure minimum spacing
+        return max(18.0, base_spacing)  # Reduced minimum spacing from 30.0
     
     def calculate_subpart_spacing(self, subparts: List[Dict]) -> float:
         """Calculate dynamic subpart spacing"""
         total_subparts = len(subparts)
         if total_subparts <= 1:
-            return 20.0
+            return 12.0  # Reduced from 20.0 for tighter spacing
         
-        # Dynamic spacing based on subpart count and content complexity
-        base_spacing = 15.0
+        # Dynamic spacing based on subpart count and content complexity - reduced for tighter layout
+        base_spacing = 10.0  # Reduced from 15.0
         density_factor = min(1.5, total_subparts / 2.0)
         
         # Adjust based on text length (longer text needs more space)
@@ -757,9 +757,9 @@ class FlexibleLayoutCalculator:
         # Find the leftmost part position to avoid overlap
         leftmost_part_x = min(unit.part_position.x for unit in units)
         
-        # Position topic to the left of all parts with proper spacing
-        # Ensure topic is positioned at least 300px to the left of the leftmost part
-        topic_x = max(dimensions['padding'] + 20, leftmost_part_x - 300)  # Increased spacing to 300px
+        # Position topic to the left of all parts with proper spacing - further reduced for tighter horizontal layout
+        # Ensure topic is positioned at least 170px to the left of the leftmost part
+        topic_x = max(dimensions['padding'] + 15, leftmost_part_x - 170)  # Further reduced from 220px for tighter horizontal spacing
         topic_y = center_y
         
         return (topic_x, topic_y)
@@ -791,9 +791,9 @@ class FlexibleLayoutCalculator:
         available_width = canvas_width - 2 * dimensions['padding']
         
         # Calculate optimal spacing based on content
-        topic_offset = max(30, min(80, available_width * 0.1))  # 10% of available width, min 30, max 80
-        part_offset = max(100, min(200, available_width * 0.25))  # 25% of available width, min 100, max 200
-        subpart_offset = max(80, min(150, available_width * 0.2))  # Reduced from 25% to 20% of available width, min 80, max 150
+        topic_offset = max(20, min(60, available_width * 0.08))  # Reduced to 8% of available width, min 20, max 60 for tighter horizontal spacing
+        part_offset = max(80, min(160, available_width * 0.2))  # Reduced to 20% of available width, min 80, max 160 for tighter horizontal spacing
+        subpart_offset = max(60, min(120, available_width * 0.16))  # Reduced to 16% of available width, min 60, max 120 for tighter horizontal spacing
         
         # Calculate global grid positions for all subparts across all parts
         all_subparts = []
@@ -924,7 +924,7 @@ class FlexibleLayoutCalculator:
                 # Ensure no overlap with previous units
                 if i > 0 and units:
                     # Check against all previous units, not just the last one
-                    min_spacing = 30.0  # Increased minimum spacing between units
+                    min_spacing = 18.0  # Reduced from 30.0 for tighter spacing between units
                     max_prev_bottom = 0
                     for prev_unit in units:
                         prev_bottom = prev_unit.y + prev_unit.height
@@ -939,7 +939,7 @@ class FlexibleLayoutCalculator:
                             subpart_positions = []
                             for j, subpart in enumerate(subparts):
                                 subpart_x = global_subpart_x
-                                subpart_y = unit_y + j * (theme['fontSubpart'] + 20 + subpart_spacing)
+                                subpart_y = unit_y + j * (theme['fontSubpart'] + 20 + subpart_spacing)  # subpart_spacing already reduced
                                 
                                 subpart_node = NodePosition(
                                     x=subpart_x, y=subpart_y,
@@ -1280,12 +1280,25 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             if isinstance(response, dict):
                 spec = response
             else:
+                # Log raw response for debugging
+                response_str = str(response)
+                logger.debug(f"BraceMapAgent: Raw LLM response (first 500 chars): {response_str[:500]}")
+                
                 # Try to extract JSON from string response
-                spec = extract_json_from_response(str(response))
+                spec = extract_json_from_response(response_str)
             
             if not spec:
-                logger.error("BraceMapAgent: Failed to extract JSON from LLM response")
+                logger.error(f"BraceMapAgent: Failed to extract JSON from LLM response. Response type: {type(response)}, Response length: {len(str(response))}")
+                logger.error(f"BraceMapAgent: Raw response content: {str(response)[:1000]}")
                 return None
+            
+            # Normalize field names (e.g., 'topic' -> 'whole') before validation
+            spec = self._normalize_field_names(spec)
+            
+            # Log extracted spec for debugging
+            logger.debug(f"BraceMapAgent: Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            if isinstance(spec, dict) and 'whole' in spec:
+                logger.debug(f"BraceMapAgent: Extracted 'whole' field value: {spec.get('whole')}")
             
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if fixed_dimension:
@@ -1359,6 +1372,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
         try:
             # Create a copy to avoid modifying the original
             normalized_spec = spec.copy()
+            
+            # Normalize 'topic' to 'whole' if 'whole' doesn't exist (backward compatibility)
+            if 'topic' in normalized_spec and 'whole' not in normalized_spec:
+                normalized_spec['whole'] = normalized_spec['topic']
+                logger.debug("BraceMapAgent: Normalized 'topic' field to 'whole'")
             
             # Normalize parts
             if 'parts' in normalized_spec and isinstance(normalized_spec['parts'], list):
@@ -1717,7 +1735,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             parts_left = min(n['x'] for n in part_nodes)
 
             # Curly (math-style) main brace opening to the left (very conservative spacing)
-            safety_gap = max(50.0, canvas_width * 0.05)  # Increased safety gap for better spacing
+            safety_gap = max(24.0, canvas_width * 0.03)  # Reduced from 35.0 to move brace closer to nodes
             
             # CRITICAL: Calculate safe positioning for LEFT-opening brace
             # Brace extends LEFT by tip_depth and RIGHT by arc_radius
@@ -1744,10 +1762,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # Position brace to the right of topic
             if min_brace_x >= max_brace_x:
                 # Not enough space - position as close to topic as possible
-                brace_x = topic_right + safety_gap + tip_depth + 10.0  # Extra 10px buffer
+                brace_x = topic_right + safety_gap + tip_depth + 3.0  # Reduced from 6px to move brace closer to topic
             else:
-                # Sufficient space - position closer to topic (right side of available space)
-                brace_x = min_brace_x + (max_brace_x - min_brace_x) * 0.3  # 30% from left (slightly more centered)
+                # Position brace closer to both topic and parts
+                brace_x = min_brace_x + (max_brace_x - min_brace_x) * 0.15  # Reduced from 30% to 15% to move brace closer to both nodes
             
             # CRITICAL: Brace boundaries include arc radius for complete display (arcs extend inward)
             brace_start_y = first_part_center_y + arc_radius  # Include top arc radius (inward)
@@ -1884,7 +1902,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 subparts_left = min(n['x'] for n in part_subparts)
 
                 small_brace_width = 6
-                small_safety_gap = max(40.0, canvas_width * 0.04)  # Increased from 32.0 to 40.0
+                small_safety_gap = max(20.0, canvas_width * 0.025)  # Reduced from 28.0 to move small brace closer to nodes
 
                 # CRITICAL: Calculate safe positioning for LEFT-opening small brace
                 # Calculate small brace height based on first and last subpart centers
@@ -1908,8 +1926,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                     # Very tight space: position as safely as possible
                     small_brace_x = min_sx
                 else:
-                    # Position in the middle of safe zone
-                    small_brace_x = (min_sx + max_sx) / 2.0
+                    # Position small brace closer to both parts and subparts
+                    small_brace_x = min_sx + (max_sx - min_sx) * 0.2  # Reduced from 0.5 (middle) to 0.2 to move closer to nodes
 
                 # Calculate safe depth
                 small_total_lane = max(0.0, (subparts_left - part_right - (small_safety_gap * 2) - s_tip_depth - s_arc_radius))

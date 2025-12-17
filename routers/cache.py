@@ -141,10 +141,10 @@ async def get_modular_cache_status(current_user: User = Depends(get_current_user
     Returns modular cache status, performance metrics, and optimization details.
     """
     try:
-        from static.js.modular_cache_python import getModularCacheStats, getModularPerformanceSummary
+        from static.js.modular_cache_python import get_modular_cache_stats, get_modular_performance_summary
         
-        stats = getModularCacheStats()
-        performance_summary = getModularPerformanceSummary()
+        stats = get_modular_cache_stats()
+        performance_summary = get_modular_performance_summary()
         
         cache_data = {
             'status': 'success',
@@ -168,7 +168,8 @@ async def get_modular_cache_status(current_user: User = Depends(get_current_user
             'timestamp': time.time()
         }
         
-        logger.info(f"Modular cache status check: OK - {performance_summary['status']}")
+        status_msg = performance_summary.get('status', 'Unknown')
+        logger.info(f"Modular cache status check: OK - {status_msg}")
         return cache_data
         
     except Exception as e:

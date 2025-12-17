@@ -54,20 +54,82 @@ def extract_json_from_response(response_content):
         if json_match:
             json_content = json_match.group(1).strip()
         else:
-            # Try to find JSON object or array in content
-            # Look for { ... } or [ ... ] patterns
-            obj_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
-            arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
-            
-            if obj_match:
-                json_content = obj_match.group(0)
-            elif arr_match:
-                json_content = arr_match.group(0)
+            # Find the root JSON object by finding the first { and matching its closing }
+            # This ensures we get the outermost object, not nested objects
+            first_brace = content.find('{')
+            if first_brace != -1:
+                # Use balanced bracket matching to find the matching closing brace
+                brace_count = 0
+                json_end = first_brace
+                in_string = False
+                escape_next = False
+                
+                for i in range(first_brace, len(content)):
+                    char = content[i]
+                    
+                    if escape_next:
+                        escape_next = False
+                        continue
+                    
+                    if char == '\\':
+                        escape_next = True
+                        continue
+                    
+                    if char == '"' and not escape_next:
+                        in_string = not in_string
+                        continue
+                    
+                    if not in_string:
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_end = i + 1
+                                break
+                
+                if brace_count == 0:
+                    json_content = content[first_brace:json_end]
+                else:
+                    # If balanced matching failed, try to find the largest complete JSON object
+                    # by finding the last } that could match the first {
+                    last_brace = content.rfind('}')
+                    if last_brace > first_brace:
+                        # Try parsing from first { to last }
+                        try:
+                            candidate = content[first_brace:last_brace + 1]
+                            # Quick validation: check if it has root-level fields we expect
+                            if '"whole"' in candidate or '"topic"' in candidate or '"dimension"' in candidate:
+                                json_content = candidate
+                            else:
+                                # Fallback to old regex method
+                                obj_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+                                if obj_match:
+                                    json_content = obj_match.group(0)
+                        except:
+                            # Fallback to old regex method
+                            obj_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+                            if obj_match:
+                                json_content = obj_match.group(0)
+                    else:
+                        # Fallback: try to find JSON object or array patterns
+                        obj_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+                        arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
+                        
+                        if obj_match:
+                            json_content = obj_match.group(0)
+                        elif arr_match:
+                            json_content = arr_match.group(0)
+                        else:
+                            # Last fallback: try greedy match for { ... }
+                            greedy_match = re.search(r'\{.*\}', content, re.DOTALL)
+                            if greedy_match:
+                                json_content = greedy_match.group(0)
             else:
-                # Fallback: try greedy match for { ... }
-                greedy_match = re.search(r'\{.*\}', content, re.DOTALL)
-                if greedy_match:
-                    json_content = greedy_match.group(0)
+                # No opening brace found, try array pattern
+                arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
+                if arr_match:
+                    json_content = arr_match.group(0)
         
         if not json_content:
             # No JSON-like content found

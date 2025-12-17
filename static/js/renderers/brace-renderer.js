@@ -241,7 +241,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const subpartPadding = 8;
     const braceWidth = 3;
     const braceSpacing = 30;
-    const columnSpacing = 80;  // Increased from 45 to 80 to prevent overlap
+    const columnSpacing = 38;  // Further reduced from 52 to 38 for tighter horizontal spacing
     
     // Font sizes
     const topicFontSize = parseFontSpec(THEME.fontTopic).size;
@@ -331,7 +331,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const subpartBoxHeight = Math.max(...subpartData.map(sp => sp.boxHeight), subpartFontSize + subpartPadding * 2);
     
     // Calculate total height needed
-    const topPadding = 60; // Reduced from 100 - more reasonable top padding
+    const topPadding = 42; // Reduced from 60 for tighter spacing
     let totalHeight = topPadding + topicBoxHeight; // Topic + top padding
     
     // Add space for dimension label if it exists (25px below topic box + font size + small padding)
@@ -339,11 +339,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         totalHeight += 25 + 14 + 15; // 25px gap + 14px font + 15px padding before parts
     }
     
-    // Calculate parts/subparts height
+    // Calculate parts/subparts height - tightened spacing
     (actualSpec.parts || []).forEach(part => {
-        totalHeight += partBoxHeight + 20; // Part height + spacing
+        totalHeight += partBoxHeight + 12; // Reduced from 20 for tighter spacing
         if (part.subparts && part.subparts.length > 0) {
-            totalHeight += (part.subparts.length * (subpartBoxHeight + 10)) + 20; // Subparts + spacing
+            totalHeight += (part.subparts.length * (subpartBoxHeight + 7)) + 12; // Reduced spacing: 10->7, 20->12
         }
     });
     
@@ -365,10 +365,10 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     const contentCenterY = contentStartY + (contentEndY - contentStartY) / 2;
     
     // Calculate total width needed - use adaptive dimensions if provided
-    const topicSectionWidth = topicBoxWidth + 30; // Topic + padding
-    const partsSectionWidth = maxPartBoxWidth + 30; // Parts + padding
-    const subpartsSectionWidth = maxSubpartBoxWidth + 30; // Subparts + padding
-    const braceTipSpace = 100; // Extra space for brace tip extension
+    const topicSectionWidth = topicBoxWidth + 20; // Reduced from 30 for tighter spacing
+    const partsSectionWidth = maxPartBoxWidth + 20; // Reduced from 30 for tighter spacing
+    const subpartsSectionWidth = maxSubpartBoxWidth + 20; // Reduced from 30 for tighter spacing
+    const braceTipSpace = 70; // Reduced from 100 for tighter horizontal spacing
     const contentWidth = topicSectionWidth + columnSpacing + partsSectionWidth + columnSpacing + subpartsSectionWidth + braceTipSpace;
     
     // Use adaptive width if provided, otherwise use calculated content width
@@ -384,11 +384,11 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .style('background-color', THEME.background || '#f8f9fa');
 
     // Position topic with adequate left margin to prevent dimension label cutoff
-    const topicX = 50;  // Increased from 15 to 50 to provide space for centered dimension label
+    const topicX = 35;  // Reduced from 50 for tighter horizontal spacing
     // Topic will be drawn AFTER brace center is calculated to ensure correct position
 
-    // Position parts to the right of topic with spacing for brace
-    const partsStartX = topicX + topicBoxWidth + columnSpacing + 80;  // Space for brace
+    // Position parts to the right of topic with spacing for brace - further tightened
+    const partsStartX = topicX + topicBoxWidth + columnSpacing + 18;  // Reduced from 28 to move parts closer to brace
     const partsStartY = topPadding;  // Start at top padding (consistent with contentStartY)
     let currentY = partsStartY;
     
@@ -407,7 +407,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         const partSectionStartY = currentY;
         
         // First, calculate the total height needed for this part's section (including subparts)
-        let partSectionHeight = partInfo.boxHeight + 20; // Part height + spacing
+        let partSectionHeight = partInfo.boxHeight + 12; // Reduced from 20 for tighter spacing
         
         // Get subparts for this part
         const thisPartSubparts = subpartData.filter((sp, idx) => {
@@ -421,15 +421,15 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         if (thisPartSubparts.length > 0) {
             const subpartHeights = thisPartSubparts.map(sp => sp.boxHeight);
             const maxSubpartH = Math.max(...subpartHeights, subpartBoxHeight);
-            partSectionHeight += (thisPartSubparts.length * (maxSubpartH + 10)) + 20; // Subparts + spacing
+            partSectionHeight += (thisPartSubparts.length * (maxSubpartH + 7)) + 12; // Reduced spacing: 10->7, 20->12
         }
         
         // Calculate subparts range center for part positioning
         let subpartsRangeCenterY = partSectionStartY + partSectionHeight / 2; // Default to section center
         if (thisPartSubparts.length > 0) {
-            const subpartsStartY = currentY + partInfo.boxHeight + 20;
+            const subpartsStartY = currentY + partInfo.boxHeight + 12;  // Reduced from 20 for tighter spacing
             const maxSubpartH = Math.max(...thisPartSubparts.map(sp => sp.boxHeight), subpartBoxHeight);
-            const subpartsEndY = subpartsStartY + (thisPartSubparts.length * (maxSubpartH + 10)) - 10;
+            const subpartsEndY = subpartsStartY + (thisPartSubparts.length * (maxSubpartH + 7)) - 7;  // Reduced from 10 for tighter spacing
             subpartsRangeCenterY = (subpartsStartY + subpartsEndY) / 2;
         }
         
@@ -494,7 +494,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         });
 
         // Move to next position for subparts
-        currentY += partBoxHeight + 20;
+        currentY += partBoxHeight + 12;  // Reduced from 20 for tighter spacing
 
         // Draw subparts if they exist
         if (part.subparts && part.subparts.length > 0) {
@@ -562,7 +562,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                         .text(line);
                 });
 
-                currentY += subpartInfo.boxHeight + 10;
+                currentY += subpartInfo.boxHeight + 7;  // Reduced from 10 for tighter spacing
                 
                 // Track the actual bottom edge of this subpart
                 lastChildBottomY = Math.max(lastChildBottomY, subpartY + subpartInfo.boxHeight / 2);
@@ -574,7 +574,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 // Calculate safe brace position to avoid overlap
                 const partRight = partsStartX + partBoxWidth;
                 const subpartsLeft = subpartsStartX;
-                const safetyGap = 20;  // Minimum gap between elements
+                const safetyGap = 9;  // Reduced from 12 to move small brace closer to parts and subparts
                 
                 // Calculate small brace boundaries based on subpart centers
                 const subpartCenterYs = [];
@@ -601,12 +601,12 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 const minBraceX = partRight + safetyGap + sTipDepth;
                 const maxBraceX = subpartsLeft - safetyGap - sArcRadius;
                 
-                // Position in the middle of safe zone
-                const braceX = (minBraceX + maxBraceX) / 2;
+                // Position brace closer to both parts and subparts (slightly toward center but tighter)
+                const braceX = minBraceX + (maxBraceX - minBraceX) * 0.2;  // Reduced from 0.5 (middle) to 0.2 to move closer to nodes
                 
-                // Calculate safe depth
+                // Calculate safe depth - reduced for tighter horizontal spacing
                 const availableSpace = subpartsLeft - partRight - (safetyGap * 2) - sTipDepth - sArcRadius;
-                const braceDepth = Math.max(8, Math.min(availableSpace * 0.3, 30));
+                const braceDepth = Math.max(6, Math.min(availableSpace * 0.25, 24));  // Reduced from 0.3 to 0.25 and max from 30 to 24
                 
                 const bracePaths = buildCurlyBracePath(
                     braceX,
@@ -650,7 +650,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             }
         }
         
-        currentY += 20; // Extra spacing between parts
+        currentY += 12; // Reduced from 20 for tighter spacing between parts
     });
 
     // Calculate brace boundaries based on first and last part centers
@@ -677,7 +677,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // Calculate safe brace position to avoid overlap
         const topicRight = topicX + topicBoxWidth;
         const partsLeft = partsStartX;
-        const safetyGap = 25;  // Increased safety gap between topic and brace
+        const safetyGap = 10;  // Reduced from 14 to move brace closer to nodes on both sides
         
         // Calculate main brace height and tip depth based on corrected boundaries
         const mainBraceHeight = braceEndY - braceStartY;
@@ -692,14 +692,14 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // Calculate maximum X position (before parts start)
         const maxBraceX = partsLeft - safetyGap - arcRadius;  // Maximum X to avoid overlap with parts
         
-        // Position brace to the right of topic
+        // Position brace closer to both topic and parts
         let mainBraceX;
         if (minBraceX >= maxBraceX) {
             // Not enough space - position as close to topic as possible
-            mainBraceX = topicRight + safetyGap + tipDepth + 10;  // Extra 10px buffer
+            mainBraceX = topicRight + safetyGap + tipDepth + 3;  // Reduced from 6px to move brace closer to topic
         } else {
-            // Sufficient space - position closer to topic (right side of available space)
-            mainBraceX = minBraceX + (maxBraceX - minBraceX) * 0.3;  // 30% from left (slightly more centered)
+            // Position brace closer to center (equidistant from both sides) for tighter spacing
+            mainBraceX = minBraceX + (maxBraceX - minBraceX) * 0.15;  // Reduced from 25% to 15% to move brace closer to both nodes
         }
         
         // CRITICAL: Brace boundaries align with first and last part centers
@@ -713,9 +713,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         topicCenterY = braceCenterY;
         
         // RENDERING ORDER: Draw brace paths FIRST (underneath), then topic node on top
-        // Calculate safe depth
+        // Calculate safe depth - reduced for tighter horizontal spacing
         const availableSpace = partsLeft - topicRight - (safetyGap * 2) - tipDepth - arcRadius;
-        const braceDepth = Math.max(10, Math.min(availableSpace * 0.3, 40));
+        const braceDepth = Math.max(8, Math.min(availableSpace * 0.25, 32));  // Reduced from 0.3 to 0.25 and max from 40 to 32
         
         const bracePaths = buildCurlyBracePath(
             mainBraceX,

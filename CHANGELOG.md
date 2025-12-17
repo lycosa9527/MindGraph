@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.98] - 2025-12-17 - Brace Map Spacing Improvements and JSON Extraction Fix
+
+### Changed
+
+- **Brace Map Spacing - Horizontal Layout** (`agents/thinking_maps/brace_map_agent.py`, `static/js/renderers/brace-renderer.js`)
+  - Reduced horizontal gaps between topic, braces, parts, and subparts by 20-40%
+  - `gap_topic_to_main_brace`: 24.0 → 16.0 (33% reduction)
+  - `gap_main_brace_to_part`: 28.0 → 18.0 (36% reduction)
+  - `gap_part_to_small_brace`: 22.0 → 14.0 (36% reduction)
+  - `gap_small_brace_to_subpart`: 22.0 → 14.0 (36% reduction)
+  - Column spacing: 52 → 38 (27% reduction)
+  - Parts start position: reduced extra spacing from 28 to 18
+  - Safety gaps: main brace 14 → 10, small brace 12 → 9
+  - Topic offset: 220px → 170px (23% reduction)
+  - Brace positioning: moved closer to nodes on both sides (15-20% from edges instead of centered)
+
+- **Brace Map Spacing - Vertical Layout** (`agents/thinking_maps/brace_map_agent.py`, `static/js/renderers/brace-renderer.js`)
+  - Reduced vertical spacing between parts and subparts by 30-40%
+  - Block spacing: 12.0-20.0 → 8.0-12.0 (33-40% reduction)
+  - Unit spacing: 20.0-30.0 → 12.0-18.0 (40% reduction)
+  - Part-to-subpart gap: 20 → 12 (40% reduction)
+  - Subpart-to-subpart spacing: 10 → 7 (30% reduction)
+  - Minimum unit spacing: 30.0 → 18.0 (40% reduction)
+  - Top padding: 60 → 42 (30% reduction)
+
+- **Brace Positioning** (`agents/thinking_maps/brace_map_agent.py`, `static/js/renderers/brace-renderer.js`)
+  - Main brace positioned closer to both topic and parts (15% from left edge instead of 25-30%)
+  - Small braces positioned closer to both parts and subparts (20% from left edge instead of centered)
+  - Reduced brace depth calculations for tighter horizontal spacing
+  - Extra spacing buffers reduced: 6px → 3px
+
+### Fixed
+
+- **JSON Extraction Bug** (`agents/core/agent_utils.py`)
+  - Fixed issue where `extract_json_from_response()` was extracting nested objects (like part objects) instead of root JSON objects
+  - Implemented balanced bracket matching to correctly identify root JSON object boundaries
+  - Added fallback validation to check for root-level fields (`whole`, `topic`, `dimension`) when balanced matching fails
+  - Prevents extraction of nested objects like `{"name": "...", "subparts": [...]}` instead of root spec `{"whole": "...", "dimension": "...", "parts": [...]}`
+  - This bug was causing brace map generation to fail with "Missing or empty whole field" errors
+
+- **Brace Map Field Name Normalization** (`agents/thinking_maps/brace_map_agent.py`)
+  - Added normalization to convert `topic` → `whole` for backward compatibility
+  - Normalization now runs before validation to handle LLM response variations
+  - Improved error logging to show extracted spec keys and field values
+
+### Added
+
+- **Enhanced Debug Logging** (`agents/thinking_maps/brace_map_agent.py`)
+  - Added logging for raw LLM responses (first 500 chars) to aid debugging
+  - Log extracted spec keys and `whole` field value after extraction
+  - Better error messages showing response type, length, and content preview when JSON extraction fails
+
+---
+
 ## [4.28.97] - 2025-12-17 - Tencent Cloud Object Storage (COS) Online Backup Integration
 
 ### Added

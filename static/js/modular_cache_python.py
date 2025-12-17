@@ -17,8 +17,6 @@ Implementation: Option 3 - Code Splitting by Graph Type
 """
 
 import logging
-import os
-import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dotenv import load_dotenv
@@ -357,12 +355,79 @@ def get_javascript_for_graph_type(graph_type: str) -> Tuple[Dict[str, str], Dict
 
 def get_modular_cache_stats() -> Dict:
     """
-    Get modular cache statistics.
+    Get modular cache statistics in the format expected by the API endpoint.
     
     Returns:
-        Dict: Cache performance statistics
+        Dict: Cache statistics with base_cache and modular sections
     """
-    return modular_js_manager.get_cache_statistics()
+    stats = modular_js_manager.get_cache_statistics()
+    
+    # Calculate cache hit rate
+    cache_hit_rate = stats.get('cache_hit_rate_percent', 0)
+    
+    # Calculate compression ratio
+    total_bytes_saved = stats.get('total_bytes_saved', 0)
+    total_requests = stats.get('total_requests', 0)
+    full_renderer_size = 218174  # Size of full d3-renderers.js
+    avg_size_per_request = (full_renderer_size * total_requests - total_bytes_saved) / max(1, total_requests)
+    compression_ratio = ((full_renderer_size - avg_size_per_request) / full_renderer_size * 100) if full_renderer_size > 0 else 0
+    
+    # Count cached modules
+    cached_modules = stats.get('cached_modules', [])
+    supported_types = stats.get('supported_graph_types', [])
+    
+    # Calculate total memory usage
+    total_memory = sum(len(modular_js_manager._module_cache.get(module, '')) for module in cached_modules)
+    
+    return {
+        'files_loaded': len(cached_modules),
+        'total_memory_usage': total_memory,
+        'cache_hit_rate': cache_hit_rate,
+        'modular': {
+            'compressionRatio': f'{compression_ratio:.1f}%',
+            'supportedGraphTypes': supported_types,
+            'availableModules': cached_modules,
+            'totalRequests': total_requests,
+            'cacheHits': stats.get('cache_hits', 0),
+            'cacheMisses': stats.get('cache_misses', 0),
+            'totalBytesSaved': total_bytes_saved
+        }
+    }
+
+def get_modular_performance_summary() -> Dict:
+    """
+    Get modular cache performance summary in a human-readable format.
+    
+    Returns:
+        Dict: Performance summary with status, improvement metrics, etc.
+    """
+    stats = modular_js_manager.get_cache_statistics()
+    
+    if stats['total_requests'] == 0:
+        return {
+            'status': 'No modular requests yet',
+            'improvement': '0%',
+            'averageLoadTime': 0,
+            'bytesSaved': 0
+        }
+    
+    # Calculate average improvement percentage
+    avg_savings = stats.get('average_savings_per_request', 0)
+    full_renderer_size = 218174  # Size of full d3-renderers.js
+    avg_improvement = (avg_savings / full_renderer_size * 100) if full_renderer_size > 0 else 0
+    
+    # Get most used graph type
+    most_used_types = stats.get('most_used_graph_types', {})
+    most_used_renderer = max(most_used_types.items(), key=lambda x: x[1])[0] if most_used_types else 'None'
+    
+    return {
+        'status': 'Optimal',
+        'improvement': f'{avg_improvement:.1f}% size reduction',
+        'averageLoadTime': 'N/A',  # Not tracked in Python version
+        'bytesSaved': f'{stats.get("total_bytes_saved", 0):,} bytes',
+        'mostUsedRenderer': most_used_renderer,
+        'cacheHitRate': f'{stats.get("cache_hit_rate_percent", 0):.1f}%'
+    }
 
 def preload_common_renderers():
     """Preload commonly used renderer modules."""

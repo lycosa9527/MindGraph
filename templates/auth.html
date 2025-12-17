@@ -1281,11 +1281,47 @@
             document.getElementById('alert').classList.remove('show');
         }
         
-        // Format authentication errors with bilingual support
+        /**
+         * Extract error message from API response.
+         * Handles both FastAPI standard {"detail": ...} and legacy {"error": ...} formats.
+         */
+        function extractErrorDetail(result) {
+            // FastAPI standard format
+            if (result.detail) {
+                return typeof result.detail === 'string' ? result.detail : String(result.detail);
+            }
+            // Legacy format (from custom exception handler)
+            if (result.error) {
+                return typeof result.error === 'string' ? result.error : String(result.error);
+            }
+            return '';
+        }
+        
+        /**
+         * Format authentication errors with bilingual support.
+         * Backend already sends localized messages, so we primarily pass them through.
+         * Translation dictionary is kept as fallback for edge cases.
+         */
         function formatAuthError(detail, statusCode, lang) {
+            // Handle empty or falsy detail
             if (!detail) {
                 return lang === 'zh' ? '操作失败，请重试' : 'Operation failed, please try again';
             }
+            
+            // Ensure detail is a string (handle edge cases where it might be an object)
+            if (typeof detail !== 'string') {
+                detail = String(detail);
+            }
+            
+            // Backend sends localized messages, so check if already localized
+            // If message contains Chinese characters, return as-is (already localized)
+            const chineseCharPattern = /[\u4e00-\u9fff]/;
+            if (chineseCharPattern.test(detail)) {
+                return detail;
+            }
+            
+            // For English messages when user expects Chinese, try translation
+            // This is a fallback for edge cases where backend might not have localized
             
             // Translate common English error messages
             const translations = {
@@ -1748,7 +1784,8 @@
                     const redirectUrl = urlParams.get('redirect') || '/editor';
                     setTimeout(() => window.location.href = redirectUrl, 1000);
                 } else {
-                    let msg = formatAuthError(result.detail || '', response.status, currentLang);
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
                     showAlert(msg, 'error');
                     refreshCaptcha(); // Refresh captcha on error
                 }
@@ -1863,7 +1900,8 @@
                         errorMsg = currentLang === 'zh' ? `验证错误: ${errors}` : `Validation error: ${errors}`;
                     } else {
                         // Use formatAuthError for all other errors
-                        errorMsg = formatAuthError(result.detail || '', response.status, currentLang);
+                        const errorDetail = extractErrorDetail(result);
+                        errorMsg = formatAuthError(errorDetail, response.status, currentLang);
                     }
                     showAlert(errorMsg, 'error');
                     refreshRegisterCaptcha(); // Refresh captcha on error
@@ -2035,7 +2073,8 @@
                     const msg = currentLang === 'zh' ? '验证码已发送' : 'Verification code sent';
                     showAlert(msg, 'success');
                 } else {
-                    let msg = formatAuthError(result.detail || '', response.status, currentLang);
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
                     showAlert(msg, 'error');
                     refreshResetCaptcha();
                 }
@@ -2165,7 +2204,8 @@
                         refreshCaptcha();
                     }, 2000);
                 } else {
-                    let msg = formatAuthError(result.detail || '', response.status, currentLang);
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
                     showAlert(msg, 'error');
                 }
             } catch (error) {
@@ -2426,7 +2466,8 @@
                     const redirectUrl = urlParams.get('redirect') || '/editor';
                     setTimeout(() => window.location.href = redirectUrl, 1000);
                 } else {
-                    let msg = formatAuthError(result.detail || '', response.status, currentLang);
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
                     showAlert(msg, 'error');
                 }
             } catch (error) {

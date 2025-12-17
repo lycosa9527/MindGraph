@@ -997,11 +997,16 @@ templates.env.auto_reload = True  # Enable template auto-reload for development
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions"""
+    """
+    Handle HTTP exceptions.
+    
+    Returns FastAPI-standard format: {"detail": "error message"}
+    This matches FastAPI's default HTTPException response format.
+    """
     logger.warning(f"HTTP {exc.status_code}: {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.detail}
+        content={"detail": exc.detail}  # Use "detail" to match FastAPI standard
     )
 
 @app.exception_handler(Exception)

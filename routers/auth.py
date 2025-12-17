@@ -332,14 +332,16 @@ async def login(
     lang: Language = get_request_language(x_language, accept_language)
     
     # Check rate limit by phone
-    is_allowed, rate_limit_msg = check_rate_limit(
+    is_allowed, _ = check_rate_limit(
         request.phone, login_attempts, MAX_LOGIN_ATTEMPTS
     )
     if not is_allowed:
         logger.warning(f"Rate limit exceeded for {request.phone}")
+        # Use localized message instead of hardcoded English from check_rate_limit
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=rate_limit_msg
+            detail=error_msg
         )
     
     # Find user
@@ -364,11 +366,14 @@ async def login(
             )
     
     # Check account lockout
-    is_locked, lockout_msg = check_account_lockout(user)
+    is_locked, _ = check_account_lockout(user)
     if is_locked:
+        # Use localized message instead of hardcoded English from check_account_lockout
+        minutes_left = LOCKOUT_DURATION_MINUTES
+        error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
-            detail=lockout_msg
+            detail=error_msg
         )
     
     # Verify captcha
@@ -687,14 +692,18 @@ async def generate_captcha(
         logger.debug(f"New captcha session created: {session_token[:8]}...")
     
     # Rate limit by session token (not IP)
-    is_allowed, rate_limit_msg = check_rate_limit(
+    is_allowed, _ = check_rate_limit(
         session_token, captcha_session_attempts, MAX_CAPTCHA_ATTEMPTS
     )
     if not is_allowed:
         logger.warning(f"Captcha rate limit exceeded for session: {session_token[:8]}...")
+        # Use localized message instead of hardcoded English from check_rate_limit
+        accept_language = request.headers.get("Accept-Language", "")
+        lang: Language = get_request_language(x_language, accept_language)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=rate_limit_msg
+            detail=error_msg
         )
     
     # Record attempt
