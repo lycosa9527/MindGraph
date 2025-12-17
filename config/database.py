@@ -361,29 +361,30 @@ def init_db():
                 logger.info(f"Seeding organizations from .env: {len(seeded_orgs)} entries")
             else:
                 # Fallback demo data if .env not configured
+                # Format: AAAA-XXXXX (4 uppercase letters, dash, 5 uppercase letters/digits)
                 seeded_orgs = [
                     Organization(
                         code="DEMO-001",
                         name="Demo School for Testing",
-                        invitation_code="DEMO2024",
+                        invitation_code="DEMO-A1B2C",
                         created_at=datetime.utcnow()
                     ),
                     Organization(
                         code="SPRING-EDU",
                         name="Springfield Elementary School",
-                        invitation_code="SPRING123",
+                        invitation_code="SPRN-9K2L1",
                         created_at=datetime.utcnow()
                     ),
                     Organization(
                         code="BJ-001",
                         name="Beijing First High School",
-                        invitation_code="BJ-INVITE",
+                        invitation_code="BJXX-M3N4P",
                         created_at=datetime.utcnow()
                     ),
                     Organization(
                         code="SH-042",
                         name="Shanghai International School",
-                        invitation_code="SH2024",
+                        invitation_code="SHXX-Q5R6S",
                         created_at=datetime.utcnow()
                     )
                 ]

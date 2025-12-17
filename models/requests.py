@@ -586,7 +586,7 @@ class RegisterRequest(BaseModel):
                 "phone": "13812345678",
                 "password": "Teacher123!",
                 "name": "Zhang Wei",
-                "invitation_code": "DEMO2024",
+                "invitation_code": "DEMO-A1B2C",
                 "captcha": "AB3D",
                 "captcha_id": "uuid-captcha-session"
             }
@@ -766,7 +766,7 @@ class RegisterWithSMSRequest(BaseModel):
                 "phone": "13812345678",
                 "password": "Teacher123!",
                 "name": "Zhang Wei",
-                "invitation_code": "DEMO2024",
+                "invitation_code": "DEMO-A1B2C",
                 "sms_code": "123456"
             }
         }
