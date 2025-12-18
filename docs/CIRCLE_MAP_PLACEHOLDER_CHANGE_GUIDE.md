@@ -34,7 +34,6 @@ This document provides a step-by-step guide for changing placeholder text across
 - **Linter errors:** 0 ✅
 - **Files verified safe (no changes needed):** 25+ files
 - **Auto-complete system:** Uses dynamic data (no hardcoded placeholders)
-- **ThinkGuide system:** No changes needed (different meaning of 背景)
 
 ---
 
@@ -712,7 +711,6 @@ After making the changes, test all diagram types:
 
 ### Cross-Diagram Testing
 - [ ] Learning Mode validation works for all diagram types
-- [ ] ThinkGuide works correctly (still shows "收集背景信息" - different meaning)
 - [ ] Node Palette placeholder detection works with updated patterns
 
 ---
@@ -744,16 +742,6 @@ These files contain "背景" but with a DIFFERENT meaning (educational backgroun
 | `agents/thinking_maps/circle_map_agent.py` | No hardcoded placeholder - uses LLM prompts |
 | `prompts/thinking_maps.py` | Circle Map prompts describe behavior, not placeholder text |
 
-### ThinkGuide System (Different meaning of 背景)
-| File | Line | Text | Meaning |
-|------|------|------|---------|
-| `static/js/managers/thinkguide-manager.js` | 906 | `收集背景信息...` | "Gathering background info" (workflow status) |
-| `agents/thinking_modes/brace_map_agent_react.py` | 194, 330 | `教学背景` | "Teaching background" (educational context) |
-| `agents/thinking_modes/bridge_map_agent_react.py` | 184, 315 | `教学背景` | "Teaching background" |
-| `agents/thinking_modes/flow_map_agent_react.py` | 194, 310 | `教学背景` | "Teaching background" |
-| `agents/thinking_modes/mindmap_agent_react.py` | 185, 313 | `教学背景` | "Teaching background" |
-| `agents/thinking_modes/multi_flow_map_agent_react.py` | 174, 290 | `教学背景` | "Teaching background" |
-| `agents/thinking_modes/tree_map_agent_react.py` | 175, 323 | `教学背景` | "Teaching background" |
 | `agents/thinking_modes/bubble_map_agent_react.py` | 312 | `教学背景` | "Teaching background" |
 | `agents/thinking_modes/double_bubble_map_agent_react.py` | 295, 400, 548 | `教学背景` | "Teaching background" |
 | `agents/thinking_modes/base_thinking_agent.py` | 541 | `教学背景` | "Teaching background" |

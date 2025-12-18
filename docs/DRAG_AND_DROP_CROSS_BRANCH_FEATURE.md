@@ -3112,7 +3112,6 @@ class DragDropManager {
 ```javascript
 {
     panels: {
-        thinkguide: { ... },
         mindmate: { ... },
         nodePalette: { ... },
         property: {

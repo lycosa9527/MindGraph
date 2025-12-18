@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.31.1] - 2025-12-19 - Legacy Code Cleanup
+
+### Removed
+
+- **Legacy `thinking_modes` Folders Removed** - Cleanup of orphaned code from previous refactoring
+  - Deleted `agents/thinking_modes/` folder (unused wrapper and broken imports)
+  - Deleted `prompts/thinking_modes/` folder (empty)
+  - All active node palette code remains in `agents/node_palette/`
+
+### Changed
+
+- **Updated `.gitignore`** - Simplified browser folder exclusion
+  - Changed from ignoring specific paths (`browsers/chromium/`, `browsers/*.zip`) to ignoring entire `browsers/` folder
+
+---
+
 ## [4.31.0] - 2025-12-19 - Learning Mode Removal & Node Palette Improvements
 
 ### Removed

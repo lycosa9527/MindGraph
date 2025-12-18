@@ -2526,15 +2526,6 @@ class NodePaletteManager {
         // Set initial opacity for fade-in animation
         palettePanel.style.opacity = '0';
         
-        // Check panel layout (for layout adjustment)
-        const needsLayoutAdjust = false; // Previously checked ThinkGuide visibility
-        if (needsLayoutAdjust) {
-            palettePanel.classList.add('thinkguide-visible');
-            this.logger?.debug('NodePalette', 'Leaving space for side panel');
-        } else {
-            palettePanel.classList.remove('thinkguide-visible');
-            this.logger?.debug('NodePalette', 'Using full width');
-        }
         
         // Fade in animation
         setTimeout(() => {
@@ -2909,11 +2900,6 @@ class NodePaletteManager {
         // Save scroll position before hiding (use centralized method)
         this.saveCurrentTabScrollPosition();
         
-        const palettePanel = document.getElementById('node-palette-panel');
-        if (palettePanel) {
-            // Clean up visibility class
-            palettePanel.classList.remove('thinkguide-visible');
-        }
     }
     
     async cancelPalette() {

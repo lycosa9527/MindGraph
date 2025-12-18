@@ -49,15 +49,6 @@ class StateManager {
     getInitialState() {
         return {
             panels: {
-                thinkguide: {
-                    open: false,
-                    sessionId: null,
-                    isStreaming: false,
-                    currentState: 'CONTEXT_GATHERING',
-                    cognitiveConflicts: [], // Parsed cognitive conflict examples
-                    currentMessage: '', // Current streaming buffer
-                    messages: [] // Message history
-                },
                 mindmate: {
                     open: false,
                     conversationId: null,
@@ -213,21 +204,6 @@ class StateManager {
         return this.updatePanelState(panelName, { isStreaming });
     }
     
-    /**
-     * Add cognitive conflict to state
-     */
-    addCognitiveConflict(conflict) {
-        if (!this.state.panels.thinkguide.cognitiveConflicts) {
-            this.state.panels.thinkguide.cognitiveConflicts = [];
-        }
-        
-        this.state.panels.thinkguide.cognitiveConflicts.push(conflict);
-        this.readOnlyState = this.createReadOnlyProxy(this.state);
-        
-        this.eventBus.emit('state:cognitive_conflict_added', { conflict });
-        
-        this.logger.debug('StateManager', 'Cognitive conflict added', conflict);
-    }
     
     /**
      * Update diagram state

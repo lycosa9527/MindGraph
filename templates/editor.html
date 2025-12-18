@@ -20,7 +20,6 @@
 </head>
 <body 
     data-verbose-logging="{{ verbose_logging | tojson }}"
-    data-feature-thinkguide="{{ feature_thinkguide | tojson }}"
     data-feature-voice-agent="{{ feature_voice_agent | tojson }}"
     data-feature-drag-and-drop="{{ feature_drag_and_drop | tojson }}"
     data-feature-tab-mode="{{ feature_tab_mode | tojson }}"
@@ -32,7 +31,6 @@
         // Load configuration from data attributes
         const bodyElement = document.body;
         window.VERBOSE_LOGGING = bodyElement.dataset.verboseLogging === 'true';
-        window.FEATURE_THINKGUIDE = bodyElement.dataset.featureThinkguide === 'true';
         window.FEATURE_VOICE_AGENT = bodyElement.dataset.featureVoiceAgent === 'true';
         window.FEATURE_DRAG_AND_DROP = bodyElement.dataset.featureDragAndDrop === 'true';
         window.FEATURE_TAB_MODE = bodyElement.dataset.featureTabMode === 'true';
@@ -760,7 +758,6 @@
                         <span id="learning-btn-text">Learn</span>
                     </button>
                     {% endif %}
-                    {% if feature_thinkguide %}
                     <button id="node-palette-btn" class="btn-tool btn-node-palette" title="" tabindex="-1">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
                             <rect x="3" y="3" width="7" height="7"></rect>
@@ -770,7 +767,6 @@
                         </svg>
                         <span id="node-palette-btn-text">Node Palette</span>
                     </button>
-                    {% endif %}
                 </div>
             </div>
             
@@ -1106,15 +1102,13 @@
     <script src="/static/js/dynamic-renderer-loader.js?v={{ version }}"></script>
     <script src="/static/js/renderers/renderer-dispatcher.js?v={{ version }}"></script>
     
-    <!-- Markdown Libraries for AI Assistant & ThinkGuide (Local copies) -->
+    <!-- Markdown Libraries for AI Assistant (Local copies) -->
     <script src="/static/js/markdown-it.min.js?v={{ version }}"></script>
     <script src="/static/js/purify.min.js?v={{ version }}"></script>
     
     <!-- AI Assistant (MindMate) -->
     <script src="/static/js/managers/mindmate-manager.js?v={{ version }}"></script>
     
-    <!-- ThinkGuide (Thinking Mode) - Must load AFTER markdown libraries -->
-    <script src="/static/js/managers/thinkguide-manager.js?v={{ version }}"></script>
     <script src="/static/js/editor/black-cat.js?v={{ version }}"></script>
     <script src="/static/js/editor/comic-bubble.js?v={{ version }}"></script>
     <!-- Voice Agent -->

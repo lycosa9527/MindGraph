@@ -1933,7 +1933,6 @@ Based on codebase review, the following input fields exist and need Tab Mode sup
 
 4. **Other Text Inputs:**
    - ❌ `prompt-input` (input) - Main diagram generation prompt
-   - ❌ `thinking-input` (textarea) - ThinkGuide input
    - ❌ `ai-chat-input` (textarea) - AI assistant chat input
    - **Status**: Not covered - should work like Cursor (context-aware everywhere)
 
@@ -2224,7 +2223,6 @@ Based on Cursor's tab completion, Tab Mode should:
 1. **Work Everywhere**: All text inputs, not just node text
    - ✅ Node text (covered)
    - ❌ Prompt input (missing)
-   - ❌ ThinkGuide input (missing)
    - ❌ AI chat input (missing)
    - ⚠️ Color hex input (partially covered)
 
@@ -2262,7 +2260,6 @@ Based on Cursor's tab completion, Tab Mode should:
 **Phase 2 Additions:**
 - [ ] Add prompts for all 10 diagram types
 - [ ] Add prompt input support (diagram generation)
-- [ ] Add ThinkGuide input support
 - [ ] Add AI chat input support
 - [ ] Add keyboard navigation (Arrow keys, Ctrl+Space)
 
@@ -5177,7 +5174,7 @@ def extract_hierarchical_context(diagram_type: str, spec: Dict[str, Any],
 
 **✅ Complete Integration Patterns Verified Against Codebase**
 
-This section documents how Tab Mode integrates with Event Bus and State Manager, verified against actual manager implementations (`PropertyPanelManager`, `VoiceAgentManager`, `ThinkGuideManager`).
+This section documents how Tab Mode integrates with Event Bus and State Manager, verified against actual manager implementations (`PropertyPanelManager`, `VoiceAgentManager`, `MindMateManager`).
 
 ---
 
@@ -5533,7 +5530,6 @@ this.eventBus.onWithOwner('interaction:selection_changed', (data) => {
 ```javascript
 {
     panels: {
-        thinkguide: {...},
         mindmate: {...},
         nodePalette: {...},
         property: {...}

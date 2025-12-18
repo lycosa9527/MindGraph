@@ -554,10 +554,7 @@ class ViewManager {
         const aiPanel = document.getElementById('ai-assistant-panel');
         const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
         
-        const thinkingPanel = document.getElementById('thinking-panel');
-        const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
-        
-        return isPropertyPanelVisible || isAIPanelVisible || isThinkingPanelVisible;
+        return isPropertyPanelVisible || isAIPanelVisible;
     }
     
     /**
@@ -659,28 +656,21 @@ class ViewManager {
         const aiPanel = document.getElementById('ai-assistant-panel');
         const isAIPanelVisible = aiPanel && !aiPanel.classList.contains('collapsed');
         
-        const thinkingPanel = document.getElementById('thinking-panel');
-        const isThinkingPanelVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
-        
         // Update canvas panel classes for dynamic width adjustment
         const canvasPanel = document.querySelector('.canvas-panel');
         if (canvasPanel) {
             canvasPanel.classList.toggle('property-panel-visible', isPropertyPanelVisible);
             canvasPanel.classList.toggle('ai-panel-visible', isAIPanelVisible && !isPropertyPanelVisible);
-            canvasPanel.classList.toggle('thinking-panel-visible', isThinkingPanelVisible && !isPropertyPanelVisible);
         }
         
         // Calculate available canvas width based on reserveForPanel parameter and active panels
         // CRITICAL: Always use windowWidth as reference, not containerWidth (which may be CSS-constrained)
         const propertyPanelWidth = 320;
-        const thinkingPanelWidth = 0;    // ThinkGuide removed
         const aiPanelWidth = 450;        // AI Assistant panel width
         
         let reservedWidth = 0;
         if (reserveForPanel && isPropertyPanelVisible) {
             reservedWidth = propertyPanelWidth;
-        } else if (isThinkingPanelVisible) {
-            reservedWidth = thinkingPanelWidth;
         } else if (isAIPanelVisible) {
             reservedWidth = aiPanelWidth;
         }
@@ -692,7 +682,6 @@ class ViewManager {
             windowWidth,
             containerSize: { width: containerWidth, height: containerHeight },
             isPropertyPanelVisible,
-            isThinkingPanelVisible,
             isAIPanelVisible,
             reservedWidth,
             availableCanvasWidth,

@@ -21,7 +21,7 @@ class TokenUsage(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True, index=True)
     session_id = Column(String(100), index=True)  # For grouping multi-LLM requests (e.g., node palette batch)
-    conversation_id = Column(String(100), index=True)  # For multi-turn conversations (e.g., thinkguide, mindmate)
+    conversation_id = Column(String(100), index=True)  # For multi-turn conversations (e.g., mindmate)
     
     # LLM details
     model_provider = Column(String(50), index=True)  # 'dashscope', 'tencent'
@@ -39,7 +39,7 @@ class TokenUsage(Base):
     total_cost = Column(Float, default=0.0)
     
     # Request details
-    request_type = Column(String(50), index=True)  # Feature type: 'diagram_generation', 'node_palette', 'thinkguide', 'autocomplete', 'mindmate'
+    request_type = Column(String(50), index=True)  # Feature type: 'diagram_generation', 'node_palette', 'mindmate', 'autocomplete'
     diagram_type = Column(String(50))  # 'mind_map', 'concept_map', etc.
     endpoint_path = Column(String(200))  # API endpoint used: '/api/generate_graph', '/thinking_mode/node_palette/start', etc.
     success = Column(Boolean, default=True)

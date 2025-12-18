@@ -2807,7 +2807,6 @@ body {
 /* ============================================
    AI ASSISTANT PANEL (MindMate)
    ============================================ */
-/* ThinkGuide panel removed - code cleanup */
 
 .ai-assistant-panel-placeholder {
     /* This placeholder prevents CSS issues during transition */
@@ -2815,7 +2814,7 @@ body {
 }
 
 .thinking-panel {
-    /* ThinkGuide panel removed - keeping minimal styles for backward compatibility */
+    /* Panel removed - keeping minimal styles for backward compatibility */
     display: none !important;
     position: absolute;
     top: 0;
@@ -3051,15 +3050,6 @@ body {
     color: #7B1FA2;
 }
 
-/* ThinkGuide purple bold highlights for diagram types and main topics */
-.thinking-message-content .thinkguide-highlight {
-    color: #9C27B0;
-    font-weight: 700;
-    background: linear-gradient(135deg, rgba(156, 39, 176, 0.08) 0%, rgba(123, 31, 162, 0.05) 100%);
-    padding: 1px 4px;
-    border-radius: 4px;
-    border-bottom: 2px solid rgba(156, 39, 176, 0.3);
-}
 
 .thinking-message-content pre {
     background: #f5f2f7;
@@ -3119,7 +3109,7 @@ body {
     }
 }
 
-/* Typing indicator for ThinkGuide - matches MindMate style */
+/* Typing indicator - matches MindMate style */
 .thinking-typing-indicator {
     padding: 14px 16px;
     background: white;
@@ -3155,7 +3145,7 @@ body {
     animation-delay: 0.4s;
 }
 
-/* ThinkGuide Toolbar - above text input */
+/* Toolbar - above text input */
 .thinking-toolbar {
     padding: 12px 24px;
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
@@ -4062,7 +4052,7 @@ body {
         font-size: 16px; /* Prevent iOS zoom on focus */
     }
     
-    /* ThinkGuide panel - Full screen on mobile */
+    /* Thinking panel - Full screen on mobile (hidden) */
     .thinking-panel {
         position: fixed;
         top: 0;

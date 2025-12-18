@@ -239,10 +239,6 @@ class FeatureFlagSettings(BaseModel):
     """Feature flags for experimental features"""
     __category__ = "Feature Flags"
     
-    FEATURE_THINKGUIDE: bool = Field(
-        default=False,
-        description="Enable ThinkGuide button"
-    )
     FEATURE_MINDMATE: bool = Field(
         default=False,
         description="Enable MindMate AI Assistant button"

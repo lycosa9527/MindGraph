@@ -58,7 +58,7 @@ class AgentState(TypedDict):
     
     # Panel states
     active_panel: str
-    thinkguide_open: bool
+    mindmate_open: bool
     node_palette_open: bool
     
     # Last parsed action (output)
@@ -188,7 +188,7 @@ def auto_complete() -> Dict[str, Any]:
 @tool
 def open_panel(panel_name: str) -> Dict[str, Any]:
     """
-    Open a panel (thinkguide, mindmate, node_palette).
+    Open a panel (mindmate, node_palette).
     
     Args:
         panel_name: Name of panel to open
@@ -197,7 +197,7 @@ def open_panel(panel_name: str) -> Dict[str, Any]:
         Action to open panel
     """
     panel_map = {
-        "thinkguide": "open_thinkguide",
+        "thinkguide": "open_mindmate",  # Redirect to MindMate
         "mindmate": "open_mindmate",
         "node_palette": "open_node_palette",
         "palette": "open_node_palette"
@@ -224,7 +224,7 @@ def close_panel(panel_name: str) -> Dict[str, Any]:
         return {"action": "close_all_panels", "confidence": 0.95}
     
     panel_map = {
-        "thinkguide": "close_thinkguide",
+        "thinkguide": "close_mindmate",  # Redirect to MindMate
         "mindmate": "close_mindmate",
         "node_palette": "close_node_palette"
     }
@@ -279,7 +279,7 @@ class VoiceAgent:
                 "selected_nodes": []
             },
             "active_panel": "none",
-            "thinkguide_open": False,
+            "mindmate_open": False,
             "node_palette_open": False,
             "action": None,
             "session_id": self.session_id,
@@ -517,8 +517,8 @@ class VoiceAgent:
 - delete_node: Remove a node
 - update_node: Change a node's text (can update existing node at specific position)
 - auto_complete: AI fill/complete the diagram (trigger AI auto-complete feature)
-- open_thinkguide/open_mindmate/open_node_palette: Open panels
-- close_thinkguide/close_mindmate/close_all_panels: Close panels
+- open_mindmate/open_node_palette: Open panels
+- close_mindmate/close_all_panels: Close panels
 - none: Just conversation, no action needed
 
 【Structured Input Pattern】
@@ -854,7 +854,7 @@ Return only JSON:"""
         """Update panel states"""
         self._state["active_panel"] = active_panel
         if panels:
-            self._state["thinkguide_open"] = panels.get("thinkguide", False)
+            self._state["mindmate_open"] = panels.get("mindmate", False)
             self._state["node_palette_open"] = panels.get("node_palette", False)
     
     async def process_command(

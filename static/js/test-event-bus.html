@@ -262,8 +262,8 @@
                 }
                 
                 // Test 2: Open panel
-                window.stateManager.openPanel('thinkguide', { sessionId: 'test123' });
-                const panelState = window.stateManager.getPanelState('thinkguide');
+                window.stateManager.openPanel('mindmate', { sessionId: 'test123' });
+                const panelState = window.stateManager.getPanelState('mindmate');
                 
                 if (panelState.open && panelState.sessionId === 'test123') {
                     result.textContent += '✅ Test 2: Open panel - PASSED\n';
@@ -272,8 +272,8 @@
                 }
                 
                 // Test 3: Update panel
-                window.stateManager.updatePanelState('thinkguide', { isStreaming: true });
-                const updatedState = window.stateManager.getPanelState('thinkguide');
+                window.stateManager.updatePanelState('mindmate', { isStreaming: true });
+                const updatedState = window.stateManager.getPanelState('mindmate');
                 
                 if (updatedState.isStreaming === true) {
                     result.textContent += '✅ Test 3: Update panel - PASSED\n';
@@ -282,8 +282,8 @@
                 }
                 
                 // Test 4: Close panel
-                window.stateManager.closePanel('thinkguide');
-                const closedState = window.stateManager.getPanelState('thinkguide');
+                window.stateManager.closePanel('mindmate');
+                const closedState = window.stateManager.getPanelState('mindmate');
                 
                 if (closedState.open === false) {
                     result.textContent += '✅ Test 4: Close panel - PASSED\n';
@@ -314,7 +314,7 @@
                 
                 // Try to modify (should fail)
                 try {
-                    state.panels.thinkguide.open = true;
+                    state.panels.mindmate.open = true;
                     result.textContent += '❌ Read-only protection - FAILED (modification allowed)\n';
                 } catch (e) {
                     result.textContent += '✅ Read-only protection - PASSED (modification blocked)\n';
@@ -322,7 +322,7 @@
                 
                 // Verify original state unchanged
                 const cleanState = window.stateManager._getStateSnapshot();
-                result.textContent += '\nState remains unchanged:\n' + JSON.stringify(cleanState.panels.thinkguide, null, 2);
+                result.textContent += '\nState remains unchanged:\n' + JSON.stringify(cleanState.panels.mindmate, null, 2);
                 
             } catch (error) {
                 result.textContent += '❌ Error: ' + error.message;
@@ -348,9 +348,9 @@
                 window.eventBus.on('state:panel_closed', () => eventCount++);
                 
                 // Perform operations
-                window.stateManager.openPanel('thinkguide', { sessionId: 'integration_test' });
-                window.stateManager.updatePanelState('thinkguide', { isStreaming: true });
-                window.stateManager.closePanel('thinkguide');
+                window.stateManager.openPanel('mindmate', { sessionId: 'integration_test' });
+                window.stateManager.updatePanelState('mindmate', { isStreaming: true });
+                window.stateManager.closePanel('mindmate');
                 
                 if (eventCount === 3) {
                     result.textContent += '✅ Event Bus + State Manager integration - PASSED\n';

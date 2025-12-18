@@ -498,7 +498,7 @@ class LLMService:
             
         Example:
             prompt = llm_service.get_prompt(
-                category='thinkguide',
+                category='assistant',
                 function='welcome',
                 language='zh',
                 diagram_type='圆圈图',

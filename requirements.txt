@@ -9,7 +9,7 @@
 #
 # PRODUCTION DEPLOYMENT NOTES:
 #   - Review and configure all environment variables in .env
-#   - Set feature flags (FEATURE_THINKGUIDE, FEATURE_MINDMATE, etc.)
+#   - Set feature flags (FEATURE_MINDMATE, FEATURE_VOICE_AGENT, etc.)
 #   - Configure database URL for your environment
 #   - Set DEBUG=False for production
 #   - Configure proper JWT_SECRET_KEY (min 32 characters)

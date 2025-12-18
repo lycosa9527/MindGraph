@@ -241,7 +241,6 @@ async def editor(request: Request, db: Session = Depends(get_db)):
                         {
                             "request": request,
                             "version": get_app_version(),
-                            "feature_thinkguide": config.FEATURE_THINKGUIDE,
                             "feature_mindmate": config.FEATURE_MINDMATE,
                             "feature_voice_agent": config.FEATURE_VOICE_AGENT,
                             "feature_drag_and_drop": config.FEATURE_DRAG_AND_DROP,
@@ -300,7 +299,6 @@ async def editor(request: Request, db: Session = Depends(get_db)):
             {
                 "request": request,
                 "version": get_app_version(),
-                "feature_thinkguide": config.FEATURE_THINKGUIDE,
                 "feature_mindmate": config.FEATURE_MINDMATE,
                 "feature_voice_agent": config.FEATURE_VOICE_AGENT,
                 "feature_drag_and_drop": config.FEATURE_DRAG_AND_DROP,

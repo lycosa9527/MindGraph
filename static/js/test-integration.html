@@ -444,7 +444,7 @@
                             window.eventBus.once('panel:opened', (data) => {
                                 resolve(`Panel workflow: ${data.panel} opened successfully`);
                             });
-                            window.eventBus.emit('panel:open_requested', { panel: 'thinkguide' });
+                            window.eventBus.emit('panel:open_requested', { panel: 'mindmate' });
                             setTimeout(() => {
                                 throw new Error('Panel open event not received');
                             }, 2000);

@@ -27,7 +27,7 @@ class PromptManager:
     
     Organizes prompts by:
     - Diagram type (circle_map, bubble_map, etc.)
-    - Function (thinkguide, generation, classification)
+    - Function (assistant, generation, classification)
     - Language (zh, en)
     
     Features:
@@ -71,9 +71,9 @@ class PromptManager:
             template="你是一个有帮助的AI助手。请提供清晰简洁的回答。"
         )
         
-        # Node Palette prompts
+        # AI Assistant prompts
         self.register_prompt(
-            category='thinkguide',
+            category='assistant',
             function='welcome',
             name='default',
             language='en',
@@ -81,7 +81,7 @@ class PromptManager:
         )
         
         self.register_prompt(
-            category='thinkguide',
+            category='assistant',
             function='welcome',
             name='default',
             language='zh',
@@ -134,7 +134,7 @@ class PromptManager:
         Register a prompt template.
         
         Args:
-            category: Prompt category (e.g., 'thinkguide', 'generation')
+            category: Prompt category (e.g., 'assistant', 'generation')
             function: Function name (e.g., 'welcome', 'nodes')
             name: Specific prompt name (e.g., 'circle_map', 'default')
             language: Language code ('en', 'zh')
@@ -181,7 +181,7 @@ class PromptManager:
             
         Example:
             prompt = prompt_manager.get_prompt(
-                category='thinkguide',
+                category='assistant',
                 function='welcome',
                 name='default',
                 language='zh',

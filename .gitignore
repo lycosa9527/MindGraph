@@ -176,7 +176,5 @@ dmypy.json
 *.iso
 
 # Browser binaries (offline Chromium installer)
-# Ignore extracted browsers and zip files (transfer via personal methods, keep GitHub small)
-browsers/chromium/
-browsers/*.zip
-chromium.zip 
+# Ignore entire browsers folder (transfer via personal methods, keep GitHub small)
+browsers/ 

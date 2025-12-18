@@ -238,7 +238,7 @@ class TokenTracker:
             output_tokens: Number of output tokens (from API)
             total_tokens: Total tokens from API (authoritative billing value). 
                          If None, will be calculated as input_tokens + output_tokens.
-            request_type: Type of request ('diagram_generation', 'node_palette', 'thinkguide', 'autocomplete')
+            request_type: Type of request ('diagram_generation', 'node_palette', 'mindmate', 'autocomplete')
             diagram_type: Type of diagram if applicable
             user_id: User ID if authenticated
             organization_id: Organization ID (school) - IMPORTANT for per-school tracking!

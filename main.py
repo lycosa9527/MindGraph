@@ -1088,7 +1088,7 @@ async def log_requests(request: Request, call_next):
         # Node Palette streams from 4 LLMs, 5-8s is normal
         logger.warning(f"Slow node palette: {request.method} {request.url.path} took {response_time:.3f}s")
     elif 'thinking_mode' in request.url.path and response_time > 10:
-        # ThinkGuide LLM calls take 3-8s normally
+        # LLM calls take 3-8s normally
         logger.warning(f"Slow thinking mode: {request.method} {request.url.path} took {response_time:.3f}s")
     elif response_time > 5:
         # Other endpoints (static files, auth, etc.) should be fast

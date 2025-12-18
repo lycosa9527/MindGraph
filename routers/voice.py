@@ -762,7 +762,7 @@ def create_voice_session(
         'user_id': user_id,
         'diagram_session_id': diagram_session_id,
         'diagram_type': diagram_type,
-        'active_panel': active_panel or 'thinkguide',
+        'active_panel': active_panel or 'mindmate',
         'created_at': datetime.now(),
         'last_activity': datetime.now(),
         'conversation_history': [],
@@ -972,7 +972,7 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
 def build_voice_instructions(context: Dict[str, Any]) -> str:
     """Build voice instructions from context with full diagram data"""
     diagram_type = context.get('diagram_type', 'unknown')
-    active_panel = context.get('active_panel', 'thinkguide')
+    active_panel = context.get('active_panel', 'mindmate')
     conversation_history = context.get('conversation_history', [])
     selected_nodes = context.get('selected_nodes', [])
     diagram_data = context.get('diagram_data', {})
@@ -2378,8 +2378,8 @@ async def process_voice_command(
         
         # Handle UI actions first
         if action == 'open_thinkguide':
-            # ThinkGuide removed - redirect to MindMate
-            logger.debug("Opening MindMate panel (ThinkGuide removed)")
+            # Redirect to MindMate
+            logger.debug("Opening MindMate panel")
             await safe_websocket_send(websocket, {
                 'type': 'action',
                 'action': 'open_mindmate',
@@ -2388,8 +2388,8 @@ async def process_voice_command(
             return True
         
         elif action == 'close_thinkguide':
-            # ThinkGuide removed - redirect to MindMate
-            logger.debug("Closing MindMate panel (ThinkGuide removed)")
+            # Redirect to MindMate
+            logger.debug("Closing MindMate panel")
             await safe_websocket_send(websocket, {
                 'type': 'action',
                 'action': 'close_mindmate',
@@ -2461,8 +2461,8 @@ async def process_voice_command(
             return True
         
         elif action == 'ask_thinkguide' and target:
-            # ThinkGuide removed - redirect to MindMate
-            logger.debug(f"Sending question to MindMate (ThinkGuide removed): {target}")
+            # Redirect to MindMate
+            logger.debug(f"Sending question to MindMate: {target}")
             await safe_websocket_send(websocket, {
                 'type': 'action',
                 'action': 'ask_mindmate',
@@ -2526,7 +2526,6 @@ async def process_voice_command(
             return True
         
         elif action == 'help':
-            # ThinkGuide removed - redirect to MindMate
             logger.debug("User requested help - opening MindMate")
             await safe_websocket_send(websocket, {
                 'type': 'action',
@@ -2675,7 +2674,7 @@ async def voice_conversation(
             user_id=user_id,
             diagram_session_id=diagram_session_id,
             diagram_type=start_msg.get('diagram_type'),
-            active_panel=start_msg.get('active_panel', 'thinkguide')
+            active_panel=start_msg.get('active_panel', 'mindmate')
         )
         
         logger.debug(f"Session created: {voice_session_id}, diagram_type={start_msg.get('diagram_type')}, panel={start_msg.get('active_panel')}")

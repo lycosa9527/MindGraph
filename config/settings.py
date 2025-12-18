@@ -339,11 +339,6 @@ class Config:
     # ============================================================================
     
     @property
-    def FEATURE_THINKGUIDE(self):
-        """Enable ThinkGuide button (experimental feature)."""
-        return self._get_cached_value('FEATURE_THINKGUIDE', 'False').lower() == 'true'
-    
-    @property
     def FEATURE_MINDMATE(self):
         """Enable MindMate AI Assistant button (experimental feature)."""
         return self._get_cached_value('FEATURE_MINDMATE', 'False').lower() == 'true'

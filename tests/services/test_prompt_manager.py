@@ -49,7 +49,7 @@ class TestPromptManager:
     def test_get_prompt_with_variables(self):
         """Test getting prompt with variable substitution."""
         prompt = prompt_manager.get_prompt(
-            category='thinkguide',
+            category='assistant',
             function='welcome',
             name='default',
             language='en',
@@ -64,7 +64,7 @@ class TestPromptManager:
     def test_get_prompt_chinese(self):
         """Test getting Chinese prompt."""
         prompt = prompt_manager.get_prompt(
-            category='thinkguide',
+            category='assistant',
             function='welcome',
             name='default',
             language='zh',
@@ -80,7 +80,7 @@ class TestPromptManager:
         """Test that missing variables raise error."""
         with pytest.raises(PromptTemplateError) as excinfo:
             prompt_manager.get_prompt(
-                category='thinkguide',
+                category='assistant',
                 function='welcome',
                 language='en'
                 # Missing: diagram_type, topic
@@ -197,7 +197,7 @@ class TestPromptManager:
         
         assert isinstance(categories, list)
         assert 'common' in categories
-        assert 'thinkguide' in categories
+        assert 'assistant' in categories
         print(f"Categories: {categories}")
     
     def test_list_functions(self):
@@ -222,7 +222,7 @@ class TestPromptManager:
         
         assert isinstance(prompts, dict)
         assert 'common' in prompts
-        assert 'thinkguide' in prompts
+        assert 'assistant' in prompts
         print(f"Available prompts: {prompts}")
     
     def test_node_generation_prompt(self):

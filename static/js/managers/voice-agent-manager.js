@@ -1118,12 +1118,14 @@ class VoiceAgentManager {
         switch (action) {
             // ========== Panel Control (via Event Bus) ==========
             case 'open_thinkguide':
-                this.eventBus.emit('panel:open_requested', { panel: 'thinkguide', source: 'voice_agent' });
+                // Redirect to MindMate
+                this.eventBus.emit('panel:open_requested', { panel: 'mindmate', source: 'voice_agent' });
                 this.celebrate();
                 break;
             
             case 'close_thinkguide':
-                this.eventBus.emit('panel:close_requested', { panel: 'thinkguide', source: 'voice_agent' });
+                // Redirect to MindMate
+                this.eventBus.emit('panel:close_requested', { panel: 'mindmate', source: 'voice_agent' });
                 this.celebrate(800);
                 break;
             
@@ -1160,13 +1162,6 @@ class VoiceAgentManager {
                 break;
             
             case 'ask_thinkguide':
-                // ThinkGuide removed - redirect to MindMate
-                if (params.message) {
-                    this.eventBus.emit('mindmate:send_message', { message: params.message });
-                    this.celebrate();
-                }
-                break;
-            
             case 'ask_mindmate':
                 if (params.message) {
                     // Emit event to send message to MindMate
@@ -1177,7 +1172,7 @@ class VoiceAgentManager {
             
             case 'explain_node':
                 if (params.node_id && params.node_label) {
-                    // Open MindMate (ThinkGuide removed)
+                    // Open MindMate
                     this.eventBus.emit('panel:open_requested', { panel: 'mindmate' });
                     
                     // Highlight node
@@ -1327,9 +1322,9 @@ class VoiceAgentManager {
         }
         
         // Get conversation history from MindMate state
-        const thinkguideState = state.panels?.thinkguide;
-        if (thinkguideState) {
-            context.conversation_history = thinkguideState.conversationHistory || [];
+        const mindmateState = state.panels?.mindmate;
+        if (mindmateState) {
+            context.conversation_history = mindmateState.messages || [];
         }
         
         // Get current diagram data with structured node info (including IDs)
