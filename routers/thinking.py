@@ -105,6 +105,7 @@ async def thinking_mode_stream(
         # SSE generator
         async def generate():
             """Async generator for SSE streaming"""
+            chunk_count = 0
             try:
                 async for chunk in agent.process_step(
                     message=req.message,
@@ -117,7 +118,13 @@ async def thinking_mode_stream(
                     language=req.language
                 ):
                     # Format as SSE
+                    chunk_count += 1
                     yield f"data: {json.dumps(chunk)}\n\n"
+                
+                # Ensure at least one event is yielded to prevent RuntimeError
+                if chunk_count == 0:
+                    logger.warning(f"[ThinkGuide] No chunks yielded, sending completion event")
+                    yield f"data: {json.dumps({'event': 'message_complete', 'new_state': req.current_state})}\n\n"
                 
             except LLMContentFilterError as e:
                 # Content filter - don't retry, use user_message if available
@@ -182,6 +189,12 @@ async def thinking_mode_stream(
                 # Fallback for unknown errors
                 user_message = "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
+            finally:
+                # Always ensure at least one event is yielded to prevent RuntimeError
+                if chunk_count == 0:
+                    logger.warning(f"[ThinkGuide] Generator completed without yielding, sending error event")
+                    user_message = "请求处理失败，请重试。" if req.language == 'zh' else "Request processing failed. Please try again."
+                    yield f"data: {json.dumps({'event': 'error', 'error_type': 'no_response', 'message': user_message})}\n\n"
         
         # Return SSE stream
         return StreamingResponse(
@@ -349,6 +362,7 @@ async def start_node_palette(
         async def generate():
             logger.debug("[NodePalette-API] SSE stream starting | Session: %s", session_id[:8])
             node_count = 0
+            chunk_count = 0
             
             try:
                 # Get mode from request (default to 'similarities' for double bubble, 'causes' for multi flow)
@@ -414,10 +428,16 @@ async def start_node_palette(
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
                     ):
+                        chunk_count += 1
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
                         
                         yield f"data: {json.dumps(chunk)}\n\n"
+                
+                # Ensure at least one event is yielded to prevent RuntimeError
+                if chunk_count == 0:
+                    logger.warning("[NodePalette-API] No chunks yielded, sending completion event | Session: %s", session_id[:8])
+                    yield f"data: {json.dumps({'event': 'batch_complete', 'nodes': node_count})}\n\n"
                 
                 logger.debug("[NodePalette-API] Batch complete | Session: %s | Nodes: %d", 
                            session_id[:8], node_count)
@@ -492,6 +512,12 @@ async def start_node_palette(
                 # Fallback for unknown errors
                 user_message = "出现问题，请重试。" if req.language == 'zh' else "Something went wrong. Please try again."
                 yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
+            finally:
+                # Always ensure at least one event is yielded to prevent RuntimeError
+                if chunk_count == 0:
+                    logger.warning("[NodePalette-API] Generator completed without yielding, sending error event | Session: %s", session_id[:8])
+                    user_message = "请求处理失败，请重试。" if req.language == 'zh' else "Request processing failed. Please try again."
+                    yield f"data: {json.dumps({'event': 'error', 'error_type': 'no_response', 'message': user_message})}\n\n"
         
         return StreamingResponse(
             generate(),

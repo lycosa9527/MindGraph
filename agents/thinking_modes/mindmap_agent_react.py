@@ -80,11 +80,35 @@ Return JSON:
         user_prompt = f"User message: {message}"
         
         try:
+            # Ensure _call_llm method exists (inherited from BaseThinkingAgent)
+            if not hasattr(self, '_call_llm'):
+                logger.error(f"[MindMapThinkingAgent] _call_llm method not found. Check BaseThinkingAgent inheritance.")
+                return {'action': 'discuss'}
+            
             result = await self._call_llm(system_prompt, user_prompt, session)
-            intent = json.loads(result)
+            
+            # Try to parse JSON, handle various formats
+            if not result or not result.strip():
+                logger.warning(f"[MindMapThinkingAgent] Empty response from LLM")
+                return {'action': 'discuss'}
+            
+            # Extract JSON if wrapped in code blocks
+            result_text = result.strip()
+            if '```json' in result_text:
+                result_text = result_text.split('```json')[1].split('```')[0].strip()
+            elif '```' in result_text:
+                result_text = result_text.split('```')[1].split('```')[0].strip()
+            
+            intent = json.loads(result_text)
             return intent
+        except json.JSONDecodeError as e:
+            logger.error(f"[MindMapThinkingAgent] JSON parsing failed: {e}. Response: {result[:200] if 'result' in locals() else 'N/A'}")
+            return {'action': 'discuss'}
+        except AttributeError as e:
+            logger.error(f"[MindMapThinkingAgent] Attribute error in intent detection: {e}", exc_info=True)
+            return {'action': 'discuss'}
         except Exception as e:
-            logger.error(f"Intent detection failed: {e}")
+            logger.error(f"[MindMapThinkingAgent] Intent detection failed: {e}", exc_info=True)
             return {'action': 'discuss'}
     
     async def _generate_greeting(self, session: Dict) -> AsyncGenerator[Dict, None]:

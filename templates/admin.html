@@ -62,6 +62,7 @@
 
         .lang-en { display: inline; }
         .lang-zh { display: none; }
+        .lang-az { display: none; }
 
         /* Main Container */
         .container {
@@ -732,7 +733,7 @@
     <div class="header">
         <div class="header-content">
             <div style="display:flex;align-items:center;gap:1rem;">
-                <h1>🎓 MindGraph <span class="lang-zh">管理后台</span><span class="lang-en">Admin Panel</span></h1>
+                <h1>🎓 MindGraph <span class="lang-zh">管理后台</span><span class="lang-en">Admin Panel</span><span class="lang-az">İdarə Paneli</span></h1>
                 <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
                     <span class="lang-en">中文</span>
                     <span class="lang-zh">AZ</span>
@@ -744,6 +745,7 @@
                 <button class="btn btn-secondary btn-sm" onclick="window.location.href='/editor'">
                     <span class="lang-zh">图库</span>
                     <span class="lang-en">Gallery</span>
+                    <span class="lang-az">Qalereya</span>
                 </button>
                 <button class="btn btn-secondary btn-sm" onclick="logout()">
                     <span class="lang-zh">登出</span>
@@ -761,38 +763,38 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard', this)"><span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span></button>
-            <button class="tab" data-tab="tokens" onclick="switchTab('tokens', this)"><span class="lang-zh">Token统计</span><span class="lang-en">Tokens</span></button>
-            <button class="tab" data-tab="schools" onclick="switchTab('schools', this)"><span class="lang-zh">学校管理</span><span class="lang-en">Schools</span></button>
-            <button class="tab" data-tab="users" onclick="switchTab('users', this)"><span class="lang-zh">用户管理</span><span class="lang-en">Users</span></button>
-            <button class="tab" data-tab="apikeys" onclick="switchTab('apikeys', this)"><span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span></button>
-            <button class="tab" data-tab="announcement" onclick="switchTab('announcement', this)"><span class="lang-zh">更新公告</span><span class="lang-en">Announcement</span></button>
+            <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard', this)"><span class="lang-zh">仪表盘</span><span class="lang-en">Dashboard</span><span class="lang-az">İdarə Paneli</span></button>
+            <button class="tab" data-tab="tokens" onclick="switchTab('tokens', this)"><span class="lang-zh">Token统计</span><span class="lang-en">Tokens</span><span class="lang-az">Tokenlar</span></button>
+            <button class="tab" data-tab="schools" onclick="switchTab('schools', this)"><span class="lang-zh">学校管理</span><span class="lang-en">Schools</span><span class="lang-az">Məktəblər</span></button>
+            <button class="tab" data-tab="users" onclick="switchTab('users', this)"><span class="lang-zh">用户管理</span><span class="lang-en">Users</span><span class="lang-az">İstifadəçilər</span></button>
+            <button class="tab" data-tab="apikeys" onclick="switchTab('apikeys', this)"><span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span><span class="lang-az">API Açarları</span></button>
+            <button class="tab" data-tab="announcement" onclick="switchTab('announcement', this)"><span class="lang-zh">更新公告</span><span class="lang-en">Announcement</span><span class="lang-az">Elan</span></button>
         </div>
 
         <!-- Dashboard Tab -->
         <div id="dashboard-tab" class="tab-content active">
             <div class="stats-grid">
                 <div class="stat-card" data-metric="users" onclick="showTrendChart('users', this)">
-                    <h3><span class="lang-zh">总用户数</span><span class="lang-en">Total Users</span></h3>
+                    <h3><span class="lang-zh">总用户数</span><span class="lang-en">Total Users</span><span class="lang-az">Ümumi İstifadəçilər</span></h3>
                     <div class="value" id="stat-users">-</div>
                 </div>
                 <div class="stat-card" data-metric="organizations" onclick="showTrendChart('organizations', this)">
-                    <h3><span class="lang-zh">学校数量</span><span class="lang-en">Organizations</span></h3>
+                    <h3><span class="lang-zh">学校数量</span><span class="lang-en">Organizations</span><span class="lang-az">Təşkilatlar</span></h3>
                     <div class="value" id="stat-orgs">-</div>
                 </div>
                 <div class="stat-card" data-metric="registrations" onclick="showTrendChart('registrations', this)">
-                    <h3><span class="lang-zh">今日注册</span><span class="lang-en">Today</span></h3>
+                    <h3><span class="lang-zh">今日注册</span><span class="lang-en">Today</span><span class="lang-az">Bu Gün</span></h3>
                     <div class="value" id="stat-recent">-</div>
                 </div>
                 <div class="stat-card" data-metric="tokens" onclick="showTrendChart('tokens', this)">
-                    <h3><span class="lang-zh">总Token使用</span><span class="lang-en">Total Tokens</span></h3>
+                    <h3><span class="lang-zh">总Token使用</span><span class="lang-en">Total Tokens</span><span class="lang-az">Ümumi Tokenlar</span></h3>
                     <div class="value" id="stat-tokens">-</div>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">🏆 <span class="lang-zh">活跃学校排行榜 (按总Token使用量)</span><span class="lang-en">Top Active Schools (by Total Tokens)</span></h2>
+                    <h2 class="card-title">🏆 <span class="lang-zh">活跃学校排行榜 (按总Token使用量)</span><span class="lang-en">Top Active Schools (by Total Tokens)</span><span class="lang-az">Ən Aktiv Məktəblər (Ümumi Tokenlərə Görə)</span></h2>
                 </div>
                 <div id="org-distribution"></div>
             </div>
@@ -801,27 +803,27 @@
         <!-- Tokens Tracking Tab -->
         <div id="tokens-tab" class="tab-content">
             <div class="stats-grid">
-                <div class="stat-card">
-                    <h3><span class="lang-zh">今日Token</span><span class="lang-en">Today</span></h3>
+                <div class="stat-card" data-metric="token-today" onclick="showTrendChart('token-today', this)">
+                    <h3><span class="lang-zh">今日Token</span><span class="lang-en">Today</span><span class="lang-az">Bu Gün</span></h3>
                     <div class="value" id="token-today">-</div>
                 </div>
-                <div class="stat-card">
-                    <h3><span class="lang-zh">过去一周</span><span class="lang-en">Past Week</span></h3>
+                <div class="stat-card" data-metric="token-week" onclick="showTrendChart('token-week', this)">
+                    <h3><span class="lang-zh">过去一周</span><span class="lang-en">Past Week</span><span class="lang-az">Keçən Həftə</span></h3>
                     <div class="value" id="token-week">-</div>
                 </div>
-                <div class="stat-card">
-                    <h3><span class="lang-zh">过去一月</span><span class="lang-en">Past Month</span></h3>
+                <div class="stat-card" data-metric="token-month" onclick="showTrendChart('token-month', this)">
+                    <h3><span class="lang-zh">过去一月</span><span class="lang-en">Past Month</span><span class="lang-az">Keçən Ay</span></h3>
                     <div class="value" id="token-month">-</div>
                 </div>
-                <div class="stat-card">
-                    <h3><span class="lang-zh">总计</span><span class="lang-en">Total</span></h3>
+                <div class="stat-card" data-metric="token-total" onclick="showTrendChart('token-total', this)">
+                    <h3><span class="lang-zh">总计</span><span class="lang-en">Total</span><span class="lang-az">Ümumi</span></h3>
                     <div class="value" id="token-total">-</div>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">🏆 <span class="lang-zh">用户Token排行榜(按总Token使用量)</span><span class="lang-en">User Token Leaderboard (by Total Token Usage)</span></h2>
+                    <h2 class="card-title">🏆 <span class="lang-zh">用户Token排行榜(按总Token使用量)</span><span class="lang-en">User Token Leaderboard (by Total Token Usage)</span><span class="lang-az">İstifadəçi Token Reytinqi (Ümumi Token İstifadəsinə Görə)</span></h2>
                 </div>
                 <div id="token-users-list"></div>
             </div>
@@ -831,21 +833,21 @@
         <div id="schools-tab" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title"><span class="lang-zh">学校列表</span><span class="lang-en">School List</span></h2>
+                    <h2 class="card-title"><span class="lang-zh">学校列表</span><span class="lang-en">School List</span><span class="lang-az">Məktəb Siyahısı</span></h2>
                     <button class="btn btn-primary" onclick="showCreateSchoolModal()">
-                        ➕ <span class="lang-zh">创建学校</span><span class="lang-en">Create School</span>
+                        ➕ <span class="lang-zh">创建学校</span><span class="lang-en">Create School</span><span class="lang-az">Məktəb Yarat</span>
                     </button>
                 </div>
                 <div id="schools-loading" class="spinner"></div>
                 <table id="schools-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th><span class="lang-zh">学校名称</span><span class="lang-en">Name</span></th>
-                            <th><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></th>
-                            <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span></th>
-                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
-                            <th><span class="lang-zh">用户数</span><span class="lang-en">Users</span></th>
-                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
+                            <th><span class="lang-zh">学校名称</span><span class="lang-en">Name</span><span class="lang-az">Ad</span></th>
+                            <th><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span><span class="lang-az">Dəvət Kodu</span></th>
+                            <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span><span class="lang-az">İstifadə Olunan Tokenlar</span></th>
+                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span><span class="lang-az">Status</span></th>
+                            <th><span class="lang-zh">用户数</span><span class="lang-en">Users</span><span class="lang-az">İstifadəçilər</span></th>
+                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span><span class="lang-az">Əməliyyatlar</span></th>
                         </tr>
                     </thead>
                     <tbody id="schools-tbody"></tbody>
@@ -857,30 +859,30 @@
         <div id="users-tab" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title"><span class="lang-zh">用户列表</span><span class="lang-en">User List</span></h2>
+                    <h2 class="card-title"><span class="lang-zh">用户列表</span><span class="lang-en">User List</span><span class="lang-az">İstifadəçi Siyahısı</span></h2>
                 </div>
                 
                 <!-- Filter Controls -->
                 <div style="padding:1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
                         <div style="flex:1;min-width:200px;">
-                            <label class="form-label" style="margin-bottom:0.25rem;" for="user-search"><span class="lang-zh">搜索</span><span class="lang-en">Search</span></label>
+                            <label class="form-label" style="margin-bottom:0.25rem;" for="user-search"><span class="lang-zh">搜索</span><span class="lang-en">Search</span><span class="lang-az">Axtar</span></label>
                             <input type="text" id="user-search" name="user-search" class="form-input" 
                                    placeholder="Name or Phone" 
                                    autocomplete="off"
                                    onkeyup="if(event.key==='Enter') filterUsers()">
                         </div>
                         <div style="min-width:200px;">
-                            <label class="form-label" style="margin-bottom:0.25rem;" for="user-org-filter"><span class="lang-zh">学校筛选</span><span class="lang-en">Filter by School</span></label>
+                            <label class="form-label" style="margin-bottom:0.25rem;" for="user-org-filter"><span class="lang-zh">学校筛选</span><span class="lang-en">Filter by School</span><span class="lang-az">Məktəbə Görə Filtr</span></label>
                             <select id="user-org-filter" name="user-org-filter" class="form-select" onchange="filterUsers()">
-                                <option value=""><span class="lang-zh">全部学校</span><span class="lang-en">All Schools</span></option>
+                                <option value=""><span class="lang-zh">全部学校</span><span class="lang-en">All Schools</span><span class="lang-az">Bütün Məktəblər</span></option>
                             </select>
                         </div>
                         <button class="btn btn-primary" onclick="filterUsers()">
-                            🔍 <span class="lang-zh">搜索</span><span class="lang-en">Search</span>
+                            🔍 <span class="lang-zh">搜索</span><span class="lang-en">Search</span><span class="lang-az">Axtar</span>
                         </button>
                         <button class="btn btn-secondary" onclick="clearUserFilters()">
-                            ↻ <span class="lang-zh">重置</span><span class="lang-en">Reset</span>
+                            ↻ <span class="lang-zh">重置</span><span class="lang-en">Reset</span><span class="lang-az">Sıfırla</span>
                         </button>
                     </div>
                 </div>
@@ -889,12 +891,12 @@
                 <table id="users-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th><span class="lang-zh">手机号</span><span class="lang-en">Phone</span></th>
-                            <th><span class="lang-zh">姓名</span><span class="lang-en">Name</span></th>
-                            <th><span class="lang-zh">学校</span><span class="lang-en">Organization</span></th>
-                            <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span></th>
-                            <th><span class="lang-zh">注册时间</span><span class="lang-en">Registration Time</span></th>
-                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
+                            <th><span class="lang-zh">手机号</span><span class="lang-en">Phone</span><span class="lang-az">Telefon</span></th>
+                            <th><span class="lang-zh">姓名</span><span class="lang-en">Name</span><span class="lang-az">Ad</span></th>
+                            <th><span class="lang-zh">学校</span><span class="lang-en">Organization</span><span class="lang-az">Təşkilat</span></th>
+                            <th><span class="lang-zh">Token使用量</span><span class="lang-en">Tokens Used</span><span class="lang-az">İstifadə Olunan Tokenlar</span></th>
+                            <th><span class="lang-zh">注册时间</span><span class="lang-en">Registration Time</span><span class="lang-az">Qeydiyyat Vaxtı</span></th>
+                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span><span class="lang-az">Əməliyyatlar</span></th>
                         </tr>
                     </thead>
                     <tbody id="users-tbody"></tbody>
@@ -908,13 +910,13 @@
                         </div>
                         <div style="display:flex;gap:0.5rem;">
                             <button id="users-prev-btn" class="btn btn-secondary btn-sm" onclick="previousUsersPage()">
-                                ← <span class="lang-zh">上一页</span><span class="lang-en">Previous</span>
+                                ← <span class="lang-zh">上一页</span><span class="lang-en">Previous</span><span class="lang-az">Əvvəlki</span>
                             </button>
                             <div id="users-page-numbers" style="display:flex;gap:0.25rem;">
                                 <!-- Page numbers will be inserted here -->
                             </div>
                             <button id="users-next-btn" class="btn btn-secondary btn-sm" onclick="nextUsersPage()">
-                                <span class="lang-zh">下一页</span><span class="lang-en">Next</span> →
+                                <span class="lang-zh">下一页</span><span class="lang-en">Next</span><span class="lang-az">Növbəti</span> →
                             </button>
                         </div>
                     </div>
@@ -926,22 +928,22 @@
         <div id="apikeys-tab" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">🔑 <span class="lang-zh">API密钥管理</span><span class="lang-en">API Keys Management</span></h2>
+                    <h2 class="card-title">🔑 <span class="lang-zh">API密钥管理</span><span class="lang-en">API Keys Management</span><span class="lang-az">API Açarları İdarəetməsi</span></h2>
                     <button class="btn btn-primary" onclick="showCreateAPIKeyModal()">
-                        ➕ <span class="lang-zh">创建密钥</span><span class="lang-en">Create API Key</span>
+                        ➕ <span class="lang-zh">创建密钥</span><span class="lang-en">Create API Key</span><span class="lang-az">API Açarı Yarat</span>
                     </button>
                 </div>
                 <div id="apikeys-loading" class="spinner"></div>
                 <table id="apikeys-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th><span class="lang-zh">名称</span><span class="lang-en">Name</span></th>
-                            <th><span class="lang-zh">API密钥</span><span class="lang-en">API Key</span></th>
-                            <th><span class="lang-zh">使用量</span><span class="lang-en">Usage</span></th>
-                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span></th>
-                            <th><span class="lang-zh">创建时间</span><span class="lang-en">Created</span></th>
-                            <th><span class="lang-zh">最后使用</span><span class="lang-en">Last Used</span></th>
-                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span></th>
+                            <th><span class="lang-zh">名称</span><span class="lang-en">Name</span><span class="lang-az">Ad</span></th>
+                            <th><span class="lang-zh">API密钥</span><span class="lang-en">API Key</span><span class="lang-az">API Açarı</span></th>
+                            <th><span class="lang-zh">使用量</span><span class="lang-en">Usage</span><span class="lang-az">İstifadə</span></th>
+                            <th><span class="lang-zh">状态</span><span class="lang-en">Status</span><span class="lang-az">Status</span></th>
+                            <th><span class="lang-zh">创建时间</span><span class="lang-en">Created</span><span class="lang-az">Yaradılıb</span></th>
+                            <th><span class="lang-zh">最后使用</span><span class="lang-en">Last Used</span><span class="lang-az">Son İstifadə</span></th>
+                            <th><span class="lang-zh">操作</span><span class="lang-en">Actions</span><span class="lang-az">Əməliyyatlar</span></th>
                         </tr>
                     </thead>
                     <tbody id="apikeys-tbody"></tbody>
@@ -957,7 +959,7 @@
                 <!-- Enable/Disable Toggle -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title" style="font-size:1.1rem;">公告开关</h3>
+                        <h3 class="card-title" style="font-size:1.1rem;"><span class="lang-zh">公告开关</span><span class="lang-en">Announcement Toggle</span><span class="lang-az">Elan Açıb-Bağlama</span></h3>
                     </div>
                     <div style="padding:1rem;">
                         <div class="form-group" style="display:flex;align-items:center;gap:1rem;">
@@ -965,10 +967,10 @@
                                 <input type="checkbox" id="announcement-enabled" name="announcement-enabled">
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span style="font-weight:500;">启用更新公告</span>
+                            <span style="font-weight:500;"><span class="lang-zh">启用更新公告</span><span class="lang-en">Enable Update Announcement</span><span class="lang-az">Yeniləmə Elanını Aktivləşdir</span></span>
                         </div>
                         <div style="margin-top:0.5rem;color:#64748b;font-size:0.875rem;">
-                            开启后，用户登录时将看到公告弹窗（每个版本只显示一次）
+                            <span class="lang-zh">开启后，用户登录时将看到公告弹窗（每个版本只显示一次）</span><span class="lang-en">When enabled, users will see announcement popup on login (once per version)</span><span class="lang-az">Aktivləşdirildikdə, istifadəçilər giriş zamanı elan pəncərəsi görəcəklər (hər versiya üçün bir dəfə)</span>
                         </div>
                     </div>
                 </div>
@@ -976,13 +978,13 @@
                 <!-- Version -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title" style="font-size:1.1rem;">版本号</h3>
+                        <h3 class="card-title" style="font-size:1.1rem;"><span class="lang-zh">版本号</span><span class="lang-en">Version Number</span><span class="lang-az">Versiya Nömrəsi</span></h3>
                     </div>
                     <div style="padding:1rem;">
                         <div class="form-group">
-                            <label class="form-label" for="announcement-version">版本号</label>
-                            <input type="text" id="announcement-version" name="announcement-version" class="form-input" placeholder="例如: 1.5.0" autocomplete="off">
-                            <small style="color:#64748b;">每个版本号只会显示一次公告。更改版本号后，所有用户将再次看到公告。</small>
+                            <label class="form-label" for="announcement-version"><span class="lang-zh">版本号</span><span class="lang-en">Version Number</span><span class="lang-az">Versiya Nömrəsi</span></label>
+                            <input type="text" id="announcement-version" name="announcement-version" class="form-input" placeholder="例如: 1.5.0 / Example: 1.5.0 / Məsələn: 1.5.0" autocomplete="off">
+                            <small style="color:#64748b;"><span class="lang-zh">每个版本号只会显示一次公告。更改版本号后，所有用户将再次看到公告。</span><span class="lang-en">Each version number will only show announcement once. After changing version number, all users will see the announcement again.</span><span class="lang-az">Hər versiya nömrəsi yalnız bir dəfə elan göstərəcək. Versiya nömrəsini dəyişdikdən sonra, bütün istifadəçilər yenidən elanı görəcəklər.</span></small>
                         </div>
                     </div>
                 </div>
@@ -990,15 +992,15 @@
                 <!-- Content -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title" style="font-size:1.1rem;">公告内容</h3>
+                        <h3 class="card-title" style="font-size:1.1rem;"><span class="lang-zh">公告内容</span><span class="lang-en">Announcement Content</span><span class="lang-az">Elan Məzmunu</span></h3>
                     </div>
                     <div style="padding:1rem;">
                         <div class="form-group">
-                            <label class="form-label" for="announcement-title">标题</label>
-                            <input type="text" id="announcement-title" name="announcement-title" class="form-input" placeholder="例如: 系统更新" autocomplete="off">
+                            <label class="form-label" for="announcement-title"><span class="lang-zh">标题</span><span class="lang-en">Title</span><span class="lang-az">Başlıq</span></label>
+                            <input type="text" id="announcement-title" name="announcement-title" class="form-input" placeholder="例如: 系统更新 / Example: System Update / Məsələn: Sistem Yeniləməsi" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">公告正文</label>
+                            <label class="form-label"><span class="lang-zh">公告正文</span><span class="lang-en">Announcement Body</span><span class="lang-az">Elan Mətni</span></label>
                             <!-- Rich Text Toolbar -->
                             <div class="rich-text-toolbar">
                                 <select id="font-family-zh" class="toolbar-select" onchange="announcementEditor.execCommand('fontName', this.value)" title="字体">
@@ -1188,15 +1190,15 @@
                                 <input type="file" id="announcement-image-input" accept="image/*" style="display:none;" onchange="announcementEditor.handleImageUpload(this)">
                             </div>
                             <!-- Editable Content Area -->
-                            <div id="announcement-message" class="rich-text-editor" contenteditable="true" data-placeholder="请输入公告内容..."></div>
+                            <div id="announcement-message" class="rich-text-editor" contenteditable="true" data-placeholder="请输入公告内容... / Please enter announcement content... / Zəhmət olmasa elan məzmununu daxil edin..."></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Save Actions -->
                 <div style="display:flex;gap:1rem;margin-top:1rem;">
-                    <button class="btn btn-secondary" onclick="previewAnnouncement()">👁 <span class="lang-zh">预览</span><span class="lang-en">Preview</span></button>
-                    <button class="btn btn-primary" onclick="saveAnnouncementConfig()">💾 <span class="lang-zh">保存设置</span><span class="lang-en">Save Settings</span></button>
+                    <button class="btn btn-secondary" onclick="previewAnnouncement()">👁 <span class="lang-zh">预览</span><span class="lang-en">Preview</span><span class="lang-az">Önizləmə</span></button>
+                    <button class="btn btn-primary" onclick="saveAnnouncementConfig()">💾 <span class="lang-zh">保存设置</span><span class="lang-en">Save Settings</span><span class="lang-az">Parametrləri Saxla</span></button>
                 </div>
             </div>
         </div>
@@ -1233,29 +1235,29 @@
     <div id="create-school-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title"><span class="lang-zh">创建学校</span><span class="lang-en">Create School</span></h3>
+                <h3 class="modal-title"><span class="lang-zh">创建学校</span><span class="lang-en">Create School</span><span class="lang-az">Məktəb Yarat</span></h3>
                 <span class="close" onclick="closeModal('create-school-modal')">&times;</span>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new-school-name"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span> *</label>
+                <label class="form-label" for="new-school-name"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span><span class="lang-az">Məktəb Adı</span> *</label>
                 <input type="text" id="new-school-name" name="new-school-name" class="form-input" 
-                       placeholder="Beijing High School 北京高中" 
+                       placeholder="Beijing High School 北京高中 / Bakı Liseyi" 
                        autocomplete="organization"
                        oninput="autoGenerateSchoolCode()" required>
-                <small style="color:#64748b;">Enter the school name first, code will be generated automatically</small>
+                <small style="color:#64748b;"><span class="lang-zh">先输入学校名称，代码将自动生成</span><span class="lang-en">Enter the school name first, code will be generated automatically</span><span class="lang-az">Əvvəlcə məktəb adını daxil edin, kod avtomatik yaradılacaq</span></small>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new-school-code"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span> *</label>
+                <label class="form-label" for="new-school-code"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span><span class="lang-az">Məktəb Kodu</span> *</label>
                 <div style="display:flex;gap:0.5rem;">
                     <input type="text" id="new-school-code" name="new-school-code" class="form-input" 
-                           placeholder="AUTO-GENERATED" required
+                           placeholder="AUTO-GENERATED / 自动生成 / AVTOMATIK YARADILIR" required
                            autocomplete="off"
                            style="flex:1;background:#f8fafc;">
-                    <button type="button" class="btn btn-secondary" onclick="regenerateSchoolCode()" title="Regenerate Code">
+                    <button type="button" class="btn btn-secondary" onclick="regenerateSchoolCode()" title="Regenerate Code / 重新生成 / Yenidən Yarat">
                         🔄
                     </button>
                 </div>
-                <small style="color:#64748b;">Auto-generated from school name (editable, click 🔄 to regenerate)</small>
+                <small style="color:#64748b;"><span class="lang-zh">从学校名称自动生成（可编辑，点击 🔄 重新生成）</span><span class="lang-en">Auto-generated from school name (editable, click 🔄 to regenerate)</span><span class="lang-az">Məktəb adından avtomatik yaradılır (redaktə oluna bilər, 🔄 düyməsinə klikləyin)</span></small>
             </div>
             <div style="padding:1rem;background:#f8fafc;border-radius:8px;margin-bottom:1rem;">
                 <small style="color:#64748b;">
@@ -1270,38 +1272,38 @@
     <div id="edit-school-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title"><span class="lang-zh">编辑学校</span><span class="lang-en">Edit School</span></h3>
+                <h3 class="modal-title"><span class="lang-zh">编辑学校</span><span class="lang-en">Edit School</span><span class="lang-az">Məktəbi Redaktə Et</span></h3>
                 <span class="close" onclick="closeModal('edit-school-modal')">&times;</span>
             </div>
             <input type="hidden" id="edit-school-id" name="edit-school-id">
             <div class="form-group">
-                <label class="form-label" for="edit-school-code"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span></label>
+                <label class="form-label" for="edit-school-code"><span class="lang-zh">学校代码</span><span class="lang-en">School Code</span><span class="lang-az">Məktəb Kodu</span></label>
                 <input type="text" id="edit-school-code" name="edit-school-code" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-school-name"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span></label>
+                <label class="form-label" for="edit-school-name"><span class="lang-zh">学校名称</span><span class="lang-en">School Name</span><span class="lang-az">Məktəb Adı</span></label>
                 <input type="text" id="edit-school-name" name="edit-school-name" class="form-input" autocomplete="organization">
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-school-invite"><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span></label>
+                <label class="form-label" for="edit-school-invite"><span class="lang-zh">邀请码</span><span class="lang-en">Invitation Code</span><span class="lang-az">Dəvət Kodu</span></label>
                 <input type="text" id="edit-school-invite" name="edit-school-invite" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-school-expires"><span class="lang-zh">服务到期日期</span><span class="lang-en">Service Expiration Date</span></label>
+                <label class="form-label" for="edit-school-expires"><span class="lang-zh">服务到期日期</span><span class="lang-en">Service Expiration Date</span><span class="lang-az">Xidmət Bitmə Tarixi</span></label>
                 <input type="date" id="edit-school-expires" name="edit-school-expires" class="form-input" autocomplete="off">
-                <small style="color:#64748b;"><span class="lang-zh">留空表示永久有效</span><span class="lang-en">Leave empty for no expiration</span></small>
+                <small style="color:#64748b;"><span class="lang-zh">留空表示永久有效</span><span class="lang-en">Leave empty for no expiration</span><span class="lang-az">Boş buraxılsa, müddətsizdir</span></small>
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-school-active"><span class="lang-zh">账户状态</span><span class="lang-en">Account Status</span></label>
+                <label class="form-label" for="edit-school-active"><span class="lang-zh">账户状态</span><span class="lang-en">Account Status</span><span class="lang-az">Hesab Statusu</span></label>
                 <select id="edit-school-active" name="edit-school-active" class="form-select">
-                    <option value="true"><span class="lang-zh">激活</span><span class="lang-en">Active</span></option>
-                    <option value="false"><span class="lang-zh">锁定</span><span class="lang-en">Locked</span></option>
+                    <option value="true"><span class="lang-zh">激活</span><span class="lang-en">Active</span><span class="lang-az">Aktiv</span></option>
+                    <option value="false"><span class="lang-zh">锁定</span><span class="lang-en">Locked</span><span class="lang-az">Kilidlənib</span></option>
                 </select>
-                <small style="color:#64748b;"><span class="lang-zh">锁定后该组织的所有用户将无法登录</span><span class="lang-en">Locked organizations cannot login</span></small>
+                <small style="color:#64748b;"><span class="lang-zh">锁定后该组织的所有用户将无法登录</span><span class="lang-en">Locked organizations cannot login</span><span class="lang-az">Kilidlənmiş təşkilatlar giriş edə bilməz</span></small>
             </div>
             <div style="display:flex; gap:0.5rem; align-items:center;">
-                <button class="btn btn-secondary" onclick="regenerateInviteCode()"><span class="lang-zh">重新生成</span><span class="lang-en">Regenerate</span></button>
-                <button class="btn btn-primary" onclick="updateSchool()"><span class="lang-zh">保存</span><span class="lang-en">Save</span></button>
+                <button class="btn btn-secondary" onclick="regenerateInviteCode()"><span class="lang-zh">重新生成</span><span class="lang-en">Regenerate</span><span class="lang-az">Yenidən Yarat</span></button>
+                <button class="btn btn-primary" onclick="updateSchool()"><span class="lang-zh">保存</span><span class="lang-en">Save</span><span class="lang-az">Saxla</span></button>
             </div>
         </div>
     </div>
@@ -1310,37 +1312,37 @@
     <div id="edit-user-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title"><span class="lang-zh">编辑用户</span><span class="lang-en">Edit User</span></h3>
+                <h3 class="modal-title"><span class="lang-zh">编辑用户</span><span class="lang-en">Edit User</span><span class="lang-az">İstifadəçini Redaktə Et</span></h3>
                 <span class="close" onclick="closeModal('edit-user-modal')">&times;</span>
             </div>
             <input type="hidden" id="edit-user-id" name="edit-user-id">
             <div class="form-group">
-                <label class="form-label" for="edit-user-phone"><span class="lang-zh">手机号</span><span class="lang-en">Phone Number</span> *</label>
+                <label class="form-label" for="edit-user-phone"><span class="lang-zh">手机号</span><span class="lang-en">Phone Number</span><span class="lang-az">Telefon Nömrəsi</span> *</label>
                 <input type="tel" id="edit-user-phone" name="edit-user-phone" class="form-input" 
                        placeholder="13812345678" maxlength="11" autocomplete="tel" required>
                 <small style="color:#64748b;">11-digit Chinese mobile number</small>
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-user-name"><span class="lang-zh">姓名</span><span class="lang-en">Name</span> *</label>
+                <label class="form-label" for="edit-user-name"><span class="lang-zh">姓名</span><span class="lang-en">Name</span><span class="lang-az">Ad</span> *</label>
                 <input type="text" id="edit-user-name" name="edit-user-name" class="form-input" 
                        placeholder="Zhang Wei" autocomplete="name" required>
                 <small style="color:#64748b;">At least 2 characters, no numbers</small>
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-user-org"><span class="lang-zh">学校</span><span class="lang-en">School</span> *</label>
+                <label class="form-label" for="edit-user-org"><span class="lang-zh">学校</span><span class="lang-en">School</span><span class="lang-az">Məktəb</span> *</label>
                 <select id="edit-user-org" name="edit-user-org" class="form-select" required>
                     <option value="">Loading...</option>
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-user-reset-password"><span class="lang-zh">重置密码</span><span class="lang-en">Reset Password</span></label>
+                <label class="form-label" for="edit-user-reset-password"><span class="lang-zh">重置密码</span><span class="lang-en">Reset Password</span><span class="lang-az">Parolu Sıfırla</span></label>
                 <input type="text" id="edit-user-reset-password" name="edit-user-reset-password" class="form-input" 
                        placeholder="12345678" value="12345678" autocomplete="new-password">
-                <small style="color:#64748b;"><span class="lang-zh">留空或输入 '12345678' 将重置为默认密码 '12345678'</span><span class="lang-en">Leave empty or enter '12345678' to use default password '12345678'</span></small>
+                <small style="color:#64748b;"><span class="lang-zh">留空或输入 '12345678' 将重置为默认密码 '12345678'</span><span class="lang-en">Leave empty or enter '12345678' to use default password '12345678'</span><span class="lang-az">Boş buraxın və ya '12345678' daxil edin, standart parol '12345678' istifadə olunacaq</span></small>
             </div>
             <div style="display:flex;gap:0.5rem;align-items:center;justify-content:center;">
-                <button class="btn btn-primary" onclick="updateUser()"><span class="lang-zh">保存</span><span class="lang-en">Save</span></button>
-                <button class="btn btn-warning" onclick="resetPasswordFromModal()"><span class="lang-zh">重置密码</span><span class="lang-en">Reset Password</span></button>
+                <button class="btn btn-primary" onclick="updateUser()"><span class="lang-zh">保存</span><span class="lang-en">Save</span><span class="lang-az">Saxla</span></button>
+                <button class="btn btn-warning" onclick="resetPasswordFromModal()"><span class="lang-zh">重置密码</span><span class="lang-en">Reset Password</span><span class="lang-az">Parolu Sıfırla</span></button>
             </div>
         </div>
     </div>
@@ -1349,30 +1351,30 @@
     <div id="create-apikey-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">🔑 Create API Key</h3>
+                <h3 class="modal-title">🔑 <span class="lang-zh">创建API密钥</span><span class="lang-en">Create API Key</span><span class="lang-az">API Açarı Yarat</span></h3>
                 <span class="close" onclick="closeModal('create-apikey-modal')">&times;</span>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new-apikey-name">Name *</label>
+                <label class="form-label" for="new-apikey-name"><span class="lang-zh">名称</span><span class="lang-en">Name</span><span class="lang-az">Ad</span> *</label>
                 <input type="text" id="new-apikey-name" name="new-apikey-name" class="form-input" 
-                       placeholder="Dify Integration, Mobile App, etc." autocomplete="off" required>
+                       placeholder="Dify Integration, Mobile App, etc. / Dify集成, 移动应用等 / Dify İnteqrasiyası, Mobil Tətbiq və s." autocomplete="off" required>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new-apikey-description">Description</label>
+                <label class="form-label" for="new-apikey-description"><span class="lang-zh">描述</span><span class="lang-en">Description</span><span class="lang-az">Təsvir</span></label>
                 <textarea id="new-apikey-description" name="new-apikey-description" class="form-textarea" style="min-height:80px;"
-                          placeholder="Purpose of this API key..." autocomplete="off"></textarea>
+                          placeholder="Purpose of this API key... / 此API密钥的用途... / Bu API açarının məqsədi..." autocomplete="off"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new-apikey-quota">Quota Limit (leave empty for unlimited)</label>
+                <label class="form-label" for="new-apikey-quota"><span class="lang-zh">配额限制（留空表示无限制）</span><span class="lang-en">Quota Limit (leave empty for unlimited)</span><span class="lang-az">Kvota Limiti (boş buraxılsa, limitsizdir)</span></label>
                 <input type="number" id="new-apikey-quota" name="new-apikey-quota" class="form-input" 
                        placeholder="10000" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label" for="new-apikey-expires">Expires in (days, optional)</label>
+                <label class="form-label" for="new-apikey-expires"><span class="lang-zh">有效期（天数，可选）</span><span class="lang-en">Expires in (days, optional)</span><span class="lang-az">Müddəti (gün, istəyə bağlıdır)</span></label>
                 <input type="number" id="new-apikey-expires" name="new-apikey-expires" class="form-input" 
                        placeholder="365" autocomplete="off">
             </div>
-            <button class="btn btn-primary" onclick="createAPIKey()">🔑 Generate API Key</button>
+            <button class="btn btn-primary" onclick="createAPIKey()">🔑 <span class="lang-zh">生成API密钥</span><span class="lang-en">Generate API Key</span><span class="lang-az">API Açarı Yarat</span></button>
         </div>
     </div>
 
@@ -1380,20 +1382,20 @@
     <div id="show-apikey-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">✅ API Key Created</h3>
+                <h3 class="modal-title">✅ <span class="lang-zh">API密钥已创建</span><span class="lang-en">API Key Created</span><span class="lang-az">API Açarı Yaradıldı</span></h3>
                 <span class="close" onclick="closeModal('show-apikey-modal')">&times;</span>
             </div>
             <div class="alert alert-warning show">
-                ⚠️ <strong>Important:</strong> Save this key securely - it won't be shown again!
+                ⚠️ <strong><span class="lang-zh">重要：</span><span class="lang-en">Important:</span><span class="lang-az">Vacibdir:</span></strong> <span class="lang-zh">请安全保存此密钥 - 它不会再次显示！</span><span class="lang-en">Save this key securely - it won't be shown again!</span><span class="lang-az">Bu açarı təhlükəsiz saxlayın - yenidən göstərilməyəcək!</span>
             </div>
             <div class="form-group">
-                <label class="form-label" for="generated-apikey">API Key</label>
+                <label class="form-label" for="generated-apikey"><span class="lang-zh">API密钥</span><span class="lang-en">API Key</span><span class="lang-az">API Açarı</span></label>
                 <input type="text" id="generated-apikey" name="generated-apikey" class="form-input" readonly 
                        autocomplete="off"
                        style="font-family:monospace;font-size:0.875rem;" onclick="this.select()">
             </div>
             <div class="form-group">
-                <label class="form-label" for="apikey-usage-instructions">Usage Instructions</label>
+                <label class="form-label" for="apikey-usage-instructions"><span class="lang-zh">使用说明</span><span class="lang-en">Usage Instructions</span><span class="lang-az">İstifadə Təlimatları</span></label>
                 <textarea id="apikey-usage-instructions" name="apikey-usage-instructions" readonly class="form-textarea" style="min-height:100px;" autocomplete="off">Add this header to your HTTP requests:
 X-API-Key: [your-key-here]
 
@@ -1403,7 +1405,7 @@ curl -X POST http://your-server/api/generate_graph \
   -H "Content-Type: application/json" \
   -d '{"prompt":"test","diagram_type":"mind_map"}'</textarea>
             </div>
-            <button class="btn btn-primary" onclick="copyAPIKey()">📋 Copy to Clipboard</button>
+            <button class="btn btn-primary" onclick="copyAPIKey()">📋 <span class="lang-zh">复制到剪贴板</span><span class="lang-en">Copy to Clipboard</span><span class="lang-az">Mübadilə Buferinə Kopyala</span></button>
         </div>
     </div>
 
@@ -1411,27 +1413,27 @@ curl -X POST http://your-server/api/generate_graph \
     <div id="edit-apikey-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">✏️ Edit API Key</h3>
+                <h3 class="modal-title">✏️ <span class="lang-zh">编辑API密钥</span><span class="lang-en">Edit API Key</span><span class="lang-az">API Açarını Redaktə Et</span></h3>
                 <span class="close" onclick="closeModal('edit-apikey-modal')">&times;</span>
             </div>
             <input type="hidden" id="edit-apikey-id" name="edit-apikey-id">
             <div class="form-group">
-                <label class="form-label" for="edit-apikey-name">Name</label>
+                <label class="form-label" for="edit-apikey-name"><span class="lang-zh">名称</span><span class="lang-en">Name</span><span class="lang-az">Ad</span></label>
                 <input type="text" id="edit-apikey-name" name="edit-apikey-name" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-apikey-description">Description</label>
+                <label class="form-label" for="edit-apikey-description"><span class="lang-zh">描述</span><span class="lang-en">Description</span><span class="lang-az">Təsvir</span></label>
                 <textarea id="edit-apikey-description" name="edit-apikey-description" class="form-textarea" style="min-height:80px;" autocomplete="off"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-apikey-quota">Quota Limit (empty for unlimited)</label>
+                <label class="form-label" for="edit-apikey-quota"><span class="lang-zh">配额限制（留空表示无限制）</span><span class="lang-en">Quota Limit (empty for unlimited)</span><span class="lang-az">Kvota Limiti (boş buraxılsa, limitsizdir)</span></label>
                 <input type="number" id="edit-apikey-quota" name="edit-apikey-quota" class="form-input" autocomplete="off">
             </div>
             <div class="form-group">
-                <label class="form-label" for="edit-apikey-usage">Usage Count (reset to 0 if needed)</label>
+                <label class="form-label" for="edit-apikey-usage"><span class="lang-zh">使用次数（如需要可重置为0）</span><span class="lang-en">Usage Count (reset to 0 if needed)</span><span class="lang-az">İstifadə Sayı (lazım olsa, 0-a sıfırlayın)</span></label>
                 <input type="number" id="edit-apikey-usage" name="edit-apikey-usage" class="form-input" autocomplete="off">
             </div>
-            <button class="btn btn-primary" onclick="updateAPIKey()">💾 Save Changes</button>
+            <button class="btn btn-primary" onclick="updateAPIKey()">💾 <span class="lang-zh">保存更改</span><span class="lang-en">Save Changes</span><span class="lang-az">Dəyişiklikləri Saxla</span></button>
         </div>
     </div>
 
@@ -1439,7 +1441,7 @@ curl -X POST http://your-server/api/generate_graph \
     <div id="share-invite-modal" class="modal">
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
-                <h3 class="modal-title">📤 <span class="lang-zh">分享邀请信息</span><span class="lang-en">Share Invitation Info</span></h3>
+                <h3 class="modal-title">📤 <span class="lang-zh">分享邀请信息</span><span class="lang-en">Share Invitation Info</span><span class="lang-az">Dəvət Məlumatını Paylaş</span></h3>
                 <span class="close" onclick="closeModal('share-invite-modal')">&times;</span>
             </div>
             <div style="margin-bottom:1rem;color:#64748b;font-size:0.9rem;">
@@ -2020,12 +2022,34 @@ curl -X POST http://your-server/api/generate_graph \
             const titleElement = document.getElementById('trend-chart-title');
             const canvas = document.getElementById('trend-chart-canvas');
             
+            // Map token-specific metrics to API metric and days
+            let apiMetric = metric;
+            let days = 30;
+            
+            if (metric === 'token-today') {
+                apiMetric = 'tokens';
+                days = 1;
+            } else if (metric === 'token-week') {
+                apiMetric = 'tokens';
+                days = 7;
+            } else if (metric === 'token-month') {
+                apiMetric = 'tokens';
+                days = 30;
+            } else if (metric === 'token-total') {
+                apiMetric = 'tokens';
+                days = 90; // Show last 90 days for total
+            }
+            
             // Set title based on metric
             const titles = {
                 'users': { zh: '总用户数趋势', en: 'Total Users Trend' },
                 'organizations': { zh: '学校数量趋势', en: 'Organizations Trend' },
                 'registrations': { zh: '每日注册趋势', en: 'Daily Registrations Trend' },
-                'tokens': { zh: 'Token使用趋势', en: 'Token Usage Trend' }
+                'tokens': { zh: 'Token使用趋势', en: 'Token Usage Trend' },
+                'token-today': { zh: '今日Token趋势', en: 'Today Token Trend' },
+                'token-week': { zh: '过去一周Token趋势', en: 'Past Week Token Trend' },
+                'token-month': { zh: '过去一月Token趋势', en: 'Past Month Token Trend' },
+                'token-total': { zh: 'Token总计趋势', en: 'Total Token Trend' }
             };
             
             const title = titles[metric] || { zh: '趋势图表', en: 'Trend Chart' };
@@ -2045,7 +2069,7 @@ curl -X POST http://your-server/api/generate_graph \
             
             try {
                 // Fetch trends data
-                const response = await auth.fetch(`/api/auth/admin/stats/trends?metric=${metric}&days=30`);
+                const response = await auth.fetch(`/api/auth/admin/stats/trends?metric=${apiMetric}&days=${days}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trends data');
                 }
@@ -2069,7 +2093,8 @@ curl -X POST http://your-server/api/generate_graph \
                 const maxValue = Math.max(...values);
                 const minValue = Math.min(...values);
                 const range = maxValue - minValue;
-                const padding = range * 0.1; // 10% padding
+                // Handle edge case when all values are the same (e.g., single day)
+                const padding = range === 0 ? maxValue * 0.1 : range * 0.1; // 10% padding
                 const yMin = Math.max(0, minValue - padding);
                 const yMax = maxValue + padding;
                 
@@ -2190,7 +2215,7 @@ curl -X POST http://your-server/api/generate_graph \
                 };
                 
                 // For tokens, add input/output lines if available
-                if (metric === 'tokens' && data.data[0].input !== undefined) {
+                if ((metric === 'tokens' || metric.startsWith('token-')) && data.data[0] && data.data[0].input !== undefined) {
                     const inputValues = data.data.map(item => item.input || 0);
                     const outputValues = data.data.map(item => item.output || 0);
                     
@@ -2511,16 +2536,16 @@ curl -X POST http://your-server/api/generate_graph \
                             </td>
                             <td>
                                 ${!isActive ? 
-                                    '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span></span>' : 
+                                    '<span class="badge badge-danger">🔒 <span class="lang-zh">锁定</span><span class="lang-en">Locked</span><span class="lang-az">Kilidlənib</span></span>' : 
                                     isExpired ? 
-                                    '<span class="badge badge-danger">⏰ <span class="lang-zh">已过期</span><span class="lang-en">Expired</span></span>' :
-                                    '<span class="badge badge-success">✅ <span class="lang-zh">正常</span><span class="lang-en">Active</span></span>'
+                                    '<span class="badge badge-danger">⏰ <span class="lang-zh">已过期</span><span class="lang-en">Expired</span><span class="lang-az">Müddəti Bitib</span></span>' :
+                                    '<span class="badge badge-success">✅ <span class="lang-zh">正常</span><span class="lang-en">Active</span><span class="lang-az">Aktiv</span></span>'
                                 }
                             </td>
-                            <td>${school.user_count} <span class="lang-zh">用户</span><span class="lang-en">users</span></td>
+                            <td>${school.user_count} <span class="lang-zh">用户</span><span class="lang-en">users</span><span class="lang-az">istifadəçi</span></td>
                             <td>
-                                <button class="btn btn-primary btn-sm" onclick="editSchool(${school.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteSchool(${school.id}, '${school.code}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span></button>
+                                <button class="btn btn-primary btn-sm" onclick="editSchool(${school.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span><span class="lang-az">Redaktə</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteSchool(${school.id}, '${school.code}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span><span class="lang-az">Sil</span></button>
                             </td>
                         </tr>
                     `;
@@ -2748,10 +2773,10 @@ curl -X POST http://your-server/api/generate_graph \
                                 })() : '-'}
                             </td>
                             <td>
-                                <button class="btn btn-primary btn-sm" onclick="showEditUserModal(${user.id})" title="Edit User"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id}, '${user.phone}')" title="Delete User"><span class="lang-zh">删除</span><span class="lang-en">Delete</span></button>
+                                <button class="btn btn-primary btn-sm" onclick="showEditUserModal(${user.id})" title="Edit User"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span><span class="lang-az">Redaktə</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id}, '${user.phone}')" title="Delete User"><span class="lang-zh">删除</span><span class="lang-en">Delete</span><span class="lang-az">Sil</span></button>
                                 ${isLocked ? 
-                                    `<button class="btn btn-success btn-sm" onclick="unlockUser(${user.id}, '${user.phone}')" title="Unlock Account">🔓 <span class="lang-zh">解锁</span><span class="lang-en">Unlock</span></button>` : 
+                                    `<button class="btn btn-success btn-sm" onclick="unlockUser(${user.id}, '${user.phone}')" title="Unlock Account">🔓 <span class="lang-zh">解锁</span><span class="lang-en">Unlock</span><span class="lang-az">Kilidi Aç</span></button>` : 
                                     ''
                                 }
                             </td>
@@ -3197,17 +3222,17 @@ curl -X POST http://your-server/api/generate_graph \
                             </td>
                             <td>
                                 ${key.is_active && !isExpired ? 
-                                    '<span class="badge badge-success">✅ <span class="lang-zh">激活</span><span class="lang-en">Active</span></span>' : 
-                                    isExpired ? '<span class="badge badge-danger">⏰ <span class="lang-zh">过期</span><span class="lang-en">Expired</span></span>' :
-                                    '<span class="badge badge-danger">❌ <span class="lang-zh">禁用</span><span class="lang-en">Disabled</span></span>'
+                                    '<span class="badge badge-success">✅ <span class="lang-zh">激活</span><span class="lang-en">Active</span><span class="lang-az">Aktiv</span></span>' : 
+                                    isExpired ? '<span class="badge badge-danger">⏰ <span class="lang-zh">过期</span><span class="lang-en">Expired</span><span class="lang-az">Müddəti Bitib</span></span>' :
+                                    '<span class="badge badge-danger">❌ <span class="lang-zh">禁用</span><span class="lang-en">Disabled</span><span class="lang-az">Deaktiv</span></span>'
                                 }
                             </td>
                             <td><small>${new Date(key.created_at).toLocaleDateString()}</small></td>
                             <td><small>${key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</small></td>
                             <td>
-                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ <span class="lang-zh">禁用</span><span class="lang-en">Disable</span>' : '▶️ <span class="lang-zh">启用</span><span class="lang-en">Enable</span>'}</button>
-                                <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span></button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span></button>
+                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ <span class="lang-zh">禁用</span><span class="lang-en">Disable</span><span class="lang-az">Deaktivləşdir</span>' : '▶️ <span class="lang-zh">启用</span><span class="lang-en">Enable</span><span class="lang-az">Aktivləşdir</span>'}</button>
+                                <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span><span class="lang-az">Redaktə</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span><span class="lang-az">Sil</span></button>
                             </td>
                         </tr>
                     `;

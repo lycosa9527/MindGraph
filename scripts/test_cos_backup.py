@@ -57,8 +57,13 @@ from services.backup_scheduler import (
 async def test_backup():
     """Test backup functionality."""
     print("=" * 60)
-    print("COS Backup Test Script")
+    print("Backup Test Script")
     print("=" * 60)
+    print()
+    
+    # Ensure we're running as worker 0 (required for backup)
+    os.environ['UVICORN_WORKER_ID'] = '0'
+    print("[INFO] Set UVICORN_WORKER_ID=0 for backup test")
     print()
     
     # Check configuration
@@ -70,14 +75,11 @@ async def test_backup():
     print()
     
     if not COS_BACKUP_ENABLED:
-        print("[WARNING] COS backup is disabled in .env file")
-        print("   Set COS_BACKUP_ENABLED=true to enable")
-        return False
-    
-    if not COS_BUCKET:
-        print("[WARNING] COS_BUCKET is not configured")
-        print("   Set COS_BUCKET=your-bucket-appid in .env file")
-        return False
+        print("[INFO] COS backup is disabled - will test local backup only")
+        print("   Set COS_BACKUP_ENABLED=true to enable COS upload")
+    elif not COS_BUCKET:
+        print("[WARNING] COS_BUCKET is not configured - will test local backup only")
+        print("   Set COS_BUCKET=your-bucket-appid in .env file to enable COS upload")
     
     # Check current backup status
     print("Current Backup Status:")
@@ -89,20 +91,21 @@ async def test_backup():
             print(f"    - {backup['filename']} ({backup['size_mb']} MB)")
     print()
     
-    # List existing COS backups
-    print("Existing COS Backups:")
-    cos_backups = list_cos_backups()
-    print(f"  Found {len(cos_backups)} backup(s) in COS")
-    if cos_backups:
-        print("  Recent COS backups:")
-        for backup in cos_backups[:5]:
-            # Handle size as int or string
-            size = int(backup['size']) if isinstance(backup['size'], str) else backup['size']
-            size_mb = size / (1024 * 1024)
-            print(f"    - {backup['key']} ({size_mb:.2f} MB)")
-    else:
-        print("  No backups found in COS")
-    print()
+    # List existing COS backups (if enabled)
+    if COS_BACKUP_ENABLED and COS_BUCKET:
+        print("Existing COS Backups:")
+        cos_backups = list_cos_backups()
+        print(f"  Found {len(cos_backups)} backup(s) in COS")
+        if cos_backups:
+            print("  Recent COS backups:")
+            for backup in cos_backups[:5]:
+                # Handle size as int or string
+                size = int(backup['size']) if isinstance(backup['size'], str) else backup['size']
+                size_mb = size / (1024 * 1024)
+                print(f"    - {backup['key']} ({size_mb:.2f} MB)")
+        else:
+            print("  No backups found in COS")
+        print()
     
     # Trigger backup
     print("Triggering backup...")
@@ -124,17 +127,18 @@ async def test_backup():
                 print(f"  Latest backup: {latest['filename']} ({latest['size_mb']} MB)")
             print()
             
-            # List updated COS backups
-            print("Updated COS Backups:")
-            cos_backups = list_cos_backups()
-            print(f"  Found {len(cos_backups)} backup(s) in COS")
-            if cos_backups:
-                print("  Recent COS backups:")
-                for backup in cos_backups[:5]:
-                    # Handle size as int or string
-                    size = int(backup['size']) if isinstance(backup['size'], str) else backup['size']
-                    size_mb = size / (1024 * 1024)
-                    print(f"    - {backup['key']} ({size_mb:.2f} MB)")
+            # List updated COS backups (if enabled)
+            if COS_BACKUP_ENABLED and COS_BUCKET:
+                print("Updated COS Backups:")
+                cos_backups = list_cos_backups()
+                print(f"  Found {len(cos_backups)} backup(s) in COS")
+                if cos_backups:
+                    print("  Recent COS backups:")
+                    for backup in cos_backups[:5]:
+                        # Handle size as int or string
+                        size = int(backup['size']) if isinstance(backup['size'], str) else backup['size']
+                        size_mb = size / (1024 * 1024)
+                        print(f"    - {backup['key']} ({size_mb:.2f} MB)")
             
             return True
         else:

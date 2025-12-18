@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.29.0] - 2025-12-18 - Comprehensive API Security Review
+
+### Added
+
+- **Security Review Documentation** (`docs/SECURITY_REVIEW.md`)
+  - Comprehensive security audit of all API endpoints across all routers
+  - Detailed analysis of authentication, authorization, input validation, and security headers
+  - Identified security vulnerabilities and provided prioritized recommendations
+  - Security testing checklist for future audits
+  - Documented positive security practices found in the codebase
+
+### Security Findings
+
+- **Critical Issues:** 0
+- **High Issues:** 2
+  - Frontend logging endpoints (`/api/frontend_log`, `/api/frontend_log_batch`) lack authentication
+  - Expensive endpoints (`/api/generate_graph`, `/api/export_png`, `/api/generate_png`) lack rate limiting
+- **Medium Issues:** 5
+  - Temp images endpoint lacks authentication
+  - CSRF protection improvements needed
+  - Multi-server rate limiting improvements needed
+  - Rate limiting needed for SSE endpoints
+  - Error message sanitization improvements
+
+### Security Strengths Identified
+
+- ✅ Strong authentication mechanisms (JWT tokens, API keys, secure cookies)
+- ✅ Comprehensive input validation using Pydantic models
+- ✅ SQL injection protection via ORM usage
+- ✅ Path traversal protection on file endpoints
+- ✅ Security headers properly configured (CSP, XSS protection, frame options)
+- ✅ Admin endpoints properly protected with role checks
+- ✅ Rate limiting on authentication endpoints
+- ✅ File upload security properly implemented
+
+### Recommendations
+
+- Add authentication to frontend logging endpoints
+- Implement rate limiting on expensive LLM and browser automation endpoints
+- Add CSRF token validation for state-changing operations
+- Migrate rate limiting to Redis for multi-server deployments
+- Add rate limiting to SSE streaming endpoints
+- Improve error message sanitization
+
+---
+
 ## [4.28.99] - 2025-12-17 - Admin Dashboard Interactive Trend Charts
 
 ### Added

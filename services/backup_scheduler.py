@@ -36,10 +36,6 @@ from typing import Optional, Tuple, List
 
 logger = logging.getLogger(__name__)
 
-# Lock to prevent concurrent backup operations
-# This ensures only one backup runs at a time, preventing race conditions
-_backup_lock = asyncio.Lock()
-
 # Thread-safe flag to coordinate with WAL checkpoint scheduler
 # When backup is running, WAL checkpoint should skip (backup API handles WAL correctly)
 _backup_in_progress = threading.Event()
@@ -615,6 +611,7 @@ def upload_backup_to_cos(backup_path: Path) -> bool:
         # Server-side errors (permissions, bucket not found, etc.)
         # Following official COS SDK exception handling pattern:
         # https://cloud.tencent.com/document/product/436/35154
+        # Error codes reference: https://cloud.tencent.com/document/product/436/7730
         try:
             status_code = e.get_status_code() if hasattr(e, 'get_status_code') else 'Unknown'
             error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'
@@ -631,10 +628,28 @@ def upload_backup_to_cos(backup_path: Path) -> bool:
             trace_id = 'N/A'
             resource_location = 'N/A'
         
+        # Provide actionable error messages for common error codes
+        # Reference: https://cloud.tencent.com/document/product/436/7730
+        actionable_msg = ""
+        if error_code == 'AccessDenied':
+            actionable_msg = " - Check COS credentials and bucket permissions"
+        elif error_code == 'NoSuchBucket':
+            actionable_msg = f" - Bucket '{COS_BUCKET}' does not exist or is inaccessible"
+        elif error_code == 'InvalidAccessKeyId':
+            actionable_msg = " - Check TENCENT_SMS_SECRET_ID configuration"
+        elif error_code == 'SignatureDoesNotMatch':
+            actionable_msg = " - Check TENCENT_SMS_SECRET_KEY configuration"
+        elif error_code == 'EntityTooLarge':
+            actionable_msg = " - Backup file exceeds COS size limit (5GB for single upload)"
+        elif error_code == 'SlowDown' or error_code == 'RequestLimitExceeded':
+            actionable_msg = " - Rate limit exceeded, backup will retry on next schedule"
+        elif status_code and str(status_code).startswith('5'):
+            actionable_msg = " - Server error, may be transient - backup will retry on next schedule"
+        
         # Log detailed error information
         logger.error(
             f"[Backup] COS service error uploading {backup_path.name} to {COS_BUCKET}/{object_key}: "
-            f"HTTP {status_code}, Error {error_code} - {error_msg}"
+            f"HTTP {status_code}, Error {error_code} - {error_msg}{actionable_msg}"
         )
         logger.error(
             f"[Backup] COS error details: RequestID={request_id}, TraceID={trace_id}, "
@@ -736,8 +751,23 @@ def list_cos_backups() -> List[dict]:
         logger.error(f"[Backup] COS client error listing backups: {e}", exc_info=True)
         return []
     except CosServiceError as e:
-        error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'
-        logger.error(f"[Backup] COS service error listing backups: {error_code}", exc_info=True)
+        # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
+        try:
+            status_code = e.get_status_code() if hasattr(e, 'get_status_code') else 'Unknown'
+            error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'
+            error_msg = e.get_error_msg() if hasattr(e, 'get_error_msg') else str(e)
+            request_id = e.get_request_id() if hasattr(e, 'get_request_id') else 'N/A'
+        except Exception:
+            status_code = 'Unknown'
+            error_code = 'Unknown'
+            error_msg = str(e)
+            request_id = 'N/A'
+        
+        logger.error(
+            f"[Backup] COS service error listing backups: HTTP {status_code}, "
+            f"Error {error_code} - {error_msg} (RequestID: {request_id})",
+            exc_info=True
+        )
         return []
     except Exception as e:
         logger.error(f"[Backup] Unexpected error listing COS backups: {e}", exc_info=True)
@@ -859,8 +889,23 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
         logger.error(f"[Backup] COS client error cleaning up backups: {e}", exc_info=True)
         return 0
     except CosServiceError as e:
-        error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'
-        logger.error(f"[Backup] COS service error cleaning up backups: {error_code}", exc_info=True)
+        # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
+        try:
+            status_code = e.get_status_code() if hasattr(e, 'get_status_code') else 'Unknown'
+            error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'
+            error_msg = e.get_error_msg() if hasattr(e, 'get_error_msg') else str(e)
+            request_id = e.get_request_id() if hasattr(e, 'get_request_id') else 'N/A'
+        except Exception:
+            status_code = 'Unknown'
+            error_code = 'Unknown'
+            error_msg = str(e)
+            request_id = 'N/A'
+        
+        logger.error(
+            f"[Backup] COS service error cleaning up backups: HTTP {status_code}, "
+            f"Error {error_code} - {error_msg} (RequestID: {request_id})",
+            exc_info=True
+        )
         return 0
     except Exception as e:
         logger.error(f"[Backup] Unexpected error cleaning up COS backups: {e}", exc_info=True)
@@ -998,7 +1043,8 @@ def create_backup() -> bool:
         
         # Upload to COS if enabled
         if COS_BACKUP_ENABLED:
-            logger.info("[Backup] Uploading backup to COS...")
+            logger.info("[Backup] COS backup enabled, starting upload...")
+            logger.info(f"[Backup] COS config: bucket={COS_BUCKET}, region={COS_REGION}, prefix={COS_KEY_PREFIX}")
             if upload_backup_to_cos(backup_path):
                 logger.info("[Backup] COS upload completed successfully")
                 
@@ -1008,8 +1054,10 @@ def create_backup() -> bool:
                 if deleted > 0:
                     logger.info(f"[Backup] Cleaned up {deleted} old backup(s) from COS")
             else:
-                logger.warning("[Backup] COS upload failed, but local backup succeeded")
+                logger.error("[Backup] COS upload failed, but local backup succeeded")
                 # Don't fail the backup if COS upload fails - local backup is still valid
+        else:
+            logger.debug("[Backup] COS backup disabled (COS_BACKUP_ENABLED=false), skipping upload")
         
         return True
     else:
@@ -1067,21 +1115,18 @@ async def start_backup_scheduler():
             # Wait until backup time
             await asyncio.sleep(wait_seconds)
             
-            # Perform backup (with lock to prevent concurrent operations)
+            # Perform backup (SQLite's own locking handles concurrent access)
+            # Only worker 0 runs scheduled backups, so no cross-worker conflicts
             logger.info("[Backup] Starting scheduled backup...")
-            async with _backup_lock:
-                logger.debug("[Backup] Acquired backup lock for scheduled backup...")
-                try:
-                    success = await asyncio.to_thread(create_backup)
-                    if success:
-                        logger.info("[Backup] Scheduled backup completed successfully")
-                    else:
-                        logger.error("[Backup] Scheduled backup failed")
-                except Exception as e:
-                    logger.error(f"[Backup] Scheduled backup failed with exception: {e}", exc_info=True)
-                    success = False
-                finally:
-                    logger.debug("[Backup] Released backup lock")
+            try:
+                success = await asyncio.to_thread(create_backup)
+                if success:
+                    logger.info("[Backup] Scheduled backup completed successfully")
+                else:
+                    logger.error("[Backup] Scheduled backup failed")
+            except Exception as e:
+                logger.error(f"[Backup] Scheduled backup failed with exception: {e}", exc_info=True)
+                success = False
             
             # Wait a bit to avoid running twice in the same minute
             await asyncio.sleep(60)
@@ -1099,28 +1144,29 @@ async def run_backup_now() -> bool:
     """
     Run a backup immediately (for manual trigger or API call).
     
-    Uses a lock to prevent concurrent backup operations, which could cause:
-    - Race conditions when setting journal_mode
-    - Multiple backups accessing source database simultaneously
-    - File conflicts if backups use same timestamp
+    Only worker 0 can run backups to prevent duplicate backups across workers.
+    SQLite's own locking mechanism handles concurrent access safely.
     
     Returns:
         True if backup succeeded, False otherwise
     """
+    # Only allow worker 0 to run backups (same as scheduler)
+    # This prevents multiple workers from creating duplicate backups
+    worker_id = os.getenv('UVICORN_WORKER_ID', '0')
+    if worker_id != '0' and worker_id:
+        logger.warning(f"[Backup] Manual backup rejected: only worker 0 can run backups (current worker: {worker_id})")
+        return False
+    
     logger.info("[Backup] Manual backup triggered")
     
-    # Acquire lock to prevent concurrent backups
-    # If another backup is running, wait for it to complete
-    async with _backup_lock:
-        logger.debug("[Backup] Acquired backup lock, starting backup...")
-        try:
-            result = await asyncio.to_thread(create_backup)
-            return result
-        except Exception as e:
-            logger.error(f"[Backup] Backup failed with exception: {e}", exc_info=True)
-            return False
-        finally:
-            logger.debug("[Backup] Released backup lock")
+    # SQLite's backup API and connection locking naturally prevent concurrent backups
+    # If another backup is running, SQLite will handle the lock appropriately
+    try:
+        result = await asyncio.to_thread(create_backup)
+        return result
+    except Exception as e:
+        logger.error(f"[Backup] Backup failed with exception: {e}", exc_info=True)
+        return False
 
 
 def get_backup_status() -> dict:

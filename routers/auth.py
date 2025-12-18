@@ -2689,8 +2689,8 @@ async def get_stats_trends_admin(
     
     if days > 90:
         days = 90  # Cap at 90 days
-    if days < 7:
-        days = 7  # Minimum 7 days
+    if days < 1:
+        days = 1  # Minimum 1 day
     
     now = datetime.now(timezone.utc)
     start_date = now - timedelta(days=days)

@@ -83,6 +83,26 @@ class MindMapAgent(BaseAgent):
         self._font_size_cache.clear()
         self._node_height_cache.clear()
     
+    def _get_node_text(self, node: Dict, default: str = '') -> str:
+        """
+        Safely extract text from a node that may have 'label' or 'text' field.
+        
+        Root cause: LLM responses sometimes use 'label', sometimes 'text'.
+        This helper ensures we handle both cases gracefully.
+        
+        Args:
+            node: Node dictionary that may have 'label' or 'text' key
+            default: Default value if neither key exists
+            
+        Returns:
+            Text content from node
+        """
+        if not isinstance(node, dict):
+            return default
+        
+        # Try 'label' first (standard format), then 'text' (fallback)
+        return node.get('label') or node.get('text') or default
+    
     async def generate_graph(
         self, 
         prompt: str, 
@@ -194,9 +214,11 @@ class MindMapAgent(BaseAgent):
                 spec = extract_json_from_response(response_str)
                 
                 if not spec:
-                    # Log the actual response for debugging
+                    # Log the actual response for debugging with more context
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(f"MindMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
+                    logger.error(f"MindMapAgent: Failed to extract JSON from LLM response")
+                    logger.error(f"MindMapAgent: Response length: {len(response_str)}, Preview: {response_preview}")
+                    logger.error(f"MindMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
                     # Return None to trigger error handling upstream
                     return None
             
@@ -452,12 +474,22 @@ class MindMapAgent(BaseAgent):
         
         for branch in children:
             # Use capped width to prevent excessively wide nodes for long text
-            branch_width = self._get_capped_node_width(branch['label'], 'branch')
+            # Use helper function to safely get text (handles both 'label' and 'text' fields)
+            branch_label = self._get_node_text(branch)
+            if not branch_label:
+                logger.warning(f"Branch missing 'label' and 'text' keys: {branch}")
+                continue
+            branch_width = self._get_capped_node_width(branch_label, 'branch')
             max_branch_width = max(max_branch_width, branch_width)
             
             for child in branch.get('children', []):
                 # Use capped width to prevent excessively wide nodes for long text
-                child_width = self._get_capped_node_width(child['label'], 'child')
+                # Use helper function to safely get text (handles both 'label' and 'text' fields)
+                child_label = self._get_node_text(child)
+                if not child_label:
+                    logger.warning(f"Child node missing 'label' and 'text' keys: {child}")
+                    continue
+                child_width = self._get_capped_node_width(child_label, 'child')
                 max_child_width = max(max_child_width, child_width)
         
         # Column positions
@@ -684,7 +716,8 @@ class MindMapAgent(BaseAgent):
         if all_children:
             font_sizes = []
             for child_info in all_children:
-                child_font_size = self._get_adaptive_font_size(child_info['data']['label'], 'child')
+                child_text = self._get_node_text(child_info['data'])
+                child_font_size = self._get_adaptive_font_size(child_text, 'child')
                 font_sizes.append(child_font_size)
             avg_font_size = sum(font_sizes) / len(font_sizes)
             
@@ -697,16 +730,17 @@ class MindMapAgent(BaseAgent):
         # Calculate dimensions and positions for all children
         for i, child_info in enumerate(all_children):
             child_data = child_info['data']
+            child_text = self._get_node_text(child_data)
             # Use capped width to prevent excessively wide nodes for long text
-            child_width = self._get_capped_node_width(child_data['label'], 'child')
-            child_height = self._get_adaptive_node_height(child_data['label'], 'child')
+            child_width = self._get_capped_node_width(child_text, 'child')
+            child_height = self._get_adaptive_node_height(child_text, 'child')
             
             child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
             
             positions[child_key] = {
                 'x': column_x, 'y': current_y,
                 'width': child_width, 'height': child_height,
-                'text': child_data['label'], 'node_type': 'child',
+                'text': child_text, 'node_type': 'child',
                 'branch_index': child_info['branch_idx'], 
                 'child_index': child_info['child_idx'], 'angle': 0
             }
@@ -714,7 +748,8 @@ class MindMapAgent(BaseAgent):
             # Move to next position with dynamic spacing
             if i < len(all_children) - 1:
                 next_child_info = all_children[i + 1]
-                next_child_height = self._get_adaptive_node_height(next_child_info['data']['label'], 'child')
+                next_child_text = self._get_node_text(next_child_info['data'])
+                next_child_height = self._get_adaptive_node_height(next_child_text, 'child')
                 
                 # Check if next child is from a different branch group
                 current_branch = child_info['branch_idx']
@@ -821,7 +856,10 @@ class MindMapAgent(BaseAgent):
         num_branches = len(children)
         
         for branch_idx, branch in enumerate(children):
-            branch_text = branch['label']
+            branch_text = self._get_node_text(branch)
+            if not branch_text:
+                logger.warning(f"Branch {branch_idx} missing text, skipping")
+                continue
             
             # Calculate branch dimensions (use capped width for text wrapping)
             branch_width = self._get_capped_node_width(branch_text, 'branch')
@@ -1092,9 +1130,10 @@ class MindMapAgent(BaseAgent):
         # Calculate heights for all children
         for child_info in side_children:
             child_data = child_info['data']
-            child_info['height'] = self._get_adaptive_node_height(child_data['label'], 'child')
+            child_text = self._get_node_text(child_data)
+            child_info['height'] = self._get_adaptive_node_height(child_text, 'child')
             # Use capped width for text wrapping
-            child_info['width'] = self._get_capped_node_width(child_data['label'], 'child')
+            child_info['width'] = self._get_capped_node_width(child_text, 'child')
         
         # Calculate dynamic center-to-center spacings
         spacings = []
@@ -1113,10 +1152,11 @@ class MindMapAgent(BaseAgent):
         for i, child_info in enumerate(side_children):
             child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
             
+            child_text = self._get_node_text(child_info['data'])
             positions[child_key] = {
                 'x': column_x, 'y': current_y,
                 'width': child_info['width'], 'height': child_info['height'],
-                'text': child_info['data']['label'], 'node_type': 'child',
+                'text': child_text, 'node_type': 'child',
                 'branch_index': child_info['branch_idx'], 
                 'child_index': child_info['child_idx'], 'angle': 0
             }
@@ -1144,7 +1184,10 @@ class MindMapAgent(BaseAgent):
         positions = {}
         
         for branch_idx, branch in enumerate(children):
-            branch_text = branch['label']
+            branch_text = self._get_node_text(branch)
+            if not branch_text:
+                logger.warning(f"Branch {branch_idx} missing text, skipping")
+                continue
             
             # Calculate branch dimensions (use capped width for text wrapping)
             branch_width = self._get_capped_node_width(branch_text, 'branch')
@@ -1526,20 +1569,21 @@ class MindMapAgent(BaseAgent):
                 if not child_info['is_phantom']:
                     # Real child - create position
                     child_data = child_info['data']
+                    child_text = self._get_node_text(child_data)
                     # Use capped width for text wrapping
-                    child_width = self._get_capped_node_width(child_data['label'], 'child')
-                    child_height = self._get_adaptive_node_height(child_data['label'], 'child')
+                    child_width = self._get_capped_node_width(child_text, 'child')
+                    child_height = self._get_adaptive_node_height(child_text, 'child')
                     
                     child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
                     positions[child_key] = {
                         'x': left_children_x, 'y': child_y,
                         'width': child_width, 'height': child_height,
-                        'text': child_data['label'], 'node_type': 'child',
+                        'text': child_text, 'node_type': 'child',
                         'branch_index': child_info['branch_idx'], 
                         'child_index': child_info['child_idx'], 'angle': 0
                     }
                     
-                    logger.debug(f"  Left child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_data['label']}' at Y={child_y:.1f}")
+                    logger.debug(f"  Left child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_text}' at Y={child_y:.1f}")
                 else:
                     # Phantom child - just reserve space, don't create position
                     logger.debug(f"  Left phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
@@ -1556,20 +1600,21 @@ class MindMapAgent(BaseAgent):
                 if not child_info['is_phantom']:
                     # Real child - create position
                     child_data = child_info['data']
+                    child_text = self._get_node_text(child_data)
                     # Use capped width for text wrapping
-                    child_width = self._get_capped_node_width(child_data['label'], 'child')
-                    child_height = self._get_adaptive_node_height(child_data['label'], 'child')
+                    child_width = self._get_capped_node_width(child_text, 'child')
+                    child_height = self._get_adaptive_node_height(child_text, 'child')
                     
                     child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
                     positions[child_key] = {
                         'x': right_children_x, 'y': child_y,
                         'width': child_width, 'height': child_height,
-                        'text': child_data['label'], 'node_type': 'child',
+                        'text': child_text, 'node_type': 'child',
                         'branch_index': child_info['branch_idx'], 
                         'child_index': child_info['child_idx'], 'angle': 0
                     }
                     
-                    logger.debug(f"  Right child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_data['label']}' at Y={child_y:.1f}")
+                    logger.debug(f"  Right child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_text}' at Y={child_y:.1f}")
                 else:
                     # Phantom child - just reserve space, don't create position
                     logger.debug(f"  Right phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
@@ -1596,7 +1641,10 @@ class MindMapAgent(BaseAgent):
         
         for branch_idx in range(num_branches):
             branch_data = children[branch_idx]
-            branch_text = branch_data['label']
+            branch_text = self._get_node_text(branch_data)
+            if not branch_text:
+                logger.warning(f"Branch {branch_idx} missing text, skipping")
+                continue
             
             # Calculate branch dimensions (use capped width for text wrapping)
             branch_width = self._get_capped_node_width(branch_text, 'branch')
@@ -1671,7 +1719,8 @@ class MindMapAgent(BaseAgent):
                 mid_point = num_branches // 2
                 is_left_side = i >= mid_point
                 
-                logger.debug(f"Branch {i} ('{branch_data['label']}'):")
+                branch_text_debug = self._get_node_text(branch_data)
+                logger.debug(f"Branch {i} ('{branch_text_debug}'):")
                 logger.debug(f"  Side: {'LEFT' if is_left_side else 'RIGHT'}")
                 logger.debug(f"  Children count: {len(nested_children)}")
                 
@@ -1689,7 +1738,8 @@ class MindMapAgent(BaseAgent):
                 child_heights = []
                 
                 for child in nested_children:
-                    child_height = self._get_adaptive_node_height(child['label'], 'child')
+                    child_text = self._get_node_text(child)
+                    child_height = self._get_adaptive_node_height(child_text, 'child')
                     child_heights.append(child_height)
                 
                 # Calculate optimal center-to-center spacing for this branch
@@ -1732,9 +1782,10 @@ class MindMapAgent(BaseAgent):
                     first_child_center_y = current_y + block_height / 2
                 
                 for j, child in enumerate(nested_children):
+                    child_text = self._get_node_text(child)
                     child_height = child_heights[j]  # Use pre-calculated height
                     # Use capped width for text wrapping
-                    child_width = self._get_capped_node_width(child['label'], 'child')
+                    child_width = self._get_capped_node_width(child_text, 'child')
                     
                     # Calculate child center Y using center-to-center spacing
                     if len(nested_children) == 1:
@@ -1747,18 +1798,18 @@ class MindMapAgent(BaseAgent):
                     positions[child_key] = {
                         'x': child_x, 'y': child_center_y,
                         'width': child_width, 'height': child_height,
-                        'text': child['label'], 'node_type': 'child',
+                        'text': child_text, 'node_type': 'child',
                         'branch_index': i, 'child_index': j, 'angle': 0
                     }
                     
                     child_positions.append({
                         'x': child_x, 'y': child_center_y,
                         'width': child_width, 'height': child_height,
-                        'text': child['label'], 'node_type': 'child',
+                        'text': child_text, 'node_type': 'child',
                         'branch_index': i, 'child_index': j, 'angle': 0
                     })
                     
-                    logger.debug(f"    Child {j} '{child['label']}' at center Y={child_center_y:.1f} (height={child_height})")
+                    logger.debug(f"    Child {j} '{child_text}' at center Y={child_center_y:.1f} (height={child_height})")
                 
                 # Update tracking for this side - IMPROVED GAP to prevent overlaps
                 # Calculate dynamic inter-branch gap based on branch complexity
@@ -1782,7 +1833,10 @@ class MindMapAgent(BaseAgent):
         
         # STEP 5: Position branch nodes using TARGETED MATHEMATICAL CENTER FIX
         for i, branch_data in enumerate(children):
-            branch_text = branch_data['label']
+            branch_text = self._get_node_text(branch_data)
+            if not branch_text:
+                logger.warning(f"Branch {i} missing text, skipping")
+                continue
             # Use capped width for text wrapping
             branch_width = self._get_capped_node_width(branch_text, 'branch')
             branch_height = self._get_adaptive_node_height(branch_text, 'branch')
@@ -2521,7 +2575,7 @@ class MindMapAgent(BaseAgent):
     def _analyze_branch_content(self, children: List[Dict]) -> Dict[str, Any]:
         """Analyze branch characteristics for optimal spacing."""
         total_children = len(children)
-        avg_text_length = sum(len(child['label']) for child in children) / total_children if children else 0
+        avg_text_length = sum(len(self._get_node_text(child)) for child in children) / total_children if children else 0
         
         # Classify branch density
         if total_children <= 2:

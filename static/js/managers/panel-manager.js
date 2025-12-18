@@ -116,15 +116,13 @@ class PanelManager {
             button: thinkingBtn, // thinking-btn now controls Node Palette
             manager: () => window.currentEditor?.nodePalette,
             closeCallback: () => {
-                // Hide panel and clean up
-                if (nodePalettePanel) {
-                    nodePalettePanel.style.display = 'none';
-                    nodePalettePanel.classList.remove('thinkguide-visible');
-                }
+                // Panel-specific cleanup (PanelManager handles display)
+                // NodePaletteManager.closePanel() will be called by PanelManager
                 if (thinkingBtn) thinkingBtn.classList.remove('active');
             },
             openCallback: () => {
-                // Show panel using NodePaletteManager's method
+                // Panel-specific setup (PanelManager handles display)
+                // NodePaletteManager.showPalettePanel() handles watermark, listeners, etc.
                 if (window.currentEditor?.nodePalette) {
                     window.currentEditor.nodePalette.showPalettePanel();
                 }
@@ -224,7 +222,9 @@ class PanelManager {
         if (panel.type === 'class') {
             panel.element.classList.remove('collapsed');
         } else if (panel.type === 'style') {
-            panel.element.style.display = 'block';
+            // Node palette uses flex layout, others use block
+            const displayValue = name === 'nodePalette' ? 'flex' : 'block';
+            panel.element.style.display = displayValue;
         }
         
         this.currentPanel = name;

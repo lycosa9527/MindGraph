@@ -288,8 +288,8 @@ class NodeCounterFeatureModeManager {
         this.logger.info('NodeCounterFeatureModeManager', 'Node Palette button clicked');
         
         // Check if node palette panel is already open - toggle behavior
-        const palettePanel = document.getElementById('node-palette-panel');
-        const isPaletteOpen = palettePanel && palettePanel.style.display !== 'none';
+        // Use PanelManager instead of direct DOM check
+        const isPaletteOpen = window.panelManager?.isPanelOpen('nodePalette') || false;
         
         this.logger.info('NodeCounterFeatureModeManager', 'Initial palette state:', {
             isPaletteOpen: isPaletteOpen,

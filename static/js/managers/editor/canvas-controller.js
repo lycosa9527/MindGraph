@@ -184,12 +184,13 @@ class CanvasController {
     fitDiagramToWindow(animate = false) {
         try {
             // Skip if Node Palette is active (d3-container is hidden)
-            const nodePalettePanel = document.getElementById('node-palette-panel');
-            const d3Container = document.getElementById('d3-container');
-            if (nodePalettePanel && nodePalettePanel.style.display !== 'none' && 
-                d3Container && d3Container.style.display === 'none') {
-                this.logger.debug('CanvasController', 'Skipping fit: Node Palette is active');
-                return;
+            // Use PanelManager instead of direct DOM check
+            if (window.panelManager?.isPanelOpen('nodePalette')) {
+                const d3Container = document.getElementById('d3-container');
+                if (d3Container && d3Container.style.display === 'none') {
+                    this.logger.debug('CanvasController', 'Skipping fit: Node Palette is active');
+                    return;
+                }
             }
             
             this.logger.debug('CanvasController', 'Fitting diagram to window');
@@ -372,12 +373,13 @@ class CanvasController {
     checkAutoFitNeeded() {
         try {
             // Skip if Node Palette is active (d3-container is hidden)
-            const nodePalettePanel = document.getElementById('node-palette-panel');
-            const d3Container = document.getElementById('d3-container');
-            if (nodePalettePanel && nodePalettePanel.style.display !== 'none' && 
-                d3Container && d3Container.style.display === 'none') {
-                this.logger.debug('CanvasController', 'Skipping auto-fit check: Node Palette is active');
-                return;
+            // Use PanelManager instead of direct DOM check
+            if (window.panelManager?.isPanelOpen('nodePalette')) {
+                const d3Container = document.getElementById('d3-container');
+                if (d3Container && d3Container.style.display === 'none') {
+                    this.logger.debug('CanvasController', 'Skipping auto-fit check: Node Palette is active');
+                    return;
+                }
             }
             
             const container = d3.select('#d3-container');

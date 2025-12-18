@@ -697,10 +697,9 @@ class DiagramSelector {
         // ========================================
         
         // Node Palette - Clean up session on backend before destroying
-        const nodePalettePanel = document.getElementById('node-palette-panel');
-        if (nodePalettePanel) {
-            nodePalettePanel.style.display = 'none';
-            nodePalettePanel.classList.remove('thinkguide-visible');
+        // Use PanelManager to close panel properly
+        if (window.panelManager?.isPanelOpen('nodePalette')) {
+            window.panelManager.closePanel('nodePalette');
         }
         if (window.currentEditor?.nodePalette) {
             // Send cleanup request to backend to properly end session
@@ -837,10 +836,9 @@ class DiagramSelector {
         }
         
         // 3. Node Palette - UI cleanup only
-        const nodePalettePanel = document.getElementById('node-palette-panel');
-        if (nodePalettePanel) {
-            nodePalettePanel.style.display = 'none';
-            nodePalettePanel.classList.remove('thinkguide-visible');
+        // Use PanelManager to close panel properly
+        if (window.panelManager?.isPanelOpen('nodePalette')) {
+            window.panelManager.closePanel('nodePalette');
         }
         
         // 4. Voice Agent Modal - Explicit cleanup to ensure modal doesn't persist

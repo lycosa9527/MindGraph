@@ -2507,43 +2507,45 @@ class NodePaletteManager {
     
     showPalettePanel() {
         /**
-         * Show Node Palette panel and hide Circle Map.
-         * Respects ThinkGuide panel if it's visible (leaves space for it).
+         * Setup Node Palette panel when it opens (called by PanelManager).
+         * NOTE: Panel visibility is controlled by PanelManager, not this method.
+         * This method only handles panel-specific setup (watermark, listeners, etc.).
          */
-        const d3Container = document.getElementById('d3-container');
         const palettePanel = document.getElementById('node-palette-panel');
         const thinkingPanel = document.getElementById('thinking-panel');
         
-        if (d3Container) d3Container.style.display = 'none';
-        if (palettePanel) {
-            palettePanel.style.display = 'flex';
-            palettePanel.style.opacity = '0';
-            
-            // Check if ThinkGuide panel is visible
-            const isThinkGuideVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
-            if (isThinkGuideVisible) {
-                palettePanel.classList.add('thinkguide-visible');
-                console.log('[NodePalette] ThinkGuide is visible, leaving space for it');
-            } else {
-                palettePanel.classList.remove('thinkguide-visible');
-                console.log('[NodePalette] ThinkGuide is hidden, using full width');
-            }
-            
-            // Fade in
-            setTimeout(() => {
-                palettePanel.style.transition = 'opacity 0.3s';
-                palettePanel.style.opacity = '1';
-                
-                // Show watermark after panel is fully visible
-                // Use a small delay to ensure container is properly positioned
-                setTimeout(() => {
-                    this.showTestingWatermark();
-                }, 50);
-            }, 10);
-        } else {
-            // Panel already visible, show watermark immediately
-            this.showTestingWatermark();
+        if (!palettePanel) {
+            console.warn('[NodePalette] Panel element not found');
+            return;
         }
+        
+        // Hide d3-container when palette is shown
+        const d3Container = document.getElementById('d3-container');
+        if (d3Container) d3Container.style.display = 'none';
+        
+        // Set initial opacity for fade-in animation
+        palettePanel.style.opacity = '0';
+        
+        // Check if ThinkGuide panel is visible (for layout adjustment)
+        const isThinkGuideVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
+        if (isThinkGuideVisible) {
+            palettePanel.classList.add('thinkguide-visible');
+            this.logger?.debug('NodePalette', 'ThinkGuide is visible, leaving space for it');
+        } else {
+            palettePanel.classList.remove('thinkguide-visible');
+            this.logger?.debug('NodePalette', 'ThinkGuide is hidden, using full width');
+        }
+        
+        // Fade in animation
+        setTimeout(() => {
+            palettePanel.style.transition = 'opacity 0.3s';
+            palettePanel.style.opacity = '1';
+            
+            // Show watermark after panel is fully visible
+            setTimeout(() => {
+                this.showTestingWatermark();
+            }, 50);
+        }, 10);
         
         // Attach button listeners when panel opens
         this.attachFinishButtonListener();
@@ -2760,11 +2762,36 @@ class NodePaletteManager {
      * Close the node palette panel and clean up resources
      * Called by PanelManager when the panel is closed
      */
-    closePanel() {
-        this.logger?.debug('NodePalette', 'closePanel() called - cleaning up watermark');
+    closePanel(options = {}) {
+        /**
+         * Close Node Palette panel.
+         * Called by PanelManager when panel should close.
+         * 
+         * @param {Object} options - Options for closing
+         * @param {boolean} options._internal - If true, this is an internal call from PanelManager (skip PanelManager call)
+         */
+        this.logger?.debug('NodePalette', 'closePanel() called', { internal: options._internal });
 
-        // Hide testing watermark
+        // If called from user action (not internal), use PanelManager to close
+        // PanelManager will call this method again with _internal: true for cleanup
+        if (!options._internal && window.panelManager) {
+            window.panelManager.closeNodePalettePanel();
+            return;
+        }
+
+        // Internal cleanup (called by PanelManager or when already closing)
         this.hideTestingWatermark();
+        
+        // Show d3-container when palette closes
+        const d3Container = document.getElementById('d3-container');
+        if (d3Container) {
+            d3Container.style.display = 'block';
+            d3Container.style.opacity = '0';
+            setTimeout(() => {
+                d3Container.style.transition = 'opacity 0.3s';
+                d3Container.style.opacity = '1';
+            }, 10);
+        }
 
         // Additional cleanup can be added here if needed
         // For example: clear timers, abort requests, etc.
@@ -2863,33 +2890,25 @@ class NodePaletteManager {
     
     hidePalettePanel() {
         /**
-         * Hide Node Palette panel and show Circle Map.
-         * Saves scroll position before hiding for restoration on re-entry.
+         * Hide Node Palette panel (panel-specific cleanup only).
+         * NOTE: Panel visibility is controlled by PanelManager, not this method.
+         * This method only handles panel-specific cleanup (watermark, scroll position, etc.).
+         * 
+         * @deprecated Use closePanel() instead, which properly integrates with PanelManager.
+         * This method is kept for backward compatibility but should not be called directly.
          */
+        this.logger?.warn('NodePalette', 'hidePalettePanel() called directly - should use closePanel() instead');
+        
         // Hide testing watermark
         this.hideTestingWatermark();
         
         // Save scroll position before hiding (use centralized method)
         this.saveCurrentTabScrollPosition();
         
-        const d3Container = document.getElementById('d3-container');
         const palettePanel = document.getElementById('node-palette-panel');
-        
         if (palettePanel) {
-            palettePanel.style.opacity = '0';
-            setTimeout(() => {
-                palettePanel.style.display = 'none';
-                // Clean up ThinkGuide visibility class
-                palettePanel.classList.remove('thinkguide-visible');
-            }, 300);
-        }
-        if (d3Container) {
-            d3Container.style.display = 'block';
-            d3Container.style.opacity = '0';
-            setTimeout(() => {
-                d3Container.style.transition = 'opacity 0.3s';
-                d3Container.style.opacity = '1';
-            }, 10);
+            // Clean up ThinkGuide visibility class
+            palettePanel.classList.remove('thinkguide-visible');
         }
     }
     
@@ -2931,10 +2950,15 @@ class NodePaletteManager {
             console.log('[NodePalette-Cancel] Skipping backend call (no active session)');
         }
         
-        // Hide Node Palette panel
-        console.log('[NodePalette-Cancel] Hiding Node Palette panel...');
+        // Close Node Palette panel through PanelManager
+        console.log('[NodePalette-Cancel] Closing Node Palette panel...');
         this.hideBatchTransition(); // Clean up any active transition
-        this.hidePalettePanel();
+        if (window.panelManager) {
+            window.panelManager.closeNodePalettePanel();
+        } else {
+            // Fallback if PanelManager not available
+            this.hidePalettePanel();
+        }
         
         // Clear all state including session properties
         console.log('[NodePalette-Cancel] Clearing Node Palette state...');
@@ -4612,12 +4636,17 @@ class NodePaletteManager {
             console.error('[NodePalette-Finish] Failed to log finish event:', e);
         }
         
-        // Hide Node Palette BEFORE adding nodes (so user sees the result)
-        console.log('[NodePalette-Finish] Hiding Node Palette panel...');
+        // Close Node Palette BEFORE adding nodes (so user sees the result)
+        console.log('[NodePalette-Finish] Closing Node Palette panel...');
         this.hideBatchTransition(); // Clean up any active transition
-        this.hidePalettePanel();
+        if (window.panelManager) {
+            window.panelManager.closeNodePalettePanel();
+        } else {
+            // Fallback if PanelManager not available
+            this.hidePalettePanel();
+        }
         
-        // Wait for panel to hide
+        // Wait for panel to close
         await new Promise(resolve => setTimeout(resolve, 350));
         
         // Add selected nodes to diagram (method name kept for backward compatibility)

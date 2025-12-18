@@ -148,9 +148,11 @@ class DoubleBubbleMapAgent(BaseAgent):
                 spec = extract_json_from_response(response_str)
                 
                 if not spec:
-                    # Log the actual response for debugging
+                    # Log the actual response for debugging with more context
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(f"DoubleBubbleMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
+                    logger.error(f"DoubleBubbleMapAgent: Failed to extract JSON from LLM response")
+                    logger.error(f"DoubleBubbleMapAgent: Response length: {len(response_str)}, Preview: {response_preview}")
+                    logger.error(f"DoubleBubbleMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
                     # Return None to trigger error handling upstream
                     return None
                 

@@ -3454,12 +3454,19 @@ body {
     backdrop-filter: blur(8px);
 }
 
+.ai-close-btn svg {
+    transition: transform 0.2s ease;
+}
+
 .ai-close-btn:hover {
     background: rgba(255, 255, 255, 0.25);
+}
+
+.ai-close-btn:hover svg {
     transform: rotate(90deg);
 }
 
-.ai-close-btn:active {
+.ai-close-btn:active svg {
     transform: rotate(90deg) scale(0.9);
 }
 

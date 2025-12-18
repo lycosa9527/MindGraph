@@ -105,13 +105,13 @@ async def ai_assistant_stream(
     async def generate():
         """Async generator function for SSE streaming"""
         logger.debug(f"[GENERATOR] Async generator function called - starting execution")
+        chunk_count = 0  # Initialize outside try block for finally access
         try:
             logger.debug(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
             logger.debug(f"[STREAM] AsyncDifyClient created successfully")
             
             logger.debug(f"[STREAM] Starting async stream_chat for message: {message[:50]}...")
-            chunk_count = 0
             async for chunk in client.stream_chat(message, req.user_id, req.conversation_id):
                 chunk_count += 1
                 logger.debug(f"[STREAM] Received chunk {chunk_count}: {chunk.get('event', 'unknown')}")
@@ -119,6 +119,11 @@ async def ai_assistant_stream(
                 yield f"data: {json.dumps(chunk)}\n\n"
             
             logger.debug(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
+            
+            # Ensure at least one event is yielded to prevent RuntimeError
+            if chunk_count == 0:
+                logger.warning(f"[STREAM] No chunks yielded, sending completion event")
+                yield f"data: {json.dumps({'event': 'message_complete', 'timestamp': int(time.time() * 1000)})}\n\n"
                 
         except Exception as e:
             logger.error(f"[STREAM] AI assistant streaming error: {e}", exc_info=True)
@@ -131,6 +136,18 @@ async def ai_assistant_stream(
                 'timestamp': int(time.time() * 1000)
             }
             yield f"data: {json.dumps(error_data)}\n\n"
+            chunk_count += 1  # Count error event as a chunk
+        finally:
+            # Always ensure at least one event is yielded to prevent RuntimeError
+            if chunk_count == 0:
+                logger.warning(f"[STREAM] Generator completed without yielding, sending error event")
+                error_data = {
+                    'event': 'error',
+                    'error': 'No response returned from stream',
+                    'error_type': 'NoResponse',
+                    'timestamp': int(time.time() * 1000)
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
     
     logger.debug(f"[SETUP] Creating StreamingResponse with async generator")
     return StreamingResponse(
