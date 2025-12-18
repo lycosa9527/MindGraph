@@ -153,6 +153,14 @@ class PromptManager {
                 throw new Error(data.error);
             }
             
+            // Check for warnings (partial recovery)
+            if (data.warning) {
+                const warningMsg = window.languageManager?.currentLanguage === 'zh'
+                    ? 'LLM响应存在问题，部分分支可能缺失。您可以使用自动补全功能添加更多内容。'
+                    : 'LLM response had issues. Some branches may be missing. You can use auto-complete to add more.';
+                this.showNotification(warningMsg, 'warning', 8000);
+            }
+            
             // Clear input
             this.promptInput.value = '';
             this.updateSendButtonState();
@@ -744,9 +752,9 @@ class PromptManager {
     /**
      * Show notification using centralized notification manager
      */
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', duration = null) {
         if (window.notificationManager) {
-            window.notificationManager.show(message, type);
+            window.notificationManager.show(message, type, duration);
         } else {
             logger.error('PromptManager', 'NotificationManager not available');
         }

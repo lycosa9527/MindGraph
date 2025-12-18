@@ -10,6 +10,7 @@ import re
 import json
 import yaml
 import os
+from typing import Optional, Dict
 from config.settings import config
 import logging
 from dotenv import load_dotenv
@@ -20,7 +21,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def extract_json_from_response(response_content):
+def extract_json_from_response(response_content, allow_partial=False):
     """
     Extract JSON from LLM response content.
     
@@ -30,14 +31,17 @@ def extract_json_from_response(response_content):
     - Trailing commas (common JSON extension)
     - Basic whitespace/control characters
     
-    Does NOT attempt to fix malformed or truncated JSON.
-    If JSON is invalid, returns None and logs the error with full context.
+    If JSON is invalid and allow_partial=True, attempts to extract valid branches
+    from corrupted JSON (for mind maps and similar structures).
     
     Args:
         response_content (str): Raw response content from LLM
+        allow_partial (bool): If True, attempt partial recovery when JSON is invalid
         
     Returns:
         dict or None: Extracted JSON data or None if failed
+        If allow_partial=True and partial recovery succeeds, returns dict with
+        '_partial_recovery' key set to True and '_recovery_warnings' list
     """
     if not response_content:
         logger.warning("Empty response content provided")
@@ -140,15 +144,42 @@ def extract_json_from_response(response_content):
         # Clean legitimate formatting issues (not structural problems)
         cleaned = _clean_json_string(json_content)
         
-        # Try to parse - if it fails, that's a real error
+        # Try to parse - if it fails, attempt repair
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError as e:
-            # Log the actual error with context
+            # Log the original error for debugging
             error_pos = getattr(e, 'pos', None)
             error_msg = str(e)
             content_preview = cleaned[:500] + "..." if len(cleaned) > 500 else cleaned
             
+            logger.debug(
+                f"Initial JSON parse failed: {error_msg} "
+                f"(position: {error_pos}). "
+                f"Attempting repair..."
+            )
+            
+            # Attempt to repair common structural issues
+            repaired = _repair_json_structure(cleaned, error_pos)
+            if repaired:
+                try:
+                    return json.loads(repaired)
+                except json.JSONDecodeError as e2:
+                    logger.debug(f"Repaired JSON still invalid: {e2}. Original error: {error_msg}")
+            
+            # If repair failed and partial recovery is allowed, try to extract valid branches
+            if allow_partial:
+                partial_result = _extract_partial_json(cleaned)
+                if partial_result:
+                    logger.warning(
+                        f"Partial JSON recovery succeeded. "
+                        f"Original error: {error_msg} "
+                        f"(position: {error_pos}). "
+                        f"Recovered {partial_result.get('_recovered_count', 0)} valid branches."
+                    )
+                    return partial_result
+            
+            # If repair failed, log the error with context
             logger.error(
                 f"Failed to parse JSON: {error_msg} "
                 f"(position: {error_pos}). "
@@ -161,6 +192,230 @@ def extract_json_from_response(response_content):
         content_preview = str(response_content)[:500] + "..." if len(str(response_content)) > 500 else str(response_content)
         logger.error(f"Unexpected error extracting JSON: {e}. Content preview: {content_preview}", exc_info=True)
         return None
+
+
+def _extract_partial_json(text: str) -> Optional[Dict]:
+    """
+    Extract valid branches from corrupted JSON when full parsing fails.
+    
+    This function attempts to salvage valid data structures from malformed JSON,
+    specifically designed for mind maps and similar tree structures where we have:
+    - A root object with 'topic' and 'children' fields
+    - Children array containing branch objects with 'id', 'label', and 'children' fields
+    
+    Strategy:
+    1. Extract the topic if present
+    2. Find all complete branch objects in the children array
+    3. Build a valid JSON structure with only the complete branches
+    4. Return partial result with warning flags
+    
+    Args:
+        text: Corrupted JSON text
+        
+    Returns:
+        dict with partial data and recovery metadata, or None if extraction failed
+    """
+    if not text:
+        return None
+    
+    import re
+    warnings = []
+    recovered_branches = []
+    
+    try:
+        # Step 1: Try to extract topic
+        topic_match = re.search(r'"topic"\s*:\s*"([^"]+)"', text)
+        topic = topic_match.group(1) if topic_match else None
+        
+        if not topic:
+            # Try alternative patterns
+            topic_match = re.search(r'"topic"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', text)
+            if topic_match:
+                topic = topic_match.group(1).replace('\\"', '"').replace('\\n', '\n')
+        
+        # Step 2: Find all complete branch objects
+        # Pattern: {"id": "...", "label": "...", "children": [...]}
+        # We'll look for complete objects that have id, label, and optionally children
+        
+        # First, try to find the children array
+        children_start = text.find('"children"')
+        if children_start == -1:
+            children_start = text.find("'children'")
+        
+        if children_start != -1:
+            # Find the opening bracket of children array
+            array_start = text.find('[', children_start)
+            if array_start != -1:
+                # Extract branch objects from the array
+                # Look for complete branch objects: {"id": "...", "label": "...", ...}
+                branch_pattern = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
+                
+                # Find all potential branch objects
+                for match in re.finditer(branch_pattern, text[array_start:], re.DOTALL):
+                    branch_text = match.group(0)
+                    branch_id = match.group(1)
+                    branch_label = match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                    
+                    # Try to parse this branch object to ensure it's valid
+                    try:
+                        # Check if it has children field
+                        children_match = re.search(r'"children"\s*:\s*\[(.*?)\]', branch_text, re.DOTALL)
+                        children_list = []
+                        
+                        if children_match:
+                            children_content = children_match.group(1)
+                            # Extract child objects: {"id": "...", "label": "..."}
+                            child_pattern = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
+                            for child_match in re.finditer(child_pattern, children_content):
+                                child_id = child_match.group(1)
+                                child_label = child_match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                                children_list.append({
+                                    "id": child_id,
+                                    "label": child_label
+                                })
+                        
+                        # Build complete branch object
+                        branch_obj = {
+                            "id": branch_id,
+                            "label": branch_label
+                        }
+                        if children_list:
+                            branch_obj["children"] = children_list
+                        
+                        recovered_branches.append(branch_obj)
+                        
+                    except Exception as e:
+                        logger.debug(f"Skipping invalid branch object: {e}")
+                        warnings.append(f"Skipped invalid branch: {branch_id}")
+                        continue
+        
+        # Step 3: Build result structure
+        if not topic and not recovered_branches:
+            return None  # Nothing recoverable
+        
+        result = {}
+        if topic:
+            result["topic"] = topic
+        else:
+            result["topic"] = "Untitled"  # Fallback topic
+            warnings.append("Topic not found, using fallback")
+        
+        if recovered_branches:
+            result["children"] = recovered_branches
+        else:
+            result["children"] = []
+            warnings.append("No valid branches recovered")
+        
+        # Add recovery metadata
+        result["_partial_recovery"] = True
+        result["_recovery_warnings"] = warnings
+        result["_recovered_count"] = len(recovered_branches)
+        
+        logger.info(f"Partial JSON recovery: extracted {len(recovered_branches)} branches, {len(warnings)} warnings")
+        return result
+        
+    except Exception as e:
+        logger.debug(f"Partial JSON extraction failed: {e}")
+        return None
+
+
+def _repair_json_structure(text: str, error_pos: int = None) -> str:
+    """
+    Attempt to repair common JSON structural issues from LLM responses.
+    
+    Handles:
+    - Duplicate object entries (e.g., {"id": "x"        {"id": "x", "label": "y"})
+    - Missing closing braces/commas
+    - Incomplete objects in arrays
+    
+    Args:
+        text: JSON text that failed to parse
+        error_pos: Position where parsing failed (if available)
+        
+    Returns:
+        Repaired JSON string, or None if repair not possible
+    """
+    if not text:
+        return None
+    
+    import re
+    repaired = text
+    
+    # Pattern 1: Fix duplicate object entries - incomplete object followed by complete duplicate
+    # Example: {"id": "zi_xiang_1_2"        {"id": "zi_xiang_1_2", "label": "外力为零的含义"}
+    # Strategy: Find incomplete objects (missing closing brace) followed by complete duplicates with same id
+    # and remove the incomplete one
+    
+    # Find all incomplete object starts: {"id": "value" followed by whitespace and then another object
+    # We'll check if the next object is a duplicate
+    incomplete_pattern = r'(\{"id":\s*"([^"]+)")\s+(?=\{)'
+    matches = list(re.finditer(incomplete_pattern, repaired))
+    
+    if matches:
+        # Process from end to preserve positions
+        for match in reversed(matches):
+            incomplete_start = match.start()
+            incomplete_end = match.end()
+            incomplete_id = match.group(2)
+            incomplete_obj = match.group(1)
+            
+            # Check if the incomplete object is missing a closing brace
+            if incomplete_obj.rstrip().endswith('}'):
+                continue  # It's complete, skip
+            
+            # Find the next object starting after the incomplete one
+            remaining_text = repaired[incomplete_end:]
+            next_obj_match = re.search(r'(\{"id":\s*"([^"]+)"[^}]*\})', remaining_text)
+            
+            if next_obj_match:
+                next_id = next_obj_match.group(2)
+                # Check if it's a duplicate (same id)
+                if incomplete_id == next_id:
+                    # Found a complete duplicate - remove the incomplete one
+                    repaired = repaired[:incomplete_start] + repaired[incomplete_end:]
+                    logger.debug(f"Fixed duplicate object: removed incomplete object with id '{incomplete_id}'")
+    
+    # Pattern 2: Fix incomplete objects missing closing brace before next different object
+    # Look for: {"id": "x"        {"id": "y"} where first is incomplete and second is different
+    incomplete_before_different = r'(\{"id":\s*"([^"]+)")\s+(?=\{"id":\s*"([^"]+)"[^}]*\})'
+    matches = list(re.finditer(incomplete_before_different, repaired))
+    if matches:
+        for match in reversed(matches):
+            incomplete_id = match.group(2)
+            next_id = match.group(3)
+            # Only fix if IDs are different (not duplicates handled by Pattern 1)
+            if incomplete_id != next_id:
+                incomplete = match.group(1)
+                if not incomplete.rstrip().endswith('}'):
+                    # Close the incomplete object
+                    fixed = incomplete.rstrip() + '},'
+                    repaired = repaired[:match.start()] + fixed + repaired[match.end():]
+                    logger.debug(f"Fixed incomplete object before different object")
+    
+    # Pattern 3: Fix incomplete object at end of array/object
+    # Look for: {"id": "value" followed by ] or }
+    incomplete_end_pattern = r'(\{"id":\s*"[^"]+")\s*([\]\}])'
+    matches = list(re.finditer(incomplete_end_pattern, repaired))
+    if matches:
+        for match in reversed(matches):
+            obj_start = match.group(1)
+            closing = match.group(2)
+            # Check if object is incomplete
+            if not obj_start.rstrip().endswith('}'):
+                fixed_obj = obj_start.rstrip() + '}'
+                if closing == ']':
+                    # In array context, check if we need a comma
+                    before = repaired[:match.start()].rstrip()
+                    if before and not before.endswith('[') and not before.endswith(','):
+                        fixed_obj += ','
+                repaired = repaired[:match.start()] + fixed_obj + closing + repaired[match.end():]
+                logger.debug(f"Fixed incomplete object at end")
+    
+    # Pattern 4: Remove consecutive duplicate complete objects
+    consecutive_duplicate = r'(\{"id":\s*"([^"]+)",\s*"[^"]+":\s*"[^"]+"[^}]*\})\s*,\s*\1'
+    repaired = re.sub(consecutive_duplicate, r'\1', repaired)
+    
+    return repaired if repaired != text else None
 
 
 def _remove_js_comments_safely(text: str) -> str:

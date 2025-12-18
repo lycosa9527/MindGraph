@@ -38,6 +38,8 @@ class GenerateResponse(BaseModel):
     is_learning_sheet: Optional[bool] = Field(False, description="Whether this is a learning sheet")
     hidden_node_percentage: Optional[float] = Field(0.0, description="Percentage of nodes hidden for learning")
     error: Optional[str] = Field(None, description="Error message if failed")
+    warning: Optional[str] = Field(None, description="Warning message if partial recovery occurred")
+    recovery_warnings: Optional[List[str]] = Field(None, description="Detailed recovery warnings")
     use_default_template: Optional[bool] = Field(False, description="Whether to use default template (prompt-based generation)")
     extracted_topic: Optional[str] = Field(None, description="Extracted topic from prompt")
     

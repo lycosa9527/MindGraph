@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.29.2] - 2025-12-18 - Zoom/Pan Implementation Improvements & Touch Device Support
+
+### Fixed
+
+- **Zoom Behavior Re-attachment** (`static/js/managers/editor/view-manager.js`)
+  - Fixed issue where zoom behavior was re-attached on every diagram render without removing old handlers
+  - Now properly removes existing zoom handlers before attaching new ones
+  - Prevents duplicate event handlers and ensures clean state
+
+- **Touch Event Handling for touchend** (`static/js/managers/editor/view-manager.js`)
+  - Fixed touch event filter to properly handle `touchend` events
+  - Now checks `changedTouches` for multi-touch gesture completion
+  - Ensures pinch-to-zoom gestures complete correctly on all touch devices
+
+- **Zoom-Group Reference Safety** (`static/js/managers/editor/view-manager.js`)
+  - Fixed potential stale reference issue in zoom handler
+  - Now always gets fresh reference to zoom-group in zoom event handler
+  - Prevents issues if zoom-group is recreated during re-renders
+
+### Improved
+
+- **Transform Preservation Across Re-renders** (`static/js/managers/editor/view-manager.js`)
+  - Enhanced zoom/pan state preservation when diagrams re-render
+  - Now parses and restores existing transform from zoom-group
+  - Supports both `translate/scale` and `matrix` transform formats
+  - Preserves user's zoom/pan position when diagram updates
+
+- **Touch Support Documentation** (`static/js/managers/editor/view-manager.js`)
+  - Updated comments to clarify touch support works on all touch-enabled devices
+  - Not limited to mobile devices - works on tablets, interactive whiteboards, and large touch displays
+  - Clarified that touch gestures (pinch-to-zoom, two-finger pan) work universally
+
+### Verified
+
+- **Complete Zoom/Pan Functionality Review**
+  - ✅ Mouse wheel zoom: Working correctly (scale extent: 0.1x to 10x)
+  - ✅ Middle mouse button panning: Working correctly (button === 1)
+  - ✅ Touch pinch-to-zoom: Working on all touch devices (mobile, tablets, large displays)
+  - ✅ Touch two-finger pan: Working on all touch devices
+  - ✅ Single-finger touch blocking: Correctly reserved for node selection
+  - ✅ Double-click zoom disabled: Correctly disabled to allow edit modal
+  - ✅ Transform application: Correctly applied to zoom-group
+  - ✅ Reset zoom functionality: Working correctly with named transitions
+  - ✅ CSS touch-action: Properly configured (`pinch-zoom pan-x pan-y`)
+
+### Technical Details
+
+- Zoom behavior now properly cleans up before re-attachment
+- Transform parsing handles both SVG transform formats (translate/scale and matrix)
+- Touch event filtering correctly distinguishes between single and multi-touch gestures
+- Zoom-group reference is always fresh in event handlers to prevent stale references
+- All zoom/pan interactions verified to work correctly without conflicts
+
+---
+
 ## [4.29.1] - 2025-12-18 - Doubao Integration Enhancements & Logging Improvements
 
 ### Added

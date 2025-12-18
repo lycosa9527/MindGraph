@@ -118,7 +118,7 @@ class MindMapAgent(BaseAgent):
             # Clear caches at the start of each generation
             self._clear_caches()
             # Generate the initial mind map specification
-            spec = await self._generate_mind_map_spec(
+            spec, recovery_warnings = await self._generate_mind_map_spec(
                 prompt, 
                 language,
                 user_id=user_id,
@@ -136,20 +136,32 @@ class MindMapAgent(BaseAgent):
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
                 logger.warning(f"MindMapAgent: Validation failed: {validation_msg}")
+                # If this was a partial recovery attempt, enhance the error message
+                if recovery_warnings:
+                    error_msg = f'Partial recovery attempted but validation failed: {validation_msg}. Original LLM response had issues.'
+                else:
+                    error_msg = f'Generated invalid specification: {validation_msg}'
                 return {
                     'success': False,
-                    'error': f'Generated invalid specification: {validation_msg}'
+                    'error': error_msg
                 }
             
             # Enhance the spec with layout and dimensions
             enhanced_spec = await self.enhance_spec(spec)
             
             logger.info(f"MindMapAgent: Successfully generated mind map")
-            return {
+            result = {
                 'success': True,
                 'spec': enhanced_spec,
                 'diagram_type': self.diagram_type
             }
+            
+            # Add recovery warnings if present
+            if recovery_warnings:
+                result['warning'] = 'LLM response had issues. Some branches may be missing. You can use auto-complete to add more.'
+                result['recovery_warnings'] = recovery_warnings
+            
+            return result
             
         except Exception as e:
             logger.error(f"MindMapAgent: Error generating mind map: {e}")
@@ -167,7 +179,7 @@ class MindMapAgent(BaseAgent):
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
         endpoint_path: Optional[str] = None
-    ) -> Optional[Dict]:
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
         """Generate the mind map specification using LLM."""
         try:
             # Import centralized prompt system
@@ -200,18 +212,19 @@ class MindMapAgent(BaseAgent):
             
             if not response:
                 logger.error("MindMapAgent: No response from LLM")
-                return None
+                return None, None
             
             # Extract JSON from response
             from ..core.agent_utils import extract_json_from_response
             
             # Check if response is already a dictionary (from mock client)
+            recovery_warnings = None
             if isinstance(response, dict):
                 spec = response
             else:
-                # Try to extract JSON from string response
+                # Try to extract JSON from string response with partial recovery enabled
                 response_str = str(response)
-                spec = extract_json_from_response(response_str)
+                spec = extract_json_from_response(response_str, allow_partial=True)
                 
                 if not spec:
                     # Log the actual response for debugging with more context
@@ -220,13 +233,29 @@ class MindMapAgent(BaseAgent):
                     logger.error(f"MindMapAgent: Response length: {len(response_str)}, Preview: {response_preview}")
                     logger.error(f"MindMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
                     # Return None to trigger error handling upstream
-                    return None
+                    return None, None
+                
+                # Check if this was a partial recovery
+                if spec.get("_partial_recovery"):
+                    warnings = spec.get("_recovery_warnings", [])
+                    recovered_count = spec.get("_recovered_count", 0)
+                    logger.warning(
+                        f"MindMapAgent: Partial JSON recovery succeeded. "
+                        f"Recovered {recovered_count} branches. "
+                        f"Warnings: {', '.join(warnings)}"
+                    )
+                    # Store warnings to return separately
+                    recovery_warnings = warnings
+                    # Remove metadata fields before returning (they'll be added to response separately)
+                    spec.pop("_partial_recovery", None)
+                    spec.pop("_recovery_warnings", None)
+                    spec.pop("_recovered_count", None)
             
-            return spec
+            return spec, recovery_warnings
             
         except Exception as e:
             logger.error(f"MindMapAgent: Error in spec generation: {e}")
-            return None
+            return None, None
     
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
         """Validate a mind map specification."""

@@ -129,7 +129,13 @@ class ViewManager {
             return;
         }
         
-        // Create a group to hold all content if it doesn't exist
+        // CRITICAL: Remove existing zoom behavior before re-attaching
+        // This prevents duplicate event handlers and ensures clean state
+        if (this.zoomBehavior) {
+            svg.on('.zoom', null);
+        }
+        
+        // Get or create zoom-group
         let contentGroup = svg.select('g.zoom-group');
         if (contentGroup.empty()) {
             // Move all existing SVG children into a group
@@ -138,8 +144,50 @@ class ViewManager {
                 .attr('class', 'zoom-group');
             
             existingChildren.forEach(child => {
-                contentGroup.node().appendChild(child);
+                // Skip if child is already a zoom-group (shouldn't happen, but safety check)
+                if (child !== contentGroup.node() && child.getAttribute('class') !== 'zoom-group') {
+                    contentGroup.node().appendChild(child);
+                }
             });
+        }
+        
+        // Get current transform from existing zoom-group if it exists
+        // This preserves zoom/pan state across re-renders
+        let currentTransform = d3.zoomIdentity;
+        if (!contentGroup.empty()) {
+            const existingTransform = contentGroup.attr('transform');
+            if (existingTransform && existingTransform !== 'none') {
+                try {
+                    // D3 stores transform as: translate(x,y) scale(k) or matrix(a,b,c,d,e,f)
+                    // Try to parse translate/scale format first
+                    const translateMatch = existingTransform.match(/translate\(([^)]+)\)/);
+                    const scaleMatch = existingTransform.match(/scale\(([^)]+)\)/);
+                    
+                    if (translateMatch && scaleMatch) {
+                        const [tx, ty] = translateMatch[1].split(',').map(s => parseFloat(s.trim()));
+                        const k = parseFloat(scaleMatch[1]);
+                        if (!isNaN(tx) && !isNaN(ty) && !isNaN(k)) {
+                            currentTransform = d3.zoomIdentity.translate(tx, ty).scale(k);
+                        }
+                    } else {
+                        // Try matrix format: matrix(a,b,c,d,e,f)
+                        const matrixMatch = existingTransform.match(/matrix\(([^)]+)\)/);
+                        if (matrixMatch) {
+                            const values = matrixMatch[1].split(',').map(s => parseFloat(s.trim()));
+                            if (values.length === 6 && values.every(v => !isNaN(v))) {
+                                // matrix(a,b,c,d,e,f) where e=tx, f=ty, and scale k = sqrt(a²+b²)
+                                const k = Math.sqrt(values[0] * values[0] + values[1] * values[1]);
+                                const tx = values[4];
+                                const ty = values[5];
+                                currentTransform = d3.zoomIdentity.translate(tx, ty).scale(k);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // If parsing fails, use identity transform
+                    this.logger.debug('ViewManager', 'Could not parse existing transform, using identity', e);
+                }
+            }
         }
         
         // Configure zoom behavior
@@ -160,9 +208,11 @@ class ViewManager {
                     return true;
                 }
                 
-                // MOBILE TOUCH SUPPORT: Allow multi-touch for pinch-to-zoom
-                // event.touches is available for touch events
-                if (event.type === 'touchstart' || event.type === 'touchmove' || event.type === 'touchend') {
+                // TOUCH SUPPORT: Allow multi-touch for pinch-to-zoom on all touch-enabled devices
+                // Works on mobile devices, tablets, and large touch displays (interactive whiteboards, etc.)
+                // For touchstart/touchmove: check event.touches.length
+                // For touchend: check event.changedTouches.length (touches array is empty on touchend)
+                if (event.type === 'touchstart' || event.type === 'touchmove') {
                     // Allow touch events with 2+ fingers (pinch-to-zoom / two-finger pan)
                     // Block single-finger touch (reserved for node selection/tapping)
                     const touchCount = event.touches ? event.touches.length : 0;
@@ -173,13 +223,30 @@ class ViewManager {
                     return false;
                 }
                 
+                if (event.type === 'touchend') {
+                    // For touchend, check changedTouches to see if this was part of a multi-touch gesture
+                    // If 2+ fingers were lifted, allow the event (completes pinch gesture)
+                    const changedTouchCount = event.changedTouches ? event.changedTouches.length : 0;
+                    const remainingTouchCount = event.touches ? event.touches.length : 0;
+                    // Allow if 2+ touches were involved (either lifted or remaining)
+                    if (changedTouchCount >= 2 || remainingTouchCount >= 2) {
+                        return true;
+                    }
+                    return false;
+                }
+                
                 // Block everything else: left click, right click, double-click
                 // Left click is reserved for node selection/interaction
                 // Double-click opens edit modal
                 return false;
             })
             .on('zoom', (event) => {
-                contentGroup.attr('transform', event.transform);
+                // CRITICAL: Always get fresh reference to zoom-group in case it was recreated
+                const zoomGroup = svg.select('g.zoom-group');
+                if (!zoomGroup.empty()) {
+                    zoomGroup.attr('transform', event.transform);
+                }
+                
                 // Update zoom level display if needed
                 if (this.currentZoomLevel) {
                     this.currentZoomLevel.textContent = `${Math.round(event.transform.k * 100)}%`;
@@ -193,6 +260,9 @@ class ViewManager {
                     this.isSizedForPanel = false;
                 }
                 
+                // Store current transform for programmatic access
+                this.zoomTransform = event.transform;
+                
                 // Update state (use updateUI method for view state)
                 if (this.stateManager && typeof this.stateManager.updateUI === 'function') {
                     this.stateManager.updateUI({
@@ -203,8 +273,13 @@ class ViewManager {
                 }
             });
         
-        // Apply zoom behavior to SVG
+        // Apply zoom behavior to SVG with current transform preserved
         svg.call(zoom);
+        
+        // Restore previous transform if it existed
+        if (currentTransform.k !== 1 || currentTransform.x !== 0 || currentTransform.y !== 0) {
+            svg.call(zoom.transform, currentTransform);
+        }
         
         // CRITICAL: Disable default double-click zoom behavior
         // This allows custom double-click handlers (e.g., edit modal) to work properly
@@ -213,9 +288,9 @@ class ViewManager {
         
         // Store zoom behavior for programmatic control
         this.zoomBehavior = zoom;
-        this.zoomTransform = d3.zoomIdentity;
+        this.zoomTransform = currentTransform;
         
-        this.logger.debug('ViewManager', 'Zoom enabled (mouse wheel only, double-click disabled)');
+        this.logger.debug('ViewManager', 'Zoom enabled (mouse wheel + middle mouse pan, touch support, double-click disabled)');
     }
     
     /**
