@@ -2670,6 +2670,194 @@ async def get_token_stats_admin(
     }
 
 
+@router.get("/admin/stats/trends", dependencies=[Depends(get_current_user)])
+async def get_stats_trends_admin(
+    request: Request,
+    metric: str,  # 'users', 'organizations', 'registrations', 'tokens'
+    days: int = 30,  # Number of days to look back
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """Get time-series trends data for dashboard charts (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    if not is_admin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    
+    if days > 90:
+        days = 90  # Cap at 90 days
+    if days < 7:
+        days = 7  # Minimum 7 days
+    
+    now = datetime.now(timezone.utc)
+    start_date = now - timedelta(days=days)
+    start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Generate all dates in range (fill missing dates with 0)
+    date_list = []
+    current = start_date
+    while current <= now:
+        date_list.append(current.date())
+        current += timedelta(days=1)
+    
+    trends_data = []
+    
+    if metric == 'users':
+        # Daily cumulative user count
+        try:
+            # Get initial count before start_date
+            initial_count = db.query(func.count(User.id)).filter(
+                User.created_at < start_date
+            ).scalar() or 0
+            
+            # Get user counts grouped by date
+            user_counts = db.query(
+                func.date(User.created_at).label('date'),
+                func.count(User.id).label('count')
+            ).filter(
+                User.created_at >= start_date
+            ).group_by(
+                func.date(User.created_at)
+            ).all()
+            
+            # Create a dictionary for quick lookup
+            counts_by_date = {str(row.date): row.count for row in user_counts}
+            
+            # Calculate cumulative counts
+            cumulative = initial_count
+            for date in date_list:
+                date_str = str(date)
+                if date_str in counts_by_date:
+                    cumulative += counts_by_date[date_str]
+                trends_data.append({
+                    "date": date_str,
+                    "value": cumulative
+                })
+        except Exception as e:
+            logger.error(f"Error fetching user trends: {e}")
+            # Return zeros if error
+            for date in date_list:
+                trends_data.append({"date": str(date), "value": 0})
+    
+    elif metric == 'organizations':
+        # Daily cumulative organization count
+        try:
+            # Get initial count before start_date
+            initial_count = db.query(func.count(Organization.id)).filter(
+                Organization.created_at < start_date
+            ).scalar() or 0
+            
+            org_counts = db.query(
+                func.date(Organization.created_at).label('date'),
+                func.count(Organization.id).label('count')
+            ).filter(
+                Organization.created_at >= start_date
+            ).group_by(
+                func.date(Organization.created_at)
+            ).all()
+            
+            counts_by_date = {str(row.date): row.count for row in org_counts}
+            
+            cumulative = initial_count
+            for date in date_list:
+                date_str = str(date)
+                if date_str in counts_by_date:
+                    cumulative += counts_by_date[date_str]
+                trends_data.append({
+                    "date": date_str,
+                    "value": cumulative
+                })
+        except Exception as e:
+            logger.error(f"Error fetching organization trends: {e}")
+            for date in date_list:
+                trends_data.append({"date": str(date), "value": 0})
+    
+    elif metric == 'registrations':
+        # Daily new user registrations (non-cumulative)
+        try:
+            reg_counts = db.query(
+                func.date(User.created_at).label('date'),
+                func.count(User.id).label('count')
+            ).filter(
+                User.created_at >= start_date
+            ).group_by(
+                func.date(User.created_at)
+            ).all()
+            
+            counts_by_date = {str(row.date): row.count for row in reg_counts}
+            
+            for date in date_list:
+                date_str = str(date)
+                trends_data.append({
+                    "date": date_str,
+                    "value": counts_by_date.get(date_str, 0)
+                })
+        except Exception as e:
+            logger.error(f"Error fetching registration trends: {e}")
+            for date in date_list:
+                trends_data.append({"date": str(date), "value": 0})
+    
+    elif metric == 'tokens':
+        # Daily token usage (non-cumulative)
+        try:
+            from models.token_usage import TokenUsage
+            
+            token_counts = db.query(
+                func.date(TokenUsage.created_at).label('date'),
+                func.sum(TokenUsage.total_tokens).label('total_tokens'),
+                func.sum(TokenUsage.input_tokens).label('input_tokens'),
+                func.sum(TokenUsage.output_tokens).label('output_tokens')
+            ).filter(
+                TokenUsage.created_at >= start_date,
+                TokenUsage.success == True
+            ).group_by(
+                func.date(TokenUsage.created_at)
+            ).all()
+            
+            tokens_by_date = {
+                str(row.date): {
+                    "total": int(row.total_tokens or 0),
+                    "input": int(row.input_tokens or 0),
+                    "output": int(row.output_tokens or 0)
+                }
+                for row in token_counts
+            }
+            
+            for date in date_list:
+                date_str = str(date)
+                tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
+                trends_data.append({
+                    "date": date_str,
+                    "value": tokens["total"],
+                    "input": tokens["input"],
+                    "output": tokens["output"]
+                })
+        except Exception as e:
+            logger.error(f"Error fetching token trends: {e}")
+            for date in date_list:
+                trends_data.append({
+                    "date": str(date),
+                    "value": 0,
+                    "input": 0,
+                    "output": 0
+                })
+    
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid metric: {metric}. Must be one of: users, organizations, registrations, tokens"
+        )
+    
+    return {
+        "metric": metric,
+        "days": days,
+        "data": trends_data
+    }
+
+
 # ============================================================================
 # API Key Management Endpoints (ADMIN ONLY)
 # ============================================================================

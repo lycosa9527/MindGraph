@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.28.99] - 2025-12-17 - Admin Dashboard Interactive Trend Charts
+
+### Added
+
+- **Clickable Stat Cards with Trend Charts** (`templates/admin.html`)
+  - Made all 4 dashboard stat cards clickable (Total Users, Organizations, Today Registrations, Total Tokens)
+  - Clicking any stat card opens a modal with an interactive line graph showing trending data
+  - Charts display daily data over the last 30 days with dates on x-axis
+  - Smooth line charts with fill areas and hover tooltips
+
+- **Chart.js Integration** (`static/js/chart.umd.min.js`, `templates/admin.html`)
+  - Added Chart.js 4.4.0 library for offline use (no CDN dependency)
+  - Integrated Chart.js zoom plugin for interactive zoom and pan functionality
+  - Integrated Chart.js datalabels plugin to show short-form numbers above data points
+  - All libraries stored locally in `static/js/` for offline operation
+
+- **Interactive Chart Features** (`templates/admin.html`)
+  - Mouse wheel zoom in/out functionality
+  - Click and drag to pan when zoomed in
+  - Adaptive X/Y axes that zoom together
+  - Data labels showing cute short-form numbers (e.g., "1.2K", "3.5M") above each data point
+  - Y-axis adapts to data range (doesn't start at zero) with 10% padding
+  - Chart stays centered when zooming
+  - For token charts: multi-line display showing total, input, and output tokens separately
+
+- **Trend Data API Endpoint** (`routers/auth.py`)
+  - New `/api/auth/admin/stats/trends` endpoint for time-series data
+  - Supports 4 metrics: `users`, `organizations`, `registrations`, `tokens`
+  - Configurable date range (7-90 days, default 30 days)
+  - Cumulative calculations for users and organizations
+  - Daily breakdowns for registrations and tokens
+  - Token data includes input/output breakdown
+
+### Changed
+
+- **Admin Dashboard UI** (`templates/admin.html`)
+  - Stat cards now have hover effects (lift and shadow) indicating they're clickable
+  - Added cursor pointer styling to stat cards
+  - Improved chart modal styling with larger container (900px max-width)
+  - Removed zoom control buttons (using mouse wheel and drag instead)
+
+---
+
 ## [4.28.98] - 2025-12-17 - Brace Map Spacing Improvements and JSON Extraction Fix
 
 ### Changed

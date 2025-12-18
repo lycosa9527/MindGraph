@@ -147,6 +147,13 @@
             padding: 1.5rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.2);
         }
 
         .stat-card h3 {
@@ -309,6 +316,21 @@
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+        }
+
+        .modal-content.chart-modal {
+            max-width: 900px;
+            width: 95%;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin-top: 1.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8fafc;
         }
 
         .modal-header {
@@ -750,19 +772,19 @@
         <!-- Dashboard Tab -->
         <div id="dashboard-tab" class="tab-content active">
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card" data-metric="users" onclick="showTrendChart('users', this)">
                     <h3><span class="lang-zh">总用户数</span><span class="lang-en">Total Users</span></h3>
                     <div class="value" id="stat-users">-</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" data-metric="organizations" onclick="showTrendChart('organizations', this)">
                     <h3><span class="lang-zh">学校数量</span><span class="lang-en">Organizations</span></h3>
                     <div class="value" id="stat-orgs">-</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" data-metric="registrations" onclick="showTrendChart('registrations', this)">
                     <h3><span class="lang-zh">今日注册</span><span class="lang-en">Today</span></h3>
                     <div class="value" id="stat-recent">-</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" data-metric="tokens" onclick="showTrendChart('tokens', this)">
                     <h3><span class="lang-zh">总Token使用</span><span class="lang-en">Total Tokens</span></h3>
                     <div class="value" id="stat-tokens">-</div>
                 </div>
@@ -1441,6 +1463,21 @@ curl -X POST http://your-server/api/generate_graph \
         </div>
     </div>
 
+    <!-- Trend Chart Modal -->
+    <div id="trend-chart-modal" class="modal">
+        <div class="modal-content chart-modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="trend-chart-title">
+                    <span class="lang-zh">趋势图表</span><span class="lang-en">Trend Chart</span>
+                </h3>
+                <span class="close" onclick="closeModal('trend-chart-modal')">&times;</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="trend-chart-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Unauthenticated Overlay -->
     <div id="auth-required-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
         <div style="background:white; border-radius:20px; padding:3rem; text-align:center; max-width:500px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
@@ -1464,6 +1501,9 @@ curl -X POST http://your-server/api/generate_graph \
     </div>
 
     <script src="/static/js/auth-helper.js?v={{ version }}"></script>
+    <script src="/static/js/chart.umd.min.js?v={{ version }}"></script>
+    <script src="/static/js/chartjs-plugin-zoom.min.js?v={{ version }}"></script>
+    <script src="/static/js/chartjs-plugin-datalabels.min.js?v={{ version }}"></script>
     <script>
         // Store app version for cache detection
         window.MINDGRAPH_VERSION = '{{ version }}';
@@ -1835,6 +1875,11 @@ curl -X POST http://your-server/api/generate_graph \
         
         function closeModal(id) {
             document.getElementById(id).classList.remove('show');
+            // Destroy chart when closing trend modal
+            if (id === 'trend-chart-modal' && trendChartInstance) {
+                trendChartInstance.destroy();
+                trendChartInstance = null;
+            }
         }
 
         // Auto-generate school code from school name
@@ -1903,6 +1948,16 @@ curl -X POST http://your-server/api/generate_graph \
             return num.toString();
         }
 
+        // Format numbers for chart labels (cute short format)
+        function formatChartLabel(value) {
+            if (value >= 1000000) {
+                return (value / 1000000).toFixed(1) + 'M';
+            } else if (value >= 1000) {
+                return (value / 1000).toFixed(1) + 'K';
+            }
+            return value.toString();
+        }
+
         // Mask phone number for privacy (e.g., 13812345678 -> 138****5678)
         function maskPhone(phone) {
             if (!phone || phone.length < 7) return phone;
@@ -1918,6 +1973,282 @@ curl -X POST http://your-server/api/generate_graph \
                 return phone.slice(0, visibleStart) + '*'.repeat(Math.min(maskedLength, 4)) + phone.slice(-visibleEnd);
             }
             return phone;
+        }
+
+        // Chart instance for trend chart
+        let trendChartInstance = null;
+
+        // Register Chart.js plugins when available
+        if (typeof Chart !== 'undefined') {
+            // Register zoom plugin if available
+            if (typeof chartjsPluginZoom !== 'undefined') {
+                Chart.register(chartjsPluginZoom);
+            }
+            // Register datalabels plugin if available
+            if (typeof ChartDataLabels !== 'undefined') {
+                Chart.register(ChartDataLabels);
+            }
+        }
+
+        // Zoom chart functions
+        function zoomChart(direction) {
+            if (!trendChartInstance) return;
+            
+            try {
+                if (direction === 'in') {
+                    trendChartInstance.zoom(1.2);
+                } else if (direction === 'out') {
+                    trendChartInstance.zoom(0.8);
+                }
+            } catch (e) {
+                console.warn('Zoom function not available:', e);
+            }
+        }
+
+        function resetChartZoom() {
+            if (!trendChartInstance) return;
+            try {
+                trendChartInstance.resetZoom();
+            } catch (e) {
+                console.warn('Reset zoom function not available:', e);
+            }
+        }
+
+        // Show trend chart modal
+        async function showTrendChart(metric, cardElement) {
+            const modal = document.getElementById('trend-chart-modal');
+            const titleElement = document.getElementById('trend-chart-title');
+            const canvas = document.getElementById('trend-chart-canvas');
+            
+            // Set title based on metric
+            const titles = {
+                'users': { zh: '总用户数趋势', en: 'Total Users Trend' },
+                'organizations': { zh: '学校数量趋势', en: 'Organizations Trend' },
+                'registrations': { zh: '每日注册趋势', en: 'Daily Registrations Trend' },
+                'tokens': { zh: 'Token使用趋势', en: 'Token Usage Trend' }
+            };
+            
+            const title = titles[metric] || { zh: '趋势图表', en: 'Trend Chart' };
+            titleElement.innerHTML = `<span class="lang-zh">${title.zh}</span><span class="lang-en">${title.en}</span>`;
+            applyCurrentLanguage();
+            
+            // Show modal
+            modal.classList.add('show');
+            
+            // Show loading state
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '16px Inter';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.fillText('Loading...', canvas.width / 2, canvas.height / 2);
+            
+            try {
+                // Fetch trends data
+                const response = await auth.fetch(`/api/auth/admin/stats/trends?metric=${metric}&days=30`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trends data');
+                }
+                
+                const data = await response.json();
+                
+                // Destroy existing chart if it exists
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+                
+                // Prepare chart data
+                const labels = data.data.map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                
+                const values = data.data.map(item => item.value);
+                
+                // Calculate adaptive Y-axis range
+                const maxValue = Math.max(...values);
+                const minValue = Math.min(...values);
+                const range = maxValue - minValue;
+                const padding = range * 0.1; // 10% padding
+                const yMin = Math.max(0, minValue - padding);
+                const yMax = maxValue + padding;
+                
+                // Chart configuration
+                const chartConfig = {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: title.en,
+                            data: values,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: { size: 14, weight: 'bold' },
+                                bodyFont: { size: 13 },
+                                cornerRadius: 8,
+                                displayColors: false
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 4,
+                                color: '#667eea',
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                },
+                                formatter: function(value) {
+                                    return formatChartLabel(value);
+                                },
+                                display: function(context) {
+                                    // Show labels on first dataset (main line)
+                                    return context.datasetIndex === 0;
+                                },
+                                clamp: true,
+                                clip: false
+                            },
+                            zoom: {
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                        speed: 0.1
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'xy',
+                                    onZoomComplete: function({chart}) {
+                                        // Keep chart centered after zoom
+                                        chart.update('none');
+                                    }
+                                },
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: yMin,
+                                max: yMax,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    color: '#64748b',
+                                    font: { size: 12 },
+                                    callback: function(value) {
+                                        return formatChartLabel(value);
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#64748b',
+                                    font: { size: 11 },
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                afterFit: function(scale) {
+                                    // Keep x-axis centered
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                };
+                
+                // For tokens, add input/output lines if available
+                if (metric === 'tokens' && data.data[0].input !== undefined) {
+                    const inputValues = data.data.map(item => item.input || 0);
+                    const outputValues = data.data.map(item => item.output || 0);
+                    
+                    chartConfig.data.datasets.push({
+                        label: 'Input Tokens',
+                        data: inputValues,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    });
+                    
+                    chartConfig.data.datasets.push({
+                        label: 'Output Tokens',
+                        data: outputValues,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    });
+                    
+                    // Update datalabels to show on all datasets for tokens
+                    chartConfig.options.plugins.datalabels.display = function(context) {
+                        return true; // Show on all token lines
+                    };
+                    chartConfig.options.plugins.datalabels.color = function(context) {
+                        const colors = ['#667eea', '#10b981', '#f59e0b'];
+                        return colors[context.datasetIndex] || '#667eea';
+                    };
+                    
+                    chartConfig.options.plugins.legend.display = true;
+                    chartConfig.options.plugins.legend.position = 'top';
+                    chartConfig.options.plugins.legend.labels = {
+                        color: '#64748b',
+                        font: { size: 12 },
+                        padding: 15,
+                        usePointStyle: true
+                    };
+                }
+                
+                // Create chart
+                trendChartInstance = new Chart(ctx, chartConfig);
+                
+            } catch (error) {
+                console.error('Error loading trend chart:', error);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#ef4444';
+                ctx.textAlign = 'center';
+                ctx.fillText('Failed to load chart data', canvas.width / 2, canvas.height / 2);
+                showAlert('Failed to load trend data', 'error');
+            }
         }
 
         // Dashboard
