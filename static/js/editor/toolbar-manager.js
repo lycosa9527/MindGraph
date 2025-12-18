@@ -111,7 +111,7 @@ class ToolbarManager {
         this.autoCompleteBtn = document.getElementById('auto-complete-btn');
         this.lineModeBtn = document.getElementById('line-mode-btn');
         this.learningBtn = document.getElementById('learning-btn');  // 🆕 Learning Mode button
-        this.thinkingBtn = document.getElementById('thinking-btn');  // 🆕 Node Palette button
+        this.nodePaletteBtn = document.getElementById('node-palette-btn');  // Node Palette button
         this.duplicateNodeBtn = document.getElementById('duplicate-node-btn');
         this.emptyNodeBtn = document.getElementById('empty-node-btn');
         this.flowMapOrientationBtn = document.getElementById('flow-map-orientation-btn');
@@ -157,11 +157,9 @@ class ToolbarManager {
         this.activeColorType = null; // 'text', 'fill', or 'stroke'
         
         this.propStrokeWidth = document.getElementById('prop-stroke-width');
-        this.propOpacity = document.getElementById('prop-opacity');
         
         // Value displays
         this.strokeWidthValue = document.getElementById('stroke-width-value');
-        this.opacityValue = document.getElementById('opacity-value');
         
         // Status bar elements
         this.nodeCountElement = document.getElementById('node-count');
@@ -235,10 +233,80 @@ class ToolbarManager {
             e.stopPropagation();
             this.handleLearningMode();
         });
-        this.thinkingBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.handleThinkingMode();
-        });
+        // Node Palette button - apply same protection as MindMate button
+        // CRITICAL: Prevent focus and ensure only mouse clicks trigger the action
+        if (this.nodePaletteBtn) {
+            // Ensure tabindex is set (also set in HTML as backup)
+            this.nodePaletteBtn.setAttribute('tabindex', '-1');
+            
+            // Track if button was activated via explicit mouse click
+            let nodePaletteBtnActivatedViaMouse = false;
+            let nodePaletteBtnMouseDownTime = 0;
+            
+            // Mouse down handler - mark as mouse activation with timestamp
+            this.nodePaletteBtn.addEventListener('mousedown', (e) => {
+                if (e.button === 0) {
+                    nodePaletteBtnActivatedViaMouse = true;
+                    nodePaletteBtnMouseDownTime = Date.now();
+                }
+            });
+            
+            // Click handler - only activate if it was a real mouse click
+            this.nodePaletteBtn.addEventListener('click', (e) => {
+                const timeSinceMouseDown = Date.now() - nodePaletteBtnMouseDownTime;
+                const isValidClick = nodePaletteBtnActivatedViaMouse && timeSinceMouseDown < 500 && e.button === 0;
+                
+                if (isValidClick && e.isTrusted) {
+                    e.stopPropagation();
+                    this.handleNodePaletteMode();
+                } else {
+                    // Block invalid clicks (keyboard-triggered or synthetic)
+                    logger.warn('ToolbarManager', 'Blocked invalid node palette button click', {
+                        activatedViaMouse: nodePaletteBtnActivatedViaMouse,
+                        timeSinceMouseDown,
+                        button: e.button,
+                        isTrusted: e.isTrusted
+                    });
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+                // Reset flags
+                nodePaletteBtnActivatedViaMouse = false;
+                nodePaletteBtnMouseDownTime = 0;
+            }, true); // Use capture phase to intercept early
+            
+            // Prevent ALL keyboard activation
+            this.nodePaletteBtn.addEventListener('keydown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
+            
+            this.nodePaletteBtn.addEventListener('keyup', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
+            
+            this.nodePaletteBtn.addEventListener('keypress', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
+            
+            // CRITICAL: Prevent focus event - blur immediately if focus received
+            this.nodePaletteBtn.addEventListener('focus', (e) => {
+                this.nodePaletteBtn.blur();
+                // Move focus to a safe element
+                const canvas = document.getElementById('d3-container');
+                if (canvas && canvas.focus) {
+                    canvas.focus();
+                } else {
+                    document.body.focus();
+                }
+            }, true);
+        }
         this.duplicateNodeBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.handleDuplicateNode();
@@ -337,32 +405,31 @@ class ToolbarManager {
             e.stopPropagation();
             e.preventDefault();
             this.toggleBold();
-            this.applyStylesRealtime(); // Apply immediately
+            // NOTE: applyStylesRealtime is now called inside the toggle method via NodePropertyOperationsManager
         });
         this.propItalic?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.toggleItalic();
-            this.applyStylesRealtime(); // Apply immediately
+            // NOTE: applyStylesRealtime is now called inside the toggle method via NodePropertyOperationsManager
         });
         this.propUnderline?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.toggleUnderline();
-            this.applyStylesRealtime(); // Apply immediately
+            // NOTE: applyStylesRealtime is now called inside the toggle method via NodePropertyOperationsManager
         });
         this.propStrikethrough?.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.toggleStrikethrough();
-            this.applyStylesRealtime(); // Apply immediately
+            // NOTE: applyStylesRealtime is now called inside the toggle method via NodePropertyOperationsManager
         });
         
         // Real-time style updates
         this.propFontSize?.addEventListener('input', () => this.applyStylesRealtime());
         this.propFontFamily?.addEventListener('change', () => this.applyStylesRealtime());
         this.propStrokeWidth?.addEventListener('input', () => this.applyStylesRealtime());
-        this.propOpacity?.addEventListener('input', () => this.applyStylesRealtime());
         
         // Initialize shared color palette
         this.initColorPalette();
@@ -402,11 +469,6 @@ class ToolbarManager {
         // Sliders
         this.propStrokeWidth?.addEventListener('input', (e) => {
             this.strokeWidthValue.textContent = `${e.target.value}px`;
-        });
-        
-        this.propOpacity?.addEventListener('input', (e) => {
-            const percent = Math.round(e.target.value * 100);
-            this.opacityValue.textContent = `${percent}%`;
         });
         
         // Listen to history state changes to update undo/redo button states
@@ -674,8 +736,6 @@ class ToolbarManager {
         // Reset stroke width and opacity to defaults
         if (this.propStrokeWidth) this.propStrokeWidth.value = 2;
         if (this.strokeWidthValue) this.strokeWidthValue.textContent = '2px';
-        if (this.propOpacity) this.propOpacity.value = 1;
-        if (this.opacityValue) this.opacityValue.textContent = '100%';
         
         // Reset toggle buttons
         if (this.propBold) this.propBold.classList.remove('active');
@@ -694,6 +754,13 @@ class ToolbarManager {
      * Load properties from selected node
      */
     loadNodeProperties(nodeId) {
+        // CRITICAL: Reset toggle buttons first to ensure they don't retain state from previous node
+        // This fixes the bug where underline/strikethrough buttons stayed lit when switching nodes
+        if (this.propBold) this.propBold.classList.remove('active');
+        if (this.propItalic) this.propItalic.classList.remove('active');
+        if (this.propUnderline) this.propUnderline.classList.remove('active');
+        if (this.propStrikethrough) this.propStrikethrough.classList.remove('active');
+        
         const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
         
         if (nodeElement.empty()) return;
@@ -702,9 +769,6 @@ class ToolbarManager {
         const fill = nodeElement.attr('fill') || '#2196f3';
         const stroke = nodeElement.attr('stroke') || '#1976d2';
         const strokeWidth = nodeElement.attr('stroke-width') || '2';
-        // Use explicit null check to preserve opacity 0 (fully transparent)
-        const opacityAttr = nodeElement.attr('opacity');
-        const opacity = (opacityAttr !== null && opacityAttr !== undefined) ? opacityAttr : '1';
         
         // Get text element - try multiple methods to find it
         let textElement = null;
@@ -871,8 +935,6 @@ class ToolbarManager {
         if (this.propStrokeColor) this.propStrokeColor.value = expandedStroke;
         if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(strokeWidth);
         if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${strokeWidth}px`;
-        if (this.propOpacity) this.propOpacity.value = parseFloat(opacity);
-        if (this.opacityValue) this.opacityValue.textContent = `${Math.round(parseFloat(opacity) * 100)}%`;
         
         // Update color button previews
         this.updateColorPreviews();
@@ -1725,8 +1787,8 @@ class ToolbarManager {
     /**
      * Handle Node Palette button click - EVENT BUS WRAPPER
      */
-    async handleThinkingMode() {
-        window.eventBus.emit('thinking_mode:toggle_requested', {});
+    async handleNodePaletteMode() {
+        window.eventBus.emit('node_palette:toggle_requested', {});
         logger.debug('ToolbarManager', 'Node Palette toggle requested via Event Bus');
     }
     
@@ -1753,7 +1815,7 @@ class ToolbarManager {
         // This is the most reliable way to remove event listeners added with arrow functions
         const buttonsToClean = [
             'add-node-btn', 'delete-node-btn', 'duplicate-node-btn', 'empty-node-btn', 'auto-complete-btn',
-            'line-mode-btn', 'learning-btn', 'thinking-btn', 'undo-btn', 'redo-btn', 'reset-btn', 
+            'line-mode-btn', 'learning-btn', 'node-palette-btn', 'undo-btn', 'redo-btn', 'reset-btn', 
             'export-btn', 'export-image-btn', 'zoom-in-btn', 'zoom-out-btn', 'fit-diagram-btn', 'mindmate-ai-btn',
             // Note: 'back-to-gallery' is NOT included - it's managed by DiagramSelector
             // and its event listener must persist across diagram switches

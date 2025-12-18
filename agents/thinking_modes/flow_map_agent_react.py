@@ -248,9 +248,9 @@ Keep it concise, professional, no emojis."""
         
         # Acknowledge request with step ordering emphasis
         if language == 'zh':
-            ack_prompt = f"好的！节点调色板即将打开。\n\n让我们为流程「{center_topic}」生成更多步骤。目前有{step_count}个步骤。\n\n**重要提示**：流程图的步骤需要按照时间顺序排列。系统将生成有序的步骤，每个步骤都会显示序号。你可以查看序号来确保步骤的逻辑顺序。\n\n系统将使用4个AI模型同时生成创意步骤想法。"
+            ack_prompt = f"好的！节点调色板即将打开。\n\n让我们为流程「{center_topic}」生成更多步骤。目前有{step_count}个步骤。\n\n**重要提示**：流程图的步骤需要按照时间顺序排列。系统将生成有序的步骤，每个步骤都会显示序号。你可以查看序号来确保步骤的逻辑顺序。\n\n系统将使用5个AI模型同时生成创意步骤想法。"
         else:
-            ack_prompt = f"Okay! Opening Node Palette.\n\nLet's generate more steps for process \"{center_topic}\". Currently {step_count} steps.\n\n**Important**: Flow map steps need to be in chronological order. The system will generate ordered steps, and each step will display a sequence number. You can review the sequence numbers to ensure logical ordering.\n\nThe system will use 4 AI models simultaneously to generate creative step ideas."
+            ack_prompt = f"Okay! Opening Node Palette.\n\nLet's generate more steps for process \"{center_topic}\". Currently {step_count} steps.\n\n**Important**: Flow map steps need to be in chronological order. The system will generate ordered steps, and each step will display a sequence number. You can review the sequence numbers to ensure logical ordering.\n\nThe system will use 5 AI models simultaneously to generate creative step ideas."
         
         async for chunk in self._stream_llm_response(ack_prompt, session):
             yield chunk

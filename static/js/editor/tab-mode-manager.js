@@ -74,10 +74,32 @@ class TabModeManager {
             });
         }
         
-        // Global keyboard handler for viewing mode expansion
+        // CRITICAL: Completely disable Tab navigation on canvas
+        // Prevent Tab key from navigating between elements
+        // This handler runs in capture phase to intercept before other handlers
         document.addEventListener('keydown', (e) => {
-            this.handleGlobalKeydown(e);
-        }, true); // Use capture phase to intercept before other handlers
+            // Only process Tab key
+            if (e.key !== 'Tab') return;
+            
+            // Check if user is typing in an input field
+            const activeElement = document.activeElement;
+            const isTyping = activeElement && (
+                activeElement.tagName === 'INPUT' ||
+                activeElement.tagName === 'TEXTAREA' ||
+                activeElement.isContentEditable
+            );
+            
+            // CRITICAL: Allow Tab in input fields for normal navigation and Tab Mode autocomplete
+            // Only block Tab when NOT in input fields (on canvas)
+            if (!isTyping) {
+                // Block Tab navigation on canvas to prevent focus navigation
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                this.logger.debug('TabModeManager', 'Tab navigation blocked on canvas');
+            }
+            // If isTyping is true, let the event continue to input handlers
+        }, true); // Use capture phase to intercept early
     }
     
     /**
@@ -135,29 +157,11 @@ class TabModeManager {
     
     /**
      * Handle global keydown events (for viewing mode expansion)
+     * REMOVED: Tab navigation support has been removed
      */
     handleGlobalKeydown(event) {
-        // Only handle Tab key when Tab Mode is enabled
-        if (!this.enabled) return;
-        
-        // Ignore if user is typing in an input/textarea
-        const activeElement = document.activeElement;
-        const isTyping = activeElement && (
-            activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            activeElement.isContentEditable
-        );
-        
-        // Viewing Mode: Tab key on selected node → Expand
-        if (event.key === 'Tab' && !isTyping && !event.shiftKey) {
-            const selectedNodes = this.stateManager.getDiagramState()?.selectedNodes || [];
-            if (selectedNodes.length === 1) {
-                event.preventDefault();
-                event.stopPropagation(); // Prevent Tab from triggering other handlers (e.g., MindMate panel)
-                this.handleNodeExpansion(selectedNodes[0]);
-                return; // Exit early to prevent further processing
-            }
-        }
+        // Tab navigation support removed - this method is no longer used
+        // Tab key now works normally for browser navigation
     }
     
     /**

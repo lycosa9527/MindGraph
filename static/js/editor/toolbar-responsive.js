@@ -236,7 +236,7 @@ class ToolbarResponsiveManager {
          * Show full text on buttons (restore from abbreviated state).
          */
         const learningBtn = document.getElementById('learning-btn-text');
-        const thinkingBtn = document.getElementById('thinking-btn-text');
+        const nodePaletteBtn = document.getElementById('node-palette-btn-text');
         const mindmateBtn = document.getElementById('mindmate-btn-text');
         
         // Get current language from LanguageManager
@@ -245,12 +245,12 @@ class ToolbarResponsiveManager {
         if (learningBtn) {
             learningBtn.textContent = currentLang === 'zh' ? '学习' : 'Learn';
         }
-        if (thinkingBtn) {
-            thinkingBtn.textContent = currentLang === 'zh' ? '瀑布流' : 'Node Palette';
+        if (nodePaletteBtn) {
+            nodePaletteBtn.textContent = currentLang === 'zh' ? '瀑布流' : 'Node Palette';
         }
         if (mindmateBtn) {
-            const fullName = window.AI_ASSISTANT_NAME || 'MindMate AI';
-            mindmateBtn.textContent = fullName;
+            // Button text is hardcoded to "教学设计"
+            mindmateBtn.textContent = '教学设计';
         }
     }
     
@@ -260,21 +260,19 @@ class ToolbarResponsiveManager {
          */
         const mindmateBtn = document.getElementById('mindmate-btn-text');
         
-        // Only abbreviate MindMate AI button
+        // Button text stays as "教学设计" (no abbreviation)
         if (mindmateBtn) {
-            const fullName = window.AI_ASSISTANT_NAME || 'MindMate AI';
-            const firstName = fullName.split(' ')[0];
-            mindmateBtn.textContent = firstName;
+            mindmateBtn.textContent = '教学设计';
         }
     }
     
     abbreviateAIButton() {
         /**
-         * Extra abbreviation for mobile - just "AI".
+         * Button text stays as "教学设计" (no abbreviation)
          */
         const mindmateBtn = document.getElementById('mindmate-btn-text');
         if (mindmateBtn) {
-            mindmateBtn.textContent = 'AI';
+            mindmateBtn.textContent = '教学设计';
         }
     }
     

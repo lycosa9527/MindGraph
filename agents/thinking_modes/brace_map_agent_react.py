@@ -254,9 +254,9 @@ Keep it concise, professional, no emojis."""
         if not has_real_parts:
             # Stage 1: Main Parts Generation
             if language == 'zh':
-                ack_prompt = f"好的！节点调色板即将打开。\n\n让我们为整体「{center_topic}」生成主要组成部分。请选择你想要的部分，然后点击\"完成\"添加到图中。\n\n系统将使用4个AI模型同时生成创意想法。"
+                ack_prompt = f"好的！节点调色板即将打开。\n\n让我们为整体「{center_topic}」生成主要组成部分。请选择你想要的部分，然后点击\"完成\"添加到图中。\n\n系统将使用5个AI模型同时生成创意想法。"
             else:
-                ack_prompt = f"Okay! Opening Node Palette.\n\nLet's generate main parts for \"{center_topic}\". Select the parts you want, then click \"Finish\" to add them to the diagram.\n\nThe system will use 4 AI models simultaneously to generate creative ideas."
+                ack_prompt = f"Okay! Opening Node Palette.\n\nLet's generate main parts for \"{center_topic}\". Select the parts you want, then click \"Finish\" to add them to the diagram.\n\nThe system will use 5 AI models simultaneously to generate creative ideas."
         else:
             # Stage 2: Sub-Parts Generation
             part_count = len(real_parts)

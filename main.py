@@ -27,6 +27,8 @@ from logging.handlers import TimedRotatingFileHandler, BaseRotatingHandler
 import time
 import signal
 import asyncio
+import re
+from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -544,6 +546,110 @@ logger.addFilter(CancelledErrorFilter())
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 
+# Suppress verbose COS SDK logs (qcloud_cos produces excessive DEBUG logs during backup)
+# The backup_scheduler service logs are tagged with SERV, these external libs should be quiet
+logging.getLogger('qcloud_cos').setLevel(logging.WARNING)
+logging.getLogger('qcloud_cos.cos_client').setLevel(logging.WARNING)
+logging.getLogger('qcloud_cos.cos_auth').setLevel(logging.WARNING)
+
+# Suppress verbose urllib3 connection pool logs (used by COS SDK and other HTTP clients)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+
+class OpenAIHTTPLogFilter(logging.Filter):
+    """Filter to reformat OpenAI SDK HTTP logs to match project log format.
+    
+    Reformats verbose HTTP request/response logs from OpenAI SDK into concise format:
+    - "HTTP Response: POST https://api.hunyuan.cloud.tencent.com/v1/chat/completions "200 OK" Headers({...})"
+      → "Hunyuan API: POST /v1/chat/completions → 200 OK"
+    """
+    
+    # API name mapping: URL substring -> Display name
+    API_NAMES = {
+        'hunyuan': 'Hunyuan',
+        'doubao': 'Doubao',
+        'dashscope': 'DashScope',
+        'openai': 'OpenAI',
+        'anthropic': 'Anthropic',
+    }
+    
+    def _extract_api_name(self, url: str) -> str:
+        """Extract API name from URL."""
+        url_lower = url.lower()
+        for key, name in self.API_NAMES.items():
+            if key in url_lower:
+                return name
+        return 'LLM'
+    
+    def _extract_endpoint(self, url: str) -> str:
+        """Extract endpoint path from URL."""
+        try:
+            parsed = urlparse(url)
+            return parsed.path or '/'
+        except (ValueError, AttributeError, TypeError):
+            # Fallback: extract path manually
+            if '://' in url:
+                path_part = url.split('://', 1)[1]
+                if '/' in path_part:
+                    return '/' + path_part.split('/', 1)[1].split('?')[0]
+            return url.split('/')[-1] if '/' in url else url
+    
+    def _reformat_response(self, message: str) -> str:
+        """Reformat HTTP Response message."""
+        # Pattern: "HTTP Response: METHOD URL "STATUS_CODE STATUS_TEXT" ..."
+        # More flexible regex to handle various formats
+        pattern = r'HTTP Response:\s+(\w+)\s+(https?://[^\s"]+)\s+"(\d+)\s+([^"]+)"'
+        match = re.match(pattern, message)
+        if match:
+            method, url, status_code, status_text = match.groups()
+            api_name = self._extract_api_name(url)
+            endpoint = self._extract_endpoint(url)
+            return f"{api_name} API: {method} {endpoint} → {status_code} {status_text}"
+        return message  # Return original if pattern doesn't match
+    
+    def _reformat_request(self, message: str) -> str:
+        """Reformat HTTP Request message."""
+        # Pattern: "HTTP Request: METHOD URL ..."
+        pattern = r'HTTP Request:\s+(\w+)\s+(https?://[^\s]+)'
+        match = re.match(pattern, message)
+        if match:
+            method, url = match.groups()
+            api_name = self._extract_api_name(url)
+            endpoint = self._extract_endpoint(url)
+            return f"{api_name} API: {method} {endpoint}"
+        return message  # Return original if pattern doesn't match
+    
+    def filter(self, record):
+        """Reformat HTTP request/response messages from OpenAI SDK."""
+        # Only process if message hasn't been reformatted yet
+        if hasattr(record, '_openai_reformatted'):
+            return True
+        
+        # Get message string (avoid calling getMessage() if possible)
+        if isinstance(record.msg, str):
+            message = record.msg
+        elif record.args:
+            # Only call getMessage() if args exist (format string)
+            message = record.getMessage()
+        else:
+            message = str(record.msg)
+        
+        # Reformat HTTP Response messages
+        if message.startswith('HTTP Response:'):
+            reformatted = self._reformat_response(message)
+            record.msg = reformatted
+            record.args = ()
+            record._openai_reformatted = True
+        
+        # Reformat HTTP Request messages
+        elif message.startswith('HTTP Request:'):
+            reformatted = self._reformat_request(message)
+            record.msg = reformatted
+            record.args = ()
+            record._openai_reformatted = True
+        
+        return True
+
 # Enable OpenAI SDK logging for HTTP request/response visibility
 # This provides detailed logs for Hunyuan and Doubao API calls
 openai_logger = logging.getLogger('openai')
@@ -551,6 +657,7 @@ openai_logger.setLevel(logging.DEBUG)
 openai_logger.handlers = []  # Remove default handlers
 openai_logger.addHandler(console_handler)
 openai_logger.addHandler(file_handler)
+openai_logger.addFilter(OpenAIHTTPLogFilter())
 openai_logger.propagate = False
 
 # Only log from main process, not each worker

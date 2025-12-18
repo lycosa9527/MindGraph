@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.29.3] - 2025-12-19 - Line Mode Fix, JSON Parsing, Logging & UI Improvements
+
+### Fixed
+
+- **Line Mode Stroke Width Changes** (`static/js/managers/toolbar/node-property-operations-manager.js`, `static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Fixed issue where changing node border width in line mode would revert node colors from black/white back to original colors
+  - Root cause: When changing stroke-width, `applyStylesRealtime()` was applying ALL properties from property panel including fill color, stroke color, and text color (which showed original colors, not line mode colors)
+  - Now detects line mode state and skips fill/stroke/text color changes during realtime property updates
+  - Stroke-width changes now work correctly in line mode without affecting the black/white styling
+  - Line mode state is now synced from `UIStateLLMManager` to `toolbarManager` for cross-manager access
+
+- **Chinese Quotation Marks in JSON Parsing** (`agents/core/agent_utils.py`)
+  - Added `_escape_chinese_quotes_in_strings()` function to handle Chinese quotation marks (" and ") in LLM JSON responses
+  - Chinese quotes inside JSON string values are now properly escaped before parsing
+  - Prevents JSON parsing failures when LLM includes Chinese punctuation in responses
+  - Applied before smart quote normalization to avoid double-processing
+
+- **Button Keyboard Activation Prevention** (`static/js/managers/mindmate-manager.js`, `static/js/editor/toolbar-manager.js`, `templates/editor.html`)
+  - Fixed accidental panel opens when pressing Enter/Space after using keyboard shortcuts
+  - MindMate AI button: Added comprehensive protection against keyboard and Tab-triggered clicks
+  - Node Palette button: Applied same protection pattern
+  - Both buttons now have `tabindex="-1"` to prevent Tab navigation
+  - Added mouse-down timestamp validation to ensure only genuine mouse clicks trigger actions
+  - Focus is moved to canvas after button clicks to prevent focus-related side effects
+
+- **Selection Manager Simplification** (`static/js/editor/selection-manager.js`)
+  - Selection highlight now uses ONLY drop-shadow filter (no stroke color/width changes)
+  - Allows real-time preview of stroke color/width changes while node is selected
+  - Removed stroke restoration logic on deselection (no longer needed)
+  - Cleaner selection visual feedback without interfering with property panel changes
+
+### Improved
+
+- **OpenAI SDK HTTP Log Formatting** (`main.py`)
+  - Added `OpenAIHTTPLogFilter` to reformat verbose OpenAI SDK HTTP request/response logs
+  - Transforms verbose logs like `HTTP Response: POST https://api.hunyuan.cloud.tencent.com/v1/chat/completions "200 OK" Headers({...})`
+  - Into concise format: `Hunyuan API: POST /v1/chat/completions → 200 OK`
+  - Supports Hunyuan, Doubao, DashScope, OpenAI, and Anthropic API detection
+  - Cleaner logs without losing essential information
+
+- **Logging Noise Reduction** (`main.py`)
+  - Suppressed verbose COS SDK logs (`qcloud_cos`, `qcloud_cos.cos_client`, `qcloud_cos.cos_auth`)
+  - Suppressed verbose urllib3 connection pool logs
+  - Set these external library loggers to WARNING level to reduce log noise during backups
+
+### Changed
+
+- **Node Palette Button Renaming** (`templates/editor.html`, `static/js/editor/toolbar-manager.js`, `static/css/editor-toolbar.css`)
+  - Renamed `thinkingBtn` / `btn-thinking` to `nodePaletteBtn` / `btn-node-palette` for clarity
+  - Updated HTML element IDs: `thinking-btn` → `node-palette-btn`, `thinking-btn-text` → `node-palette-btn-text`
+  - Updated all CSS class references from `.btn-thinking` to `.btn-node-palette`
+  - Renamed handler method from `handleThinkingMode()` to `handleNodePaletteMode()`
+
+- **Property Panel Cleanup** (`templates/editor.html`, `static/js/editor/toolbar-manager.js`)
+  - Removed unused Opacity slider from property panel
+  - Removed `propOpacity` and `opacityValue` references from toolbar manager
+  - Simplified property panel UI by removing non-functional control
+
+### Technical Details
+
+**Line Mode Fix:**
+- Line mode applies inline styles (`fill: #ffffff`, `stroke: #000000`, `stroke-width: 2px`)
+- Property panel reads values from attributes (not inline styles), showing original colors
+- When user changed stroke-width slider, `applyStylesRealtime()` applied ALL properties
+- Fix: Detect line mode and conditionally skip color property updates
+
+**Chinese Quote Escaping:**
+- Chinese quotation marks (\u201c and \u201d) break JSON parsing when inside string values
+- New function identifies JSON strings and escapes Chinese quotes to `\"`
+- Applied early in `_clean_json_string()` pipeline before other quote normalization
+
+---
+
 ## [4.29.2] - 2025-12-18 - Zoom/Pan Implementation Improvements & Touch Device Support
 
 ### Fixed

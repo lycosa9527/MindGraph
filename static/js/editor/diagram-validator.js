@@ -246,13 +246,13 @@ class DiagramValidator {
             this.logger.warn('DiagramValidator', 'Learning button not found');
         }
         
-        // ThinkGuide is ALWAYS available - no validation needed!
+        // Node Palette is ALWAYS available - no validation needed!
         // It can help build diagrams from scratch, so don't disable it
-        const thinkingBtn = document.getElementById('thinking-btn');
-        if (thinkingBtn) {
-            thinkingBtn.disabled = false;
-            thinkingBtn.classList.remove('disabled');
-            this.logger.debug('DiagramValidator', '✅ ThinkGuide always enabled (no validation required)');
+        const nodePaletteBtn = document.getElementById('node-palette-btn');
+        if (nodePaletteBtn) {
+            nodePaletteBtn.disabled = false;
+            nodePaletteBtn.classList.remove('disabled');
+            this.logger.debug('DiagramValidator', 'Node Palette always enabled (no validation required)');
         }
         
         return result;

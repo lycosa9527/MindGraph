@@ -2286,9 +2286,9 @@ class NodePaletteManager {
                     
                     const lang = window.languageManager?.getCurrentLanguage() || 'en';
                     const loadingMsg = lang === 'zh' ? 
-                        `正在为「${this.currentTab}」生成项目 (4个AI模型)...` : 
-                        `Generating items for "${this.currentTab}" (4 AI models)...`;
-                    this.updateCatapultLoading(loadingMsg, 0, 4);
+                        `正在为「${this.currentTab}」生成项目 (5个AI模型)...` : 
+                        `Generating items for "${this.currentTab}" (5 AI models)...`;
+                    this.updateCatapultLoading(loadingMsg, 0, 5);
                     
                     try {
                         await this.loadCategoryTabBatch(this.currentTab);
@@ -2321,9 +2321,9 @@ class NodePaletteManager {
                     
                     const lang = window.languageManager?.getCurrentLanguage() || 'en';
                     const loadingMsg = lang === 'zh' ? 
-                        `正在为「${this.currentTab}」生成子部分 (4个AI模型)...` : 
-                        `Generating subparts for "${this.currentTab}" (4 AI models)...`;
-                    this.updateCatapultLoading(loadingMsg, 0, 4);
+                        `正在为「${this.currentTab}」生成子部分 (5个AI模型)...` : 
+                        `Generating subparts for "${this.currentTab}" (5 AI models)...`;
+                    this.updateCatapultLoading(loadingMsg, 0, 5);
                     
                     try {
                         await this.loadCategoryTabBatch(this.currentTab);
@@ -2381,9 +2381,9 @@ class NodePaletteManager {
                     
                     const lang = window.languageManager?.getCurrentLanguage() || 'en';
                     const loadingMsg = lang === 'zh' ? 
-                        `正在为「${this.currentTab}」生成子步骤 (4个AI模型)...` : 
-                        `Generating substeps for "${this.currentTab}" (4 AI models)...`;
-                    this.updateCatapultLoading(loadingMsg, 0, 4);
+                        `正在为「${this.currentTab}」生成子步骤 (5个AI模型)...` : 
+                        `Generating substeps for "${this.currentTab}" (5 AI models)...`;
+                    this.updateCatapultLoading(loadingMsg, 0, 5);
                     
                     try {
                         await this.loadCategoryTabBatch(this.currentTab);
@@ -3098,11 +3098,11 @@ class NodePaletteManager {
         this.showCatapultLoading();
         
         const lang = window.languageManager?.getCurrentLanguage() || 'en';
-        const loadingMsg = lang === 'zh' ? '正在加载两个标签 (8个AI模型)...' : 'Loading both tabs (8 AI models)...';
-        this.updateCatapultLoading(loadingMsg, 0, 8);
+        const loadingMsg = lang === 'zh' ? '正在加载两个标签 (10个AI模型)...' : 'Loading both tabs (10 AI models)...';
+        this.updateCatapultLoading(loadingMsg, 0, 10);
         
         try {
-            // CATAPULT! Fire 8 LLMs total (4 per tab) - both tabs load in parallel
+            // CATAPULT! Fire 10 LLMs total (5 per tab) - both tabs load in parallel
             // Each catapult call will update the progress
             console.log(`[NodePalette] Firing 2 parallel catapults: ${firstTab} + ${secondTab}`);
             const results = await Promise.all([
@@ -3732,6 +3732,7 @@ class NodePaletteManager {
                 diagram_type: this.diagramType,
                 diagram_data: this.diagramData,
                 educational_context: this.educationalContext,
+                language: lang,
                 mode: this.currentTab  // For double bubble/multi flow maps
             };
         } else {
@@ -3740,6 +3741,7 @@ class NodePaletteManager {
                 diagram_type: this.diagramType,
                 center_topic: this.centerTopic,
                 educational_context: this.educationalContext,
+                language: lang,
                 mode: this.currentTab  // For double bubble/multi flow maps
             };
         }
@@ -5860,6 +5862,11 @@ class NodePaletteManager {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NodePaletteManager;
+}
+
+// Make available globally for browser scripts
+if (typeof window !== 'undefined') {
+    window.NodePaletteManager = NodePaletteManager;
 }
 
 // NOTE: No longer auto-initialized globally.

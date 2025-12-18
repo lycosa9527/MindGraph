@@ -492,7 +492,7 @@
     .btn-auto svg,
     .btn-line svg,
     .btn-learning svg,
-    .btn-thinking svg {
+    .btn-node-palette svg {
         width: 14px !important;
         height: 14px !important;
         margin-right: 3px !important;
@@ -555,7 +555,7 @@
     .btn-auto,
     .btn-line,
     .btn-learning,
-    .btn-thinking {
+    .btn-node-palette {
         padding: 5px 8px !important;
         font-size: 11px !important;
     }
@@ -590,6 +590,17 @@
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* CRITICAL: Prevent Tab focus on MindMate button - mouse only */
+.mindmate-ai-btn:focus {
+    outline: none !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important; /* Keep normal shadow, no focus ring */
+}
+
+/* Node Palette button - also prevent Tab focus */
+.btn-node-palette:focus {
+    outline: none !important;
 }
 
 /* Icon-only mode for narrow desktop screens */
@@ -776,10 +787,10 @@
 }
 
 /* ============================================
-   THINKING BUTTON (ThinkGuide)
+   NODE PALETTE BUTTON
    ============================================ */
 
-.btn-thinking {
+.btn-node-palette {
     position: relative;
     background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%) !important;
     color: white !important;
@@ -793,22 +804,22 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.btn-thinking svg {
+.btn-node-palette svg {
     margin-right: 6px;
 }
 
-.btn-thinking:not(:disabled):hover {
+.btn-node-palette:not(:disabled):hover {
     background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%) !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(156, 39, 176, 0.5) !important;
 }
 
-.btn-thinking:not(:disabled):active {
+.btn-node-palette:not(:disabled):active {
     transform: translateY(0);
 }
 
 /* Disabled state */
-.btn-thinking:disabled {
+.btn-node-palette:disabled {
     background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%) !important;
     color: #757575 !important;
     cursor: not-allowed;
@@ -816,7 +827,7 @@
 }
 
 /* Active state when panel is open */
-.btn-thinking.active {
+.btn-node-palette.active {
     background: linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%) !important;
     box-shadow: 0 2px 8px rgba(106, 27, 154, 0.5) !important;
 }

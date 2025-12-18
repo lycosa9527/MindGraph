@@ -152,7 +152,26 @@ class ThinkGuideManager {
         
         // Close button
         if (this.closeBtn) {
-            this.closeBtn.addEventListener('click', () => this.closePanel());
+            this.closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closePanel();
+                // CRITICAL FIX: Move focus to a safe element (canvas) to prevent
+                // focus-related side effects like accidentally opening other panels
+                setTimeout(() => {
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement.tagName === 'BUTTON') {
+                        activeElement.blur();
+                    }
+                    const canvas = document.getElementById('d3-container');
+                    if (canvas) {
+                        canvas.setAttribute('tabindex', '-1');
+                        canvas.focus();
+                    } else {
+                        document.body.focus();
+                    }
+                }, 0);
+            });
         }
         
         // Node palette button

@@ -75,54 +75,33 @@ class SelectionManager {
         }
         
         if (isSelected) {
-            // Store original stroke attributes to restore later
+            // Store original stroke attributes to restore later (for tracking purposes)
             const originalStroke = nodeElement.attr('stroke');
             const originalStrokeWidth = nodeElement.attr('stroke-width');
             
             if (!nodeElement.attr('data-original-stroke')) {
                 nodeElement
                     .attr('data-original-stroke', originalStroke || 'none')
-                    .attr('data-original-stroke-width', originalStrokeWidth || '0');
+                    .attr('data-original-stroke-width', originalStrokeWidth || '2');
             }
             
-            // Apply selection highlight with contrasting blue/purple color
+            // Apply selection highlight using ONLY drop-shadow filter
+            // This allows real-time preview of stroke color/width changes while selected
+            // The drop-shadow provides clear visual feedback that the node is selected
             nodeElement
                 .classed('selected', true)
-                .attr('stroke', '#667eea')  // Blue/purple from app theme
-                .attr('stroke-width', 4)
-                .style('filter', 'drop-shadow(0 0 12px rgba(102, 126, 234, 0.7))');
+                .style('filter', 'drop-shadow(0 0 12px rgba(102, 126, 234, 0.8)) drop-shadow(0 0 4px rgba(102, 126, 234, 0.6))');
         } else {
-            // Get stored original stroke (if exists)
-            const storedOriginalStroke = nodeElement.attr('data-original-stroke');
-            const storedOriginalStrokeWidth = nodeElement.attr('data-original-stroke-width');
-            
-            // Remove selection styling
+            // Remove selection styling - just remove the drop-shadow and 'selected' class
+            // Since we no longer change stroke on selection, we don't need to restore it
             nodeElement
                 .classed('selected', false)
                 .style('filter', null);
             
-            // Only restore stroke if we have stored original values
-            // This prevents destroying strokes on re-rendered elements that don't have
-            // the data-original-stroke attribute (they already have correct strokes from renderer)
-            if (storedOriginalStroke !== null) {
-                // Restore original stroke if it was a valid stroke, otherwise remove
-                if (storedOriginalStroke && storedOriginalStroke !== 'none') {
-                nodeElement
-                        .attr('stroke', storedOriginalStroke)
-                        .attr('stroke-width', storedOriginalStrokeWidth);
-            } else {
-                nodeElement
-                    .attr('stroke', null)
-                    .attr('stroke-width', null);
-            }
-            
-            // Clean up data attributes
+            // Clean up data attributes (they're now just used for tracking, not restoration)
             nodeElement
                 .attr('data-original-stroke', null)
                 .attr('data-original-stroke-width', null);
-            }
-            // If storedOriginalStroke is null (element was re-rendered and never had selection applied),
-            // don't touch the stroke at all - it's already correct from the renderer
         }
     }
     

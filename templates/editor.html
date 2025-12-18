@@ -763,14 +763,14 @@
                     </button>
                     {% endif %}
                     {% if feature_thinkguide %}
-                    <button id="thinking-btn" class="btn-tool btn-thinking" title="">
+                    <button id="node-palette-btn" class="btn-tool btn-node-palette" title="" tabindex="-1">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
                             <rect x="3" y="3" width="7" height="7"></rect>
                             <rect x="14" y="3" width="7" height="7"></rect>
                             <rect x="14" y="14" width="7" height="7"></rect>
                             <rect x="3" y="14" width="7" height="7"></rect>
                         </svg>
-                        <span id="thinking-btn-text">Node Palette</span>
+                        <span id="node-palette-btn-text">Node Palette</span>
                     </button>
                     {% endif %}
                 </div>
@@ -790,7 +790,7 @@
             <!-- Right Section: AI Assistant Button (configurable name) -->
             <div class="toolbar-section toolbar-right">
                 {% if feature_mindmate %}
-                <button id="mindmate-ai-btn" class="mindmate-ai-btn">
+                <button id="mindmate-ai-btn" class="mindmate-ai-btn" tabindex="-1">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
@@ -897,13 +897,6 @@
                         <label for="prop-stroke-width">Stroke Width</label>
                         <input type="range" id="prop-stroke-width" name="prop-stroke-width" class="prop-slider" min="0" max="10" step="0.5" value="2">
                         <span id="stroke-width-value">2px</span>
-                    </div>
-                    
-                    <!-- Opacity -->
-                    <div class="property-group">
-                        <label for="prop-opacity">Opacity</label>
-                        <input type="range" id="prop-opacity" name="prop-opacity" class="prop-slider" min="0" max="1" step="0.1" value="1">
-                        <span id="opacity-value">100%</span>
                     </div>
                     
                     <!-- Reset Styles Button -->

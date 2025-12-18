@@ -830,9 +830,9 @@ class DiagramSelector {
         if (thinkPanel) {
             thinkPanel.classList.add('collapsed');
         }
-        const thinkingBtn = document.getElementById('thinking-btn');
-        if (thinkingBtn) {
-            thinkingBtn.classList.remove('active');
+        const nodePaletteBtn = document.getElementById('node-palette-btn');
+        if (nodePaletteBtn) {
+            nodePaletteBtn.classList.remove('active');
         }
         
         // 3. Node Palette - UI cleanup only

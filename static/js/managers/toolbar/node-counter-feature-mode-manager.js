@@ -38,7 +38,7 @@ class NodeCounterFeatureModeManager {
                 this.eventBus.emit('learning_mode:validated', { result });
             },
             startLearningMode: () => this.handleLearningMode(),
-            toggleThinkingMode: () => this.handleThinkingMode()
+            toggleNodePaletteMode: () => this.handleNodePaletteMode()
         };
         
         this.setupEventListeners();
@@ -55,7 +55,7 @@ class NodeCounterFeatureModeManager {
         this.eventBus.onWithOwner('session:validate_requested', this.callbacks.validateSession, this.ownerId);
         this.eventBus.onWithOwner('learning_mode:validate', this.callbacks.validateLearningMode, this.ownerId);
         this.eventBus.onWithOwner('learning_mode:start_requested', this.callbacks.startLearningMode, this.ownerId);
-        this.eventBus.onWithOwner('thinking_mode:toggle_requested', this.callbacks.toggleThinkingMode, this.ownerId);
+        this.eventBus.onWithOwner('node_palette:toggle_requested', this.callbacks.toggleNodePaletteMode, this.ownerId);
         
         this.logger.debug('NodeCounterFeatureModeManager', 'Event Bus listeners registered with owner tracking');
     }
@@ -281,10 +281,10 @@ class NodeCounterFeatureModeManager {
     }
     
     /**
-     * Handle Node Palette button click (formerly Thinking Mode / ThinkGuide button)
+     * Handle Node Palette button click
      * Opens Node Palette directly for brainstorming nodes with AI
      */
-    async handleThinkingMode() {
+    async handleNodePaletteMode() {
         this.logger.info('NodeCounterFeatureModeManager', 'Node Palette button clicked');
         
         // Check if node palette panel is already open - toggle behavior

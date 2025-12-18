@@ -105,7 +105,6 @@ class NodePropertyOperationsManager {
             fillColor: this.toolbarManager.propFillColor?.value,
             strokeColor: this.toolbarManager.propStrokeColor?.value,
             strokeWidth: this.toolbarManager.propStrokeWidth?.value,
-            opacity: this.toolbarManager.propOpacity?.value,
             bold: this.toolbarManager.propBold?.classList.contains('active'),
             italic: this.toolbarManager.propItalic?.classList.contains('active'),
             underline: this.toolbarManager.propUnderline?.classList.contains('active'),
@@ -125,6 +124,9 @@ class NodePropertyOperationsManager {
             const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (nodeElement.empty()) return;
             
+            // Check if node is currently selected (has selection highlight)
+            const isCurrentlySelected = nodeElement.classed('selected');
+            
             // Find ALL text elements for this node using selectAll (for multi-line text support)
             let textElements = d3.selectAll(`text[data-node-id="${nodeId}"]`);
             if (textElements.empty()) {
@@ -139,28 +141,27 @@ class NodePropertyOperationsManager {
                 }
             }
             
-            // Apply shape properties
+            // Apply shape properties - ALWAYS apply directly for real-time preview
+            // The drop-shadow filter will remain as the selection indicator
             if (properties.fillColor) {
                 nodeElement.attr('fill', properties.fillColor);
             }
             if (properties.strokeColor) {
+                // Apply stroke directly for real-time preview
                 nodeElement.attr('stroke', properties.strokeColor);
-                // CRITICAL: Also update data-original-stroke so SelectionManager
-                // restores the NEW value when deselecting, not the old one
-                if (nodeElement.attr('data-original-stroke')) {
+                // Also update data-original-stroke so correct color is tracked for deselection
+                if (isCurrentlySelected) {
                     nodeElement.attr('data-original-stroke', properties.strokeColor);
                 }
             }
             if (properties.strokeWidth) {
+                // Apply via inline style (takes precedence, works in line mode)
+                // This ensures changes work even when line mode has set inline styles
+                nodeElement.style('stroke-width', properties.strokeWidth + 'px');
+                // Also update attribute for when inline style is cleared (line mode disabled)
                 nodeElement.attr('stroke-width', properties.strokeWidth);
-                // Also update data-original-stroke-width
-                if (nodeElement.attr('data-original-stroke-width')) {
-                    nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
-                }
-            }
-            // Use explicit null/undefined check to allow opacity 0 (fully transparent)
-            if (properties.opacity !== null && properties.opacity !== undefined && properties.opacity !== '') {
-                nodeElement.attr('opacity', properties.opacity);
+                // Always update data-original-stroke-width for line mode restoration
+                nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
             }
             
             // Apply text styling properties to ALL text elements (not content - that's handled by applyText)
@@ -217,40 +218,46 @@ class NodePropertyOperationsManager {
             fillColor: this.toolbarManager.propFillColor?.value,
             strokeColor: this.toolbarManager.propStrokeColor?.value,
             strokeWidth: this.toolbarManager.propStrokeWidth?.value,
-            opacity: this.toolbarManager.propOpacity?.value,
             bold: this.toolbarManager.propBold?.classList.contains('active'),
             italic: this.toolbarManager.propItalic?.classList.contains('active'),
             underline: this.toolbarManager.propUnderline?.classList.contains('active'),
             strikethrough: this.toolbarManager.propStrikethrough?.classList.contains('active')
         };
         
+        // Check if we're in line mode - if so, skip fill/stroke color changes
+        // to preserve line mode's black/white styling
+        const isLineMode = this.toolbarManager?.isLineMode || false;
+        
         // Apply to all selected nodes
         selectedNodes.forEach(nodeId => {
             const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
             if (nodeElement.empty()) return;
             
-            // Apply shape properties
-            if (properties.fillColor) {
+            // Check if node is currently selected (has selection highlight)
+            const isCurrentlySelected = nodeElement.classed('selected');
+            
+            // Apply shape properties - ALWAYS apply directly for real-time preview
+            // The drop-shadow filter will remain as the selection indicator
+            // In line mode, skip fill/stroke to preserve black/white styling
+            if (properties.fillColor && !isLineMode) {
                 nodeElement.attr('fill', properties.fillColor);
             }
-            if (properties.strokeColor) {
+            if (properties.strokeColor && !isLineMode) {
+                // Apply stroke directly for real-time preview
                 nodeElement.attr('stroke', properties.strokeColor);
-                // CRITICAL: Also update data-original-stroke so SelectionManager
-                // restores the NEW value when deselecting, not the old one
-                if (nodeElement.attr('data-original-stroke')) {
+                // Also update data-original-stroke so correct color is tracked for deselection
+                if (isCurrentlySelected) {
                     nodeElement.attr('data-original-stroke', properties.strokeColor);
                 }
             }
             if (properties.strokeWidth) {
+                // Apply via inline style (takes precedence, works in line mode)
+                // This ensures changes work even when line mode has set inline styles
+                nodeElement.style('stroke-width', properties.strokeWidth + 'px');
+                // Also update attribute for when inline style is cleared (line mode disabled)
                 nodeElement.attr('stroke-width', properties.strokeWidth);
-                // Also update data-original-stroke-width
-                if (nodeElement.attr('data-original-stroke-width')) {
-                    nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
-                }
-            }
-            // Use explicit null/undefined check to allow opacity 0 (fully transparent)
-            if (properties.opacity !== null && properties.opacity !== undefined && properties.opacity !== '') {
-                nodeElement.attr('opacity', properties.opacity);
+                // Always update data-original-stroke-width for line mode restoration
+                nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
             }
             
             // Find ALL text elements for this node using selectAll (for multi-line text support)
@@ -268,6 +275,7 @@ class NodePropertyOperationsManager {
             }
             
             // Apply text properties to ALL text elements
+            // In line mode, skip text color to preserve black text styling
             if (!textElements.empty()) {
                 if (properties.fontSize) {
                     textElements.attr('font-size', properties.fontSize);
@@ -275,7 +283,7 @@ class NodePropertyOperationsManager {
                 if (properties.fontFamily) {
                     textElements.attr('font-family', properties.fontFamily);
                 }
-                if (properties.textColor) {
+                if (properties.textColor && !isLineMode) {
                     textElements.attr('fill', properties.textColor);
                 }
                 textElements.attr('font-weight', properties.bold ? 'bold' : 'normal');
@@ -319,13 +327,12 @@ class NodePropertyOperationsManager {
         if (this.toolbarManager.propStrokeColorHex) this.toolbarManager.propStrokeColorHex.value = defaultProps.strokeColor.toUpperCase();
         if (this.toolbarManager.propStrokeWidth) this.toolbarManager.propStrokeWidth.value = parseFloat(defaultProps.strokeWidth);
         if (this.toolbarManager.strokeWidthValue) this.toolbarManager.strokeWidthValue.textContent = `${defaultProps.strokeWidth}px`;
-        if (this.toolbarManager.propOpacity) this.toolbarManager.propOpacity.value = parseFloat(defaultProps.opacity);
-        if (this.toolbarManager.opacityValue) this.toolbarManager.opacityValue.textContent = `${Math.round(parseFloat(defaultProps.opacity) * 100)}%`;
         
         // Reset style toggles to defaults (off)
         this.toolbarManager.propBold?.classList.remove('active');
         this.toolbarManager.propItalic?.classList.remove('active');
         this.toolbarManager.propUnderline?.classList.remove('active');
+        this.toolbarManager.propStrikethrough?.classList.remove('active');
         
         // Apply template defaults to selected nodes
         this.applyStylesRealtime();
@@ -376,38 +383,118 @@ class NodePropertyOperationsManager {
     }
     
     /**
+     * Apply only text styles (font properties) without touching shape properties
+     * This is used by toggle methods to avoid interfering with selection highlight
+     */
+    applyTextStylesOnly() {
+        if (!this.toolbarManager) return;
+        
+        const selectedNodes = this.getSelectedNodes();
+        if (selectedNodes.length === 0) return;
+        
+        const textProperties = {
+            fontSize: this.toolbarManager.propFontSize?.value,
+            fontFamily: this.toolbarManager.propFontFamily?.value,
+            textColor: this.toolbarManager.propTextColor?.value,
+            bold: this.toolbarManager.propBold?.classList.contains('active'),
+            italic: this.toolbarManager.propItalic?.classList.contains('active'),
+            underline: this.toolbarManager.propUnderline?.classList.contains('active'),
+            strikethrough: this.toolbarManager.propStrikethrough?.classList.contains('active')
+        };
+        
+        // Apply ONLY text properties to selected nodes (skip shape properties like stroke/fill)
+        selectedNodes.forEach(nodeId => {
+            const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (nodeElement.empty()) return;
+            
+            // Find text elements for this node
+            let textElements = d3.selectAll(`text[data-node-id="${nodeId}"]`);
+            if (textElements.empty()) {
+                textElements = d3.selectAll(`[data-text-for="${nodeId}"]`);
+            }
+            if (textElements.empty()) {
+                const node = nodeElement.node();
+                if (node.nextElementSibling && node.nextElementSibling.tagName === 'text') {
+                    textElements = d3.selectAll(node.nextElementSibling);
+                } else {
+                    textElements = nodeElement.selectAll('text');
+                }
+            }
+            
+            // Apply only text styling properties (NOT shape properties)
+            if (!textElements.empty()) {
+                if (textProperties.fontSize) {
+                    textElements.attr('font-size', textProperties.fontSize);
+                }
+                if (textProperties.fontFamily) {
+                    textElements.attr('font-family', textProperties.fontFamily);
+                }
+                if (textProperties.textColor) {
+                    textElements.attr('fill', textProperties.textColor);
+                }
+                textElements.attr('font-weight', textProperties.bold ? 'bold' : 'normal');
+                textElements.attr('font-style', textProperties.italic ? 'italic' : 'normal');
+                
+                // Combine text-decoration values
+                const decorations = [];
+                if (textProperties.underline) decorations.push('underline');
+                if (textProperties.strikethrough) decorations.push('line-through');
+                textElements.attr('text-decoration', decorations.length > 0 ? decorations.join(' ') : 'none');
+            }
+        });
+        
+        // Save to history silently
+        this.editor?.saveToHistory('update_text_styles', { 
+            nodes: selectedNodes, 
+            properties: textProperties 
+        });
+    }
+    
+    /**
      * Toggle bold
      * EXTRACTED FROM: toolbar-manager.js lines 1017-1019
+     * NOTE: Uses applyTextStylesOnly to avoid interfering with selection
      */
     toggleBold() {
         if (!this.toolbarManager) return;
         this.toolbarManager.propBold.classList.toggle('active');
+        // Apply ONLY text styles - don't touch shape properties to preserve selection highlight
+        this.applyTextStylesOnly();
     }
     
     /**
      * Toggle italic
      * EXTRACTED FROM: toolbar-manager.js lines 1024-1026
+     * NOTE: Uses applyTextStylesOnly to avoid interfering with selection
      */
     toggleItalic() {
         if (!this.toolbarManager) return;
         this.toolbarManager.propItalic.classList.toggle('active');
+        // Apply ONLY text styles - don't touch shape properties to preserve selection highlight
+        this.applyTextStylesOnly();
     }
     
     /**
      * Toggle underline
      * EXTRACTED FROM: toolbar-manager.js lines 1031-1033
+     * NOTE: Uses applyTextStylesOnly to avoid interfering with selection
      */
     toggleUnderline() {
         if (!this.toolbarManager) return;
         this.toolbarManager.propUnderline.classList.toggle('active');
+        // Apply ONLY text styles - don't touch shape properties to preserve selection highlight
+        this.applyTextStylesOnly();
     }
     
     /**
      * Toggle strikethrough
+     * NOTE: Uses applyTextStylesOnly to avoid interfering with selection
      */
     toggleStrikethrough() {
         if (!this.toolbarManager) return;
         this.toolbarManager.propStrikethrough.classList.toggle('active');
+        // Apply ONLY text styles - don't touch shape properties to preserve selection highlight
+        this.applyTextStylesOnly();
     }
     
     /**

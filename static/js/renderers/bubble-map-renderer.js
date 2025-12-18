@@ -976,33 +976,6 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
         };
     });
     
-    // If we recalculated evenly (new nodes added), update custom positions silently
-    // This ensures positions are saved for future renders without triggering re-render loop
-    if (shouldRecalculateEvenly) {
-        console.log('[CircleMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly for', nodeCount, 'nodes');
-        if (!spec._customPositions) {
-            spec._customPositions = {};
-        }
-        // Clear old custom positions and save new evenly-spaced positions
-        Object.keys(spec._customPositions).forEach(key => {
-            if (key.startsWith('context_')) {
-                delete spec._customPositions[key];
-            }
-        });
-        
-        // Save all recalculated positions
-        nodes.forEach(node => {
-            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
-        });
-        
-        logger.info('[CircleMap-Renderer] Updated custom positions with evenly-spaced layout', {
-            updatedPositions: nodes.length
-        });
-        console.log('[CircleMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('context_')).sort());
-    } else {
-        console.log('[CircleMap-Renderer] ⏭️ SKIPPING recalculation - shouldRecalculateEvenly =', shouldRecalculateEvenly);
-    }
-    
     logger.info('[CircleMap-Renderer] Node positioning calculated:');
     nodes.forEach((node, idx) => {
         logger.info(`  [${idx}] "${node.text}" at (${Math.round(node.x)}, ${Math.round(node.y)})`);
@@ -1019,9 +992,11 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
     const actualCenterY = actualHeight / 2;
     
     // Update node positions with actual center
-    // If using custom positions, they're already in SVG coordinates, so use them directly
-    // If not using custom positions, adjust for actual center
-    if (!hasCustomPositions) {
+    // CRITICAL FIX: When shouldRecalculateEvenly is true, we need to adjust positions for actual center
+    // before saving them. Otherwise, saved positions will be relative to wrong center.
+    const shouldAdjustForActualCenter = !hasCustomPositions || shouldRecalculateEvenly;
+    
+    if (shouldAdjustForActualCenter) {
         nodes.forEach(node => {
             const dx = node.x - centerX;
             const dy = node.y - centerY;
@@ -1032,7 +1007,7 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             node.targetY = actualCenterY + (node.targetY - centerY);
         });
     } else {
-        // For custom positions, they're already in SVG coordinates from previous render
+        // For custom positions (and not recalculating), they're already in SVG coordinates from previous render
         // Use them directly - they should match the current SVG coordinate system
         nodes.forEach(node => {
             // Positions already set from custom positions - use as-is
@@ -1040,6 +1015,36 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
             node.targetX = node.x;
             node.targetY = node.y;
         });
+    }
+    
+    // If we recalculated evenly (new nodes added), update custom positions silently
+    // CRITICAL FIX: Save positions AFTER canvas expansion and center adjustment
+    // This ensures saved positions are relative to actual center, not base center
+    if (shouldRecalculateEvenly) {
+        console.log('[CircleMap-Renderer] 🔄 UPDATING CUSTOM POSITIONS - Recalculated evenly for', nodeCount, 'nodes');
+        if (!spec._customPositions) {
+            spec._customPositions = {};
+        }
+        // Clear old custom positions and save new evenly-spaced positions
+        Object.keys(spec._customPositions).forEach(key => {
+            if (key.startsWith('context_')) {
+                delete spec._customPositions[key];
+            }
+        });
+        
+        // Save all recalculated positions (now correctly adjusted for actual center)
+        nodes.forEach(node => {
+            spec._customPositions[node.nodeId] = { x: node.x, y: node.y };
+        });
+        
+        logger.info('[CircleMap-Renderer] Updated custom positions with evenly-spaced layout', {
+            updatedPositions: nodes.length,
+            actualCenter: { x: actualCenterX, y: actualCenterY },
+            baseCenter: { x: centerX, y: centerY }
+        });
+        console.log('[CircleMap-Renderer] ✅ Custom positions updated:', Object.keys(spec._customPositions).filter(k => k.startsWith('context_')).sort());
+    } else {
+        console.log('[CircleMap-Renderer] ⏭️ SKIPPING recalculation - shouldRecalculateEvenly =', shouldRecalculateEvenly);
     }
     
     // Add central topic as a fixed node for force simulation
@@ -1284,49 +1289,49 @@ function renderCircleMap(spec, theme = null, dimensions = null) {
                 }
             });
         } else {
-            // No custom positions - run simulation to create nice circular layout
-            // First, ensure nodes start at their calculated target positions
+            // No custom positions - use mathematically calculated even spacing directly
+            // CRITICAL FIX: Skip force simulation when positions are evenly calculated
+            // The angle-based calculation already provides perfect even spacing
+            // Running simulation disrupts this spacing, especially with 11+ nodes
+            // First, ensure nodes are at their calculated target positions
             nodes.forEach(node => {
                 node.x = node.targetX;
                 node.y = node.targetY;
             });
             
-            // Run simulation to create nice circular distribution
-            // The simulation will use the donutBoundary force to keep nodes in the ring
-            // Run enough ticks to ensure good layout
-            for (let i = 0; i < 400; ++i) {
-                window.circleMapSimulation.tick();
-            }
-            
-            // Ensure nodes are within boundaries after simulation
+            // Verify nodes are within boundaries (they should be, but check for safety)
             nodes.forEach(node => {
                 const dx = node.x - actualCenterX;
                 const dy = node.y - actualCenterY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
                 if (distance > 0) {
-                    // Constrain to outer boundary
+                    // Constrain to outer boundary if somehow outside
                     if (distance > outerRadius) {
                         const scale = outerRadius / distance;
                         node.x = actualCenterX + dx * scale;
                         node.y = actualCenterY + dy * scale;
+                        logger.warn(`[CircleMap-Renderer] Node ${node.nodeId} was outside outer boundary, constrained`);
                     }
                     
-                    // Constrain to inner boundary
+                    // Constrain to inner boundary if somehow inside
                     if (distance < innerRadius) {
                         const scale = innerRadius / distance;
                         node.x = actualCenterX + dx * scale;
                         node.y = actualCenterY + dy * scale;
+                        logger.warn(`[CircleMap-Renderer] Node ${node.nodeId} was inside inner boundary, constrained`);
                     }
                 }
             });
             
-            // Update target positions to match final simulation positions
-            // This ensures if user drags later, nodes start from good positions
-            nodes.forEach(node => {
-                node.targetX = node.x;
-                node.targetY = node.y;
+            // Keep target positions as calculated (they're already perfect)
+            // No need to update - the calculated positions are mathematically even
+            const spacingAngle = (360 / nodes.length).toFixed(2);
+            logger.info('[CircleMap-Renderer] Using calculated even spacing (no simulation needed)', {
+                nodeCount: nodes.length,
+                spacingAngle: spacingAngle + '°'
             });
+            console.log(`[CircleMap-Renderer] ✅ Using calculated even spacing: ${nodes.length} nodes, ${spacingAngle}° between each`);
         }
     }
     

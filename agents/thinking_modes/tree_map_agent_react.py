@@ -235,26 +235,26 @@ Keep it concise, professional, no emojis."""
             # Stage 1: Dimension Selection
             stage = 'dimensions'
             if language == 'zh':
-                ack_prompt = f"好的！节点调色板（维度选择）即将打开。\n\n为「{center_topic}」选择分类维度是第一步。维度决定了如何分类这个主题（例如：按功能、按结构、按时间等）。\n\n我将使用4个AI模型为你生成多个维度选项。**请只选择1个维度**，然后点击\"下一步\"继续到类别生成阶段。"
+                ack_prompt = f"好的！节点调色板（维度选择）即将打开。\n\n为「{center_topic}」选择分类维度是第一步。维度决定了如何分类这个主题（例如：按功能、按结构、按时间等）。\n\n我将使用5个AI模型为你生成多个维度选项。**请只选择1个维度**，然后点击\"下一步\"继续到类别生成阶段。"
             else:
-                ack_prompt = f"Great! Node Palette (dimension selection) is opening.\n\nChoosing a classification dimension for \"{center_topic}\" is the first step. The dimension determines how we'll classify this topic (e.g., by function, by structure, by time, etc.).\n\nI'll use 4 AI models to generate dimension options for you. **Please select ONLY 1 dimension**, then click \"Next\" to continue to category generation."
+                ack_prompt = f"Great! Node Palette (dimension selection) is opening.\n\nChoosing a classification dimension for \"{center_topic}\" is the first step. The dimension determines how we'll classify this topic (e.g., by function, by structure, by time, etc.).\n\nI'll use 5 AI models to generate dimension options for you. **Please select ONLY 1 dimension**, then click \"Next\" to continue to category generation."
         elif not has_categories:
             # Stage 2: Category Generation
             stage = 'categories'
             dimension = diagram_data.get('dimension', '')
             if language == 'zh':
-                ack_prompt = f"好的！节点调色板（类别生成）即将打开。\n\n现在让我们为「{center_topic}」生成分类类别，使用维度：{dimension}。\n\n我将使用4个AI模型生成符合这个维度的类别。**请选择你想要的类别**（可以选择多个），然后点击\"下一步\"。\n\n系统将为你选择的每个类别创建一个独立的标签页，并同时启动多个AI模型为所有类别生成具体项目。"
+                ack_prompt = f"好的！节点调色板（类别生成）即将打开。\n\n现在让我们为「{center_topic}」生成分类类别，使用维度：{dimension}。\n\n我将使用5个AI模型生成符合这个维度的类别。**请选择你想要的类别**（可以选择多个），然后点击\"下一步\"。\n\n系统将为你选择的每个类别创建一个独立的标签页，并同时启动多个AI模型为所有类别生成具体项目。"
             else:
-                ack_prompt = f"Great! Node Palette (category generation) is opening.\n\nNow let's generate categories for \"{center_topic}\" using dimension: {dimension}.\n\nI'll use 4 AI models to generate categories that follow this dimension. **Please select the categories you want** (multiple selection allowed), then click \"Next\".\n\nThe system will create a separate tab for each selected category and launch multiple AI models simultaneously to generate specific items for all categories."
+                ack_prompt = f"Great! Node Palette (category generation) is opening.\n\nNow let's generate categories for \"{center_topic}\" using dimension: {dimension}.\n\nI'll use 5 AI models to generate categories that follow this dimension. **Please select the categories you want** (multiple selection allowed), then click \"Next\".\n\nThe system will create a separate tab for each selected category and launch multiple AI models simultaneously to generate specific items for all categories."
         else:
             # Stage 3: Children Generation
             stage = 'children'
             dimension = diagram_data.get('dimension', '')
             category_count = len(diagram_data.get('children', []))
             if language == 'zh':
-                ack_prompt = f"好的！现在让我们为你的{category_count}个类别添加具体项目。\n\n选择一个类别，我将使用4个AI模型为该类别生成具体的项目。你可以为每个类别分别选择项目。"
+                ack_prompt = f"好的！现在让我们为你的{category_count}个类别添加具体项目。\n\n选择一个类别，我将使用5个AI模型为该类别生成具体的项目。你可以为每个类别分别选择项目。"
             else:
-                ack_prompt = f"Great! Now let's add specific items to your {category_count} categories.\n\nSelect a category, and I'll use 4 AI models to generate specific items for it. You can select items for each category separately."
+                ack_prompt = f"Great! Now let's add specific items to your {category_count} categories.\n\nSelect a category, and I'll use 5 AI models to generate specific items for it. You can select items for each category separately."
         
         async for chunk in self._stream_llm_response(ack_prompt, session):
             yield chunk

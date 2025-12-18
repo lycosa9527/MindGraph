@@ -141,10 +141,12 @@ class UIStateLLMManager {
                         .style('stroke', '#000000')
                         .style('stroke-width', '1px');
                 } else {
-                    // For all other shapes (including nodes): no fill, black stroke
-                    // Edge-to-edge connection rendering ensures connections don't go through nodes
+                    // For all other shapes (including nodes): white fill, black stroke
+                    // Using white fill instead of none to ensure click events work on interior
+                    // (SVG elements with fill:none only capture clicks on stroke/border)
+                    // White fill is appropriate for line mode since it's meant for B&W printing
                     element
-                        .style('fill', 'none')
+                        .style('fill', '#ffffff')
                         .style('stroke', '#000000')
                         .style('stroke-width', '2px');
                 }
@@ -213,6 +215,11 @@ class UIStateLLMManager {
      */
     toggleLineMode() {
         this.isLineMode = !this.isLineMode;
+        
+        // Sync line mode state to toolbarManager for other managers to access
+        if (this.toolbarManager) {
+            this.toolbarManager.isLineMode = this.isLineMode;
+        }
         
         // Toggle button active state
         const lineModeBtn = this.toolbarManager.lineModeBtn;

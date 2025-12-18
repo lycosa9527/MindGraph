@@ -855,11 +855,23 @@ async def generate_dingtalk_png(
         logger.debug(f"[generate_dingtalk] Saved to {temp_path}")
         
         # Step 4: Build plain text response in ![](url) format (empty alt text)
-        # Detect protocol from request (http or https)
-        protocol = request.url.scheme
-        external_host = os.getenv('EXTERNAL_HOST', 'localhost')
-        port = os.getenv('PORT', '9527')
-        image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
+        # Detect protocol and host from reverse proxy headers (X-Forwarded-*) if present
+        # This prevents mixed content errors when behind HTTPS reverse proxy
+        forwarded_proto = request.headers.get('X-Forwarded-Proto')
+        forwarded_host = request.headers.get('X-Forwarded-Host')
+        
+        if forwarded_proto and forwarded_host:
+            # Behind reverse proxy - use forwarded values (no port needed)
+            protocol = forwarded_proto
+            image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
+            logger.debug(f"[generate_dingtalk] Using reverse proxy headers: {protocol}://{forwarded_host}")
+        else:
+            # Direct access - use backend protocol and EXTERNAL_HOST with port
+            protocol = request.url.scheme
+            external_host = os.getenv('EXTERNAL_HOST', 'localhost')
+            port = os.getenv('PORT', '9527')
+            image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
+        
         plain_text = f"![]({image_url})"
         
         logger.info(f"[generate_dingtalk] Success: {image_url}")

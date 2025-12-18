@@ -54,7 +54,22 @@ class MindMateManager {
         this.callbacks = {
             panelOpen: (data) => {
                 if (data.panel === 'mindmate') {
-                    this.openPanel();
+                    // CRITICAL: Block automatic opens from keyboard/focus events
+                    // Allow all other sources (button clicks, voice commands, etc.)
+                    const blockedSources = ['keyboard', 'focus', 'tab_navigation'];
+                    const source = data.source || '';
+                    
+                    if (blockedSources.includes(source)) {
+                        // Block automatic opens from keyboard/focus
+                        this.logger.warn('MindMateManager', 'Blocked automatic panel open from keyboard/focus', { 
+                            source,
+                            blockedSources 
+                        });
+                    } else {
+                        // Allow panel open (button click, voice command, or unknown source)
+                        this.logger.debug('MindMateManager', 'Panel open requested', { source: source || 'unknown' });
+                        this.openPanel();
+                    }
                 }
             },
             panelClose: (data) => {
@@ -89,6 +104,9 @@ class MindMateManager {
         this.chatInput = document.getElementById('ai-chat-input');
         this.sendBtn = document.getElementById('ai-chat-send');
         
+        // Note: tabindex="-1" is set in bindEvents() after event handlers are attached
+        // This ensures the button is non-focusable via Tab navigation
+        
         if (this.panel && !this.mindmateBtn) {
             this.logger.error('MindMateManager', 'MindMate button not found in DOM');
         }
@@ -103,17 +121,123 @@ class MindMateManager {
             this.toggleBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation(); // CRITICAL: Prevent any other handlers from firing
                 this.togglePanel();
+                // CRITICAL FIX: Move focus to a safe element (canvas) to prevent
+                // focus-related side effects like accidentally opening other panels
+                setTimeout(() => {
+                    // First blur any focused button
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement.tagName === 'BUTTON') {
+                        activeElement.blur();
+                    }
+                    // Then move focus to canvas or body
+                    const canvas = document.getElementById('d3-container');
+                    if (canvas) {
+                        // Make canvas focusable temporarily
+                        canvas.setAttribute('tabindex', '-1');
+                        canvas.focus();
+                    } else {
+                        document.body.focus();
+                    }
+                }, 0);
             });
         }
         
         // MindMate AI button in toolbar
         if (this.mindmateBtn) {
+            // CRITICAL FIX: Completely disable Tab navigation to this button
+            this.mindmateBtn.setAttribute('tabindex', '-1');
+            
+            // Track if button was activated via explicit mouse click
+            let activatedViaMouse = false;
+            let mouseDownTime = 0;
+            
+            // Mouse down handler - mark as mouse activation with timestamp
+            this.mindmateBtn.addEventListener('mousedown', (e) => {
+                // Only allow if it's a left mouse button click (button === 0)
+                if (e.button === 0) {
+                    activatedViaMouse = true;
+                    mouseDownTime = Date.now();
+                }
+            });
+            
+            // Click handler - only activate if it was a real mouse click
             this.mindmateBtn.addEventListener('click', (e) => {
+                // CRITICAL: Only toggle if:
+                // 1. Activated via mouse (flag is true)
+                // 2. Mouse down happened recently (within 500ms)
+                // 3. It's a left mouse button click
+                const timeSinceMouseDown = Date.now() - mouseDownTime;
+                const isValidClick = activatedViaMouse && timeSinceMouseDown < 500 && e.button === 0;
+                
+                this.logger.debug('MindMateManager', 'Button click detected', {
+                    activatedViaMouse,
+                    timeSinceMouseDown,
+                    button: e.button,
+                    isValidClick,
+                    isTrusted: e.isTrusted
+                });
+                
+                if (isValidClick && e.isTrusted) {
+                    // Real user mouse click - allow it
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    this.togglePanel();
+                } else {
+                    // Not a valid mouse click - block it completely
+                    this.logger.warn('MindMateManager', 'Blocked invalid button click', {
+                        activatedViaMouse,
+                        timeSinceMouseDown,
+                        button: e.button,
+                        isTrusted: e.isTrusted
+                    });
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+                // Reset flags
+                activatedViaMouse = false;
+                mouseDownTime = 0;
+            }, true); // Use capture phase to intercept early
+            
+            // Prevent ALL keyboard activation
+            this.mindmateBtn.addEventListener('keydown', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.togglePanel();
-            });
+                e.stopImmediatePropagation();
+            }, true);
+            
+            this.mindmateBtn.addEventListener('keyup', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
+            
+            this.mindmateBtn.addEventListener('keypress', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
+            
+            // CRITICAL FIX: Prevent focus event - blur immediately if focus received
+            this.mindmateBtn.addEventListener('focus', (e) => {
+                // Log for debugging - this should NEVER happen with tabindex="-1"
+                this.logger.warn('MindMateManager', 'UNEXPECTED FOCUS on MindMate button - should not happen with tabindex=-1', {
+                    tabindex: this.mindmateBtn.getAttribute('tabindex'),
+                    activeElement: document.activeElement?.id
+                });
+                // Always blur if button gets focus unexpectedly
+                this.mindmateBtn.blur();
+                // Move focus away
+                const canvas = document.getElementById('d3-container');
+                if (canvas && canvas.focus) {
+                    canvas.focus();
+                } else {
+                    document.body.focus();
+                }
+            }, true);
         }
         
         // Send message button
@@ -176,7 +300,9 @@ class MindMateManager {
     openPanel() {
         if (!this.panel) return;
         
+        // DEBUG: Log call stack to trace what's triggering panel open
         this.logger.info('MindMateManager', 'Opening panel');
+        console.trace('MindMateManager.openPanel() called - tracing caller');
         
         // Mobile: Lock body scroll to prevent page shift
         if (window.innerWidth <= 768) {

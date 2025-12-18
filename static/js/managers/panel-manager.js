@@ -63,14 +63,14 @@ class PanelManager {
         const propertyPanel = document.getElementById('property-panel');
         const thinkingPanel = document.getElementById('thinking-panel');
         const aiPanel = document.getElementById('ai-assistant-panel');
-        const thinkingBtn = document.getElementById('thinking-btn');
+        const nodePaletteBtn = document.getElementById('node-palette-btn');
         const mindmateBtn = document.getElementById('mindmate-ai-btn');
         
         this.logger.debug('PanelManager', 'Initializing panels', {
             hasPropertyPanel: !!propertyPanel,
             hasThinkingPanel: !!thinkingPanel,
             hasAIPanel: !!aiPanel,
-            hasThinkingBtn: !!thinkingBtn,
+            hasNodePaletteBtn: !!nodePaletteBtn,
             hasMindmateBtn: !!mindmateBtn
         });
         
@@ -86,12 +86,12 @@ class PanelManager {
             }
         });
         
-        // Register ThinkGuide Panel (still exists, but button now opens Node Palette)
+        // Register ThinkGuide Panel (legacy - kept for backward compatibility)
         this.registerPanel('thinkguide', {
             element: thinkingPanel,
             type: 'class', // Uses collapsed class
             manager: () => window.currentEditor?.thinkGuide,
-            // No button - thinking-btn now opens Node Palette instead
+            // No button - node-palette-btn opens Node Palette instead
         });
         
         // Register MindMate Panel
@@ -108,17 +108,17 @@ class PanelManager {
             }
         });
         
-        // Register Node Palette Panel (thinking-btn now opens this)
+        // Register Node Palette Panel
         const nodePalettePanel = document.getElementById('node-palette-panel');
         this.registerPanel('nodePalette', {
             element: nodePalettePanel,
             type: 'style', // Uses style.display
-            button: thinkingBtn, // thinking-btn now controls Node Palette
+            button: nodePaletteBtn,
             manager: () => window.currentEditor?.nodePalette,
             closeCallback: () => {
                 // Panel-specific cleanup (PanelManager handles display)
                 // NodePaletteManager.closePanel() will be called by PanelManager
-                if (thinkingBtn) thinkingBtn.classList.remove('active');
+                if (nodePaletteBtn) nodePaletteBtn.classList.remove('active');
             },
             openCallback: () => {
                 // Panel-specific setup (PanelManager handles display)
@@ -126,7 +126,7 @@ class PanelManager {
                 if (window.currentEditor?.nodePalette) {
                     window.currentEditor.nodePalette.showPalettePanel();
                 }
-                if (thinkingBtn) thinkingBtn.classList.add('active');
+                if (nodePaletteBtn) nodePaletteBtn.classList.add('active');
             }
         });
         

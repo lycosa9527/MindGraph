@@ -573,7 +573,7 @@ class LanguageManager {
                 online: '在线',
                 welcomeTitle: `欢迎使用${window.AI_ASSISTANT_NAME || 'MindMate AI'}！`,
                 welcomeMessage: '我在这里帮助您创建图示。随时询问有关创建、编辑或改进您作品的任何问题。',
-                askMindMatePlaceholder: `向${window.AI_ASSISTANT_NAME?.split(' ')[0] || 'MindMate'}提问任何问题...`,
+                askMindMatePlaceholder: `向${window.AI_ASSISTANT_NAME || 'MindMate AI'}提出任何问题...`,
                 // Notification Messages
                 notif: {
                     textEmpty: '文本不能为空',
@@ -1189,14 +1189,14 @@ class LanguageManager {
             learningBtn.title = t.learningModeTooltip;
         }
         
-        // Update ThinkGuide button text and title
-        const thinkingBtn = document.getElementById('thinking-btn');
-        if (thinkingBtn) {
-            const thinkingBtnText = document.getElementById('thinking-btn-text');
-            if (thinkingBtnText) {
-                thinkingBtnText.textContent = t.thinking;
+        // Update Node Palette button text and title
+        const nodePaletteBtn = document.getElementById('node-palette-btn');
+        if (nodePaletteBtn) {
+            const nodePaletteBtnText = document.getElementById('node-palette-btn-text');
+            if (nodePaletteBtnText) {
+                nodePaletteBtnText.textContent = t.nodePalette;
             }
-            thinkingBtn.title = t.thinkingModeTooltip;
+            nodePaletteBtn.title = t.nodePaletteTooltip;
         }
         
         // Update ThinkGuide panel title
@@ -1439,9 +1439,6 @@ class LanguageManager {
         const propStrokeWidthLabel = document.querySelector('label[for="prop-stroke-width"]');
         if (propStrokeWidthLabel) propStrokeWidthLabel.textContent = t.strokeWidth;
         
-        const propOpacityLabel = document.querySelector('label[for="prop-opacity"]');
-        if (propOpacityLabel) propOpacityLabel.textContent = t.opacity;
-        
         const propTextInput = document.getElementById('prop-text');
         if (propTextInput) propTextInput.placeholder = t.nodeTextPlaceholder;
         
@@ -1467,11 +1464,11 @@ class LanguageManager {
         const aiChatInput = document.getElementById('ai-chat-input');
         if (aiChatInput) aiChatInput.placeholder = t.askMindMatePlaceholder;
         
-        // Update MindMate AI toolbar button
+        // Update MindMate AI toolbar button (hardcoded to "教学设计")
         const mindmateBtn = document.getElementById('mindmate-ai-btn');
         if (mindmateBtn) {
             const btnText = mindmateBtn.querySelector('span');
-            if (btnText) btnText.textContent = t.mindMateAI;
+            if (btnText) btnText.textContent = '教学设计';
         }
         
         // Update LLM selector label and tooltips

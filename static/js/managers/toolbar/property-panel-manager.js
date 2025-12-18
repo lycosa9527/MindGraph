@@ -32,7 +32,6 @@ class PropertyPanelManager {
         this.propFillColor = null;
         this.propStrokeColor = null;
         this.propStrokeWidth = null;
-        this.propOpacity = null;
         this.propBold = null;
         this.propItalic = null;
         this.propUnderline = null;
@@ -66,7 +65,6 @@ class PropertyPanelManager {
         this.propFillColor = document.getElementById('prop-fill-color');
         this.propStrokeColor = document.getElementById('prop-stroke-color');
         this.propStrokeWidth = document.getElementById('prop-stroke-width');
-        this.propOpacity = document.getElementById('prop-opacity');
         this.propBold = document.getElementById('prop-bold');
         this.propItalic = document.getElementById('prop-italic');
         this.propUnderline = document.getElementById('prop-underline');
@@ -275,6 +273,13 @@ class PropertyPanelManager {
      * @param {string} nodeId - Node ID
      */
     loadNodeProperties(nodeId) {
+        // CRITICAL: Reset toggle buttons first to ensure they don't retain state from previous node
+        // This fixes the bug where underline/strikethrough buttons stayed lit when switching nodes
+        if (this.propBold) this.propBold.classList.remove('active');
+        if (this.propItalic) this.propItalic.classList.remove('active');
+        if (this.propUnderline) this.propUnderline.classList.remove('active');
+        if (this.propStrikethrough) this.propStrikethrough.classList.remove('active');
+        
         const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
         
         if (nodeElement.empty()) {
@@ -297,9 +302,6 @@ class PropertyPanelManager {
         const fill = nodeElement.attr('fill') || '#2196f3';
         const stroke = nodeElement.attr('stroke') || '#1976d2';
         const strokeWidth = nodeElement.attr('stroke-width') || '2';
-        // Use explicit null check to preserve opacity 0 (fully transparent)
-        const opacityAttr = nodeElement.attr('opacity');
-        const opacity = (opacityAttr !== null && opacityAttr !== undefined) ? opacityAttr : '1';
         
         // Get text element - try multiple methods to find it
         let textElement = null;
@@ -394,8 +396,6 @@ class PropertyPanelManager {
         if (this.propStrokeColor) this.propStrokeColor.value = expandedStroke;
         if (this.propStrokeWidth) this.propStrokeWidth.value = parseFloat(strokeWidth);
         if (this.strokeWidthValue) this.strokeWidthValue.textContent = `${strokeWidth}px`;
-        if (this.propOpacity) this.propOpacity.value = parseFloat(opacity);
-        if (this.opacityValue) this.opacityValue.textContent = `${Math.round(parseFloat(opacity) * 100)}%`;
         
         // Update color button previews
         this.updateColorPreviews();
@@ -465,7 +465,6 @@ class PropertyPanelManager {
         if (this.propFillColor) this.propFillColor.value = '#2196f3';
         if (this.propStrokeColor) this.propStrokeColor.value = '#1976d2';
         if (this.propStrokeWidth) this.propStrokeWidth.value = 2;
-        if (this.propOpacity) this.propOpacity.value = 1;
         
         // Reset toggle buttons
         if (this.propBold) this.propBold.classList.remove('active');

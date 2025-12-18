@@ -404,7 +404,7 @@
                         <span class="lang-en">Phone Number</span>
                     </label>
                     <input type="tel" class="form-input" name="phone" id="login-phone"
-                           placeholder="手机号作为用户名" maxlength="11" required>
+                           placeholder="手机号作为用户名" maxlength="11" required autocomplete="username tel">
                 </div>
 
                 <div class="form-group">
@@ -413,7 +413,7 @@
                         <span class="lang-en">Password</span>
                     </label>
                     <input type="password" class="form-input" name="password" id="login-password"
-                           placeholder="输入密码" required>
+                           placeholder="输入密码" autocomplete="current-password" required>
                 </div>
 
                 <div class="form-group">
@@ -582,7 +582,7 @@
                             <span class="lang-en">SMS Code</span>
                         </label>
                         <input type="text" class="form-input" name="sms_code" id="reset-sms-code"
-                               placeholder="输入6位短信验证码" maxlength="6" required>
+                               placeholder="输入6位短信验证码" maxlength="6" required autocomplete="one-time-code">
                         <small class="hint-text">
                             <span class="lang-zh" id="sms-sent-hint">验证码已发送至 <span id="masked-phone"></span></span>
                             <span class="lang-en" id="sms-sent-hint-en">Code sent to <span id="masked-phone-en"></span></span>
@@ -595,7 +595,7 @@
                             <span class="lang-en">New Password</span>
                         </label>
                         <input type="password" class="form-input" name="new_password" id="reset-new-password"
-                               placeholder="输入新密码（至少8位）" minlength="8" required>
+                               placeholder="输入新密码（至少8位）" minlength="8" autocomplete="new-password" required>
                     </div>
                     
                     <div class="form-group">
@@ -604,7 +604,7 @@
                             <span class="lang-en">Confirm Password</span>
                         </label>
                         <input type="password" class="form-input" name="confirm_password" id="reset-confirm-password"
-                               placeholder="再次输入新密码" minlength="8" required>
+                               placeholder="再次输入新密码" minlength="8" autocomplete="new-password" required>
                     </div>
                     
                     <button type="button" class="btn btn-primary" id="reset-password-btn" onclick="resetPassword()">
@@ -631,7 +631,7 @@
                         <span class="lang-en">Phone Number *</span>
                     </label>
                     <input type="tel" class="form-input" name="phone" id="register-phone"
-                           placeholder="手机号作为用户名" maxlength="11" required>
+                           placeholder="手机号作为用户名" maxlength="11" required autocomplete="tel">
                     <small class="hint-text">
                         <span class="lang-zh">11位中国手机号</span>
                         <span class="lang-en">11-digit Chinese mobile number</span>
@@ -644,7 +644,7 @@
                         <span class="lang-en">Password *</span>
                     </label>
                     <input type="password" class="form-input" name="password" id="register-password"
-                           placeholder="至少8位字符" minlength="8" required>
+                           placeholder="至少8位字符" minlength="8" autocomplete="new-password" required>
                     <small class="hint-text">
                         <span class="lang-zh">最少8个字符</span>
                         <span class="lang-en">Minimum 8 characters</span>

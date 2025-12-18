@@ -729,8 +729,8 @@ class PromptManager {
                 logger.info('PromptManager', 'Triggering auto-complete with all models');
             }
             
-            // Count of models to run
-            const modelCount = excludeModel ? 3 : 4;
+            // Count of models to run (5 models: qwen, deepseek, kimi, hunyuan, doubao)
+            const modelCount = excludeModel ? 4 : 5;
             
             // Show info notification
             this.showNotification(

@@ -329,6 +329,7 @@ class NodePaletteStartRequest(BaseModel):
     diagram_data: Dict[str, Any] = Field(..., description="Current diagram data")
     educational_context: Optional[Dict[str, Any]] = Field(None, description="Educational context (grade level, subject, etc.)")
     user_id: Optional[str] = Field(None, description="User identifier for analytics")
+    language: str = Field('en', description="UI language (en or zh)")
     mode: Optional[str] = Field('similarities', description="Mode for double bubble map: 'similarities' or 'differences'")
     # NEW: Stage-based generation for tree maps
     stage: Optional[str] = Field('categories', description="Generation stage for tree maps: 'dimensions', 'categories', or 'children'")
@@ -362,6 +363,7 @@ class NodePaletteNextRequest(BaseModel):
     diagram_type: str = Field(..., description="Diagram type ('circle_map', 'bubble_map', 'double_bubble_map', 'tree_map', etc.)")
     center_topic: str = Field(..., min_length=1, description="Center topic from diagram")
     educational_context: Optional[Dict[str, Any]] = Field(None, description="Educational context")
+    language: str = Field('en', description="UI language (en or zh)")
     mode: Optional[str] = Field('similarities', description="Mode for double bubble map: 'similarities' or 'differences'")
     # NEW: Stage-based generation for tree maps
     stage: Optional[str] = Field('categories', description="Generation stage for tree maps: 'dimensions', 'categories', or 'children'")

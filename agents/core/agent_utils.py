@@ -63,6 +63,7 @@ def extract_json_from_response(response_content, allow_partial=False):
             first_brace = content.find('{')
             if first_brace != -1:
                 # Use balanced bracket matching to find the matching closing brace
+                # Note: We need to handle Chinese quotes here too, but we'll escape them later
                 brace_count = 0
                 json_end = first_brace
                 in_string = False
@@ -79,6 +80,7 @@ def extract_json_from_response(response_content, allow_partial=False):
                         escape_next = True
                         continue
                     
+                    # Track string state using regular quotes only (Chinese quotes will be escaped)
                     if char == '"' and not escape_next:
                         in_string = not in_string
                         continue
@@ -497,12 +499,75 @@ def _remove_js_comments_safely(text: str) -> str:
     return ''.join(result)
 
 
+def _escape_chinese_quotes_in_strings(text: str) -> str:
+    """
+    Escape Chinese quotation marks that appear inside JSON string values.
+    
+    Chinese quotation marks (" and ") break JSON parsing when they appear inside
+    string values because the parser thinks the string has ended.
+    
+    This function identifies JSON string values and escapes Chinese quotes inside them.
+    
+    Args:
+        text: JSON text that may contain Chinese quotes inside strings
+        
+    Returns:
+        Text with Chinese quotes escaped inside string values
+    """
+    result = []
+    i = 0
+    in_string = False
+    escape_next = False
+    
+    while i < len(text):
+        char = text[i]
+        
+        if escape_next:
+            # Escaped character - add as-is and reset escape flag
+            result.append(char)
+            escape_next = False
+            i += 1
+            continue
+        
+        if char == '\\':
+            # Escape character - next char is escaped
+            result.append(char)
+            escape_next = True
+            i += 1
+            continue
+        
+        if char == '"':
+            # Toggle string state
+            in_string = not in_string
+            result.append(char)
+            i += 1
+            continue
+        
+        if in_string:
+            # Inside string - escape Chinese quotation marks
+            if char == '\u201c':  # Chinese left double quotation mark "
+                result.append('\\"')
+            elif char == '\u201d':  # Chinese right double quotation mark "
+                result.append('\\"')
+            else:
+                result.append(char)
+            i += 1
+            continue
+        
+        # Outside string - add character as-is
+        result.append(char)
+        i += 1
+    
+    return ''.join(result)
+
+
 def _clean_json_string(text: str) -> str:
     """
     Clean JSON string by fixing legitimate formatting issues.
     
     Only fixes issues that don't change JSON semantics:
     - Unicode quote normalization
+    - Chinese quotation mark escaping inside strings
     - Control character removal
     - Trailing comma removal (common JSON extension)
     - JS-style comments (only outside string values)
@@ -522,7 +587,11 @@ def _clean_json_string(text: str) -> str:
     # Remove leading/trailing whitespace and backticks
     text = text.strip().strip('`')
     
+    # Escape Chinese quotation marks inside JSON strings FIRST (before other quote replacements)
+    text = _escape_chinese_quotes_in_strings(text)
+    
     # Replace smart quotes with ASCII equivalents (legitimate fix)
+    # Note: We do this AFTER escaping Chinese quotes to avoid double-processing
     text = text.replace('\u201c', '"').replace('\u201d', '"')
     text = text.replace('\u2018', "'").replace('\u2019', "'")
     text = text.replace('"', '"').replace('"', '"')
