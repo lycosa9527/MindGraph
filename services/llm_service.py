@@ -426,6 +426,7 @@ class LLMService:
             'deepseek': 70.0,
             'hunyuan': 70.0,
             'kimi': 70.0,
+            'doubao': 70.0,
             'chatglm': 70.0
         }
         return timeouts.get(model, 70.0)
@@ -745,7 +746,7 @@ class LLMService:
         
         Args:
             prompt: Prompt to send to all LLMs
-            models: List of model names (default: ['qwen', 'deepseek', 'kimi', 'hunyuan'])
+            models: List of model names (default: ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao'])
             temperature: Sampling temperature (None uses model default)
             max_tokens: Maximum tokens to generate
             timeout: Per-LLM timeout in seconds (None uses default)
@@ -776,7 +777,7 @@ class LLMService:
                     print(f"\n{chunk['llm']} error: {chunk['error']}")
         """
         if models is None:
-            models = ['qwen', 'deepseek', 'kimi', 'hunyuan']
+            models = ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
         
         logger.debug(f"[LLMService] stream_progressive() - streaming from {len(models)} models concurrently")
         

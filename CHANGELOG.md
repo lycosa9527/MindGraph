@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.29.1] - 2025-12-18 - Doubao Integration Enhancements & Logging Improvements
+
+### Added
+
+- **Doubao Node Palette Integration** (`agents/thinking_modes/node_palette/base_palette_generator.py`, `agents/thinking_modes/node_palette_generator.py`, `routers/thinking.py`)
+  - Added Doubao to Node Palette catapult system - now fires all 5 LLMs concurrently (qwen, deepseek, hunyuan, kimi, doubao)
+  - Updated docstrings and log messages from "4 LLMs" to "5 LLMs" to reflect Doubao inclusion
+  - Doubao nodes now generate alongside other LLMs in infinite scroll and auto-complete features
+
+- **Doubao Node Color Styling** (`static/css/node-palette.css`)
+  - Added pink/magenta color scheme for Doubao nodes in Node Palette (matching button color)
+  - Normal state: Pink border (`#e91e63`) with subtle gradient background and glow effects
+  - Selected state: Enhanced pink glow with multiple shadow layers for visual feedback
+  - Animation timing staggered at 0.9s to differentiate from other LLMs
+
+- **Enhanced Authentication Logging** (`utils/auth.py`)
+  - Added endpoint path to authentication logs for better traceability
+  - Format: `Authenticated teacher: {name} (ID: {id}, Phone: {phone}) [Worker: {worker}] [{endpoint}]`
+  - Helps identify which endpoint triggered authentication when multiple parallel requests occur
+
+### Changed
+
+- **Doubao Button Color** (`static/css/editor.css`)
+  - Changed from orange/amber to pink/magenta (`rgba(233, 30, 99)`) to differentiate from Hunyuan's orange/gold
+  - Updated all states: normal, hover, active, and ready (glow effect)
+  - Ensures visual distinction between Hunyuan and Doubao buttons
+
+- **Consolidated Request/Response Logging** (`main.py`)
+  - Combined separate request and response log lines into single consolidated line
+  - Format: `Request: {method} {path} from {host} Response: {status} in {time}s`
+  - Reduces log file size by ~50% for HTTP requests while maintaining all information
+  - Improves log readability by keeping request/response context together
+
+---
+
 ## [4.29.0] - 2025-12-18 - Comprehensive API Security Review
 
 ### Added

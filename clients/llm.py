@@ -27,6 +27,7 @@ from services.error_handler import (
 )
 from services.dashscope_error_parser import parse_and_raise_dashscope_error
 from services.hunyuan_error_parser import parse_and_raise_hunyuan_error
+from services.doubao_error_parser import parse_and_raise_doubao_error
 
 # Load environment variables for logging configuration
 load_dotenv()
@@ -835,6 +836,235 @@ class HunyuanClient:
             logger.error(f"Hunyuan streaming error: {e}")
             raise
 
+
+class DoubaoClient:
+    """Client for Volcengine Doubao (豆包) using OpenAI-compatible API"""
+    
+    def __init__(self):
+        """Initialize Doubao client with OpenAI SDK"""
+        self.api_key = config.ARK_API_KEY
+        self.base_url = config.ARK_BASE_URL
+        self.model_name = config.DOUBAO_MODEL
+        self.timeout = 60  # seconds
+        
+        # DIVERSITY FIX: Moderate temperature for Doubao
+        self.default_temperature = 0.8
+        
+        # Initialize AsyncOpenAI client with custom base URL
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=self.timeout
+        )
+        
+        logger.debug(f"DoubaoClient initialized with OpenAI-compatible API: {self.model_name}")
+    
+    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
+                                   max_tokens: int = 2000) -> str:
+        """
+        Send async chat completion request to Volcengine Doubao (OpenAI-compatible)
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 2.0), None uses default
+            max_tokens: Maximum tokens in response
+            
+        Returns:
+            Response content as string
+        """
+        try:
+            # Use instance default if not specified
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            logger.debug(f"Doubao async API request: {self.model_name} (temp: {temperature})")
+            
+            # Call OpenAI-compatible API
+            completion = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            
+            # Extract content from response
+            content = completion.choices[0].message.content
+            
+            if content:
+                logger.debug(f"Doubao response length: {len(content)} chars")
+                # Extract usage data (OpenAI SDK uses 'usage' attribute)
+                usage = {}
+                if hasattr(completion, 'usage') and completion.usage:
+                    usage = {
+                        'prompt_tokens': completion.usage.prompt_tokens if hasattr(completion.usage, 'prompt_tokens') else 0,
+                        'completion_tokens': completion.usage.completion_tokens if hasattr(completion.usage, 'completion_tokens') else 0,
+                        'total_tokens': completion.usage.total_tokens if hasattr(completion.usage, 'total_tokens') else 0
+                    }
+                return {
+                    'content': content,
+                    'usage': usage
+                }
+            else:
+                logger.error("Doubao API returned empty content")
+                raise Exception("Doubao API returned empty content")
+        
+        except RateLimitError as e:
+            logger.error(f"Doubao rate limit error: {e}")
+            raise LLMRateLimitError(f"Doubao rate limit: {e}")
+        
+        except APIStatusError as e:
+            error_msg = str(e)
+            logger.error(f"Doubao API status error: {error_msg}")
+            
+            # Try to extract error code from OpenAI SDK error
+            error_code = None
+            status_code = getattr(e, 'status_code', None)
+            
+            if hasattr(e, 'code'):
+                error_code = e.code
+            elif hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_data = e.response.json()
+                    if 'error' in error_data:
+                        error_code = error_data['error'].get('code', 'Unknown')
+                        error_msg = error_data['error'].get('message', error_msg)
+                    # Also check for status_code in response
+                    if status_code is None:
+                        status_code = error_data.get('status_code')
+                except:
+                    pass
+            
+            # Try to extract from error message if code not found
+            if not error_code:
+                # Look for common error code patterns in message
+                code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
+                if code_match:
+                    error_code = code_match.group(1)
+                else:
+                    error_code = 'Unknown'
+            
+            # Parse error using comprehensive Doubao error parser
+            try:
+                parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+                    LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
+                # Re-raise parsed exceptions
+                raise
+            except Exception:
+                # Fallback to generic error if parsing fails
+                raise LLMProviderError(f"Doubao API error ({error_code}): {error_msg}", provider='doubao', error_code=error_code)
+                
+        except Exception as e:
+            logger.error(f"Doubao API error: {e}")
+            raise
+    
+    # Alias for compatibility with agents that call chat_completion
+    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+                             max_tokens: int = 2000) -> str:
+        """Alias for async_chat_completion for API consistency"""
+        return await self.async_chat_completion(messages, temperature, max_tokens)
+    
+    async def async_stream_chat_completion(
+        self, 
+        messages: List[Dict], 
+        temperature: float = None,
+        max_tokens: int = 2000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat completion from Doubao using OpenAI-compatible API.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 2.0), None uses default
+            max_tokens: Maximum tokens in response
+            
+        Yields:
+            str: Content chunks as they arrive
+        """
+        try:
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            logger.debug(f"Doubao stream API request: {self.model_name} (temp: {temperature})")
+            
+            # Use OpenAI SDK's streaming with usage tracking
+            stream = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,  # Enable streaming
+                stream_options={"include_usage": True}  # Request usage in stream
+            )
+            
+            last_usage = None
+            async for chunk in stream:
+                # Check for usage data (usually in last chunk)
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    last_usage = {
+                        'prompt_tokens': chunk.usage.prompt_tokens if hasattr(chunk.usage, 'prompt_tokens') else 0,
+                        'completion_tokens': chunk.usage.completion_tokens if hasattr(chunk.usage, 'completion_tokens') else 0,
+                        'total_tokens': chunk.usage.total_tokens if hasattr(chunk.usage, 'total_tokens') else 0
+                    }
+                
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        yield {'type': 'token', 'content': delta.content}
+            
+            # Yield usage data as final chunk
+            if last_usage:
+                yield {'type': 'usage', 'usage': last_usage}
+        
+        except RateLimitError as e:
+            logger.error(f"Doubao streaming rate limit: {e}")
+            raise LLMRateLimitError(f"Doubao rate limit: {e}")
+        
+        except APIStatusError as e:
+            error_msg = str(e)
+            logger.error(f"Doubao streaming API error: {error_msg}")
+            
+            # Try to extract error code from OpenAI SDK error
+            error_code = None
+            status_code = getattr(e, 'status_code', None)
+            
+            if hasattr(e, 'code'):
+                error_code = e.code
+            elif hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_data = e.response.json()
+                    if 'error' in error_data:
+                        error_code = error_data['error'].get('code', 'Unknown')
+                        error_msg = error_data['error'].get('message', error_msg)
+                    # Also check for status_code in response
+                    if status_code is None:
+                        status_code = error_data.get('status_code')
+                except:
+                    pass
+            
+            # Try to extract from error message if code not found
+            if not error_code:
+                code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
+                if code_match:
+                    error_code = code_match.group(1)
+                else:
+                    error_code = 'Unknown'
+            
+            # Parse error using comprehensive Doubao error parser
+            try:
+                parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+                    LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
+                # Re-raise parsed exceptions
+                raise
+            except Exception:
+                # Fallback to generic error if parsing fails
+                raise LLMProviderError(f"Doubao stream error ({error_code}): {error_msg}", provider='doubao', error_code=error_code)
+        
+        except Exception as e:
+            logger.error(f"Doubao streaming error: {e}")
+            raise
+
 # ============================================================================
 # GLOBAL CLIENT INSTANCES
 # ============================================================================
@@ -849,11 +1079,12 @@ try:
     deepseek_client = DeepSeekClient()
     kimi_client = KimiClient()
     hunyuan_client = HunyuanClient()
+    doubao_client = DoubaoClient()
     
     # Only log from main worker to avoid duplicate messages
     import os
     if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
-        logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan)")
+        logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan, Doubao)")
 except Exception as e:
     logger.warning(f"Failed to initialize LLM clients: {e}")
     qwen_client = None
@@ -862,13 +1093,14 @@ except Exception as e:
     deepseek_client = None
     kimi_client = None
     hunyuan_client = None
+    doubao_client = None
 
 def get_llm_client(model_id='qwen'):
     """
     Get an LLM client by model ID.
     
     Args:
-        model_id (str): 'qwen', 'deepseek', 'kimi', or 'hunyuan'
+        model_id (str): 'qwen', 'deepseek', 'kimi', 'hunyuan', or 'doubao'
         
     Returns:
         LLM client instance
@@ -877,7 +1109,8 @@ def get_llm_client(model_id='qwen'):
         'qwen': qwen_client_generation,
         'deepseek': deepseek_client,
         'kimi': kimi_client,
-        'hunyuan': hunyuan_client
+        'hunyuan': hunyuan_client,
+        'doubao': doubao_client
     }
     
     client = client_map.get(model_id)

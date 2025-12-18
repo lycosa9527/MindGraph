@@ -36,7 +36,7 @@ class NodePaletteGenerator:
     
     Architecture:
     - Uses llm_service.stream_progressive() for concurrent token streaming
-    - All 4 LLMs (qwen, deepseek, hunyuan, kimi) fire simultaneously
+    - All 5 LLMs (qwen, deepseek, hunyuan, kimi, doubao) fire simultaneously
     - Circles render progressively as tokens arrive from any LLM
     - Deduplication across all batches and LLMs
     - No limits - keeps generating on scroll
@@ -51,7 +51,7 @@ class NodePaletteGenerator:
         """
         self.diagram_type = diagram_type
         self.llm_service = llm_service
-        self.llm_models = ['qwen', 'deepseek', 'hunyuan', 'kimi']
+        self.llm_models = ['qwen', 'deepseek', 'hunyuan', 'kimi', 'doubao']
         
         # Get appropriate palette generator
         if diagram_type == 'circle_map':

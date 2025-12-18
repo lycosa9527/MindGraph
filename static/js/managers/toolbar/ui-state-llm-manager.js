@@ -458,7 +458,8 @@ class UIStateLLMManager {
                     'qwen': 'Qwen',
                     'deepseek': 'DeepSeek',
                     'kimi': 'Kimi',
-                    'hunyuan': 'HunYuan'
+                    'hunyuan': 'HunYuan',
+                    'doubao': 'Doubao'
                 };
                 this.logger.debug('UIStateLLMManager', `Switched to ${modelNames[llmModel] || llmModel} result`);
             } else {
@@ -482,7 +483,8 @@ class UIStateLLMManager {
                 'qwen': 'Qwen',
                 'deepseek': 'DeepSeek',
                 'kimi': 'Kimi',
-                'hunyuan': 'HunYuan'
+                'hunyuan': 'HunYuan',
+                'doubao': 'Doubao'
             };
             const modelName = modelNames[llmModel] || llmModel;
             const message = lang === 'zh' 

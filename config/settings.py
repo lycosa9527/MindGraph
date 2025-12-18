@@ -139,6 +139,25 @@ class Config:
         """Hunyuan model name"""
         return self._get_cached_value('HUNYUAN_MODEL', 'hunyuan-turbo')
     
+    # ============================================================================
+    # VOLCENGINE DOUBAO SUPPORT
+    # ============================================================================
+    
+    @property
+    def ARK_API_KEY(self):
+        """Volcengine ARK API Key"""
+        return self._get_cached_value('ARK_API_KEY', '')
+    
+    @property
+    def ARK_BASE_URL(self):
+        """Volcengine ARK API Base URL"""
+        return self._get_cached_value('ARK_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
+    
+    @property
+    def DOUBAO_MODEL(self):
+        """Doubao model name"""
+        return self._get_cached_value('DOUBAO_MODEL', 'doubao-1-5-pro-32k-250115')
+    
     @property
     def QWEN_TEMPERATURE(self):
         try:

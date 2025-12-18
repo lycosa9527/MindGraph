@@ -4455,7 +4455,7 @@ class NodePaletteManager {
     updateLlmStatus(llmName, status, nodeCount, errorType = null) {
         /**
          * Track LLM status for UI display
-         * @param {string} llmName - 'qwen', 'deepseek', 'kimi', 'hunyuan'
+         * @param {string} llmName - 'qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao'
          * @param {string} status - 'success' or 'error'
          * @param {number} nodeCount - Number of nodes generated
          * @param {string} errorType - Error type if failed ('rate_limit', 'content_filter', 'timeout')

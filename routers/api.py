@@ -1109,8 +1109,8 @@ async def generate_multi_parallel(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    # Get models to use (default to all 4)
-    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan']
+    # Get models to use (default to all 5)
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
     
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
@@ -1281,7 +1281,7 @@ async def generate_multi_progressive(
         )
     
     # Get models to use (same as line 370)
-    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan']
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
     
     # Extract language and diagram_type (same as lines 372-373)
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)

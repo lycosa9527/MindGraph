@@ -295,7 +295,7 @@ class LLMAutoCompleteManager {
             
             // Run multi-model generation
             // Check if a model should be excluded (e.g., already used for initial generation)
-            let models = ['qwen', 'deepseek', 'kimi', 'hunyuan'];
+            let models = ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao'];
             
             // Catapult mode: exclude model that was already used for initial generation
             if (window._autoCompleteExcludeModel) {

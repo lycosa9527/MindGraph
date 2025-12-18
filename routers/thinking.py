@@ -268,7 +268,7 @@ async def start_node_palette(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Initialize Node Palette and fire ALL 4 LLMs concurrently.
+    Initialize Node Palette and fire ALL 5 LLMs concurrently.
     
     Returns SSE stream with progressive results as each LLM completes.
     No limits - this is the start of infinite scrolling!
@@ -327,11 +327,11 @@ async def start_node_palette(
         # Special logging for bridge map
         if req.diagram_type == 'bridge_map':
             if center_topic and center_topic.strip():
-                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 4 LLMs concurrently", center_topic)
+                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 5 LLMs concurrently", center_topic)
             else:
-                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | Firing 4 LLMs concurrently")
+                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | Firing 5 LLMs concurrently")
         else:
-            logger.debug("[NodePalette-API] Type: %s | Topic: '%s' | Firing 4 LLMs concurrently", 
+            logger.debug("[NodePalette-API] Type: %s | Topic: '%s' | Firing 5 LLMs concurrently", 
                        req.diagram_type, center_topic)
         
         # Get appropriate generator based on diagram type (with fallback)

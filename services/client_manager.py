@@ -25,7 +25,8 @@ from clients.llm import (
     QwenClient,
     DeepSeekClient,
     KimiClient,
-    HunyuanClient
+    HunyuanClient,
+    DoubaoClient
 )
 from clients.omni_client import OmniClient
 from config.settings import config
@@ -70,6 +71,7 @@ class ClientManager:
                 self._clients['deepseek'] = DeepSeekClient()
                 self._clients['kimi'] = KimiClient()
                 self._clients['hunyuan'] = HunyuanClient()
+                self._clients['doubao'] = DoubaoClient()
                 
                 # Initialize Qwen Omni client (for VoiceAgent)
                 self._clients['omni'] = OmniClient()
@@ -94,7 +96,7 @@ class ClientManager:
         Get LLM client instance by model name.
         
         Args:
-            model: Model name ('qwen', 'deepseek', 'kimi', 'hunyuan', 'chatglm')
+            model: Model name ('qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao', 'chatglm')
             
         Returns:
             Appropriate client instance

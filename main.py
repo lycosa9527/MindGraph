@@ -435,6 +435,8 @@ class UnifiedFormatter(logging.Formatter):
             source = 'SERV'
         elif source.startswith('agents'):
             source = 'AGNT'
+        elif source == 'openai':
+            source = 'OPEN'
         else:
             source = source[:4].upper()
         
@@ -541,6 +543,15 @@ logger.addFilter(CancelledErrorFilter())
 # Suppress verbose HTTP client logs (httpx/httpcore make many API calls)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
+
+# Enable OpenAI SDK logging for HTTP request/response visibility
+# This provides detailed logs for Hunyuan and Doubao API calls
+openai_logger = logging.getLogger('openai')
+openai_logger.setLevel(logging.DEBUG)
+openai_logger.handlers = []  # Remove default handlers
+openai_logger.addHandler(console_handler)
+openai_logger.addHandler(file_handler)
+openai_logger.propagate = False
 
 # Only log from main process, not each worker
 if os.getenv('UVICORN_WORKER_ID') is None:
@@ -953,14 +964,12 @@ async def log_requests(request: Request, call_next):
     if request.url.path.startswith('/static/') and request.url.query:
         log_path = f"{request.url.path}?{request.url.query}"
     
-    logger.debug(f"Request: {request.method} {log_path} from {request.client.host}")
-    
     # Process request
     response = await call_next(request)
     
-    # Log response
+    # Log combined request/response to save space
     response_time = time.time() - start_time
-    logger.debug(f"Response: {response.status_code} in {response_time:.3f}s")
+    logger.debug(f"Request: {request.method} {log_path} from {request.client.host} Response: {response.status_code} in {response_time:.3f}s")
     
     # Monitor slow requests (thresholds based on endpoint type)
     if 'generate_png' in request.url.path and response_time > 20:

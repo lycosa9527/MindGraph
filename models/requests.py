@@ -19,7 +19,7 @@ class GenerateRequest(BaseModel):
     diagram_type: Optional[DiagramType] = Field(None, description="Diagram type (auto-detected if not provided)")
     language: Language = Field(Language.ZH, description="Language for diagram generation")
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
-    models: Optional[List[str]] = Field(None, description="List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'hunyuan'])")
+    models: Optional[List[str]] = Field(None, description="List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao'])")
     dimension_preference: Optional[str] = Field(None, description="Optional dimension preference for certain diagrams")
     request_type: Optional[str] = Field('diagram_generation', description="Request type for token tracking: 'diagram_generation' or 'autocomplete'")
     # Bridge map specific: existing analogy pairs for auto-complete (preserve user's pairs, only identify relationship)
