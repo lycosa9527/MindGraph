@@ -59,36 +59,6 @@ class Messages:
             "en": "Invalid request",
             "az": "Etibarsız sorğu"
         },
-        "learning_session_start_failed": {
-            "zh": "创建学习会话失败",
-            "en": "Failed to start learning session",
-            "az": "Öyrənmə sessiyasını başlatmaq mümkün olmadı"
-        },
-        "learning_session_not_found": {
-            "zh": "学习会话未找到或已过期",
-            "en": "Learning session not found or expired",
-            "az": "Öyrənmə sessiyası tapılmadı və ya müddəti bitib"
-        },
-        "learning_node_not_found": {
-            "zh": "节点未在图示中找到",
-            "en": "Node not found in diagram",
-            "az": "Düyün diaqramda tapılmadı"
-        },
-        "learning_validation_failed": {
-            "zh": "答案验证失败",
-            "en": "Answer validation failed",
-            "az": "Cavab yoxlanışı uğursuz oldu"
-        },
-        "learning_hint_failed": {
-            "zh": "提示生成失败",
-            "en": "Hint generation failed",
-            "az": "İpucu yaratmaq mümkün olmadı"
-        },
-        "learning_verification_failed": {
-            "zh": "理解验证失败",
-            "en": "Understanding verification failed",
-            "az": "Anlayış yoxlanışı uğursuz oldu"
-        },
         "captcha_generate_failed": {
             "zh": "验证码生成失败，系统暂时繁忙。请等待几秒后刷新页面重试。如果问题持续，系统可能正在处理高负载请求。",
             "en": "Failed to generate captcha due to a temporary system issue. Please wait a few seconds and refresh the page to try again. If the problem persists, the system may be experiencing high load.",

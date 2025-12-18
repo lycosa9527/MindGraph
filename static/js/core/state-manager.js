@@ -214,7 +214,7 @@ class StateManager {
     }
     
     /**
-     * Add cognitive conflict to ThinkGuide state
+     * Add cognitive conflict to state
      */
     addCognitiveConflict(conflict) {
         if (!this.state.panels.thinkguide.cognitiveConflicts) {

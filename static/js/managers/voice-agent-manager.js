@@ -1160,9 +1160,9 @@ class VoiceAgentManager {
                 break;
             
             case 'ask_thinkguide':
+                // ThinkGuide removed - redirect to MindMate
                 if (params.message) {
-                    // Emit event to send message to ThinkGuide
-                    this.eventBus.emit('thinkguide:send_message', { message: params.message });
+                    this.eventBus.emit('mindmate:send_message', { message: params.message });
                     this.celebrate();
                 }
                 break;
@@ -1177,16 +1177,16 @@ class VoiceAgentManager {
             
             case 'explain_node':
                 if (params.node_id && params.node_label) {
-                    // Open ThinkGuide
-                    this.eventBus.emit('panel:open_requested', { panel: 'thinkguide' });
+                    // Open MindMate (ThinkGuide removed)
+                    this.eventBus.emit('panel:open_requested', { panel: 'mindmate' });
                     
                     // Highlight node
                     this.eventBus.emit('selection:highlight_requested', { nodeId: params.node_id });
                     
-                    // Send prompt to ThinkGuide
+                    // Send prompt to MindMate
                     const prompt = params.prompt || `Explain the concept of "${params.node_label}" in simple terms for K12 students.`;
                     setTimeout(() => {
-                        this.eventBus.emit('thinkguide:send_message', { message: prompt });
+                        this.eventBus.emit('mindmate:send_message', { message: prompt });
                     }, 500);
                     
                     this.celebrate();
@@ -1326,7 +1326,7 @@ class VoiceAgentManager {
             context.node_palette_open = nodePaletteState.isOpen || false;
         }
         
-        // Get conversation history from ThinkGuide state
+        // Get conversation history from MindMate state
         const thinkguideState = state.panels?.thinkguide;
         if (thinkguideState) {
             context.conversation_history = thinkguideState.conversationHistory || [];

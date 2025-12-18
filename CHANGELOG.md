@@ -7,6 +7,143 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.31.0] - 2025-12-19 - Learning Mode Removal & Node Palette Improvements
+
+### Removed
+
+- **Learning Mode Agent Completely Removed** - Major cleanup to simplify codebase
+  - Learning Mode was an interactive tutoring feature that is now deprecated
+  - All Learning Mode agents removed (`agents/learning/` folder deleted)
+  - Learning Mode router removed (`routers/learning.py`)
+  - Learning Mode manager removed (`static/js/editor/learning-mode-manager.js`)
+  - Learning Mode feature flag removed (`FEATURE_LEARNING_MODE`)
+  - Learning Mode request models removed from `models/requests.py`
+  - Learning Mode error messages removed from `models/messages.py`
+
+### Fixed
+
+- **Node Palette Language Detection** - Fixed mixed language results when Chinese topics are used
+  - Added centralized `_detect_language()` method in `BasePaletteGenerator`
+  - Language detection now checks: center_topic → raw_message → explicit language field → default 'en'
+  - Updated all 9 palette generator subclasses to use consistent language detection
+  - Removed redundant `_get_system_message()` implementations from subclasses
+  - Ensures Chinese prompts and system messages are used together when input is Chinese
+
+- **Node Palette Scroll Position Memory** - Fixed scroll position not being restored when returning to same session
+  - Added `saveCurrentTabScrollPosition()` call to `closePanel()` method
+  - Scroll position now saved before panel closes (in addition to on-scroll saving)
+  - Works for both tabbed diagrams (per-tab scroll) and non-tabbed diagrams
+
+### Changed
+
+- **Tab Agent Cleanup** - Removed unused QwenLLM wrapper from `agents/tab_mode/tab_agent.py`
+  - The agent was importing but not using `QwenLLM` from deleted learning module
+  - Agent already uses native `llm_service.chat()` directly
+
+### Technical Details
+
+**Files Deleted:**
+- `agents/learning/__init__.py`
+- `agents/learning/learning_agent.py`
+- `agents/learning/learning_agent_v3.py`
+- `agents/learning/qwen_langchain.py`
+- `routers/learning.py`
+- `static/js/editor/learning-mode-manager.js`
+
+**Files Modified:**
+- `main.py` - Commented out learning router import
+- `routers/__init__.py` - Removed learning from exports
+- `models/__init__.py` - Removed Learning*Request imports
+- `models/requests.py` - Removed Learning*Request classes
+- `models/messages.py` - Removed learning error messages
+- `models/env_settings.py` - Removed FEATURE_LEARNING_MODE field
+- `config/settings.py` - Removed FEATURE_LEARNING_MODE property
+- `services/env_manager.py` - Removed FEATURE_LEARNING_MODE validation
+- `env.example` - Removed FEATURE_LEARNING_MODE line
+- `routers/pages.py` - Removed feature_learning_mode from template context
+- `templates/editor.html` - Removed learning mode script and data attribute
+- `agents/tab_mode/tab_agent.py` - Removed unused QwenLLM import and initialization
+- `agents/node_palette/base_palette_generator.py` - Added `_detect_language()` method
+- `agents/node_palette/*.py` - Updated all 9 palette generators for consistent language detection
+- `static/js/editor/node-palette-manager.js` - Added scroll position save to closePanel()
+
+---
+
+## [4.30.0] - 2025-12-19 - ThinkGuide Removal & Code Cleanup
+
+### Removed
+
+- **ThinkGuide Feature Completely Removed** - Major cleanup to simplify codebase
+  - ThinkGuide was a Socratic guided thinking feature that is now replaced by Node Palette
+  - All ThinkGuide agents removed (9 files in `agents/thinking_modes/`)
+  - ThinkGuide factory and base class removed
+  - ThinkGuide manager (`static/js/managers/thinkguide-manager.js`) removed
+  - ThinkGuide panel HTML removed from `templates/editor.html`
+  - ThinkGuide CSS hidden (panel will not display)
+  - ThinkGuide prompts removed from `prompts/thinking_modes/`
+  - ThinkGuide endpoints removed from `routers/thinking.py` (Node Palette endpoints retained)
+  - `ThinkingModeRequest` model removed from `models/requests.py`
+
+### Changed
+
+- **Voice Actions Redirected** - ThinkGuide voice actions now redirect to MindMate
+  - `open_thinkguide` → `open_mindmate`
+  - `close_thinkguide` → `close_mindmate`
+  - `ask_thinkguide` → `ask_mindmate`
+  - `help` action now opens MindMate instead of ThinkGuide
+
+- **Panel Manager Updated** - Removed ThinkGuide panel registration and methods
+
+- **Router Renamed** - `routers/thinking.py` renamed to `routers/node_palette.py`
+
+### Technical Details
+
+**Files Deleted:**
+- `static/js/managers/thinkguide-manager.js`
+- `agents/thinking_modes/factory.py`
+- `agents/thinking_modes/base_thinking_agent.py`
+- `agents/thinking_modes/circle_map_agent_react.py`
+- `agents/thinking_modes/bubble_map_agent_react.py`
+- `agents/thinking_modes/double_bubble_map_agent_react.py`
+- `agents/thinking_modes/tree_map_agent_react.py`
+- `agents/thinking_modes/flow_map_agent_react.py`
+- `agents/thinking_modes/multi_flow_map_agent_react.py`
+- `agents/thinking_modes/brace_map_agent_react.py`
+- `agents/thinking_modes/bridge_map_agent_react.py`
+- `agents/thinking_modes/mindmap_agent_react.py`
+- `agents/thinking_modes/circle_map_agent_legacy.py`
+- `agents/thinking_modes/circle_map_actions.py`
+- `prompts/thinking_modes/circle_map.py`
+
+**Files Modified:**
+- `routers/thinking.py` → `routers/node_palette.py` - Renamed, removed ThinkGuide endpoints
+- `main.py` - Updated router import from `thinking` to `node_palette`
+- `routers/__init__.py` - Updated module list
+- `prompts/node_palette.py` - **NEW** - Node palette prompts moved from thinking_modes
+- `agents/thinking_modes/node_palette/circle_map_palette.py` - Updated import path
+- `models/requests.py` - Removed `ThinkingModeRequest`
+- `templates/editor.html` - Removed ThinkGuide panel HTML
+- `static/css/editor.css` - Hidden ThinkGuide CSS
+- `static/css/node-palette.css` - Removed ThinkGuide references
+- `static/js/managers/panel-manager.js` - Removed ThinkGuide registration
+- `static/js/editor/diagram-selector.js` - Removed ThinkGuide manager creation
+- `static/js/editor/interactive-editor.js` - Removed ThinkGuide references
+- `static/js/editor/toolbar-manager.js` - Updated comments
+- `static/js/editor/language-manager.js` - Removed ThinkGuide UI updates
+- `static/js/editor/node-palette-manager.js` - Updated comments
+- `static/js/managers/voice-agent-manager.js` - Redirected actions to MindMate
+- `routers/voice.py` - Redirected ThinkGuide actions to MindMate
+- Various other files updated to remove ThinkGuide references
+
+**Node Palette Preserved:**
+- All Node Palette functionality remains intact
+- `agents/thinking_modes/node_palette/` folder preserved
+- Node Palette endpoints in `routers/node_palette.py` preserved
+- `static/js/editor/node-palette-manager.js` preserved
+- `static/css/node-palette.css` preserved
+
+---
+
 ## [4.29.3] - 2025-12-19 - Line Mode Fix, JSON Parsing, Logging & UI Improvements
 
 ### Fixed

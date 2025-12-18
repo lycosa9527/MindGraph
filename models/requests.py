@@ -156,70 +156,6 @@ class AIAssistantRequest(BaseModel):
         }
 
 
-# ============================================================================
-# LEARNING MODE REQUEST MODELS
-# ============================================================================
-
-class LearningStartSessionRequest(BaseModel):
-    """Request model for /api/learning/start_session endpoint"""
-    diagram_type: DiagramType = Field(..., description="Type of diagram for learning")
-    spec: Dict[str, Any] = Field(..., description="Diagram specification")
-    knocked_out_nodes: List[str] = Field(..., min_items=1, description="Node IDs to knock out for learning")
-    language: Language = Field(Language.EN, description="Language for questions")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "diagram_type": "bubble_map",
-                "spec": {"topic": "Plants", "attributes": ["water", "sunlight"]},
-                "knocked_out_nodes": ["attribute_1"],
-                "language": "zh"
-            }
-        }
-
-
-class LearningValidateAnswerRequest(BaseModel):
-    """Request model for /api/learning/validate_answer endpoint"""
-    session_id: str = Field(..., description="Learning session ID")
-    node_id: str = Field(..., description="Node ID being answered")
-    user_answer: str = Field(..., min_length=1, description="Student's answer")
-    question: str = Field(..., description="The question that was asked")
-    context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional context")
-    language: Language = Field(Language.EN, description="Language for validation")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "session_id": "learning_123",
-                "node_id": "attribute_3",
-                "user_answer": "氧气",
-                "question": "植物光合作用产生什么气体?",
-                "language": "zh"
-            }
-        }
-
-
-class LearningHintRequest(BaseModel):
-    """Request model for /api/learning/get_hint endpoint"""
-    session_id: str = Field(..., description="Learning session ID")
-    node_id: str = Field(..., description="Node ID needing hint")
-    question: str = Field(..., description="The question")
-    context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional context")
-    hint_level: int = Field(1, ge=1, le=3, description="Hint level (1=subtle, 3=direct)")
-    language: Language = Field(Language.EN, description="Language for hint")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "session_id": "learning_123",
-                "node_id": "attribute_3",
-                "question": "What gas do plants produce?",
-                "hint_level": 1,
-                "language": "en"
-            }
-        }
-
-
 class FrontendLogRequest(BaseModel):
     """Request model for /api/frontend_log endpoint"""
     level: str = Field(..., description="Log level (debug, info, warn, error)")
@@ -259,61 +195,6 @@ class FrontendLogBatchRequest(BaseModel):
                     }
                 ],
                 "batch_size": 2
-            }
-        }
-
-
-class LearningVerifyUnderstandingRequest(BaseModel):
-    """Request model for /api/learning/verify_understanding endpoint"""
-    session_id: str = Field(..., description="Learning session ID")
-    node_id: str = Field(..., description="Node ID being verified")
-    user_explanation: str = Field(..., min_length=1, max_length=1000, description="User's explanation of understanding")
-    language: Language = Field(Language.EN, description="Language for verification feedback")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "session_id": "learning_123",
-                "node_id": "attribute_3",
-                "user_explanation": "光合作用通过叶绿素吸收光能，将二氧化碳和水转化为氧气和葡萄糖",
-                "language": "zh"
-            }
-        }
-
-
-class ThinkingModeRequest(BaseModel):
-    """Request model for ThinkGuide (Thinking Mode) SSE streaming endpoint"""
-    message: str = Field("", description="User message")
-    user_id: str = Field(..., min_length=1, max_length=100, description="User identifier")
-    session_id: str = Field(..., min_length=1, max_length=100, description="Thinking session ID")
-    diagram_type: str = Field(..., description="Diagram type (e.g., 'circle_map')")
-    diagram_data: Dict[str, Any] = Field(..., description="Complete diagram structure")
-    current_state: str = Field(..., description="Current workflow state")
-    selected_node: Optional[Dict[str, Any]] = Field(None, description="Currently selected node (optional)")
-    is_initial_greeting: bool = Field(False, description="If True, agent should greet user (for new sessions only)")
-    language: str = Field('en', description="UI language (en or zh)")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "message": "5th grade science, understanding photosynthesis",
-                "user_id": "user123",
-                "session_id": "thinking_abc",
-                "diagram_type": "circle_map",
-                "diagram_data": {
-                    "center": {"text": "Photosynthesis"},
-                    "children": [
-                        {"id": "1", "text": "Sunlight"},
-                        {"id": "2", "text": "Water"},
-                        {"id": "3", "text": "Carbon Dioxide"}
-                    ]
-                },
-                "current_state": "CONTEXT_GATHERING",
-                "selected_node": {
-                    "id": "1",
-                    "text": "Sunlight",
-                    "type": "circle"
-                }
             }
         }
 

@@ -151,7 +151,6 @@ class SessionLifecycleManager {
                 'AutoCompleteManager',
                 'SmallOperationsManager',
                 'TextToolbarStateManager',
-                'ThinkGuideManager',
                 'VoiceAgentManager',
                 'LLMValidationManager',
                 'NodePropertyOperationsManager',

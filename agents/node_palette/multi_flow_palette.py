@@ -15,7 +15,7 @@ import re
 import logging
 from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.thinking_modes.node_palette.base_palette_generator import BasePaletteGenerator
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +95,8 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         Args:
             center_topic: Central event/topic
         """
-        # Get language from educational context (from UI language toggle)
-        language = educational_context.get('language', 'en') if educational_context else 'en'
+        # Detect language from content (Chinese topic = Chinese prompt)
+        language = self._detect_language(center_topic, educational_context)
         
         # Get educational context
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
@@ -212,14 +212,6 @@ Generate {count} effects:"""
                 prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity with new dimensions and angles of analysis, avoid any repetition from previous batches."
         
         return prompt
-    
-    def _get_system_message(self, educational_context: Optional[Dict[str, Any]]) -> str:
-        """Get system message for Multi Flow Map node generation"""
-        has_chinese = False
-        if educational_context and educational_context.get('raw_message'):
-            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']))
-        
-        return '你是一个有帮助的K12教育助手。' if has_chinese else 'You are a helpful K12 education assistant.'
     
     def end_session(self, session_id: str, reason: str = "complete"):
         """Clean up session including mode tracking"""

@@ -24,8 +24,8 @@ from typing import Dict, List, Set, AsyncGenerator, Tuple, Optional, Any
 from difflib import SequenceMatcher
 
 from services.llm_service import llm_service
-from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
-from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
+from agents.node_palette.circle_map_palette import get_circle_map_palette_generator
+from agents.node_palette.bubble_map_palette import get_bubble_map_palette_generator
 
 logger = logging.getLogger(__name__)
 

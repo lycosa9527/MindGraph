@@ -272,10 +272,10 @@ class NodeCounterFeatureModeManager {
      * @returns {Object} Educational context object
      */
     extractEducationalContext() {
-        // Try to get from ThinkGuide if available, otherwise return empty context
-        const thinkGuide = window.currentEditor?.thinkGuide;
-        if (thinkGuide && typeof thinkGuide.extractEducationalContext === 'function') {
-            return thinkGuide.extractEducationalContext();
+        // Try to get from Node Palette if available, otherwise return empty context
+        const nodePalette = window.currentEditor?.nodePalette;
+        if (nodePalette && nodePalette.educationalContext) {
+            return nodePalette.educationalContext;
         }
         return {};
     }
@@ -335,14 +335,30 @@ class NodeCounterFeatureModeManager {
             return;
         }
         
-        // Generate session ID (use timestamp-based ID)
-        const sessionId = `node-palette-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Reuse existing session ID if available (preserves state when re-entering)
+        // Only generate new session if nodePalette doesn't have one yet
+        const nodePalette = window.currentEditor?.nodePalette;
+        let sessionId;
         
-        this.logger.info('NodeCounterFeatureModeManager', 'Opening Node Palette', {
-            diagramType,
-            centerTopic,
-            sessionId
-        });
+        if (nodePalette?.sessionId && nodePalette.nodes?.length > 0) {
+            // Reuse existing session - user is returning to palette with existing nodes
+            sessionId = nodePalette.sessionId;
+            this.logger.info('NodeCounterFeatureModeManager', 'Reusing existing Node Palette session', {
+                diagramType,
+                centerTopic,
+                sessionId,
+                existingNodes: nodePalette.nodes.length,
+                selectedNodes: nodePalette.selectedNodes?.size || 0
+            });
+        } else {
+            // Generate new session ID
+            sessionId = `node-palette-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            this.logger.info('NodeCounterFeatureModeManager', 'Opening new Node Palette session', {
+                diagramType,
+                centerTopic,
+                sessionId
+            });
+        }
         
         // Open panel first
         if (window.panelManager) {
@@ -351,8 +367,7 @@ class NodeCounterFeatureModeManager {
             this.eventBus.emit('panel:open_requested', { panel: 'nodePalette' });
         }
         
-        // Start Node Palette Manager
-        const nodePalette = window.currentEditor?.nodePalette;
+        // Start Node Palette Manager (nodePalette already retrieved above for session check)
         if (nodePalette) {
             try {
                 // Extract educational context

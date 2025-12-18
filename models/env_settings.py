@@ -239,10 +239,6 @@ class FeatureFlagSettings(BaseModel):
     """Feature flags for experimental features"""
     __category__ = "Feature Flags"
     
-    FEATURE_LEARNING_MODE: bool = Field(
-        default=False,
-        description="Enable Learning Mode button"
-    )
     FEATURE_THINKGUIDE: bool = Field(
         default=False,
         description="Enable ThinkGuide button"

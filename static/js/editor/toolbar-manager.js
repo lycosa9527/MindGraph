@@ -590,10 +590,10 @@ class ToolbarManager {
             const currentPanel = window.panelManager?.getCurrentPanel();
             
             // Show/hide property panel based on selection
-            // NOTE: Previously blocked property panel when MindMate/ThinkGuide were open
+            // NOTE: Previously blocked property panel when MindMate was open
             // This caused confusion as users couldn't edit nodes while chatting.
             // Now property panel always opens when a node is selected, which will
-            // close MindMate/ThinkGuide automatically (panel manager single-panel rule).
+            // close MindMate automatically (panel manager single-panel rule).
             if (hasSelection && this.currentSelection.length > 0) {
                 this.showPropertyPanel();
                 this.loadNodeProperties(this.currentSelection[0]);

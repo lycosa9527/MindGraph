@@ -1199,12 +1199,6 @@ class LanguageManager {
             nodePaletteBtn.title = t.nodePaletteTooltip;
         }
         
-        // Update ThinkGuide panel title
-        const thinkingTitleText = document.getElementById('thinking-title-text');
-        if (thinkingTitleText) {
-            thinkingTitleText.textContent = t.thinkingModeTitle;
-        }
-        
         // Update logout button text and language classes
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
@@ -1248,12 +1242,6 @@ class LanguageManager {
                 langZhSpan.style.display = this.currentLanguage === 'zh' ? 'inline' : 'none';
             }
             feedbackBtn.dataset.tooltip = t.feedbackTooltip;
-        }
-        
-        // Update ThinkGuide input placeholder
-        const thinkingInput = document.getElementById('thinking-input');
-        if (thinkingInput) {
-            thinkingInput.placeholder = t.thinkingInputPlaceholder;
         }
         
         if (emptyBtn) {

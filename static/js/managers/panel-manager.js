@@ -4,7 +4,7 @@
  * 
  * Centralized panel management system integrated with Event Bus.
  * Ensures only one panel is open at a time.
- * Manages: Properties Panel, ThinkGuide Panel, MindMate AI Panel, Node Palette, and future panels.
+ * Manages: Properties Panel, MindMate AI Panel, Node Palette, and future panels.
  * 
  * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
  * All Rights Reserved
@@ -61,14 +61,12 @@ class PanelManager {
     init() {
         // Get DOM elements
         const propertyPanel = document.getElementById('property-panel');
-        const thinkingPanel = document.getElementById('thinking-panel');
         const aiPanel = document.getElementById('ai-assistant-panel');
         const nodePaletteBtn = document.getElementById('node-palette-btn');
         const mindmateBtn = document.getElementById('mindmate-ai-btn');
         
         this.logger.debug('PanelManager', 'Initializing panels', {
             hasPropertyPanel: !!propertyPanel,
-            hasThinkingPanel: !!thinkingPanel,
             hasAIPanel: !!aiPanel,
             hasNodePaletteBtn: !!nodePaletteBtn,
             hasMindmateBtn: !!mindmateBtn
@@ -84,14 +82,6 @@ class PanelManager {
                     window.currentEditor.toolbarManager.clearPropertyPanel();
                 }
             }
-        });
-        
-        // Register ThinkGuide Panel (legacy - kept for backward compatibility)
-        this.registerPanel('thinkguide', {
-            element: thinkingPanel,
-            type: 'class', // Uses collapsed class
-            manager: () => window.currentEditor?.thinkGuide,
-            // No button - node-palette-btn opens Node Palette instead
         });
         
         // Register MindMate Panel
@@ -431,37 +421,6 @@ class PanelManager {
      */
     isMindMatePanelOpen() {
         return this.isPanelOpen('mindmate');
-    }
-    
-    /**
-     * Open ThinkGuide Panel (left side)
-     */
-    openThinkGuidePanel() {
-        this.logger.info('PanelManager', '🧠 openThinkGuidePanel() called - EXPLICIT');
-        return this.openPanel('thinkguide');
-    }
-    
-    /**
-     * Close ThinkGuide Panel
-     */
-    closeThinkGuidePanel() {
-        this.logger.info('PanelManager', '🧠 closeThinkGuidePanel() called - EXPLICIT');
-        return this.closePanel('thinkguide');
-    }
-    
-    /**
-     * Toggle ThinkGuide Panel
-     */
-    toggleThinkGuidePanel() {
-        this.logger.info('PanelManager', '🧠 toggleThinkGuidePanel() called - EXPLICIT');
-        return this.togglePanel('thinkguide');
-    }
-    
-    /**
-     * Check if ThinkGuide Panel is open
-     */
-    isThinkGuidePanelOpen() {
-        return this.isPanelOpen('thinkguide');
     }
     
     /**

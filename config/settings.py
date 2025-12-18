@@ -339,11 +339,6 @@ class Config:
     # ============================================================================
     
     @property
-    def FEATURE_LEARNING_MODE(self):
-        """Enable Learning Mode button (experimental feature)."""
-        return self._get_cached_value('FEATURE_LEARNING_MODE', 'False').lower() == 'true'
-    
-    @property
     def FEATURE_THINKGUIDE(self):
         """Enable ThinkGuide button (experimental feature)."""
         return self._get_cached_value('FEATURE_THINKGUIDE', 'False').lower() == 'true'

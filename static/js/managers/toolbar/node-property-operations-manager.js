@@ -161,7 +161,7 @@ class NodePropertyOperationsManager {
                 // Also update attribute for when inline style is cleared (line mode disabled)
                 nodeElement.attr('stroke-width', properties.strokeWidth);
                 // Always update data-original-stroke-width for line mode restoration
-                nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
+                    nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
             }
             
             // Apply text styling properties to ALL text elements (not content - that's handled by applyText)
@@ -257,7 +257,7 @@ class NodePropertyOperationsManager {
                 // Also update attribute for when inline style is cleared (line mode disabled)
                 nodeElement.attr('stroke-width', properties.strokeWidth);
                 // Always update data-original-stroke-width for line mode restoration
-                nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
+                    nodeElement.attr('data-original-stroke-width', properties.strokeWidth);
             }
             
             // Find ALL text elements for this node using selectAll (for multi-line text support)

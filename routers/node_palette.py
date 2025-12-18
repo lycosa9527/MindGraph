@@ -1,9 +1,9 @@
 """
-ThinkGuide API Router
-=====================
+Node Palette API Router
+========================
 
-Handles ALL diagram types through factory pattern.
-Provides SSE streaming for Socratic guided thinking workflow.
+Provides API endpoints for Node Palette feature.
+Fires multiple LLMs concurrently to generate node suggestions.
 
 @author lycosa9527
 @made_by MindSpring Team
@@ -18,16 +18,15 @@ import json
 from models.auth import User
 from utils.auth import get_current_user
 
-from agents.thinking_modes.factory import ThinkingAgentFactory
-from agents.thinking_modes.node_palette.circle_map_palette import get_circle_map_palette_generator
-from agents.thinking_modes.node_palette.bubble_map_palette import get_bubble_map_palette_generator
-from agents.thinking_modes.node_palette.double_bubble_palette import get_double_bubble_palette_generator
-from agents.thinking_modes.node_palette.multi_flow_palette import get_multi_flow_palette_generator
-from agents.thinking_modes.node_palette.tree_map_palette import get_tree_map_palette_generator
-from agents.thinking_modes.node_palette.flow_map_palette import get_flow_map_palette_generator
-from agents.thinking_modes.node_palette.brace_map_palette import get_brace_map_palette_generator
-from agents.thinking_modes.node_palette.bridge_map_palette import get_bridge_map_palette_generator
-from agents.thinking_modes.node_palette.mindmap_palette import get_mindmap_palette_generator
+from agents.node_palette.circle_map_palette import get_circle_map_palette_generator
+from agents.node_palette.bubble_map_palette import get_bubble_map_palette_generator
+from agents.node_palette.double_bubble_palette import get_double_bubble_palette_generator
+from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
+from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
+from agents.node_palette.flow_map_palette import get_flow_map_palette_generator
+from agents.node_palette.brace_map_palette import get_brace_map_palette_generator
+from agents.node_palette.bridge_map_palette import get_bridge_map_palette_generator
+from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from services.error_handler import (
     LLMContentFilterError, 
     LLMRateLimitError,
@@ -39,7 +38,6 @@ from services.error_handler import (
     LLMServiceError
 )
 from models.requests import (
-    ThinkingModeRequest,
     NodePaletteStartRequest,
     NodePaletteNextRequest,
     NodeSelectionRequest,
@@ -49,223 +47,6 @@ from models.requests import (
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
-
-
-@router.post('/thinking_mode/stream')
-async def thinking_mode_stream(
-    req: ThinkingModeRequest,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Universal SSE streaming endpoint for ALL diagram types.
-    Uses factory pattern to route to correct agent.
-    
-    Currently supports: circle_map (more coming: bubble_map, tree_map, etc.)
-    """
-    
-    try:
-        # Validate diagram type
-        supported = ThinkingAgentFactory.get_supported_types()
-        if req.diagram_type not in supported:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported diagram type: {req.diagram_type}. Supported: {supported}"
-            )
-        
-        # Get agent from factory
-        agent = ThinkingAgentFactory.get_agent(req.diagram_type)
-        
-        # Log diagram data for debugging - handle different diagram type structures
-        if req.diagram_type in ['tree_map', 'mindmap']:
-            center_text = req.diagram_data.get('topic', 'N/A')
-        elif req.diagram_type == 'flow_map':
-            center_text = req.diagram_data.get('title', 'N/A')
-        elif req.diagram_type == 'brace_map':
-            center_text = req.diagram_data.get('whole', 'N/A')
-        elif req.diagram_type == 'double_bubble_map':
-            left_topic = req.diagram_data.get('left', '')
-            right_topic = req.diagram_data.get('right', '')
-            center_text = f"{left_topic} vs {right_topic}"
-        elif req.diagram_type == 'multi_flow_map':
-            center_text = req.diagram_data.get('event', 'N/A')
-        elif req.diagram_type == 'bridge_map':
-            center_text = req.diagram_data.get('dimension', 'N/A')
-        else:
-            # For circle_map, bubble_map and others
-            center_text = req.diagram_data.get('center', {}).get('text', 'N/A')
-        
-        child_count = len(req.diagram_data.get('children', []))
-        logger.debug(f"[ThinkGuide] Starting session: {req.session_id} | Diagram: {req.diagram_type} | State: {req.current_state}")
-        logger.debug(f"[ThinkGuide] Diagram data - Center: '{center_text}' | Children: {child_count}")
-        
-        # Get user context for token tracking
-        user_id = current_user.id if current_user else (req.user_id if hasattr(req, 'user_id') else None)
-        organization_id = current_user.organization_id if current_user else None
-        
-        # SSE generator
-        async def generate():
-            """Async generator for SSE streaming"""
-            chunk_count = 0
-            try:
-                async for chunk in agent.process_step(
-                    message=req.message,
-                    session_id=req.session_id,
-                    diagram_data=req.diagram_data,
-                    current_state=req.current_state,
-                    user_id=user_id,
-                    organization_id=organization_id,  # Pass organization_id for token tracking
-                    is_initial_greeting=req.is_initial_greeting,
-                    language=req.language
-                ):
-                    # Format as SSE
-                    chunk_count += 1
-                    yield f"data: {json.dumps(chunk)}\n\n"
-                
-                # Ensure at least one event is yielded to prevent RuntimeError
-                if chunk_count == 0:
-                    logger.warning(f"[ThinkGuide] No chunks yielded, sending completion event")
-                    yield f"data: {json.dumps({'event': 'message_complete', 'new_state': req.current_state})}\n\n"
-                
-            except LLMContentFilterError as e:
-                # Content filter - don't retry, use user_message if available
-                logger.warning(f"[ThinkGuide] Content filter triggered: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "无法处理您的请求，请尝试修改主题描述。" if language == 'zh' else "Your request couldn't be processed. Please try rephrasing your topic."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
-            
-            except LLMRateLimitError as e:
-                # Rate limit - can retry, use user_message if available
-                logger.warning(f"[ThinkGuide] Rate limit hit: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "AI服务繁忙，请稍后重试。" if language == 'zh' else "AI service is busy. Please try again in a few seconds."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
-            
-            except LLMTimeoutError as e:
-                logger.warning(f"[ThinkGuide] Timeout error: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "请求超时，请重试。" if language == 'zh' else "Request timed out. Please try again."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'timeout', 'message': user_message})}\n\n"
-            
-            except LLMInvalidParameterError as e:
-                logger.warning(f"[ThinkGuide] Invalid parameter: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "参数错误，请检查输入。" if language == 'zh' else "Invalid parameter. Please check input."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'invalid_parameter', 'message': user_message})}\n\n"
-            
-            except LLMQuotaExhaustedError as e:
-                logger.warning(f"[ThinkGuide] Quota exhausted: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "配额已用完，请检查账户。" if language == 'zh' else "Quota exhausted. Please check account."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'quota_exhausted', 'message': user_message})}\n\n"
-            
-            except LLMModelNotFoundError as e:
-                logger.warning(f"[ThinkGuide] Model not found: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "模型不存在，请检查配置。" if language == 'zh' else "Model not found. Please check configuration."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'model_not_found', 'message': user_message})}\n\n"
-            
-            except LLMAccessDeniedError as e:
-                logger.warning(f"[ThinkGuide] Access denied: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "访问被拒绝，请检查权限。" if language == 'zh' else "Access denied. Please check permissions."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'access_denied', 'message': user_message})}\n\n"
-            
-            except LLMServiceError as e:
-                logger.error(f"[ThinkGuide] LLM service error: {e}")
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "AI服务错误，请稍后重试。" if language == 'zh' else "AI service error. Please try again later."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'service_error', 'message': user_message})}\n\n"
-            
-            except Exception as e:
-                logger.error(f"[ThinkGuide] Streaming error: {e}", exc_info=True)
-                # Fallback for unknown errors
-                language = getattr(req, 'language', 'en')
-                user_message = "出现问题，请重试。" if language == 'zh' else "Something went wrong. Please try again."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
-            finally:
-                # Always ensure at least one event is yielded to prevent RuntimeError
-                if chunk_count == 0:
-                    logger.warning(f"[ThinkGuide] Generator completed without yielding, sending error event")
-                    language = getattr(req, 'language', 'en')
-                    user_message = "请求处理失败，请重试。" if language == 'zh' else "Request processing failed. Please try again."
-                    yield f"data: {json.dumps({'event': 'error', 'error_type': 'no_response', 'message': user_message})}\n\n"
-        
-        # Return SSE stream
-        return StreamingResponse(
-            generate(),
-            media_type='text/event-stream',
-            headers={
-                'Cache-Control': 'no-cache',
-                'X-Accel-Buffering': 'no',
-                'Connection': 'keep-alive'
-            }
-        )
-    
-    except ValueError as e:
-        # Invalid diagram type from factory
-        raise HTTPException(status_code=400, detail=str(e))
-    
-    except Exception as e:
-        logger.error(f"[ThinkGuide] Thinking Mode error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.get('/thinking_mode/node_learning/{session_id}/{node_id}')
-async def get_node_learning_material(
-    session_id: str,
-    node_id: str,
-    diagram_type: str = 'circle_map',
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get learning material for a specific node (for hover tooltip).
-    
-    Called when user hovers over a node during Thinking Mode.
-    Works for ALL diagram types via factory pattern.
-    """
-    
-    try:
-        # Get agent from factory using diagram type
-        # In production, diagram_type should be stored in session metadata
-        agent = ThinkingAgentFactory.get_agent(diagram_type)
-        session = agent.get_session(session_id)
-        
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        # Get learning material for this node
-        material = session.get('node_learning_material', {}).get(node_id)
-        
-        if not material:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Learning material not found for node: {node_id}"
-            )
-        
-        logger.debug(f"[ThinkGuide] Retrieved learning material for node: {node_id} | Session: {session_id}")
-        return material
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"[ThinkGuide] Error fetching node learning material: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============================================================================
@@ -562,10 +343,10 @@ async def get_next_batch(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generate next batch - fires ALL 4 LLMs concurrently again!
+    Generate next batch - fires ALL 5 LLMs concurrently again!
     
     Called when user scrolls to 2/3 of content.
-    Infinite scroll - keeps firing 4 concurrent LLMs on each trigger.
+    Infinite scroll - keeps firing 5 concurrent LLMs on each trigger.
     """
     session_id = req.session_id
     logger.debug("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
@@ -595,7 +376,7 @@ async def get_next_batch(
             logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
             generator = get_circle_map_palette_generator()
         
-        logger.debug("[NodePalette-API] Type: %s | Firing 4 LLMs concurrently for next batch...", req.diagram_type)
+        logger.debug("[NodePalette-API] Type: %s | Firing 5 LLMs concurrently for next batch...", req.diagram_type)
         
         # Stream next batch with concurrent execution
         async def generate():
@@ -624,7 +405,7 @@ async def get_next_batch(
                         session_id=session_id,
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
-                        nodes_per_llm=15,  # 60 total nodes per scroll trigger
+                        nodes_per_llm=15,  # 75 total nodes per scroll trigger
                         mode=mode,  # Pass mode for tab-enabled diagrams
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
@@ -658,7 +439,7 @@ async def get_next_batch(
                         session_id=session_id,
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
-                        nodes_per_llm=15,  # 60 total nodes per scroll trigger
+                        nodes_per_llm=15,  # 75 total nodes per scroll trigger
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
@@ -795,7 +576,7 @@ async def log_finish_selection(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Log when user finishes Node Palette and return to Circle Map.
+    Log when user finishes Node Palette and return to diagram.
     
     Called when user clicks "Finish" button.
     Logs final metrics and cleans up session.
@@ -885,12 +666,3 @@ async def node_palette_cleanup(
     generator.end_session(session_id, reason="canvas_exit")
     
     return {"status": "session_cleaned"}
-
-
-# Debug endpoint removed - V2 generator uses different session tracking
-# Use browser console logs and server logs for debugging instead
-# @router.get('/thinking_mode/node_palette/debug/{session_id}')
-# async def debug_node_palette_session(session_id: str):
-#     """Debug endpoint (deprecated - use logs instead)"""
-#     pass
-

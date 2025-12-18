@@ -19,7 +19,6 @@ from pydantic import BaseModel, Field
 from langgraph.prebuilt import create_react_agent
 
 from ..core.base_agent import BaseAgent
-from agents.learning.qwen_langchain import QwenLLM
 from prompts import get_prompt
 from services.llm_service import llm_service
 from services.error_handler import LLMServiceError
@@ -76,9 +75,6 @@ class TabAgent(BaseAgent):
         """
         super().__init__(model=model)
         self.diagram_type = "tab_mode"
-        
-        # Initialize LangChain LLM wrapper
-        self.llm = QwenLLM(model_type='generation')
         
         # Create tools
         self.tools = self._create_tools()

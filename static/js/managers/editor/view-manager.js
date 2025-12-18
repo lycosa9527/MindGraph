@@ -673,7 +673,7 @@ class ViewManager {
         // Calculate available canvas width based on reserveForPanel parameter and active panels
         // CRITICAL: Always use windowWidth as reference, not containerWidth (which may be CSS-constrained)
         const propertyPanelWidth = 320;
-        const thinkingPanelWidth = 400;  // ThinkGuide panel width
+        const thinkingPanelWidth = 0;    // ThinkGuide removed
         const aiPanelWidth = 450;        // AI Assistant panel width
         
         let reservedWidth = 0;

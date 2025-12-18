@@ -71,7 +71,7 @@ class PromptManager:
             template="你是一个有帮助的AI助手。请提供清晰简洁的回答。"
         )
         
-        # ThinkGuide prompts
+        # Node Palette prompts
         self.register_prompt(
             category='thinkguide',
             function='welcome',

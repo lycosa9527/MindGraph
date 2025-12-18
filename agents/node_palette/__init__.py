@@ -9,9 +9,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from agents.thinking_modes.node_palette.base_palette_generator import BasePaletteGenerator
-from agents.thinking_modes.node_palette.circle_map_palette import CircleMapPaletteGenerator
-from agents.thinking_modes.node_palette.double_bubble_palette import DoubleBubblePaletteGenerator
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
+from agents.node_palette.circle_map_palette import CircleMapPaletteGenerator
+from agents.node_palette.double_bubble_palette import DoubleBubblePaletteGenerator
 
 __all__ = ['BasePaletteGenerator', 'CircleMapPaletteGenerator', 'DoubleBubblePaletteGenerator']
 

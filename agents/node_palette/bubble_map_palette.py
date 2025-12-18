@@ -14,7 +14,7 @@ Proprietary License
 import re
 from typing import Optional, Dict, Any
 
-from agents.thinking_modes.node_palette.base_palette_generator import BasePaletteGenerator
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 
 class BubbleMapPaletteGenerator(BasePaletteGenerator):
@@ -43,8 +43,8 @@ class BubbleMapPaletteGenerator(BasePaletteGenerator):
         Returns:
             Formatted prompt for Bubble Map attribute node generation
         """
-        # Get language from educational context (from UI language toggle)
-        language = educational_context.get('language', 'en') if educational_context else 'en'
+        # Detect language from content (Chinese topic = Chinese prompt)
+        language = self._detect_language(center_topic, educational_context)
         
         # Use same context extraction as auto-complete
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
@@ -94,23 +94,6 @@ Generate {count} attributes:"""
         
         return prompt
     
-    def _get_system_message(self, educational_context: Optional[Dict[str, Any]]) -> str:
-        """
-        Get system message for Bubble Map node generation.
-        
-        Args:
-            educational_context: Educational context dict
-            
-        Returns:
-            System message string (EN or ZH based on context)
-        """
-        has_chinese = False
-        if educational_context and educational_context.get('raw_message'):
-            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']))
-        
-        return '你是一个有帮助的K12教育助手。' if has_chinese else 'You are a helpful K12 education assistant.'
-
-
 # Global singleton instance for Bubble Map
 _bubble_map_palette_generator = None
 
@@ -120,5 +103,4 @@ def get_bubble_map_palette_generator() -> BubbleMapPaletteGenerator:
     if _bubble_map_palette_generator is None:
         _bubble_map_palette_generator = BubbleMapPaletteGenerator()
     return _bubble_map_palette_generator
-
 

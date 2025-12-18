@@ -16,7 +16,7 @@ import re
 import logging
 from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.thinking_modes.node_palette.base_palette_generator import BasePaletteGenerator
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -136,8 +136,8 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         Returns:
             Formatted prompt for Bridge Map analogy generation
         """
-        # Get language from educational context (from UI language toggle)
-        language = educational_context.get('language', 'en') if educational_context else 'en'
+        # Detect language from content (Chinese topic = Chinese prompt)
+        language = self._detect_language(center_topic, educational_context)
         
         # Use same context extraction as auto-complete
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
@@ -278,23 +278,6 @@ Generate {count} analogies:"""
         
         return prompt
     
-    def _get_system_message(self, educational_context: Optional[Dict[str, Any]]) -> str:
-        """
-        Get system message for Bridge Map node generation.
-        
-        Args:
-            educational_context: Educational context dict
-            
-        Returns:
-            System message string (EN or ZH based on context)
-        """
-        has_chinese = False
-        if educational_context and educational_context.get('raw_message'):
-            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']))
-        
-        return '你是一个有帮助的K12教育助手。' if has_chinese else 'You are a helpful K12 education assistant.'
-
-
 # Global singleton instance for Bridge Map
 _bridge_map_palette_generator = None
 

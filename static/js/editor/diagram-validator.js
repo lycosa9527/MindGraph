@@ -156,7 +156,7 @@ class DiagramValidator {
             }
             
             // 🆕 Removed placeholder validation - users can start with template text
-            // ThinkGuide and LLMs can help build diagrams from scratch!
+            // Node Palette and LLMs can help build diagrams from scratch!
         });
         
         // Generate validation result

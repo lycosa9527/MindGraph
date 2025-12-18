@@ -2804,12 +2804,19 @@ body {
     }
 }
 
-/* ========== AI Assistant Panel ========== */
 /* ============================================
-   THINKING MODE PANEL (ThinkGuide)
+   AI ASSISTANT PANEL (MindMate)
    ============================================ */
+/* ThinkGuide panel removed - code cleanup */
+
+.ai-assistant-panel-placeholder {
+    /* This placeholder prevents CSS issues during transition */
+    display: none;
+}
 
 .thinking-panel {
+    /* ThinkGuide panel removed - keeping minimal styles for backward compatibility */
+    display: none !important;
     position: absolute;
     top: 0;
     right: 0;

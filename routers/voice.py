@@ -2378,19 +2378,21 @@ async def process_voice_command(
         
         # Handle UI actions first
         if action == 'open_thinkguide':
-            logger.debug("Opening ThinkGuide panel")
+            # ThinkGuide removed - redirect to MindMate
+            logger.debug("Opening MindMate panel (ThinkGuide removed)")
             await safe_websocket_send(websocket, {
                 'type': 'action',
-                'action': 'open_thinkguide',
+                'action': 'open_mindmate',
                 'params': {}
             })
             return True
         
         elif action == 'close_thinkguide':
-            logger.debug("Closing ThinkGuide panel")
+            # ThinkGuide removed - redirect to MindMate
+            logger.debug("Closing MindMate panel (ThinkGuide removed)")
             await safe_websocket_send(websocket, {
                 'type': 'action',
-                'action': 'close_thinkguide',
+                'action': 'close_mindmate',
                 'params': {}
             })
             return True
@@ -2459,10 +2461,11 @@ async def process_voice_command(
             return True
         
         elif action == 'ask_thinkguide' and target:
-            logger.debug(f"Sending question to ThinkGuide: {target}")
+            # ThinkGuide removed - redirect to MindMate
+            logger.debug(f"Sending question to MindMate (ThinkGuide removed): {target}")
             await safe_websocket_send(websocket, {
                 'type': 'action',
-                'action': 'ask_thinkguide',
+                'action': 'ask_mindmate',
                 'params': {'message': target}
             })
             return True
@@ -2523,10 +2526,11 @@ async def process_voice_command(
             return True
         
         elif action == 'help':
-            logger.debug("User requested help - opening ThinkGuide")
+            # ThinkGuide removed - redirect to MindMate
+            logger.debug("User requested help - opening MindMate")
             await safe_websocket_send(websocket, {
                 'type': 'action',
-                'action': 'open_thinkguide',
+                'action': 'open_mindmate',
                 'params': {}
             })
             return True

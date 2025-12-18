@@ -1460,7 +1460,7 @@ class NodePaletteManager {
     
     /**
      * Preload Node Palette data in background WITHOUT showing panel
-     * Called by ThinkGuide when it opens to save time later
+     * Called to save time before user opens the panel
      */
     async preload(centerTopic, diagramData, sessionId, educationalContext, diagramType) {
         console.log('[NodePalette] ===== PRELOAD INITIATED =====');
@@ -1473,7 +1473,7 @@ class NodePaletteManager {
         this.thinkingSessionId = sessionId;
         this.educationalContext = educationalContext;
         this.diagramType = diagramType;
-        this.sessionId = sessionId;  // Use ThinkGuide's session ID for continuity
+        this.sessionId = sessionId;  // Use provided session ID for continuity
         
         // Initialize tabs for double bubble map and multi flow map
         if (this.usesTabs()) {
@@ -1534,12 +1534,12 @@ class NodePaletteManager {
     async preload(centerTopic, diagramData, sessionId, educationalContext, diagramType = 'circle_map') {
         /**
          * 🚀 CATAPULT PRE-LOADING: Load Node Palette data in background without showing UI.
-         * This is called when ThinkGuide opens, so nodes are ready when user clicks the button.
+         * This is called ahead of time, so nodes are ready when user clicks the button.
          * 
          * @param {string} centerTopic - Center node text from diagram
          * @param {Object} diagramData - Current diagram data
-         * @param {string} sessionId - Session ID from ThinkGuide
-         * @param {Object} educationalContext - Educational context from ThinkGuide
+         * @param {string} sessionId - Session ID
+         * @param {Object} educationalContext - Educational context
          * @param {string} diagramType - Type of diagram
          */
         
@@ -1639,8 +1639,8 @@ class NodePaletteManager {
          * 
          * @param {string} centerTopic - Center node text from diagram
          * @param {Object} diagramData - Current diagram data
-         * @param {string} sessionId - Session ID from ThinkGuide
-         * @param {Object} educationalContext - Educational context from ThinkGuide (grade, subject, etc.)
+         * @param {string} sessionId - Session ID
+         * @param {Object} educationalContext - Educational context (grade, subject, etc.)
          * @param {string} diagramType - Type of diagram (circle_map, bubble_map, etc.)
          */
         this.diagramType = diagramType || window.currentEditor?.diagramType || 'circle_map';
@@ -1652,7 +1652,7 @@ class NodePaletteManager {
         this.sessionId = sessionId || `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         this.centerTopic = centerTopic;
         this.diagramData = diagramData;
-        this.educationalContext = educationalContext || {}; // Store ThinkGuide context
+        this.educationalContext = educationalContext || {}; // Store educational context
         
         // Only clear state if it's a NEW session (different sessionId)
         if (!isSameSession) {
@@ -2526,14 +2526,14 @@ class NodePaletteManager {
         // Set initial opacity for fade-in animation
         palettePanel.style.opacity = '0';
         
-        // Check if ThinkGuide panel is visible (for layout adjustment)
-        const isThinkGuideVisible = thinkingPanel && !thinkingPanel.classList.contains('collapsed');
-        if (isThinkGuideVisible) {
+        // Check panel layout (for layout adjustment)
+        const needsLayoutAdjust = false; // Previously checked ThinkGuide visibility
+        if (needsLayoutAdjust) {
             palettePanel.classList.add('thinkguide-visible');
-            this.logger?.debug('NodePalette', 'ThinkGuide is visible, leaving space for it');
+            this.logger?.debug('NodePalette', 'Leaving space for side panel');
         } else {
             palettePanel.classList.remove('thinkguide-visible');
-            this.logger?.debug('NodePalette', 'ThinkGuide is hidden, using full width');
+            this.logger?.debug('NodePalette', 'Using full width');
         }
         
         // Fade in animation
@@ -2780,6 +2780,10 @@ class NodePaletteManager {
         }
 
         // Internal cleanup (called by PanelManager or when already closing)
+        
+        // Save scroll position before closing (for restoring when returning to same session)
+        this.saveCurrentTabScrollPosition();
+        
         this.hideTestingWatermark();
         
         // Show d3-container when palette closes
@@ -2907,7 +2911,7 @@ class NodePaletteManager {
         
         const palettePanel = document.getElementById('node-palette-panel');
         if (palettePanel) {
-            // Clean up ThinkGuide visibility class
+            // Clean up visibility class
             palettePanel.classList.remove('thinkguide-visible');
         }
     }

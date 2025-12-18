@@ -108,7 +108,7 @@ class BasePaletteGenerator(ABC):
         
         # Build prompt using diagram-specific logic (subclass implements this)
         prompt = self._build_prompt(center_topic, educational_context, nodes_per_llm, batch_num)
-        system_message = self._get_system_message(educational_context)
+        system_message = self._get_system_message(educational_context, center_topic)
         
         # Get temperature for diversity
         temperature = self._get_temperature_for_batch(batch_num)
@@ -379,20 +379,22 @@ class BasePaletteGenerator(ABC):
         """
         pass
     
-    @abstractmethod
-    def _get_system_message(self, educational_context: Optional[Dict[str, Any]]) -> str:
+    def _get_system_message(self, educational_context: Optional[Dict[str, Any]], center_topic: str = "") -> str:
         """
         Get system message for LLM.
         
+        Default implementation detects language from content.
         Subclasses can override for diagram-specific instructions.
         
         Args:
             educational_context: Educational context dict
+            center_topic: Center topic text for language detection
             
         Returns:
             System message string
         """
-        pass
+        language = self._detect_language(center_topic, educational_context)
+        return '你是一个有帮助的K12教育助手。' if language == 'zh' else 'You are a helpful K12 education assistant.'
     
     def _get_temperature_for_batch(self, batch_num: int) -> float:
         """
@@ -444,6 +446,39 @@ class BasePaletteGenerator(ABC):
         text = re.sub(r'[^\w\s]', '', text)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
+    
+    def _detect_language(self, center_topic: str, educational_context: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Detect language from content, prioritizing Chinese character detection.
+        
+        Priority order:
+        1. If center_topic contains Chinese characters -> 'zh'
+        2. If educational_context.raw_message contains Chinese -> 'zh'
+        3. If educational_context.language is explicitly set -> use it
+        4. Default -> 'en'
+        
+        Args:
+            center_topic: The main topic text
+            educational_context: Educational context dict
+            
+        Returns:
+            'zh' or 'en'
+        """
+        # Check center_topic for Chinese characters (highest priority)
+        if center_topic and re.search(r'[\u4e00-\u9fff]', center_topic):
+            return 'zh'
+        
+        # Check raw_message for Chinese characters
+        if educational_context and educational_context.get('raw_message'):
+            if re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']):
+                return 'zh'
+        
+        # Fall back to explicit language setting
+        if educational_context and educational_context.get('language'):
+            return educational_context['language']
+        
+        # Default to English
+        return 'en'
     
     def end_session(self, session_id: str, reason: str = "complete"):
         """

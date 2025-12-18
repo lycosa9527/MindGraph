@@ -484,11 +484,6 @@ class DiagramSelector {
             window.currentEditor.initialize();
             
             // Create session managers (previously wrongly global)
-            window.currentEditor.thinkGuide = window.sessionLifecycle.register(
-                new ThinkGuideManager(window.eventBus, window.stateManager, window.sseClient, logger),
-                'thinkGuide'
-            );
-            
             window.currentEditor.mindMate = window.sessionLifecycle.register(
                 new MindMateManager(window.eventBus, window.stateManager, logger),
                 'mindMate'
@@ -646,10 +641,10 @@ class DiagramSelector {
             );
             
             logger.info('DiagramSelector', 'All 18 managers registered with SessionLifecycleManager', {
-                sessionManagers: 4,
+                sessionManagers: 3,
                 moduleManagers: Object.keys(window.currentEditor.modules).length,
-                totalManagers: 4 + Object.keys(window.currentEditor.modules).length,
-                managers: ['thinkGuide', 'mindMate', 'nodePalette', 'voiceAgent', ...Object.keys(window.currentEditor.modules)]
+                totalManagers: 3 + Object.keys(window.currentEditor.modules).length,
+                managers: ['mindMate', 'nodePalette', 'voiceAgent', ...Object.keys(window.currentEditor.modules)]
             });
             
             // CRITICAL: Single auto-fit trigger for initial load
@@ -703,7 +698,7 @@ class DiagramSelector {
         }
         if (window.currentEditor?.nodePalette) {
             // Send cleanup request to backend to properly end session
-            const sessionId = window.currentEditor.thinkGuide?.sessionId;
+            const sessionId = window.currentEditor.nodePalette?.sessionId;
             const diagramType = window.currentEditor.diagramType;
             if (sessionId && diagramType) {
                 auth.fetch('/thinking_mode/node_palette/cleanup', {
@@ -811,7 +806,7 @@ class DiagramSelector {
         // PHASE 3: RESET ALL PANELS & MANAGERS
         // ========================================
         
-        // NOTE: Session managers (ThinkGuide, MindMate, NodePalette, VoiceAgent) 
+        // NOTE: Session managers (MindMate, NodePalette, VoiceAgent) 
         // are now automatically destroyed by SessionLifecycleManager.cleanup()
         // No manual reset needed!
         
@@ -825,10 +820,10 @@ class DiagramSelector {
             mindmateBtn.classList.remove('active');
         }
         
-        // 2. ThinkGuide Panel - UI cleanup only
-        const thinkPanel = document.getElementById('thinking-panel');
-        if (thinkPanel) {
-            thinkPanel.classList.add('collapsed');
+        // 2. Node Palette Panel - UI cleanup only
+        const nodePalettePanel = document.getElementById('node-palette-panel');
+        if (nodePalettePanel) {
+            nodePalettePanel.style.display = 'none';
         }
         const nodePaletteBtn = document.getElementById('node-palette-btn');
         if (nodePaletteBtn) {

@@ -291,7 +291,6 @@ class EnvManager:
             'PORT': lambda v: self._validate_port(v, errors),
             'DEBUG': lambda v: self._validate_boolean(v, 'DEBUG', errors),
             'VERBOSE_LOGGING': lambda v: self._validate_boolean(v, 'VERBOSE_LOGGING', errors),
-            'FEATURE_LEARNING_MODE': lambda v: self._validate_boolean(v, 'FEATURE_LEARNING_MODE', errors),
             'FEATURE_THINKGUIDE': lambda v: self._validate_boolean(v, 'FEATURE_THINKGUIDE', errors),
             'FEATURE_MINDMATE': lambda v: self._validate_boolean(v, 'FEATURE_MINDMATE', errors),
             'FEATURE_VOICE_AGENT': lambda v: self._validate_boolean(v, 'FEATURE_VOICE_AGENT', errors),

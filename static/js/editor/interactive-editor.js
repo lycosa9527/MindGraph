@@ -1428,12 +1428,8 @@ class InteractiveEditor {
                         }
                     });
                 } else {
-                    // Standard diagrams: use generic removal
-                    data.nodeIds.forEach(nodeId => {
-                        if (nodeId && this.thinkGuide) {
-                            this.thinkGuide.removeDiagramNode(nodeId);
-                        }
-                    });
+                    // Standard diagrams: nodes are removed via operations module
+                    // No additional cleanup needed
                 }
                 
                 this.renderDiagram();
@@ -2536,7 +2532,6 @@ class InteractiveEditor {
         }
         
         // Nullify session manager references
-        this.thinkGuide = null;
         this.mindMate = null;
         this.nodePalette = null;
         this.voiceAgent = null;
