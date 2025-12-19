@@ -86,6 +86,25 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Beijing timezone (UTC+8)
+BEIJING_TIMEZONE = timezone(timedelta(hours=8))
+
+def get_beijing_now() -> datetime:
+    """Get current datetime in Beijing timezone (UTC+8)"""
+    return datetime.now(BEIJING_TIMEZONE)
+
+def get_beijing_today_start_utc() -> datetime:
+    """
+    Get today's start (00:00:00) in Beijing timezone, converted to UTC.
+    This is used for database queries since timestamps are stored in UTC.
+    Example: If it's 2025-01-20 01:00:00 in Beijing, today starts at 2025-01-20 00:00:00 Beijing
+    which is 2025-01-19 16:00:00 UTC.
+    """
+    beijing_now = get_beijing_now()
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Convert Beijing time to UTC for database queries
+    return beijing_today_start.astimezone(timezone.utc).replace(tzinfo=None)
+
 router = APIRouter(tags=["Authentication"])
 
 # File-based captcha storage (works across multiple server instances)
@@ -2440,9 +2459,11 @@ async def get_stats_admin(
     # Sort by count (highest first)
     users_by_org = dict(sorted(users_by_org.items(), key=lambda x: x[1], reverse=True))
     
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_ago = now - timedelta(days=7)
+    # Use Beijing time for "today" calculations
+    # Convert to UTC for database queries since timestamps are stored in UTC
+    beijing_now = get_beijing_now()
+    today_start = get_beijing_today_start_utc()
+    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
     recent_registrations = db.query(User).filter(User.created_at >= today_start).count()
     
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
@@ -2536,10 +2557,12 @@ async def get_token_stats_admin(
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_ago = now - timedelta(days=7)
-    month_ago = now - timedelta(days=30)
+    # Use Beijing time for "today" calculations
+    # Convert to UTC for database queries since timestamps are stored in UTC
+    beijing_now = get_beijing_now()
+    today_start = get_beijing_today_start_utc()
+    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    month_ago = (beijing_now - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
     
     # Initialize default stats
     today_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -2923,19 +2946,70 @@ async def list_api_keys_admin(
     
     keys = db.query(APIKey).order_by(APIKey.created_at.desc()).all()
     
-    return [{
-        "id": key.id,
-        "key": key.key,
-        "name": key.name,
-        "description": key.description,
-        "quota_limit": key.quota_limit,
-        "usage_count": key.usage_count,
-        "is_active": key.is_active,
-        "created_at": key.created_at.isoformat() if key.created_at else None,
-        "last_used_at": key.last_used_at.isoformat() if key.last_used_at else None,
-        "expires_at": key.expires_at.isoformat() if key.expires_at else None,
-        "usage_percentage": round((key.usage_count / key.quota_limit * 100), 1) if key.quota_limit else 0
-    } for key in keys]
+        # Get token usage for each API key using api_key_id
+        token_stats_by_key = {}
+        
+        try:
+            from models.token_usage import TokenUsage
+            from sqlalchemy import func
+            
+            # For each API key, get token usage where api_key_id matches
+            for key in keys:
+                key_token_stats = db.query(
+                    func.sum(TokenUsage.input_tokens).label('input_tokens'),
+                    func.sum(TokenUsage.output_tokens).label('output_tokens'),
+                    func.sum(TokenUsage.total_tokens).label('total_tokens')
+                ).filter(
+                    TokenUsage.api_key_id == key.id,
+                    TokenUsage.success == True
+                ).first()
+                
+                if key_token_stats:
+                    token_stats_by_key[key.id] = {
+                        "input_tokens": int(key_token_stats.input_tokens or 0),
+                        "output_tokens": int(key_token_stats.output_tokens or 0),
+                        "total_tokens": int(key_token_stats.total_tokens or 0)
+                    }
+                else:
+                    token_stats_by_key[key.id] = {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "total_tokens": 0
+                    }
+    except (ImportError, Exception) as e:
+        logger.debug(f"TokenUsage not available: {e}")
+        # Set default empty stats for all keys
+        for key in keys:
+            token_stats_by_key[key.id] = {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0
+            }
+    
+    result = []
+    for key in keys:
+        token_stats = token_stats_by_key.get(key.id, {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0
+        })
+        
+        result.append({
+            "id": key.id,
+            "key": key.key,
+            "name": key.name,
+            "description": key.description,
+            "quota_limit": key.quota_limit,
+            "usage_count": key.usage_count,
+            "is_active": key.is_active,
+            "created_at": key.created_at.isoformat() if key.created_at else None,
+            "last_used_at": key.last_used_at.isoformat() if key.last_used_at else None,
+            "expires_at": key.expires_at.isoformat() if key.expires_at else None,
+            "usage_percentage": round((key.usage_count / key.quota_limit * 100), 1) if key.quota_limit else 0,
+            "token_stats": token_stats
+        })
+    
+    return result
 
 
 @router.post("/admin/api_keys", dependencies=[Depends(get_current_user)])

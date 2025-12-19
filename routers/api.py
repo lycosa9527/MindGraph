@@ -478,9 +478,7 @@ async def _export_png_core(
         # Build font-face declarations only for fonts that exist
         font_faces = []
         font_files = [
-            ("inter-300.ttf", 300),
             ("inter-400.ttf", 400),
-            ("inter-500.ttf", 500),
             ("inter-600.ttf", 600),
             ("inter-700.ttf", 700),
         ]
@@ -1200,6 +1198,7 @@ async def export_png(
 @router.post('/generate_png')
 async def generate_png_from_prompt(
     req: GeneratePNGRequest,
+    request: Request,
     x_language: str = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
@@ -1237,16 +1236,28 @@ async def generate_png_from_prompt(
         
         # Call LLM service - single call with Qwen only
         from services.llm_service import llm_service
+        from services.token_tracker import get_token_tracker
         from config.settings import config
         from agents.core.agent_utils import extract_json_from_response
         
-        response = await llm_service.chat(
+        # Get API key ID from request state if API key was used
+        api_key_id = None
+        if hasattr(request, 'state'):
+            api_key_id = getattr(request.state, 'api_key_id', None)
+            if api_key_id:
+                logger.debug(f"[GeneratePNG] Using API key ID {api_key_id} for token tracking")
+        else:
+            logger.debug(f"[GeneratePNG] Request state not available")
+        
+        start_time = time.time()
+        response, usage_data = await llm_service.chat_with_usage(
             prompt=formatted_prompt,
             model='qwen',  # Force Qwen only
             max_tokens=2000,
             temperature=config.LLM_TEMPERATURE,
             user_id=user_id,
             organization_id=organization_id,
+            api_key_id=api_key_id,
             request_type='diagram_generation',
             endpoint_path='/api/generate_png'
         )
@@ -1266,6 +1277,32 @@ async def generate_png_from_prompt(
         # Normalize diagram type
         if graph_type == 'mindmap':
             graph_type = 'mind_map'
+        
+        # Track tokens with correct diagram_type
+        if usage_data:
+            try:
+                input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
+                output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                total_tokens = usage_data.get('total_tokens') or None
+                response_time = time.time() - start_time
+                
+                token_tracker = get_token_tracker()
+                await token_tracker.track_usage(
+                    model_alias='qwen',
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    request_type='diagram_generation',
+                    diagram_type=graph_type,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    api_key_id=api_key_id,
+                    endpoint_path='/api/generate_png',
+                    response_time=response_time,
+                    success=True
+                )
+            except Exception as e:
+                logger.warning(f"[GeneratePNG] Token tracking failed (non-critical): {e}", exc_info=False)
         
         if isinstance(spec, dict) and spec.get('error'):
             raise HTTPException(status_code=400, detail=spec.get('error'))
@@ -1361,17 +1398,29 @@ async def generate_dingtalk_png(
         
         # Call LLM service - single call with Qwen only
         from services.llm_service import llm_service
+        from services.token_tracker import get_token_tracker
         from config.settings import config
         from agents.core.agent_utils import extract_json_from_response
         
+        # Get API key ID from request state if API key was used
+        api_key_id = None
+        if hasattr(request, 'state'):
+            api_key_id = getattr(request.state, 'api_key_id', None)
+            if api_key_id:
+                logger.debug(f"[GenerateDingTalk] Using API key ID {api_key_id} for token tracking")
+        else:
+            logger.debug(f"[GenerateDingTalk] Request state not available")
+        
         logger.debug(f"[GenerateDingTalk] Calling Qwen with prompt-to-diagram")
-        response = await llm_service.chat(
+        start_time = time.time()
+        response, usage_data = await llm_service.chat_with_usage(
             prompt=formatted_prompt,
             model='qwen',  # Force Qwen only
             max_tokens=2000,
             temperature=config.LLM_TEMPERATURE,
             user_id=user_id,
             organization_id=organization_id,
+            api_key_id=api_key_id,
             request_type='diagram_generation',
             endpoint_path='/api/generate_dingtalk'
         )
@@ -1397,6 +1446,32 @@ async def generate_dingtalk_png(
         # Normalize diagram type
         if diagram_type == 'mindmap':
             diagram_type = 'mind_map'
+        
+        # Track tokens with correct diagram_type
+        if usage_data:
+            try:
+                input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
+                output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                total_tokens = usage_data.get('total_tokens') or None
+                response_time = time.time() - start_time
+                
+                token_tracker = get_token_tracker()
+                await token_tracker.track_usage(
+                    model_alias='qwen',
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    request_type='diagram_generation',
+                    diagram_type=diagram_type,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    api_key_id=api_key_id,
+                    endpoint_path='/api/generate_dingtalk',
+                    response_time=response_time,
+                    success=True
+                )
+            except Exception as e:
+                logger.warning(f"[GenerateDingTalk] Token tracking failed (non-critical): {e}", exc_info=False)
         
         if isinstance(spec, dict) and spec.get('error'):
             raise HTTPException(status_code=400, detail=spec.get('error'))

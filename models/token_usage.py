@@ -20,6 +20,7 @@ class TokenUsage(Base):
     # Request metadata - CAN TRACK PER USER!
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True, index=True)
+    api_key_id = Column(Integer, ForeignKey('api_keys.id'), nullable=True, index=True)  # Track which API key was used
     session_id = Column(String(100), index=True)  # For grouping multi-LLM requests (e.g., node palette batch)
     conversation_id = Column(String(100), index=True)  # For multi-turn conversations (e.g., mindmate)
     
@@ -51,11 +52,13 @@ class TokenUsage(Base):
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
     organization = relationship("Organization", foreign_keys=[organization_id])
+    api_key = relationship("APIKey", foreign_keys=[api_key_id])  # APIKey is defined in models.auth
     
     # Indexes for fast queries
     __table_args__ = (
         Index('idx_token_usage_user_date', 'user_id', 'created_at'),
         Index('idx_token_usage_org_date', 'organization_id', 'created_at'),
+        Index('idx_token_usage_api_key_date', 'api_key_id', 'created_at'),
         Index('idx_token_usage_date', 'created_at'),
     )
     

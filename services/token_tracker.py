@@ -219,6 +219,7 @@ class TokenTracker:
         diagram_type: Optional[str] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
+        api_key_id: Optional[int] = None,
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
         endpoint_path: Optional[str] = None,
@@ -242,6 +243,7 @@ class TokenTracker:
             diagram_type: Type of diagram if applicable
             user_id: User ID if authenticated
             organization_id: Organization ID (school) - IMPORTANT for per-school tracking!
+            api_key_id: API key ID if request was made with API key (not user auth)
             session_id: Session ID to group multi-LLM requests
             conversation_id: Conversation ID for multi-turn conversations
             endpoint_path: API endpoint path
@@ -292,6 +294,7 @@ class TokenTracker:
             record = {
                 'user_id': user_id,
                 'organization_id': organization_id,
+                'api_key_id': api_key_id,
                 'session_id': session_id or self.generate_session_id(),
                 'conversation_id': conversation_id,
                 'model_provider': pricing['provider'],

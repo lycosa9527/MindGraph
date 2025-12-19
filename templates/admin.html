@@ -3234,7 +3234,23 @@ curl -X POST http://your-server/api/generate_graph \
                 tbody.innerHTML = apiKeys.map(key => {
                     const isExpired = key.expires_at && new Date(key.expires_at) < new Date();
                     const usagePercent = key.usage_percentage || 0;
-                    const quotaText = key.quota_limit ? `${key.usage_count.toLocaleString()} / ${key.quota_limit.toLocaleString()}` : `${key.usage_count.toLocaleString()} / unlimited`;
+                    
+                    // Get token stats
+                    const tokenStats = key.token_stats || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                    const totalTokens = tokenStats.total_tokens || 0;
+                    const inputTokens = tokenStats.input_tokens || 0;
+                    const outputTokens = tokenStats.output_tokens || 0;
+                    
+                    // Format token display
+                    const formatTokens = (num) => {
+                        if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+                        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                        return num.toLocaleString();
+                    };
+                    
+                    const tokenDisplay = totalTokens > 0 
+                        ? `${formatTokens(totalTokens)} tokens (${formatTokens(inputTokens)}+${formatTokens(outputTokens)})`
+                        : '0 tokens';
                     
                     return `
                         <tr>
@@ -3246,7 +3262,8 @@ curl -X POST http://your-server/api/generate_graph \
                                 <code style="font-size:0.75rem;background:#f1f5f9;padding:0.25rem 0.5rem;border-radius:4px;" onclick="copyToClipboard('${key.key}', this)">${key.key.substring(0, 20)}...${key.key.substring(key.key.length - 8)}</code>
                             </td>
                             <td>
-                                ${quotaText}
+                                <div style="font-weight:500;">${tokenDisplay}</div>
+                                <small style="color:#64748b;">Requests: ${key.usage_count.toLocaleString()}${key.quota_limit ? ` / ${key.quota_limit.toLocaleString()}` : ''}</small>
                                 ${key.quota_limit ? `<br><div style="background:#e2e8f0;height:6px;border-radius:3px;margin-top:4px;overflow:hidden;"><div style="background:${usagePercent > 90 ? '#ef4444' : '#667eea'};width:${Math.min(usagePercent, 100)}%;height:100%;"></div></div>` : ''}
                             </td>
                             <td>

@@ -12,7 +12,7 @@ Provides unified API, error handling, and performance tracking.
 import asyncio
 import logging
 import time
-from typing import Dict, List, Optional, Any, AsyncGenerator
+from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
 
 from services.client_manager import client_manager
 from services.error_handler import error_handler, LLMServiceError
@@ -93,6 +93,7 @@ class LLMService:
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
+        api_key_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
@@ -229,6 +230,7 @@ class LLMService:
                         diagram_type=diagram_type,
                         user_id=user_id,
                         organization_id=organization_id,
+                        api_key_id=api_key_id,
                         session_id=session_id,
                         conversation_id=conversation_id,
                         endpoint_path=endpoint_path,
@@ -252,9 +254,164 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
+            # Track failed request
+            try:
+                token_tracker = get_token_tracker()
+                await token_tracker.track_usage(
+                    model_alias=model,
+                    input_tokens=0,
+                    output_tokens=0,
+                    total_tokens=0,
+                    request_type=request_type,
+                    diagram_type=diagram_type,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    session_id=session_id,
+                    conversation_id=conversation_id,
+                    endpoint_path=endpoint_path,
+                    response_time=duration,
+                    success=False
+                )
+            except Exception:
+                pass  # Non-critical
             logger.error(f"[LLMService] {model} failed after {duration:.2f}s: {e}")
             
             # Record failure metrics
+            self.performance_tracker.record_request(
+                model=model,
+                duration=duration,
+                success=False,
+                error=str(e)
+            )
+            
+            raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
+    
+    async def chat_with_usage(
+        self,
+        prompt: str,
+        model: str = 'qwen',
+        temperature: Optional[float] = None,
+        max_tokens: int = 2000,
+        system_message: Optional[str] = None,
+        timeout: Optional[float] = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        api_key_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+        **kwargs
+    ) -> Tuple[str, dict]:
+        """
+        Chat completion that returns both content and usage data.
+        
+        This method is useful when you need to track tokens with diagram_type
+        that is only known after parsing the response.
+        
+        Returns:
+            Tuple of (content: str, usage_data: dict)
+            usage_data contains: prompt_tokens, completion_tokens, total_tokens
+        """
+        start_time = time.time()
+        
+        try:
+            logger.debug(f"[LLMService] chat_with_usage() - model={model}, prompt_len={len(prompt)}")
+            
+            # Get client
+            client = self.client_manager.get_client(model)
+            
+            # Build messages
+            messages = []
+            if system_message:
+                messages.append({"role": "system", "content": system_message})
+            messages.append({"role": "user", "content": prompt})
+            
+            # Set timeout (per-model defaults)
+            if timeout is None:
+                timeout = self._get_default_timeout(model)
+            
+            # Use rate limiter if available
+            if self.rate_limiter:
+                async with self.rate_limiter:
+                    async def _call():
+                        if hasattr(client, 'async_chat_completion'):
+                            return await client.async_chat_completion(
+                                messages=messages,
+                                temperature=temperature,
+                                max_tokens=max_tokens,
+                                **kwargs
+                            )
+                        else:
+                            return await client.chat_completion(
+                                messages=messages,
+                                temperature=temperature,
+                                max_tokens=max_tokens,
+                                **kwargs
+                            )
+                    
+                    response = await asyncio.wait_for(
+                        error_handler.with_retry(_call),
+                        timeout=timeout
+                    )
+            else:
+                async def _call():
+                    if hasattr(client, 'async_chat_completion'):
+                        return await client.async_chat_completion(
+                            messages=messages,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                            **kwargs
+                        )
+                    else:
+                        return await client.chat_completion(
+                            messages=messages,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                            **kwargs
+                        )
+                
+                response = await asyncio.wait_for(
+                    error_handler.with_retry(_call),
+                    timeout=timeout
+                )
+            
+            # Validate response
+            response = error_handler.validate_response(response)
+            
+            duration = time.time() - start_time
+            
+            # Extract content and usage from response
+            content = response
+            usage_data = {}
+            
+            if isinstance(response, dict):
+                content = response.get('content', '')
+                usage_data = response.get('usage', {})
+            else:
+                content = str(response)
+                usage_data = {}
+            
+            logger.info(f"[LLMService] {model} responded in {duration:.2f}s")
+            
+            # Don't track tokens here - caller will track with correct diagram_type
+            # Record performance metrics
+            self.performance_tracker.record_request(
+                model=model,
+                duration=duration,
+                success=True
+            )
+            
+            return content, usage_data
+            
+        except ValueError as e:
+            raise
+        except Exception as e:
+            duration = time.time() - start_time
+            logger.error(f"[LLMService] {model} failed after {duration:.2f}s: {e}")
+            
             self.performance_tracker.record_request(
                 model=model,
                 duration=duration,

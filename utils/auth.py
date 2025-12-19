@@ -925,12 +925,17 @@ def validate_api_key(api_key: str, db: Session) -> bool:
 
 def track_api_key_usage(api_key: str, db: Session):
     """Increment usage counter for API key"""
-    key_record = db.query(APIKey).filter(APIKey.key == api_key).first()
-    if key_record:
-        key_record.usage_count += 1
-        key_record.last_used_at = datetime.utcnow()
-        db.commit()
-        logger.info(f"API key used: {key_record.name} (usage: {key_record.usage_count}/{key_record.quota_limit or 'unlimited'})")
+    try:
+        key_record = db.query(APIKey).filter(APIKey.key == api_key).first()
+        if key_record:
+            key_record.usage_count += 1
+            key_record.last_used_at = datetime.utcnow()
+            db.commit()
+            logger.debug(f"[Auth] API key used: {key_record.name} (usage: {key_record.usage_count}/{key_record.quota_limit or 'unlimited'})")
+        else:
+            logger.warning(f"[Auth] API key usage tracking failed: key record not found")
+    except Exception as e:
+        logger.error(f"[Auth] Failed to track API key usage: {e}", exc_info=True)
 
 
 def get_current_user_or_api_key(
@@ -999,8 +1004,26 @@ def get_current_user_or_api_key(
         db = SessionLocal()
         try:
             if validate_api_key(api_key, db):
-                track_api_key_usage(api_key, db)
-                logger.info(f"Valid API key access")
+                # Get API key record to store ID in request state
+                from models.auth import APIKey
+                key_record = db.query(APIKey).filter(APIKey.key == api_key).first()
+                
+                if key_record:
+                    if request and hasattr(request, 'state'):
+                        # Store API key ID in request state for token tracking
+                        request.state.api_key_id = key_record.id
+                        request.state.api_key_name = key_record.name
+                        logger.debug(f"[Auth] Stored API key ID {key_record.id} in request state")
+                    else:
+                        logger.warning(f"[Auth] Request state not available, cannot store api_key_id for token tracking")
+                    
+                    track_api_key_usage(api_key, db)
+                    logger.info(f"[Auth] Valid API key access: {key_record.name} (ID: {key_record.id})")
+                else:
+                    logger.warning(f"[Auth] API key validated but record not found in database")
+                    track_api_key_usage(api_key, db)
+                    logger.info(f"[Auth] Valid API key access (record lookup failed)")
+                
                 return None  # Valid API key, no user object
         finally:
             db.close()  # Release connection immediately
