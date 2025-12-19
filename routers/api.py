@@ -855,22 +855,33 @@ async def generate_dingtalk_png(
         logger.debug(f"[generate_dingtalk] Saved to {temp_path}")
         
         # Step 4: Build plain text response in ![](url) format (empty alt text)
-        # Detect protocol and host from reverse proxy headers (X-Forwarded-*) if present
-        # This prevents mixed content errors when behind HTTPS reverse proxy
-        forwarded_proto = request.headers.get('X-Forwarded-Proto')
-        forwarded_host = request.headers.get('X-Forwarded-Host')
+        # Priority order for URL generation:
+        # 1. EXTERNAL_BASE_URL env var (explicit override, e.g. https://example.com)
+        # 2. X-Forwarded-* headers from reverse proxy
+        # 3. Fallback to EXTERNAL_HOST:PORT
         
-        if forwarded_proto and forwarded_host:
-            # Behind reverse proxy - use forwarded values (no port needed)
-            protocol = forwarded_proto
-            image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
-            logger.debug(f"[generate_dingtalk] Using reverse proxy headers: {protocol}://{forwarded_host}")
+        external_base_url = os.getenv('EXTERNAL_BASE_URL', '').rstrip('/')
+        
+        if external_base_url:
+            # Explicit override - use EXTERNAL_BASE_URL directly
+            image_url = f"{external_base_url}/api/temp_images/{filename}"
+            logger.debug(f"[generate_dingtalk] Using EXTERNAL_BASE_URL: {external_base_url}")
         else:
-            # Direct access - use backend protocol and EXTERNAL_HOST with port
-            protocol = request.url.scheme
-            external_host = os.getenv('EXTERNAL_HOST', 'localhost')
-            port = os.getenv('PORT', '9527')
-            image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
+            # Try reverse proxy headers
+            forwarded_proto = request.headers.get('X-Forwarded-Proto')
+            forwarded_host = request.headers.get('X-Forwarded-Host')
+            
+            if forwarded_proto and forwarded_host:
+                # Behind reverse proxy - use forwarded values (no port needed)
+                protocol = forwarded_proto
+                image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
+                logger.debug(f"[generate_dingtalk] Using reverse proxy headers: {protocol}://{forwarded_host}")
+            else:
+                # Direct access - use backend protocol and EXTERNAL_HOST with port
+                protocol = request.url.scheme
+                external_host = os.getenv('EXTERNAL_HOST', 'localhost')
+                port = os.getenv('PORT', '9527')
+                image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
         
         plain_text = f"![]({image_url})"
         

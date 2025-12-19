@@ -15,3 +15,4 @@ from agents.node_palette.double_bubble_palette import DoubleBubblePaletteGenerat
 
 __all__ = ['BasePaletteGenerator', 'CircleMapPaletteGenerator', 'DoubleBubblePaletteGenerator']
 
+
