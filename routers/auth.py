@@ -2946,36 +2946,36 @@ async def list_api_keys_admin(
     
     keys = db.query(APIKey).order_by(APIKey.created_at.desc()).all()
     
-        # Get token usage for each API key using api_key_id
-        token_stats_by_key = {}
+    # Get token usage for each API key using api_key_id
+    token_stats_by_key = {}
+    
+    try:
+        from models.token_usage import TokenUsage
+        from sqlalchemy import func
         
-        try:
-            from models.token_usage import TokenUsage
-            from sqlalchemy import func
+        # For each API key, get token usage where api_key_id matches
+        for key in keys:
+            key_token_stats = db.query(
+                func.sum(TokenUsage.input_tokens).label('input_tokens'),
+                func.sum(TokenUsage.output_tokens).label('output_tokens'),
+                func.sum(TokenUsage.total_tokens).label('total_tokens')
+            ).filter(
+                TokenUsage.api_key_id == key.id,
+                TokenUsage.success == True
+            ).first()
             
-            # For each API key, get token usage where api_key_id matches
-            for key in keys:
-                key_token_stats = db.query(
-                    func.sum(TokenUsage.input_tokens).label('input_tokens'),
-                    func.sum(TokenUsage.output_tokens).label('output_tokens'),
-                    func.sum(TokenUsage.total_tokens).label('total_tokens')
-                ).filter(
-                    TokenUsage.api_key_id == key.id,
-                    TokenUsage.success == True
-                ).first()
-                
-                if key_token_stats:
-                    token_stats_by_key[key.id] = {
-                        "input_tokens": int(key_token_stats.input_tokens or 0),
-                        "output_tokens": int(key_token_stats.output_tokens or 0),
-                        "total_tokens": int(key_token_stats.total_tokens or 0)
-                    }
-                else:
-                    token_stats_by_key[key.id] = {
-                        "input_tokens": 0,
-                        "output_tokens": 0,
-                        "total_tokens": 0
-                    }
+            if key_token_stats:
+                token_stats_by_key[key.id] = {
+                    "input_tokens": int(key_token_stats.input_tokens or 0),
+                    "output_tokens": int(key_token_stats.output_tokens or 0),
+                    "total_tokens": int(key_token_stats.total_tokens or 0)
+                }
+            else:
+                token_stats_by_key[key.id] = {
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "total_tokens": 0
+                }
     except (ImportError, Exception) as e:
         logger.debug(f"TokenUsage not available: {e}")
         # Set default empty stats for all keys
