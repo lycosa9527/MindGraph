@@ -25,11 +25,12 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
     Flow Map specific palette generator with multi-stage workflow and step sequencing.
     
     Stages:
-    1. dimensions: Generate decomposition dimensions for the flow
-    2. steps: Generate main steps based on selected dimension
-    3. substeps: Generate substeps for a specific step
+    1. steps: Generate main steps (no dimensions needed)
+    2. substeps: Generate substeps for a specific step
     
-    Key feature: Each generated step gets a sequence number for ordering.
+    Key feature: Sequence numbers are assigned when user selects steps (based on selection order),
+    not during generation. This allows users to see steps without numbers first, then numbers
+    appear after selection.
     """
     
     def __init__(self):
@@ -108,11 +109,8 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
                 
                 node['mode'] = node_mode
                 
-                # CRITICAL: Add sequence number for steps
-                if stage == 'steps':
-                    node['sequence'] = self.step_sequences[session_id]
-                    self.step_sequences[session_id] += 1
-                    logger.info(f"[FlowMapPalette] Step node tagged with sequence={node['sequence']} | ID: {node.get('id', 'unknown')}")
+                # NOTE: Sequence numbers are NOT assigned during generation
+                # They are assigned when user selects steps, based on selection order
             
             yield event
     
@@ -144,22 +142,21 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         
         # Get current stage and stage_data
         stage_info = self.session_stages.get(session_id, {})
-        stage = stage_info.get('stage', 'dimensions')
+        stage = stage_info.get('stage', 'steps')  # Default to 'steps' (dimensions stage removed)
         
         logger.debug(f"[FlowMapPalette-Prompt] Building prompt for stage: {stage}")
         
         # Build stage-specific prompt
-        if stage == 'dimensions':
-            return self._build_dimensions_prompt(center_topic, context_desc, language, count, batch_num)
-        elif stage == 'steps':
-            dimension = stage_info.get('dimension', '')
-            return self._build_steps_prompt(center_topic, dimension, context_desc, language, count, batch_num)
+        if stage == 'steps':
+            # Steps stage - no dimension needed
+            return self._build_steps_prompt(center_topic, context_desc, language, count, batch_num)
         elif stage == 'substeps':
             step_name = stage_info.get('step_name', '')
             return self._build_substeps_prompt(center_topic, step_name, context_desc, language, count, batch_num)
         else:
-            # Fallback to dimensions
-            return self._build_dimensions_prompt(center_topic, context_desc, language, count, batch_num)
+            # Fallback to steps (default stage for flow maps)
+            logger.warning(f"[FlowMapPalette] Unknown stage '{stage}', defaulting to 'steps'")
+            return self._build_steps_prompt(center_topic, context_desc, language, count, batch_num)
     
     def _build_dimensions_prompt(
         self,
@@ -226,27 +223,23 @@ Generate {count} decomposition dimensions:"""
     def _build_steps_prompt(
         self,
         center_topic: str,
-        dimension: str,
         context_desc: str,
         language: str,
         count: int,
         batch_num: int
     ) -> str:
-        """Build prompt for Stage 2: Steps (based on selected dimension)"""
+        """Build prompt for Stage 1: Steps"""
         if language == 'zh':
             prompt = f"""为流程"{center_topic}"生成{count}个按时间顺序排列的步骤
-
-拆解维度：{dimension}
 
 教学背景：{context_desc}
 
 你能够绘制流程图，展示过程的各个步骤。
 思维方式：顺序、流程
-1. 步骤要按照"{dimension}"这个维度进行拆解
-2. 步骤要按时间顺序排列（从早到晚，从开始到结束）
-3. 每个步骤要简洁明了，不要使用完整句子
-4. 使用动宾短语或名词短语描述步骤
-5. 步骤之间要有逻辑关联
+1. 步骤要按时间顺序排列（从早到晚，从开始到结束）
+2. 每个步骤要简洁明了，不要使用完整句子
+3. 使用动宾短语或名词短语描述步骤
+4. 步骤之间要有逻辑关联
 
 要求：每个步骤要简洁明了（1-6个词），不要标点符号，不要编号前缀。只输出步骤文本，每行一个。**请按照时间顺序从早到晚排列步骤**。
 
@@ -254,17 +247,14 @@ Generate {count} decomposition dimensions:"""
         else:
             prompt = f"""Generate {count} chronologically ordered steps for: {center_topic}
 
-Decomposition dimension: {dimension}
-
 Educational Context: {context_desc}
 
 You can draw a flow map to show the steps of a process.
 Thinking approach: Sequential, Procedural
-1. Steps should follow the "{dimension}" dimension
-2. Steps should be in chronological order (from beginning to end)
-3. Each step should be concise and clear, avoid full sentences
-4. Use action phrases or noun phrases to describe steps
-5. Steps should be logically connected
+1. Steps should be in chronological order (from beginning to end)
+2. Each step should be concise and clear, avoid full sentences
+3. Use action phrases or noun phrases to describe steps
+4. Steps should be logically connected
 
 Requirements: Each step should be concise (1-6 words), no punctuation, no numbering prefixes. Output only the step text, one per line. **Please arrange steps in chronological order from earliest to latest**.
 
@@ -289,39 +279,41 @@ Generate {count} ordered steps:"""
     ) -> str:
         """Build prompt for Stage 3: Substeps (for a specific step)"""
         if language == 'zh':
-            prompt = f"""为步骤"{step_name}"生成{count}个子步骤
+            prompt = f"""为步骤"{step_name}"生成{count}个子步骤，该步骤属于整体流程"{center_topic}"
 
 整体流程：{center_topic}
+选中的步骤：{step_name}
 
 教学背景：{context_desc}
 
-你能够将一个步骤进一步细化为多个子步骤。
-思维方式：细化、分解
-1. 子步骤要详细展开"{step_name}"这个步骤
-2. 子步骤要按时间顺序排列
-3. 每个子步骤要简洁明了，不要使用完整句子
-4. 使用动宾短语或名词短语描述子步骤
+核心要求：
+1. 所有子步骤必须属于步骤"{step_name}"，且与整体流程"{center_topic}"相关
+2. 子步骤要详细展开"{step_name}"这个步骤的具体操作或细节
+3. 子步骤要按时间顺序排列（从早到晚）
+4. 子步骤要具体、详细、有代表性
+5. 每个子步骤要简洁明了（1-8个词），不要使用完整句子
+6. 使用动宾短语或名词短语描述子步骤
+7. 只输出子步骤文本，每行一个，不要编号前缀，不要标点符号
 
-要求：每个子步骤要简洁明了（1-8个词），不要标点符号，不要编号前缀。只输出子步骤文本，每行一个。
-
-生成{count}个子步骤："""
+为步骤"{step_name}"（属于流程"{center_topic}"）生成{count}个子步骤："""
         else:
-            prompt = f"""Generate {count} substeps for: {step_name}
+            prompt = f"""Generate {count} substeps for step "{step_name}" of overall process "{center_topic}"
 
-Overall process: {center_topic}
+Overall Process: {center_topic}
+Selected Step: {step_name}
 
 Educational Context: {context_desc}
 
-You can break down a step into multiple substeps.
-Thinking approach: Refinement, Decomposition
-1. Substeps should detail out the "{step_name}" step
-2. Substeps should be in chronological order
-3. Each substep should be concise and clear, avoid full sentences
-4. Use action phrases or noun phrases to describe substeps
+Requirements:
+1. ALL substeps MUST belong to step "{step_name}" and be relevant to the overall process "{center_topic}"
+2. Substeps should detail out the specific actions or details of the "{step_name}" step
+3. Substeps should be in chronological order (from earliest to latest)
+4. Substeps should be specific, detailed, and representative
+5. Each substep should be concise (1-8 words), avoid full sentences
+6. Use action phrases or noun phrases to describe substeps
+7. Output only substep text, one per line, no numbering prefixes, no punctuation
 
-Requirements: Each substep should be concise (1-8 words), no punctuation, no numbering prefixes. Output only the substep text, one per line.
-
-Generate {count} substeps:"""
+Generate {count} substeps for "{step_name}" (step of "{center_topic}"):"""
         
         if batch_num > 1:
             if language == 'zh':

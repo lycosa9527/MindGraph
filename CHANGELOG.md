@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.35.0] - 2025-01-20 - Node Palette Prompt Improvements for Multi-Stage Diagrams
+
+### Changed
+
+- **Node Palette Prompt Enhancements** - Improved relevance and consistency of child node generation for multi-stage diagrams
+  - **Tree Map** - Enhanced children prompt to strongly emphasize relevance to main topic, classification dimension, and category
+  - **Brace Map** - Enhanced subparts prompt to strongly emphasize relevance to main topic, decomposition dimension, and parent part
+  - **Flow Map** - Enhanced substeps prompt to strongly emphasize relevance to overall process and parent step
+  - All three diagram types now have consistent prompt structure with explicit requirements for child nodes
+
+- **Prompt Structure Improvements**
+  - Added explicit requirement that child nodes MUST belong to their parent node
+  - Added explicit requirement that child nodes MUST be relevant to the main topic/process
+  - Added explicit requirement for consistency with classification/decomposition dimension (when applicable)
+  - Reorganized requirements for better clarity and emphasis
+  - Updated both Chinese and English prompts for all three diagram types
+
+### Technical Details
+
+**Files Modified:**
+- `agents/node_palette/tree_map_palette.py` - Enhanced `_build_children_prompt()` with stronger emphasis on topic, dimension, and category relevance
+- `agents/node_palette/brace_map_palette.py` - Enhanced `_build_subparts_prompt()` with stronger emphasis on topic, dimension, and part relevance
+- `agents/node_palette/flow_map_palette.py` - Enhanced `_build_substeps_prompt()` with stronger emphasis on process and step relevance
+
+---
+
 ## [4.34.0] - 2025-12-19 - Admin Panel Token Leaderboard Enhancement
 
 ### Added

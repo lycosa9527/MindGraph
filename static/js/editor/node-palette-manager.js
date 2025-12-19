@@ -135,13 +135,8 @@ class NodePaletteManager {
                 useStages: true  // Enable multi-stage workflow (branches -> children)
             },
             'flow_map': {
-                // Multi-stage workflow: dimensions → steps → substeps (per step)
+                // Multi-stage workflow: steps → substeps (per step)
                 arrays: {
-                    'dimensions': {
-                        nodeName: 'dimension',
-                        nodeNamePlural: 'dimensions',
-                        nodeType: 'dimension'
-                    },
                     'steps': {
                         nodeName: 'step',
                         nodeNamePlural: 'steps',
@@ -159,7 +154,7 @@ class NodePaletteManager {
                 nodeNamePlural: 'steps',
                 nodeType: 'step',
                 useTabs: true,  // Enable tab UI for multi-stage
-                useStages: true  // Enable 3-stage workflow (dimensions → steps → substeps)
+                useStages: true  // Enable 2-stage workflow (steps → substeps)
             },
             'multi_flow_map': {
                 // Multi-array support with tabs
@@ -746,68 +741,33 @@ class NodePaletteManager {
             return;
         }
         
-        if (this.currentStage === 'dimensions') {
-            // Stage 1 → Stage 2: User selected a dimension
+        if (this.currentStage === 'steps') {
+            // Stage 1 → Stage 2: User selected steps
             
-            // Validate: exactly 1 dimension should be selected
-            if (this.selectedNodes.size !== 1) {
-                alert('Please select exactly ONE dimension to proceed.');
-                return;
-            }
-            
-            const selectedDimension = Array.from(this.selectedNodes)
+            // Get selected step nodes in selection order (preserve order from selectedNodes Set)
+            const selectedStepNodes = Array.from(this.selectedNodes)
                 .map(id => this.nodes.find(n => n.id === id))
-                .filter(node => node && node.text)
-                .map(node => node.text)[0];
+                .filter(node => node && node.text);
             
-            console.log(`[NodePalette-FlowMap] Stage 1 → Stage 2: Dimension selected = "${selectedDimension}"`);
+            // Assign sequence numbers based on selection order (1, 2, 3, ...)
+            const stepSequenceMap = {};  // stepName -> sequence number
+            selectedStepNodes.forEach((node, index) => {
+                const sequence = index + 1;
+                node.sequence = sequence;  // Update node object with sequence
+                stepSequenceMap[node.text] = sequence;
+                console.log(`[NodePalette-FlowMap] Assigned sequence ${sequence} to step: "${node.text}"`);
+            });
             
-            // Update stage
-            this.currentStage = 'steps';
-            this.stageData.dimension = selectedDimension;
-            this.stageGeneration++;  // Invalidate old batches from previous stage
+            const selectedSteps = selectedStepNodes.map(node => node.text);
             
-            // Abort any in-flight batch from previous stage
-            if (this.currentBatchAbortController) {
-                console.log('[NodePalette-FlowMap] Aborting in-flight batch from previous stage');
-                this.currentBatchAbortController.abort();
-                this.currentBatchAbortController = null;
-            }
-            this.isLoadingBatch = false;  // Allow new batch to start immediately
-            
-            // Lock dimensions tab
-            this.lockTab('dimensions');
-            
-            // Clear current nodes and reset batch count for new stage
-            this.nodes = [];
-            this.tabNodes.steps = [];
-            this.selectedNodes.clear();
-            this.tabSelectedNodes.steps = new Set();
-            this.currentBatch = 0;
-            
-            // Show stage transition
-            this.showStageTransition(`Stage 2: Generate Steps based on "${selectedDimension}"`);
-            
-            // Update button text
-            this.updateStageProgressButton();
-            
-            // Switch to steps tab (will auto-load if empty)
-            this.switchTab('steps');
-            
-        } else if (this.currentStage === 'steps') {
-            // Stage 2 → Stage 3: User selected steps
-            
-            const selectedSteps = Array.from(this.selectedNodes)
-                .map(id => this.nodes.find(n => n.id === id))
-                .filter(node => node && node.text)
-                .map(node => node.text);
-            
-            console.log(`[NodePalette-FlowMap] Stage 2 → Stage 3: ${selectedSteps.length} steps selected`);
+            console.log(`[NodePalette-FlowMap] Stage 1 → Stage 2: ${selectedSteps.length} steps selected`);
             console.log(`[NodePalette-FlowMap]   Steps: ${selectedSteps.join(', ')}`);
+            console.log(`[NodePalette-FlowMap]   Sequence map:`, stepSequenceMap);
             
             // Update stage
             this.currentStage = 'substeps';
             this.stageData.steps = selectedSteps;
+            this.stageData.stepSequenceMap = stepSequenceMap;  // Store sequence mapping
             this.stageGeneration++;  // Invalidate old batches from previous stage
             
             // Abort any in-flight batch from previous stage
@@ -835,19 +795,16 @@ class NodePaletteManager {
                 dynamicTabScrollPositions[stepName] = 0;
             });
             
-            // Include locked tabs from previous stages
+            // Include locked steps tab from previous stage
             this.tabNodes = {
-                dimensions: this.tabNodes.dimensions || [],
                 steps: this.tabNodes.steps || [],
                 ...dynamicTabNodes
             };
             this.tabSelectedNodes = {
-                dimensions: this.tabSelectedNodes.dimensions || new Set(),
                 steps: this.tabSelectedNodes.steps || new Set(),
                 ...dynamicTabSelectedNodes
             };
             this.tabScrollPositions = {
-                dimensions: 0,
                 steps: 0,
                 ...dynamicTabScrollPositions
             };
@@ -857,8 +814,8 @@ class NodePaletteManager {
             // Set current tab to first step
             this.currentTab = selectedSteps[0];
             
-            // Show dynamic tabs UI
-            this.showDynamicCategoryTabsUI(selectedSteps);
+            // Show dynamic tabs UI with sequence numbers
+            this.showDynamicCategoryTabsUI(selectedSteps, stepSequenceMap);
             
             // Attach listeners for new tabs
             this.attachTabButtonListeners();
@@ -875,8 +832,8 @@ class NodePaletteManager {
             await this.loadAllCategoryTabsInitial(selectedSteps);
             
         } else if (this.currentStage === 'substeps') {
-            // Stage 3 → Complete: User selected substeps, ready to add to diagram
-            console.log(`[NodePalette-FlowMap] Stage 3: Substeps selected, completing workflow`);
+            // Stage 2 → Complete: User selected substeps, ready to add to diagram
+            console.log(`[NodePalette-FlowMap] Stage 2: Substeps selected, completing workflow`);
             
             // Lock substeps tab
             this.lockTab('substeps');
@@ -1355,8 +1312,10 @@ class NodePaletteManager {
     /**
      * Show dynamic category tabs UI for Tree Map Stage 3 or Brace Map Stage 3
      * Creates one tab per selected category/part
+     * @param {Array} selectedCategories - Array of category/part/step names
+     * @param {Object} stepSequenceMap - Optional map of step name -> sequence number (for flow map)
      */
-    showDynamicCategoryTabsUI(selectedCategories) {
+    showDynamicCategoryTabsUI(selectedCategories, stepSequenceMap = null) {
         const tabsContainer = document.getElementById('node-palette-tabs');
         const paletteTabsDiv = tabsContainer?.querySelector('.palette-tabs');
         
@@ -1394,10 +1353,9 @@ class NodePaletteManager {
             dynamicLabel = '🌱';
             logPrefix = 'Mindmap';
         } else if (this.diagramType === 'flow_map') {
-            // Flow Map: Dimensions (locked) + Steps (locked) + Step tabs (active)
+            // Flow Map: Steps (locked) + Step tabs (active)
             tabs = [
-                { id: 'dimensions', label: this.getTabLabelWithEmoji('dimensions'), counterId: 'count-dimensions', counterSuffix: '', locked: true },
-                { id: 'steps', label: this.getTabLabelWithEmoji('steps'), counterId: 'count-steps', counterSuffix: '', locked: true }
+                { id: 'steps', label: this.getTabLabelWithEmoji('steps'), counterId: 'count-steps', counterSuffix: '', locked: this.currentStage === 'substeps' }
             ];
             dynamicLabel = '▶️';
             logPrefix = 'FlowMap';
@@ -1405,9 +1363,19 @@ class NodePaletteManager {
         
         // Add dynamic category/part/branch/step tabs
         selectedCategories.forEach((categoryName, index) => {
+            let label;
+            if (this.diagramType === 'flow_map' && stepSequenceMap && stepSequenceMap[categoryName]) {
+                // Flow map: Show "Step 1", "Step 2", etc. with sequence number
+                const sequence = stepSequenceMap[categoryName];
+                label = `${dynamicLabel} Step ${sequence}: ${categoryName}`;
+            } else {
+                // Other diagrams: Show category/part/branch name
+                label = `${dynamicLabel} ${categoryName}`;
+            }
+            
             tabs.push({
                 id: categoryName,
-                label: `${dynamicLabel} ${categoryName}`,
+                label: label,
                 counterId: `count-${categoryName}`,
                 counterSuffix: '',
                 locked: false
@@ -1848,12 +1816,11 @@ class NodePaletteManager {
                     console.log(`[NodePalette-Mindmap]   Current tab: ${this.currentTab}`);
                 }
             } else if (this.diagramType === 'flow_map') {
-                // Flow Map: Multi-stage workflow (dimensions -> steps -> substeps)
-                firstTab = 'dimensions';
-                secondTab = 'steps';
+                // Flow Map: Multi-stage workflow (steps -> substeps)
+                firstTab = 'steps';
+                secondTab = null;  // No second tab needed
                 
                 // Determine initial stage based on diagram data
-                const hasDimension = diagramData && diagramData.dimension && diagramData.dimension.trim().length > 0;
                 const hasSteps = diagramData && diagramData.steps && diagramData.steps.length > 0;
                 
                 // Filter out empty steps
@@ -1864,31 +1831,35 @@ class NodePaletteManager {
                     })
                     : [];
                 
-                if (!hasDimension) {
-                    // Stage 1: Dimension Selection
-                    this.currentStage = 'dimensions';
-                    this.currentTab = 'dimensions';
-                    console.log('[NodePalette-FlowMap] Stage 1: Dimension Selection');
-                } else if (realSteps.length === 0) {
-                    // Stage 2: Steps Generation based on selected dimension
+                if (realSteps.length === 0) {
+                    // Stage 1: Steps Selection (no dimensions needed)
                     this.currentStage = 'steps';
                     this.currentTab = 'steps';
-                    this.stageData.dimension = diagramData.dimension;
-                    console.log('[NodePalette-FlowMap] Stage 2: Steps Generation | Dimension:', diagramData.dimension);
+                    console.log('[NodePalette-FlowMap] Stage 1: Steps Selection');
                 } else {
-                    // Stage 3: Sub-Steps Generation (REOPEN CASE)
+                    // Stage 2: Sub-Steps Generation (REOPEN CASE)
                     this.currentStage = 'substeps';
-                    this.stageData.dimension = diagramData.dimension;
                     
                     // Extract step names from diagram data (support both 'text' and 'name' fields)
                     const stepNames = realSteps.map(step => step.text || step.name || '');
                     this.stageData.steps = stepNames;
                     
+                    // Restore sequence numbers from diagram data (steps may have sequence property)
+                    const stepSequenceMap = {};
+                    realSteps.forEach((step, index) => {
+                        const stepText = step.text || step.name || '';
+                        // Use sequence from step if available, otherwise use index + 1
+                        const sequence = step.sequence !== undefined ? step.sequence : (index + 1);
+                        stepSequenceMap[stepText] = sequence;
+                    });
+                    this.stageData.stepSequenceMap = stepSequenceMap;
+                    
                     // Set current tab to first step
                     this.currentTab = stepNames[0];
                     
-                    console.log(`[NodePalette-FlowMap] Stage 3: Reopening with ${stepNames.length} steps`);
+                    console.log(`[NodePalette-FlowMap] Stage 2: Reopening with ${stepNames.length} steps`);
                     console.log(`[NodePalette-FlowMap]   Steps: ${stepNames.join(', ')}`);
+                    console.log(`[NodePalette-FlowMap]   Sequence map:`, stepSequenceMap);
                     console.log(`[NodePalette-FlowMap]   Current tab: ${this.currentTab}`);
                 }
             } else {
@@ -2052,9 +2023,9 @@ class NodePaletteManager {
                         console.log('[NodePalette-Mindmap] Initialized branches tab (Stage 1)');
                     }
                 } else if (this.diagramType === 'flow_map') {
-                    // Flow Map: Multi-stage workflow (dimensions -> steps -> substeps)
+                    // Flow Map: Multi-stage workflow (steps -> substeps)
                     if (this.currentStage === 'substeps' && this.stageData.steps && this.stageData.steps.length > 0) {
-                        // Stage 3: Initialize tabs for each selected step
+                        // Stage 2: Initialize tabs for each selected step
                         const stepNames = this.stageData.steps;
                         
                         const dynamicTabNodes = {};
@@ -2067,53 +2038,34 @@ class NodePaletteManager {
                             dynamicTabScrollPositions[stepName] = 0;
                         });
                         
-                        // Include locked tabs from previous stages
+                        // Include locked steps tab from previous stage
                         this.tabNodes = {
-                            dimensions: [],
-                            steps: [],
+                            steps: this.tabNodes.steps || [],
                             ...dynamicTabNodes
                         };
                         this.tabSelectedNodes = {
-                            dimensions: new Set(),
-                            steps: new Set(),
+                            steps: this.tabSelectedNodes.steps || new Set(),
                             ...dynamicTabSelectedNodes
                         };
                         this.tabScrollPositions = {
-                            dimensions: 0,
                             steps: 0,
                             ...dynamicTabScrollPositions
                         };
                         
                         console.log(`[NodePalette-FlowMap] Initialized ${stepNames.length} dynamic step tabs:`, stepNames);
                     } else if (this.currentStage === 'steps') {
-                        // Stage 2: Initialize dimensions and steps tabs
+                        // Stage 1: Initialize steps tab only
                         this.tabNodes = {
-                            dimensions: [],
                             steps: []
                         };
                         this.tabSelectedNodes = {
-                            dimensions: new Set(),
                             steps: new Set()
                         };
                         this.tabScrollPositions = {
-                            dimensions: 0,
                             steps: 0
                         };
                         
-                        console.log('[NodePalette-FlowMap] Initialized dimensions and steps tabs (Stage 2)');
-                    } else {
-                        // Stage 1: Initialize dimensions tab only
-                        this.tabNodes = {
-                            dimensions: []
-                        };
-                        this.tabSelectedNodes = {
-                            dimensions: new Set()
-                        };
-                        this.tabScrollPositions = {
-                            dimensions: 0
-                        };
-                        
-                        console.log('[NodePalette-FlowMap] Initialized dimensions tab (Stage 1)');
+                        console.log('[NodePalette-FlowMap] Initialized steps tab (Stage 1)');
                     }
                 } else {
                     // Other diagrams: 2 tabs (double_bubble_map, multi_flow_map)
@@ -2143,8 +2095,9 @@ class NodePaletteManager {
                 // For Mindmap Stage 2 with branches, show dynamic branch tabs
                 this.showDynamicCategoryTabsUI(this.stageData.branches);  // Reuse tree map's dynamic tab UI
             } else if (this.diagramType === 'flow_map' && this.currentStage === 'substeps' && this.stageData.steps && this.stageData.steps.length > 0) {
-                // For Flow Map Stage 3 with steps, show dynamic step tabs
-                this.showDynamicCategoryTabsUI(this.stageData.steps);  // Reuse tree map's dynamic tab UI
+                // For Flow Map Stage 2 with steps, show dynamic step tabs
+                const stepSequenceMap = this.stageData.stepSequenceMap || null;
+                this.showDynamicCategoryTabsUI(this.stageData.steps, stepSequenceMap);  // Pass sequence map for flow map
             } else {
                 this.showTabsUI();
             }
@@ -2194,14 +2147,10 @@ class NodePaletteManager {
                     console.log('[NodePalette-Mindmap] Locked branches tab (Stage 2)');
                 }
                 
-                // For Flow Map Stage 3: Lock dimensions and steps tabs
+                // For Flow Map Stage 2: Lock steps tab
                 if (this.diagramType === 'flow_map' && this.currentStage === 'substeps') {
-                    this.lockTab('dimensions');
                     this.lockTab('steps');
-                    console.log('[NodePalette-FlowMap] Locked dimensions and steps tabs (Stage 3)');
-                } else if (this.diagramType === 'flow_map' && this.currentStage === 'steps') {
-                    this.lockTab('dimensions');
-                    console.log('[NodePalette-FlowMap] Locked dimensions tab (Stage 2)');
+                    console.log('[NodePalette-FlowMap] Locked steps tab (Stage 2)');
                 }
             }, 50);
             
@@ -2370,9 +2319,9 @@ class NodePaletteManager {
                 // Update button text for flow map stages
                 this.updateStageProgressButton();
                 
-                // For Stage 3 (substeps), load the current step tab
+                // For Stage 2 (substeps), load the current step tab
                 if (this.currentStage === 'substeps' && this.stageData.steps && this.stageData.steps.length > 0) {
-                    console.log(`[NodePalette-FlowMap] Stage 3: Loading current step tab "${this.currentTab}"`);
+                    console.log(`[NodePalette-FlowMap] Stage 2: Loading current step tab "${this.currentTab}"`);
                     
                     // Set loading state and show catapult animation
                     this.isLoadingBatch = true;
@@ -3497,18 +3446,29 @@ class NodePaletteManager {
                                 
                                 console.log(`[NodePalette] Received node - Target: ${targetMode}, Node mode: ${nodeMode}, Has left/right: ${!!(node.left && node.right)}, ID: ${node.id}`);
                                 
-                                // For staged diagrams (tree_map, brace_map, flow_map, mindmap), use more lenient matching
-                                // Nodes tagged with stage name (e.g., 'dimensions', 'parts') should match the target tab
+                                // For staged diagrams (tree_map, brace_map, flow_map, mindmap), use strict matching for children/subparts/substeps
+                                // For earlier stages (dimensions, categories, parts, steps), use lenient matching
                                 const isStagedDiagram = this.usesStages();
                                 let shouldAccept = false;
                                 
                                 if (isStagedDiagram) {
-                                    // For staged diagrams: accept if node.mode matches targetMode OR currentTab
-                                    // This handles cases where mode is set to stage name (e.g., 'dimensions')
-                                    shouldAccept = (nodeMode === targetMode || nodeMode === this.currentTab);
-                                    if (!shouldAccept && this.currentStage) {
-                                        // Also accept if mode matches current stage
-                                        shouldAccept = (nodeMode === this.currentStage);
+                                    // Check if we're in children/subparts/substeps stage (Stage 3)
+                                    const isChildrenStage = (this.currentStage === 'children' || 
+                                                           this.currentStage === 'subparts' || 
+                                                           this.currentStage === 'substeps');
+                                    
+                                    if (isChildrenStage) {
+                                        // Stage 3: STRICT matching - node.mode must exactly match targetMode (category/part/step name)
+                                        // This ensures nodes from one category don't appear in another category's tab
+                                        shouldAccept = (nodeMode === targetMode);
+                                    } else {
+                                        // Stage 1/2: Lenient matching for dimensions/categories/parts/steps
+                                        // Accept if node.mode matches targetMode OR currentTab
+                                        shouldAccept = (nodeMode === targetMode || nodeMode === this.currentTab);
+                                        if (!shouldAccept && this.currentStage) {
+                                            // Also accept if mode matches current stage
+                                            shouldAccept = (nodeMode === this.currentStage);
+                                        }
                                     }
                                 } else {
                                     // For double bubble: strict validation
@@ -3757,7 +3717,7 @@ class NodePaletteManager {
                 }
                 console.log(`[NodePalette-Mindmap] Loading batch | Stage: ${payload.stage} | Data:`, payload.stage_data);
             } else if (this.diagramType === 'flow_map') {
-                payload.stage = this.currentStage || 'dimensions';
+                payload.stage = this.currentStage || 'steps';
                 payload.stage_data = this.stageData || {};
                 console.log(`[NodePalette-FlowMap] Loading batch | Stage: ${payload.stage} | Data:`, payload.stage_data);
             }
@@ -3896,10 +3856,15 @@ class NodePaletteManager {
             console.log(`[NodePalette-CreateCard] Node already selected, applying 'selected' class:`, node.id);
         }
         
-        // Add sequence badge for flow map steps (if sequence number exists)
-        const sequenceBadgeHTML = (this.diagramType === 'flow_map' && node.sequence) 
-            ? `<div class="sequence-badge">${node.sequence}</div>` 
-            : '';
+        // Add sequence badge for flow map steps (only show if step has been selected and assigned sequence)
+        // Sequence is assigned when user selects steps, stored in stageData.stepSequenceMap
+        let sequenceBadgeHTML = '';
+        if (this.diagramType === 'flow_map' && this.currentStage === 'substeps' && this.stageData.stepSequenceMap) {
+            const sequence = this.stageData.stepSequenceMap[node.text];
+            if (sequence) {
+                sequenceBadgeHTML = `<div class="sequence-badge">${sequence}</div>`;
+            }
+        }
         
         let contentHTML;
         if (isDifferencePair) {
@@ -4107,7 +4072,9 @@ class NodePaletteManager {
             });
         } else {
             // Tree Map & Brace Map dimensions tab: SINGLE SELECTION ONLY
-            if ((this.diagramType === 'tree_map' || this.diagramType === 'brace_map') && this.currentTab === 'dimensions') {
+            const isTreeOrBraceMapDimensions = (this.diagramType === 'tree_map' || this.diagramType === 'brace_map') && this.currentTab === 'dimensions';
+            
+            if (isTreeOrBraceMapDimensions) {
                 // Deselect all other nodes first (enforce single selection)
                 this.selectedNodes.forEach(selectedId => {
                     if (selectedId !== nodeId) {
@@ -4686,6 +4653,10 @@ class NodePaletteManager {
         if (this.diagramType === 'brace_map') {
             console.log('[NodePalette-Assemble] ✓ Routing to assembleNodesToBraceMap()');
             return await this.assembleNodesToBraceMap(selectedNodes);
+        }
+        if (this.diagramType === 'flow_map') {
+            console.log('[NodePalette-Assemble] ✓ Routing to assembleNodesToFlowMap()');
+            return await this.assembleNodesToFlowMap(selectedNodes);
         }
         
         // Generic handling for all other diagram types
@@ -5412,8 +5383,21 @@ class NodePaletteManager {
         });
         
         // Filter out placeholder categories from existing children
+        // Also filter out placeholder items within each category
         const existingChildren = (currentSpec.children || []).filter(category => {
-            return category.text && !this.isPlaceholder(category.text);
+            if (!category.text || this.isPlaceholder(category.text)) {
+                return false;  // Filter out placeholder categories
+            }
+            
+            // Filter out placeholder items within this category
+            if (category.children && Array.isArray(category.children)) {
+                category.children = category.children.filter(item => {
+                    const itemText = item.text || '';
+                    return itemText.trim().length > 0 && !this.isPlaceholder(itemText);
+                });
+            }
+            
+            return true;  // Keep non-placeholder categories
         });
         
         console.log(`[TreeMap-Assemble] Keeping ${existingChildren.length} existing non-placeholder categories`);
@@ -5533,9 +5517,22 @@ class NodePaletteManager {
         });
         
         // Filter out placeholder parts from existing parts first
+        // Also filter out placeholder subparts within each part
         const existingParts = (currentSpec.parts || []).filter(part => {
             const partName = part.name || part.text || '';
-            return partName.trim().length > 0 && !this.isPlaceholder(partName);
+            if (!partName.trim().length || this.isPlaceholder(partName)) {
+                return false;  // Filter out placeholder parts
+            }
+            
+            // Filter out placeholder subparts within this part
+            if (part.subparts && Array.isArray(part.subparts)) {
+                part.subparts = part.subparts.filter(subpart => {
+                    const subpartName = subpart.name || subpart.text || '';
+                    return subpartName.trim().length > 0 && !this.isPlaceholder(subpartName);
+                });
+            }
+            
+            return true;  // Keep non-placeholder parts
         });
         
         // Build hierarchical structure
@@ -5629,6 +5626,275 @@ class NodePaletteManager {
             console.log('[BraceMap-Assemble] ========================================');
         } catch (error) {
             console.error('[BraceMap-Assemble] ERROR:', error);
+            alert(`Error rendering diagram: ${error.message}`);
+        }
+    }
+    
+    async assembleNodesToFlowMap(selectedNodes) {
+        /**
+         * Specialized assembly for Flow Map.
+         * Multi-stage workflow: steps → substeps
+         * 
+         * Builds structure:
+         * {
+         *   title: "Process Name",
+         *   steps: ["Step 1", "Step 2", "Step 3"],
+         *   substeps: [
+         *     {step: "Step 1", substeps: ["Substep 1.1", "Substep 1.2"]},
+         *     {step: "Step 2", substeps: ["Substep 2.1", "Substep 2.2"]}
+         *   ]
+         * }
+         */
+        
+        console.log('[FlowMap-Assemble] ========================================');
+        console.log('[FlowMap-Assemble] ASSEMBLING NODES TO FLOW MAP');
+        console.log('[FlowMap-Assemble] ========================================');
+        console.log(`[FlowMap-Assemble] Total selected nodes: ${selectedNodes.length}`);
+        console.log(`[FlowMap-Assemble] Stage data:`, this.stageData);
+        
+        const editor = window.currentEditor;
+        if (!editor || !editor.currentSpec) {
+            console.error('[FlowMap-Assemble] ERROR: No active editor found');
+            alert('Error: No active editor found.');
+            return;
+        }
+        
+        const currentSpec = editor.currentSpec;
+        
+        // Extract steps from stage data
+        const selectedSteps = this.stageData.steps || [];
+        const stepSequenceMap = this.stageData.stepSequenceMap || {};
+        
+        console.log(`[FlowMap-Assemble] Selected steps: ${selectedSteps.length}`);
+        console.log(`[FlowMap-Assemble] Steps:`, selectedSteps);
+        console.log(`[FlowMap-Assemble] Sequence map:`, stepSequenceMap);
+        
+        // Separate step nodes from substep nodes
+        const stepNodes = [];
+        const substepNodesByStep = {};  // stepName -> [nodes]
+        
+        selectedNodes.forEach(node => {
+            if (node.mode === 'steps') {
+                // This is a step node
+                stepNodes.push(node);
+            } else if (node.mode && selectedSteps.includes(node.mode)) {
+                // This is a substep node (mode is the step name)
+                const stepName = node.mode;
+                if (!substepNodesByStep[stepName]) {
+                    substepNodesByStep[stepName] = [];
+                }
+                substepNodesByStep[stepName].push(node);
+            } else {
+                console.warn(`[FlowMap-Assemble] Node has unknown mode "${node.mode}":`, node);
+            }
+        });
+        
+        console.log('[FlowMap-Assemble] Node distribution:');
+        console.log(`  Step nodes: ${stepNodes.length}`);
+        Object.keys(substepNodesByStep).forEach(stepName => {
+            console.log(`  Substeps for "${stepName}": ${substepNodesByStep[stepName].length}`);
+        });
+        
+        // Initialize arrays if needed
+        if (!Array.isArray(currentSpec.steps)) {
+            currentSpec.steps = [];
+        }
+        if (!Array.isArray(currentSpec.substeps)) {
+            currentSpec.substeps = [];
+        }
+        
+        // Filter out placeholder steps from existing steps
+        const existingSteps = currentSpec.steps.filter(step => {
+            const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+            return stepName.trim().length > 0 && !this.isPlaceholder(stepName);
+        });
+        
+        // Filter out placeholder substeps from existing substeps
+        const existingSubsteps = currentSpec.substeps.map(entry => {
+            const nonPlaceholderSubsteps = (entry.substeps || []).filter(substep => {
+                const substepText = typeof substep === 'string' ? substep : (substep.text || substep.name || '');
+                return substepText.trim().length > 0 && !this.isPlaceholder(substepText);
+            });
+            return {
+                step: entry.step,
+                substeps: nonPlaceholderSubsteps
+            };
+        }).filter(entry => entry.substeps.length > 0 || !this.isPlaceholder(entry.step));
+        
+        console.log(`[FlowMap-Assemble] Filtered placeholders:`);
+        console.log(`  Existing steps (non-placeholder): ${existingSteps.length}`);
+        console.log(`  Existing substeps entries (non-placeholder): ${existingSubsteps.length}`);
+        
+        // Process step nodes - add steps from stageData.steps (they were selected in Stage 1)
+        const newSteps = [];
+        if (selectedSteps.length > 0) {
+            console.log('[FlowMap-Assemble] Processing steps from stageData...');
+            
+            // Sort steps by sequence if available
+            const sortedSteps = [...selectedSteps].sort((a, b) => {
+                const seqA = stepSequenceMap[a] || 999;
+                const seqB = stepSequenceMap[b] || 999;
+                return seqA - seqB;
+            });
+            
+            sortedSteps.forEach((stepText) => {
+                const sequence = stepSequenceMap[stepText];
+                
+                // Check if step already exists in existing steps
+                const existingIndex = existingSteps.findIndex(step => {
+                    const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+                    return stepName === stepText;
+                });
+                
+                if (existingIndex === -1) {
+                    // Add new step (with sequence if available)
+                    const stepObj = sequence ? { text: stepText, sequence: sequence } : stepText;
+                    newSteps.push(stepObj);
+                    console.log(`[FlowMap-Assemble] ✓ Added step ${sequence ? `#${sequence}` : ''}: "${stepText}"`);
+                } else {
+                    // Step already exists, keep it
+                    newSteps.push(existingSteps[existingIndex]);
+                    console.log(`[FlowMap-Assemble] Step already exists, keeping: "${stepText}"`);
+                }
+            });
+        }
+        
+        // Also process any step nodes that might be directly selected (for backward compatibility)
+        if (stepNodes.length > 0) {
+            console.log('[FlowMap-Assemble] Processing step nodes from selectedNodes...');
+            
+            stepNodes.forEach((node) => {
+                const stepText = node.text;
+                const sequence = stepSequenceMap[stepText];
+                
+                // Check if step already exists in newSteps or existingSteps
+                const alreadyInNewSteps = newSteps.some(step => {
+                    const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+                    return stepName === stepText;
+                });
+                const alreadyInExisting = existingSteps.some(step => {
+                    const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+                    return stepName === stepText;
+                });
+                
+                if (!alreadyInNewSteps && !alreadyInExisting) {
+                    // Add new step (with sequence if available)
+                    const stepObj = sequence ? { text: stepText, sequence: sequence } : stepText;
+                    newSteps.push(stepObj);
+                    node.added_to_diagram = true;
+                    console.log(`[FlowMap-Assemble] ✓ Added step ${sequence ? `#${sequence}` : ''}: "${stepText}"`);
+                } else {
+                    console.log(`[FlowMap-Assemble] Step already exists, skipping: "${stepText}"`);
+                }
+            });
+        }
+        
+        // Merge existing non-placeholder steps with new steps
+        // Keep existing steps that weren't replaced, add new steps
+        const finalSteps = [];
+        const addedStepNames = new Set();
+        
+        // First add new steps (selected from palette)
+        newSteps.forEach(step => {
+            const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+            finalSteps.push(step);
+            addedStepNames.add(stepName);
+        });
+        
+        // Then add existing steps that weren't replaced
+        existingSteps.forEach(step => {
+            const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+            if (!addedStepNames.has(stepName)) {
+                finalSteps.push(step);
+                addedStepNames.add(stepName);
+            }
+        });
+        
+        // Process substep nodes - group by step and add to spec.substeps
+        const newSubsteps = [];
+        
+        // First, copy existing substeps entries for steps that aren't being updated
+        const stepsBeingUpdated = new Set(Object.keys(substepNodesByStep));
+        existingSubsteps.forEach(entry => {
+            if (!stepsBeingUpdated.has(entry.step)) {
+                // Keep existing entry for steps not being updated
+                newSubsteps.push(entry);
+            }
+        });
+        
+        // Process substeps for each step
+        Object.keys(substepNodesByStep).forEach(stepName => {
+            const substepNodes = substepNodesByStep[stepName];
+            
+            console.log(`[FlowMap-Assemble] Processing substeps for step "${stepName}"...`);
+            
+            // Find existing substeps entry for this step (if any)
+            const existingEntry = existingSubsteps.find(entry => entry.step === stepName);
+            const existingSubstepsForStep = existingEntry ? existingEntry.substeps : [];
+            
+            // Build new substeps array: keep existing non-placeholder + add new
+            const substepsArray = [...existingSubstepsForStep];
+            
+            // Add new substep nodes
+            substepNodes.forEach(node => {
+                const substepText = node.text;
+                
+                // Check if substep already exists
+                if (!substepsArray.includes(substepText)) {
+                    substepsArray.push(substepText);
+                    node.added_to_diagram = true;
+                    console.log(`[FlowMap-Assemble] ✓ Added substep to "${stepName}": "${substepText}"`);
+                } else {
+                    console.log(`[FlowMap-Assemble] Substep already exists, skipping: "${substepText}"`);
+                }
+            });
+            
+            // Create or update substeps entry
+            newSubsteps.push({
+                step: stepName,
+                substeps: substepsArray
+            });
+        });
+        
+        // Update spec with filtered + new data
+        currentSpec.steps = finalSteps;
+        currentSpec.substeps = newSubsteps;
+        
+        console.log(`[FlowMap-Assemble] ✓ Added ${newSteps.length} new steps`);
+        console.log(`[FlowMap-Assemble] Total steps now: ${currentSpec.steps.length}`);
+        console.log(`[FlowMap-Assemble] Total substeps entries: ${currentSpec.substeps.length}`);
+        
+        // Log final structure
+        console.log('[FlowMap-Assemble] Final structure:');
+        console.log(`  Title: "${currentSpec.title}"`);
+        console.log(`  Steps: ${currentSpec.steps.length}`);
+        currentSpec.steps.forEach((step, idx) => {
+            const stepName = typeof step === 'string' ? step : (step.text || step.name || '');
+            const substepsEntry = currentSpec.substeps.find(s => s.step === stepName);
+            const substepCount = substepsEntry ? substepsEntry.substeps.length : 0;
+            console.log(`    [${idx + 1}] ${stepName}: ${substepCount} substeps`);
+        });
+        
+        // Re-render
+        try {
+            if (typeof editor.renderDiagram === 'function') {
+                await editor.renderDiagram(currentSpec);
+                console.log('[FlowMap-Assemble] ✓ Diagram re-rendered');
+            } else if (typeof editor.render === 'function') {
+                await editor.render();
+                console.log('[FlowMap-Assemble] ✓ Diagram rendered (legacy)');
+            }
+            
+            if (typeof editor.saveHistoryState === 'function') {
+                editor.saveHistoryState('node_palette_add');
+                console.log('[FlowMap-Assemble] ✓ History saved');
+            }
+            
+            console.log('[FlowMap-Assemble] ========================================');
+            console.log('[FlowMap-Assemble] ✓ ASSEMBLY COMPLETE');
+            console.log('[FlowMap-Assemble] ========================================');
+        } catch (error) {
+            console.error('[FlowMap-Assemble] ERROR:', error);
             alert(`Error rendering diagram: ${error.message}`);
         }
     }

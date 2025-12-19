@@ -335,68 +335,66 @@ Generate {count} parts:"""
         """
         if language == 'zh':
             if dimension:
-                prompt = f"""需要拆解部分"{part_name}"的组成成分。
+                prompt = f"""为部分"{part_name}"生成{count}个子部件，该部分属于整体"{center_topic}"，拆解维度为"{dimension}"
 
 教学背景：{context_desc}
 整体主题：{center_topic}
 拆解维度：{dimension}
 选中的部分：{part_name}
 
-核心任务：将"{part_name}"拆解成它的组成部分、子元素或具体实例。
-
 核心要求：
-1. 拆解"{part_name}"的组成成分或具体实例
-2. 子部件应该是"{part_name}"的组成部分、子元素或具体实例（2-6个，理想数量）
-3. 使用名词或名词短语，2-8个字
-4. 只输出子部件名称，每行一个，不要编号，不要解释
+1. 所有子部件必须属于部分"{part_name}"，且与整体主题"{center_topic}"相关
+2. 子部件必须符合拆解维度"{dimension}"的视角
+3. 子部件应该是"{part_name}"的组成部分、子元素或具体实例（2-6个，理想数量）
+4. 子部件要具体、详细、有代表性
+5. 使用名词或名词短语，2-8个字
+6. 只输出子部件名称，每行一个，不要编号，不要解释
 
-为"{part_name}"生成{count}个子部件："""
+为部分"{part_name}"（属于"{center_topic}"，维度"{dimension}"）生成{count}个子部件："""
             else:
                 prompt = f"""为整体"{center_topic}"的部分"{part_name}"生成{count}个子部件或组成成分
 
 教学背景：{context_desc}
 
-你能够绘制括号图，进一步分解"{part_name}"这个部分，展示它的更细致的组成。
+核心要求：
+1. 所有子部件必须属于部分"{part_name}"，且与整体主题"{center_topic}"相关
+2. 子部件应该是"{part_name}"的组成部分、子元素或具体实例
+3. 子部件要具体、详细、有代表性
+4. 使用名词或名词短语，2-8个字
+5. 只输出子部件名称，每行一个，不要编号
 
-要求：
-1. 所有子部件必须属于"{part_name}"这个部分
-2. 子部件要具体、清晰、有代表性
-3. 使用名词或名词短语，2-8个字
-4. 只输出子部件名称，每行一个，不要编号
-
-为"{part_name}"生成{count}个子部件："""
+为部分"{part_name}"（属于整体"{center_topic}"）生成{count}个子部件："""
         else:
             if dimension:
-                prompt = f"""Decompose part "{part_name}" into its components.
+                prompt = f"""Generate {count} sub-components for part "{part_name}" of whole "{center_topic}" using dimension "{dimension}"
 
 Educational Context: {context_desc}
 Whole Topic: {center_topic}
 Decomposition Dimension: {dimension}
 Selected Part: {part_name}
 
-Core Task: Break down "{part_name}" into its components, sub-elements, or specific instances.
+Requirements:
+1. ALL sub-components MUST belong to part "{part_name}" and be relevant to the whole topic "{center_topic}"
+2. Sub-components MUST align with the decomposition dimension "{dimension}"
+3. Sub-components should be components, sub-elements, or specific instances of "{part_name}" (2-6 items, ideal range)
+4. Sub-components should be specific, detailed, and representative
+5. Use nouns or noun phrases, 2-8 words
+6. Output only sub-component names, one per line, no numbering, no explanations
 
-Core Requirements:
-1. Decompose "{part_name}" into its components or specific instances
-2. Sub-components should be parts, sub-elements, or specific instances of "{part_name}" (2-6 items, ideal range)
-3. Use nouns or noun phrases, 2-8 words
-4. Output only sub-component names, one per line, no numbering, no explanations
-
-Generate {count} sub-components for "{part_name}":"""
+Generate {count} sub-components for "{part_name}" (part of "{center_topic}", dimension "{dimension}"):"""
             else:
                 prompt = f"""Generate {count} sub-components for part "{part_name}" of whole: {center_topic}
 
 Educational Context: {context_desc}
 
-You can draw a brace map to further decompose the part "{part_name}" and show its finer components.
-
 Requirements:
-1. All sub-components MUST belong to the part "{part_name}"
-2. Sub-components should be specific, clear, and representative
-3. Use nouns or noun phrases, 2-8 words
-4. Output only sub-component names, one per line, no numbering
+1. ALL sub-components MUST belong to part "{part_name}" and be relevant to the whole topic "{center_topic}"
+2. Sub-components should be components, sub-elements, or specific instances of "{part_name}"
+3. Sub-components should be specific, detailed, and representative
+4. Use nouns or noun phrases, 2-8 words
+5. Output only sub-component names, one per line, no numbering
 
-Generate {count} sub-components for "{part_name}":"""
+Generate {count} sub-components for "{part_name}" (part of "{center_topic}"):"""
         
         if batch_num > 1:
             if language == 'zh':

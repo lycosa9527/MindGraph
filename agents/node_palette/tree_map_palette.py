@@ -284,31 +284,43 @@ Generate {count} categories:"""
     def _build_children_prompt(self, center_topic: str, dimension: str, category_name: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
         """Build prompt for generating children for a specific category"""
         if language == 'zh':
-            prompt = f"""为主题"{center_topic}"的类别"{category_name}"生成{count}个具体项目
+            prompt = f"""为主题"{center_topic}"生成{count}个具体项目
+
+分类维度：{dimension}
+所属类别：{category_name}
 
 教学背景：{context_desc}
-分类维度：{dimension}
 
 要求：
-1. 所有项目必须属于"{category_name}"这个类别
-2. 项目要具体、详细、有代表性
+1. **所有项目必须同时满足以下条件：**
+   - 属于主题"{center_topic}"的范畴
+   - 遵循分类维度"{dimension}"
+   - 属于类别"{category_name}"
+2. 项目要具体、详细、有代表性，与主题"{center_topic}"直接相关
 3. 使用名词或名词短语，2-10个字
 4. 只输出项目名称，每行一个，不要编号
+5. **重要：只生成属于"{category_name}"类别的项目，不要生成其他类别的项目**
 
-为"{category_name}"生成{count}个项目："""
+为"{center_topic}"的"{category_name}"类别生成{count}个项目："""
         else:
-            prompt = f"""Generate {count} specific items for category "{category_name}" under topic: {center_topic}
+            prompt = f"""Generate {count} specific items for topic: {center_topic}
+
+Classification Dimension: {dimension}
+Category: {category_name}
 
 Educational Context: {context_desc}
-Classification Dimension: {dimension}
 
 Requirements:
-1. ALL items MUST belong to the "{category_name}" category
-2. Items should be specific, detailed, and representative
+1. **ALL items MUST satisfy ALL of the following:**
+   - Belong to the topic "{center_topic}"
+   - Follow the classification dimension "{dimension}"
+   - Belong to the "{category_name}" category
+2. Items should be specific, detailed, and representative, directly related to "{center_topic}"
 3. Use nouns or noun phrases, 2-10 words
 4. Output only item names, one per line, no numbering
+5. **IMPORTANT: Only generate items that belong to the "{category_name}" category, do NOT generate items from other categories**
 
-Generate {count} items for "{category_name}":"""
+Generate {count} items for "{category_name}" category under "{center_topic}":"""
         
         if batch_num > 1:
             if language == 'zh':
