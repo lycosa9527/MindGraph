@@ -273,6 +273,12 @@ class PropertyPanelManager {
      * @param {string} nodeId - Node ID
      */
     loadNodeProperties(nodeId) {
+        // VERBOSE LOGGING: Track property loading
+        this.logger.info('PropertyPanelManager', 'Loading node properties', {
+            nodeId,
+            diagramType: window.currentEditor?.diagramType
+        });
+        
         // CRITICAL: Reset toggle buttons first to ensure they don't retain state from previous node
         // This fixes the bug where underline/strikethrough buttons stayed lit when switching nodes
         if (this.propBold) this.propBold.classList.remove('active');
@@ -363,7 +369,11 @@ class PropertyPanelManager {
         const textColor = textElement && !textElement.empty() ? (textElement.attr('fill') || '#000000') : '#000000';
         const fontWeight = textElement && !textElement.empty() ? (textElement.attr('font-weight') || 'normal') : 'normal';
         const fontStyle = textElement && !textElement.empty() ? (textElement.attr('font-style') || 'normal') : 'normal';
-        const textDecoration = textElement && !textElement.empty() ? (textElement.attr('text-decoration') || 'none') : 'none';
+        // Read text-decoration from style first (we set it via CSS style for better browser support)
+        // Fall back to attr if style is not set
+        const textDecoration = textElement && !textElement.empty() 
+            ? (textElement.style('text-decoration') || textElement.attr('text-decoration') || 'none') 
+            : 'none';
         
         // Expand shorthand hex codes for color inputs
         const expandedFill = this.expandHexColor(fill);
@@ -412,7 +422,89 @@ class PropertyPanelManager {
             this.propUnderline.classList.toggle('active', textDecoration.includes('underline'));
         }
         if (this.propStrikethrough) {
-            this.propStrikethrough.classList.toggle('active', textDecoration.includes('line-through'));
+            // ROOT CAUSE FIX: Strikethrough is stored as <line> SVG elements, NOT CSS text-decoration
+            // Check for existence of strikethrough lines instead of text-decoration attribute
+            let hasStrikethrough = false;
+            
+            // Find ALL text elements for this node (same logic as NodePropertyOperationsManager)
+            let allTextElements = d3.selectAll(`text[data-node-id="${nodeId}"], text[data-text-for="${nodeId}"]`);
+            
+            // VERBOSE LOGGING: Track text element finding
+            this.logger.info('PropertyPanelManager', 'Finding text elements for strikethrough detection', {
+                nodeId,
+                diagramType: window.currentEditor?.diagramType,
+                strategy1Found: !allTextElements.empty(),
+                strategy1Count: allTextElements.size()
+            });
+            
+            // Special handling for concept map (text in groups)
+            if (allTextElements.empty() && window.currentEditor?.diagramType === 'concept_map') {
+                const node = nodeElement.node();
+                if (node && node.parentElement && node.parentElement.tagName === 'g') {
+                    allTextElements = d3.select(node.parentElement).selectAll('text');
+                    this.logger.info('PropertyPanelManager', 'Concept map: Found text via group', {
+                        nodeId,
+                        groupTextCount: allTextElements.size()
+                    });
+                }
+            }
+            
+            // Check if any text element has a strikethrough line
+            if (!allTextElements.empty()) {
+                allTextElements.each(function() {
+                    if (hasStrikethrough) return; // Already found one, skip
+                    
+                    const textNode = this;
+                    const textNodeId = textNode.getAttribute('data-node-id') || 'unknown';
+                    const lineIndex = textNode.getAttribute('data-line-index') || '0';
+                    const lineId = `strikethrough-${textNodeId}-${lineIndex}`;
+                    
+                    // Check in same parent as text, then root SVG
+                    const textParent = textNode.parentElement;
+                    const svg = d3.select(textNode.ownerSVGElement || textNode.closest('svg'));
+                    const targetContainer = textParent ? d3.select(textParent) : svg;
+                    let line = targetContainer.select(`#${lineId}`);
+                    
+                    if (line.empty()) {
+                        // Also check root SVG
+                        line = svg.select(`#${lineId}`);
+                    }
+                    
+                    // VERBOSE LOGGING: Track line detection
+                    if (!line.empty()) {
+                        this.logger.info('PropertyPanelManager', 'Strikethrough line found', {
+                            nodeId,
+                            textNodeId,
+                            lineIndex,
+                            lineId,
+                            foundIn: textParent ? textParent.tagName : 'svg',
+                            lineElement: line.node()?.tagName
+                        });
+                        hasStrikethrough = true;
+                    } else {
+                        this.logger.debug('PropertyPanelManager', 'No strikethrough line found for text element', {
+                            nodeId,
+                            textNodeId,
+                            lineIndex,
+                            lineId,
+                            textContent: textNode.textContent?.substring(0, 20)
+                        });
+                    }
+                });
+            } else {
+                this.logger.warn('PropertyPanelManager', 'No text elements found for strikethrough detection', {
+                    nodeId,
+                    diagramType: window.currentEditor?.diagramType
+                });
+            }
+            
+            this.logger.info('PropertyPanelManager', 'Setting strikethrough button state', {
+                nodeId,
+                hasStrikethrough,
+                buttonWillBeActive: hasStrikethrough
+            });
+            
+            this.propStrikethrough.classList.toggle('active', hasStrikethrough);
         }
         
         this.logger.debug('PropertyPanelManager', 'Loaded node properties', {

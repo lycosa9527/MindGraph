@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.34.0] - 2025-12-19 - Admin Panel Token Leaderboard Enhancement
+
+### Added
+
+- **Today's Token Usage Leaderboard** - Added side-by-side display of token usage leaderboards in admin panel
+  - Added new API endpoint response field `top_users_today` for top 10 users by today's token usage
+  - Display two leaderboards side by side: Total Token Usage (left) and Today's Token Usage (right)
+  - Both leaderboards show top 10 users with rank, name, phone, school, and token usage
+  - Responsive design: leaderboards stack vertically on mobile devices
+
+### Changed
+
+- **Admin Panel Token Tab** - Improved leaderboard display
+  - Changed title from "用户Token排行榜(按总Token使用量)" to "总Token使用量" for cleaner display
+  - Refactored JavaScript to use reusable `renderUserTable()` helper function
+  - Added CSS class `token-leaderboards-grid` for better maintainability
+
+### Technical Details
+
+**Files Modified:**
+- `routers/auth.py` - Added query for top 10 users by today's token usage in `get_token_stats_admin()` endpoint
+- `templates/admin.html` - Updated token tab HTML structure and JavaScript rendering logic
+
+---
+
+## [4.33.0] - 2025-12-19 - Reset Style Functionality Improvements
+
+### Fixed
+
+- **Reset Style Now Diagram-Specific and Node-Specific** - Comprehensive fix for reset style functionality
+  - Fixed reset style to use diagram-specific and node-specific defaults instead of generic values
+  - Created comprehensive mapping system for all diagram types and node types
+  - All node properties (fill color, text color, stroke color, stroke width, font size, font weight, font family) now reset correctly
+
+- **Double Bubble Map** - Fixed font sizes and stroke colors
+  - Central topic font size: 18px (was incorrect)
+  - Left/Right topics font size: 18px with font-weight 600 (was 16px)
+  - Similarities stroke color: #1976d2 (blue, was black)
+  - Differences stroke color: #1976d2 (blue, was black)
+
+- **Brace Map** - Fixed stroke widths and font sizes
+  - Topic stroke width: 2 (renderer hardcodes, not 3 from StyleManager)
+  - Part stroke width: 1 (renderer hardcodes, not 2 from StyleManager)
+  - Subpart stroke width: 1 (correct)
+  - Subpart font size: 16px (parseFontSpec fallback when fontSubpart is numeric, not 12px)
+
+- **Flow Map** - Fixed substep properties
+  - Substep font size: 13px (Math.max(12, THEME.fontStep - 1) = 13, not 14)
+  - Substep stroke width: 1 (Math.max(1, THEME.stepStrokeWidth - 1) = 1, not 2)
+
+- **Bridge Map** - Fixed stroke width
+  - Left/Right nodes stroke width: 0 (no borders, was 2)
+
+- **All Diagrams** - Fixed font weights and font families
+  - Font weights now correctly match renderer defaults (bold, 600, 400, normal)
+  - Font families updated to match renderer usage (Inter, Segoe UI, sans-serif where applicable)
+
+### Changed
+
+- **NodePropertyOperationsManager** - Refactored reset style implementation
+  - Added `getDiagramNodeDefaults()` method with comprehensive mapping for all diagram types
+  - Mapping includes: bubble_map, double_bubble_map, circle_map, mindmap, brace_map, tree_map, flow_map, multi_flow_map, concept_map, bridge_map, flowchart, and all 9 thinking tools
+  - Each diagram type has node-specific defaults for all properties
+  - Updated `resetStyles()` to use new diagram-specific mapping
+  - Reset function now correctly sets bold/italic toggles based on actual defaults
+
+### Technical Details
+
+**Files Modified:**
+- `static/js/managers/toolbar/node-property-operations-manager.js` - Complete refactor of reset style functionality with comprehensive diagram/node-specific mapping
+
+---
+
 ## [4.32.0] - 2025-12-19 - Reverse Proxy Deployment Support
 
 ### Added

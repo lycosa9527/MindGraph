@@ -831,7 +831,11 @@ class ToolbarManager {
         const textColor = textElement && !textElement.empty() ? (textElement.attr('fill') || '#000000') : '#000000';
         const fontWeight = textElement && !textElement.empty() ? (textElement.attr('font-weight') || 'normal') : 'normal';
         const fontStyle = textElement && !textElement.empty() ? (textElement.attr('font-style') || 'normal') : 'normal';
-        const textDecoration = textElement && !textElement.empty() ? (textElement.attr('text-decoration') || 'none') : 'none';
+        // Read text-decoration from style first (we set it via CSS style for better browser support)
+        // Fall back to attr if style is not set
+        const textDecoration = textElement && !textElement.empty() 
+            ? (textElement.style('text-decoration') || textElement.attr('text-decoration') || 'none') 
+            : 'none';
         
         // Helper function to expand shorthand hex color codes (e.g., #fff -> #ffffff)
         const expandHexColor = (hex) => {
@@ -951,7 +955,49 @@ class ToolbarManager {
             this.propUnderline.classList.toggle('active', textDecoration.includes('underline'));
         }
         if (this.propStrikethrough) {
-            this.propStrikethrough.classList.toggle('active', textDecoration.includes('line-through'));
+            // ROOT CAUSE FIX: Strikethrough is stored as <line> SVG elements, NOT CSS text-decoration
+            // Check for existence of strikethrough lines instead of text-decoration attribute
+            let hasStrikethrough = false;
+            
+            // Find ALL text elements for this node (same logic as NodePropertyOperationsManager)
+            let allTextElements = d3.selectAll(`text[data-node-id="${nodeId}"], text[data-text-for="${nodeId}"]`);
+            
+            // Special handling for concept map (text in groups)
+            if (allTextElements.empty() && window.currentEditor?.diagramType === 'concept_map') {
+                const node = nodeElement.node();
+                if (node && node.parentElement && node.parentElement.tagName === 'g') {
+                    allTextElements = d3.select(node.parentElement).selectAll('text');
+                }
+            }
+            
+            // Check if any text element has a strikethrough line
+            if (!allTextElements.empty()) {
+                allTextElements.each(function() {
+                    if (hasStrikethrough) return; // Already found one, skip
+                    
+                    const textNode = this;
+                    const textNodeId = textNode.getAttribute('data-node-id') || 'unknown';
+                    const lineIndex = textNode.getAttribute('data-line-index') || '0';
+                    const lineId = `strikethrough-${textNodeId}-${lineIndex}`;
+                    
+                    // Check in same parent as text, then root SVG
+                    const textParent = textNode.parentElement;
+                    const svg = d3.select(textNode.ownerSVGElement || textNode.closest('svg'));
+                    const targetContainer = textParent ? d3.select(textParent) : svg;
+                    let line = targetContainer.select(`#${lineId}`);
+                    
+                    if (line.empty()) {
+                        // Also check root SVG
+                        line = svg.select(`#${lineId}`);
+                    }
+                    
+                    if (!line.empty()) {
+                        hasStrikethrough = true;
+                    }
+                });
+            }
+            
+            this.propStrikethrough.classList.toggle('active', hasStrikethrough);
         }
     }
     

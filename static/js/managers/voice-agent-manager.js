@@ -131,7 +131,11 @@ class VoiceAgentManager {
                 };
                 this.logger.info('VoiceAgentManager', 'BlackCat click handler set');
             } else {
-                this.logger.warn('VoiceAgentManager', 'BlackCat not available');
+                // Only warn if feature is enabled (BlackCat should be available)
+                // If feature is disabled, this is expected and not an error
+                if (window.FEATURE_VOICE_AGENT) {
+                    this.logger.warn('VoiceAgentManager', 'BlackCat not available (feature enabled but BlackCat missing)');
+                }
             }
             
             // Subscribe to events
