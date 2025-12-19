@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.32.0] - 2025-12-19 - Reverse Proxy Deployment Support
+
+### Added
+
+- **EXTERNAL_BASE_URL Configuration** - Support for explicit base URL configuration in reverse proxy deployments
+  - Added `EXTERNAL_BASE_URL` environment variable for full base URL override
+  - Priority order: EXTERNAL_BASE_URL → X-Forwarded-* headers → EXTERNAL_HOST:PORT
+  - Useful for HTTPS reverse proxy setups (e.g., Nginx Proxy Manager)
+  - Updated `routers/api.py` to use EXTERNAL_BASE_URL for DingTalk image URL generation
+  - Added documentation in `env.example` with usage examples
+
+### Technical Details
+
+**Files Modified:**
+- `routers/api.py` - Enhanced URL generation logic with EXTERNAL_BASE_URL priority
+- `env.example` - Added EXTERNAL_BASE_URL configuration documentation
+
+---
+
 ## [4.31.1] - 2025-12-19 - Legacy Code Cleanup
 
 ### Removed
