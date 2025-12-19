@@ -37,6 +37,22 @@ from services.captcha_storage import start_captcha_cleanup_scheduler
 from services.backup_scheduler import start_backup_scheduler
 from utils.env_utils import ensure_utf8_env_file
 
+# Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
+# MUST be set before any event loop is created (before Uvicorn starts)
+if sys.platform == 'win32':
+    try:
+        current_policy = asyncio.get_event_loop_policy()
+        if not isinstance(current_policy, asyncio.WindowsProactorEventLoopPolicy):
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
+    except Exception as e:
+        # If we can't check/set, try to set it anyway
+        try:
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
+        except Exception as e2:
+            logging.warning(f"Windows: Could not set event loop policy: {e2}")
+
 # Ensure .env file is UTF-8 encoded before loading
 ensure_utf8_env_file()
 # Load environment variables
@@ -746,6 +762,26 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to initialize LLM Service: {e}")
     
+    # Verify Playwright installation (for PNG generation)
+    if worker_id == '0' or not worker_id:
+        try:
+            import sys
+            logger.info(f"Python executable: {sys.executable}")
+            logger.info(f"Python version: {sys.version}")
+            
+            # NOTE: We can't use sync_playwright() here because we're in an async context
+            # This check is skipped to avoid mixing sync/async APIs
+            # Playwright will be verified when actually used in BrowserContextManager
+            logger.info("Playwright check skipped (async context - will verify on first use)")
+        except NotImplementedError:
+            logger.error("=" * 80)
+            logger.error("CRITICAL: Playwright browsers are not installed!")
+            logger.error("PNG generation endpoints (/api/generate_png, /api/generate_dingtalk) will fail.")
+            logger.error("To fix: conda activate python3.13 && playwright install chromium")
+            logger.error("=" * 80)
+        except Exception as e:
+            logger.warning(f"Could not verify Playwright installation: {e}")
+    
     # Start temp image cleanup task
     cleanup_task = None
     try:
@@ -1191,6 +1227,14 @@ app.include_router(tab_mode.router)  # Tab Mode (autocomplete and expansion)
 
 if __name__ == "__main__":
     import uvicorn
+    import asyncio
+    import sys
+    
+    # CRITICAL FIX for Windows: Set event loop policy to support subprocesses
+    # Playwright requires subprocess support, which SelectorEventLoop doesn't provide on Windows
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        logger.info("Windows detected: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
     
     # Print configuration summary
     config.print_config_summary()

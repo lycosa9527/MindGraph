@@ -69,7 +69,7 @@ CRITICAL Requirements:
 - Branches should follow MECE principle (Mutually Exclusive, Collectively Exhaustive)
 - Sub-items should have hierarchy and instructional guidance significance
 - ALL children arrays must be properly closed with ]
-- ALL objects must be properly closed with }
+- ALL objects must be properly closed with }}
 - Use concise but educationally practical text
 - Ensure the JSON format is completely valid with no syntax errors"""
 
@@ -130,7 +130,7 @@ MIND_MAP_AGENT_GENERATION_ZH = """你是一名专为提升教师思维教学水�
 - 分支应该遵循MECE原则（相互独立，完全穷尽）
 - 子项应该具有层次性和教学指导意义
 - 所有children数组必须用]正确闭合
-- 所有对象必须用}正确闭合
+- 所有对象必须用}}正确闭合
 - 使用简洁但具有教学实践指导价值的文本
 - 确保JSON格式完全有效，没有语法错误"""
 

@@ -17,6 +17,8 @@ import os
 import platform
 import subprocess
 import re
+import sys
+import asyncio
 from pathlib import Path
 from typing import Optional, Tuple
 from playwright.async_api import async_playwright, Browser, BrowserContext
@@ -35,7 +37,6 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
         Version string (e.g., "141.0.7390.37") or None if failed
     """
     # Method 1: Try using Playwright to launch browser and get version (works for any Chromium)
-    # This is more reliable than --version flag on Windows
     try:
         from playwright.sync_api import sync_playwright
         
@@ -72,22 +73,13 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
     
     # Method 2: Try --version flag with timeout (fallback)
     try:
-        run_kwargs = {
-            'args': [executable_path, "--version"],
-            'capture_output': True,
-            'text': True,
-            'timeout': 3,
-            'stderr': subprocess.DEVNULL
-        }
-        # On Windows, try to suppress window creation
-        if platform.system() == "Windows":
-            try:
-                run_kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-            except AttributeError:
-                # CREATE_NO_WINDOW not available in this Python version
-                pass
-        
-        result = subprocess.run(**run_kwargs)
+        result = subprocess.run(
+            [executable_path, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            stderr=subprocess.DEVNULL
+        )
         if result.returncode == 0 and result.stdout:
             # Parse version from output like "Chromium 141.0.7390.37" or "Google Chrome 141.0.7390.37"
             version_match = re.search(r'(\d+\.\d+\.\d+\.\d+)', result.stdout)
@@ -190,10 +182,8 @@ def _get_local_chromium_executable():
     
     system = platform.system().lower()
     
-    if system == "windows":
-        # Windows: browsers/chromium/chrome.exe
-        exe_path = browsers_dir / "chrome.exe"
-    elif system == "darwin":  # macOS
+    # Note: Windows support removed - Linux/WSL only
+    if system == "darwin":  # macOS
         # macOS: browsers/chromium/chrome-mac/Chromium.app/Contents/MacOS/Chromium
         possible_paths = [
             browsers_dir / "chrome-mac" / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
@@ -204,7 +194,7 @@ def _get_local_chromium_executable():
             if path.exists():
                 return str(path)
         return None
-    else:  # Linux
+    else:  # Linux (default for WSL/production)
         # Linux: browsers/chromium/chrome-linux/chrome
         possible_paths = [
             browsers_dir / "chrome-linux" / "chrome",
@@ -214,8 +204,6 @@ def _get_local_chromium_executable():
             if path.exists():
                 return str(path)
         return None
-    
-    return str(exe_path) if exe_path.exists() else None
 
 
 def _get_best_chromium_executable() -> Optional[str]:
@@ -302,7 +290,82 @@ class BrowserContextManager:
         """Create fresh browser instance for this request"""
         logger.debug("Creating fresh browser instance for PNG generation")
         
-        self.playwright = await async_playwright().start()
+        # Diagnostic: Check Python executable and Playwright installation
+        import sys
+        python_exe = sys.executable
+        logger.info(f"[BrowserContextManager] Python executable: {python_exe}")
+        logger.info(f"[BrowserContextManager] Python version: {sys.version}")
+        
+        # Check if Playwright module is available
+        try:
+            import playwright
+            playwright_path = playwright.__file__
+            logger.info(f"[BrowserContextManager] Playwright module path: {playwright_path}")
+        except Exception as e:
+            logger.error(f"[BrowserContextManager] Cannot import playwright: {e}")
+        
+        try:
+            # Log event loop information for debugging (useful for troubleshooting)
+            try:
+                loop = asyncio.get_running_loop()
+                loop_type = type(loop).__name__
+                policy = asyncio.get_event_loop_policy()
+                policy_type = type(policy).__name__
+                logger.info(f"[BrowserContextManager] Event loop type: {loop_type}")
+                logger.info(f"[BrowserContextManager] Event loop policy: {policy_type}")
+            except Exception as loop_check_error:
+                logger.debug(f"[BrowserContextManager] Could not check event loop: {loop_check_error}")
+            
+            logger.info("[BrowserContextManager] Starting async_playwright().start()...")
+            self.playwright = await async_playwright().start()
+            logger.info("[BrowserContextManager] async_playwright().start() succeeded!")
+            
+            # Check Chromium executable path after starting (using async API)
+            try:
+                chromium_path = self.playwright.chromium.executable_path
+                logger.info(f"[BrowserContextManager] Chromium executable path: {chromium_path}")
+                if chromium_path and os.path.exists(chromium_path):
+                    logger.info(f"[BrowserContextManager] Chromium executable exists: YES")
+                else:
+                    logger.warning(f"[BrowserContextManager] Chromium executable exists: NO")
+            except Exception as e:
+                logger.warning(f"[BrowserContextManager] Could not check Chromium path: {e}")
+                
+        except NotImplementedError as e:
+            # NotImplementedError should not occur on Linux/WSL (this is Windows-specific)
+            # If it happens, it indicates a serious configuration issue
+            logger.error(f"[BrowserContextManager] NotImplementedError occurred - this is unexpected on Linux/WSL")
+            logger.error(f"[BrowserContextManager] Original error: {e}")
+            logger.error(f"[BrowserContextManager] Platform: {platform.system()}")
+            logger.error(f"[BrowserContextManager] Python executable: {python_exe}")
+            
+            # Check if browsers are actually installed
+            import subprocess
+            try:
+                result = subprocess.run(
+                    [python_exe, '-m', 'playwright', 'install', '--list'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0:
+                    logger.error(f"[BrowserContextManager] Playwright browsers check output:\n{result.stdout}")
+                    if 'chromium' in result.stdout.lower():
+                        logger.error("[BrowserContextManager] Browsers ARE installed but Playwright can't access them!")
+            except Exception as check_error:
+                logger.error(f"[BrowserContextManager] Could not check browser installation: {check_error}")
+            
+            error_msg = (
+                "Playwright browsers are not installed or cannot be accessed. "
+                "Please run: python -m playwright install chromium\n"
+                "Or install all browsers: python -m playwright install"
+            )
+            logger.error(f"[BrowserContextManager] {error_msg}")
+            raise RuntimeError(error_msg) from e
+        except Exception as e:
+            logger.error(f"[BrowserContextManager] Error starting Playwright: {e}", exc_info=True)
+            logger.error(f"[BrowserContextManager] Error type: {type(e)}")
+            raise
         
         # Get best available Chromium (compares versions, prefers newer)
         chromium_executable = _get_best_chromium_executable()

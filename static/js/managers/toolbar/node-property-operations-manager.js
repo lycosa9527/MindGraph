@@ -624,6 +624,11 @@ class NodePropertyOperationsManager {
             if (!textElements.empty()) {
                 if (properties.fontSize) {
                     textElements.attr('font-size', properties.fontSize);
+                    
+                    // CRITICAL: For brace maps, directly recalculate box dimensions when font size changes
+                    if (this.editor?.diagramType === 'brace_map') {
+                        this.recalculateBraceMapNodeDimensions(nodeId, nodeElement, textElements, properties.fontSize);
+                    }
                 }
                 if (properties.fontFamily) {
                     textElements.attr('font-family', properties.fontFamily);
@@ -2459,10 +2464,225 @@ class NodePropertyOperationsManager {
     }
     
     /**
+     * Recalculate brace map node box dimensions when font size changes
+     * Directly updates DOM and triggers layout re-render
+     */
+    recalculateBraceMapNodeDimensions(nodeId, nodeElement, textElements, fontSize) {
+        try {
+            const nodeType = nodeElement.attr('data-node-type');
+            if (!nodeType || !['topic', 'part', 'subpart'].includes(nodeType)) {
+                return;
+            }
+            
+            // Parse font size
+            const fontSizeNum = typeof fontSize === 'string' ? parseFloat(fontSize) : fontSize;
+            if (isNaN(fontSizeNum) || fontSizeNum <= 0) return;
+            
+            // Get text content from all text elements
+            const textNodes = textElements.nodes();
+            const textLines = textNodes
+                .map(node => {
+                    const lineIndex = parseInt(node.getAttribute('data-line-index') || '0');
+                    return { index: lineIndex, text: node.textContent || '' };
+                })
+                .sort((a, b) => a.index - b.index)
+                .map(item => item.text);
+            
+            const fullText = textLines.join('\n');
+            if (!fullText.trim()) return; // Skip empty nodes
+            
+            // Get font properties from first text element
+            const fontFamily = textNodes[0]?.getAttribute('font-family') || 'Inter, Segoe UI, sans-serif';
+            const fontWeight = textNodes[0]?.getAttribute('font-weight') || (nodeType === 'topic' || nodeType === 'part' ? 'bold' : 'normal');
+            
+            // Determine padding and line height multiplier based on node type
+            let paddingX, paddingY, lineHeightMultiplier;
+            if (nodeType === 'topic') {
+                paddingX = 16; paddingY = 16; lineHeightMultiplier = 1.2;
+            } else if (nodeType === 'part') {
+                paddingX = 12; paddingY = 12; lineHeightMultiplier = 1.2;
+            } else { // subpart
+                paddingX = 8; paddingY = 8; lineHeightMultiplier = 1.2;
+            }
+            
+            // Create temporary SVG for accurate text measurement
+            const tempSvg = d3.select('body').append('svg')
+                .attr('width', 0).attr('height', 0)
+                .style('position', 'absolute').style('left', '-9999px').style('top', '-9999px')
+                .style('visibility', 'hidden');
+            
+            // Measure text width function
+            const measureText = (text) => {
+                const tempText = tempSvg.append('text')
+                    .text(text || '')
+                    .attr('font-size', fontSizeNum)
+                    .attr('font-family', fontFamily)
+                    .style('font-weight', fontWeight);
+                let width = 0;
+                try {
+                    width = Math.max(0, tempText.node().getBBox()?.width || 0);
+                } catch (e) {
+                    width = (text || '').length * fontSizeNum * 0.6; // Fallback
+                }
+                tempText.remove();
+                return width;
+            };
+            
+            // Get current box width to determine wrapping
+            const currentRectWidth = parseFloat(nodeElement.attr('width')) || 100;
+            const maxTextWidth = currentRectWidth * 0.9; // 90% of box width for wrapping
+            
+            // Wrap text using splitAndWrapText if available
+            let wrappedLines = textLines;
+            if (typeof window.splitAndWrapText === 'function') {
+                wrappedLines = window.splitAndWrapText(fullText, fontSizeNum, maxTextWidth, measureText);
+            }
+            
+            // Calculate new box dimensions
+            const maxLineWidth = Math.max(...wrappedLines.map(line => measureText(line)), 20);
+            const newBoxWidth = maxLineWidth + paddingX * 2;
+            const lineHeight = Math.round(fontSizeNum * lineHeightMultiplier);
+            const newBoxHeight = wrappedLines.length * lineHeight + paddingY * 2;
+            
+            // Update rect dimensions
+            const rectX = parseFloat(nodeElement.attr('x')) || 0;
+            const rectY = parseFloat(nodeElement.attr('y')) || 0;
+            nodeElement.attr('width', newBoxWidth);
+            nodeElement.attr('height', newBoxHeight);
+            
+            // Reposition text elements to center them in the new box
+            const centerX = rectX + newBoxWidth / 2;
+            const centerY = rectY + newBoxHeight / 2;
+            const textStartY = centerY - (wrappedLines.length - 1) * lineHeight / 2;
+            
+            textElements.each(function(d, i, nodes) {
+                const textNode = nodes[i];
+                const lineIndex = parseInt(textNode.getAttribute('data-line-index') || '0');
+                d3.select(textNode)
+                    .attr('x', centerX)
+                    .attr('y', textStartY + lineIndex * lineHeight);
+            });
+            
+            // Clean up temp SVG
+            tempSvg.remove();
+            
+            this.logger.debug('NodePropertyOperationsManager', 'Recalculated brace map node dimensions', {
+                nodeId,
+                nodeType,
+                fontSize: fontSizeNum,
+                oldWidth: currentRectWidth,
+                newWidth: newBoxWidth,
+                newHeight: newBoxHeight,
+                lineCount: wrappedLines.length
+            });
+            
+            // Trigger re-render for layout adjustments (braces, spacing, viewBox)
+            // CRITICAL: Before re-render, read all font sizes from DOM and store them
+            // so the renderer uses them instead of default theme
+            if (!this._braceMapRerenderTimeout) {
+                this._braceMapRerenderTimeout = setTimeout(() => {
+                    if (this.editor && typeof this.editor.renderDiagram === 'function') {
+                        // Read all current font sizes from DOM before re-render
+                        this.preserveBraceMapFontSizesFromDOM();
+                        
+                        this.logger.debug('NodePropertyOperationsManager', 'Triggering brace map re-render with preserved font sizes');
+                        this.editor.renderDiagram();
+                    }
+                    this._braceMapRerenderTimeout = null;
+                }, 300);
+            }
+            
+        } catch (error) {
+            this.logger.error('NodePropertyOperationsManager', 'Error recalculating brace map node dimensions', error);
+        }
+    }
+    
+    /**
+     * Read font sizes from DOM and store in spec._style for re-render
+     * This preserves custom font sizes when re-rendering
+     */
+    preserveBraceMapFontSizesFromDOM() {
+        if (!this.editor?.currentSpec || this.editor?.diagramType !== 'brace_map') {
+            return;
+        }
+        
+        try {
+            // Initialize spec._style if needed
+            if (!this.editor.currentSpec._style) {
+                this.editor.currentSpec._style = {};
+            }
+            
+            // Read font sizes from all nodes in DOM
+            const svg = d3.select('#d3-container svg');
+            if (svg.empty()) return;
+            
+            // Find all text elements and group by node type
+            const fontSizes = {
+                topic: null,
+                part: null,
+                subpart: null
+            };
+            
+            // Check topic node
+            const topicText = svg.select('[data-node-id^="brace-topic"] text');
+            if (!topicText.empty()) {
+                const fontSize = parseFloat(topicText.attr('font-size'));
+                if (!isNaN(fontSize) && fontSize > 0) {
+                    fontSizes.topic = fontSize;
+                }
+            }
+            
+            // Check part nodes (use first one found)
+            const partText = svg.select('[data-node-id^="brace-part-"] text').node();
+            if (partText) {
+                const fontSize = parseFloat(partText.getAttribute('font-size'));
+                if (!isNaN(fontSize) && fontSize > 0) {
+                    fontSizes.part = fontSize;
+                }
+            }
+            
+            // Check subpart nodes (use first one found)
+            const subpartText = svg.select('[data-node-id^="brace-subpart-"] text').node();
+            if (subpartText) {
+                const fontSize = parseFloat(subpartText.getAttribute('font-size'));
+                if (!isNaN(fontSize) && fontSize > 0) {
+                    fontSizes.subpart = fontSize;
+                }
+            }
+            
+            // Store in spec._style (renderer will use these via spec._style merge)
+            if (fontSizes.topic !== null) {
+                this.editor.currentSpec._style.fontTopic = fontSizes.topic;
+            }
+            if (fontSizes.part !== null) {
+                this.editor.currentSpec._style.fontPart = fontSizes.part;
+            }
+            if (fontSizes.subpart !== null) {
+                this.editor.currentSpec._style.fontSubpart = fontSizes.subpart;
+            }
+            
+            this.logger.debug('NodePropertyOperationsManager', 'Preserved font sizes from DOM', {
+                fontTopic: fontSizes.topic,
+                fontPart: fontSizes.part,
+                fontSubpart: fontSizes.subpart
+            });
+            
+        } catch (error) {
+            this.logger.error('NodePropertyOperationsManager', 'Error preserving font sizes from DOM', error);
+        }
+    }
+    
+    /**
      * Clean up resources
      */
     destroy() {
         this.logger.debug('NodePropertyOperationsManager', 'Destroying');
+        
+        // Clear any pending re-render timeouts
+        if (this._braceMapRerenderTimeout) {
+            clearTimeout(this._braceMapRerenderTimeout);
+            this._braceMapRerenderTimeout = null;
+        }
         
         // Remove all Event Bus listeners using Listener Registry
         if (this.eventBus && this.ownerId) {

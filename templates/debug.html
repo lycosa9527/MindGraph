@@ -82,6 +82,7 @@
             align-items: flex-end;
             gap: 1rem;
             margin-bottom: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .language-selector {
@@ -230,6 +231,15 @@
         }
         
         #pngResult.result-container.active {
+            display: block !important;
+        }
+        
+        /* DingTalk Result Container */
+        #dingtalkResult.result-container {
+            display: none; /* Default state */
+        }
+        
+        #dingtalkResult.result-container.active {
             display: block !important;
         }
 
@@ -384,7 +394,10 @@
                     </div>
                     
                     <button id="generateDiagramBtn" class="btn btn-primary">
-                        Generate Diagram
+                        Generate PNG
+                    </button>
+                    <button id="generateDingtalkBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                        Test DingTalk
                     </button>
                 </div>
                 
@@ -395,6 +408,7 @@
                 
                 <div class="result-container" id="jsonResult"></div>
                 <div class="result-container" id="pngResult"></div>
+                <div class="result-container" id="dingtalkResult"></div>
                 
                 <!-- D3 Visualization Container -->
                 <div class="result-container">
@@ -971,10 +985,12 @@
     
     <script>
     const generateDiagramBtn = document.getElementById('generateDiagramBtn');
+    const generateDingtalkBtn = document.getElementById('generateDingtalkBtn');
     const promptBox = document.getElementById('prompt');
     const languageSelect = document.getElementById('language');
     const jsonResult = document.getElementById('jsonResult');
     const pngResult = document.getElementById('pngResult');
+    const dingtalkResult = document.getElementById('dingtalkResult');
     const errorMsg = document.getElementById('errorMsg');
     const infoMsg = document.getElementById('infoMsg');
     const historyBox = document.getElementById('historyBox');
@@ -1416,6 +1432,111 @@
         }
     };
     
+    // DingTalk endpoint test handler
+    generateDingtalkBtn.onclick = async function() {
+        showError('');
+        showInfo('Generating diagram for DingTalk...');
+        jsonResult.style.display = 'none';
+        pngResult.style.display = 'none';
+        dingtalkResult.style.display = 'none';
+        jsonResult.classList.remove('active');
+        pngResult.classList.remove('active');
+        dingtalkResult.classList.remove('active');
+
+        try {
+            console.log('🔍 Debug: Calling /api/generate_dingtalk endpoint');
+            console.log('🔍 Debug: Request payload:', { prompt: promptBox.value, language: languageSelect.value });
+            
+            const dingtalkResp = await auth.fetch('/api/generate_dingtalk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
+            });
+
+            if (!dingtalkResp.ok) {
+                const errorText = await dingtalkResp.text().catch(() => '');
+                console.error('❌ DingTalk generation failed with status:', dingtalkResp.status);
+                console.error('❌ Error response:', errorText);
+                showError(errorText || 'DingTalk generation failed.');
+                showInfo('');
+                return;
+            }
+
+            console.log('✅ DingTalk generation successful, status:', dingtalkResp.status);
+            console.log('✅ Response headers:', Object.fromEntries(dingtalkResp.headers.entries()));
+            console.log('✅ Response type:', dingtalkResp.type);
+            
+            // Get plain text response
+            const plainText = await dingtalkResp.text();
+            console.log('✅ Plain text response:', plainText);
+            
+            // Extract image URL from markdown format ![](url)
+            const urlMatch = plainText.match(/!\[\]\((.*?)\)/);
+            const imageUrl = urlMatch ? urlMatch[1] : null;
+            console.log('✅ Extracted image URL:', imageUrl);
+            
+            // Display result
+            dingtalkResult.style.display = 'block';
+            dingtalkResult.classList.add('active');
+            dingtalkResult.innerHTML = '';
+            
+            const resultCard = document.createElement('div');
+            resultCard.className = 'result-card fade-in';
+            
+            const title = document.createElement('h3');
+            title.innerHTML = '📱 DingTalk Integration Result';
+            resultCard.appendChild(title);
+            
+            // Plain text output
+            const plainTextDiv = document.createElement('div');
+            plainTextDiv.style.cssText = 'background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-family: monospace; font-size: 0.9rem; word-break: break-all;';
+            plainTextDiv.innerHTML = `<strong>Plain Text Output:</strong><br><code>${plainText}</code>`;
+            resultCard.appendChild(plainTextDiv);
+            
+            // Image URL
+            if (imageUrl) {
+                const urlDiv = document.createElement('div');
+                urlDiv.style.cssText = 'background: #ebf8ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;';
+                urlDiv.innerHTML = `<strong>Image URL:</strong><br><a href="${imageUrl}" target="_blank" style="color: #2b6cb0; word-break: break-all;">${imageUrl}</a>`;
+                resultCard.appendChild(urlDiv);
+                
+                // Display image preview
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'png-container';
+                imgContainer.style.cssText = 'margin-top: 1rem;';
+                
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.style.cssText = 'max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); cursor: pointer;';
+                img.onerror = () => {
+                    imgContainer.innerHTML = '<div style="padding: 2rem; text-align: center; color: #c53030;">Failed to load image. URL may be invalid or image may have expired.</div>';
+                };
+                
+                // Click to expand
+                img.addEventListener('click', function() {
+                    if (this.classList.contains('expanded')) {
+                        this.classList.remove('expanded');
+                        document.body.style.overflow = '';
+                    } else {
+                        this.classList.add('expanded');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+                
+                imgContainer.appendChild(img);
+                resultCard.appendChild(imgContainer);
+            }
+            
+            dingtalkResult.appendChild(resultCard);
+            showInfo('');
+            saveHistory(promptBox.value, languageSelect.value);
+        } catch (e) {
+            console.error('❌ Exception during DingTalk generation:', e);
+            console.error('❌ Exception stack:', e.stack);
+            showError('Failed to generate DingTalk response: ' + e.message);
+            showInfo('');
+        }
+    };
 
     </script>
 </body>

@@ -24,12 +24,20 @@ async function renderGraph(type, spec, theme = null, dimensions = null) {
     d3.select('#d3-container').html('');
     
     // Prepare integrated theme
+    // If spec._style exists, merge it with theme (or default theme if theme is null)
     let integratedTheme = theme;
     if (spec && spec._style) {
-        integratedTheme = {
-            ...spec._style,
-            background: theme?.background
-        };
+        if (theme) {
+            // Merge spec._style with provided theme
+            integratedTheme = {
+                ...theme,
+                ...spec._style
+            };
+        } else {
+            // No theme provided, use spec._style directly
+            // StyleManager will merge it with defaults
+            integratedTheme = { ...spec._style };
+        }
     }
     
     // Use dynamic loading (REQUIRED - no fallback)

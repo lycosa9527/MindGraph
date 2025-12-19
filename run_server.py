@@ -13,6 +13,16 @@ Proprietary License
 
 import os
 import sys
+import asyncio
+
+# CRITICAL: Set Windows event loop policy BEFORE any other imports or event loop creation
+# Playwright requires WindowsProactorEventLoopPolicy for subprocess support
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    # Verify it was set correctly
+    policy = asyncio.get_event_loop_policy()
+    print(f"[run_server] Windows event loop policy set: {type(policy).__name__}")
+
 import signal
 import logging
 import importlib.util

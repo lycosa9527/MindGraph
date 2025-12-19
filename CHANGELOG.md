@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.36.0] - 2025-01-21 - Format String Fixes and PNG Generation Improvements
+
+### Fixed
+
+- **Format String Brace Escaping** - Fixed "Single '}' encountered in format string" errors
+  - Fixed unescaped closing brace in Chinese prompt text (`prompts/prompt_to_diagram_agent.py`)
+  - Fixed unescaped closing braces in mind map prompts (`prompts/mind_maps.py`) - both English and Chinese versions
+  - All format strings now properly escape literal braces as `{{` and `}}`
+
+- **Mindmap PNG Generation** - Fixed blank mindmap images in `/api/generate_png` and `/api/generate_dingtalk`
+  - Added automatic layout enhancement for mindmaps when `_layout` data is missing
+  - Mindmaps now automatically generate layout positions using `MindMapAgent.enhance_spec()`
+  - Prevents "No layout data from Python agent" rendering errors
+
+- **Brace Map PNG Generation** - Fixed brace map rendering failures
+  - Added normalization to convert `topic` field to `whole` field (renderer expects `whole`)
+  - Brace maps now render correctly when generated via prompt-to-diagram agent
+
+### Changed
+
+- **PNG Export Endpoints** - Improved diagram type normalization
+  - Enhanced `/api/generate_png` endpoint with comprehensive field normalization
+  - Enhanced `/api/generate_dingtalk` endpoint with same normalization logic
+  - Added automatic field transformations for all 10 diagram types
+  - Improved error handling and logging for PNG generation
+
+- **API Documentation** - Comprehensive updates to `docs/API_REFERENCE.md`
+  - Added complete "Diagram Specification Formats" section with field mapping table
+  - Documented all 10 diagram types with JSON examples
+  - Added normalization notes for each diagram type
+  - Updated production URLs and API key examples
+  - Enhanced AI Assistant endpoint documentation with SSE details
+
+### Added
+
+- **Diagram Type Reference** - Created `docs/DIAGRAM_TYPE_TABLE.md`
+  - Complete reference table showing API returns vs renderer expectations
+  - Field normalization documentation for all diagram types
+  - Detailed spec format examples
+
+### Technical Details
+
+**Files Modified:**
+- `prompts/prompt_to_diagram_agent.py` - Fixed format string brace escaping (line 459)
+- `prompts/mind_maps.py` - Fixed format string brace escaping (lines 72, 133)
+- `routers/api.py` - Added mindmap layout enhancement and brace_map normalization
+- `docs/API_REFERENCE.md` - Added comprehensive diagram specification documentation
+
+**Files Created:**
+- `docs/DIAGRAM_TYPE_TABLE.md` - Diagram type field mapping reference
+
+---
+
 ## [4.35.0] - 2025-01-20 - Node Palette Prompt Improvements for Multi-Stage Diagrams
 
 ### Changed

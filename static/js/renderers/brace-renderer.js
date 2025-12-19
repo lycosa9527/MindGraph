@@ -126,11 +126,24 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     
     // Helpers to measure text width using a temporary hidden SVG text node
     function parseFontSpec(fontSpec) {
-        // Expect formats like "24px Inter, sans-serif"
-        const match = typeof fontSpec === 'string' ? fontSpec.match(/^(\\d+)px\\s+(.+)$/) : null;
-        if (match) {
-            return { size: parseInt(match[1], 10), family: match[2] };
+        // Handle numeric font sizes (e.g., 18)
+        if (typeof fontSpec === 'number') {
+            return { size: fontSpec, family: 'Inter, Segoe UI, sans-serif' };
         }
+        
+        // Handle string formats like "24px Inter, sans-serif"
+        if (typeof fontSpec === 'string') {
+            const match = fontSpec.match(/^(\d+)px\s+(.+)$/);
+            if (match) {
+                return { size: parseInt(match[1], 10), family: match[2] };
+            }
+            // Try to parse as just a number string (e.g., "18")
+            const numMatch = fontSpec.match(/^(\d+)$/);
+            if (numMatch) {
+                return { size: parseInt(numMatch[1], 10), family: 'Inter, Segoe UI, sans-serif' };
+            }
+        }
+        
         // Fallbacks
         return { size: 16, family: 'Inter, Segoe UI, sans-serif' };
     }
@@ -168,8 +181,32 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     }
     
     // Helper for splitAndWrapText compatibility (takes text, fontSize, returns width)
+    // fontSize can be a number (e.g., 18) or a font spec string (e.g., "18px Inter, sans-serif")
     function measureLineWidthForWrap(text, fontSize) {
-        return measureTextWidth(text, fontSize, 'normal');
+        // If fontSize is a number, construct a proper font spec using the font family from THEME
+        // Match the fontSize to the appropriate THEME property to get the correct font family
+        let fontSpec = fontSize;
+        
+        if (typeof fontSize === 'number') {
+            // Determine which THEME font property matches this size to get the correct font family
+            // This ensures we use the right font family for the node type
+            let themeFontSpec = null;
+            if (THEME.fontTopic && parseFontSpec(THEME.fontTopic).size === fontSize) {
+                themeFontSpec = THEME.fontTopic;
+            } else if (THEME.fontPart && parseFontSpec(THEME.fontPart).size === fontSize) {
+                themeFontSpec = THEME.fontPart;
+            } else if (THEME.fontSubpart && parseFontSpec(THEME.fontSubpart).size === fontSize) {
+                themeFontSpec = THEME.fontSubpart;
+            } else {
+                // Fallback: use any available THEME font property to get the font family
+                themeFontSpec = THEME.fontTopic || THEME.fontPart || THEME.fontSubpart || '16px Inter, Segoe UI, sans-serif';
+            }
+            
+            const { family } = parseFontSpec(themeFontSpec);
+            fontSpec = `${fontSize}px ${family}`;
+        }
+        
+        return measureTextWidth(text, fontSpec, 'normal');
     }
 
     // Helper to build a curly brace path opening to the left
@@ -265,10 +302,17 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         topicBoxHeight = nodeDimensions.topic.h;
         logger.debug('BraceRenderer', 'Using preserved topic dimensions', { topicBoxWidth, topicBoxHeight });
     } else {
-        // Calculate from text
+        // Calculate from text - use splitTextLines for initial width calculation
         const topicTextWidth = Math.max(...topicLines.map(line => measureLineWidth(line, THEME.fontTopic, 'bold')), 20);
         topicBoxWidth = topicTextWidth + topicPadding * 2;
-        topicBoxHeight = topicLines.length * topicLineHeight + topicPadding * 2;
+        
+        // CRITICAL: Recalculate height using wrapped text to match actual rendering
+        // This ensures height accounts for text wrapping within the box width
+        const topicMaxWidth = topicBoxWidth * 0.9; // Same as rendering (line 855)
+        const wrappedTopicLines = (typeof window.splitAndWrapText === 'function')
+            ? window.splitAndWrapText(topicText, topicFontSize, topicMaxWidth, measureLineWidthForWrap)
+            : topicLines;
+        topicBoxHeight = wrappedTopicLines.length * topicLineHeight + topicPadding * 2;
     }
     
     // Measure part texts (with line break support) - use preserved dimensions if available
@@ -284,14 +328,21 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             boxHeight = preservedDims.h;
             logger.debug('BraceRenderer', 'Using preserved part dimensions', { partIndex, boxWidth, boxHeight });
         } else {
-            // Calculate from text
+            // Calculate from text - use splitTextLines for initial width calculation
             const partLines = (typeof window.splitTextLines === 'function') 
                 ? window.splitTextLines(text) 
                 : (text || '').split(/\n/);
             const partLineHeight = Math.round(partFontSize * 1.2);
             const textWidth = Math.max(...partLines.map(line => measureLineWidth(line, THEME.fontPart, 'bold')), 20);
             boxWidth = textWidth + partPadding * 2;
-            boxHeight = partLines.length * partLineHeight + partPadding * 2;
+            
+            // CRITICAL: Recalculate height using wrapped text to match actual rendering
+            // This ensures height accounts for text wrapping within the box width
+            const partMaxWidth = boxWidth * 0.9; // Same as rendering (line 547)
+            const wrappedPartLines = (typeof window.splitAndWrapText === 'function')
+                ? window.splitAndWrapText(text, partFontSize, partMaxWidth, measureLineWidthForWrap)
+                : partLines;
+            boxHeight = wrappedPartLines.length * partLineHeight + partPadding * 2;
         }
         return { part: p, text, boxWidth, boxHeight };
     });
@@ -312,14 +363,21 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 boxHeight = preservedDims.h;
                 logger.debug('BraceRenderer', 'Using preserved subpart dimensions', { partIndex, subpartIndex, boxWidth, boxHeight });
             } else {
-                // Calculate from text
+                // Calculate from text - use splitTextLines for initial width calculation
                 const subpartLines = (typeof window.splitTextLines === 'function') 
                     ? window.splitTextLines(text) 
                     : (text || '').split(/\n/);
                 const subpartLineHeight = Math.round(subpartFontSize * 1.2);
                 const textWidth = Math.max(...subpartLines.map(line => measureLineWidth(line, THEME.fontSubpart)), 20);
                 boxWidth = textWidth + subpartPadding * 2;
-                boxHeight = subpartLines.length * subpartLineHeight + subpartPadding * 2;
+                
+                // CRITICAL: Recalculate height using wrapped text to match actual rendering
+                // This ensures height accounts for text wrapping within the box width
+                const subpartMaxWidth = boxWidth * 0.9; // Same as rendering (line 616)
+                const wrappedSubpartLines = (typeof window.splitAndWrapText === 'function')
+                    ? window.splitAndWrapText(text, subpartFontSize, subpartMaxWidth, measureLineWidthForWrap)
+                    : subpartLines;
+                boxHeight = wrappedSubpartLines.length * subpartLineHeight + subpartPadding * 2;
             }
             subpartData.push({ subpart: sp, text, boxWidth, boxHeight });
         });

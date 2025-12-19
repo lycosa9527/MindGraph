@@ -249,6 +249,480 @@ async def generate_graph(
 # PNG EXPORT - BROWSER AUTOMATION
 # ============================================================================
 
+def _get_font_base64(font_filename: str) -> str:
+    """Convert font file to base64 for embedding in HTML."""
+    try:
+        font_path = Path(__file__).parent.parent / 'static' / 'fonts' / font_filename
+        if font_path.exists():
+            with open(font_path, 'rb') as f:
+                import base64
+                return base64.b64encode(f.read()).decode('utf-8')
+        else:
+            logger.debug(f"[ExportPNG] Font file not found: {font_path}")
+            return ""
+    except Exception as e:
+        logger.warning(f"[ExportPNG] Failed to load font {font_filename}: {e}")
+        return ""
+
+
+async def _export_png_core(
+    diagram_data: Dict[str, Any],
+    diagram_type: str,
+    width: int = 1200,
+    height: int = 800,
+    scale: int = 2,
+    x_language: Optional[str] = None
+) -> bytes:
+    """
+    Core PNG export function that embeds JS and fonts directly (like old working version).
+    
+    This function avoids Depends() issues by being a pure async function.
+    Returns raw PNG bytes.
+    """
+    from config.settings import Config
+    config = Config()
+    
+    logger.debug(f"[ExportPNG] Starting PNG export: diagram_type={diagram_type}, width={width}, height={height}, scale={scale}")
+    if isinstance(diagram_data, dict):
+        logger.debug(f"[ExportPNG] Diagram data keys: {list(diagram_data.keys())}")
+        if 'topic' in diagram_data:
+            logger.debug(f"[ExportPNG] Topic: {diagram_data['topic']}")
+    
+    # Normalize data format for renderers (transform LLM output format to renderer expected format)
+    if isinstance(diagram_data, dict):
+        if diagram_type == 'double_bubble_map':
+            # Transform left_topic/right_topic to left/right (renderer expects left/right)
+            if 'left_topic' in diagram_data and 'left' not in diagram_data:
+                diagram_data['left'] = diagram_data.pop('left_topic')
+            if 'right_topic' in diagram_data and 'right' not in diagram_data:
+                diagram_data['right'] = diagram_data.pop('right_topic')
+            logger.debug(f"[ExportPNG] Normalized double_bubble_map: left={diagram_data.get('left')}, right={diagram_data.get('right')}")
+        
+        elif diagram_type == 'circle_map':
+            # Transform contexts (plural) to context (singular) - renderer expects spec.context
+            if 'contexts' in diagram_data and 'context' not in diagram_data:
+                diagram_data['context'] = diagram_data.pop('contexts')
+            logger.debug(f"[ExportPNG] Normalized circle_map: context count={len(diagram_data.get('context', []))}")
+        
+        elif diagram_type == 'tree_map':
+            # Transform categories to children - renderer expects spec.children
+            # Each category: {name: "...", items: [...]} → {text: "...", children: [...]}
+            if 'categories' in diagram_data and 'children' not in diagram_data:
+                categories = diagram_data.pop('categories')
+                diagram_data['children'] = []
+                for cat in categories:
+                    if isinstance(cat, dict):
+                        child = {
+                            'text': cat.get('name', cat.get('label', '')),
+                            'children': cat.get('items', [])
+                        }
+                        diagram_data['children'].append(child)
+                    elif isinstance(cat, str):
+                        # Simple string category
+                        diagram_data['children'].append({'text': cat, 'children': []})
+                logger.debug(f"[ExportPNG] Normalized tree_map: children count={len(diagram_data.get('children', []))}")
+        
+        elif diagram_type == 'brace_map':
+            # Transform topic to whole (renderer expects 'whole' field)
+            if 'topic' in diagram_data and 'whole' not in diagram_data:
+                diagram_data['whole'] = diagram_data.pop('topic')
+                logger.debug(f"[ExportPNG] Normalized brace_map: topic -> whole = '{diagram_data['whole']}'")
+            
+            # Transform parts array: strings → objects with name property
+            # Renderer expects: parts = [{name: "...", subparts: [{name: "..."}]}]
+            # Prompt returns: parts = ["Part 1", "Part 2", ...]
+            if 'parts' in diagram_data and isinstance(diagram_data['parts'], list):
+                normalized_parts = []
+                for part in diagram_data['parts']:
+                    if isinstance(part, str):
+                        # String part → object with name
+                        normalized_parts.append({'name': part})
+                    elif isinstance(part, dict):
+                        # Already an object, ensure it has 'name' property
+                        if 'name' not in part and 'text' in part:
+                            part['name'] = part.pop('text')
+                        normalized_parts.append(part)
+                diagram_data['parts'] = normalized_parts
+                logger.debug(f"[ExportPNG] Normalized brace_map: parts count={len(diagram_data.get('parts', []))}")
+    
+    try:
+        # Load JS files from disk for embedding (like old version)
+        logger.debug(f"[ExportPNG] Loading JavaScript files for embedding")
+        
+        # Read local D3.js content for embedding in PNG generation (like old version)
+        d3_js_path = Path(__file__).parent.parent / 'static' / 'js' / 'd3.min.js'
+        try:
+            with open(d3_js_path, 'r', encoding='utf-8') as f:
+                d3_js_content = f.read()
+            logger.debug(f"[ExportPNG] D3.js loaded ({len(d3_js_content)} bytes)")
+            d3_script_tag = f'<script>{d3_js_content}</script>'
+        except Exception as e:
+            logger.error(f"[ExportPNG] Failed to load D3.js: {e}")
+            raise RuntimeError(f"Local D3.js library not available at {d3_js_path}")
+        
+        # Load other JS files for embedding
+        # IMPORTANT: Load order matters - logger must be loaded BEFORE dynamic_loader
+        js_files_to_embed = {
+            'logger': Path(__file__).parent.parent / 'static' / 'js' / 'logger.js',
+            'theme_config': Path(__file__).parent.parent / 'static' / 'js' / 'theme-config.js',
+            'style_manager': Path(__file__).parent.parent / 'static' / 'js' / 'style-manager.js',
+            'dynamic_loader': Path(__file__).parent.parent / 'static' / 'js' / 'dynamic-renderer-loader.js',
+        }
+        
+        embedded_js_content = {}
+        for key, path in js_files_to_embed.items():
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    if key == 'dynamic_loader':
+                        # Replace relative URLs with absolute ones for PNG generation context
+                        port = os.getenv('PORT', '9527')
+                        base_url = f"http://localhost:{port}"
+                        content = content.replace('/static/js/renderers/', f'{base_url}/static/js/renderers/')
+                    embedded_js_content[key] = content
+                logger.debug(f"[ExportPNG] JS file '{key}' loaded ({len(content)} bytes)")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Failed to load JS file '{key}': {e}")
+                raise RuntimeError(f"Required JavaScript file '{key}' not available at {path}")
+        
+        logger_js = embedded_js_content['logger']
+        theme_config = embedded_js_content['theme_config']
+        style_manager = embedded_js_content['style_manager']
+        dynamic_loader = embedded_js_content['dynamic_loader']
+        
+        renderer_scripts = f'''
+        <!-- Logger (MUST load first - required by dynamic-renderer-loader) -->
+        <script>
+        {logger_js}
+        </script>
+        
+        <!-- Dynamic Renderer Loader (Modified for PNG Generation) -->
+        <script>
+        {dynamic_loader}
+        </script>
+        '''
+        
+        # Calculate optimized dimensions for different graph types (like old version)
+        dimensions = config.get_d3_dimensions()
+        
+        if diagram_type == 'bridge_map' and diagram_data and 'analogies' in diagram_data:
+            num_analogies = len(diagram_data['analogies'])
+            min_width_per_analogy = 120
+            min_padding = 40
+            content_width = (num_analogies * min_width_per_analogy) + ((num_analogies - 1) * 60)
+            optimal_width = max(content_width + (2 * min_padding), 600)
+            optimal_height = max(90 + (2 * min_padding), 200)
+            
+            dimensions = {
+                'baseWidth': optimal_width,
+                'baseHeight': optimal_height,
+                'padding': min_padding,
+                'width': optimal_width,
+                'height': optimal_height,
+                'topicFontSize': dimensions.get('topicFontSize', 26),
+                'charFontSize': dimensions.get('charFontSize', 22)
+            }
+        elif diagram_type == 'brace_map' and diagram_data:
+            optimal_dims = diagram_data.get('_optimal_dimensions', {})
+            svg_data = diagram_data.get('_svg_data', {})
+            
+            if optimal_dims and optimal_dims.get('width') and optimal_dims.get('height'):
+                dimensions = {
+                    'baseWidth': optimal_dims['width'],
+                    'baseHeight': optimal_dims['height'],
+                    'padding': 50,
+                    'width': optimal_dims['width'],
+                    'height': optimal_dims['height'],
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
+            elif diagram_data.get('success') and svg_data and 'width' in svg_data and 'height' in svg_data:
+                dimensions = {
+                    'baseWidth': svg_data['width'],
+                    'baseHeight': svg_data['height'],
+                    'padding': 50,
+                    'width': svg_data['width'],
+                    'height': svg_data['height'],
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
+            else:
+                dimensions = {
+                    'baseWidth': 800,
+                    'baseHeight': 600,
+                    'padding': 50,
+                    'width': 800,
+                    'height': 600,
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
+        elif diagram_type in ('multi_flow_map', 'flow_map', 'tree_map', 'concept_map') and isinstance(diagram_data, dict):
+            try:
+                rd = diagram_data.get('_recommended_dimensions') or {}
+                if rd:
+                    dimensions = {
+                        'baseWidth': rd.get('baseWidth', dimensions.get('baseWidth', 900)),
+                        'baseHeight': rd.get('baseHeight', dimensions.get('baseHeight', 500)),
+                        'padding': rd.get('padding', dimensions.get('padding', 40)),
+                        'width': rd.get('width', rd.get('baseWidth', dimensions.get('baseWidth', 900))),
+                        'height': rd.get('height', rd.get('baseHeight', dimensions.get('baseHeight', 500))),
+                        'topicFontSize': dimensions.get('topicFontSize', 18),
+                        'charFontSize': dimensions.get('charFontSize', 14)
+                    }
+            except Exception as e:
+                logger.warning(f"[ExportPNG] Failed to apply recommended dimensions: {e}")
+        
+        # Build font-face declarations only for fonts that exist
+        font_faces = []
+        font_files = [
+            ("inter-300.ttf", 300),
+            ("inter-400.ttf", 400),
+            ("inter-500.ttf", 500),
+            ("inter-600.ttf", 600),
+            ("inter-700.ttf", 700),
+        ]
+        
+        for font_file, weight in font_files:
+            font_base64 = _get_font_base64(font_file)
+            if font_base64:  # Only add if font was successfully loaded
+                font_faces.append(f'''
+            @font-face {{
+                font-display: swap;
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: {weight};
+                src: url('data:font/truetype;base64,{font_base64}') format('truetype');
+            }}''')
+        
+        font_css = '\n'.join(font_faces) if font_faces else '/* No fonts available - using system fonts */'
+        
+        # Build HTML exactly like old version
+        html = f'''<!DOCTYPE html>
+        <html><head>
+        <meta charset="utf-8">
+        {d3_script_tag}
+        <style>
+            body {{ margin:0; background:#fff; }}
+            #d3-container {{ 
+                width: 100%; 
+                height: 100vh; 
+                display: block; 
+            }}
+            
+            /* Inter Font Loading for Ubuntu Server Compatibility */
+            {font_css}
+        </style>
+        </head><body>
+        <div id="d3-container"></div>
+        
+        <!-- Theme Configuration -->
+        <script>
+        {theme_config}
+        </script>
+        
+        <!-- Style Manager -->
+        <script>
+        {style_manager}
+        </script>
+        
+        <!-- Modular D3 Renderers (Loaded in dependency order) -->
+        {renderer_scripts}
+        
+        <!-- Main Rendering Logic -->
+        <script>
+        // Wait for D3.js to load
+        function waitForD3() {{
+            if (typeof d3 !== "undefined") {{
+                try {{
+                    window.spec = {json.dumps(diagram_data, ensure_ascii=False)};
+                    window.graph_type = "{diagram_type}";
+                    
+                    // Get theme using style manager (centralized theme system)
+                    let theme;
+                    let backendTheme;
+                    if (typeof styleManager !== "undefined" && typeof styleManager.getTheme === "function") {{
+                        theme = styleManager.getTheme(window.graph_type);
+                    }} else {{
+                        theme = {{}};
+                        console.error("Style manager not available - this should not happen");
+                    }}
+                    const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
+                    backendTheme = {{...theme, ...watermarkConfig}};
+                    window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
+                    
+                    // Ensure style manager is available
+                    if (typeof styleManager === "undefined") {{
+                        console.error("Style manager not loaded!");
+                        throw new Error("Style manager not available");
+                    }}
+                    
+                    // Use dynamic renderer loader for all graph types
+                    if (typeof window.dynamicRendererLoader === "undefined") {{
+                        console.error("Dynamic renderer loader not available");
+                        console.error("Available window properties:", Object.keys(window).slice(0, 20));
+                        throw new Error("Dynamic renderer loader not available");
+                    }}
+                    
+                    try {{
+                        // Use the dynamic renderer loader to render the graph
+                        window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
+                            .then(() => {{
+                                // Rendering complete
+                            }})
+                            .catch(error => {{
+                                console.error("Dynamic rendering failed:", error);
+                            }});
+                    }} catch (error) {{
+                        console.error("Error calling dynamic renderer:", error);
+                    }}
+                }} catch (error) {{
+                    console.error("Render error:", error);
+                }}
+            }} else {{
+                setTimeout(waitForD3, 100);
+            }}
+        }}
+        waitForD3();
+        </script>
+        </body></html>
+        '''
+        
+        logger.debug(f"[ExportPNG] HTML content length: {len(html)} characters")
+        
+        # Create browser context (like old version)
+        logger.debug(f"[ExportPNG] Creating browser context")
+        async with BrowserContextManager() as context:
+            page = await context.new_page()
+            
+            # Set timeout and log HTML size and structure (like old version)
+            html_size = len(html)
+            timeout_ms = 60000  # 60 seconds for all content
+            logger.debug(f"[ExportPNG] HTML content size: {html_size} characters")
+            
+            # Set up comprehensive console and error logging BEFORE loading content (like old version)
+            console_messages = []
+            page_errors = []
+            
+            def log_console_message(msg):
+                message = f"{msg.type}: {msg.text}"
+                console_messages.append(message)
+                logger.debug(f"BROWSER CONSOLE: {message}")
+            
+            def log_page_error(err):
+                error_str = str(err)
+                page_errors.append(error_str)
+                logger.error(f"BROWSER ERROR: {error_str}")
+            
+            page.on("console", log_console_message)
+            page.on("pageerror", log_page_error)
+            page.on("requestfailed", lambda request: logger.error(f"RESOURCE FAILED: {request.url} - {request.failure}"))
+            page.on("response", lambda response: logger.debug(f"RESOURCE LOADED: {response.url} - {response.status}") if response.status >= 400 else None)
+            
+            # Set timeout (like old version)
+            page.set_default_timeout(60000)
+            page.set_default_navigation_timeout(60000)
+            
+            # Try to load the content with more detailed error handling (like old version)
+            try:
+                await page.set_content(html, timeout=timeout_ms)
+                logger.debug("[ExportPNG] HTML content loaded successfully")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Failed to set HTML content: {e}")
+                raise
+            
+            # Wait for rendering and check for console errors (like old version)
+            logger.debug("[ExportPNG] Waiting for initial rendering")
+            try:
+                await page.wait_for_selector('svg', timeout=10000)
+                logger.debug("[ExportPNG] SVG element found - initial rendering complete")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Timeout waiting for SVG element: {e}")
+                # Log console messages and errors for debugging
+                if console_messages:
+                    logger.error(f"[ExportPNG] Browser console messages: {len(console_messages)}")
+                    for i, msg in enumerate(console_messages[-10:]):
+                        logger.error(f"[ExportPNG] Console {i+1}: {msg}")
+                if page_errors:
+                    logger.error(f"[ExportPNG] Browser errors: {len(page_errors)}")
+                    for i, error in enumerate(page_errors):
+                        logger.error(f"[ExportPNG] Browser Error {i+1}: {error}")
+                raise ValueError("SVG element not found. The graph could not be rendered.")
+            
+            # Wait for rendering to complete (like old version)
+            logger.debug("[ExportPNG] Waiting for rendering to complete")
+            try:
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        return svg && svg.children.length > 0;
+                    }
+                ''', timeout=5000)
+                logger.debug("[ExportPNG] SVG content populated - rendering complete")
+            except Exception as e:
+                logger.warning(f"[ExportPNG] Timeout waiting for SVG content: {e}")
+            
+            # Log console messages and errors (like old version)
+            if console_messages:
+                logger.debug(f"[ExportPNG] Browser console messages: {len(console_messages)}")
+                for i, msg in enumerate(console_messages[-10:]):
+                    logger.debug(f"[ExportPNG] Console {i+1}: {msg}")
+            if page_errors:
+                logger.error(f"[ExportPNG] Browser errors: {len(page_errors)}")
+                for i, error in enumerate(page_errors):
+                    logger.error(f"[ExportPNG] Browser Error {i+1}: {error}")
+            
+            # Wait for SVG element to be created with timeout (like old version)
+            try:
+                element = await page.wait_for_selector("svg", timeout=10000)
+                logger.debug("[ExportPNG] SVG element found successfully")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Timeout waiting for SVG element: {e}")
+                element = await page.query_selector("svg")  # Try one more time
+            
+            # Check if SVG exists and has content (like old version)
+            if element is None:
+                logger.error("[ExportPNG] SVG element not found in rendered page")
+                raise ValueError("SVG element not found. The graph could not be rendered.")
+            
+            # Check SVG dimensions (like old version)
+            svg_width = await element.get_attribute('width')
+            svg_height = await element.get_attribute('height')
+            logger.debug(f"[ExportPNG] SVG dimensions: width={svg_width}, height={svg_height}")
+            
+            # Ensure element is visible before screenshot (like old version)
+            await element.scroll_into_view_if_needed()
+            
+            # Wait for element to be ready for screenshot (like old version)
+            try:
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        if (!svg) return false;
+                        const rect = svg.getBoundingClientRect();
+                        return rect.width > 0 && rect.height > 0;
+                    }
+                ''', timeout=2000)
+                logger.debug("[ExportPNG] Element ready for screenshot")
+            except Exception as e:
+                logger.warning(f"[ExportPNG] Element not ready for screenshot within 2s timeout: {e}")
+                await page.wait_for_timeout(200)  # Fallback wait
+            
+            # Take screenshot using SVG element directly (like old version)
+            logger.debug("[ExportPNG] Taking screenshot")
+            screenshot_bytes = await element.screenshot(omit_background=False, timeout=60000)
+            logger.debug(f"[ExportPNG] Screenshot taken: {len(screenshot_bytes)} bytes")
+        
+        logger.info(f"[ExportPNG] PNG generated successfully: {len(screenshot_bytes)} bytes")
+        return screenshot_bytes
+        
+    except Exception as e:
+        logger.error(f"[ExportPNG] Error during PNG export: {e}", exc_info=True)
+        raise
+
+
 @router.post('/export_png')
 async def export_png(
     req: ExportPNGRequest,
@@ -730,61 +1204,111 @@ async def generate_png_from_prompt(
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
-    Generate PNG directly from user prompt (backward compatibility).
+    Generate PNG directly from user prompt using simplified prompt-to-diagram agent.
     
-    This endpoint chains existing generate_graph() + export_png() internally.
-    Uses main agent to extract topic and diagram type, exports default PNG result.
-    Provides 1-step workflow for external clients.
+    Uses only Qwen in a single LLM call for fast, efficient diagram generation.
     """
     lang = get_request_language(x_language)
     prompt = req.prompt.strip()
     
     if not prompt:
-        raise HTTPException(
-            status_code=400,
-            detail=Messages.error("invalid_prompt", lang)
-        )
+        raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
     
-    logger.debug(f"[generate_png] Request: {prompt[:50]}... (llm={req.llm})")
+    language = req.language.value if req.language and hasattr(req.language, 'value') else str(req.language) if req.language else 'zh'
+    if language not in ['zh', 'en']:
+        raise HTTPException(status_code=400, detail="Invalid language. Must be 'zh' or 'en'")
+    
+    logger.info(f"[GeneratePNG] Request: prompt='{prompt}', language='{language}'")
     
     try:
-        # Step 1: Generate diagram spec using main agent (reuse existing endpoint)
-        generate_req = GenerateRequest(
-            prompt=req.prompt,
-            language=req.language,
-            llm=req.llm,
-            diagram_type=req.diagram_type,
-            dimension_preference=req.dimension_preference
+        # Use simplified prompt-to-diagram approach (single Qwen call)
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
+        
+        # Get prompt from centralized system
+        from prompts import get_prompt
+        prompt_template = get_prompt('prompt_to_diagram', language, 'generation')
+        
+        if not prompt_template:
+            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}"))
+        
+        # Format prompt with user input
+        formatted_prompt = prompt_template.format(user_prompt=prompt)
+        
+        # Call LLM service - single call with Qwen only
+        from services.llm_service import llm_service
+        from config.settings import config
+        from agents.core.agent_utils import extract_json_from_response
+        
+        response = await llm_service.chat(
+            prompt=formatted_prompt,
+            model='qwen',  # Force Qwen only
+            max_tokens=2000,
+            temperature=config.LLM_TEMPERATURE,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type='diagram_generation',
+            endpoint_path='/api/generate_png'
         )
         
-        spec_result = await generate_graph(generate_req, x_language)
+        if not response:
+            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "No response from LLM"))
         
-        logger.debug(f"[generate_png] Generated {spec_result.get('diagram_type')} spec")
+        # Extract JSON from response
+        result = extract_json_from_response(response)
         
-        # Step 2: Export default PNG result from LLM (reuse existing endpoint)
-        export_req = ExportPNGRequest(
-            diagram_data=spec_result['spec'],
-            diagram_type=spec_result['diagram_type'],
-            width=req.width,
-            height=req.height,
-            scale=req.scale
+        if not isinstance(result, dict) or 'spec' not in result:
+            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "Invalid response format from LLM"))
+        
+        spec = result.get('spec', {})
+        graph_type = result.get('diagram_type', 'bubble_map')
+        
+        # Normalize diagram type
+        if graph_type == 'mindmap':
+            graph_type = 'mind_map'
+        
+        if isinstance(spec, dict) and spec.get('error'):
+            raise HTTPException(status_code=400, detail=spec.get('error'))
+        
+        # For mindmaps, enhance spec with layout data if missing
+        if graph_type == 'mind_map' and isinstance(spec, dict):
+            if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
+                logger.debug("[GeneratePNG] Mindmap spec missing layout data, enhancing with MindMapAgent")
+                try:
+                    from agents.mind_maps.mind_map_agent import MindMapAgent
+                    mind_map_agent = MindMapAgent(model='qwen')
+                    enhanced_spec = await mind_map_agent.enhance_spec(spec)
+                    
+                    if enhanced_spec.get('_layout'):
+                        spec = enhanced_spec
+                        logger.debug("[GeneratePNG] Mindmap layout data added successfully")
+                    else:
+                        logger.warning("[GeneratePNG] MindMapAgent failed to generate layout data")
+                except Exception as e:
+                    logger.error(f"[GeneratePNG] Error enhancing mindmap spec: {e}", exc_info=True)
+                    # Continue with original spec - renderer will show error message
+        
+        # Export PNG using core function
+        screenshot_bytes = await _export_png_core(
+            diagram_data=spec,
+            diagram_type=graph_type,
+            width=req.width or 1200,
+            height=req.height or 800,
+            scale=req.scale or 2,
+            x_language=x_language
         )
         
-        png_response = await export_png(export_req, x_language)
-        
-        logger.info(f"[generate_png] Success: {spec_result.get('diagram_type')}")
-        
-        return png_response
+        return Response(
+            content=screenshot_bytes,
+            media_type="image/png",
+            headers={'Content-Disposition': 'attachment; filename="diagram.png"'}
+        )
         
     except HTTPException:
-        # Let HTTP exceptions pass through
         raise
     except Exception as e:
-        logger.error(f"[generate_png] Error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=Messages.error("generation_failed", lang, str(e))
-        )
+        logger.error(f"[GeneratePNG] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e)))
 
 
 @router.post('/generate_dingtalk')
@@ -795,11 +1319,10 @@ async def generate_dingtalk_png(
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
-    Generate PNG for DingTalk integration (backward compatibility).
+    Generate PNG for DingTalk integration using simplified prompt-to-diagram agent.
     
-    Uses main agent to extract topic and diagram type from prompt.
-    Exports default PNG result from LLM.
-    Returns plain text in ![topic](url) format for DingTalk bot integration.
+    Uses only Qwen in a single LLM call. Saves PNG to temp folder and returns
+    plain text in ![]() format for DingTalk bot integration.
     """
     lang = get_request_language(x_language)
     prompt = req.prompt.strip()
@@ -810,34 +1333,104 @@ async def generate_dingtalk_png(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    logger.debug(f"[generate_dingtalk] Request: {prompt[:50]}...")
+    logger.info(f"[GenerateDingTalk] Request: prompt='{prompt}'")
     
     try:
-        # Step 1: Main agent extracts topic + generates diagram spec
-        generate_req = GenerateRequest(
-            prompt=req.prompt,
-            language=req.language,
-            llm=req.llm,
-            diagram_type=req.diagram_type,
-            dimension_preference=req.dimension_preference
+        # Handle language - default to 'zh' if not provided
+        language = req.language.value if req.language and hasattr(req.language, 'value') else str(req.language) if req.language else 'zh'
+        
+        # Handle current_user
+        user_id = None
+        organization_id = None
+        if current_user and hasattr(current_user, 'id'):
+            user_id = current_user.id
+            organization_id = getattr(current_user, 'organization_id', None)
+        
+        # Use simplified prompt-to-diagram approach (single Qwen call)
+        from prompts import get_prompt
+        prompt_template = get_prompt('prompt_to_diagram', language, 'generation')
+        
+        if not prompt_template:
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}")
+            )
+        
+        # Format prompt with user input
+        formatted_prompt = prompt_template.format(user_prompt=prompt)
+        
+        # Call LLM service - single call with Qwen only
+        from services.llm_service import llm_service
+        from config.settings import config
+        from agents.core.agent_utils import extract_json_from_response
+        
+        logger.debug(f"[GenerateDingTalk] Calling Qwen with prompt-to-diagram")
+        response = await llm_service.chat(
+            prompt=formatted_prompt,
+            model='qwen',  # Force Qwen only
+            max_tokens=2000,
+            temperature=config.LLM_TEMPERATURE,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type='diagram_generation',
+            endpoint_path='/api/generate_dingtalk'
         )
         
-        spec_result = await generate_graph(generate_req, x_language)
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generation_failed", lang, "No response from LLM")
+            )
         
-        logger.debug(f"[generate_dingtalk] Generated {spec_result.get('diagram_type')} spec")
+        # Extract JSON from response
+        result = extract_json_from_response(response)
         
-        # Step 2: Export default PNG result from LLM
-        export_req = ExportPNGRequest(
-            diagram_data=spec_result['spec'],
-            diagram_type=spec_result['diagram_type'],
+        if not isinstance(result, dict) or 'spec' not in result:
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generation_failed", lang, "Invalid response format from LLM")
+            )
+        
+        spec = result.get('spec', {})
+        diagram_type = result.get('diagram_type', 'bubble_map')
+        
+        # Normalize diagram type
+        if diagram_type == 'mindmap':
+            diagram_type = 'mind_map'
+        
+        if isinstance(spec, dict) and spec.get('error'):
+            raise HTTPException(status_code=400, detail=spec.get('error'))
+        
+        # For mindmaps, enhance spec with layout data if missing
+        if diagram_type == 'mind_map' and isinstance(spec, dict):
+            if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
+                logger.debug("[GenerateDingTalk] Mindmap spec missing layout data, enhancing with MindMapAgent")
+                try:
+                    from agents.mind_maps.mind_map_agent import MindMapAgent
+                    mind_map_agent = MindMapAgent(model='qwen')
+                    enhanced_spec = await mind_map_agent.enhance_spec(spec)
+                    
+                    if enhanced_spec.get('_layout'):
+                        spec = enhanced_spec
+                        logger.debug("[GenerateDingTalk] Mindmap layout data added successfully")
+                    else:
+                        logger.warning("[GenerateDingTalk] MindMapAgent failed to generate layout data")
+                except Exception as e:
+                    logger.error(f"[GenerateDingTalk] Error enhancing mindmap spec: {e}", exc_info=True)
+                    # Continue with original spec - renderer will show error message
+        
+        # Export PNG using core helper function
+        logger.debug(f"[GenerateDingTalk] Exporting PNG")
+        screenshot_bytes = await _export_png_core(
+            diagram_data=spec,
+            diagram_type=diagram_type,
             width=1200,
             height=800,
-            scale=2
+            scale=2,
+            x_language=x_language
         )
         
-        png_response = await export_png(export_req, x_language)
-        
-        # Step 3: Save PNG to temp directory (ASYNC file I/O)
+        # Save PNG to temp directory (ASYNC file I/O)
         temp_dir = Path("temp_images")
         temp_dir.mkdir(exist_ok=True)
         
@@ -848,51 +1441,37 @@ async def generate_dingtalk_png(
         temp_path = temp_dir / filename
         
         # Write PNG content to file using aiofiles (100% async, non-blocking)
-        # Note: png_response is a Response object with .body property
         async with aiofiles.open(temp_path, 'wb') as f:
-            await f.write(png_response.body)
+            await f.write(screenshot_bytes)
         
-        logger.debug(f"[generate_dingtalk] Saved to {temp_path}")
+        logger.debug(f"[GenerateDingTalk] Saved PNG to {temp_path} ({len(screenshot_bytes)} bytes)")
         
-        # Step 4: Build plain text response in ![](url) format (empty alt text)
-        # Priority order for URL generation:
-        # 1. EXTERNAL_BASE_URL env var (explicit override, e.g. https://example.com)
-        # 2. X-Forwarded-* headers from reverse proxy
-        # 3. Fallback to EXTERNAL_HOST:PORT
+        # Build plain text response in ![](url) format (empty alt text)
+        # Detect protocol and host from reverse proxy headers (X-Forwarded-*) if present
+        forwarded_proto = request.headers.get('X-Forwarded-Proto')
+        forwarded_host = request.headers.get('X-Forwarded-Host')
         
-        external_base_url = os.getenv('EXTERNAL_BASE_URL', '').rstrip('/')
-        
-        if external_base_url:
-            # Explicit override - use EXTERNAL_BASE_URL directly
-            image_url = f"{external_base_url}/api/temp_images/{filename}"
-            logger.debug(f"[generate_dingtalk] Using EXTERNAL_BASE_URL: {external_base_url}")
+        if forwarded_proto and forwarded_host:
+            # Behind reverse proxy - use forwarded values (no port needed)
+            protocol = forwarded_proto
+            image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
         else:
-            # Try reverse proxy headers
-            forwarded_proto = request.headers.get('X-Forwarded-Proto')
-            forwarded_host = request.headers.get('X-Forwarded-Host')
-            
-            if forwarded_proto and forwarded_host:
-                # Behind reverse proxy - use forwarded values (no port needed)
-                protocol = forwarded_proto
-                image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
-                logger.debug(f"[generate_dingtalk] Using reverse proxy headers: {protocol}://{forwarded_host}")
-            else:
-                # Direct access - use backend protocol and EXTERNAL_HOST with port
-                protocol = request.url.scheme
-                external_host = os.getenv('EXTERNAL_HOST', 'localhost')
-                port = os.getenv('PORT', '9527')
-                image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
+            # Direct access - use backend protocol and EXTERNAL_HOST with port
+            protocol = request.url.scheme
+            external_host = os.getenv('EXTERNAL_HOST', 'localhost')
+            port = os.getenv('PORT', '9527')
+            image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
         
         plain_text = f"![]({image_url})"
         
-        logger.info(f"[generate_dingtalk] Success: {image_url}")
+        logger.info(f"[GenerateDingTalk] Success: {image_url}")
         
         return PlainTextResponse(content=plain_text)
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[generate_dingtalk] Error: {e}", exc_info=True)
+        logger.error(f"[GenerateDingTalk] Error: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=Messages.error("generation_failed", lang, str(e))

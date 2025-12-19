@@ -152,6 +152,7 @@ class MindMateManager {
             // Track if button was activated via explicit mouse click
             let activatedViaMouse = false;
             let mouseDownTime = 0;
+            let lastMouseDownTime = 0; // Track mouse down for focus event correlation
             
             // Mouse down handler - mark as mouse activation with timestamp
             this.mindmateBtn.addEventListener('mousedown', (e) => {
@@ -159,6 +160,7 @@ class MindMateManager {
                 if (e.button === 0) {
                     activatedViaMouse = true;
                     mouseDownTime = Date.now();
+                    lastMouseDownTime = Date.now(); // Also track for focus correlation
                 }
             });
             
@@ -223,12 +225,21 @@ class MindMateManager {
             
             // CRITICAL FIX: Prevent focus event - blur immediately if focus received
             this.mindmateBtn.addEventListener('focus', (e) => {
-                // Log for debugging - this should NEVER happen with tabindex="-1"
-                this.logger.warn('MindMateManager', 'UNEXPECTED FOCUS on MindMate button - should not happen with tabindex=-1', {
-                    tabindex: this.mindmateBtn.getAttribute('tabindex'),
-                    activeElement: document.activeElement?.id
-                });
-                // Always blur if button gets focus unexpectedly
+                // Check if focus was caused by a recent mouse click (within 200ms)
+                // Mouse clicks naturally focus buttons even with tabindex="-1"
+                const timeSinceMouseDown = Date.now() - lastMouseDownTime;
+                const isFromMouseClick = timeSinceMouseDown < 200;
+                
+                // Only log warning if focus was NOT from a mouse click (unexpected focus)
+                if (!isFromMouseClick) {
+                    this.logger.warn('MindMateManager', 'UNEXPECTED FOCUS on MindMate button - should not happen with tabindex=-1', {
+                        tabindex: this.mindmateBtn.getAttribute('tabindex'),
+                        activeElement: document.activeElement?.id,
+                        timeSinceMouseDown
+                    });
+                }
+                
+                // Always blur if button gets focus (expected or unexpected)
                 this.mindmateBtn.blur();
                 // Move focus away
                 const canvas = document.getElementById('d3-container');

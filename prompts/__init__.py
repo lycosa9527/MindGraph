@@ -13,6 +13,7 @@ from .main_agent import MAIN_AGENT_PROMPTS
 from .thinking_tools import THINKING_TOOLS_PROMPTS
 from .voice_agent import VOICE_AGENT_PROMPTS
 from .tab_mode import TAB_MODE_PROMPTS
+from .prompt_to_diagram_agent import PROMPT_TO_DIAGRAM_PROMPTS
 
 
 # Unified prompt registry
@@ -24,6 +25,7 @@ PROMPT_REGISTRY = {
     **THINKING_TOOLS_PROMPTS,
     **VOICE_AGENT_PROMPTS,
     **TAB_MODE_PROMPTS,
+    **PROMPT_TO_DIAGRAM_PROMPTS,
 }
 
 def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'generation') -> str:
@@ -31,13 +33,18 @@ def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'gene
     Get a prompt for a specific diagram type and language.
     
     Args:
-        diagram_type: Type of diagram (e.g., 'bridge_map', 'bubble_map')
+        diagram_type: Type of diagram (e.g., 'bridge_map', 'bubble_map', 'prompt_to_diagram')
         language: Language code ('en' or 'zh')
         prompt_type: Type of prompt ('generation', 'classification', 'extraction')
     
     Returns:
         str: The prompt template
     """
+    # Handle prompt_to_diagram specially
+    if diagram_type == 'prompt_to_diagram':
+        key = f"prompt_to_diagram_{language}"
+        return PROMPT_REGISTRY.get(key, "")
+    
     key = f"{diagram_type}_{prompt_type}_{language}"
     return PROMPT_REGISTRY.get(key, "")
 
