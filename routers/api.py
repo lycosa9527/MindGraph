@@ -1224,6 +1224,16 @@ async def generate_png_from_prompt(
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
         organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
         
+        # Detect learning sheet from prompt
+        from agents.main_agent import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
+        is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
+        logger.debug(f"[GeneratePNG] Learning sheet detected: {is_learning_sheet}")
+        
+        # Clean prompt for learning sheets to generate actual content, not meta-content
+        generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
+        if is_learning_sheet:
+            logger.debug(f"[GeneratePNG] Using cleaned prompt for generation: '{generation_prompt}'")
+        
         # Get prompt from centralized system
         from prompts import get_prompt
         prompt_template = get_prompt('prompt_to_diagram', language, 'generation')
@@ -1231,8 +1241,8 @@ async def generate_png_from_prompt(
         if not prompt_template:
             raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}"))
         
-        # Format prompt with user input
-        formatted_prompt = prompt_template.format(user_prompt=prompt)
+        # Format prompt with cleaned user input
+        formatted_prompt = prompt_template.format(user_prompt=generation_prompt)
         
         # Call LLM service - single call with Qwen only
         from services.llm_service import llm_service
@@ -1277,6 +1287,13 @@ async def generate_png_from_prompt(
         # Normalize diagram type
         if graph_type == 'mindmap':
             graph_type = 'mind_map'
+        
+        # Add learning sheet metadata to spec object so renderers can access it
+        if isinstance(spec, dict):
+            hidden_percentage = 0.2 if is_learning_sheet else 0
+            spec['is_learning_sheet'] = is_learning_sheet
+            spec['hidden_node_percentage'] = hidden_percentage
+            logger.debug(f"[GeneratePNG] Added learning sheet metadata to spec: is_learning_sheet={is_learning_sheet}, hidden_percentage={hidden_percentage}")
         
         # Track tokens with correct diagram_type
         if usage_data:
@@ -1370,7 +1387,7 @@ async def generate_dingtalk_png(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    logger.info(f"[GenerateDingTalk] Request: prompt='{prompt}'")
+    logger.info("[GenerateDingTalk] Request: prompt='%s'", prompt)
     
     try:
         # Handle language - default to 'zh' if not provided
@@ -1383,6 +1400,16 @@ async def generate_dingtalk_png(
             user_id = current_user.id
             organization_id = getattr(current_user, 'organization_id', None)
         
+        # Detect learning sheet from prompt
+        from agents.main_agent import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
+        is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
+        logger.debug(f"[GenerateDingTalk] Learning sheet detected: {is_learning_sheet}")
+        
+        # Clean prompt for learning sheets to generate actual content, not meta-content
+        generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
+        if is_learning_sheet:
+            logger.debug(f"[GenerateDingTalk] Using cleaned prompt for generation: '{generation_prompt}'")
+        
         # Use simplified prompt-to-diagram approach (single Qwen call)
         from prompts import get_prompt
         prompt_template = get_prompt('prompt_to_diagram', language, 'generation')
@@ -1393,8 +1420,8 @@ async def generate_dingtalk_png(
                 detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}")
             )
         
-        # Format prompt with user input
-        formatted_prompt = prompt_template.format(user_prompt=prompt)
+        # Format prompt with cleaned user input
+        formatted_prompt = prompt_template.format(user_prompt=generation_prompt)
         
         # Call LLM service - single call with Qwen only
         from services.llm_service import llm_service
@@ -1406,12 +1433,7 @@ async def generate_dingtalk_png(
         api_key_id = None
         if hasattr(request, 'state'):
             api_key_id = getattr(request.state, 'api_key_id', None)
-            if api_key_id:
-                logger.debug(f"[GenerateDingTalk] Using API key ID {api_key_id} for token tracking")
-        else:
-            logger.debug(f"[GenerateDingTalk] Request state not available")
         
-        logger.debug(f"[GenerateDingTalk] Calling Qwen with prompt-to-diagram")
         start_time = time.time()
         response, usage_data = await llm_service.chat_with_usage(
             prompt=formatted_prompt,
@@ -1447,6 +1469,13 @@ async def generate_dingtalk_png(
         if diagram_type == 'mindmap':
             diagram_type = 'mind_map'
         
+        # Add learning sheet metadata to spec object so renderers can access it
+        if isinstance(spec, dict):
+            hidden_percentage = 0.2 if is_learning_sheet else 0
+            spec['is_learning_sheet'] = is_learning_sheet
+            spec['hidden_node_percentage'] = hidden_percentage
+            logger.debug(f"[GenerateDingTalk] Added learning sheet metadata to spec: is_learning_sheet={is_learning_sheet}, hidden_percentage={hidden_percentage}")
+        
         # Track tokens with correct diagram_type
         if usage_data:
             try:
@@ -1479,7 +1508,6 @@ async def generate_dingtalk_png(
         # For mindmaps, enhance spec with layout data if missing
         if diagram_type == 'mind_map' and isinstance(spec, dict):
             if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
-                logger.debug("[GenerateDingTalk] Mindmap spec missing layout data, enhancing with MindMapAgent")
                 try:
                     from agents.mind_maps.mind_map_agent import MindMapAgent
                     mind_map_agent = MindMapAgent(model='qwen')
@@ -1487,15 +1515,13 @@ async def generate_dingtalk_png(
                     
                     if enhanced_spec.get('_layout'):
                         spec = enhanced_spec
-                        logger.debug("[GenerateDingTalk] Mindmap layout data added successfully")
                     else:
                         logger.warning("[GenerateDingTalk] MindMapAgent failed to generate layout data")
                 except Exception as e:
-                    logger.error(f"[GenerateDingTalk] Error enhancing mindmap spec: {e}", exc_info=True)
+                    logger.error("[GenerateDingTalk] Error enhancing mindmap spec: %s", e, exc_info=True)
                     # Continue with original spec - renderer will show error message
         
         # Export PNG using core helper function
-        logger.debug(f"[GenerateDingTalk] Exporting PNG")
         screenshot_bytes = await _export_png_core(
             diagram_data=spec,
             diagram_type=diagram_type,
@@ -1519,8 +1545,6 @@ async def generate_dingtalk_png(
         async with aiofiles.open(temp_path, 'wb') as f:
             await f.write(screenshot_bytes)
         
-        logger.debug(f"[GenerateDingTalk] Saved PNG to {temp_path} ({len(screenshot_bytes)} bytes)")
-        
         # Build plain text response in ![](url) format (empty alt text)
         # Priority order: EXTERNAL_BASE_URL → X-Forwarded-* headers → EXTERNAL_HOST:PORT
         # This ensures HTTPS URLs are used when EXTERNAL_BASE_URL is set, preventing mixed content issues
@@ -1529,7 +1553,6 @@ async def generate_dingtalk_png(
         if external_base_url:
             # Explicit override - use EXTERNAL_BASE_URL directly (highest priority)
             image_url = f"{external_base_url}/api/temp_images/{filename}"
-            logger.debug(f"[GenerateDingTalk] Using EXTERNAL_BASE_URL: {external_base_url}")
         else:
             # Try reverse proxy headers
             forwarded_proto = request.headers.get('X-Forwarded-Proto')
@@ -1539,25 +1562,23 @@ async def generate_dingtalk_png(
                 # Behind reverse proxy - use forwarded values (no port needed)
                 protocol = forwarded_proto
                 image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
-                logger.debug(f"[GenerateDingTalk] Using reverse proxy headers: {protocol}://{forwarded_host}")
             else:
                 # Direct access - use backend protocol and EXTERNAL_HOST with port
                 protocol = request.url.scheme
                 external_host = os.getenv('EXTERNAL_HOST', 'localhost')
                 port = os.getenv('PORT', '9527')
                 image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
-                logger.debug(f"[GenerateDingTalk] Using direct access: {protocol}://{external_host}:{port}")
         
         plain_text = f"![]({image_url})"
         
-        logger.info(f"[GenerateDingTalk] Success: {image_url}")
+        logger.info("[GenerateDingTalk] Success: %s", image_url)
         
         return PlainTextResponse(content=plain_text)
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[GenerateDingTalk] Error: {e}", exc_info=True)
+        logger.error("[GenerateDingTalk] Error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=Messages.error("generation_failed", lang, str(e))

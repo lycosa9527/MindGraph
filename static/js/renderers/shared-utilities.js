@@ -609,6 +609,26 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 const svgHeight = parseFloat(svg.attr('height')) || height;
                 svg.attr('height', svgHeight + answerKeyHeight);
                 
+                // Update background rectangle to cover entire expanded canvas
+                // Check for both 'background' and 'background-rect' class names
+                let backgroundRect = svg.select('rect.background');
+                if (backgroundRect.empty()) {
+                    backgroundRect = svg.select('rect.background-rect');
+                }
+                if (!backgroundRect.empty()) {
+                    // For viewBox coordinates, update height to match new viewBox height
+                    backgroundRect.attr('height', newHeight);
+                }
+                
+                // Reposition watermark to bottom-right corner of expanded canvas
+                const watermark = svg.select('text.watermark');
+                if (!watermark.empty()) {
+                    const padding = 12; // Default padding from watermark config
+                    watermark.attr('x', minX + width - padding)
+                             .attr('y', minY + newHeight - padding)
+                             .attr('text-anchor', 'end');
+                }
+                
                 // Position answer key at new bottom
                 answerX = minX + 20;
                 answerY = minY + newHeight - 20; // 20px from new bottom
@@ -622,6 +642,27 @@ function knockoutTextForLearningSheet(svg, hiddenPercentage) {
                 // Expand SVG height to make room for answer key
                 const newHeight = currentHeight + answerKeyHeight;
                 svg.attr('height', newHeight);
+                
+                // Update background rectangle to cover entire expanded canvas
+                // Check for both 'background' and 'background-rect' class names
+                let backgroundRect = svg.select('rect.background');
+                if (backgroundRect.empty()) {
+                    backgroundRect = svg.select('rect.background-rect');
+                }
+                if (!backgroundRect.empty()) {
+                    // For regular coordinates, update height to match new SVG height
+                    backgroundRect.attr('height', newHeight);
+                }
+                
+                // Reposition watermark to bottom-right corner of expanded canvas
+                const watermark = svg.select('text.watermark');
+                if (!watermark.empty()) {
+                    const padding = 12; // Default padding from watermark config
+                    const svgWidth = parseFloat(svg.attr('width')) || currentWidth;
+                    watermark.attr('x', svgWidth - padding)
+                             .attr('y', newHeight - padding)
+                             .attr('text-anchor', 'end');
+                }
                 
                 // Position answer key at new bottom
                 answerX = 20;

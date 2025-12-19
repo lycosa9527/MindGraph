@@ -3259,10 +3259,10 @@ curl -X POST http://your-server/api/generate_graph \
                                 ${key.description ? `<br><small style="color:#64748b;">${key.description}</small>` : ''}
                             </td>
                             <td>
-                                <code style="font-size:0.75rem;background:#f1f5f9;padding:0.25rem 0.5rem;border-radius:4px;" onclick="copyToClipboard('${key.key}', this)">${key.key.substring(0, 20)}...${key.key.substring(key.key.length - 8)}</code>
+                                <code style="font-size:0.75rem;background:#f1f5f9;padding:0.25rem 0.5rem;border-radius:4px;" onclick="copyToClipboard('${key.key}', this)">${key.key.substring(0, 8)}...${key.key.substring(key.key.length - 4)}</code>
                             </td>
                             <td>
-                                <div style="font-weight:500;">${tokenDisplay}</div>
+                                <div style="font-weight:700;color:#10b981;">${tokenDisplay}</div>
                                 <small style="color:#64748b;">Requests: ${key.usage_count.toLocaleString()}${key.quota_limit ? ` / ${key.quota_limit.toLocaleString()}` : ''}</small>
                                 ${key.quota_limit ? `<br><div style="background:#e2e8f0;height:6px;border-radius:3px;margin-top:4px;overflow:hidden;"><div style="background:${usagePercent > 90 ? '#ef4444' : '#667eea'};width:${Math.min(usagePercent, 100)}%;height:100%;"></div></div>` : ''}
                             </td>
@@ -3273,10 +3273,9 @@ curl -X POST http://your-server/api/generate_graph \
                                     '<span class="badge badge-danger">❌ <span class="lang-zh">禁用</span><span class="lang-en">Disabled</span><span class="lang-az">Deaktiv</span></span>'
                                 }
                             </td>
-                            <td><small>${new Date(key.created_at).toLocaleDateString()}</small></td>
-                            <td><small>${key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</small></td>
+                            <td><small>${new Date(key.created_at).toLocaleString('en-US', {timeZone: 'Asia/Shanghai', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</small></td>
+                            <td><small>${key.last_used_at ? new Date(key.last_used_at).toLocaleString('en-US', {timeZone: 'Asia/Shanghai', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'Never'}</small></td>
                             <td>
-                                <button class="btn btn-sm ${key.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleAPIKey(${key.id})">${key.is_active ? '⏸️ <span class="lang-zh">禁用</span><span class="lang-en">Disable</span><span class="lang-az">Deaktivləşdir</span>' : '▶️ <span class="lang-zh">启用</span><span class="lang-en">Enable</span><span class="lang-az">Aktivləşdir</span>'}</button>
                                 <button class="btn btn-primary btn-sm" onclick="editAPIKey(${key.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span><span class="lang-az">Redaktə</span></button>
                                 <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${key.id}, '${key.name}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span><span class="lang-az">Sil</span></button>
                             </td>

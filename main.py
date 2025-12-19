@@ -765,14 +765,8 @@ async def lifespan(app: FastAPI):
     # Verify Playwright installation (for PNG generation)
     if worker_id == '0' or not worker_id:
         try:
-            import sys
-            logger.info(f"Python executable: {sys.executable}")
-            logger.info(f"Python version: {sys.version}")
-            
-            # NOTE: We can't use sync_playwright() here because we're in an async context
-            # This check is skipped to avoid mixing sync/async APIs
-            # Playwright will be verified when actually used in BrowserContextManager
-            logger.info("Playwright check skipped (async context - will verify on first use)")
+            from services.browser import log_browser_diagnostics
+            await log_browser_diagnostics()
         except NotImplementedError:
             logger.error("=" * 80)
             logger.error("CRITICAL: Playwright browsers are not installed!")
@@ -780,7 +774,7 @@ async def lifespan(app: FastAPI):
             logger.error("To fix: conda activate python3.13 && playwright install chromium")
             logger.error("=" * 80)
         except Exception as e:
-            logger.warning(f"Could not verify Playwright installation: {e}")
+            logger.warning("Could not verify Playwright installation: %s", e)
     
     # Start temp image cleanup task
     cleanup_task = None

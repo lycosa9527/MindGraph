@@ -1653,7 +1653,7 @@ def _detect_learning_sheet_from_prompt(user_prompt: str, language: str) -> bool:
     Returns:
         bool: True if learning sheet keywords detected
     """
-    learning_sheet_keywords = ['半成品']
+    learning_sheet_keywords = ['半成品', '学习单']
     is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
     
     if is_learning_sheet:
@@ -1676,7 +1676,7 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     Returns:
         str: Cleaned prompt with learning sheet keywords removed
     """
-    learning_sheet_keywords = ['半成品']
+    learning_sheet_keywords = ['半成品', '学习单']
     
     cleaned_prompt = user_prompt
     for keyword in learning_sheet_keywords:
@@ -1860,6 +1860,12 @@ async def agent_graph_workflow_with_styles(
         
         # Calculate hidden percentage for learning sheets (20%)
         hidden_percentage = 0.2 if is_learning_sheet else 0
+        
+        # Add learning sheet metadata to spec object so renderers can access it
+        if isinstance(spec, dict):
+            spec['is_learning_sheet'] = is_learning_sheet
+            spec['hidden_node_percentage'] = hidden_percentage
+            logger.debug(f"Added learning sheet metadata to spec: is_learning_sheet={is_learning_sheet}, hidden_percentage={hidden_percentage}")
         
         # Add metadata to the result
         result = {
