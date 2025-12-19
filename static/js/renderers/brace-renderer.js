@@ -383,14 +383,38 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         .style('display', 'block')
         .style('background-color', THEME.background || '#f8f9fa');
 
-    // Position topic with adequate left margin to prevent dimension label cutoff
-    const topicX = 35;  // Reduced from 50 for tighter horizontal spacing
-    // Topic will be drawn AFTER brace center is calculated to ensure correct position
-
-    // Position parts to the right of topic with spacing for brace - further tightened
-    const partsStartX = topicX + topicBoxWidth + columnSpacing + 18;  // Reduced from 28 to move parts closer to brace
+    // Calculate column positions based on actual node widths (like Python agent)
+    // Column 1: Topic (left edge)
+    const topicX = 35;  // Left margin
+    const topicRight = topicX + topicBoxWidth;  // Right edge of topic
+    
+    // Calculate brace corridor widths (adaptive based on content)
+    const estimatedMainBraceDepth = Math.min(Math.max(24, totalWidth * 0.08), 100);
+    const estimatedSmallBraceDepth = Math.min(Math.max(18, totalWidth * 0.06), 80);
+    
+    // Gaps around braces - increased to prevent overlap
+    const gapTopicToMainBrace = 24;  // Gap from topic right edge to brace
+    const gapMainBraceToPart = 28;   // Gap from brace to parts left edge
+    const gapPartToSmallBrace = 22;  // Gap from part right edge to small brace
+    const gapSmallBraceToSubpart = 22;  // Gap from small brace to subparts left edge
+    
+    // Column 2: Main brace center X
+    // Position brace center: topic right + gap + half brace depth
+    const mainBraceCenterX = topicRight + gapTopicToMainBrace + estimatedMainBraceDepth / 2;
+    
+    // Column 3: Parts (left edge)
+    // Position parts: topic right + gap + brace depth + gap
+    const partsStartX = topicRight + gapTopicToMainBrace + estimatedMainBraceDepth + gapMainBraceToPart;
     const partsStartY = topPadding;  // Start at top padding (consistent with contentStartY)
     let currentY = partsStartY;
+    
+    // Column 4: Small brace center X (aligned vertically for all parts)
+    // Use max part width to align all small braces vertically
+    const maxPartRight = partsStartX + maxPartBoxWidth;
+    const smallBraceCenterX = maxPartRight + gapPartToSmallBrace + estimatedSmallBraceDepth / 2;
+    
+    // Column 5: Subparts (left edge, aligned vertically for all parts)
+    const subpartsStartX = maxPartRight + gapPartToSmallBrace + estimatedSmallBraceDepth + gapSmallBraceToSubpart;
     
     // Track the rightmost content position for proper centering
     let maxContentRightX = topicX + topicBoxWidth;
@@ -498,7 +522,7 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
 
         // Draw subparts if they exist
         if (part.subparts && part.subparts.length > 0) {
-            const subpartsStartX = partsStartX + partBoxWidth + columnSpacing;
+            // Use consistent column positions (already calculated above) for vertical alignment
             const subpartsStartY = currentY;
             
             // Get subpart data for this part
@@ -568,14 +592,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 lastChildBottomY = Math.max(lastChildBottomY, subpartY + subpartInfo.boxHeight / 2);
             });
 
-            // Draw small brace connecting part to subparts - with safety gap check
+            // Draw small brace connecting part to subparts - using calculated column positions
             const subpartsEndY = currentY - 10;
             if (subpartsEndY > subpartsStartY) {
-                // Calculate safe brace position to avoid overlap
-                const partRight = partsStartX + partBoxWidth;
-                const subpartsLeft = subpartsStartX;
-                const safetyGap = 9;  // Reduced from 12 to move small brace closer to parts and subparts
-                
                 // Calculate small brace boundaries based on subpart centers
                 const subpartCenterYs = [];
                 part.subparts.forEach((subpart, subpartIndex) => {
@@ -594,19 +613,28 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 const smallBraceEndY = Math.max(...subpartCenterYs) - sArcRadius;    // Include bottom arc (inward)
                 const smallBraceHeight = smallBraceEndY - smallBraceStartY;
                 
-                // CRITICAL: Calculate safe positioning
-                // 1. Tip (braceX - tipDepth) doesn't overlap part
-                // 2. Right edge (braceX + arcRadius) doesn't overlap subparts
+                // Use the pre-calculated small brace center position (aligned vertically)
+                // Ensure brace doesn't overlap with part or subparts
+                const partRight = partsStartX + partBoxWidth;  // Actual part right edge for this part
+                const minBraceX = maxPartRight + gapPartToSmallBrace + sTipDepth;  // Minimum X: max part right + gap + tip depth
+                const maxBraceX = subpartsStartX - gapSmallBraceToSubpart - sArcRadius;  // Maximum X: subparts left - gap - arc radius
                 
-                const minBraceX = partRight + safetyGap + sTipDepth;
-                const maxBraceX = subpartsLeft - safetyGap - sArcRadius;
+                // Position brace at calculated center (aligned vertically), but ensure it's within safe bounds
+                let braceX = smallBraceCenterX;
+                if (braceX < minBraceX) {
+                    braceX = minBraceX;
+                } else if (braceX > maxBraceX) {
+                    braceX = maxBraceX;
+                }
                 
-                // Position brace closer to both parts and subparts (slightly toward center but tighter)
-                const braceX = minBraceX + (maxBraceX - minBraceX) * 0.2;  // Reduced from 0.5 (middle) to 0.2 to move closer to nodes
+                // If still not enough space, use minimum safe position
+                if (minBraceX >= maxBraceX) {
+                    braceX = maxPartRight + gapPartToSmallBrace + sTipDepth + 5;
+                }
                 
-                // Calculate safe depth - reduced for tighter horizontal spacing
-                const availableSpace = subpartsLeft - partRight - (safetyGap * 2) - sTipDepth - sArcRadius;
-                const braceDepth = Math.max(6, Math.min(availableSpace * 0.25, 24));  // Reduced from 0.3 to 0.25 and max from 30 to 24
+                // Calculate safe depth based on actual available space (using max part width for consistency)
+                const availableSpace = subpartsStartX - maxPartRight - gapPartToSmallBrace - gapSmallBraceToSubpart - sTipDepth - sArcRadius;
+                const braceDepth = Math.max(6, Math.min(availableSpace * 0.25, 24));
                 
                 const bracePaths = buildCurlyBracePath(
                     braceX,
@@ -672,34 +700,29 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         braceEndY = partsStartY;
     }
 
-    // Draw main brace connecting topic to parts - with safety gap check
+    // Draw main brace connecting topic to parts - using calculated column positions
     if (braceEndY > braceStartY) {
-        // Calculate safe brace position to avoid overlap
-        const topicRight = topicX + topicBoxWidth;
-        const partsLeft = partsStartX;
-        const safetyGap = 10;  // Reduced from 14 to move brace closer to nodes on both sides
-        
         // Calculate main brace height and tip depth based on corrected boundaries
         const mainBraceHeight = braceEndY - braceStartY;
         const tipDepth = mainBraceHeight * 0.05;  // Tip extends LEFT by 5% of height
         const arcRadius = mainBraceHeight * 0.04;  // Arc radius is 4% of height
         
-        // CRITICAL: Position brace to the RIGHT of topic text box
-        // Brace should be positioned after topic with sufficient gap
-        // The brace's leftmost point (braceX - tipDepth) should be after topic's right edge
-        const minBraceX = topicRight + safetyGap + tipDepth;  // Minimum X to avoid overlap with topic
+        // Use the pre-calculated brace center position
+        // Ensure brace doesn't overlap with topic or parts
+        const minBraceX = topicRight + gapTopicToMainBrace + tipDepth;  // Minimum X: topic right + gap + tip depth
+        const maxBraceX = partsStartX - gapMainBraceToPart - arcRadius;  // Maximum X: parts left - gap - arc radius
         
-        // Calculate maximum X position (before parts start)
-        const maxBraceX = partsLeft - safetyGap - arcRadius;  // Maximum X to avoid overlap with parts
+        // Position brace at calculated center, but ensure it's within safe bounds
+        let mainBraceX = mainBraceCenterX;
+        if (mainBraceX < minBraceX) {
+            mainBraceX = minBraceX;
+        } else if (mainBraceX > maxBraceX) {
+            mainBraceX = maxBraceX;
+        }
         
-        // Position brace closer to both topic and parts
-        let mainBraceX;
+        // If still not enough space, use minimum safe position
         if (minBraceX >= maxBraceX) {
-            // Not enough space - position as close to topic as possible
-            mainBraceX = topicRight + safetyGap + tipDepth + 3;  // Reduced from 6px to move brace closer to topic
-        } else {
-            // Position brace closer to center (equidistant from both sides) for tighter spacing
-            mainBraceX = minBraceX + (maxBraceX - minBraceX) * 0.15;  // Reduced from 25% to 15% to move brace closer to both nodes
+            mainBraceX = topicRight + gapTopicToMainBrace + tipDepth + 5;
         }
         
         // CRITICAL: Brace boundaries align with first and last part centers
@@ -713,9 +736,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         topicCenterY = braceCenterY;
         
         // RENDERING ORDER: Draw brace paths FIRST (underneath), then topic node on top
-        // Calculate safe depth - reduced for tighter horizontal spacing
-        const availableSpace = partsLeft - topicRight - (safetyGap * 2) - tipDepth - arcRadius;
-        const braceDepth = Math.max(8, Math.min(availableSpace * 0.25, 32));  // Reduced from 0.3 to 0.25 and max from 40 to 32
+        // Calculate safe depth based on actual available space between columns
+        const availableSpace = partsStartX - topicRight - gapTopicToMainBrace - gapMainBraceToPart - tipDepth - arcRadius;
+        const braceDepth = Math.max(8, Math.min(availableSpace * 0.25, 32));
         
         const bracePaths = buildCurlyBracePath(
             mainBraceX,

@@ -504,11 +504,11 @@ class BlockBasedPositioningSystem:
         const_main_brace_visual_width = 16.0
         const_small_brace_visual_width = 12.0
 
-        # Gaps around braces - minimized to move braces closer to nodes on both sides
-        gap_topic_to_main_brace = 16.0  # Reduced from 24.0 to move brace closer to topic
-        gap_main_brace_to_part = 18.0   # Reduced from 28.0 to move brace closer to parts
-        gap_part_to_small_brace = 14.0  # Reduced from 22.0 to move brace closer to parts
-        gap_small_brace_to_subpart = 14.0  # Reduced from 22.0 to move brace closer to subparts
+        # Gaps around braces - increased to prevent overlap with nodes
+        gap_topic_to_main_brace = 24.0  # Increased to prevent brace overlap with topic
+        gap_main_brace_to_part = 28.0   # Increased to prevent brace overlap with parts
+        gap_part_to_small_brace = 22.0  # Increased to prevent small brace overlap with parts
+        gap_small_brace_to_subpart = 22.0  # Increased to prevent small brace overlap with subparts
         
         # Increased vertical spacing for arc display
         vertical_padding_top = 80.0  # Increased from 50.0
