@@ -80,6 +80,20 @@ async def ai_assistant_stream(
     # Get message
     message = req.message.strip()
     
+    # Track user activity
+    if current_user:
+        try:
+            from services.user_activity_tracker import get_activity_tracker
+            tracker = get_activity_tracker()
+            tracker.record_activity(
+                user_id=current_user.id,
+                user_phone=current_user.phone,
+                activity_type='ai_assistant',
+                details={'conversation_id': req.conversation_id, 'user_id': req.user_id}
+            )
+        except Exception as e:
+            logger.debug(f"Failed to track user activity: {e}")
+    
     # Handle Dify conversation opener trigger
     # When message is "start" with no conversation_id, this triggers Dify's opener
     if message.lower() == 'start' and not req.conversation_id:
@@ -208,6 +222,22 @@ async def generate_graph(
         
         # Determine request type for token tracking (default to 'diagram_generation')
         request_type = req.request_type if req.request_type else 'diagram_generation'
+        
+        # Track user activity
+        if current_user:
+            try:
+                from services.user_activity_tracker import get_activity_tracker
+                tracker = get_activity_tracker()
+                activity_type = 'autocomplete' if request_type == 'autocomplete' else 'diagram_generation'
+                diagram_type_str = req.diagram_type.value if req.diagram_type else 'unknown'
+                tracker.record_activity(
+                    user_id=current_user.id,
+                    user_phone=current_user.phone,
+                    activity_type=activity_type,
+                    details={'diagram_type': diagram_type_str, 'llm_model': llm_model}
+                )
+            except Exception as e:
+                logger.debug(f"Failed to track user activity: {e}")
         
         # Log auto-complete start at INFO level for user activity tracking
         # Note: AutoComplete fires 5 concurrent requests (one per LLM model)

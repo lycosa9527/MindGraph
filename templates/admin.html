@@ -780,6 +780,7 @@
             <button class="tab" data-tab="users" onclick="switchTab('users', this)"><span class="lang-zh">用户管理</span><span class="lang-en">Users</span><span class="lang-az">İstifadəçilər</span></button>
             <button class="tab" data-tab="apikeys" onclick="switchTab('apikeys', this)"><span class="lang-zh">API密钥</span><span class="lang-en">API Keys</span><span class="lang-az">API Açarları</span></button>
             <button class="tab" data-tab="announcement" onclick="switchTab('announcement', this)"><span class="lang-zh">更新公告</span><span class="lang-en">Announcement</span><span class="lang-az">Elan</span></button>
+            <button class="tab" data-tab="realtime" onclick="switchTab('realtime', this)"><span class="lang-zh">实时监控</span><span class="lang-en">Realtime</span><span class="lang-az">Real Vaxt</span></button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -1218,6 +1219,72 @@
                 <div style="display:flex;gap:1rem;margin-top:1rem;">
                     <button class="btn btn-secondary" onclick="previewAnnouncement()">👁 <span class="lang-zh">预览</span><span class="lang-en">Preview</span><span class="lang-az">Önizləmə</span></button>
                     <button class="btn btn-primary" onclick="saveAnnouncementConfig()">💾 <span class="lang-zh">保存设置</span><span class="lang-en">Save Settings</span><span class="lang-az">Parametrləri Saxla</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Realtime Monitoring Tab -->
+        <div id="realtime-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <h2 class="card-title"><span class="lang-zh">实时用户活动监控</span><span class="lang-en">Real-time User Activity Monitor</span><span class="lang-az">Real Vaxt İstifadəçi Fəaliyyəti Monitoru</span></h2>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <span id="realtime-status" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;background:rgba(100,116,139,0.2);border-radius:8px;font-size:0.875rem;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:#64748b;"></span>
+                            <span class="lang-zh">未连接</span><span class="lang-en">Disconnected</span><span class="lang-az">Bağlı Deyil</span>
+                        </span>
+                        <button class="btn btn-primary" onclick="toggleRealtimeStream()" id="realtime-toggle-btn">
+                            <span class="lang-zh">开始监控</span><span class="lang-en">Start Monitoring</span><span class="lang-az">Monitoru Başlat</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" style="margin-top:1rem;">
+                <div class="stat-card">
+                    <h3><span class="lang-zh">在线用户</span><span class="lang-en">Active Users</span><span class="lang-az">Aktiv İstifadəçilər</span></h3>
+                    <div class="value" id="realtime-active-users">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">总会话数</span><span class="lang-en">Total Sessions</span><span class="lang-az">Ümumi Sessiyalar</span></h3>
+                    <div class="value" id="realtime-total-sessions">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">唯一用户</span><span class="lang-en">Unique Users</span><span class="lang-az">Unikal İstifadəçilər</span></h3>
+                    <div class="value" id="realtime-unique-users">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="lang-zh">最近活动</span><span class="lang-en">Recent Activities</span><span class="lang-az">Son Fəaliyyətlər</span></h3>
+                    <div class="value" id="realtime-recent-activities">0</div>
+                </div>
+            </div>
+
+            <!-- Active Users List -->
+            <div class="card" style="margin-top:1rem;">
+                <div class="card-header">
+                    <h2 class="card-title"><span class="lang-zh">当前在线用户</span><span class="lang-en">Currently Active Users</span><span class="lang-az">Hal-hazırda Aktiv İstifadəçilər</span></h2>
+                </div>
+                <div id="realtime-users-loading" class="spinner"></div>
+                <div id="realtime-users-container" style="display:none;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                                <th style="text-align:left;padding:0.75rem;color:#94a3b8;font-weight:600;"><span class="lang-zh">用户</span><span class="lang-en">User</span><span class="lang-az">İstifadəçi</span></th>
+                                <th style="text-align:left;padding:0.75rem;color:#94a3b8;font-weight:600;"><span class="lang-zh">当前活动</span><span class="lang-en">Current Activity</span><span class="lang-az">Cari Fəaliyyət</span></th>
+                                <th style="text-align:left;padding:0.75rem;color:#94a3b8;font-weight:600;"><span class="lang-zh">活动次数</span><span class="lang-en">Activity Count</span><span class="lang-az">Fəaliyyət Sayı</span></th>
+                                <th style="text-align:left;padding:0.75rem;color:#94a3b8;font-weight:600;"><span class="lang-zh">会话时长</span><span class="lang-en">Session Duration</span><span class="lang-az">Sessiya Müddəti</span></th>
+                                <th style="text-align:left;padding:0.75rem;color:#94a3b8;font-weight:600;"><span class="lang-zh">最后活动</span><span class="lang-en">Last Activity</span><span class="lang-az">Son Fəaliyyət</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="realtime-users-tbody">
+                            <tr>
+                                <td colspan="5" style="text-align:center;padding:2rem;color:#64748b;">
+                                    <span class="lang-zh">暂无在线用户</span><span class="lang-en">No active users</span><span class="lang-az">Aktiv istifadəçi yoxdur</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -3239,16 +3306,16 @@ curl -X POST http://your-server/api/generate_graph \
                     const inputTokens = tokenStats.input_tokens || 0;
                     const outputTokens = tokenStats.output_tokens || 0;
                     
-                    // Format token display
+                    // Format token display - show input+output format (e.g., "13+1K")
                     const formatTokens = (num) => {
-                        if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+                        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
                         if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
                         return num.toLocaleString();
                     };
                     
-                    const tokenDisplay = totalTokens > 0 
-                        ? `${formatTokens(totalTokens)} tokens (${formatTokens(inputTokens)}+${formatTokens(outputTokens)})`
-                        : '0 tokens';
+                    const tokenDisplay = inputTokens > 0 || outputTokens > 0
+                        ? `${formatTokens(inputTokens)}+${formatTokens(outputTokens)}`
+                        : '0';
                     
                     return `
                         <tr>
@@ -3850,6 +3917,208 @@ curl -X POST http://your-server/api/generate_graph \
                 showAlert('保存失败: ' + error.message, 'error');
             }
         }
+        
+        // ============================================================================
+        // REALTIME MONITORING
+        // ============================================================================
+        
+        let realtimeEventSource = null;
+        let realtimeUsers = [];
+        
+        function toggleRealtimeStream() {
+            if (realtimeEventSource) {
+                stopRealtimeStream();
+            } else {
+                startRealtimeStream();
+            }
+        }
+        
+        function startRealtimeStream() {
+            if (realtimeEventSource) {
+                return; // Already connected
+            }
+            
+            const statusEl = document.getElementById('realtime-status');
+            const btnEl = document.getElementById('realtime-toggle-btn');
+            
+            // Update UI
+            statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse 2s infinite;"></span><span class="lang-zh">连接中...</span><span class="lang-en">Connecting...</span><span class="lang-az">Qoşulur...</span>';
+            btnEl.innerHTML = '<span class="lang-zh">停止监控</span><span class="lang-en">Stop Monitoring</span><span class="lang-az">Monitoru Dayandır</span>';
+            
+            // Connect to SSE stream
+            realtimeEventSource = new EventSource('/api/auth/admin/realtime/stream');
+            
+            realtimeEventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleRealtimeEvent(data);
+                } catch (e) {
+                    console.error('Failed to parse realtime event:', e);
+                }
+            };
+            
+            realtimeEventSource.onerror = function(error) {
+                console.error('Realtime stream error:', error);
+                if (realtimeEventSource) {
+                    realtimeEventSource.close();
+                    realtimeEventSource = null;
+                }
+                const statusEl = document.getElementById('realtime-status');
+                const btnEl = document.getElementById('realtime-toggle-btn');
+                statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></span><span class="lang-zh">连接错误</span><span class="lang-en">Connection Error</span><span class="lang-az">Qoşulma Xətası</span>';
+                btnEl.innerHTML = '<span class="lang-zh">开始监控</span><span class="lang-en">Start Monitoring</span><span class="lang-az">Monitoru Başlat</span>';
+            };
+            
+            realtimeEventSource.onopen = function() {
+                const statusEl = document.getElementById('realtime-status');
+                statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse 2s infinite;"></span><span class="lang-zh">已连接</span><span class="lang-en">Connected</span><span class="lang-az">Qoşulub</span>';
+            };
+        }
+        
+        function stopRealtimeStream() {
+            if (realtimeEventSource) {
+                realtimeEventSource.close();
+                realtimeEventSource = null;
+            }
+            
+            const statusEl = document.getElementById('realtime-status');
+            const btnEl = document.getElementById('realtime-toggle-btn');
+            
+            statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#64748b;"></span><span class="lang-zh">未连接</span><span class="lang-en">Disconnected</span><span class="lang-az">Bağlı Deyil</span>';
+            btnEl.innerHTML = '<span class="lang-zh">开始监控</span><span class="lang-en">Start Monitoring</span><span class="lang-az">Monitoru Başlat</span>';
+        }
+        
+        function handleRealtimeEvent(data) {
+            switch(data.type) {
+                case 'initial':
+                    updateRealtimeStats(data.stats);
+                    updateRealtimeUsers(data.users);
+                    break;
+                case 'stats':
+                    updateRealtimeStats(data.stats);
+                    break;
+                case 'users_update':
+                    updateRealtimeUsers(data.users);
+                    break;
+                case 'user_joined':
+                    // User joined - refresh list
+                    loadRealtimeUsers();
+                    break;
+                case 'user_left':
+                    // User/session left - refresh list to get updated state
+                    loadRealtimeUsers();
+                    break;
+                case 'heartbeat':
+                    // Keep-alive ping
+                    break;
+                case 'error':
+                    console.error('Realtime stream error:', data.error);
+                    break;
+            }
+        }
+        
+        function updateRealtimeStats(stats) {
+            document.getElementById('realtime-active-users').textContent = stats.active_users_count || 0;
+            document.getElementById('realtime-total-sessions').textContent = stats.total_sessions || 0;
+            document.getElementById('realtime-unique-users').textContent = stats.unique_users_count || 0;
+            document.getElementById('realtime-recent-activities').textContent = stats.recent_activities_count || 0;
+        }
+        
+        function updateRealtimeUsers(users) {
+            realtimeUsers = users || [];
+            renderRealtimeUsers();
+        }
+        
+        function renderRealtimeUsers() {
+            const tbody = document.getElementById('realtime-users-tbody');
+            const container = document.getElementById('realtime-users-container');
+            const loading = document.getElementById('realtime-users-loading');
+            
+            if (loading) loading.style.display = 'none';
+            if (container) container.style.display = 'block';
+            
+            if (!realtimeUsers || realtimeUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#64748b;"><span class="lang-zh">暂无在线用户</span><span class="lang-en">No active users</span><span class="lang-az">Aktiv istifadəçi yoxdur</span></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = realtimeUsers.map(user => {
+                const lastActivity = new Date(user.last_activity);
+                const timeAgo = formatTimeAgo(lastActivity);
+                const userPhone = user.user_phone ? escapeHtml(user.user_phone) : '<span class="lang-zh">未知</span><span class="lang-en">Unknown</span><span class="lang-az">Naməlum</span>';
+                const activityLabel = user.current_activity_label ? escapeHtml(user.current_activity_label) : '<span class="lang-zh">未知</span><span class="lang-en">Unknown</span><span class="lang-az">Naməlum</span>';
+                
+                return `
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:0.75rem;">
+                            <div style="display:flex;flex-direction:column;gap:0.25rem;">
+                                <span style="font-weight:600;color:#ffffff;">${userPhone}</span>
+                                ${user.user_name ? `<span style="font-size:0.875rem;color:#94a3b8;">${escapeHtml(user.user_name)}</span>` : ''}
+                                ${user.ip_address ? `<span style="font-size:0.75rem;color:#64748b;">IP: ${escapeHtml(user.ip_address)}</span>` : ''}
+                            </div>
+                        </td>
+                        <td style="padding:0.75rem;">
+                            <span style="display:inline-block;padding:0.25rem 0.75rem;background:rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;font-size:0.875rem;">
+                                ${activityLabel}
+                            </span>
+                        </td>
+                        <td style="padding:0.75rem;color:#cbd5e1;">${user.activity_count || 0}</td>
+                        <td style="padding:0.75rem;color:#cbd5e1;">${escapeHtml(user.session_duration || '0:00')}</td>
+                        <td style="padding:0.75rem;color:#94a3b8;font-size:0.875rem;">${timeAgo}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        async function loadRealtimeUsers() {
+            try {
+                const response = await auth.fetch('/api/auth/admin/realtime/active-users');
+                const data = await response.json();
+                updateRealtimeUsers(data.users);
+                updateRealtimeStats(data);
+            } catch (error) {
+                console.error('Failed to load realtime users:', error);
+            }
+        }
+        
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            
+            if (diffSec < 60) {
+                return diffSec + 's ago';
+            } else if (diffMin < 60) {
+                return diffMin + 'm ago';
+            } else if (diffHour < 24) {
+                return diffHour + 'h ago';
+            } else {
+                return date.toLocaleString();
+            }
+        }
+        
+        // Stop stream when switching away from realtime tab
+        if (typeof window.switchTab === 'function') {
+            const originalSwitchTab = window.switchTab;
+            window.switchTab = function(tab, element) {
+                if (tab !== 'realtime' && realtimeEventSource) {
+                    stopRealtimeStream();
+                }
+                originalSwitchTab(tab, element);
+            };
+        }
+        
+        // Add pulse animation for connection indicator
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+        `;
+        document.head.appendChild(style);
         
         // Initialize
         loadDashboard();

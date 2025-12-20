@@ -86,6 +86,59 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+# ============================================================================
+# USER ACTIVITY TRACKING
+# ============================================================================
+
+def track_user_activity(
+    user: User,
+    activity_type: str,
+    details: Optional[dict] = None,
+    request: Optional[Request] = None
+):
+    """
+    Track user activity for real-time monitoring.
+    
+    Args:
+        user: User object
+        activity_type: Type of activity (login, diagram_generation, etc.)
+        details: Optional activity details
+        request: Optional request object for IP address
+    """
+    try:
+        from services.user_activity_tracker import get_activity_tracker
+        
+        tracker = get_activity_tracker()
+        ip_address = None
+        if request and request.client:
+            ip_address = request.client.host
+        
+        # For login activities, start a new session (or reuse existing)
+        # For other activities, just record (will find/create session automatically)
+        if activity_type == 'login':
+            session_id = tracker.start_session(
+                user_id=user.id,
+                user_phone=user.phone,
+                user_name=user.name,
+                ip_address=ip_address,
+                reuse_existing=True  # Reuse existing session if user already has one
+            )
+        else:
+            session_id = None  # Let record_activity find/create session
+        
+        # Record activity
+        tracker.record_activity(
+            user_id=user.id,
+            user_phone=user.phone,
+            activity_type=activity_type,
+            details=details or {},
+            session_id=session_id
+        )
+    except Exception as e:
+        # Don't fail the request if tracking fails
+        logger.debug(f"Failed to track user activity: {e}")
+
 # Beijing timezone (UTC+8)
 BEIJING_TIMEZONE = timezone(timedelta(hours=8))
 
@@ -522,6 +575,9 @@ async def login(
     org_name = org.name if org else "None"
     
     logger.info(f"User logged in: {user.phone} (ID: {user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
+    
+    # Track user activity
+    track_user_activity(user, 'login', {'method': 'captcha', 'org': org_name}, http_request)
     
     return {
         "access_token": token,
@@ -1368,6 +1424,9 @@ async def register_with_sms(
     
     logger.info(f"User registered via SMS: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
     
+    # Track user activity
+    track_user_activity(new_user, 'login', {'method': 'sms', 'org': org_name, 'action': 'register'}, http_request)
+    
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -1481,6 +1540,9 @@ async def login_with_sms(
     org_name = org.name if org else "None"
     
     logger.info(f"User logged in via SMS: {user.phone} (ID: {user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
+    
+    # Track user activity
+    track_user_activity(user, 'login', {'method': 'sms', 'org': org_name}, http_request)
     
     return {
         "access_token": token,
@@ -1752,6 +1814,14 @@ async def logout(
         samesite="lax",
         secure=is_https(request)  # SECURITY: Match original cookie settings
     )
+    
+    # End user sessions in activity tracker
+    try:
+        from services.user_activity_tracker import get_activity_tracker
+        tracker = get_activity_tracker()
+        tracker.end_session(user_id=current_user.id)
+    except Exception as e:
+        logger.debug(f"Failed to end user session on logout: {e}")
     
     logger.info(f"User logged out: {current_user.phone}")
     return {"message": Messages.success("logged_out", lang)}
@@ -3019,6 +3089,16 @@ async def list_api_keys_admin(
             "total_tokens": 0
         })
         
+        # Convert UTC timestamps to Beijing time for display
+        def utc_to_beijing_iso(utc_dt):
+            """Convert UTC datetime to Beijing time ISO string"""
+            if not utc_dt:
+                return None
+            # Add UTC timezone info, convert to Beijing, then format as ISO
+            utc_dt_tz = utc_dt.replace(tzinfo=timezone.utc)
+            beijing_dt = utc_dt_tz.astimezone(BEIJING_TIMEZONE)
+            return beijing_dt.isoformat()
+        
         result.append({
             "id": key.id,
             "key": key.key,
@@ -3027,9 +3107,9 @@ async def list_api_keys_admin(
             "quota_limit": key.quota_limit,
             "usage_count": key.usage_count,
             "is_active": key.is_active,
-            "created_at": key.created_at.isoformat() if key.created_at else None,
-            "last_used_at": key.last_used_at.isoformat() if key.last_used_at else None,
-            "expires_at": key.expires_at.isoformat() if key.expires_at else None,
+            "created_at": utc_to_beijing_iso(key.created_at),
+            "last_used_at": utc_to_beijing_iso(key.last_used_at),
+            "expires_at": utc_to_beijing_iso(key.expires_at),
             "usage_percentage": round((key.usage_count / key.quota_limit * 100), 1) if key.quota_limit else 0,
             "token_stats": token_stats
         })

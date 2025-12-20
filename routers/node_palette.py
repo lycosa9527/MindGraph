@@ -67,6 +67,20 @@ async def start_node_palette(
     session_id = req.session_id
     user_id = current_user.id if current_user else None
     
+    # Track user activity
+    if current_user:
+        try:
+            from services.user_activity_tracker import get_activity_tracker
+            tracker = get_activity_tracker()
+            tracker.record_activity(
+                user_id=current_user.id,
+                user_phone=current_user.phone,
+                activity_type='node_palette',
+                details={'diagram_type': req.diagram_type, 'session_id': session_id}
+            )
+        except Exception as e:
+            logger.debug(f"Failed to track user activity: {e}")
+    
     # Log at INFO level for user activity tracking
     logger.info("[NodePalette] Started: Session %s (User: %s, Diagram: %s)", 
                session_id[:8], user_id, req.diagram_type)
