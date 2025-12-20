@@ -387,31 +387,22 @@ These endpoints remain publicly accessible and do not require authentication.
 
 These endpoints require JWT token authentication and do not accept API keys, as they are premium features reserved for authenticated teachers.
 
-#### Learning Endpoints (`routers/learning.py`)
+#### Node Palette Endpoints (`routers/node_palette.py`)
+
+**Note:** Learning Mode and ThinkGuide features were removed in versions 4.30.0 and 4.31.0. Only Node Palette endpoints remain.
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/learning/start_session` | Start a learning session |
-| `/learning/validate_answer` | Validate student answers |
-| `/learning/get_hint` | Get hints for learning |
-| `/learning/verify_understanding` | Verify student understanding |
-
-**Authentication:** Uses `get_current_user` dependency (JWT token required)
-
-#### Thinking Endpoints (`routers/thinking.py`)
-
-| Endpoint | Purpose |
-|----------|---------|
-| `/thinking_mode/stream` | Stream thinking mode responses |
-| `/thinking_mode/node_learning/{session_id}/{node_id}` | Node-specific learning |
-| `/thinking_mode/node_palette/start` | Start node palette generation |
-| `/thinking_mode/node_palette/next_batch` | Get next batch of node suggestions |
-| `/thinking_mode/node_palette/select_node` | Select a node from palette |
+| `/thinking_mode/node_palette/start` | Start node palette generation (SSE stream) |
+| `/thinking_mode/node_palette/next_batch` | Get next batch of node suggestions (SSE stream) |
+| `/thinking_mode/node_palette/select_node` | Log node selection/deselection event |
 | `/thinking_mode/node_palette/finish` | Finish node palette session |
-| `/thinking_mode/node_palette/generate` | Generate node palette options |
 | `/thinking_mode/node_palette/cancel` | Cancel node palette session |
+| `/thinking_mode/node_palette/cleanup` | Clean up session when leaving canvas |
 
 **Authentication:** Uses `get_current_user` dependency (JWT token required)
+
+**Note:** The router was renamed from `routers/thinking.py` to `routers/node_palette.py` in version 4.30.0, but endpoints still use the `/thinking_mode/` prefix for backward compatibility.
 
 #### Cache Endpoints (`routers/cache.py`)
 

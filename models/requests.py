@@ -98,7 +98,7 @@ class ExportPNGRequest(BaseModel):
 class GeneratePNGRequest(BaseModel):
     """Request model for /api/generate_png endpoint - direct PNG from prompt"""
     prompt: str = Field(..., min_length=1, description="Natural language description of diagram")
-    language: Optional[Language] = Field(Language.EN, description="Language code (en or zh)")
+    language: Optional[Language] = Field(Language.ZH, description="Language code (en or zh, defaults to Chinese)")
     llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use for generation")
     diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
     dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")

@@ -1325,11 +1325,11 @@ async def generate_png_from_prompt(
             raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "Invalid response format from LLM"))
         
         spec = result.get('spec', {})
-        graph_type = result.get('diagram_type', 'bubble_map')
+        diagram_type = result.get('diagram_type', 'bubble_map')
         
         # Normalize diagram type
-        if graph_type == 'mindmap':
-            graph_type = 'mind_map'
+        if diagram_type == 'mindmap':
+            diagram_type = 'mind_map'
         
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
@@ -1353,7 +1353,7 @@ async def generate_png_from_prompt(
                     output_tokens=output_tokens,
                     total_tokens=total_tokens,
                     request_type='diagram_generation',
-                    diagram_type=graph_type,
+                    diagram_type=diagram_type,
                     user_id=user_id,
                     organization_id=organization_id,
                     api_key_id=api_key_id,
@@ -1368,7 +1368,7 @@ async def generate_png_from_prompt(
             raise HTTPException(status_code=400, detail=spec.get('error'))
         
         # For mindmaps, enhance spec with layout data if missing
-        if graph_type == 'mind_map' and isinstance(spec, dict):
+        if diagram_type == 'mind_map' and isinstance(spec, dict):
             if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
                 logger.debug("[GeneratePNG] Mindmap spec missing layout data, enhancing with MindMapAgent")
                 try:
@@ -1388,7 +1388,7 @@ async def generate_png_from_prompt(
         # Export PNG using core function
         screenshot_bytes = await _export_png_core(
             diagram_data=spec,
-            diagram_type=graph_type,
+            diagram_type=diagram_type,
             width=req.width or 1200,
             height=req.height or 800,
             scale=req.scale or 2,
@@ -1430,11 +1430,13 @@ async def generate_dingtalk_png(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    logger.info("[GenerateDingTalk] Request: prompt='%s'", prompt)
-    
     try:
         # Handle language - default to 'zh' if not provided
         language = req.language.value if req.language and hasattr(req.language, 'value') else str(req.language) if req.language else 'zh'
+        if language not in ['zh', 'en']:
+            raise HTTPException(status_code=400, detail="Invalid language. Must be 'zh' or 'en'")
+        
+        logger.info("[GenerateDingTalk] Request: prompt='%s', language='%s'", prompt, language)
         
         # Handle current_user
         user_id = None
@@ -1551,6 +1553,7 @@ async def generate_dingtalk_png(
         # For mindmaps, enhance spec with layout data if missing
         if diagram_type == 'mind_map' and isinstance(spec, dict):
             if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
+                logger.debug("[GenerateDingTalk] Mindmap spec missing layout data, enhancing with MindMapAgent")
                 try:
                     from agents.mind_maps.mind_map_agent import MindMapAgent
                     mind_map_agent = MindMapAgent(model='qwen')
@@ -1558,6 +1561,7 @@ async def generate_dingtalk_png(
                     
                     if enhanced_spec.get('_layout'):
                         spec = enhanced_spec
+                        logger.debug("[GenerateDingTalk] Mindmap layout data added successfully")
                     else:
                         logger.warning("[GenerateDingTalk] MindMapAgent failed to generate layout data")
                 except Exception as e:
