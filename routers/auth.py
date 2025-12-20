@@ -311,7 +311,11 @@ async def register(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    logger.info(f"User registered: {new_user.phone} (Org: {org.code})")
+    # Get client IP address
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    org_name = org.name if org else "None"
+    
+    logger.info(f"User registered: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
     
     return {
         "access_token": token,
@@ -513,7 +517,11 @@ async def login(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    logger.info(f"User logged in: {user.phone}")
+    # Get client IP address
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    org_name = org.name if org else "None"
+    
+    logger.info(f"User logged in: {user.phone} (ID: {user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
     
     return {
         "access_token": token,
@@ -1134,6 +1142,9 @@ async def verify_sms_code(
     verification.attempts += 1
     db.commit()
     
+    # Log successful verification
+    logger.info(f"SMS code verified: {phone[:3]}****{phone[-4:]} (Purpose: {purpose}, Attempts: {verification.attempts})")
+    
     return {
         "valid": True,
         "message": Messages.success("verification_code_valid", lang)
@@ -1186,6 +1197,8 @@ def _verify_and_consume_sms_code(
     # If rowcount is 1, we successfully consumed the code
     # If rowcount is 0, either code doesn't exist, is expired, or was already consumed
     if result == 1:
+        # Log successful code consumption
+        logger.info(f"SMS code consumed: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
         return True
     
     # Code was not consumed - provide appropriate error message
@@ -1349,7 +1362,11 @@ async def register_with_sms(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    logger.info(f"User registered via SMS: {new_user.phone} (Org: {org.code})")
+    # Get client IP address
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    org_name = org.name if org else "None"
+    
+    logger.info(f"User registered via SMS: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
     
     return {
         "access_token": token,
@@ -1458,7 +1475,12 @@ async def login_with_sms(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    logger.info(f"User logged in via SMS: {user.phone}")
+    # Get client IP address
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    org_name = org.name if org else "None"
+    
+    logger.info(f"User logged in via SMS: {user.phone} (ID: {user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
     
     return {
         "access_token": token,
@@ -1514,7 +1536,10 @@ async def reset_password_with_sms(
     user.locked_until = None
     db.commit()
     
-    logger.info(f"Password reset via SMS for user: {user.phone}")
+    # Get client IP address
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    
+    logger.info(f"Password reset via SMS for user: {user.phone} (ID: {user.id}, Method: SMS, IP: {client_ip})")
     
     return {
         "message": Messages.success("password_reset_success", lang),

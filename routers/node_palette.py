@@ -65,10 +65,11 @@ async def start_node_palette(
     No limits - this is the start of infinite scrolling!
     """
     session_id = req.session_id
-    user_id = getattr(req, 'user_id', 'anonymous')
+    user_id = current_user.id if current_user else None
     
-    logger.debug("[NodePalette-API] POST /start (V2 Concurrent) | Session: %s | User: %s", 
-               session_id[:8], user_id)
+    # Log at INFO level for user activity tracking
+    logger.info("[NodePalette] Started: Session %s (User: %s, Diagram: %s)", 
+               session_id[:8], user_id, req.diagram_type)
     
     # Debug: Log received diagram data structure
     logger.debug("[NodePalette-API] Diagram type: %s", req.diagram_type)
@@ -115,7 +116,19 @@ async def start_node_palette(
                 logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
                 raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
         
-        # Special logging for bridge map
+        # Log topic at INFO level for tracking
+        if req.diagram_type == 'bridge_map':
+            if center_topic and center_topic.strip():
+                logger.info("[NodePalette] Topic: '%s' (Bridge map dimension) | Session: %s", 
+                           center_topic[:50], session_id[:8])
+            else:
+                logger.info("[NodePalette] Topic: (Diverse relationships mode) | Session: %s", 
+                           session_id[:8])
+        else:
+            logger.info("[NodePalette] Topic: '%s' | Session: %s", 
+                       center_topic[:50] if center_topic else '(empty)', session_id[:8])
+        
+        # Keep debug logs for LLM firing details
         if req.diagram_type == 'bridge_map':
             if center_topic and center_topic.strip():
                 logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 5 LLMs concurrently", center_topic)
@@ -585,11 +598,12 @@ async def log_finish_selection(
     selected_count = len(req.selected_node_ids)
     total_generated = req.total_nodes_generated
     batches_loaded = req.batches_loaded
+    user_id = current_user.id if current_user else None
+    selection_rate = (selected_count/max(total_generated,1))*100
     
-    logger.debug("[NodePalette-Finish] User closed palette | Session: %s", session_id[:8])
-    logger.debug("[NodePalette-Finish]   Selected: %d/%d nodes | Batches: %d | Selection rate: %.1f%%", 
-               selected_count, total_generated, batches_loaded, 
-               (selected_count/max(total_generated,1))*100)
+    # Log at INFO level for user activity tracking
+    logger.info("[NodePalette] Completed: Session %s (User: %s, Generated: %d nodes, Selected: %d nodes, Selection rate: %.1f%%, Batches: %d)", 
+               session_id[:8], user_id, total_generated, selected_count, selection_rate, batches_loaded)
     
     # NOTE: Do NOT end the session here!
     # Session should persist throughout the entire canvas session.
@@ -613,10 +627,11 @@ async def node_palette_cancel(
     selected_count = len(request.selected_node_ids)  # Use the correct field from request model
     total_generated = request.total_nodes_generated
     batches_loaded = request.batches_loaded
+    user_id = current_user.id if current_user else None
     
-    logger.debug("[NodePalette-Cancel] User cancelled palette | Session: %s", session_id[:8])
-    logger.debug("[NodePalette-Cancel]   Selected: %d/%d nodes (NOT added) | Batches: %d", 
-               selected_count, total_generated, batches_loaded)
+    # Log at INFO level for user activity tracking
+    logger.info("[NodePalette] Cancelled: Session %s (User: %s, Generated: %d nodes, Selected: %d nodes, NOT added, Batches: %d)", 
+               session_id[:8], user_id, total_generated, selected_count, batches_loaded)
     
     # NOTE: Do NOT end the session here!
     # User may have clicked Cancel by mistake and want to reopen.

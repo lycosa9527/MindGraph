@@ -209,6 +209,11 @@ async def generate_graph(
         # Determine request type for token tracking (default to 'diagram_generation')
         request_type = req.request_type if req.request_type else 'diagram_generation'
         
+        # Log auto-complete start at INFO level for user activity tracking
+        if request_type == 'autocomplete':
+            diagram_type_str = req.diagram_type.value if req.diagram_type else 'auto'
+            logger.info(f"[AutoComplete] Started: User {user_id}, Diagram: {diagram_type_str}, Request: {request_id[:8]}")
+        
         # Bridge map specific: pass existing analogies and fixed dimension for auto-complete mode
         existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None
         fixed_dimension = req.fixed_dimension if hasattr(req, 'fixed_dimension') else None
@@ -229,7 +234,13 @@ async def generate_graph(
             fixed_dimension=fixed_dimension
         )
         
-        logger.debug(f"[{request_id}] Generated {result.get('diagram_type', 'unknown')} diagram with {llm_model}")
+        diagram_type = result.get('diagram_type', 'unknown')
+        logger.debug(f"[{request_id}] Generated {diagram_type} diagram with {llm_model}")
+        
+        # Log auto-complete operations at INFO level for user activity tracking
+        if request_type == 'autocomplete':
+            node_count = len(result.get('nodes', [])) if isinstance(result.get('nodes'), list) else 0
+            logger.info(f"[AutoComplete] Completed: User {user_id}, Diagram {diagram_type}, Nodes added: {node_count}, Model: {llm_model}, Request: {request_id[:8]}")
         
         # Add metadata
         result['llm_model'] = llm_model
