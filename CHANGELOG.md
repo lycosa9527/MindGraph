@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.2] - 2025-01-21 - Node Palette Token Tracking Endpoint Path Fix
+
+### Fixed
+
+- **Node Palette Token Tracking Endpoint Path** - Fixed hardcoded endpoint path in node palette token tracking
+  - Changed `endpoint_path` from hardcoded `/thinking_mode/node_palette/start` to dynamic parameter
+  - Router now correctly passes `/thinking_mode/node_palette/start` for initial batch requests
+  - Router now correctly passes `/thinking_mode/node_palette/next_batch` for subsequent batch requests
+  - Token tracking database now accurately records which endpoint was used for each request
+  - All 8 palette generator subclasses updated to accept and pass through `endpoint_path` parameter
+  - Base generator updated with optional `endpoint_path` parameter (defaults to `/start` for backward compatibility)
+
+### Technical Details
+
+**Root Cause:**
+- `endpoint_path` was hardcoded in `base_palette_generator.py` to `/thinking_mode/node_palette/start`
+- All requests (both start and next_batch) were recorded with the same endpoint path
+- Made it impossible to distinguish between initial batch and subsequent batch requests in token tracking
+
+**Solution:**
+- Added `endpoint_path: Optional[str] = None` parameter to `BasePaletteGenerator.generate_batch()` method
+- Updated all 8 subclass `generate_batch()` methods to accept and pass through `endpoint_path`
+- Updated router to pass correct endpoint path for each endpoint:
+  - `/thinking_mode/node_palette/start` → passes `'/thinking_mode/node_palette/start'`
+  - `/thinking_mode/node_palette/next_batch` → passes `'/thinking_mode/node_palette/next_batch'`
+- Maintained backward compatibility with default fallback to `/start` if not provided
+
+**Files Modified:**
+- `agents/node_palette/base_palette_generator.py` - Added `endpoint_path` parameter with default fallback
+- `agents/node_palette/brace_map_palette.py` - Added parameter and pass-through
+- `agents/node_palette/bridge_map_palette.py` - Added parameter and pass-through
+- `agents/node_palette/double_bubble_palette.py` - Added parameter and pass-through
+- `agents/node_palette/flow_map_palette.py` - Added parameter and pass-through
+- `agents/node_palette/mindmap_palette.py` - Added parameter and pass-through
+- `agents/node_palette/multi_flow_palette.py` - Added parameter and pass-through
+- `agents/node_palette/tree_map_palette.py` - Added parameter and pass-through
+- `routers/node_palette.py` - Updated all 12 call sites (6 for start, 6 for next_batch) to pass correct endpoint path
+
+**Impact:**
+- Token tracking now accurately records endpoint usage for analytics
+- Can distinguish between initial batch requests and subsequent batch requests
+- No breaking changes - backward compatible with default fallback
+
+---
+
 ## [4.37.1] - 2025-01-21 - Database Migration Fixes
 
 ### Fixed

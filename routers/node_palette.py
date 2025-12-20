@@ -211,7 +211,8 @@ async def start_node_palette(
                         mode=mode,  # Pass mode for tab-enabled diagrams
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/start'
                     ):
                         chunk_count += 1
                         if chunk.get('event') == 'node_generated':
@@ -230,7 +231,8 @@ async def start_node_palette(
                         stage_data=stage_data,  # Stage-specific data (dimension, category_name, part_name, etc.)
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/start'
                     ):
                         chunk_count += 1
                         if chunk.get('event') == 'node_generated':
@@ -246,7 +248,8 @@ async def start_node_palette(
                         nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/start'
                     ):
                         chunk_count += 1
                         if chunk.get('event') == 'node_generated':
@@ -439,7 +442,8 @@ async def get_next_batch(
                         mode=mode,  # Pass mode for tab-enabled diagrams
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/next_batch'
                     ):
                         chunk_count += 1
                         if chunk.get('event') == 'node_generated':
@@ -458,7 +462,8 @@ async def get_next_batch(
                         stage_data=stage_data,  # Stage-specific data (dimension, category_name, part_name, etc.)
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/next_batch'
                     ):
                         chunk_count += 1
                         if chunk.get('event') == 'node_generated':
@@ -474,7 +479,8 @@ async def get_next_batch(
                         nodes_per_llm=15,  # 75 total nodes per scroll trigger
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/next_batch'
                     ):
                         chunk_count += 1
                         if chunk.get('event') == 'node_generated':

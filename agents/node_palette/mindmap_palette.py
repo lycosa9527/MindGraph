@@ -48,7 +48,8 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        diagram_type: Optional[str] = None
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
@@ -90,7 +91,8 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
             nodes_per_llm=nodes_per_llm,
             user_id=user_id,
             organization_id=organization_id,
-            diagram_type=diagram_type
+            diagram_type=diagram_type,
+            endpoint_path=endpoint_path
         ):
             # Add mode field to every node for explicit tracking
             if event.get('event') == 'node_generated':

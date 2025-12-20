@@ -65,7 +65,8 @@ class BasePaletteGenerator(ABC):
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        diagram_type: Optional[str] = None
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch of nodes using ALL 4 LLMs with concurrent token streaming.
@@ -77,6 +78,7 @@ class BasePaletteGenerator(ABC):
             center_topic: Center node text from diagram
             educational_context: Educational context (grade, subject, etc.)
             nodes_per_llm: Nodes to request from each LLM (default: 15)
+            endpoint_path: API endpoint path for token tracking (e.g., '/thinking_mode/node_palette/start')
             
         Yields:
             Dict events:
@@ -143,7 +145,7 @@ class BasePaletteGenerator(ABC):
             organization_id=organization_id,
             request_type='node_palette',
             diagram_type=diagram_type,
-            endpoint_path='/thinking_mode/node_palette/start',
+            endpoint_path=endpoint_path or '/thinking_mode/node_palette/start',
             session_id=session_id
         ):
             event = chunk['event']

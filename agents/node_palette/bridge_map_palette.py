@@ -39,7 +39,8 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        diagram_type: Optional[str] = None
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with analogy pair parsing.
@@ -58,7 +59,8 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
             nodes_per_llm=nodes_per_llm,
             user_id=user_id,
             organization_id=organization_id,
-            diagram_type=diagram_type
+            diagram_type=diagram_type,
+            endpoint_path=endpoint_path
         ):
             # Parse pipe-separated pairs for analogy nodes
             if chunk.get('event') == 'node_generated':
