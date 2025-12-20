@@ -668,8 +668,9 @@ class OpenAIHTTPLogFilter(logging.Filter):
 
 # Enable OpenAI SDK logging for HTTP request/response visibility
 # This provides detailed logs for Hunyuan and Doubao API calls
+# Respect global LOG_LEVEL setting - only show DEBUG logs if LOG_LEVEL=DEBUG
 openai_logger = logging.getLogger('openai')
-openai_logger.setLevel(logging.DEBUG)
+openai_logger.setLevel(log_level)  # Use global log level instead of hardcoded DEBUG
 openai_logger.handlers = []  # Remove default handlers
 openai_logger.addHandler(console_handler)
 openai_logger.addHandler(file_handler)
