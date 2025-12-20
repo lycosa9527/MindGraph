@@ -3593,6 +3593,8 @@ class NodePaletteManager {
                                         if (finalTimeSinceLastNode >= 500) {
                                             console.log('[NodePalette] No new nodes received, hiding loading animation');
                                             this.hideCatapultLoading();
+                                            // Sync visual selection state after streaming completes
+                                            this.syncVisualSelectionState();
                                         } else {
                                             // Still receiving nodes, wait more
                                             console.log('[NodePalette] Still receiving nodes, keeping animation visible');
@@ -3600,7 +3602,11 @@ class NodePaletteManager {
                                     }, 1000); // Wait 1 second after batch_complete
                                 } else {
                                     // No recent nodes, safe to hide immediately
-                                    setTimeout(() => this.hideCatapultLoading(), 800);
+                                    setTimeout(() => {
+                                        this.hideCatapultLoading();
+                                        // Sync visual selection state after streaming completes
+                                        this.syncVisualSelectionState();
+                                    }, 800);
                                 }
                             }
                             
@@ -3729,6 +3735,10 @@ class NodePaletteManager {
             // For double bubble: targetMode determines which tab's nodes to update
             const targetMode = this.usesTabs() ? this.currentTab : null;
             await this.catapult(url, payload, targetMode, true);
+            
+            // Sync visual selection state after batch load completes
+            // This ensures selected nodes maintain their visual state after DOM updates
+            this.syncVisualSelectionState();
             
             // Show elegant loading animation - ready for next batch when user scrolls!
             this.showBatchTransition();
@@ -4053,11 +4063,26 @@ class NodePaletteManager {
         }
         
         const node = this.nodes.find(n => n.id === nodeId);
-        // Handle both regular cards and pair containers
-        const card = document.querySelector(`.node-card[data-node-id="${nodeId}"]`) || 
-                     document.querySelector(`.node-pair-container[data-node-id="${nodeId}"]`);
+        if (!node) {
+            console.warn(`[NodePalette-Selection] Node not found in this.nodes: ${nodeId}`);
+            return;
+        }
         
-        if (!node || !card) return;
+        // Query within the grid container to ensure we get the correct, current card element
+        const grid = document.getElementById('node-palette-grid');
+        if (!grid) {
+            console.error('[NodePalette-Selection] Grid container not found');
+            return;
+        }
+        
+        // Handle both regular cards and pair containers - query within grid for accuracy
+        const card = grid.querySelector(`.node-card[data-node-id="${nodeId}"]`) || 
+                     grid.querySelector(`.node-pair-container[data-node-id="${nodeId}"]`);
+        
+        if (!card) {
+            console.warn(`[NodePalette-Selection] Card element not found in DOM for node: ${nodeId}`);
+            return;
+        }
         
         const wasSelected = this.selectedNodes.has(nodeId);
         
@@ -4096,18 +4121,21 @@ class NodePaletteManager {
             
             if (isTreeOrBraceMapDimensions) {
                 // Deselect all other nodes first (enforce single selection)
-                this.selectedNodes.forEach(selectedId => {
-                    if (selectedId !== nodeId) {
-                        const otherCard = document.querySelector(`.node-card[data-node-id="${selectedId}"]`);
-                        if (otherCard) {
-                            otherCard.classList.remove('selected');
+                const grid = document.getElementById('node-palette-grid');
+                if (grid) {
+                    this.selectedNodes.forEach(selectedId => {
+                        if (selectedId !== nodeId) {
+                            const otherCard = grid.querySelector(`.node-card[data-node-id="${selectedId}"]`);
+                            if (otherCard) {
+                                otherCard.classList.remove('selected');
+                            }
+                            const otherNode = this.nodes.find(n => n.id === selectedId);
+                            if (otherNode) {
+                                otherNode.selected = false;
+                            }
                         }
-                        const otherNode = this.nodes.find(n => n.id === selectedId);
-                        if (otherNode) {
-                            otherNode.selected = false;
-                        }
-                    }
-                });
+                    });
+                }
                 this.selectedNodes.clear();
                 if (this.tabSelectedNodes && this.tabSelectedNodes[this.currentTab]) {
                     this.tabSelectedNodes[this.currentTab].clear();
@@ -4166,6 +4194,46 @@ class NodePaletteManager {
         if (this.selectedNodes.size % 5 === 0) {
             this.logSelection(nodeId, !wasSelected, node.text);
         }
+    }
+    
+    syncVisualSelectionState() {
+        /**
+         * Sync visual selection state for all selected nodes.
+         * Ensures DOM elements have the 'selected' class matching this.selectedNodes Set.
+         * Called after batch loads to restore visual state.
+         */
+        const grid = document.getElementById('node-palette-grid');
+        if (!grid) {
+            return;
+        }
+        
+        // First, remove 'selected' class from all cards that shouldn't be selected
+        const allCards = grid.querySelectorAll('.node-card, .node-pair-container');
+        allCards.forEach(card => {
+            const cardNodeId = card.dataset.nodeId;
+            if (cardNodeId && !this.selectedNodes.has(cardNodeId)) {
+                card.classList.remove('selected');
+                // Also update node.selected property
+                const node = this.nodes.find(n => n.id === cardNodeId);
+                if (node) {
+                    node.selected = false;
+                }
+            }
+        });
+        
+        // Then, add 'selected' class to all cards that should be selected
+        this.selectedNodes.forEach(nodeId => {
+            const card = grid.querySelector(`.node-card[data-node-id="${nodeId}"]`) || 
+                        grid.querySelector(`.node-pair-container[data-node-id="${nodeId}"]`);
+            if (card) {
+                card.classList.add('selected');
+                // Also update node.selected property
+                const node = this.nodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.selected = true;
+                }
+            }
+        });
     }
     
     updateSelectionCounter() {
@@ -4851,16 +4919,41 @@ class NodePaletteManager {
             // Step 6: Verify the rendered nodes
             this.verifyRenderedNodes(metadata.nodeType, metadata.nodeNamePlural, '[NodePalette-Assemble]');
             
-            // Step 7: Save to history
+            // Step 7: Save to history via event bus
             console.log('[NodePalette-Assemble] Saving to history...');
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[NodePalette-Assemble] ✓ History saved via saveHistoryState');
-            } else if (typeof editor.saveHistory === 'function') {
-                editor.saveHistory('node_palette_add');
-                console.log('[NodePalette-Assemble] ✓ History saved via saveHistory');
-            } else {
-                console.warn('[NodePalette-Assemble] ⚠ No history save method found (skipping)');
+            try {
+                // Validate eventBus is available
+                if (!this.eventBus) {
+                    console.warn('[NodePalette-Assemble] ⚠ EventBus not available, cannot save history');
+                    return;
+                }
+                
+                if (typeof this.eventBus.emit !== 'function') {
+                    console.warn('[NodePalette-Assemble] ⚠ EventBus.emit is not a function, cannot save history');
+                    return;
+                }
+                
+                // Validate currentSpec is available
+                if (!currentSpec) {
+                    console.warn('[NodePalette-Assemble] ⚠ currentSpec not available, cannot save history');
+                    return;
+                }
+                
+                // Use event bus to save history (HistoryManager listens for diagram:operation_completed)
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec)) // Deep clone current spec
+                });
+                console.log('[NodePalette-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[NodePalette-Assemble] ⚠ Failed to save history:', error);
+                console.warn('[NodePalette-Assemble] Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    eventBusAvailable: !!this.eventBus,
+                    eventBusType: typeof this.eventBus,
+                    currentSpecAvailable: !!currentSpec
+                });
             }
             
             console.log('[NodePalette-Assemble] ========================================');
@@ -5109,13 +5202,15 @@ class NodePaletteManager {
                 return;
             }
             
-            // Save to history
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[DoubleBubble-Assemble] ✓ History saved');
-            } else if (typeof editor.saveHistory === 'function') {
-                editor.saveHistory('node_palette_add');
-                console.log('[DoubleBubble-Assemble] ✓ History saved');
+            // Save to history via event bus
+            try {
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec))
+                });
+                console.log('[DoubleBubble-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[DoubleBubble-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes
@@ -5206,8 +5301,15 @@ class NodePaletteManager {
             } else if (typeof editor.render === 'function') {
                 await editor.render();
             }
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
+            // Save to history via event bus
+            try {
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec))
+                });
+                console.log('[MultiFlow-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[MultiFlow-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes
@@ -5304,9 +5406,15 @@ class NodePaletteManager {
                 console.log('[BridgeMap-Assemble] ✓ Diagram rendered (legacy)');
             }
             
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[BridgeMap-Assemble] ✓ History saved');
+            // Save to history via event bus
+            try {
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec))
+                });
+                console.log('[BridgeMap-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[BridgeMap-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes
@@ -5469,9 +5577,15 @@ class NodePaletteManager {
                 console.log('[TreeMap-Assemble] ✓ Diagram rendered (legacy)');
             }
             
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[TreeMap-Assemble] ✓ History saved');
+            // Save to history via event bus
+            try {
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec))
+                });
+                console.log('[TreeMap-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[TreeMap-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes
@@ -5657,9 +5771,15 @@ class NodePaletteManager {
                 console.log('[BraceMap-Assemble] ✓ Diagram rendered (legacy)');
             }
             
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[BraceMap-Assemble] ✓ History saved');
+            // Save to history via event bus
+            try {
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec))
+                });
+                console.log('[BraceMap-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[BraceMap-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes
@@ -5932,9 +6052,15 @@ class NodePaletteManager {
                 console.log('[FlowMap-Assemble] ✓ Diagram rendered (legacy)');
             }
             
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[FlowMap-Assemble] ✓ History saved');
+            // Save to history via event bus
+            try {
+                this.eventBus.emit('diagram:operation_completed', {
+                    operation: 'node_palette_add',
+                    snapshot: JSON.parse(JSON.stringify(currentSpec))
+                });
+                console.log('[FlowMap-Assemble] ✓ History saved via event bus');
+            } catch (error) {
+                console.warn('[FlowMap-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes
@@ -6117,9 +6243,20 @@ class NodePaletteManager {
             await editor.recalculateMindMapLayout();
             console.log('[MindMap-Assemble] ✓ Layout recalculated and diagram rendered');
             
-            if (typeof editor.saveHistoryState === 'function') {
-                editor.saveHistoryState('node_palette_add');
-                console.log('[MindMap-Assemble] ✓ History saved');
+            // Save to history via event bus
+            try {
+                const currentSpec = editor.currentSpec;
+                if (currentSpec) {
+                    this.eventBus.emit('diagram:operation_completed', {
+                        operation: 'node_palette_add',
+                        snapshot: JSON.parse(JSON.stringify(currentSpec))
+                    });
+                    console.log('[MindMap-Assemble] ✓ History saved via event bus');
+                } else {
+                    console.warn('[MindMap-Assemble] ⚠ Cannot save history: currentSpec not available');
+                }
+            } catch (error) {
+                console.warn('[MindMap-Assemble] ⚠ Failed to save history:', error);
             }
             
             // Verify rendered nodes

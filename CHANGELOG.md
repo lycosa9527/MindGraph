@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.3] - 2025-01-21 - Node Palette Selection Sync and History Save Fixes
+
+### Fixed
+
+- **Node Palette Selection Visual Sync Issue** (`static/js/editor/node-palette-manager.js`)
+  - Fixed issue where clicking on nodes after multiple batch loads wouldn't show visual selection
+  - Root cause: Card element queries were using `document.querySelector` which could find stale elements
+  - Solution: Scoped queries to `node-palette-grid` container and added `syncVisualSelectionState()` function
+  - Added visual state synchronization after batch loads complete and streaming finishes
+  - Ensures DOM elements have `selected` class matching `this.selectedNodes` Set
+  - Selection state now correctly persists visually after batch loads
+
+- **Node Palette History Save Warning** (`static/js/editor/node-palette-manager.js`)
+  - Fixed "No history save method found (skipping)" warning in browser console
+  - Root cause: Code was trying to call non-existent `editor.saveHistoryState()` or `editor.saveHistory()` methods
+  - Solution: Replaced all 8 assemble functions to use event bus pattern (`diagram:operation_completed` event)
+  - HistoryManager now correctly receives history save requests via event bus
+  - Added defensive validation checks for eventBus availability and currentSpec existence
+  - Enhanced error logging with diagnostic information
+
+### Technical Details
+
+**Selection Sync Fix:**
+- Improved `toggleNodeSelection()` to query cards within grid container: `grid.querySelector()`
+- Added `syncVisualSelectionState()` function that syncs all selected nodes' visual state
+- Called after batch loads complete and when streaming finishes
+- Ensures visual state matches internal state (`this.selectedNodes` Set)
+
+**History Save Fix:**
+- All 8 assemble functions now use: `this.eventBus.emit('diagram:operation_completed', {...})`
+- HistoryManager listens for this event and saves history automatically
+- Universal fix works for all diagram types (circle_map, bubble_map, tree_map, brace_map, flow_map, mindmap, etc.)
+- No diagram-specific code needed - event bus pattern is universal
+
+**Files Modified:**
+- `static/js/editor/node-palette-manager.js` - Fixed selection sync and history save in all 8 assemble functions
+
+**Impact:**
+- Node selection now works correctly after multiple batch loads
+- History tracking works correctly for all node palette operations
+- No more console warnings about missing history save methods
+- Undo/redo functionality now works after adding nodes via node palette
+
+---
+
 ## [4.37.2] - 2025-01-21 - Node Palette Token Tracking Endpoint Path Fix
 
 ### Fixed
