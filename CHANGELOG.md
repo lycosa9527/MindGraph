@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.1] - 2025-01-21 - Database Migration Fixes
+
+### Fixed
+
+- **Database Migration Duplicate Column Error** - Fixed `duplicate column name: api_key_id` error during database migration
+  - Added case-insensitive column detection for SQLite compatibility (SQLite column names are case-insensitive)
+  - Fixed inspector staleness issue by refreshing inspector before each detection and migration operation
+  - Added graceful error handling for duplicate column errors (logs warning instead of failing)
+  - Improved verification logic to only check successfully added columns, not failed duplicates
+  - Migration now properly skips columns that already exist, preventing unnecessary errors
+
+### Technical Details
+
+**Root Cause:**
+- SQLite column names are case-insensitive, but Python dictionary lookups are case-sensitive
+- Inspector was created once and reused, potentially showing stale column data
+- Migration attempted to add columns that already existed due to case sensitivity mismatch
+
+**Solution:**
+- Added case-insensitive lookup dictionaries (`existing_columns_lower`) in both `_detect_changes()` and `_migrate_table()` methods
+- Refresh inspector before each operation to ensure fresh column data
+- Added try-except block to catch `OperationalError` for duplicate columns and handle gracefully
+- Track successfully added columns separately for accurate verification
+
+**Files Modified:**
+- `utils/db_migration.py` - Enhanced column detection with case-insensitive checks, inspector refresh, and improved error handling
+
+---
+
 ## [4.37.0] - 2025-01-21 - Security Fixes and API Key Authentication Improvements
 
 ### Fixed

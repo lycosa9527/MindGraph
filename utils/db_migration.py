@@ -121,6 +121,10 @@ class DatabaseMigrationManager:
             True if changes detected, False otherwise
         """
         try:
+            # Refresh inspector to avoid stale data
+            from sqlalchemy import inspect
+            fresh_inspector = inspect(self.engine)
+            
             # Import all models to register them with Base
             from models.auth import Organization, User, APIKey, Base
             
@@ -131,13 +135,18 @@ class DatabaseMigrationManager:
             
             # Check each table for changes
             for table_name, table_class in self._get_registered_tables():
-                if not table_name or not self.inspector.has_table(table_name):
+                if not table_name or not fresh_inspector.has_table(table_name):
                     continue
                 
-                # Get existing and expected columns
+                # Get existing and expected columns (case-insensitive comparison for SQLite)
                 existing_columns = {
                     col['name']: col 
-                    for col in self.inspector.get_columns(table_name)
+                    for col in fresh_inspector.get_columns(table_name)
+                }
+                # Create case-insensitive lookup dict (lowercase key -> original name)
+                existing_columns_lower = {
+                    col['name'].lower(): col['name']
+                    for col in fresh_inspector.get_columns(table_name)
                 }
                 
                 # Get expected columns
@@ -160,9 +169,10 @@ class DatabaseMigrationManager:
                             continue
                         expected_columns = {col.name: col for col in table_metadata.columns}
                 
-                # Check for missing columns (will be added - needs backup)
+                # Check for missing columns (case-insensitive check for SQLite compatibility)
                 for col_name in expected_columns:
-                    if col_name not in existing_columns:
+                    # Check both exact match and case-insensitive match
+                    if col_name not in existing_columns and col_name.lower() not in existing_columns_lower:
                         logger.debug(f"[DBMigration] Missing column detected: '{col_name}' in '{table_name}' (will add)")
                         return True
             
@@ -397,18 +407,27 @@ class DatabaseMigrationManager:
             True if migrations were applied, False otherwise
         """
         try:
+            # Refresh inspector to get latest table and column information
+            from sqlalchemy import inspect
+            fresh_inspector = inspect(self.engine)
+            
             # Check if table exists
-            if not self.inspector.has_table(table_name):
+            if not fresh_inspector.has_table(table_name):
                 logger.info(f"[DBMigration] Table '{table_name}' does not exist")
                 logger.info(f"[DBMigration] Table will be created by Base.metadata.create_all() in init_db()")
                 # Note: Table creation happens in init_db() via Base.metadata.create_all()
                 # Migration manager only handles adding columns to existing tables
                 return False
             
-            # Get existing columns
+            # Get existing columns (case-insensitive comparison for SQLite compatibility)
             existing_columns = {
                 col['name']: col 
-                for col in self.inspector.get_columns(table_name)
+                for col in fresh_inspector.get_columns(table_name)
+            }
+            # Create case-insensitive lookup dict (lowercase key -> original name)
+            existing_columns_lower = {
+                col['name'].lower(): col['name']
+                for col in fresh_inspector.get_columns(table_name)
             }
             
             # Get expected columns from model
@@ -436,12 +455,17 @@ class DatabaseMigrationManager:
                         return False
                     expected_columns = {col.name: col for col in table_metadata.columns}
             
-            # Find missing columns only (simple: just check what's missing)
+            # Find missing columns only (case-insensitive check for SQLite compatibility)
             missing_columns = []
             
             for col_name, col_def in expected_columns.items():
-                if col_name not in existing_columns:
+                # Check both exact match and case-insensitive match (SQLite columns are case-insensitive)
+                if col_name not in existing_columns and col_name.lower() not in existing_columns_lower:
                     missing_columns.append((col_name, col_def))
+                elif col_name.lower() in existing_columns_lower and col_name not in existing_columns:
+                    # Column exists but with different case - log for debugging
+                    actual_name = existing_columns_lower[col_name.lower()]
+                    logger.debug(f"[DBMigration] Column '{col_name}' exists as '{actual_name}' (case difference) - skipping")
             
             # Only migrate if there are missing columns
             if not missing_columns:
@@ -453,33 +477,60 @@ class DatabaseMigrationManager:
             db = SessionLocal()
             try:
                 # Add missing columns (SQLite supports ADD COLUMN)
+                columns_added = 0
+                successfully_added_columns = []  # Track which columns were actually added
                 for col_name, col_def in missing_columns:
-                    self._add_column(table_name, col_name, col_def, db)
-                    logger.info(f"[DBMigration] ✅ Added column '{col_name}' to table '{table_name}'")
+                    try:
+                        self._add_column(table_name, col_name, col_def, db)
+                        db.commit()  # Commit each successful addition immediately
+                        logger.info(f"[DBMigration] ✅ Added column '{col_name}' to table '{table_name}'")
+                        columns_added += 1
+                        successfully_added_columns.append(col_name)
+                    except OperationalError as e:
+                        # Handle duplicate column error gracefully (column might exist with different case)
+                        error_msg = str(e).lower()
+                        if 'duplicate column' in error_msg or 'already exists' in error_msg:
+                            logger.warning(f"[DBMigration] Column '{col_name}' already exists in '{table_name}' (possibly case difference) - skipping")
+                            db.rollback()  # Rollback the failed statement to clear error state
+                            continue
+                        else:
+                            # Re-raise if it's a different OperationalError
+                            db.rollback()
+                            raise
                 
-                db.commit()
-                
-                # Verify columns were actually added (safety check)
-                # Recreate inspector to see new columns
-                from sqlalchemy import inspect
-                fresh_inspector = inspect(self.engine)
-                updated_columns = {
-                    col['name']: col 
-                    for col in fresh_inspector.get_columns(table_name)
-                }
-                
-                # Verify added columns exist
-                all_added = True
-                for col_name, _ in missing_columns:
-                    if col_name not in updated_columns:
-                        logger.error(f"[DBMigration] WARNING: Column '{col_name}' was not added to '{table_name}' - verification failed!")
-                        all_added = False
-                
-                if all_added:
-                    logger.info(f"[DBMigration] Table '{table_name}': ✅ All {len(missing_columns)} column(s) added and verified successfully")
-                    return True
+                # Only verify if we actually added columns
+                if columns_added > 0:
+                    # Verify columns were actually added (safety check)
+                    # Recreate inspector to see new columns
+                    from sqlalchemy import inspect
+                    fresh_inspector = inspect(self.engine)
+                    updated_columns = {
+                        col['name']: col 
+                        for col in fresh_inspector.get_columns(table_name)
+                    }
+                    # Create case-insensitive lookup for verification
+                    updated_columns_lower = {
+                        col['name'].lower(): col['name']
+                        for col in fresh_inspector.get_columns(table_name)
+                    }
+                    
+                    # Verify only successfully added columns exist (case-insensitive check)
+                    all_added = True
+                    for col_name in successfully_added_columns:
+                        # Check both exact match and case-insensitive match
+                        if col_name not in updated_columns and col_name.lower() not in updated_columns_lower:
+                            logger.error(f"[DBMigration] WARNING: Column '{col_name}' was not added to '{table_name}' - verification failed!")
+                            all_added = False
+                    
+                    if all_added:
+                        logger.info(f"[DBMigration] Table '{table_name}': ✅ All {columns_added} column(s) added and verified successfully")
+                        return True
+                    else:
+                        logger.error(f"[DBMigration] Table '{table_name}': Verification failed - some columns may not have been added")
+                        return False
                 else:
-                    logger.error(f"[DBMigration] Table '{table_name}': Verification failed - some columns may not have been added")
+                    # No columns were added (all were duplicates or skipped)
+                    logger.debug(f"[DBMigration] Table '{table_name}': No columns needed to be added (all already exist)")
                     return False
                 
             except Exception as e:
