@@ -28,6 +28,7 @@ class NodePaletteManager {
         this.isLoadingBatch = false;  // Prevent duplicate batch requests
         this.lastNodeReceivedTime = null;  // Track when last node was received
         this.nodeStreamingTimeout = null;  // Timeout to detect when streaming stops
+        this.selectionCounterUpdateTimeout = null;  // Debounce selection counter updates
         
         // Tab management for double bubble map and multi flow map
         this.currentTab = null;  // Will be set dynamically based on diagram type
@@ -3749,17 +3750,21 @@ class NodePaletteManager {
          */
         const metadata = this.getMetadata();
         
-        console.log(`[NodePalette-Append] Appending ${metadata.nodeName} to this.nodes array:`, {
-            diagram_type: this.diagramType,
-            target_array: metadata.arrayName,
-            node_type: metadata.nodeType,
-            objectType: typeof node,
-            nodeKeys: Object.keys(node),
-            id: node.id,
-            text: node.text,
-            llm: node.source_llm,
-            currentArrayLength: this.nodes.length
-        });
+        // Reduce logging verbosity during high-volume scenarios (100+ nodes)
+        const isHighVolume = this.nodes.length >= 100;
+        if (!isHighVolume) {
+            console.log(`[NodePalette-Append] Appending ${metadata.nodeName} to this.nodes array:`, {
+                diagram_type: this.diagramType,
+                target_array: metadata.arrayName,
+                node_type: metadata.nodeType,
+                objectType: typeof node,
+                nodeKeys: Object.keys(node),
+                id: node.id,
+                text: node.text,
+                llm: node.source_llm,
+                currentArrayLength: this.nodes.length
+            });
+        }
         
         this.nodes.push(node);
         
@@ -3783,7 +3788,10 @@ class NodePaletteManager {
             }
         }
         
-        console.log(`[NodePalette-Append] After push: this.nodes.length = ${this.nodes.length} ${metadata.nodeNamePlural}`);
+        // Log every 50 nodes during high-volume scenarios, or always during low-volume
+        if (!isHighVolume || this.nodes.length % 50 === 0) {
+            console.log(`[NodePalette-Append] After push: this.nodes.length = ${this.nodes.length} ${metadata.nodeNamePlural}`);
+        }
         
         const container = document.getElementById('node-palette-grid');
         if (!container) {
@@ -3794,7 +3802,10 @@ class NodePaletteManager {
         const card = this.createNodeCard(node);
         container.appendChild(card);
         
-        console.log(`[NodePalette-Append] Card appended to DOM | Card ID: ${card.dataset.nodeId}`);
+        // Only log card append during low-volume scenarios
+        if (!isHighVolume) {
+            console.log(`[NodePalette-Append] Card appended to DOM | Card ID: ${card.dataset.nodeId}`);
+        }
         
         // Fade in animation
         setTimeout(() => {
@@ -3802,8 +3813,17 @@ class NodePaletteManager {
             card.style.transform = 'translateY(0)';
         }, 10);
         
-        // Update selection counter
-        this.updateSelectionCounter();
+        // Debounce selection counter update during high-volume scenarios
+        if (isHighVolume) {
+            if (this.selectionCounterUpdateTimeout) {
+                clearTimeout(this.selectionCounterUpdateTimeout);
+            }
+            this.selectionCounterUpdateTimeout = setTimeout(() => {
+                this.updateSelectionCounter();
+            }, 100); // Update every 100ms max during high-volume
+        } else {
+            this.updateSelectionCounter();
+        }
     }
     
     renderNodeCardOnly(node) {
@@ -4829,16 +4849,7 @@ class NodePaletteManager {
             }
             
             // Step 6: Verify the rendered nodes
-            console.log('[NodePalette-Assemble] Verifying rendered nodes in DOM...');
-            const nodeElements = document.querySelectorAll(`[data-node-type="${metadata.nodeType}"]`);
-            console.log(`[NodePalette-Assemble] Found ${nodeElements.length} ${metadata.nodeNamePlural} in DOM with [data-node-type="${metadata.nodeType}"]`);
-            nodeElements.forEach((elem, idx) => {
-                const nodeId = elem.getAttribute('data-node-id');
-                const arrayIndex = elem.getAttribute('data-array-index');
-                const textElement = elem.querySelector('text');
-                const textContent = textElement ? textElement.textContent : 'NO TEXT ELEMENT';
-                console.log(`  [${idx}] ID: ${nodeId} | Index: ${arrayIndex} | Type: ${metadata.nodeType} | Text: "${textContent}"`);
-            });
+            this.verifyRenderedNodes(metadata.nodeType, metadata.nodeNamePlural, '[NodePalette-Assemble]');
             
             // Step 7: Save to history
             console.log('[NodePalette-Assemble] Saving to history...');
@@ -5107,6 +5118,15 @@ class NodePaletteManager {
                 console.log('[DoubleBubble-Assemble] ✓ History saved');
             }
             
+            // Verify rendered nodes
+            if (similaritiesNodes.length > 0) {
+                this.verifyRenderedNodes('similarity', 'similarities', '[DoubleBubble-Assemble]');
+            }
+            if (differencesNodes.length > 0) {
+                this.verifyRenderedNodes('left_difference', 'left differences', '[DoubleBubble-Assemble]');
+                this.verifyRenderedNodes('right_difference', 'right differences', '[DoubleBubble-Assemble]');
+            }
+            
             console.log('[DoubleBubble-Assemble] ========================================');
             console.log('[DoubleBubble-Assemble] ✓ SUCCESS: Double Bubble Map updated');
             console.log('[DoubleBubble-Assemble] ========================================');
@@ -5189,6 +5209,15 @@ class NodePaletteManager {
             if (typeof editor.saveHistoryState === 'function') {
                 editor.saveHistoryState('node_palette_add');
             }
+            
+            // Verify rendered nodes
+            if (causesNodes.length > 0) {
+                this.verifyRenderedNodes('cause', 'causes', '[MultiFlow-Assemble]');
+            }
+            if (effectsNodes.length > 0) {
+                this.verifyRenderedNodes('effect', 'effects', '[MultiFlow-Assemble]');
+            }
+            
             console.log('[MultiFlow-Assemble] ✓ ASSEMBLY COMPLETE');
         } catch (error) {
             console.error('[MultiFlow-Assemble] ERROR:', error);
@@ -5278,6 +5307,12 @@ class NodePaletteManager {
             if (typeof editor.saveHistoryState === 'function') {
                 editor.saveHistoryState('node_palette_add');
                 console.log('[BridgeMap-Assemble] ✓ History saved');
+            }
+            
+            // Verify rendered nodes
+            if (selectedNodes.length > 0) {
+                this.verifyRenderedNodes('left', 'left nodes', '[BridgeMap-Assemble]');
+                this.verifyRenderedNodes('right', 'right nodes', '[BridgeMap-Assemble]');
             }
             
             console.log('[BridgeMap-Assemble] ========================================');
@@ -5437,6 +5472,12 @@ class NodePaletteManager {
             if (typeof editor.saveHistoryState === 'function') {
                 editor.saveHistoryState('node_palette_add');
                 console.log('[TreeMap-Assemble] ✓ History saved');
+            }
+            
+            // Verify rendered nodes
+            if (selectedNodes.length > 0) {
+                this.verifyRenderedNodes('category', 'categories', '[TreeMap-Assemble]');
+                this.verifyRenderedNodes('leaf', 'leaves', '[TreeMap-Assemble]');
             }
             
             console.log('[TreeMap-Assemble] ========================================');
@@ -5619,6 +5660,12 @@ class NodePaletteManager {
             if (typeof editor.saveHistoryState === 'function') {
                 editor.saveHistoryState('node_palette_add');
                 console.log('[BraceMap-Assemble] ✓ History saved');
+            }
+            
+            // Verify rendered nodes
+            if (selectedNodes.length > 0) {
+                this.verifyRenderedNodes('part', 'parts', '[BraceMap-Assemble]');
+                this.verifyRenderedNodes('subpart', 'subparts', '[BraceMap-Assemble]');
             }
             
             console.log('[BraceMap-Assemble] ========================================');
@@ -5890,6 +5937,14 @@ class NodePaletteManager {
                 console.log('[FlowMap-Assemble] ✓ History saved');
             }
             
+            // Verify rendered nodes
+            if (stepNodes.length > 0) {
+                this.verifyRenderedNodes('step', 'steps', '[FlowMap-Assemble]');
+            }
+            if (Object.keys(substepNodesByStep).length > 0) {
+                this.verifyRenderedNodes('substep', 'substeps', '[FlowMap-Assemble]');
+            }
+            
             console.log('[FlowMap-Assemble] ========================================');
             console.log('[FlowMap-Assemble] ✓ ASSEMBLY COMPLETE');
             console.log('[FlowMap-Assemble] ========================================');
@@ -6067,6 +6122,14 @@ class NodePaletteManager {
                 console.log('[MindMap-Assemble] ✓ History saved');
             }
             
+            // Verify rendered nodes
+            if (newBranchNodes.length > 0) {
+                this.verifyRenderedNodes('branch', 'branches', '[MindMap-Assemble]');
+            }
+            if (totalChildrenAdded > 0) {
+                this.verifyRenderedNodes('child', 'children', '[MindMap-Assemble]');
+            }
+            
             console.log('[MindMap-Assemble] ========================================');
             console.log(`[MindMap-Assemble] ✓ SUCCESS: ${totalBranchesAdded} branches, ${totalChildrenAdded} children added to mindmap`);
             console.log('[MindMap-Assemble] ========================================');
@@ -6112,6 +6175,36 @@ class NodePaletteManager {
         this.isLoadingBatch = false;
         
         console.log('[NodePalette] Cleanup complete');
+    }
+    
+    verifyRenderedNodes(nodeType, nodeNamePlural, logPrefix = '[NodePalette-Assemble]') {
+        /**
+         * Verify rendered nodes in DOM by filtering out text elements.
+         * All renderers create both shape elements and text elements with the same data-node-type,
+         * so we need to filter out text elements (they have data-line-index or data-text-for).
+         * 
+         * @param {string} nodeType - The node type to verify (e.g., 'attribute', 'similarity', 'cause')
+         * @param {string} nodeNamePlural - Plural name for logging (e.g., 'attributes', 'similarities')
+         * @param {string} logPrefix - Prefix for log messages (e.g., '[DoubleBubble-Assemble]')
+         */
+        console.log(`${logPrefix} Verifying rendered nodes in DOM...`);
+        // Filter out text elements - only check circle/shape elements (text elements have data-line-index)
+        const allElements = document.querySelectorAll(`[data-node-type="${nodeType}"]`);
+        const nodeElements = Array.from(allElements).filter(elem => {
+            // Exclude text elements (they have data-line-index or data-text-for)
+            return !elem.hasAttribute('data-line-index') && !elem.hasAttribute('data-text-for');
+        });
+        console.log(`${logPrefix} Found ${nodeElements.length} ${nodeNamePlural} in DOM (${allElements.length} total elements including text)`);
+        nodeElements.forEach((elem, idx) => {
+            const nodeId = elem.getAttribute('data-node-id');
+            const arrayIndex = elem.getAttribute('data-array-index');
+            // Find associated text element(s) - they have data-text-for matching this node's ID
+            const textElements = document.querySelectorAll(`[data-text-for="${nodeId}"]`);
+            const textContent = textElements.length > 0 
+                ? Array.from(textElements).map(te => te.textContent).join(' ')
+                : (elem.textContent || 'NO TEXT ELEMENT');
+            console.log(`  [${idx}] ID: ${nodeId} | Index: ${arrayIndex} | Type: ${nodeType} | Text: "${textContent}"`);
+        });
     }
 }
 
