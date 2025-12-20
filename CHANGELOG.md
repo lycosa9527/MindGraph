@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.0] - 2025-01-21 - Security Fixes and API Key Authentication Improvements
+
+### Fixed
+
+- **Depends Object Attribute Error** - Fixed `'Depends' object has no attribute 'id'` error when using API key authentication
+  - Added proper `hasattr()` checks before accessing `current_user.id` and `current_user.organization_id` attributes
+  - Fixed in `/api/generate_graph` endpoint - now safely handles both JWT and API key authentication
+  - Fixed in `/api/feedback` endpoint - added safety checks for `current_user.id` and `current_user.name`
+  - Fixed in `/api/tab_mode/suggestions` endpoint - added proper attribute checks
+  - Fixed in `/api/tab_mode/expand` endpoint - added proper attribute checks
+  - Fixed in `/ws/voice` WebSocket endpoint - added defensive checks for consistency
+  - All endpoints using `get_current_user_or_api_key` now properly handle cases where `current_user` is `None` or not a `User` instance
+
+- **Admin Button Visibility Security** - Fixed admin button ("后台") visibility issue in gallery view
+  - Removed server-side template check `{% if user_is_admin %}` that could be bypassed
+  - Admin button now always rendered but hidden by default (`display: none`)
+  - JavaScript `checkAdminStatus()` function verifies admin status via API before showing button
+  - Regular users can no longer see admin button, even if server-side check fails or JavaScript is slow
+  - Button is removed from DOM if user is not admin (fail-secure approach prevents CSS/JS manipulation)
+
+### Technical Details
+
+**Files Modified:**
+- `routers/api.py` - Added `hasattr()` checks for `current_user.id` and `current_user.organization_id` (lines 206-207, 2161-2162)
+- `routers/tab_mode.py` - Added `hasattr()` checks for `current_user` attributes (lines 67-68, 206-207)
+- `routers/voice.py` - Added defensive checks for `current_user.organization_id` (line 2742)
+- `templates/editor.html` - Removed server-side admin check, button always rendered but hidden by default (line 268-272)
+
+**Security Improvements:**
+- All endpoints now use fail-secure pattern: check `hasattr()` before accessing attributes
+- Admin button visibility now controlled entirely by client-side API verification
+- Prevents attribute access errors when `get_current_user_or_api_key` returns `None` for API key authentication
+
+---
+
 ## [4.36.0] - 2025-01-21 - Format String Fixes and PNG Generation Improvements
 
 ### Fixed

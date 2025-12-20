@@ -2739,7 +2739,7 @@ async def voice_conversation(
             omni_client=omni_client,
             instructions=instructions,
             user_id=int(user_id) if user_id else None,
-            organization_id=current_user.organization_id if current_user else None,
+            organization_id=getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None,
             session_id=voice_session_id,
             request_type='voice_omni',
             endpoint_path='/ws/voice'

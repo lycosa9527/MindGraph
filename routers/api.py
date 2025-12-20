@@ -203,8 +203,8 @@ async def generate_graph(
         # Generate diagram specification - fully async
         # Pass model directly through call chain (no global state)
         # Pass user context for token tracking
-        user_id = current_user.id if current_user else None
-        organization_id = current_user.organization_id if current_user else None
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
         
         # Determine request type for token tracking (default to 'diagram_generation')
         request_type = req.request_type if req.request_type else 'diagram_generation'
@@ -2158,8 +2158,8 @@ async def submit_feedback(
             pass
         
         # Get user info (use from request if provided, otherwise from token, otherwise anonymous)
-        user_id = req.user_id or (current_user.id if current_user else 'anonymous')
-        user_name = req.user_name or (current_user.name if current_user else 'Anonymous User')
+        user_id = req.user_id or (current_user.id if current_user and hasattr(current_user, 'id') else 'anonymous')
+        user_name = req.user_name or (current_user.name if current_user and hasattr(current_user, 'name') else 'Anonymous User')
         
         # Always log feedback to application logs first
         logger.info(f"[FEEDBACK] User: {user_name} ({user_id})")

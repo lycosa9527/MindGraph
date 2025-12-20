@@ -64,8 +64,8 @@ async def tab_suggestions(
             req.partial_input = ""  # Empty input for general suggestions
         
         # Get user context
-        user_id = current_user.id if current_user else None
-        organization_id = current_user.organization_id if current_user else None
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
         
         # Determine model (default to qwen-plus for generation)
         model = 'qwen-plus'
@@ -203,8 +203,8 @@ async def tab_expand(
     
     try:
         # Get user context
-        user_id = current_user.id if current_user else None
-        organization_id = current_user.organization_id if current_user else None
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
         
         # Determine model (default to qwen-plus for generation)
         model = 'qwen-plus'
