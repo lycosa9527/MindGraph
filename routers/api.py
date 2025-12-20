@@ -210,9 +210,11 @@ async def generate_graph(
         request_type = req.request_type if req.request_type else 'diagram_generation'
         
         # Log auto-complete start at INFO level for user activity tracking
+        # Note: AutoComplete fires 5 concurrent requests (one per LLM model)
+        # Log once per request with model info to reduce noise
         if request_type == 'autocomplete':
             diagram_type_str = req.diagram_type.value if req.diagram_type else 'auto'
-            logger.info(f"[AutoComplete] Started: User {user_id}, Diagram: {diagram_type_str}, Request: {request_id[:8]}")
+            logger.info(f"[AutoComplete] Started: User {user_id}, Diagram: {diagram_type_str}, Model: {llm_model}, Request: {request_id[:8]}")
         
         # Bridge map specific: pass existing analogies and fixed dimension for auto-complete mode
         existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None

@@ -1018,7 +1018,9 @@ def get_current_user_or_api_key(
                         logger.warning(f"[Auth] Request state not available, cannot store api_key_id for token tracking")
                     
                     track_api_key_usage(api_key, db)
-                    logger.info(f"[Auth] Valid API key access: {key_record.name} (ID: {key_record.id})")
+                    # Include endpoint path for clarity when multiple parallel requests come in
+                    endpoint = request.url.path if request else 'unknown'
+                    logger.info(f"[Auth] Valid API key access: {key_record.name} (ID: {key_record.id}) [{endpoint}]")
                 else:
                     logger.warning(f"[Auth] API key validated but record not found in database")
                     track_api_key_usage(api_key, db)

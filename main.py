@@ -460,7 +460,11 @@ class UnifiedFormatter(logging.Formatter):
         
         source = source.ljust(4)
         
-        return f"[{timestamp}] {colored_level} | {source} | {record.getMessage()}"
+        # Add process ID to identify worker
+        import os
+        pid = os.getpid()
+        
+        return f"[{timestamp}] {colored_level} | {source} | [{pid}] {record.getMessage()}"
 
 # Configure logging
 unified_formatter = UnifiedFormatter()

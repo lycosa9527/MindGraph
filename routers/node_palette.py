@@ -199,6 +199,7 @@ async def start_node_palette(
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
                     ):
+                        chunk_count += 1
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
                         
@@ -217,6 +218,7 @@ async def start_node_palette(
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
                     ):
+                        chunk_count += 1
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
                         
@@ -394,6 +396,7 @@ async def get_next_batch(
         # Stream next batch with concurrent execution
         async def generate():
             node_count = 0
+            chunk_count = 0
             try:
                 # Get mode from request (default to 'similarities' for double bubble, 'causes' for multi flow)
                 mode = getattr(req, 'mode', 'similarities' if req.diagram_type == 'double_bubble_map' else 'causes')
@@ -424,6 +427,7 @@ async def get_next_batch(
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
                     ):
+                        chunk_count += 1
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
                         
@@ -442,6 +446,7 @@ async def get_next_batch(
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
                     ):
+                        chunk_count += 1
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
                         
@@ -457,6 +462,7 @@ async def get_next_batch(
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type
                     ):
+                        chunk_count += 1
                         if chunk.get('event') == 'node_generated':
                             node_count += 1
                         

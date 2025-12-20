@@ -282,8 +282,15 @@ async def log_browser_diagnostics():
     """
     Log browser diagnostic information once at startup.
     This should be called from the application lifespan function.
+    Only logs warnings/errors from main process to reduce noise in multi-worker setups.
     """
     import sys
+    import os
+    
+    # Only log warnings/errors from main process (worker 0) to reduce duplicate logs
+    worker_id = os.getenv('UVICORN_WORKER_ID')
+    is_main_process = worker_id is None or worker_id == '0'
+    
     try:
         logger.info("[Browser] Python executable: %s", sys.executable)
         logger.info("[Browser] Python version: %s", sys.version.split('\n')[0])
@@ -306,13 +313,25 @@ async def log_browser_diagnostics():
                 if chromium_path and os.path.exists(chromium_path):
                     logger.info("[Browser] Chromium executable exists: YES")
                 else:
-                    logger.warning("[Browser] Chromium executable exists: NO")
+                    # Only log warning from main process to avoid spam in multi-worker setups
+                    if is_main_process:
+                        logger.warning("[Browser] Chromium executable exists: NO (will be installed on first use)")
+                    else:
+                        logger.debug("[Browser] Chromium executable exists: NO (will be installed on first use)")
             finally:
                 await playwright_instance.stop()
         except Exception as e:
-            logger.warning("[Browser] Could not verify Chromium installation: %s", e)
+            # Only log warning from main process
+            if is_main_process:
+                logger.warning("[Browser] Could not verify Chromium installation: %s", e)
+            else:
+                logger.debug("[Browser] Could not verify Chromium installation: %s", e)
     except Exception as e:
-        logger.warning("[Browser] Diagnostic check failed: %s", e)
+        # Only log warning from main process
+        if is_main_process:
+            logger.warning("[Browser] Diagnostic check failed: %s", e)
+        else:
+            logger.debug("[Browser] Diagnostic check failed: %s", e)
 
 
 class BrowserContextManager:
