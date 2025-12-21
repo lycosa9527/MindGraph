@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.28.81-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.37.5-brightgreen.svg)](CHANGELOG.md)
 [![Built with Cursor](https://img.shields.io/badge/Built%20with-Cursor%20AI-blueviolet.svg)](https://cursor.sh)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -38,9 +38,17 @@ Transform natural language into professional visual diagrams. **API-first platfo
 ## ✨ Features | 核心功能
 
 ### 🎯 10 Professional Diagram Types | 10种专业图表类型
-- **Thinking Maps | 思维图示** (8 types | 8种): Circle, Bubble, Double Bubble, Tree, Brace, Flow, Multi-Flow, Bridge
+- **Thinking Maps | 思维图示** (8 types | 8种): 
+  - **Circle Map | 圆圈图**: Defining in context, associations | 在语境中定义，关联
+  - **Bubble Map | 气泡图**: Describing with adjectives, attributes | 用形容词描述，属性特征
+  - **Double Bubble Map | 双气泡图**: Comparing and contrasting two concepts | 对比两个概念
+  - **Tree Map | 树形图**: Classifying and grouping, hierarchy | 分类和分组，层次结构
+  - **Brace Map | 括号图**: Whole-to-part relationships | 整体与部分的关系
+  - **Flow Map | 流程图**: Sequencing and ordering steps | 步骤序列和排序
+  - **Multi-Flow Map | 复流程图**: Cause-effect relationships | 因果关系
+  - **Bridge Map | 桥形图**: Analogies and similarities | 类比和相似性
 - **Mind Map | 思维导图**: Radial brainstorming and concept organization | 放射状头脑风暴和概念组织
-- **Concept Map | 概念图**: Advanced relationship mapping | 高级关系映射
+- **Concept Map | 概念图**: Advanced relationship mapping between concepts | 概念间的高级关系映射
 
 ### 🧠 9 Thinking Tools | 9种思考工具
 - **5W1H Analysis | 5W1H分析**: Who, What, When, Where, Why, How
@@ -55,7 +63,7 @@ Transform natural language into professional visual diagrams. **API-first platfo
 
 ### 🤖 AI-Powered Generation | AI驱动生成
 - **Smart Classification | 智能分类**: Auto-detect diagram type from natural language | 从自然语言自动检测图表类型
-- **Multi-LLM Support | 多LLM支持**: Qwen, DeepSeek, Kimi, Hunyuan
+- **Multi-LLM Support | 多LLM支持**: Qwen, DeepSeek, Kimi (Moonshot), Hunyuan, Doubao (Volcengine)
 - **Node Palette | 节点调色板**: AI-suggested nodes with streaming batches | AI推荐节点流式批次
 - **Auto-Complete | 智能补全**: Context-aware diagram completion | 上下文感知图表补全
 - **Math & Chemical Formulas | 数学和化学公式**: LaTeX and chemical equation rendering | LaTeX和化学方程式渲染
@@ -105,12 +113,20 @@ Transform natural language into professional visual diagrams. **API-first platfo
 git clone https://github.com/lycosa9527/MindGraph.git
 cd MindGraph
 
-# 2. Install dependencies
+# 2. Install dependencies and Playwright browsers
 python scripts/setup.py
+# This will automatically install Python packages and Playwright Chromium browser
 
 # 3. Configure environment
 cp env.example .env
-# Edit .env and add your QWEN_API_KEY
+# Edit .env and add your QWEN_API_KEY (required for diagram generation)
+```
+
+**Note | 注意:** The setup script automatically installs Playwright Chromium browser binaries required for PNG generation. If you encounter issues, manually run:
+**注意：** 安装脚本会自动安装Playwright Chromium浏览器，这是PNG生成所必需的。如果遇到问题，请手动运行：
+
+```bash
+playwright install chromium
 ```
 
 ### Configuration | 配置
@@ -118,26 +134,39 @@ cp env.example .env
 **Required environment variables | 必需的环境变量:**
 
 ```bash
-# LLM API Key (Required)
+# LLM API Key (Required for diagram generation)
 QWEN_API_KEY=your-qwen-api-key-here
 
 # Optional: Additional LLM models
-DEEPSEEK_API_KEY=your-deepseek-key
-KIMI_API_KEY=your-kimi-key
 HUNYUAN_SECRET_ID=your-hunyuan-id
 HUNYUAN_SECRET_KEY=your-hunyuan-key
+ARK_API_KEY=your-ark-api-key-here  # For Doubao/Volcengine
 
 # Server Configuration
 PORT=9527
-EXTERNAL_HOST=localhost
+HOST=0.0.0.0
+EXTERNAL_HOST=localhost  # Or your public IP/domain
+DEBUG=False  # Set to True for development
 
-# Authentication Mode (standard, enterprise, demo)
+# Authentication Mode (standard, enterprise, demo, bayi)
 AUTH_MODE=standard
 
 # JWT Configuration
 JWT_SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRY_HOURS=168
+
+# Optional: Database backup (enabled by default)
+BACKUP_ENABLED=true
+BACKUP_HOUR=3
+BACKUP_RETENTION_COUNT=2
+
+# Optional: Tencent Cloud SMS (for phone verification)
+TENCENT_SMS_SECRET_ID=your-tencent-secret-id
+TENCENT_SMS_SECRET_KEY=your-tencent-secret-key
+TENCENT_SMS_SDK_APP_ID=1400000000
 ```
+
+**See `env.example` for complete configuration options | 查看 `env.example` 了解完整配置选项**
 
 ### Running the Server | 运行服务器
 
@@ -151,22 +180,26 @@ python run_server.py
 Environment: production
 Host: 0.0.0.0
 Port: 9527
-Workers: 4
 
 ✅ Server ready at: http://localhost:9527
 ✅ Interactive Editor: http://localhost:9527/editor
-✅ API Documentation: http://localhost:9527/docs
+✅ API Documentation: http://localhost:9527/docs (DEBUG mode only)
 ✅ Admin Panel: http://localhost:9527/admin
+✅ Health Check: http://localhost:9527/health
 ```
+
+**Note | 注意:** API documentation (`/docs`) is only available when `DEBUG=True` in `.env` for security.
+**注意：** API文档 (`/docs`) 仅在 `.env` 中设置 `DEBUG=True` 时可用，以确保安全。
 
 ### Access Points | 访问入口
 
 | Service | URL | Description |
 |---------|-----|-------------|
 | **Interactive Editor** | http://localhost:9527/editor | Full-featured web editor |
-| **API Documentation** | http://localhost:9527/docs | Interactive Swagger UI |
+| **API Documentation** | http://localhost:9527/docs | Interactive Swagger UI (DEBUG mode only) |
 | **Admin Panel** | http://localhost:9527/admin | Manage API keys, users, settings |
 | **Health Check** | http://localhost:9527/health | Server status endpoint |
+| **Database Health** | http://localhost:9527/health/database | Database integrity check |
 
 ---
 
@@ -180,13 +213,16 @@ MindGraph supports two authentication methods | MindGraph支持两种认证方�
 ```http
 POST /api/generate_png
 Content-Type: application/json
-X-API-Key: sk_mindgraph_your_api_key_here
+X-API-Key: mg_your_api_key_here
 
 {
   "prompt": "Compare cats and dogs",
   "language": "en"
 }
 ```
+
+**Note | 注意:** API keys are generated with the `mg_` prefix (e.g., `mg_abc123xyz456...`).  
+**注意：** API密钥以 `mg_` 前缀生成（例如：`mg_abc123xyz456...`）。
 
 **2. JWT Token (for authenticated users) | JWT令牌（用于已认证用户）**
 ```http
@@ -216,7 +252,7 @@ Authorization: Bearer your_jwt_token_here
   "method": "POST",
   "headers": {
     "Content-Type": "application/json",
-    "X-API-Key": "sk_mindgraph_your_key_here"
+    "X-API-Key": "mg_your_key_here"
   },
   "body": {
     "prompt": "{{user_input}}",
@@ -253,7 +289,7 @@ def generate_diagram(prompt, api_key, language="en"):
         raise Exception(f"Error: {response.json()}")
 
 # Usage
-api_key = "sk_mindgraph_abc123xyz456"
+api_key = "mg_abc123xyz456..."  # Generated from admin panel
 diagram = generate_diagram("Compare online vs offline learning", api_key)
 print(f"Saved: {diagram}")
 ```
@@ -282,7 +318,7 @@ async function generateDiagram(prompt, apiKey, language = 'en') {
 }
 
 // Usage
-const apiKey = 'sk_mindgraph_abc123xyz456';
+const apiKey = 'mg_abc123xyz456...';  // Generated from admin panel
 generateDiagram('Create a mind map about AI', apiKey)
     .then(file => console.log(`Saved: ${file}`))
     .catch(err => console.error('Error:', err));
@@ -353,8 +389,9 @@ docker-compose -f docker/docker-compose.yml up -d
 - [**API Reference**](docs/API_REFERENCE.md) - Complete API documentation with bilingual examples
 - [**API Key Authentication**](docs/API_KEY_AUTHENTICATION_GUIDE.md) - Security implementation guide
 - [**Math & Chemical Formulas**](docs/MATH_CHEMICAL_IMPLEMENTATION_GUIDE.md) - LaTeX and chemical equation guide
-- [**Drag & Drop Swap**](docs/DRAG_AND_DROP_SWAP_FEATURE.md) - Node swap feature documentation
 - [**Auto-Complete Cache**](docs/AUTO_COMPLETE_CACHE_FRAMEWORK.md) - Cache framework documentation
+- [**Tab Mode Feature**](docs/TAB_MODE_FEATURE_DESIGN.md) - Tab mode autocomplete and expansion
+- [**Health Check**](docs/HEALTH_CHECK.md) - Health check endpoints documentation
 - [**Changelog**](CHANGELOG.md) - Version history and updates
 
 ---
