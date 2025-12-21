@@ -15,7 +15,12 @@ import time
 from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
 
 from services.client_manager import client_manager
-from services.error_handler import error_handler, LLMServiceError
+from services.error_handler import (
+    error_handler,
+    LLMServiceError,
+    LLMRateLimitError,
+    LLMQuotaExhaustedError
+)
 from services.rate_limiter import initialize_rate_limiter, get_rate_limiter
 from services.prompt_manager import prompt_manager
 from services.performance_tracker import performance_tracker
@@ -592,9 +597,135 @@ class LLMService:
         """Get list of all available models."""
         return self.client_manager.get_available_models()
     
+    def _categorize_error(self, e: Exception) -> Dict[str, Any]:
+        """
+        Categorize errors for better health reporting.
+        Avoids exposing sensitive details in error messages.
+        
+        Args:
+            e: Exception that occurred
+            
+        Returns:
+            Dict with status, error message, and error type
+        """
+        import socket
+        
+        error_type = type(e).__name__
+        
+        # Don't expose sensitive details - use generic messages
+        # Check for DNS resolution errors (gaierror)
+        if isinstance(e, socket.gaierror):
+            return {
+                'status': 'unhealthy',
+                'error': 'DNS resolution failed',
+                'error_type': 'dns_error'
+            }
+        elif isinstance(e, (ConnectionError, TimeoutError)):
+            return {
+                'status': 'unhealthy',
+                'error': 'Connection failed',
+                'error_type': 'connection_error'
+            }
+        elif isinstance(e, asyncio.TimeoutError):
+            return {
+                'status': 'unhealthy',
+                'error': 'Request timeout',
+                'error_type': 'timeout'
+            }
+        elif isinstance(e, LLMServiceError):
+            # Use error handler's categorization
+            if isinstance(e, LLMRateLimitError):
+                return {
+                    'status': 'unhealthy',
+                    'error': 'Rate limit exceeded',
+                    'error_type': 'rate_limit'
+                }
+            elif isinstance(e, LLMQuotaExhaustedError):
+                return {
+                    'status': 'unhealthy',
+                    'error': 'Quota exhausted',
+                    'error_type': 'quota_exhausted'
+                }
+            else:
+                return {
+                    'status': 'unhealthy',
+                    'error': 'Service unavailable',
+                    'error_type': 'service_error'
+                }
+        else:
+            # Generic error - don't expose details
+            return {
+                'status': 'unhealthy',
+                'error': 'Service unavailable',
+                'error_type': 'unknown'
+            }
+    
+    async def _check_omni_health(self, model: str) -> Dict[str, Any]:
+        """Check health of Omni model via WebSocket."""
+        try:
+            start = time.time()
+            omni_client = self.client_manager.get_client('omni')
+            
+            # Test WebSocket connection by attempting to create and close a session
+            async def test_omni_connection():
+                from clients.omni_client import OmniRealtimeClient, TurnDetectionMode
+                native_client = None
+                try:
+                    native_client = OmniRealtimeClient(
+                        api_key=omni_client.api_key,
+                        model=omni_client.model,
+                        turn_detection_mode=TurnDetectionMode.SERVER_VAD
+                    )
+                    await native_client.connect()
+                    # Connection successful, close it
+                    await native_client.close()
+                    return True
+                except Exception as e:
+                    logger.debug(f"Omni WebSocket health check failed: {e}")
+                    if native_client:
+                        try:
+                            await native_client.close()
+                        except:
+                            pass
+                    raise
+            
+            await asyncio.wait_for(test_omni_connection(), timeout=5.0)
+            latency = time.time() - start
+            return {
+                'status': 'healthy',
+                'latency': round(latency, 2),
+                'note': 'WebSocket-based real-time voice service'
+            }
+        except Exception as e:
+            logger.warning(f"Health check failed for {model}: {e}")
+            result = self._categorize_error(e)
+            result['note'] = 'WebSocket-based real-time voice service'
+            return result
+    
+    async def _check_model_health(self, model: str) -> Dict[str, Any]:
+        """Check health of a single HTTP-based model."""
+        try:
+            start = time.time()
+            await self.chat(
+                prompt="Test",
+                model=model,
+                max_tokens=10,
+                timeout=5.0
+            )
+            latency = time.time() - start
+            return {
+                'status': 'healthy',
+                'latency': round(latency, 2)
+            }
+        except Exception as e:
+            logger.warning(f"Health check failed for {model}: {e}")
+            return self._categorize_error(e)
+    
     async def health_check(self) -> Dict[str, Any]:
         """
-        Check health of all LLM clients.
+        Check health of all LLM clients in parallel for better performance.
+        
+        Note: Omni model uses WebSocket for real-time voice and is checked separately.
         
         Returns:
             Status dict for each model with available_models list
@@ -602,25 +733,24 @@ class LLMService:
         available_models = self.get_available_models()
         results = {'available_models': available_models}
         
+        # Create health check tasks for all models (parallel execution)
+        tasks = []
         for model in available_models:
-            try:
-                start = time.time()
-                await self.chat(
-                    prompt="Test",
-                    model=model,
-                    max_tokens=10,
-                    timeout=5.0
-                )
-                latency = time.time() - start
-                results[model] = {
-                    'status': 'healthy',
-                    'latency': round(latency, 2)
-                }
-            except Exception as e:
-                results[model] = {
-                    'status': 'unhealthy',
-                    'error': str(e)
-                }
+            if model == 'omni':
+                tasks.append(self._check_omni_health(model))
+            else:
+                tasks.append(self._check_model_health(model))
+        
+        # Execute all health checks in parallel
+        health_results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Process results
+        for model, result in zip(available_models, health_results):
+            if isinstance(result, Exception):
+                logger.error(f"Health check exception for {model}: {result}", exc_info=True)
+                results[model] = self._categorize_error(result)
+            else:
+                results[model] = result
         
         return results
     

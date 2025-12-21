@@ -25,6 +25,9 @@ from .responses import (
     GenerateResponse,
     ErrorResponse,
     HealthResponse,
+    LLMHealthResponse,
+    DatabaseHealthResponse,
+    ModelHealthStatus,
     StatusResponse,
 )
 
@@ -48,6 +51,9 @@ __all__ = [
     "ErrorResponse",
     "HealthResponse",
     "StatusResponse",
+    "LLMHealthResponse",
+    "DatabaseHealthResponse",
+    "ModelHealthStatus",
     # Common
     "DiagramType",
     "LLMModel",

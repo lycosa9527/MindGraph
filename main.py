@@ -695,6 +695,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from models.responses import DatabaseHealthResponse
 
 # ============================================================================
 # LIFESPAN CONTEXT (Startup/Shutdown Events)
@@ -1154,7 +1155,20 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     Returns FastAPI-standard format: {"detail": "error message"}
     This matches FastAPI's default HTTPException response format.
     """
-    logger.warning(f"HTTP {exc.status_code}: {exc.detail}")
+    path = getattr(request.url, 'path', '') if request and request.url else ''
+    detail = exc.detail or ""
+    
+    # Suppress warnings for expected security checks:
+    # 1. Admin access checks (403 on /api/auth/admin/* endpoints)
+    #    The admin button ("后台") calls /api/auth/admin/stats to check admin status
+    # 2. Token expiration checks (401 with "Invalid or expired token")
+    #    Frontend periodically checks authentication status via /api/auth/me
+    if exc.status_code == 403 and path.startswith("/api/auth/admin/"):
+        logger.debug(f"HTTP {exc.status_code}: {exc.detail} (expected admin check)")
+    elif exc.status_code == 401 and "Invalid or expired token" in detail:
+        logger.debug(f"HTTP {exc.status_code}: {exc.detail} (expected token expiration check)")
+    else:
+        logger.warning(f"HTTP {exc.status_code}: {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail}  # Use "detail" to match FastAPI standard
@@ -1184,6 +1198,75 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def health_check():
     """Basic health check endpoint"""
     return {"status": "ok", "version": config.VERSION}
+
+@app.get("/health/database", response_model=DatabaseHealthResponse)
+async def database_health_check():
+    """
+    Database health check endpoint.
+    
+    Returns database integrity status and statistics.
+    
+    Note: This endpoint performs a fast integrity check. For detailed backup
+    information, use the admin panel or recovery tools.
+    
+    Returns:
+        - 200 OK: Database is healthy
+        - 503 Service Unavailable: Database is unhealthy or corrupted
+        - 500 Internal Server Error: Health check failed
+    """
+    try:
+        from services.database_recovery import DatabaseRecovery
+        
+        # Fast check - only integrity and basic stats, no backup listing
+        # Backup listing can be slow (10-30+ seconds) and is not needed for health checks
+        recovery = DatabaseRecovery()
+        is_healthy, message = recovery.check_integrity()
+        
+        # Get basic database stats (fast)
+        current_stats = {}
+        if recovery.db_path and recovery.db_path.exists():
+            try:
+                stats = recovery.get_database_stats(recovery.db_path)
+                # Only include essential stats for security and performance
+                current_stats = {
+                    "path": stats.get("path"),
+                    "size_mb": stats.get("size_mb"),
+                    "modified": stats.get("modified"),
+                    "total_rows": stats.get("total_rows"),
+                    # Don't expose table names/details for security
+                }
+            except Exception as e:
+                logger.debug(f"Failed to get database stats: {e}")
+                # Stats are optional, continue without them
+        
+        response_data = {
+            "status": "healthy" if is_healthy else "unhealthy",
+            "database_healthy": is_healthy,
+            "database_message": message,
+            "database_stats": current_stats,
+            "timestamp": int(time.time())
+        }
+        
+        # Return appropriate HTTP status code
+        status_code = 200 if is_healthy else 503
+        
+        return JSONResponse(
+            content=response_data,
+            status_code=status_code
+        )
+        
+    except ImportError as e:
+        logger.error(f"Database recovery module not available: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Database health check unavailable"
+        )
+    except Exception as e:
+        logger.error(f"Database health check error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database health check failed: {str(e)}"
+        )
 
 @app.get("/status")
 async def get_status():

@@ -310,7 +310,13 @@ def decode_access_token(token: str) -> dict:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload
     except JWTError as e:
-        logger.warning(f"Invalid token: {e}")
+        # Token expiration is expected behavior when users are inactive
+        # Log at DEBUG level to reduce noise, but still log invalid tokens as WARNING
+        error_msg = str(e)
+        if "expired" in error_msg.lower() or "exp" in error_msg.lower():
+            logger.debug(f"Token expired: {e} (expected when user inactive)")
+        else:
+            logger.warning(f"Invalid token: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
@@ -636,7 +642,9 @@ def validate_bayi_token_body(body: dict) -> bool:
             logger.debug(f"Bayi token timestamp is slightly in the future but within tolerance (diff: {time_diff}s, tolerance: {BAYI_CLOCK_SKEW_TOLERANCE}s)")
         
         if time_diff > 300:  # 5 minutes = 300 seconds
-            logger.warning(f"Bayi token validation failed: timestamp expired (diff: {time_diff}s = {time_diff/60:.1f} minutes, now: {now}, token_time: {token_time})")
+            # Token expiration is expected behavior (tokens expire after 5 minutes)
+            # Log at DEBUG level to reduce noise, similar to JWT token expiration
+            logger.debug(f"Bayi token validation failed: timestamp expired (diff: {time_diff}s = {time_diff/60:.1f} minutes, now: {now}, token_time: {token_time}) - expected when token is old")
             return False
         
         logger.debug(f"Timestamp validation passed - diff: {time_diff}s")

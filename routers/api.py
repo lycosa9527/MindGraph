@@ -33,6 +33,7 @@ from models import (
     GenerateDingTalkRequest,
     FrontendLogRequest,
     FrontendLogBatchRequest,
+    LLMHealthResponse,
     RecalculateLayoutRequest,
     FeedbackRequest,
     Messages,
@@ -1965,7 +1966,7 @@ async def generate_multi_parallel(
         )
 
 
-@router.get('/llm/health')
+@router.get('/llm/health', response_model=LLMHealthResponse)
 async def llm_health_check():
     """
     Health check for LLM service.
@@ -1975,6 +1976,11 @@ async def llm_health_check():
         - Available models
         - Circuit breaker states
         - Rate limiter status
+        
+    HTTP Status Codes:
+        - 200 OK: All models healthy
+        - 503 Service Unavailable: Some models unhealthy (degraded state)
+        - 500 Internal Server Error: Health check itself failed
         
     Example:
         GET /api/llm/health
@@ -1991,12 +1997,33 @@ async def llm_health_check():
         
         health_data['circuit_states'] = circuit_states
         
+        # Check if any models are unhealthy
+        available_models = health_data.get('available_models', [])
+        unhealthy_count = sum(
+            1 for model in available_models
+            if model in health_data 
+            and health_data[model].get('status') != 'healthy'
+        )
+        
+        response_data = {
+            'status': 'success',
+            'health': health_data,
+            'timestamp': int(time.time())
+        }
+        
+        # Return appropriate HTTP status code based on health
+        if unhealthy_count == 0:
+            status_code = 200  # All healthy
+        else:
+            status_code = 503  # Degraded (some unhealthy)
+            response_data['degraded'] = True
+            response_data['unhealthy_count'] = unhealthy_count
+            response_data['total_models'] = len(available_models)
+            response_data['healthy_count'] = len(available_models) - unhealthy_count
+        
         return JSONResponse(
-            content={
-                'status': 'success',
-                'health': health_data,
-                'timestamp': int(time.time())
-            }
+            content=response_data,
+            status_code=status_code
         )
         
     except Exception as e:

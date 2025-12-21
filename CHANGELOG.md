@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.4] - 2025-01-21 - Logging Optimization for Expected Security Checks
+
+### Fixed
+
+- **Expected Security Check Logging Noise** (`main.py`, `utils/auth.py`)
+  - Reduced log noise from expected security checks by downgrading to DEBUG level
+  - Admin access checks (403 on `/api/auth/admin/*` endpoints) now log at DEBUG
+  - Token expiration checks (401 with "Invalid or expired token") now log at DEBUG
+  - Bayi token expiration (5-minute validity) now logs at DEBUG
+  - Invalid tokens and other security issues still log at WARNING level
+
+### Technical Details
+
+**Root Cause:**
+- Frontend periodically checks admin status via `/api/auth/admin/stats` endpoint
+- Frontend periodically checks authentication status via `/api/auth/me` endpoint
+- Non-admin users and expired tokens triggered frequent WARNING logs
+- These are expected security checks, not actual errors
+
+**Solution:**
+- Updated `http_exception_handler` in `main.py` to detect expected security checks:
+  - Admin endpoint 403 errors → DEBUG level
+  - Token expiration 401 errors → DEBUG level
+- Updated `decode_access_token` in `utils/auth.py` to distinguish:
+  - Token expiration (expected) → DEBUG level
+  - Invalid tokens (security concern) → WARNING level
+- Updated `validate_bayi_token_body` in `utils/auth.py`:
+  - Bayi token expiration (expected after 5 minutes) → DEBUG level
+  - Other validation errors → WARNING level
+
+**Files Modified:**
+- `main.py` - Enhanced HTTPException handler with path and detail checking
+- `utils/auth.py` - Improved token expiration detection and logging
+
+**Impact:**
+- Cleaner logs with reduced noise from expected security checks
+- Important security warnings (invalid tokens, etc.) still logged at WARNING
+- Better distinction between expected behavior and actual security issues
+- No functional changes - only logging level adjustments
+
+---
+
 ## [4.37.3] - 2025-01-21 - Node Palette Selection Sync and History Save Fixes
 
 ### Fixed

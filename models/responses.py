@@ -75,6 +75,76 @@ class StatusResponse(BaseModel):
 
 
 # ============================================================================
+# HEALTH CHECK RESPONSE MODELS
+# ============================================================================
+
+class ModelHealthStatus(BaseModel):
+    """Health status for a single LLM model"""
+    status: str = Field(..., description="Health status: healthy or unhealthy")
+    latency: Optional[float] = Field(None, description="Response latency in seconds")
+    error: Optional[str] = Field(None, description="Error message if unhealthy")
+    error_type: Optional[str] = Field(None, description="Type of error (connection_error, timeout, etc.)")
+    note: Optional[str] = Field(None, description="Additional notes about the service")
+
+
+class LLMHealthResponse(BaseModel):
+    """Response model for LLM health check endpoint"""
+    status: str = Field(..., description="Overall status: success or error")
+    health: Dict[str, Any] = Field(..., description="Health data for all models")
+    circuit_states: Dict[str, str] = Field(..., description="Circuit breaker states for each model")
+    timestamp: int = Field(..., description="Unix timestamp of health check")
+    degraded: Optional[bool] = Field(None, description="True if some models are unhealthy")
+    unhealthy_count: Optional[int] = Field(None, description="Number of unhealthy models")
+    healthy_count: Optional[int] = Field(None, description="Number of healthy models")
+    total_models: Optional[int] = Field(None, description="Total number of models checked")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "success",
+                "health": {
+                    "available_models": ["qwen", "qwen-turbo"],
+                    "qwen": {"status": "healthy", "latency": 0.8},
+                    "qwen-turbo": {"status": "healthy", "latency": 0.34}
+                },
+                "circuit_states": {
+                    "qwen": "closed",
+                    "qwen-turbo": "closed"
+                },
+                "timestamp": 1642012345,
+                "degraded": False,
+                "unhealthy_count": 0,
+                "healthy_count": 2,
+                "total_models": 2
+            }
+        }
+
+
+class DatabaseHealthResponse(BaseModel):
+    """Response model for database health check endpoint"""
+    status: str = Field(..., description="Health status: healthy or unhealthy")
+    database_healthy: bool = Field(..., description="Whether database integrity check passed")
+    database_message: str = Field(..., description="Health check message")
+    database_stats: Dict[str, Any] = Field(default_factory=dict, description="Database statistics")
+    timestamp: int = Field(..., description="Unix timestamp of health check")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "healthy",
+                "database_healthy": True,
+                "database_message": "Database integrity check passed",
+                "database_stats": {
+                    "path": "data/mindgraph.db",
+                    "size_mb": 2.5,
+                    "total_rows": 650
+                },
+                "timestamp": 1642012345
+            }
+        }
+
+
+# ============================================================================
 # TAB MODE RESPONSE MODELS
 # ============================================================================
 

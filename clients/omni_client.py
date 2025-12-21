@@ -19,9 +19,10 @@ import json
 import base64
 import time
 import logging
-from typing import Optional, Callable, Dict, Any, AsyncGenerator
+from typing import Optional, Callable, Dict, Any, AsyncGenerator, List
 from enum import Enum
 
+import aiohttp
 import websockets
 from websockets.exceptions import ConnectionClosed
 
@@ -785,6 +786,76 @@ class OmniClient:
             logger.debug(f"Image appended: {len(image_bytes)} bytes ({image_format})")
         except Exception as e:
             logger.error(f"Failed to append image: {e}", exc_info=True)
+    
+    async def chat_completion(
+        self, 
+        messages: List[Dict], 
+        temperature: float = None,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Send chat completion request using standard DashScope HTTP API.
+        
+        NOTE: This is a fallback method for compatibility. Omni is primarily designed
+        for WebSocket real-time voice API. Health checks now use WebSocket connectivity
+        tests instead of this HTTP method. This method may not work if the Omni model
+        doesn't support standard HTTP API endpoints.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0.0 to 1.0), defaults to 0.7
+            max_tokens: Maximum tokens in response
+            **kwargs: Additional parameters
+            
+        Returns:
+            Dictionary with 'content' and 'usage' keys
+        """
+        if temperature is None:
+            temperature = 0.7
+        
+        # Use standard DashScope HTTP API endpoint
+        api_url = config.QWEN_API_URL
+        api_key = self.api_key
+        
+        # Use the configured Omni model name
+        # Note: Omni models are primarily for WebSocket real-time API,
+        # but we try HTTP API for health checks. If not supported, health check will fail gracefully.
+        model_name = self.model
+        
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+            "extra_body": {"enable_thinking": False}
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        timeout = aiohttp.ClientTimeout(total=10)  # Short timeout for health checks
+        
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(api_url, json=payload, headers=headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        usage = data.get('usage', {})
+                        return {
+                            'content': content,
+                            'usage': usage
+                        }
+                    else:
+                        error_text = await response.text()
+                        raise Exception(f"API returned status {response.status}: {error_text}")
+        except Exception as e:
+            logger.error(f"Chat completion failed for Omni: {e}")
+            raise
     
     @property
     def conversation(self):
