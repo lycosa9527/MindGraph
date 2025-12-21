@@ -359,7 +359,7 @@ class UserActivityTracker:
     
     def _cleanup_stale_sessions(self):
         """Remove sessions that have been inactive for too long."""
-            now = get_beijing_now()
+        now = get_beijing_now()
         stale_sessions = []
         
         for session_id, session in self._active_sessions.items():
