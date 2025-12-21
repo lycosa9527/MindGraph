@@ -10,6 +10,10 @@ Enhances basic flow map specs by:
 The agent accepts specs that include optional "substeps" and augments the
 spec with normalized sub-step metadata under private keys that renderers can
 ignore safely.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

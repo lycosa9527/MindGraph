@@ -15,6 +15,10 @@ Usage:
     python tests/test_health_check.py --endpoint http://localhost:9527
     python tests/test_health_check.py --direct  # Test service directly instead of HTTP
     python tests/test_health_check.py --json    # Output as JSON
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import asyncio

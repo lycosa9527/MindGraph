@@ -4,6 +4,10 @@ Internal Services Package
 This package contains internal services:
 - Browser: Playwright-based browser automation for PNG export
 - LLM Service: Centralized LLM client management and orchestration
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from .browser import BrowserContextManager

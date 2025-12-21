@@ -6,6 +6,10 @@ Made by: MindSpring Team
 
 Functions to generate standardized invitation codes for organizations.
 Pattern: 4 letters (from name/code) + '-' + 5 uppercase letters/digits
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import random

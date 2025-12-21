@@ -7,6 +7,10 @@ API endpoints for Tab Mode feature:
 - /api/tab_expand: Node expansion for viewing mode
 
 @author MindGraph Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

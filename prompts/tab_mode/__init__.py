@@ -6,6 +6,10 @@ Unified prompt registry for Tab Mode feature.
 Organizes prompts by function: autocomplete, expansion, colors.
 
 @author MindGraph Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from .autocomplete import TAB_MODE_AUTOCOMPLETE_PROMPTS

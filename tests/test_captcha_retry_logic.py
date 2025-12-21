@@ -17,6 +17,10 @@ Usage:
 Requirements:
     - Test database will be created in tests/test_captcha_retry.db
     - Uses actual production code (captcha_storage.py, routers/auth.py)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import time

@@ -14,6 +14,10 @@ Features:
 
 The agent uses LLM-based prompt analysis to classify the user's intent and
 generates the appropriate JSON specification for D3.js rendering.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os

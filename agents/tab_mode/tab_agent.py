@@ -6,6 +6,10 @@ Agent for generating tab completion suggestions and node expansions.
 Uses LangChain with Qwen-plus for structured, tool-based context extraction.
 
 @author MindGraph Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

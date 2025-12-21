@@ -9,6 +9,10 @@ This is the CRITICAL component enabling 4,000+ concurrent SSE connections.
 @made_by MindSpring Team
 
 Migration Status: Phase 3.1 - Async HTTP Client
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import aiohttp

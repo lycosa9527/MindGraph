@@ -33,6 +33,10 @@ Usage:
 Requirements:
     psutil - Required for system monitoring (CPU and Disk I/O)
     Install with: pip install psutil
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import time

@@ -8,6 +8,10 @@ Enhances concept map specifications by:
 - Generating layout hints (rings, clusters, angle hints)
 - Computing evenly-spread node positions with a lightweight force routine
 - Providing recommended dimensions sized to fit all content
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from typing import Dict, List, Set, Any, Tuple

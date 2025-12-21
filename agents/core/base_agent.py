@@ -3,6 +3,10 @@ Base Agent Class for MindGraph
 
 This module provides the abstract base class that all specialized
 agents inherit from, ensuring consistent interface and behavior.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from abc import ABC, abstractmethod

@@ -4,6 +4,10 @@ Agent Utilities Module for MindGraph
 This module contains utility functions that support the LangChain agent work,
 including parsing functions, fallback logic, and helper functions for
 processing agent outputs and handling edge cases.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

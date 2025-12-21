@@ -15,6 +15,10 @@ Features:
 - 5-column system preservation: [Left Children] [Left Branches] [Topic] [Right Branches] [Right Children]
 - Adaptive canvas sizing and coordinate centering
 - Advanced text width calculation for precise node sizing
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import json

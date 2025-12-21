@@ -3,6 +3,10 @@ Prompt to Diagram Agent Prompts
 
 This module contains prompts for direct prompt-to-diagram generation using a single LLM call.
 Used by simplified endpoints that need fast, efficient diagram generation.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 # ============================================================================

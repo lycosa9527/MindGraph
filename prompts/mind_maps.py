@@ -5,6 +5,10 @@ This module contains prompts for mind maps and related diagrams.
 
 NOTE: This file now contains ONLY the agent-specific prompts that are actually being used.
 The legacy general prompts have been removed to eliminate confusion and duplication.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 # ============================================================================

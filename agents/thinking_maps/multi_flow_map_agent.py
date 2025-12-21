@@ -7,6 +7,10 @@ importance ordering, and recommending canvas dimensions based on content size.
 
 Output remains a valid spec for existing D3 renderers, with optional
 metadata under private keys (prefixed with "_") that renderers can ignore.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

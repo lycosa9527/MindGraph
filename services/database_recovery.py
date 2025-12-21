@@ -17,6 +17,10 @@ Usage:
     If corruption is detected, the application pauses for user decision.
 
 Author: MindSpring Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os

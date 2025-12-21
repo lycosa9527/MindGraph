@@ -11,6 +11,10 @@ This module contains all prompts for the 8 Thinking Maps®:
 6. Flow Map - Sequence events and processes
 7. Multi-Flow Map - Analyze cause and effect relationships
 8. Bridge Map - Show analogies and similarities
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 # ============================================================================

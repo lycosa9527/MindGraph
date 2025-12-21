@@ -8,6 +8,10 @@ Async versions of diagram generation, PNG export, and SSE streaming endpoints.
 @made_by MindSpring Team
 
 Migration Status: Phase 2.2 - FastAPI API Routes
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import json

@@ -3,6 +3,10 @@ Token Usage Tracking Models
 Stores LLM token usage and costs for analytics.
 Author: lycosa9527
 Made by: MindSpring Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Index, Boolean

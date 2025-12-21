@@ -22,6 +22,10 @@ Usage:
     from settings import config
     api_key = config.QWEN_API_KEY
     is_valid = config.validate_qwen_config()
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from dotenv import load_dotenv

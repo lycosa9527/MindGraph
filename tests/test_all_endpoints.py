@@ -8,6 +8,10 @@ Usage:
     python tests/test_all_endpoints.py
     python tests/test_all_endpoints.py --base-url http://localhost:9527
     python tests/test_all_endpoints.py --json
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import asyncio

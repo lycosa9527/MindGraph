@@ -3,6 +3,10 @@ LLM Clients for Hybrid Agent Processing
 
 This module provides async interfaces for Qwen LLM clients
 used by diagram agents for layout optimization and style enhancement.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import asyncio

@@ -17,6 +17,10 @@ On new server deployments, users can:
     3. Setup will automatically extract the correct platform from the zip
 
 The zip file can be uploaded to GitHub releases or distributed separately.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os

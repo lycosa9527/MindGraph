@@ -20,6 +20,10 @@ Usage:
 
 Author: MindGraph Development Team
 Version: See VERSION file (centralized version management)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import subprocess

@@ -11,6 +11,10 @@ The agent accepts a spec of the form:
   { "topic": str, "children": [ {"id": str, "text": str, "children": [{"id": str, "text": str}] } ] }
 
 Returns { "success": bool, "spec": Dict } on success, or { "success": False, "error": str } on failure.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

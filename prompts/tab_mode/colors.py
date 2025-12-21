@@ -5,6 +5,10 @@ Tab Mode Color Suggestion Prompts
 High-contrast color suggestions for color picker inputs.
 
 @author MindGraph Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 TAB_MODE_COLOR_SUGGESTION_EN = """Suggest 3-5 high-contrast colors for a {diagram_type} diagram.

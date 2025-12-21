@@ -4,6 +4,10 @@ Voice Agent Prompts
 This module contains prompts used by the voice agent for:
 - Paragraph processing and content extraction
 - Intent detection and diagram type recommendation
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 # Paragraph processing prompt for Qwen Plus (English)
