@@ -2169,8 +2169,13 @@ curl -X POST http://your-server/api/generate_graph \
                 
                 // Prepare chart data
                 const labels = data.data.map(item => {
-                    const date = new Date(item.date);
-                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    // Parse date string and format using Beijing timezone
+                    const date = new Date(item.date + 'T00:00:00');
+                    return date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        timeZone: 'Asia/Shanghai'
+                    });
                 });
                 
                 const values = data.data.map(item => item.value);
@@ -2596,9 +2601,11 @@ curl -X POST http://your-server/api/generate_graph \
 
                 const tbody = document.getElementById('schools-tbody');
                 tbody.innerHTML = schools.map(school => {
+                    // Use Beijing time for expiration comparison
                     const now = new Date();
+                    const beijingNow = new Date(now.toLocaleString('en-US', {timeZone: 'Asia/Shanghai'}));
                     const expiresAt = school.expires_at ? new Date(school.expires_at) : null;
-                    const isExpired = expiresAt && expiresAt < now;
+                    const isExpired = expiresAt && expiresAt < beijingNow;
                     const isActive = school.is_active !== false;
                     
                     // Get token stats for this school
@@ -2859,10 +2866,12 @@ curl -X POST http://your-server/api/generate_graph \
                             </td>
                             <td style="color:#64748b;">
                                 ${user.created_at ? (() => {
+                                    // Convert UTC timestamp to Beijing time for display
                                     const date = new Date(user.created_at);
-                                    const year = date.getFullYear();
-                                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const beijingDate = new Date(date.toLocaleString('en-US', {timeZone: 'Asia/Shanghai'}));
+                                    const year = beijingDate.getFullYear();
+                                    const month = String(beijingDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(beijingDate.getDate()).padStart(2, '0');
                                     return `${year}-${month}-${day}`;
                                 })() : '-'}
                             </td>
@@ -4095,7 +4104,15 @@ curl -X POST http://your-server/api/generate_graph \
             } else if (diffHour < 24) {
                 return diffHour + 'h ago';
             } else {
-                return date.toLocaleString();
+                // Display in Beijing timezone
+                return date.toLocaleString('en-US', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
             }
         }
         

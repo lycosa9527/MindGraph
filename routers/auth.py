@@ -1849,10 +1849,10 @@ async def list_organizations_admin(
     orgs = db.query(Organization).all()
     result = []
     
-    # Get token stats for all organizations (this week)
+    # Get token stats for all organizations (this week) - use Beijing time
     token_stats_by_org = {}
-    now = datetime.now(timezone.utc)
-    week_ago = now - timedelta(days=7)
+    beijing_now = get_beijing_now()
+    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
     
     try:
         from models.token_usage import TokenUsage
@@ -2154,9 +2154,9 @@ async def list_users_admin(
     # Get paginated users
     users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
     
-    # Get token stats for all users (this week)
-    now = datetime.now(timezone.utc)
-    week_ago = now - timedelta(days=7)
+    # Get token stats for all users (this week) - use Beijing time
+    beijing_now = get_beijing_now()
+    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
     token_stats_by_user = {}
     
     try:
@@ -2669,7 +2669,8 @@ async def get_token_stats_admin(
     try:
         from models.token_usage import TokenUsage
         
-        # Today stats
+        # Today stats - sum all token usage today (including records with user_id=NULL)
+        # Note: This includes API key usage without user_id, so it may be larger than sum of top users
         today_token_stats = db.query(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens'),
@@ -2679,12 +2680,34 @@ async def get_token_stats_admin(
             TokenUsage.success == True
         ).first()
         
+        # Also calculate today stats for authenticated users only (for comparison)
+        today_user_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.created_at >= today_start,
+            TokenUsage.success == True,
+            TokenUsage.user_id.isnot(None)
+        ).first()
+        
         if today_token_stats:
             today_stats = {
                 "input_tokens": int(today_token_stats.input_tokens or 0),
                 "output_tokens": int(today_token_stats.output_tokens or 0),
                 "total_tokens": int(today_token_stats.total_tokens or 0)
             }
+        
+        # Verify consistency: sum of top users should not exceed authenticated user total
+        if today_user_token_stats:
+            authenticated_total = int(today_user_token_stats.total_tokens or 0)
+            all_total = today_stats.get('total_tokens', 0)
+            # Log for debugging if there's a discrepancy
+            logger.debug(f"Today token stats - All: {all_total}, Authenticated users only: {authenticated_total}")
+            
+            # Warn if authenticated total exceeds all total (shouldn't happen)
+            if authenticated_total > all_total:
+                logger.warning(f"Token count mismatch: Authenticated users ({authenticated_total}) > All users ({all_total})")
         
         # Past week stats
         week_token_stats = db.query(
@@ -2737,10 +2760,12 @@ async def get_token_stats_admin(
             }
         
         # Top 10 users by total tokens (all time), including organization name
+        # Group by Organization.id (not name) to avoid issues with duplicate organization names
         top_users_query = db.query(
             User.id,
             User.phone,
             User.name,
+            Organization.id.label('organization_id'),
             Organization.name.label('organization_name'),
             func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
             func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
@@ -2758,6 +2783,7 @@ async def get_token_stats_admin(
             User.id,
             User.phone,
             User.name,
+            Organization.id,
             Organization.name
         ).order_by(
             func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
@@ -2777,18 +2803,22 @@ async def get_token_stats_admin(
         ]
         
         # Top 10 users by today's token usage, including organization name
+        # Use inner join to only include users with actual token usage today
+        # Group by Organization.id (not name) to avoid issues with duplicate organization names
         top_users_today_query = db.query(
             User.id,
             User.phone,
             User.name,
+            Organization.id.label('organization_id'),
             Organization.name.label('organization_name'),
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
-            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
-            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens')
-        ).outerjoin(
+            func.sum(TokenUsage.total_tokens).label('total_tokens'),
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens')
+        ).join(
             Organization,
-            User.organization_id == Organization.id
-        ).outerjoin(
+            User.organization_id == Organization.id,
+            isouter=True
+        ).join(
             TokenUsage,
             and_(
                 User.id == TokenUsage.user_id,
@@ -2799,9 +2829,12 @@ async def get_token_stats_admin(
             User.id,
             User.phone,
             User.name,
+            Organization.id,
             Organization.name
+        ).having(
+            func.sum(TokenUsage.total_tokens) > 0
         ).order_by(
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
+            func.sum(TokenUsage.total_tokens).desc()
         ).limit(10).all()
         
         top_users_today = [
@@ -2816,6 +2849,22 @@ async def get_token_stats_admin(
             }
             for user in top_users_today_query
         ]
+        
+        # Verify consistency: sum of top 10 users today should not exceed authenticated user total
+        if today_user_token_stats and top_users_today:
+            authenticated_total = int(today_user_token_stats.total_tokens or 0)
+            top10_sum = sum(user['total_tokens'] for user in top_users_today)
+            all_total = today_stats.get('total_tokens', 0)
+            
+            # Log for debugging
+            logger.debug(f"Today token verification - All: {all_total}, Authenticated: {authenticated_total}, Top 10 sum: {top10_sum}")
+            
+            # Warn if top 10 sum exceeds authenticated total (indicates double counting or grouping issue)
+            if top10_sum > authenticated_total:
+                logger.warning(f"Token count mismatch: Top 10 users sum ({top10_sum}) > Authenticated users total ({authenticated_total})")
+            # Warn if authenticated total exceeds all total (shouldn't happen)
+            if authenticated_total > all_total:
+                logger.warning(f"Token count mismatch: Authenticated users ({authenticated_total}) > All users ({all_total})")
         
     except (ImportError, Exception) as e:
         logger.debug(f"TokenUsage not available yet: {e}")
@@ -2852,14 +2901,19 @@ async def get_stats_trends_admin(
     if days < 1:
         days = 1  # Minimum 1 day
     
-    now = datetime.now(timezone.utc)
-    start_date = now - timedelta(days=days)
-    start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Use Beijing time for date calculations
+    beijing_now = get_beijing_now()
+    beijing_start = beijing_now - timedelta(days=days)
+    beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Generate all dates in range (fill missing dates with 0)
+    # Convert to UTC for database queries
+    start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
+    now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+    
+    # Generate all dates in range using Beijing dates (for display)
     date_list = []
-    current = start_date
-    while current <= now:
+    current = beijing_start
+    while current <= beijing_now:
         date_list.append(current.date())
         current += timedelta(days=1)
     
@@ -2868,23 +2922,29 @@ async def get_stats_trends_admin(
     if metric == 'users':
         # Daily cumulative user count
         try:
-            # Get initial count before start_date
+            # Get initial count before start_date_utc
             initial_count = db.query(func.count(User.id)).filter(
-                User.created_at < start_date
+                User.created_at < start_date_utc
             ).scalar() or 0
             
-            # Get user counts grouped by date
+            # Get user counts grouped by date (using UTC for DB query, but we'll map to Beijing dates)
             user_counts = db.query(
                 func.date(User.created_at).label('date'),
                 func.count(User.id).label('count')
             ).filter(
-                User.created_at >= start_date
+                User.created_at >= start_date_utc
             ).group_by(
                 func.date(User.created_at)
             ).all()
             
-            # Create a dictionary for quick lookup
-            counts_by_date = {str(row.date): row.count for row in user_counts}
+            # Map UTC dates to Beijing dates
+            counts_by_date = {}
+            for row in user_counts:
+                utc_date = row.date
+                utc_datetime = datetime.combine(utc_date, datetime.min.time())
+                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+                beijing_date_str = str(beijing_datetime.date())
+                counts_by_date[beijing_date_str] = counts_by_date.get(beijing_date_str, 0) + row.count
             
             # Calculate cumulative counts
             cumulative = initial_count
@@ -2905,21 +2965,28 @@ async def get_stats_trends_admin(
     elif metric == 'organizations':
         # Daily cumulative organization count
         try:
-            # Get initial count before start_date
+            # Get initial count before start_date_utc
             initial_count = db.query(func.count(Organization.id)).filter(
-                Organization.created_at < start_date
+                Organization.created_at < start_date_utc
             ).scalar() or 0
             
             org_counts = db.query(
                 func.date(Organization.created_at).label('date'),
                 func.count(Organization.id).label('count')
             ).filter(
-                Organization.created_at >= start_date
+                Organization.created_at >= start_date_utc
             ).group_by(
                 func.date(Organization.created_at)
             ).all()
             
-            counts_by_date = {str(row.date): row.count for row in org_counts}
+            # Map UTC dates to Beijing dates
+            counts_by_date = {}
+            for row in org_counts:
+                utc_date = row.date
+                utc_datetime = datetime.combine(utc_date, datetime.min.time())
+                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+                beijing_date_str = str(beijing_datetime.date())
+                counts_by_date[beijing_date_str] = counts_by_date.get(beijing_date_str, 0) + row.count
             
             cumulative = initial_count
             for date in date_list:
@@ -2942,12 +3009,19 @@ async def get_stats_trends_admin(
                 func.date(User.created_at).label('date'),
                 func.count(User.id).label('count')
             ).filter(
-                User.created_at >= start_date
+                User.created_at >= start_date_utc
             ).group_by(
                 func.date(User.created_at)
             ).all()
             
-            counts_by_date = {str(row.date): row.count for row in reg_counts}
+            # Map UTC dates to Beijing dates
+            counts_by_date = {}
+            for row in reg_counts:
+                utc_date = row.date
+                utc_datetime = datetime.combine(utc_date, datetime.min.time())
+                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+                beijing_date_str = str(beijing_datetime.date())
+                counts_by_date[beijing_date_str] = counts_by_date.get(beijing_date_str, 0) + row.count
             
             for date in date_list:
                 date_str = str(date)
@@ -2971,20 +3045,24 @@ async def get_stats_trends_admin(
                 func.sum(TokenUsage.input_tokens).label('input_tokens'),
                 func.sum(TokenUsage.output_tokens).label('output_tokens')
             ).filter(
-                TokenUsage.created_at >= start_date,
+                TokenUsage.created_at >= start_date_utc,
                 TokenUsage.success == True
             ).group_by(
                 func.date(TokenUsage.created_at)
             ).all()
             
-            tokens_by_date = {
-                str(row.date): {
-                    "total": int(row.total_tokens or 0),
-                    "input": int(row.input_tokens or 0),
-                    "output": int(row.output_tokens or 0)
-                }
-                for row in token_counts
-            }
+            # Map UTC dates to Beijing dates
+            tokens_by_date = {}
+            for row in token_counts:
+                utc_date = row.date
+                utc_datetime = datetime.combine(utc_date, datetime.min.time())
+                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+                beijing_date_str = str(beijing_datetime.date())
+                if beijing_date_str not in tokens_by_date:
+                    tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+                tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
+                tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
+                tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
             
             for date in date_list:
                 date_str = str(date)

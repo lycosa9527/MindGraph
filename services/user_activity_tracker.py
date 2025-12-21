@@ -15,10 +15,17 @@ Made by: MindSpring Team
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Set
 from collections import defaultdict
 import threading
+
+# Beijing timezone (UTC+8)
+BEIJING_TIMEZONE = timezone(timedelta(hours=8))
+
+def get_beijing_now() -> datetime:
+    """Get current datetime in Beijing timezone (UTC+8)"""
+    return datetime.now(BEIJING_TIMEZONE)
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +115,7 @@ class UserActivityTracker:
                             session['user_name'] = user_name
                         if ip_address:
                             session['ip_address'] = ip_address
-                        session['last_activity'] = datetime.now()
+                        session['last_activity'] = get_beijing_now()
                     logger.debug(f"Reusing existing session {existing_session[:8]} for user {user_id}")
                     return existing_session
             
@@ -116,7 +123,7 @@ class UserActivityTracker:
             if session_id is None:
                 session_id = f"session_{uuid.uuid4().hex[:12]}"
             
-            now = datetime.now()
+            now = get_beijing_now()
             self._active_sessions[session_id] = {
                 'session_id': session_id,
                 'user_id': user_id,
@@ -204,7 +211,7 @@ class UserActivityTracker:
             session_id: Optional session ID (will find or create if not provided)
         """
         with self._lock:
-            now = datetime.now()
+            now = get_beijing_now()
             
             # Find or create session
             if session_id is None:
@@ -258,7 +265,7 @@ class UserActivityTracker:
         activity_label = self._activity_types.get(activity_type, activity_type)
         
         entry = {
-            'timestamp': datetime.now(),
+            'timestamp': get_beijing_now(),
             'user_id': user_id,
             'user_phone': user_phone,
             'activity_type': activity_type,
@@ -298,7 +305,7 @@ class UserActivityTracker:
                     ),
                     'last_activity': session['last_activity'].isoformat(),
                     'activity_count': session['activity_count'],
-                    'session_duration': str(datetime.now() - session['created_at']).split('.')[0]
+                    'session_duration': str(get_beijing_now() - session['created_at']).split('.')[0]
                 }
                 active_users.append(user_data)
             
@@ -347,12 +354,12 @@ class UserActivityTracker:
                 'unique_users_count': len(self._user_sessions),
                 'total_sessions': len(self._active_sessions),
                 'recent_activities_count': len(self._activity_history),
-                'timestamp': datetime.now().isoformat()
+                'timestamp': get_beijing_now().isoformat()
             }
     
     def _cleanup_stale_sessions(self):
         """Remove sessions that have been inactive for too long."""
-        now = datetime.now()
+            now = get_beijing_now()
         stale_sessions = []
         
         for session_id, session in self._active_sessions.items():

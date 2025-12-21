@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.5] - 2025-01-21 - Admin Panel Beijing Timezone, Token Aggregation, and Logging Fixes
+
+### Fixed
+
+- **Admin Panel Timezone Consistency** (`routers/auth.py`, `templates/admin.html`, `services/user_activity_tracker.py`)
+  - Fixed all admin panel queries to use Beijing time (UTC+8) instead of UTC
+  - Trend charts endpoint now uses Beijing time for date calculations and display
+  - User registration dates now display in Beijing timezone
+  - School expiration comparisons now use Beijing time
+  - Realtime monitoring timestamps now use Beijing timezone
+  - User activity tracker now uses Beijing time for all timestamps
+  - Week/month calculations in users and schools tabs now use Beijing time
+
+- **Token Aggregation Query Fixes** (`routers/auth.py`)
+  - Fixed Top 10 users queries to group by `Organization.id` in addition to `Organization.name`
+  - Prevents incorrect token sums when multiple organizations have the same name
+  - Added verification logging to detect token count discrepancies
+  - All token aggregation queries now correctly group to prevent double counting
+
+- **Invalid HTTP Request Logging** (`main.py`)
+  - Downgraded uvicorn "Invalid HTTP request" warnings to DEBUG level
+  - These are usually harmless client errors (bots, scanners, malformed requests)
+  - Added RequestValidationError handler for better 422 error logging
+  - HTTP 400 errors now log at DEBUG level (expected client errors)
+  - Reduces log noise from expected client-side errors
+
+### Fixed
+
+- **Admin Panel Timezone Consistency** (`routers/auth.py`, `templates/admin.html`, `services/user_activity_tracker.py`)
+  - Fixed all admin panel queries to use Beijing time (UTC+8) instead of UTC
+  - Trend charts endpoint now uses Beijing time for date calculations and display
+  - User registration dates now display in Beijing timezone
+  - School expiration comparisons now use Beijing time
+  - Realtime monitoring timestamps now use Beijing timezone
+  - User activity tracker now uses Beijing time for all timestamps
+  - Week/month calculations in users and schools tabs now use Beijing time
+
+- **Token Aggregation Query Fixes** (`routers/auth.py`)
+  - Fixed Top 10 users queries to group by `Organization.id` in addition to `Organization.name`
+  - Prevents incorrect token sums when multiple organizations have the same name
+  - Added verification logging to detect token count discrepancies
+  - All token aggregation queries now correctly group to prevent double counting
+
+### Technical Details
+
+**Timezone Fixes:**
+
+**Trend Charts Endpoint** (`routers/auth.py:2856-3034`):
+- Changed from `datetime.now(timezone.utc)` to `get_beijing_now()`
+- Converts Beijing dates to UTC for database queries
+- Maps UTC dates back to Beijing dates for display
+- Fixed for all metrics: users, organizations, registrations, tokens
+
+**Frontend Display Fixes** (`templates/admin.html`):
+- User registration dates: Converts UTC to Beijing time before display
+- School expiration: Uses Beijing time for comparison
+- Trend chart labels: Added `timeZone: 'Asia/Shanghai'` to date formatting
+- Realtime monitoring: `formatTimeAgo()` now displays Beijing time
+
+**User Activity Tracker** (`services/user_activity_tracker.py`):
+- Added Beijing timezone functions (`get_beijing_now()`)
+- Replaced all `datetime.now()` calls with `get_beijing_now()`
+- All timestamps now use Beijing time consistently
+
+**Token Aggregation Fixes:**
+
+**Top 10 Users Queries** (`routers/auth.py:2758-2782, 2800-2828`):
+- Issue: Grouped by `Organization.name` only, causing incorrect sums if names duplicated
+- Fix: Added `Organization.id` to `group_by` clause
+- Impact: Prevents double counting and ensures accurate token sums
+
+**Verification Logging** (`routers/auth.py:2701-2706, 2853-2863`):
+- Added checks comparing "all tokens" vs "authenticated users only"
+- Added checks comparing "top 10 sum" vs "authenticated users total"
+- Logs warnings if discrepancies detected for debugging
+
+**Files Modified:**
+- `routers/auth.py` - Fixed timezone in trend charts, week/month calculations, top users queries
+- `templates/admin.html` - Fixed timezone in user dates, school expiration, chart labels, realtime timestamps
+- `services/user_activity_tracker.py` - Added Beijing timezone support
+
+**Impact:**
+- All admin panel timestamps, rankings, and date calculations now use Beijing time consistently
+- Token aggregation queries now correctly group to prevent double counting
+- Verification logging helps detect and debug any future token count discrepancies
+- All tabs, cards, graphs, and rankings verified and fixed
+
+---
+
 ## [4.37.4] - 2025-01-21 - Logging Optimization for Expected Security Checks
 
 ### Fixed

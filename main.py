@@ -499,6 +499,19 @@ logging.basicConfig(
     force=True
 )
 
+# Filter to downgrade "Invalid HTTP request" warnings from uvicorn to DEBUG level
+# These are usually harmless client errors (bots, scanners, malformed requests)
+class UvicornInvalidRequestFilter(logging.Filter):
+    """Filter to downgrade uvicorn 'Invalid HTTP request' warnings to DEBUG level."""
+    def filter(self, record):
+        # If this is a WARNING about invalid HTTP request, downgrade to DEBUG
+        if record.levelno == logging.WARNING:
+            message = record.getMessage()
+            if 'Invalid HTTP request' in message or 'invalid request' in message.lower():
+                record.levelno = logging.DEBUG
+                record.levelname = 'DEBUG'
+        return True
+
 # Configure Uvicorn's loggers to use our custom formatter
 # Note: uvicorn.access is excluded - access_log=False in run_server.py disables HTTP request logging
 for uvicorn_logger_name in ['uvicorn', 'uvicorn.error']:
@@ -506,6 +519,7 @@ for uvicorn_logger_name in ['uvicorn', 'uvicorn.error']:
     uvicorn_logger.handlers = []  # Remove default handlers
     uvicorn_logger.addHandler(console_handler)
     uvicorn_logger.addHandler(file_handler)
+    uvicorn_logger.addFilter(UvicornInvalidRequestFilter())  # Downgrade invalid request warnings
     uvicorn_logger.propagate = False
 
 # Create main logger early
@@ -695,6 +709,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.exceptions import RequestValidationError
 from models.responses import DatabaseHealthResponse
 
 # ============================================================================
@@ -1147,6 +1162,40 @@ templates.env.auto_reload = True  # Enable template auto-reload for development
 # GLOBAL EXCEPTION HANDLERS
 # ============================================================================
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Handle request validation errors (422 Unprocessable Entity).
+    
+    These occur when request body/parameters don't match the expected schema.
+    Common causes: missing required fields, wrong data types, invalid formats.
+    """
+    path = getattr(request.url, 'path', '') if request and request.url else ''
+    
+    # Extract validation errors
+    errors = exc.errors() if hasattr(exc, 'errors') else []
+    error_details = []
+    for error in errors:
+        loc = error.get('loc', [])
+        msg = error.get('msg', '')
+        error_details.append(f"{'.'.join(str(x) for x in loc)}: {msg}")
+    
+    # Log at DEBUG level for common validation issues (expected client errors)
+    # Log at WARNING level for unusual validation errors
+    error_summary = '; '.join(error_details[:3])  # Show first 3 errors
+    if len(error_details) > 3:
+        error_summary += f" ... and {len(error_details) - 3} more"
+    
+    logger.debug(f"Request validation error on {path}: {error_summary}")
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": error_details,
+            "message": "Request validation failed. Please check your request parameters."
+        }
+    )
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """
@@ -1163,10 +1212,15 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     #    The admin button ("后台") calls /api/auth/admin/stats to check admin status
     # 2. Token expiration checks (401 with "Invalid or expired token")
     #    Frontend periodically checks authentication status via /api/auth/me
+    # 3. Request validation errors (400) - these are client errors, log at DEBUG
     if exc.status_code == 403 and path.startswith("/api/auth/admin/"):
         logger.debug(f"HTTP {exc.status_code}: {exc.detail} (expected admin check)")
     elif exc.status_code == 401 and "Invalid or expired token" in detail:
         logger.debug(f"HTTP {exc.status_code}: {exc.detail} (expected token expiration check)")
+    elif exc.status_code == 400:
+        # 400 Bad Request - usually client errors (invalid parameters, malformed requests)
+        # Log at DEBUG level to reduce noise (these are expected client errors)
+        logger.debug(f"HTTP {exc.status_code} on {path}: {exc.detail}")
     else:
         logger.warning(f"HTTP {exc.status_code}: {exc.detail}")
     return JSONResponse(
