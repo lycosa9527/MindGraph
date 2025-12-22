@@ -52,7 +52,7 @@ class SQLiteCaptchaStorage:
     
     def _retry_on_lock(self, operation_func: Callable, max_retries: int = 8, base_delay: float = 0.02):
         """
-        Retry database operations on lock errors with exponential backoff.
+        Retry database operations on lock/pool errors with exponential backoff.
         
         Optimized for multi-worker deployments (4 workers):
         - SQLite busy_timeout: 150ms (handles queued writes from multiple workers)
@@ -64,8 +64,12 @@ class SQLiteCaptchaStorage:
         Typical wait: 10-150ms (most locks clear quickly)
         Old approach: up to 5 seconds → ~3x faster, but more reliable for 4-worker contention
         
-        Database locks are transient and usually resolve quickly. This retry logic
-        handles transient locks gracefully while still failing fast on other errors.
+        Retryable errors:
+        - "database is locked" / "database locked" - SQLite write contention
+        - "QueuePool limit" - Connection pool temporarily exhausted
+        
+        Database locks and pool exhaustion are transient and usually resolve quickly. 
+        This retry logic handles them gracefully while still failing fast on other errors.
         
         Args:
             operation_func: Function to execute (should be a callable that returns a value)
@@ -76,7 +80,7 @@ class SQLiteCaptchaStorage:
             Result from operation_func if successful
         
         Raises:
-            Exception: If all retries fail or error is not a database lock
+            Exception: If all retries fail or error is not retryable
         """
         for attempt in range(max_retries):
             try:
@@ -91,8 +95,10 @@ class SQLiteCaptchaStorage:
             except Exception as e:
                 error_msg = str(e).lower()
                 is_db_lock = "database is locked" in error_msg or "database locked" in error_msg
+                is_pool_exhausted = "queuepool limit" in error_msg or "connection timed out" in error_msg
+                is_retryable = is_db_lock or is_pool_exhausted
                 
-                if is_db_lock and attempt < max_retries - 1:
+                if is_retryable and attempt < max_retries - 1:
                     # Exponential backoff: 0.02s, 0.04s, 0.08s, 0.16s
                     delay = base_delay * (2 ** attempt)
                     # Increased jitter (30%) to spread retries across multiple workers
@@ -100,24 +106,28 @@ class SQLiteCaptchaStorage:
                     jitter = random.uniform(0, delay * 0.3)
                     total_delay = delay + jitter
                     
+                    # Determine error type for logging
+                    error_type = "Database lock" if is_db_lock else "Pool exhaustion"
+                    
                     # Log every retry attempt with details
                     logger.warning(
-                        f"[CaptchaStorage] Database lock detected (attempt {attempt + 1}/{max_retries}), "
+                        f"[CaptchaStorage] {error_type} detected (attempt {attempt + 1}/{max_retries}), "
                         f"retrying after {total_delay:.3f}s delay. Error: {str(e)[:150]}"
                     )
                     time.sleep(total_delay)
                     continue
                 
-                # All retries exhausted or non-lock error
-                if is_db_lock:
+                # All retries exhausted or non-retryable error
+                if is_retryable:
+                    error_type = "database lock" if is_db_lock else "pool exhaustion"
                     logger.error(
-                        f"[CaptchaStorage] All {max_retries} retry attempts exhausted for database lock. "
+                        f"[CaptchaStorage] All {max_retries} retry attempts exhausted for {error_type}. "
                         f"Final error: {str(e)[:200]}"
                     )
                 else:
-                    # Non-lock error - log at warning level (will be re-raised)
+                    # Non-retryable error - log at warning level (will be re-raised)
                     logger.warning(
-                        f"[CaptchaStorage] Non-lock database error (not retrying): {str(e)[:200]}"
+                        f"[CaptchaStorage] Non-retryable database error: {str(e)[:200]}"
                     )
                 raise
     
@@ -270,10 +280,12 @@ class SQLiteCaptchaStorage:
         except Exception as e:
             error_msg = str(e).lower()
             is_db_lock = "database is locked" in error_msg or "database locked" in error_msg
+            is_pool_exhausted = "queuepool limit" in error_msg or "connection timed out" in error_msg
             
-            if is_db_lock:
+            if is_db_lock or is_pool_exhausted:
+                error_type = "database lock" if is_db_lock else "pool exhaustion"
                 logger.error(
-                    f"[CaptchaStorage] [VERIFY] Database lock after all retries: {captcha_id}. Error: {str(e)[:200]}"
+                    f"[CaptchaStorage] [VERIFY] {error_type.title()} after all retries: {captcha_id}. Error: {str(e)[:200]}"
                 )
                 return False, "database_locked"
             else:
@@ -286,42 +298,58 @@ class SQLiteCaptchaStorage:
         """
         Remove a captcha code.
         
+        Automatically retries on database lock/pool errors.
+        
         Args:
             captcha_id: Unique captcha identifier
         """
-        db = self._get_db()
+        def _remove_operation():
+            db = self._get_db()
+            try:
+                captcha = db.query(Captcha).filter(Captcha.id == captcha_id).first()
+                if captcha:
+                    db.delete(captcha)
+                    db.commit()
+                    logger.debug(f"[CaptchaStorage] Removed captcha: {captcha_id}")
+                return True
+            except Exception as e:
+                db.rollback()
+                raise
+            finally:
+                db.close()
+        
         try:
-            captcha = db.query(Captcha).filter(Captcha.id == captcha_id).first()
-            if captcha:
-                db.delete(captcha)
-                db.commit()
-                logger.debug(f"[CaptchaStorage] Removed captcha: {captcha_id}")
+            return self._retry_on_lock(_remove_operation)
         except Exception as e:
-            db.rollback()
-            logger.error(f"[CaptchaStorage] Failed to remove captcha: {e}")
-        finally:
-            db.close()
+            logger.error(f"[CaptchaStorage] [REMOVE] Failed to remove captcha {captcha_id} after all retries: {e}")
     
     def cleanup_expired(self):
         """
         Clean up expired captchas (maintenance operation).
         
         Called periodically to remove old entries.
+        Automatically retries on database lock/pool errors.
         """
-        db = self._get_db()
-        try:
-            now = datetime.utcnow()
-            deleted = db.query(Captcha).filter(Captcha.expires_at < now).delete()
-            db.commit()
-            
-            if deleted > 0:
-                logger.debug(f"[CaptchaStorage] Cleaned up {deleted} expired captchas")
+        def _cleanup_operation():
+            db = self._get_db()
+            try:
+                now = datetime.utcnow()
+                deleted = db.query(Captcha).filter(Captcha.expires_at < now).delete()
+                db.commit()
                 
+                if deleted > 0:
+                    logger.debug(f"[CaptchaStorage] Cleaned up {deleted} expired captchas")
+                return deleted
+            except Exception as e:
+                db.rollback()
+                raise
+            finally:
+                db.close()
+        
+        try:
+            return self._retry_on_lock(_cleanup_operation)
         except Exception as e:
-            db.rollback()
-            logger.error(f"[CaptchaStorage] Failed to cleanup expired captchas: {e}")
-        finally:
-            db.close()
+            logger.error(f"[CaptchaStorage] [CLEANUP] Failed to cleanup expired captchas after all retries: {e}")
 
 
 # Global singleton instance

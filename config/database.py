@@ -207,9 +207,22 @@ else:
 # For SQLite: use check_same_thread=False
 # For PostgreSQL/MySQL: configure connection pool for production workloads
 if "sqlite" in DATABASE_URL:
+    # SQLite pool configuration for multi-worker deployments
+    # Default pool is too small (5+10=15) for high concurrency
+    # Sized for 200 concurrent users with safety margin:
+    # - Base: 15 connections (handles normal load)
+    # - Overflow: 30 connections (handles bursts)
+    # - Total: 45 connections (3x safety margin for 200 users)
+    SQLITE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '15'))       # Base connections
+    SQLITE_MAX_OVERFLOW = int(os.getenv('DATABASE_MAX_OVERFLOW', '30'))  # Overflow connections
+    SQLITE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '30'))  # Wait time (seconds)
+    
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False},
+        pool_size=SQLITE_POOL_SIZE,        # Default: 10 (was 5)
+        max_overflow=SQLITE_MAX_OVERFLOW,   # Default: 20 (was 10)
+        pool_timeout=SQLITE_POOL_TIMEOUT,   # Default: 30 (was 30)
         pool_pre_ping=True,  # Verify connections before using
         echo=False  # Set to True for SQL query logging
     )
