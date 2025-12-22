@@ -1,0 +1,171 @@
+# MindGraph Docker Ignore File
+# Excludes unnecessary files from Docker build context
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+CHANGELOG.md
+docs/
+*.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Runtime data directory (captcha storage, database files)
+data/
+captcha_store.json
+
+# Database backups
+backup/
+backups/
+*.backup_*
+*_backup_*.sql
+*.db.*
+mindgraph.db.*
+*.sqlite.*
+*.sqlite3.*
+
+# Environment file backups
+logs/env_backups/
+.env.backup.*
+.env.*.backup
+
+# API Keys and sensitive data
+*API_KEY*.txt
+*API_KEY*.json
+*_key.txt
+api_keys/
+keys/
+
+# Development temporary files
+development_prompts/
+
+# Logs
+logs/*.log
+*.log
+
+# Test files and images
+tests/images/
+tests/results/
+tests/specs/
+tests/html_viewer/
+test/images/
+test/results/
+test/specs/
+test/html_viewer/
+temp_images/
+
+# Temporary files
+tmp/
+temp/
+temp_images/
+*.tmp
+*.temp
+
+# Node modules (if any)
+node_modules/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/

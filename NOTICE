@@ -1,0 +1,86 @@
+MindGraph - Enterprise-Grade AI Diagram Generation Platform
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+
+This product includes software developed by 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.).
+
+===============================================================================
+
+TRADEMARKS
+
+The following are trademarks of 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.):
+- MindGraph (name)
+- MindGraph logos and visual identity
+- Related branding
+
+This software is licensed under a Proprietary License (All Rights Reserved). 
+Our trademarks are protected and may not be used without explicit written permission.
+
+If you fork or redistribute this software, you must:
+- Remove all MindGraph branding and logos
+- Use a different name for your project  
+- Provide clear attribution to the original project
+
+===============================================================================
+
+PROJECT HIGHLIGHT
+
+This entire enterprise-grade application was created by someone with ZERO 
+programming knowledge using Cursor AI (https://cursor.sh) - an AI-powered 
+code editor. This demonstrates that anyone with vision and ideas can build 
+professional software in the AI era, regardless of technical background.
+
+Key Achievement:
+- 6,900+ lines of production code
+- 15 files modified for security system
+- 4,000+ concurrent connections supported
+- 10 diagram types with AI generation
+- Bilingual English/Chinese support
+- 100% AI-assisted development with Cursor AI
+
+Developed by 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Powered by Cursor AI - https://cursor.sh
+
+===============================================================================
+
+THIRD-PARTY COMPONENTS
+
+This software includes the following third-party components:
+
+FastAPI - MIT License
+  Copyright (c) 2018 Sebastián Ramírez
+  https://github.com/tiangolo/fastapi
+
+Uvicorn - BSD License  
+  Copyright (c) 2017-present, Encode OSS Ltd.
+  https://github.com/encode/uvicorn
+
+SQLAlchemy - MIT License
+  Copyright (c) 2005-2023 Michael Bayer and contributors
+  https://github.com/sqlalchemy/sqlalchemy
+
+Pydantic - MIT License
+  Copyright (c) 2017-2023 Samuel Colvin and contributors  
+  https://github.com/pydantic/pydantic
+
+bcrypt - Apache License 2.0
+  Copyright (c) The Python Cryptographic Authority
+  https://github.com/pyca/bcrypt
+
+python-jose - MIT License
+  Copyright (c) 2013 Michael Davis
+  https://github.com/mpdavis/python-jose
+
+D3.js - BSD 3-Clause License
+  Copyright (c) 2010-2023, Michael Bostock
+  https://d3js.org/
+
+Inter Font Family - SIL Open Font License v1.1
+  Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+  https://rsms.me/inter/
+  Licensed under SIL Open Font License v1.1
+  Font files located in: static/fonts/
+
+For a complete list of dependencies, see requirements.txt
+
+===============================================================================
+

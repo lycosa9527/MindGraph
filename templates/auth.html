@@ -1,0 +1,2540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph - 用户登录/注册</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Gaussian Blur Background */
+        .blur-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(100px);
+            z-index: 0;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: visible;
+        }
+
+        /* Rotating rainbow light border effect */
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 23px;
+            background: conic-gradient(
+                from 0deg,
+                #667eea,
+                #764ba2,
+                #f093fb,
+                #4facfe,
+                #00f2fe,
+                #43e97b,
+                #fa709a,
+                #fee140,
+                #667eea
+            );
+            z-index: -1;
+            filter: blur(10px);
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+            position: relative;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .lang-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: white;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .lang-en { display: none; }
+        .lang-zh { display: inline; }
+
+        .tabs {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            color: #64748b;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: #f1f5f9;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+            border-bottom-color: #667eea;
+        }
+
+        .form-container {
+            padding: 30px;
+            background: white;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .captcha-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .captcha-input {
+            flex: 1;
+        }
+
+        .captcha-image {
+            cursor: pointer;
+            border-radius: 8px;
+            height: 50px;
+            width: 140px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .captcha-image:hover {
+            border-color: rgba(102, 126, 234, 0.6);
+            transform: scale(1.02);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Forget Password Link */
+        .forget-password-link {
+            text-align: center;
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .forget-password-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .forget-password-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .forget-password-link .separator {
+            color: #cbd5e1;
+        }
+
+        /* Back Link */
+        .back-link {
+            margin-bottom: 15px;
+        }
+
+        .back-link a {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .back-link a:hover {
+            color: #667eea;
+        }
+
+        /* Reset Title */
+        .reset-title {
+            color: #334155;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Resend Link */
+        .resend-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .resend-link a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .resend-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .resend-link a.disabled {
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        #resend-countdown {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .auth-container {
+                border-radius: 20px;
+                margin: 10px;
+            }
+            .auth-header {
+                border-radius: 20px 20px 0 0;
+            }
+            .form-container {
+                padding: 20px;
+                border-radius: 0 0 20px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blur-overlay"></div>
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">
+                <span class="lang-zh">EN</span>
+                <span class="lang-en">中文</span>
+            </button>
+            <h1>🎓 MindGraph</h1>
+            <p>
+                <span class="lang-zh">K12 教师思维可视化工具平台</span>
+                <span class="lang-en">K12 Teacher Thinking Visualization Tool Platform</span>
+            </p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">
+                <span class="lang-zh">登录</span>
+                <span class="lang-en">Login</span>
+            </div>
+            <div class="tab" onclick="switchTab('register')">
+                <span class="lang-zh">注册</span>
+                <span class="lang-en">Register</span>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div id="alert" class="alert"></div>
+
+            <!-- Login Form -->
+            <form id="login-form" style="display: block;">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">手机号</span>
+                        <span class="lang-en">Phone Number</span>
+                    </label>
+                    <input type="tel" class="form-input" name="phone" id="login-phone"
+                           placeholder="手机号作为用户名" maxlength="11" required autocomplete="username tel">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">密码</span>
+                        <span class="lang-en">Password</span>
+                    </label>
+                    <input type="password" class="form-input" name="password" id="login-password"
+                           placeholder="输入密码" autocomplete="current-password" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">验证码</span>
+                        <span class="lang-en">Verification Code</span>
+                    </label>
+                    <div class="captcha-group">
+                        <input type="text" class="form-input captcha-input" name="captcha" id="login-captcha"
+                               placeholder="输入验证码" maxlength="4" required>
+                        <img id="captchaImage" class="captcha-image" src="" alt="验证码" 
+                             onclick="refreshCaptcha()" title="点击刷新">
+                    </div>
+                    <small class="hint-text">
+                        <span class="lang-zh">点击图片刷新验证码</span>
+                        <span class="lang-en">Click image to refresh</span>
+                    </small>
+                    <input type="hidden" name="captcha_id" id="captchaId">
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="login-btn">
+                    <span class="lang-zh">登录</span>
+                    <span class="lang-en">Login</span>
+                </button>
+                <div class="spinner" id="login-spinner"></div>
+                
+                <div class="forget-password-link">
+                    <a href="#" onclick="showResetPassword(event)">
+                        <span class="lang-zh">忘记密码？</span>
+                        <span class="lang-en">Forgot Password?</span>
+                    </a>
+                    <span class="separator">|</span>
+                    <a href="#" onclick="showSMSLogin(event)">
+                        <span class="lang-zh">使用短信验证码登录</span>
+                        <span class="lang-en">Login with SMS Code</span>
+                    </a>
+                </div>
+            </form>
+            
+            <!-- SMS Login Form -->
+            <form id="sms-login-form" style="display: none;">
+                <div class="back-link">
+                    <a href="#" onclick="backToLoginFromSMS(event)">
+                        <span class="lang-zh">← 返回登录</span>
+                        <span class="lang-en">← Back to Login</span>
+                    </a>
+                </div>
+                
+                <!-- Step 1: Phone + Captcha to send SMS -->
+                <div id="sms-login-step1">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">手机号</span>
+                            <span class="lang-en">Phone Number</span>
+                        </label>
+                        <input type="tel" class="form-input" name="phone" id="sms-login-phone"
+                               placeholder="输入注册手机号" maxlength="11" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">图形验证码</span>
+                            <span class="lang-en">Captcha</span>
+                        </label>
+                        <div class="captcha-group">
+                            <input type="text" class="form-input captcha-input" name="captcha" id="sms-login-captcha"
+                                   placeholder="输入验证码" maxlength="4" required>
+                            <img id="smsLoginCaptchaImage" class="captcha-image" src="" alt="验证码" 
+                                 onclick="refreshSMSLoginCaptcha()" title="点击刷新">
+                        </div>
+                        <small class="hint-text">
+                            <span class="lang-zh">验证后发送短信验证码</span>
+                            <span class="lang-en">Verify to receive SMS code</span>
+                        </small>
+                        <input type="hidden" name="captcha_id" id="smsLoginCaptchaId">
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="send-sms-login-btn" onclick="sendSMSLoginCode()">
+                        <span class="lang-zh">发送短信验证码</span>
+                        <span class="lang-en">Send SMS Code</span>
+                    </button>
+                    <div class="spinner" id="sms-login-spinner"></div>
+                </div>
+                
+                <!-- Step 2: SMS Code -->
+                <div id="sms-login-step2" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">短信验证码</span>
+                            <span class="lang-en">SMS Code</span>
+                        </label>
+                        <input type="text" class="form-input" name="sms_code" id="sms-login-code"
+                               placeholder="输入6位短信验证码" maxlength="6" required>
+                        <small class="hint-text">
+                            <span class="lang-zh" id="sms-login-sent-hint">验证码已发送至 <span id="sms-login-masked-phone"></span></span>
+                            <span class="lang-en" id="sms-login-sent-hint-en">Code sent to <span id="sms-login-masked-phone-en"></span></span>
+                        </small>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="sms-login-btn" onclick="performSMSLogin()">
+                        <span class="lang-zh">登录</span>
+                        <span class="lang-en">Login</span>
+                    </button>
+                    <div class="spinner" id="sms-login-submit-spinner"></div>
+                    
+                    <div class="resend-link">
+                        <a href="#" onclick="resendSMSLogin(event)" id="resend-sms-login-link">
+                            <span class="lang-zh">重新发送验证码</span>
+                            <span class="lang-en">Resend Code</span>
+                        </a>
+                        <span id="resend-sms-login-countdown" style="display: none;"></span>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Reset Password Form -->
+            <form id="reset-form" style="display: none;">
+                <div class="back-link">
+                    <a href="#" onclick="backToLogin(event)">
+                        <span class="lang-zh">← 返回登录</span>
+                        <span class="lang-en">← Back to Login</span>
+                    </a>
+                </div>
+                
+                <!-- Step 1: Phone + Captcha to send SMS -->
+                <div id="reset-step1">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">手机号</span>
+                            <span class="lang-en">Phone Number</span>
+                        </label>
+                        <input type="tel" class="form-input" name="phone" id="reset-phone"
+                               placeholder="输入注册手机号" maxlength="11" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">图形验证码</span>
+                            <span class="lang-en">Captcha</span>
+                        </label>
+                        <div class="captcha-group">
+                            <input type="text" class="form-input captcha-input" name="captcha" id="reset-captcha"
+                                   placeholder="输入验证码" maxlength="4" required>
+                            <img id="resetCaptchaImage" class="captcha-image" src="" alt="验证码" 
+                                 onclick="refreshResetCaptcha()" title="点击刷新">
+                        </div>
+                        <small class="hint-text">
+                            <span class="lang-zh">验证后发送短信验证码</span>
+                            <span class="lang-en">Verify to receive SMS code</span>
+                        </small>
+                        <input type="hidden" name="captcha_id" id="resetCaptchaId">
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="send-sms-btn" onclick="sendResetSMS()">
+                        <span class="lang-zh">发送短信验证码</span>
+                        <span class="lang-en">Send SMS Code</span>
+                    </button>
+                    <div class="spinner" id="sms-spinner"></div>
+                </div>
+                
+                <!-- Step 2: SMS Code + New Password -->
+                <div id="reset-step2" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">短信验证码</span>
+                            <span class="lang-en">SMS Code</span>
+                        </label>
+                        <input type="text" class="form-input" name="sms_code" id="reset-sms-code"
+                               placeholder="输入6位短信验证码" maxlength="6" required autocomplete="one-time-code">
+                        <small class="hint-text">
+                            <span class="lang-zh" id="sms-sent-hint">验证码已发送至 <span id="masked-phone"></span></span>
+                            <span class="lang-en" id="sms-sent-hint-en">Code sent to <span id="masked-phone-en"></span></span>
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">新密码</span>
+                            <span class="lang-en">New Password</span>
+                        </label>
+                        <input type="password" class="form-input" name="new_password" id="reset-new-password"
+                               placeholder="输入新密码（至少8位）" minlength="8" autocomplete="new-password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="lang-zh">确认密码</span>
+                            <span class="lang-en">Confirm Password</span>
+                        </label>
+                        <input type="password" class="form-input" name="confirm_password" id="reset-confirm-password"
+                               placeholder="再次输入新密码" minlength="8" autocomplete="new-password" required>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="reset-password-btn" onclick="resetPassword()">
+                        <span class="lang-zh">重置密码</span>
+                        <span class="lang-en">Reset Password</span>
+                    </button>
+                    <div class="spinner" id="reset-spinner"></div>
+                    
+                    <div class="resend-link">
+                        <a href="#" onclick="resendSMS(event)" id="resend-sms-link">
+                            <span class="lang-zh">重新发送验证码</span>
+                            <span class="lang-en">Resend Code</span>
+                        </a>
+                        <span id="resend-countdown" style="display: none;"></span>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">手机号 *</span>
+                        <span class="lang-en">Phone Number *</span>
+                    </label>
+                    <input type="tel" class="form-input" name="phone" id="register-phone"
+                           placeholder="手机号作为用户名" maxlength="11" required autocomplete="tel">
+                    <small class="hint-text">
+                        <span class="lang-zh">11位中国手机号</span>
+                        <span class="lang-en">11-digit Chinese mobile number</span>
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">密码 *</span>
+                        <span class="lang-en">Password *</span>
+                    </label>
+                    <input type="password" class="form-input" name="password" id="register-password"
+                           placeholder="至少8位字符" minlength="8" autocomplete="new-password" required>
+                    <small class="hint-text">
+                        <span class="lang-zh">最少8个字符</span>
+                        <span class="lang-en">Minimum 8 characters</span>
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">姓名 *</span>
+                        <span class="lang-en">Name *</span>
+                    </label>
+                    <input type="text" class="form-input" name="name" id="register-name"
+                           placeholder="您的姓名" required>
+                    <small class="hint-text">
+                        <span class="lang-zh">至少2个字符，不能包含数字</span>
+                        <span class="lang-en">At least 2 characters, no numbers</span>
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">邀请码 *</span>
+                        <span class="lang-en">Invitation Code *</span>
+                    </label>
+                    <input type="text" class="form-input" name="invitation_code" id="register-invitation"
+                           placeholder="学校邀请码" required>
+                    <small class="hint-text">
+                        <span class="lang-zh">邀请码会自动绑定到您的学校</span>
+                        <span class="lang-en">Code automatically binds you to your school</span>
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="lang-zh">验证码 *</span>
+                        <span class="lang-en">Verification Code *</span>
+                    </label>
+                    <div class="captcha-group">
+                        <input type="text" class="form-input captcha-input" name="captcha" id="register-captcha"
+                               placeholder="输入验证码" maxlength="4" required>
+                        <img id="registerCaptchaImage" class="captcha-image" src="" alt="验证码" 
+                             onclick="refreshRegisterCaptcha()" title="点击刷新">
+                    </div>
+                    <small class="hint-text">
+                        <span class="lang-zh">点击图片刷新验证码</span>
+                        <span class="lang-en">Click image to refresh</span>
+                    </small>
+                    <input type="hidden" name="captcha_id" id="registerCaptchaId">
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="register-btn">
+                    <span class="lang-zh">注册</span>
+                    <span class="lang-en">Register</span>
+                </button>
+                <div class="spinner" id="register-spinner"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
+    <script>
+        // Store app version for cache detection
+        window.MINDGRAPH_VERSION = '{{ version }}';
+        
+        // Cache detection and refresh mechanism
+        (function() {
+            const CURRENT_VERSION = '{{ version }}';
+            const VERSION_STORAGE_KEY = 'mindgraph_app_version';
+            const CACHE_DETECTED_KEY = 'mindgraph_cache_detected';
+            
+            // Helper function to safely access localStorage
+            const safeLocalStorage = {
+                getItem: (key) => {
+                    try {
+                        return localStorage.getItem(key);
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        localStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+            };
+            
+            // Helper function to safely access sessionStorage
+            const safeSessionStorage = {
+                getItem: (key) => {
+                    try {
+                        return sessionStorage.getItem(key);
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        sessionStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                removeItem: (key) => {
+                    try {
+                        sessionStorage.removeItem(key);
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                }
+            };
+            
+            // Get stored version
+            const storedVersion = safeLocalStorage.getItem(VERSION_STORAGE_KEY);
+            const cacheDetected = safeSessionStorage.getItem(CACHE_DETECTED_KEY);
+            
+            // Check if version changed (cache detected)
+            if (storedVersion && storedVersion !== CURRENT_VERSION && !cacheDetected) {
+                // Mark that we've detected cache for this session
+                safeSessionStorage.setItem(CACHE_DETECTED_KEY, 'true');
+                
+                // Show cache warning notification
+                const showCacheWarning = () => {
+                    const currentLang = localStorage.getItem('language') || 'zh';
+                    const isZh = currentLang === 'zh';
+                    
+                    const warningHtml = `
+                        <div id="cache-warning" style="
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+                            color: white;
+                            padding: 20px 25px;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                            z-index: 10000;
+                            max-width: 400px;
+                            animation: slideIn 0.3s ease-out;
+                        ">
+                            <style>
+                                @keyframes slideIn {
+                                    from {
+                                        transform: translateX(100%);
+                                        opacity: 0;
+                                    }
+                                    to {
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }
+                                }
+                                @keyframes slideOut {
+                                    from {
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }
+                                    to {
+                                        transform: translateX(100%);
+                                        opacity: 0;
+                                    }
+                                }
+                            </style>
+                            <div style="display: flex; align-items: flex-start; gap: 15px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">
+                                        ${isZh ? '⚠️ 检测到旧版本缓存' : '⚠️ Old Cache Detected'}
+                                    </div>
+                                    <div style="font-size: 14px; opacity: 0.95; line-height: 1.5; margin-bottom: 12px;">
+                                        ${isZh 
+                                            ? `应用已更新到版本 ${CURRENT_VERSION}，但您可能在使用旧版本缓存。请点击下方按钮刷新，或使用快捷键强制刷新页面以获得最新功能。`
+                                            : `Application updated to version ${CURRENT_VERSION}, but you may be using cached files. Click the button below to refresh, or use keyboard shortcut to hard refresh and get the latest features.`
+                                        }
+                                    </div>
+                                    <div style="margin-bottom: 12px; padding: 10px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; border-left: 3px solid rgba(255, 255, 255, 0.5);">
+                                        <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">
+                                            ${isZh ? '⌨️ 如何强制刷新：' : '⌨️ How to Hard Refresh:'}
+                                        </div>
+                                        <div style="font-size: 12px; opacity: 0.95; line-height: 1.6;">
+                                            ${isZh 
+                                                ? '• Windows/Linux: 按 <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Ctrl</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd><br>• Mac: 按 <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Cmd</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd>'
+                                                : '• Windows/Linux: Press <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Ctrl</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd><br>• Mac: Press <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Cmd</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd>'
+                                            }
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button id="cache-refresh-btn" style="
+                                            background: white;
+                                            color: #ff6b6b;
+                                            border: none;
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            font-weight: 600;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                            ${isZh ? '🔄 立即刷新' : '🔄 Refresh Now'}
+                                        </button>
+                                        <button id="cache-dismiss-btn" style="
+                                            background: rgba(255, 255, 255, 0.2);
+                                            color: white;
+                                            border: 1px solid rgba(255, 255, 255, 0.3);
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            font-weight: 600;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                        " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+                                            ${isZh ? '稍后' : 'Later'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <button id="cache-close-btn" style="
+                                    background: rgba(255, 255, 255, 0.2);
+                                    border: none;
+                                    color: white;
+                                    width: 24px;
+                                    height: 24px;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                    font-size: 18px;
+                                    line-height: 1;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    transition: all 0.2s;
+                                " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">×</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', warningHtml);
+                    
+                    // Refresh button - force reload (prevent multiple clicks)
+                    let isRefreshing = false;
+                    document.getElementById('cache-refresh-btn').addEventListener('click', () => {
+                        if (isRefreshing) return; // Prevent multiple clicks
+                        isRefreshing = true;
+                        safeLocalStorage.setItem(VERSION_STORAGE_KEY, CURRENT_VERSION);
+                        safeSessionStorage.removeItem(CACHE_DETECTED_KEY);
+                        // Use modern reload method with cache bypass
+                        window.location.reload();
+                    });
+                    
+                    // Dismiss button - hide for this session
+                    document.getElementById('cache-dismiss-btn').addEventListener('click', () => {
+                        document.getElementById('cache-warning').remove();
+                    });
+                    
+                    // Close button
+                    document.getElementById('cache-close-btn').addEventListener('click', () => {
+                        document.getElementById('cache-warning').remove();
+                    });
+                    
+                    // Auto-dismiss after 30 seconds
+                    setTimeout(() => {
+                        const warning = document.getElementById('cache-warning');
+                        if (warning) {
+                            warning.style.animation = 'slideOut 0.3s ease-out';
+                            warning.style.animationFillMode = 'forwards';
+                            setTimeout(() => warning.remove(), 300);
+                        }
+                    }, 30000);
+                };
+                
+                // Show warning after page loads
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showCacheWarning);
+                } else {
+                    showCacheWarning();
+                }
+            }
+            
+            // Update stored version (always, even if cache detection failed)
+            safeLocalStorage.setItem(VERSION_STORAGE_KEY, CURRENT_VERSION);
+        })();
+    </script>
+    <script>
+        let currentTab = 'login';
+        let currentLang = 'zh'; // Default to Chinese
+
+        // Toggle language between English, Chinese, and Azerbaijani
+        function toggleLanguage() {
+            const languages = ['en', 'zh', 'az'];
+            const currentIndex = languages.indexOf(currentLang);
+            const nextIndex = (currentIndex + 1) % languages.length;
+            currentLang = languages[nextIndex];
+            
+            // Update all elements with lang classes
+            document.querySelectorAll('.lang-en, .lang-zh, .lang-az').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            if (currentLang === 'zh') {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
+            } else if (currentLang === 'az') {
+                document.querySelectorAll('.lang-az').forEach(el => el.style.display = 'inline');
+                // Fallback to English if Azerbaijani not available
+                if (document.querySelectorAll('.lang-az').length === 0) {
+                    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+                }
+            } else {
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+            }
+            
+            // Update placeholders
+            updatePlaceholders();
+            
+            // Save language preference
+            localStorage.setItem('preferredLanguage', currentLang);
+        }
+
+        // Update input placeholders based on language
+        function updatePlaceholders() {
+            if (currentLang === 'zh') {
+                // Login form
+                document.getElementById('login-phone').placeholder = '手机号作为用户名';
+                document.getElementById('login-password').placeholder = '输入密码';
+                document.getElementById('login-captcha').placeholder = '输入验证码';
+                
+                // Register form
+                document.getElementById('register-phone').placeholder = '手机号作为用户名';
+                document.getElementById('register-password').placeholder = '至少8位字符';
+                document.getElementById('register-name').placeholder = '您的姓名';
+                document.getElementById('register-invitation').placeholder = '学校邀请码';
+                document.getElementById('register-captcha').placeholder = '输入验证码';
+            } else if (currentLang === 'az') {
+                // Login form
+                document.getElementById('login-phone').placeholder = 'Telefon istifadəçi adı kimi';
+                document.getElementById('login-password').placeholder = 'Şifrəni daxil edin';
+                document.getElementById('login-captcha').placeholder = 'Kod daxil edin';
+                
+                // Register form
+                document.getElementById('register-phone').placeholder = 'Telefon istifadəçi adı kimi';
+                document.getElementById('register-password').placeholder = 'Ən azı 8 simvol';
+                document.getElementById('register-name').placeholder = 'Adınız';
+                document.getElementById('register-invitation').placeholder = 'Məktəb dəvət kodu';
+                document.getElementById('register-captcha').placeholder = 'Kod daxil edin';
+            } else {
+                // Login form
+                document.getElementById('login-phone').placeholder = 'Phone as username';
+                document.getElementById('login-password').placeholder = 'Enter password';
+                document.getElementById('login-captcha').placeholder = 'Enter code';
+                
+                // Register form
+                document.getElementById('register-phone').placeholder = 'Phone as username';
+                document.getElementById('register-password').placeholder = 'At least 8 characters';
+                document.getElementById('register-name').placeholder = 'Your name';
+                document.getElementById('register-invitation').placeholder = 'School invitation code';
+                document.getElementById('register-captcha').placeholder = 'Enter code';
+            }
+        }
+
+        // Initialize language on page load
+        function initLanguage() {
+            const savedLang = localStorage.getItem('preferredLanguage');
+            if (savedLang && ['en', 'zh', 'az'].includes(savedLang)) {
+                currentLang = savedLang;
+            }
+            
+            // Apply the language display settings directly (don't toggle)
+            document.querySelectorAll('.lang-en, .lang-zh, .lang-az').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            if (currentLang === 'zh') {
+                document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
+            } else if (currentLang === 'az') {
+                document.querySelectorAll('.lang-az').forEach(el => el.style.display = 'inline');
+                // Fallback to English if Azerbaijani not available
+                if (document.querySelectorAll('.lang-az').length === 0) {
+                    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+                }
+            } else {
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
+            }
+            
+            // Update placeholders
+            updatePlaceholders();
+        }
+
+        // Switch between login and register
+        function switchTab(tab) {
+            // Check if tabs are disabled (demo/bayi mode)
+            const tabs = document.querySelectorAll('.tab');
+            const tabsHidden = Array.from(tabs).every(tab => tab.style.display === 'none');
+            
+            if (tabsHidden) {
+                // All tabs are hidden (demo/bayi mode), redirect to /demo
+                window.location.href = '/demo';
+                return;
+            }
+            
+            // Check if registration is disabled
+            const registerTab = document.querySelector('.tab:nth-child(2)');
+            if (tab === 'register' && registerTab && registerTab.style.display === 'none') {
+                // Registration is disabled, show error message
+                const msg = currentLang === 'zh' 
+                    ? '当前模式下不支持注册，请使用密钥登录'
+                    : 'Registration is not available in this mode. Please use passkey authentication.';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            currentTab = tab;
+            
+            // Update tab styling
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide forms
+            document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+            document.getElementById('reset-form').style.display = 'none';
+            document.getElementById('sms-login-form').style.display = 'none';
+            
+            // Clear alert
+            hideAlert();
+            
+            // Load captcha for login
+            if (tab === 'login') {
+                refreshCaptcha();
+            }
+            
+            // Load captcha for register
+            if (tab === 'register') {
+                refreshRegisterCaptcha();
+            }
+        }
+
+        // Check if already authenticated and load captcha on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Initialize language first
+            initLanguage();
+            
+            // Check authentication mode - block login/registration in demo/bayi modes
+            try {
+                const modeResponse = await fetch('/api/auth/mode');
+                if (modeResponse.ok) {
+                    const modeData = await modeResponse.json();
+                    const authMode = modeData.mode;
+                    
+                    if (authMode === 'demo' || authMode === 'bayi') {
+                        // Hide all tabs (login and register)
+                        document.querySelectorAll('.tab').forEach(tab => {
+                            tab.style.display = 'none';
+                        });
+                        
+                        // Hide all forms
+                        document.getElementById('login-form').style.display = 'none';
+                        document.getElementById('register-form').style.display = 'none';
+                        document.getElementById('reset-form').style.display = 'none';
+                        document.getElementById('sms-login-form').style.display = 'none';
+                        
+                        // Show blocked message with redirect option
+                        const modeName = authMode === 'demo' 
+                            ? (currentLang === 'zh' ? '演示模式' : 'Demo Mode')
+                            : (currentLang === 'zh' ? '八一模式' : 'Bayi Mode');
+                        
+                        const blockedMessage = currentLang === 'zh'
+                            ? `<div style="text-align: center; padding: 40px 20px;">
+                                <div style="font-size: 24px; margin-bottom: 20px; color: #667eea;">🔐</div>
+                                <h2 style="color: #334155; margin-bottom: 15px;">${modeName}下不支持账户登录/注册</h2>
+                                <p style="color: #64748b; margin-bottom: 30px; line-height: 1.6;">
+                                    在${modeName}下，请使用密钥（Passkey）进行身份验证。<br>
+                                    点击下方按钮前往密钥登录页面。
+                                </p>
+                                <a href="/demo" style="
+                                    display: inline-block;
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    padding: 12px 30px;
+                                    border-radius: 8px;
+                                    text-decoration: none;
+                                    font-weight: 600;
+                                    font-size: 16px;
+                                    transition: all 0.3s;
+                                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'">
+                                    前往密钥登录页面 →
+                                </a>
+                            </div>`
+                            : `<div style="text-align: center; padding: 40px 20px;">
+                                <div style="font-size: 24px; margin-bottom: 20px; color: #667eea;">🔐</div>
+                                <h2 style="color: #334155; margin-bottom: 15px;">Account Login/Registration Not Available in ${modeName}</h2>
+                                <p style="color: #64748b; margin-bottom: 30px; line-height: 1.6;">
+                                    In ${modeName}, please use passkey authentication instead.<br>
+                                    Click the button below to go to the passkey login page.
+                                </p>
+                                <a href="/demo" style="
+                                    display: inline-block;
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    padding: 12px 30px;
+                                    border-radius: 8px;
+                                    text-decoration: none;
+                                    font-weight: 600;
+                                    font-size: 16px;
+                                    transition: all 0.3s;
+                                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'">
+                                    Go to Passkey Login Page →
+                                </a>
+                            </div>`;
+                        
+                        // Insert blocked message into form container
+                        const formContainer = document.querySelector('.form-container');
+                        if (formContainer) {
+                            formContainer.innerHTML = blockedMessage;
+                        }
+                    }
+                }
+            } catch (error) {
+                // If mode check fails, continue normally
+                console.log('Could not check auth mode:', error);
+            }
+            
+            // Check if user is already logged in
+            const isAuth = await auth.isAuthenticated();
+            if (isAuth) {
+                // User is already logged in, redirect appropriately
+                try {
+                    // Check if admin by testing admin endpoint
+                    const adminTest = await auth.fetch('/api/auth/admin/stats');
+                    const isAdmin = adminTest.ok;
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let redirectUrl = urlParams.get('redirect');
+                    
+                    if (!redirectUrl) {
+                        redirectUrl = isAdmin ? '/admin' : '/editor';
+                    }
+                    
+                    window.location.href = redirectUrl;
+                    return; // Don't load captcha if redirecting
+                } catch (error) {
+                    // If error, just redirect to editor
+                    window.location.href = '/editor';
+                    return;
+                }
+            }
+            
+            // Not authenticated, load captcha
+            refreshCaptcha();
+            refreshRegisterCaptcha(); // Preload register captcha
+        });
+
+        // Refresh captcha (login)
+        async function refreshCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Handle rate limit error with specific wait time
+                    if (response.status === 429) {
+                        // Parse wait time from backend message (e.g. "Too many attempts. Try again in 10 minutes.")
+                        let errorMsg;
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                        } else {
+                            errorMsg = currentLang === 'zh' ? '请求过于频繁，请稍后再试' : 'Too many requests, please try again later';
+                        }
+                        showAlert(errorMsg, 'error');
+                    } else {
+                        const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                        showAlert(msg, 'error');
+                    }
+                    return;
+                }
+                
+                document.getElementById('captchaImage').src = data.captcha_image;
+                document.getElementById('captchaId').value = data.captcha_id;
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
+            }
+        }
+
+        // Refresh captcha (register)
+        async function refreshRegisterCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Handle rate limit error with specific wait time
+                    if (response.status === 429) {
+                        // Parse wait time from backend message (e.g. "Too many attempts. Try again in 10 minutes.")
+                        let errorMsg;
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                        } else {
+                            errorMsg = currentLang === 'zh' ? '请求过于频繁，请稍后再试' : 'Too many requests, please try again later';
+                        }
+                        showAlert(errorMsg, 'error');
+                    } else {
+                        const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                        showAlert(msg, 'error');
+                    }
+                    return;
+                }
+                
+                document.getElementById('registerCaptchaImage').src = data.captcha_image;
+                document.getElementById('registerCaptchaId').value = data.captcha_id;
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type = 'error') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+        }
+
+        // Hide alert
+        function hideAlert() {
+            document.getElementById('alert').classList.remove('show');
+        }
+        
+        /**
+         * Extract error message from API response.
+         * Handles both FastAPI standard {"detail": ...} and legacy {"error": ...} formats.
+         */
+        function extractErrorDetail(result) {
+            // FastAPI standard format
+            if (result.detail) {
+                return typeof result.detail === 'string' ? result.detail : String(result.detail);
+            }
+            // Legacy format (from custom exception handler)
+            if (result.error) {
+                return typeof result.error === 'string' ? result.error : String(result.error);
+            }
+            return '';
+        }
+        
+        /**
+         * Format authentication errors with bilingual support.
+         * Backend already sends localized messages, so we primarily pass them through.
+         * Translation dictionary is kept as fallback for edge cases.
+         */
+        function formatAuthError(detail, statusCode, lang) {
+            // Handle empty or falsy detail
+            if (!detail) {
+                return lang === 'zh' ? '操作失败，请重试' : 'Operation failed, please try again';
+            }
+            
+            // Ensure detail is a string (handle edge cases where it might be an object)
+            if (typeof detail !== 'string') {
+                detail = String(detail);
+            }
+            
+            // Backend sends localized messages, so check if already localized
+            // If message contains Chinese characters, return as-is (already localized)
+            const chineseCharPattern = /[\u4e00-\u9fff]/;
+            if (chineseCharPattern.test(detail)) {
+                return detail;
+            }
+            
+            // For English messages when user expects Chinese, try translation
+            // This is a fallback for edge cases where backend might not have localized
+            
+            // Translate common English error messages
+            const translations = {
+                'zh': {
+                    // Phone validation
+                    'Phone number must contain only digits': '手机号只能包含数字，请输入有效的11位中国手机号',
+                    'Phone number is too short': (match) => `手机号太短（${match[1]}位），必须是11位数字，以1开头`,
+                    'Phone number is too long': (match) => `手机号太长（${match[1]}位），必须是11位数字，以1开头`,
+                    'Chinese mobile numbers must start with 1': '中国手机号必须以1开头，请输入有效的11位数字',
+                    'Phone number not found or password incorrect': (match) => `登录失败。手机号未找到或密码错误。还剩 ${match[1]} 次尝试机会。`,
+                    
+                    // Password validation
+                    'Password must be at least 8 characters': '密码至少需要8个字符',
+                    'Password is too short': (match) => `密码太短（${match[1]}个字符），至少需要8个字符`,
+                    
+                    // Name validation
+                    'Name is too short': (match) => `姓名太短（${match[1]}个字符），至少需要2个字符`,
+                    'Name cannot contain numbers': '姓名不能包含数字，请只使用字母',
+                    
+                    // SMS codes
+                    'SMS verification code must contain only digits': '短信验证码只能包含数字，请输入发送到您手机的6位验证码',
+                    'SMS verification code must be exactly 6 digits': (match) => `短信验证码必须是6位数字。您输入了${match[1]}位数字。`,
+                    'SMS verification code has expired': (match) => `短信验证码已过期。验证码有效期为${match[1]}分钟。请重新申请验证码。`,
+                    'This SMS verification code has already been used': '此短信验证码已被使用。每个验证码只能使用一次。请重新申请验证码。',
+                    'Invalid SMS verification code': '无效的短信验证码。请检查验证码后重试，或重新申请验证码。',
+                    
+                    // Captcha
+                    'Invalid captcha code': (match) => `图形验证码错误。请重试。还剩 ${match[1]} 次尝试机会，超过后将锁定账户。`,
+                    'Captcha expired, invalid, or incorrect': '图形验证码已过期、无效或错误。请刷新后重试',
+                    
+                    // Login errors
+                    'Invalid password': (match) => `密码错误。请检查密码后重试。还剩 ${match[1]} 次尝试机会，超过后将锁定账户。`,
+                    'attempts remaining before account lockout': (match) => `还剩 ${match[1]} 次尝试机会，超过后将锁定账户`,
+                    'Account temporarily locked': (match) => `账户因${match[1]}次登录失败而暂时锁定。请在${match[2]}分钟后重试。`,
+                    'Account locked': (match) => `账户因多次登录失败而暂时锁定。请在${match[1]}分钟后重试。`,
+                    
+                    // Rate limiting
+                    'Too many login attempts': (match1, match2) => `登录次数过多（${match1[1]}次，在${match2[1]}分钟内）。请在${match2[1]}分钟后重试。`,
+                    'Too many attempts': (match) => `请求次数过多。请在${match[1]}分钟后重试。`,
+                    'Too many SMS verification code requests': (match1, match2) => `短信验证码请求过多（${match1[1]}次，在${match2[1]}小时内）。请稍后再试。`,
+                    'Please wait': (match) => {
+                        if (match[1] && parseInt(match[1]) >= 60) {
+                            const mins = Math.floor(parseInt(match[1]) / 60);
+                            return `请等待${mins}分钟后再申请新的短信验证码。该号码最近已收到验证码。`;
+                        }
+                        return `请等待${match[1]}秒后再申请新的短信验证码。该号码最近已收到验证码。`;
+                    },
+                    
+                    // Registration
+                    'This phone number is already registered': '该手机号已注册，请直接登录或使用其他手机号',
+                    'Phone number already registered': '该手机号已注册，请直接登录或使用其他手机号',
+                    'Invalid or expired invitation code': '邀请码无效或已过期',
+                    'Invitation code is required': '邀请码是必填项',
+                    
+                    // Organization
+                    'Organization account is locked': '学校账户已被锁定，请联系管理员',
+                    'Organization subscription has expired': '学校订阅已过期，请联系管理员',
+                    
+                    // Generic
+                    'Login failed': '登录失败',
+                    'Registration failed': '注册失败',
+                    'Password reset failed': '密码重置失败',
+                    'Failed to send SMS': '发送短信失败'
+                }
+            };
+            
+            // Extract numbers from error messages for translation
+            function translateMessage(msg, lang) {
+                if (lang !== 'zh') return msg;
+                
+                const zhTranslations = translations.zh;
+                
+                // Try exact matches first
+                for (const [key, value] of Object.entries(zhTranslations)) {
+                    if (msg.includes(key)) {
+                        if (typeof value === 'function') {
+                            // Extract numbers and call function
+                            const numberMatch = msg.match(/(\d+)/);
+                            if (numberMatch) {
+                                return value(numberMatch);
+                            }
+                        } else if (typeof value === 'string') {
+                            return value;
+                        }
+                    }
+                }
+                
+                // Pattern-based translations with number extraction
+                const patterns = [
+                    {
+                        pattern: /Phone number must contain only digits\. Please enter a valid 11-digit Chinese mobile number\./i,
+                        zh: '手机号只能包含数字。请输入有效的11位中国手机号'
+                    },
+                    {
+                        pattern: /Phone number is too short \((\d+) digits\)\. Must be exactly 11 digits starting with 1\./i,
+                        zh: (m) => `手机号太短（${m[1]}位）。必须是11位数字，以1开头`
+                    },
+                    {
+                        pattern: /Phone number is too long \((\d+) digits\)\. Must be exactly 11 digits starting with 1\./i,
+                        zh: (m) => `手机号太长（${m[1]}位）。必须是11位数字，以1开头`
+                    },
+                    {
+                        pattern: /Chinese mobile numbers must start with 1\. Please enter a valid 11-digit number starting with 1\./i,
+                        zh: '中国手机号必须以1开头。请输入有效的11位数字，以1开头'
+                    },
+                    {
+                        pattern: /Name is too short \((\d+) character\(s\)\)\. Must be at least 2 characters\./i,
+                        zh: (m) => `姓名太短（${m[1]}个字符）。至少需要2个字符`
+                    },
+                    {
+                        pattern: /Name cannot contain numbers\. Please enter your name using letters only\./i,
+                        zh: '姓名不能包含数字。请只使用字母输入您的姓名'
+                    },
+                    {
+                        pattern: /(\d+) attempt\(s\) remaining before account lockout/i,
+                        zh: (m) => `还剩 ${m[1]} 次尝试机会，超过后将锁定账户`
+                    },
+                    {
+                        pattern: /Account temporarily locked due to (\d+) failed attempts.*?(\d+) minutes/i,
+                        zh: (m) => `账户因${m[1]}次登录失败而暂时锁定。请在${m[2]}分钟后重试。`
+                    },
+                    {
+                        pattern: /Account temporarily locked.*?(\d+) minutes/i,
+                        zh: (m) => `账户因多次登录失败而暂时锁定。请在${m[1]}分钟后重试。`
+                    },
+                    {
+                        pattern: /Too many login attempts \((\d+) attempts in (\d+) minutes\)/i,
+                        zh: (m) => `登录次数过多（${m[1]}次，在${m[2]}分钟内）。请在${m[2]}分钟后重试。`
+                    },
+                    {
+                        pattern: /Too many attempts.*?(\d+) minutes/i,
+                        zh: (m) => `请求次数过多。请在${m[1]}分钟后重试。`
+                    },
+                    {
+                        pattern: /Too many SMS verification code requests \((\d+) requests in (\d+) hour/i,
+                        zh: (m) => `短信验证码请求过多（${m[1]}次，在${m[2]}小时内）。请稍后再试。`
+                    },
+                    {
+                        pattern: /Please wait (\d+) second\(s\) before requesting a new SMS code/i,
+                        zh: (m) => {
+                            const secs = parseInt(m[1]);
+                            if (secs >= 60) {
+                                const mins = Math.floor(secs / 60);
+                                return `请等待${mins}分钟后再申请新的短信验证码。该号码最近已收到验证码。`;
+                            }
+                            return `请等待${m[1]}秒后再申请新的短信验证码。该号码最近已收到验证码。`;
+                        }
+                    },
+                    {
+                        pattern: /Please wait (\d+) minute\(s\) before requesting a new SMS code/i,
+                        zh: (m) => `请等待${m[1]}分钟后再申请新的短信验证码。该号码最近已收到验证码。`
+                    },
+                    {
+                        pattern: /SMS verification code must contain only digits\. Please enter the 6-digit code sent to your phone\./i,
+                        zh: '短信验证码只能包含数字。请输入发送到您手机的6位验证码'
+                    },
+                    {
+                        pattern: /SMS verification code must be exactly 6 digits\. You entered (\d+) digit\(s\)\./i,
+                        zh: (m) => `短信验证码必须是6位数字。您输入了${m[1]}位数字。`
+                    },
+                    {
+                        pattern: /SMS verification code has expired.*?(\d+) minutes/i,
+                        zh: (m) => `短信验证码已过期。验证码有效期为${m[1]}分钟，过期后无法使用。请重新申请验证码。`
+                    },
+                    {
+                        pattern: /This SMS verification code has already been used\. Each code can only be used once\. Please request a new code\./i,
+                        zh: '此短信验证码已被使用。每个验证码只能使用一次，请重新申请新的验证码。'
+                    },
+                    {
+                        pattern: /Invalid SMS verification code\. Please check the code and try again, or request a new code\./i,
+                        zh: '无效的短信验证码。请检查您输入的6位数字验证码是否正确，或重新申请验证码。'
+                    },
+                    {
+                        pattern: /Captcha code has expired\. Please refresh the captcha image/i,
+                        zh: '图形验证码已过期。请刷新验证码图片后重试'
+                    },
+                    {
+                        pattern: /Captcha session not found\. Please refresh the captcha image/i,
+                        zh: '验证码会话不存在。请刷新验证码图片后重试'
+                    },
+                    {
+                        pattern: /Captcha code is incorrect\. Please check the code or refresh for a new one/i,
+                        zh: '图形验证码错误。请检查验证码或刷新获取新验证码'
+                    },
+                    {
+                        pattern: /Captcha code is incorrect\. Please check the code and try again, or refresh for a new code/i,
+                        zh: '图形验证码错误。请检查验证码后重试，或刷新获取新验证码'
+                    },
+                    {
+                        pattern: /Captcha verification failed\. Please refresh the captcha image/i,
+                        zh: '图形验证码验证失败。请刷新验证码图片后重试'
+                    },
+                    {
+                        pattern: /Invalid captcha code.*?(\d+) attempt\(s\) remaining/i,
+                        zh: (m) => `图形验证码错误。请重试。还剩 ${m[1]} 次尝试机会，超过后将锁定账户。`
+                    },
+                    {
+                        pattern: /Invalid password\. Please check your password and try again\. (\d+) attempt\(s\) remaining before account lockout\./i,
+                        zh: (m) => `密码错误。请检查您输入的密码是否正确后重试。还剩 ${m[1]} 次尝试机会，超过后将锁定账户。`
+                    },
+                    {
+                        pattern: /Invalid password.*?(\d+) attempt\(s\) remaining/i,
+                        zh: (m) => `密码错误。请检查密码后重试。还剩 ${m[1]} 次尝试机会，超过后将锁定账户。`
+                    },
+                    {
+                        pattern: /Login failed\. Phone number not found or password incorrect\. (\d+) attempt\(s\) remaining\./i,
+                        zh: (m) => `登录失败。手机号未找到或密码错误。请检查手机号和密码是否正确。还剩 ${m[1]} 次尝试机会。`
+                    },
+                    {
+                        pattern: /Login failed.*?(\d+) attempt\(s\) remaining/i,
+                        zh: (m) => `登录失败。手机号未找到或密码错误。还剩 ${m[1]} 次尝试机会。`
+                    },
+                    {
+                        pattern: /This phone number is not registered\. Please check your phone number or register a new account\./i,
+                        zh: '该手机号未注册。请检查手机号是否正确，或注册新账户'
+                    },
+                    {
+                        pattern: /This phone number is not registered\. Please check your phone number or contact support\./i,
+                        zh: '该手机号未注册。请检查手机号是否正确，或联系技术支持'
+                    },
+                    {
+                        pattern: /Registration is not available in (demo|bayi) mode\. Please use passkey authentication instead\./i,
+                        zh: (m) => {
+                            const mode = m[1];
+                            const modeName = mode === 'demo' ? '演示模式' : '八一模式';
+                            return `${modeName}下不支持注册，请使用密钥登录`;
+                        }
+                    },
+                    {
+                        pattern: /Registration is not available.*?mode/i,
+                        zh: '当前模式下不支持注册，请使用密钥登录'
+                    },
+                    {
+                        pattern: /Invitation code '(.+?)' is not valid or does not exist\. Please check the code provided by your school administrator/i,
+                        zh: (m) => `邀请码 '${m[1]}' 无效或不存在。请检查学校管理员提供的邀请码，或联系技术支持`
+                    },
+                    {
+                        pattern: /Invalid invitation code format\. Expected format: AAAA-XXXXX.*?You entered: (.+?)$/i,
+                        zh: (m) => `邀请码格式错误。正确格式：AAAA-XXXXX（4个字母，横线，5个字母或数字）。您输入的是：${m[1]}`
+                    },
+                    {
+                        pattern: /Invalid invitation code format/i,
+                        zh: '邀请码格式错误。正确格式：AAAA-XXXXX（4个字母，横线，5个字母或数字）'
+                    },
+                    {
+                        pattern: /Invitation code is required\. Please enter the invitation code provided by your school administrator\./i,
+                        zh: '邀请码是必填项。请输入学校管理员提供的邀请码'
+                    },
+                    {
+                        pattern: /Invalid or expired invitation code\. Please check the code provided by your school administrator/i,
+                        zh: '邀请码无效或已过期。请检查学校管理员提供的邀请码，或联系技术支持'
+                    },
+                    {
+                        pattern: /Invitation code is required/i,
+                        zh: '邀请码是必填项，请输入学校提供的邀请码'
+                    },
+                    {
+                        pattern: /Your school account \((.+?)\) has been locked by the administrator/i,
+                        zh: (m) => `您的学校账户（${m[1]}）已被管理员锁定。请联系学校管理员或技术支持获取帮助`
+                    },
+                    {
+                        pattern: /Your school subscription \((.+?)\) expired on (\d{4}-\d{2}-\d{2})/i,
+                        zh: (m) => `您的学校订阅（${m[1]}）已于 ${m[2]} 过期。请联系学校管理员续订订阅`
+                    },
+                    {
+                        pattern: /SMS service is not configured\. Please contact support or use password-based authentication instead\./i,
+                        zh: '短信服务未配置。请联系技术支持，或使用密码登录'
+                    },
+                    {
+                        pattern: /SMS service is temporarily unavailable\. Please try again later or contact support if the problem persists\./i,
+                        zh: '短信服务暂时不可用。请稍后重试，如问题持续存在请联系技术支持'
+                    },
+                    {
+                        pattern: /SMS.*?timeout/i,
+                        zh: '短信服务超时。请稍后重试'
+                    },
+                    {
+                        pattern: /SMS.*?error.*?try again/i,
+                        zh: '短信服务错误。请稍后重试'
+                    },
+                    {
+                        pattern: /Daily SMS limit reached for this phone number/i,
+                        zh: '该手机号今日短信发送次数已达上限。请明天再试或联系技术支持'
+                    },
+                    {
+                        pattern: /Hourly SMS limit reached for this phone number/i,
+                        zh: '该手机号每小时短信发送次数已达上限。请稍后再试'
+                    },
+                    {
+                        pattern: /Phone number is blocked from receiving SMS/i,
+                        zh: '该手机号已被禁止接收短信。请联系技术支持获取帮助'
+                    },
+                    {
+                        pattern: /SMS service balance insufficient/i,
+                        zh: '短信服务余额不足。请联系技术支持'
+                    },
+                    {
+                        pattern: /Phone number not registered/i,
+                        zh: '该手机号未注册。请检查手机号是否正确，或注册新账户'
+                    },
+                    {
+                        pattern: /Invalid passkey/i,
+                        zh: '密钥无效。请检查您输入的6位数字密钥是否正确'
+                    },
+                    {
+                        pattern: /No organizations available/i,
+                        zh: '没有可用的学校组织。请联系技术支持'
+                    },
+                    {
+                        pattern: /User creation failed: (.+)/i,
+                        zh: (m) => `用户创建失败：${m[1]}。请联系技术支持`
+                    },
+                    {
+                        pattern: /User creation failed/i,
+                        zh: '用户创建失败。请联系技术支持'
+                    },
+                    {
+                        pattern: /Passkey must contain only digits/i,
+                        zh: '密钥必须只包含数字。请输入6位数字密钥'
+                    },
+                    {
+                        pattern: /Passkey must be exactly 6 digits/i,
+                        zh: '密钥必须是6位数字。请检查您输入的密钥长度'
+                    },
+                    {
+                        pattern: /Purpose must be one of: (.+)/i,
+                        zh: (m) => `用途必须是以下之一：${m[1]}`
+                    }
+                ];
+                
+                for (const {pattern, zh} of patterns) {
+                    const match = msg.match(pattern);
+                    if (match) {
+                        return zh(match);
+                    }
+                }
+                
+                // Fallback: translate common English phrases
+                const phraseTranslations = {
+                    'Phone number': '手机号',
+                    'Password': '密码',
+                    'Name': '姓名',
+                    'Invalid': '无效',
+                    'expired': '已过期',
+                    'locked': '已锁定',
+                    'already registered': '已注册',
+                    'too short': '太短',
+                    'too long': '太长',
+                    'must be': '必须是',
+                    'at least': '至少',
+                    'characters': '个字符',
+                    'digits': '位数字',
+                    'minutes': '分钟',
+                    'seconds': '秒',
+                    'attempts': '次尝试',
+                    'remaining': '剩余',
+                    'Please try again': '请重试',
+                    'Please contact support': '请联系管理员',
+                    'Please login instead': '请直接登录',
+                    'or use a different': '或使用其他',
+                    'Please request a new code': '请重新申请验证码',
+                    'Please check': '请检查',
+                    'and try again': '后重试'
+                };
+                
+                let translated = msg;
+                for (const [en, zh] of Object.entries(phraseTranslations)) {
+                    translated = translated.replace(new RegExp(en, 'gi'), zh);
+                }
+                
+                return translated !== msg ? translated : msg;
+            }
+            
+            // Handle specific status codes
+            if (statusCode === 400) {
+                return translateMessage(detail, lang);
+            }
+            
+            if (statusCode === 401) {
+                return translateMessage(detail, lang);
+            }
+            
+            if (statusCode === 403) {
+                return translateMessage(detail, lang);
+            }
+            
+            if (statusCode === 409) {
+                return translateMessage(detail, lang);
+            }
+            
+            if (statusCode === 423) {
+                return translateMessage(detail, lang);
+            }
+            
+            if (statusCode === 429) {
+                return translateMessage(detail, lang);
+            }
+            
+            if (statusCode === 422) {
+                // Pydantic validation errors - translate field names and messages
+                if (lang === 'zh' && typeof detail === 'string') {
+                    return translateMessage(detail, lang);
+                }
+                return detail;
+            }
+            
+            // Default: translate the message
+            return translateMessage(detail, lang);
+        }
+
+        // Login form submit
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+            
+            // Block login in demo/bayi mode
+            const tabs = document.querySelectorAll('.tab');
+            const tabsHidden = Array.from(tabs).every(tab => tab.style.display === 'none');
+            if (tabsHidden) {
+                window.location.href = '/demo';
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const data = {
+                phone: formData.get('phone'),
+                password: formData.get('password'),
+                captcha: formData.get('captcha'),
+                captcha_id: formData.get('captcha_id')
+            };
+
+            // Show loading
+            document.getElementById('login-btn').disabled = true;
+            document.getElementById('login-spinner').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store token and user, set mode to standard
+                    auth.setToken(result.access_token);
+                    auth.setUser(result.user);
+                    auth.setMode('standard');
+                    
+                    // Get user name for personalized message
+                    const userName = result.user?.name || '';
+                    const msg = currentLang === 'zh' 
+                        ? (userName ? `登录成功，跳转中... 欢迎 ${userName}` : '登录成功！跳转中...')
+                        : (userName ? `Login successful! Redirecting... Welcome ${userName}` : 'Login successful! Redirecting...');
+                    showAlert(msg, 'success');
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect') || '/editor';
+                    setTimeout(() => window.location.href = redirectUrl, 1000);
+                } else {
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
+                    showAlert(msg, 'error');
+                    refreshCaptcha(); // Refresh captcha on error
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+                refreshCaptcha();
+            } finally {
+                document.getElementById('login-btn').disabled = false;
+                document.getElementById('login-spinner').style.display = 'none';
+            }
+        });
+
+        // Register form submit
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+            
+            // Check if registration is disabled (shouldn't happen if tab is hidden, but double-check)
+            const registerTab = document.querySelector('.tab:nth-child(2)');
+            if (registerTab && registerTab.style.display === 'none') {
+                const msg = currentLang === 'zh' 
+                    ? '当前模式下不支持注册，请使用密钥登录'
+                    : 'Registration is not available in this mode. Please use passkey authentication.';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const data = {
+                phone: formData.get('phone'),
+                password: formData.get('password'),
+                name: formData.get('name'),
+                invitation_code: formData.get('invitation_code'),
+                captcha: formData.get('captcha'),
+                captcha_id: formData.get('captcha_id')
+            };
+
+            // Validate phone
+            if (!/^1\d{10}$/.test(data.phone)) {
+                const msg = currentLang === 'zh' ? '手机号格式错误！必须是11位数字，1开头' : 'Invalid phone number! Must be 11 digits starting with 1';
+                showAlert(msg, 'error');
+                return;
+            }
+
+            // Validate name
+            if (/\d/.test(data.name)) {
+                const msg = currentLang === 'zh' ? '姓名不能包含数字！' : 'Name cannot contain numbers!';
+                showAlert(msg, 'error');
+                return;
+            }
+
+            // Validate captcha
+            if (!data.captcha || data.captcha.length !== 4) {
+                const msg = currentLang === 'zh' ? '请输入4位验证码！' : 'Please enter 4-digit verification code!';
+                showAlert(msg, 'error');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('register-btn').disabled = true;
+            document.getElementById('register-spinner').style.display = 'block';
+
+            // Debug: log what we're sending
+            console.log('Registration data:', data);
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store token and user, set mode to standard
+                    auth.setToken(result.access_token);
+                    auth.setUser(result.user);
+                    auth.setMode('standard');
+                    
+                    // Get user name for personalized message
+                    const userName = result.user?.name || '';
+                    const msg = currentLang === 'zh' 
+                        ? (userName ? `注册成功，跳转中... 欢迎 ${userName}` : '注册成功！跳转中...')
+                        : (userName ? `Registration successful! Redirecting... Welcome ${userName}` : 'Registration successful! Redirecting...');
+                    showAlert(msg, 'success');
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect') || '/editor';
+                    setTimeout(() => window.location.href = redirectUrl, 1000);
+                } else {
+                    // Handle Pydantic validation errors (422) - array format
+                    let errorMsg;
+                    if (response.status === 422 && result.detail && Array.isArray(result.detail)) {
+                        // Format Pydantic validation errors
+                        const errors = result.detail.map(err => {
+                            const field = err.loc.join('.');
+                            const msg = err.msg;
+                            // Translate common field names
+                            const fieldNames = {
+                                'phone': currentLang === 'zh' ? '手机号' : 'Phone number',
+                                'password': currentLang === 'zh' ? '密码' : 'Password',
+                                'name': currentLang === 'zh' ? '姓名' : 'Name',
+                                'invitation_code': currentLang === 'zh' ? '邀请码' : 'Invitation code',
+                                'captcha': currentLang === 'zh' ? '验证码' : 'Captcha'
+                            };
+                            const fieldName = fieldNames[field] || field;
+                            return `${fieldName}: ${msg}`;
+                        }).join('; ');
+                        errorMsg = currentLang === 'zh' ? `验证错误: ${errors}` : `Validation error: ${errors}`;
+                    } else {
+                        // Use formatAuthError for all other errors
+                        const errorDetail = extractErrorDetail(result);
+                        errorMsg = formatAuthError(errorDetail, response.status, currentLang);
+                    }
+                    showAlert(errorMsg, 'error');
+                    refreshRegisterCaptcha(); // Refresh captcha on error
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+                refreshRegisterCaptcha(); // Refresh captcha on error
+            } finally {
+                document.getElementById('register-btn').disabled = false;
+                document.getElementById('register-spinner').style.display = 'none';
+            }
+        });
+
+        // ============================================================================
+        // RESET PASSWORD FUNCTIONS
+        // ============================================================================
+        
+        let resetPhone = '';
+        let resendCountdown = 0;
+        let countdownInterval = null;
+        
+        // SMS Login variables
+        let smsLoginPhone = '';
+        let smsLoginCountdown = 0;
+        let smsLoginCountdownInterval = null;
+
+        // Show reset password form
+        function showResetPassword(event) {
+            // Block in demo/bayi mode
+            const tabs = document.querySelectorAll('.tab');
+            const tabsHidden = Array.from(tabs).every(tab => tab.style.display === 'none');
+            if (tabsHidden) {
+                event.preventDefault();
+                window.location.href = '/demo';
+                return;
+            }
+            event.preventDefault();
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('reset-form').style.display = 'block';
+            document.getElementById('reset-step1').style.display = 'block';
+            document.getElementById('reset-step2').style.display = 'none';
+            hideAlert();
+            refreshResetCaptcha();
+        }
+
+        // Back to login
+        function backToLogin(event) {
+            event.preventDefault();
+            document.getElementById('reset-form').style.display = 'none';
+            document.getElementById('sms-login-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+            hideAlert();
+            // Clear reset form
+            document.getElementById('reset-phone').value = '';
+            document.getElementById('reset-captcha').value = '';
+            document.getElementById('reset-sms-code').value = '';
+            document.getElementById('reset-new-password').value = '';
+            document.getElementById('reset-confirm-password').value = '';
+            resetPhone = '';
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            // Clear SMS login form
+            document.getElementById('sms-login-phone').value = '';
+            document.getElementById('sms-login-captcha').value = '';
+            document.getElementById('sms-login-code').value = '';
+            smsLoginPhone = '';
+            if (smsLoginCountdownInterval) {
+                clearInterval(smsLoginCountdownInterval);
+                smsLoginCountdownInterval = null;
+            }
+        }
+        
+        // Back to login from SMS login
+        function backToLoginFromSMS(event) {
+            backToLogin(event);
+        }
+
+        // Refresh reset captcha
+        async function refreshResetCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            const errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                            showAlert(errorMsg, 'error');
+                        } else {
+                            showAlert(data.detail || 'Too many requests', 'error');
+                        }
+                    }
+                    return;
+                }
+                
+                document.getElementById('resetCaptchaImage').src = data.captcha_image;
+                document.getElementById('resetCaptchaId').value = data.captcha_id;
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
+            }
+        }
+
+        // Send reset SMS
+        async function sendResetSMS() {
+            hideAlert();
+            
+            const phone = document.getElementById('reset-phone').value.trim();
+            const captcha = document.getElementById('reset-captcha').value.trim();
+            const captchaId = document.getElementById('resetCaptchaId').value;
+            
+            // Validate phone
+            if (!/^1\d{10}$/.test(phone)) {
+                const msg = currentLang === 'zh' ? '请输入正确的11位手机号' : 'Please enter valid 11-digit phone number';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate captcha
+            if (!captcha || captcha.length !== 4) {
+                const msg = currentLang === 'zh' ? '请输入4位图形验证码' : 'Please enter 4-digit captcha';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // First verify captcha via login attempt (this consumes captcha)
+            // Actually, we'll send SMS directly - the backend will handle captcha-like rate limiting
+            
+            document.getElementById('send-sms-btn').disabled = true;
+            document.getElementById('sms-spinner').style.display = 'block';
+            
+            try {
+                // Send SMS verification code with captcha
+                const response = await fetch('/api/auth/sms/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        purpose: 'reset_password',
+                        captcha: captcha,
+                        captcha_id: captchaId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resetPhone = phone;
+                    
+                    // Show step 2
+                    document.getElementById('reset-step1').style.display = 'none';
+                    document.getElementById('reset-step2').style.display = 'block';
+                    
+                    // Show masked phone
+                    const maskedPhone = phone.substring(0, 3) + '****' + phone.substring(7);
+                    document.getElementById('masked-phone').textContent = maskedPhone;
+                    document.getElementById('masked-phone-en').textContent = maskedPhone;
+                    
+                    // Start resend countdown
+                    startResendCountdown(result.resend_after || 60);
+                    
+                    const msg = currentLang === 'zh' ? '验证码已发送' : 'Verification code sent';
+                    showAlert(msg, 'success');
+                } else {
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
+                    showAlert(msg, 'error');
+                    refreshResetCaptcha();
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+                refreshResetCaptcha();
+            } finally {
+                document.getElementById('send-sms-btn').disabled = false;
+                document.getElementById('sms-spinner').style.display = 'none';
+            }
+        }
+
+        // Start resend countdown
+        function startResendCountdown(seconds) {
+            // Clear any existing interval to prevent multiple concurrent countdowns
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            resendCountdown = seconds;
+            const link = document.getElementById('resend-sms-link');
+            const countdown = document.getElementById('resend-countdown');
+            
+            link.style.display = 'none';
+            countdown.style.display = 'inline';
+            
+            const updateCountdown = () => {
+                if (resendCountdown > 0) {
+                    countdown.textContent = currentLang === 'zh' 
+                        ? `${resendCountdown}秒后可重新发送` 
+                        : `Resend in ${resendCountdown}s`;
+                    resendCountdown--;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    countdown.style.display = 'none';
+                    link.style.display = 'inline';
+                }
+            };
+            
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // Resend SMS - go back to step 1 with phone pre-filled for new captcha
+        async function resendSMS(event) {
+            event.preventDefault();
+            
+            if (!resetPhone) {
+                backToLogin(event);
+                return;
+            }
+            
+            // Clear any existing countdown interval to prevent orphaned intervals
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // Go back to step 1 with phone pre-filled
+            document.getElementById('reset-phone').value = resetPhone;
+            document.getElementById('reset-captcha').value = '';
+            document.getElementById('reset-step2').style.display = 'none';
+            document.getElementById('reset-step1').style.display = 'block';
+            
+            // Refresh captcha
+            refreshResetCaptcha();
+            
+            const msg = currentLang === 'zh' ? '请重新验证图形验证码' : 'Please verify captcha again';
+            showAlert(msg, 'info');
+        }
+
+        // Reset password
+        async function resetPassword() {
+            hideAlert();
+            
+            const smsCode = document.getElementById('reset-sms-code').value.trim();
+            const newPassword = document.getElementById('reset-new-password').value;
+            const confirmPassword = document.getElementById('reset-confirm-password').value;
+            
+            // Validate SMS code
+            if (!/^\d{6}$/.test(smsCode)) {
+                const msg = currentLang === 'zh' ? '请输入6位短信验证码' : 'Please enter 6-digit SMS code';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate password
+            if (newPassword.length < 8) {
+                const msg = currentLang === 'zh' ? '密码至少需要8个字符' : 'Password must be at least 8 characters';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate password match
+            if (newPassword !== confirmPassword) {
+                const msg = currentLang === 'zh' ? '两次输入的密码不一致' : 'Passwords do not match';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            document.getElementById('reset-password-btn').disabled = true;
+            document.getElementById('reset-spinner').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/auth/reset_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: resetPhone,
+                        sms_code: smsCode,
+                        new_password: newPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const msg = currentLang === 'zh' ? '密码重置成功！请使用新密码登录' : 'Password reset successful! Please login with new password';
+                    showAlert(msg, 'success');
+                    
+                    // Clear and go back to login after 2 seconds
+                    setTimeout(() => {
+                        backToLogin({ preventDefault: () => {} });
+                        refreshCaptcha();
+                    }, 2000);
+                } else {
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
+                    showAlert(msg, 'error');
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+            } finally {
+                document.getElementById('reset-password-btn').disabled = false;
+                document.getElementById('reset-spinner').style.display = 'none';
+            }
+        }
+
+        // Update placeholders for reset form
+        function updateResetPlaceholders() {
+            if (currentLang === 'zh') {
+                document.getElementById('reset-phone').placeholder = '输入注册手机号';
+                document.getElementById('reset-captcha').placeholder = '输入验证码';
+                document.getElementById('reset-sms-code').placeholder = '输入6位短信验证码';
+                document.getElementById('reset-new-password').placeholder = '输入新密码（至少8位）';
+                document.getElementById('reset-confirm-password').placeholder = '再次输入新密码';
+            } else {
+                document.getElementById('reset-phone').placeholder = 'Enter registered phone';
+                document.getElementById('reset-captcha').placeholder = 'Enter captcha';
+                document.getElementById('reset-sms-code').placeholder = 'Enter 6-digit SMS code';
+                document.getElementById('reset-new-password').placeholder = 'New password (min 8 chars)';
+                document.getElementById('reset-confirm-password').placeholder = 'Confirm new password';
+            }
+        }
+
+        // ============================================================================
+        // SMS LOGIN FUNCTIONS
+        // ============================================================================
+        
+        // Show SMS login form
+        function showSMSLogin(event) {
+            // Block in demo/bayi mode
+            const tabs = document.querySelectorAll('.tab');
+            const tabsHidden = Array.from(tabs).every(tab => tab.style.display === 'none');
+            if (tabsHidden) {
+                event.preventDefault();
+                window.location.href = '/demo';
+                return;
+            }
+            event.preventDefault();
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('sms-login-form').style.display = 'block';
+            document.getElementById('sms-login-step1').style.display = 'block';
+            document.getElementById('sms-login-step2').style.display = 'none';
+            hideAlert();
+            refreshSMSLoginCaptcha();
+        }
+        
+        // Refresh SMS login captcha
+        async function refreshSMSLoginCaptcha() {
+            try {
+                const response = await fetch('/api/auth/captcha/generate');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        const match = data.detail && data.detail.match(/(\d+)\s+minute/i);
+                        if (match) {
+                            const minutes = match[1];
+                            const errorMsg = currentLang === 'zh' 
+                                ? `请求次数过多，请在 ${minutes} 分钟后再试`
+                                : `Too many attempts. Try again in ${minutes} minutes.`;
+                            showAlert(errorMsg, 'error');
+                        } else {
+                            showAlert(data.detail || 'Too many requests', 'error');
+                        }
+                    }
+                    return;
+                }
+                
+                document.getElementById('smsLoginCaptchaImage').src = data.captcha_image;
+                document.getElementById('smsLoginCaptchaId').value = data.captcha_id;
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '验证码加载失败' : 'Failed to load captcha';
+                showAlert(msg, 'error');
+            }
+        }
+        
+        // Send SMS login code
+        async function sendSMSLoginCode() {
+            hideAlert();
+            
+            const phone = document.getElementById('sms-login-phone').value.trim();
+            const captcha = document.getElementById('sms-login-captcha').value.trim();
+            const captchaId = document.getElementById('smsLoginCaptchaId').value;
+            
+            // Validate phone
+            if (!/^1\d{10}$/.test(phone)) {
+                const msg = currentLang === 'zh' ? '请输入正确的11位手机号' : 'Please enter valid 11-digit phone number';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            // Validate captcha
+            if (!captcha || captcha.length !== 4) {
+                const msg = currentLang === 'zh' ? '请输入4位图形验证码' : 'Please enter 4-digit captcha';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            document.getElementById('send-sms-login-btn').disabled = true;
+            document.getElementById('sms-login-spinner').style.display = 'block';
+            
+            try {
+                // Send SMS verification code with captcha
+                const response = await fetch('/api/auth/sms/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        purpose: 'login',
+                        captcha: captcha,
+                        captcha_id: captchaId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    smsLoginPhone = phone;
+                    
+                    // Show step 2
+                    document.getElementById('sms-login-step1').style.display = 'none';
+                    document.getElementById('sms-login-step2').style.display = 'block';
+                    
+                    // Show masked phone
+                    const maskedPhone = phone.substring(0, 3) + '****' + phone.substring(7);
+                    document.getElementById('sms-login-masked-phone').textContent = maskedPhone;
+                    document.getElementById('sms-login-masked-phone-en').textContent = maskedPhone;
+                    
+                    // Start resend countdown
+                    startSMSLoginCountdown(result.resend_after || 60);
+                    
+                    const msg = currentLang === 'zh' ? '验证码已发送' : 'Verification code sent';
+                    showAlert(msg, 'success');
+                } else {
+                    let msg = formatAuthError(result.detail || '', response.status, currentLang);
+                    showAlert(msg, 'error');
+                    refreshSMSLoginCaptcha();
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+                refreshSMSLoginCaptcha();
+            } finally {
+                document.getElementById('send-sms-login-btn').disabled = false;
+                document.getElementById('sms-login-spinner').style.display = 'none';
+            }
+        }
+        
+        // Start SMS login resend countdown
+        function startSMSLoginCountdown(seconds) {
+            // Clear any existing interval
+            if (smsLoginCountdownInterval) {
+                clearInterval(smsLoginCountdownInterval);
+                smsLoginCountdownInterval = null;
+            }
+            
+            smsLoginCountdown = seconds;
+            const link = document.getElementById('resend-sms-login-link');
+            const countdown = document.getElementById('resend-sms-login-countdown');
+            
+            link.style.display = 'none';
+            countdown.style.display = 'inline';
+            
+            const updateCountdown = () => {
+                if (smsLoginCountdown > 0) {
+                    countdown.textContent = currentLang === 'zh' 
+                        ? `${smsLoginCountdown}秒后可重新发送` 
+                        : `Resend in ${smsLoginCountdown}s`;
+                    smsLoginCountdown--;
+                } else {
+                    clearInterval(smsLoginCountdownInterval);
+                    smsLoginCountdownInterval = null;
+                    countdown.style.display = 'none';
+                    link.style.display = 'inline';
+                }
+            };
+            
+            updateCountdown();
+            smsLoginCountdownInterval = setInterval(updateCountdown, 1000);
+        }
+        
+        // Resend SMS login code
+        async function resendSMSLogin(event) {
+            event.preventDefault();
+            
+            if (!smsLoginPhone) {
+                backToLogin(event);
+                return;
+            }
+            
+            // Clear any existing countdown interval
+            if (smsLoginCountdownInterval) {
+                clearInterval(smsLoginCountdownInterval);
+                smsLoginCountdownInterval = null;
+            }
+            
+            // Go back to step 1 with phone pre-filled
+            document.getElementById('sms-login-phone').value = smsLoginPhone;
+            document.getElementById('sms-login-captcha').value = '';
+            document.getElementById('sms-login-step2').style.display = 'none';
+            document.getElementById('sms-login-step1').style.display = 'block';
+            
+            // Refresh captcha
+            refreshSMSLoginCaptcha();
+            
+            const msg = currentLang === 'zh' ? '请重新验证图形验证码' : 'Please verify captcha again';
+            showAlert(msg, 'info');
+        }
+        
+        // Perform SMS login
+        async function performSMSLogin() {
+            hideAlert();
+            
+            const smsCode = document.getElementById('sms-login-code').value.trim();
+            
+            // Validate SMS code
+            if (!/^\d{6}$/.test(smsCode)) {
+                const msg = currentLang === 'zh' ? '请输入6位短信验证码' : 'Please enter 6-digit SMS code';
+                showAlert(msg, 'error');
+                return;
+            }
+            
+            document.getElementById('sms-login-btn').disabled = true;
+            document.getElementById('sms-login-submit-spinner').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/auth/login_sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: smsLoginPhone,
+                        sms_code: smsCode
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Store token and user, set mode to standard
+                    auth.setToken(result.access_token);
+                    auth.setUser(result.user);
+                    auth.setMode('standard');
+                    
+                    // Get user name for personalized message
+                    const userName = result.user?.name || '';
+                    const msg = currentLang === 'zh' 
+                        ? (userName ? `登录成功，跳转中... 欢迎 ${userName}` : '登录成功！跳转中...')
+                        : (userName ? `Login successful! Redirecting... Welcome ${userName}` : 'Login successful! Redirecting...');
+                    showAlert(msg, 'success');
+                    
+                    // Check for redirect parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect') || '/editor';
+                    setTimeout(() => window.location.href = redirectUrl, 1000);
+                } else {
+                    const errorDetail = extractErrorDetail(result);
+                    let msg = formatAuthError(errorDetail, response.status, currentLang);
+                    showAlert(msg, 'error');
+                }
+            } catch (error) {
+                const msg = currentLang === 'zh' ? '网络错误: ' + error.message : 'Network error: ' + error.message;
+                showAlert(msg, 'error');
+            } finally {
+                document.getElementById('sms-login-btn').disabled = false;
+                document.getElementById('sms-login-submit-spinner').style.display = 'none';
+            }
+        }
+        
+        // Update placeholders for SMS login form
+        function updateSMSLoginPlaceholders() {
+            if (currentLang === 'zh') {
+                document.getElementById('sms-login-phone').placeholder = '输入注册手机号';
+                document.getElementById('sms-login-captcha').placeholder = '输入验证码';
+                document.getElementById('sms-login-code').placeholder = '输入6位短信验证码';
+            } else {
+                document.getElementById('sms-login-phone').placeholder = 'Enter registered phone';
+                document.getElementById('sms-login-captcha').placeholder = 'Enter captcha';
+                document.getElementById('sms-login-code').placeholder = 'Enter 6-digit SMS code';
+            }
+        }
+        
+        // Override updatePlaceholders to include reset form and SMS login form
+        const originalUpdatePlaceholders = updatePlaceholders;
+        updatePlaceholders = function() {
+            originalUpdatePlaceholders();
+            updateResetPlaceholders();
+            updateSMSLoginPlaceholders();
+        };
+    </script>
+    
+    <!-- ICP Footer -->
+    <div class="icp-footer">
+        <span>京ICP备2025126228号-1</span>
+    </div>
+    
+    <style>
+        .icp-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 50%, transparent 100%);
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 1000;
+            font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+            pointer-events: none;
+        }
+        
+        .icp-footer span {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        @media (max-width: 480px) {
+            .icp-footer {
+                font-size: 10px;
+                padding: 12px 16px;
+            }
+        }
+    </style>
+</body>
+</html>
+

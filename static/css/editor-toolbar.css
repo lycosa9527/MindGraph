@@ -1,0 +1,866 @@
+/**
+ * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+ * All Rights Reserved
+ * 
+ * Proprietary License - All use without explicit permission is prohibited.
+ * Unauthorized use, copying, modification, distribution, or execution is strictly prohibited.
+ * 
+ * @author WANG CUNCHI
+ */
+
+/**
+ * Professional Toolbar Styling for MindGraph Interactive Editor
+ */
+
+/* Toolbar container already defined in editor.css */
+
+/* Additional button styles for specific toolbar elements */
+
+/* Tooltip styles - Default (above element) */
+[title] {
+    position: relative;
+}
+
+[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+/* Ensure toolbar creates proper stacking context for tooltips */
+.editor-toolbar {
+    position: relative;
+    z-index: 100;
+}
+
+/* Tooltip for top toolbar - Show BELOW to avoid browser cutoff */
+.editor-toolbar [title]:hover::after {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 5px;
+    z-index: 10000;  /* Higher than canvas to appear on top */
+}
+
+/* Active states for selected elements */
+.toolbar-group.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Animation for toolbar interactions */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.btn-tool:active:not(:disabled) {
+    animation: pulse 0.2s ease;
+}
+
+/* Toolbar mode classes for JavaScript-driven responsive layout */
+.editor-toolbar,
+.toolbar-section,
+.toolbar-group,
+.toolbar-group-label,
+.btn-tool,
+.mindmate-ai-btn {
+    transition: all 0.3s ease;
+}
+
+/* Full mode (default, wide screens) */
+.editor-toolbar.toolbar-full .toolbar-left,
+.editor-toolbar.toolbar-full .toolbar-center,
+.editor-toolbar.toolbar-full .toolbar-right {
+    flex-wrap: nowrap;
+}
+
+/* Large mode */
+.editor-toolbar.toolbar-large .toolbar-group {
+    padding: 6px 10px;
+}
+
+/* Compact mode */
+.editor-toolbar.toolbar-compact .toolbar-group-label {
+    display: none;
+}
+
+.editor-toolbar.toolbar-compact .toolbar-group {
+    padding: 6px 8px;
+}
+
+/* Minimal mode */
+.editor-toolbar.toolbar-minimal .toolbar-group-label {
+    display: none;
+}
+
+.editor-toolbar.toolbar-minimal .toolbar-center {
+    order: 2;
+    width: 100%;
+}
+
+.editor-toolbar.toolbar-minimal .toolbar-left {
+    order: 1;
+}
+
+.editor-toolbar.toolbar-minimal .toolbar-right {
+    order: 3;
+}
+
+/* ============================================
+   FILE OPERATIONS GROUP (Export/Save/Import)
+   Inherits from .toolbar-group in editor.css
+   ============================================ */
+
+/* Export Button - Sky Blue accent for primary action */
+.btn-export {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.btn-export:hover {
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9) !important;
+}
+
+/* Mobile mode */
+.editor-toolbar.toolbar-mobile {
+    flex-direction: column;
+}
+
+.editor-toolbar.toolbar-mobile .toolbar-section {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Toolbar responsiveness with smooth dynamic adjustments */
+
+/* Wide screens - all elements in one line */
+@media (min-width: 1400px) {
+    .toolbar-center {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .toolbar-left,
+    .toolbar-right {
+        flex-shrink: 0;
+    }
+}
+
+/* Medium-large screens (1200-1399px) - icon-only AI button for budget laptops */
+@media (max-width: 1399px) and (min-width: 1200px) {
+    .toolbar-center {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .toolbar-group {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+    
+    .toolbar-group-label {
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1.4;
+    }
+    
+    .btn-tool {
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+    }
+    
+    /* MindMate AI button - icon only */
+    .mindmate-ai-btn {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    
+    .mindmate-ai-btn.icon-only {
+        padding: 8px 10px;
+    }
+    
+    .mindmate-ai-btn.icon-only svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Medium screens (900-1199px) - hide labels, icon-only AI button */
+@media (max-width: 1199px) and (min-width: 900px) {
+    .toolbar-center {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .toolbar-group {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+    
+    .toolbar-group-label {
+        display: none; /* Hide "Nodes:" and "Tools:" labels */
+    }
+    
+    .btn-tool {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+    
+    /* MindMate AI button - icon only */
+    .mindmate-ai-btn {
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    .mindmate-ai-btn.icon-only {
+        padding: 8px;
+    }
+    
+    .mindmate-ai-btn.icon-only svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Small-medium screens - compact buttons, icon-only AI button */
+@media (max-width: 899px) and (min-width: 769px) {
+    .editor-toolbar {
+        gap: 10px;
+    }
+    
+    .toolbar-section {
+        gap: 8px;
+    }
+    
+    .toolbar-center {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toolbar-left {
+        order: 1;
+    }
+    
+    .toolbar-right {
+        order: 3;
+    }
+    
+    .toolbar-group {
+        padding: 6px 8px;
+        gap: 5px;
+    }
+    
+    .toolbar-group-label {
+        display: none;
+    }
+    
+    .btn-tool,
+    .btn-secondary,
+    .btn-success,
+    .btn-warning {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+    
+    /* MindMate AI button - icon only in minimal mode */
+    .mindmate-ai-btn {
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    .mindmate-ai-btn.icon-only {
+        padding: 8px;
+    }
+    
+    .mindmate-ai-btn.icon-only svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Mobile - adaptive width sections */
+@media (max-width: 768px) {
+    .editor-toolbar {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important; /* Allow wrapping between rows */
+        gap: 6px;
+        padding: 8px;
+        justify-content: flex-start;
+        align-items: flex-start;
+        visibility: visible !important;
+    }
+    
+    .toolbar-section {
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Never wrap within a section */
+        gap: 6px;
+        width: auto;
+        max-width: 100%; /* Don't exceed viewport */
+        visibility: visible !important;
+    }
+    
+    /* Left section - file operations (full width row, centered) */
+    .toolbar-left {
+        flex: 0 0 100%;
+        order: 1;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* ===== EDIT SECTION - Node Operations and Diagram Features ===== */
+    .toolbar-nodes-section {
+        flex: 0 0 100%; /* Take full width row */
+        order: 2;
+        display: flex !important;
+        justify-content: center; /* Center the Edit group */
+        gap: 6px;
+        width: 100%;
+    }
+    
+    /* ===== ROW 3: ACTIONS SECTION - Editing Actions and History (Left aligned) ===== */
+    .toolbar-tools-section {
+        flex: 0 0 auto !important; /* Fit content, no grow/shrink */
+        order: 3 !important; /* Row 3 */
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Never wrap */
+        justify-content: flex-start !important; /* Left side */
+        align-items: center !important;
+        align-self: center !important; /* Vertical alignment in toolbar */
+        gap: 6px !important;
+        width: auto !important; /* Only take needed space */
+        max-width: 60% !important; /* Leave room for AI button */
+    }
+    
+    /* ===== ROW 3: AI BUTTON SECTION - Right aligned ===== */
+    .toolbar-right {
+        flex: 0 0 auto !important; /* Fit content, no grow/shrink */
+        order: 3 !important; /* Row 3 - SAME as tools! */
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Never wrap */
+        align-items: center !important;
+        align-self: center !important; /* Vertical alignment in toolbar */
+        margin-left: auto !important; /* Push to right side */
+        width: auto !important; /* Only take needed space */
+    }
+    
+    /* Old .toolbar-center kept for backward compatibility (desktop) */
+    .toolbar-center {
+        flex: 1;
+        order: 2;
+        display: flex !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    .toolbar-group {
+        display: flex !important; /* ← Changed from inline-flex */
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 6px 10px;
+        position: relative;
+        transition: all 0.3s ease;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .toolbar-group-label {
+        font-size: 11px;
+        margin-right: 6px;
+        white-space: nowrap;
+        display: inline-flex !important;
+        align-items: center !important;
+        visibility: visible !important;
+        line-height: 1.4 !important;
+        height: 100%;
+    }
+    
+    /* ===== EDIT TOOLBAR - Node Operations and Diagram Features ===== */
+    .nodes-toolbar-group {
+        background: rgba(255, 255, 255, 0.1);
+        width: 100% !important; /* Take full width of container */
+        flex: 1 1 100% !important; /* Grow to fill container */
+        flex-wrap: wrap; /* Allow wrapping if needed */
+        justify-content: center !important; /* Center content */
+        margin: 0 !important;
+        gap: 4px !important; /* Tighter gap for better fit */
+    }
+    
+    .nodes-toolbar-group.collapsible-group {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .nodes-toolbar-group.collapsible-group.collapsed {
+        background: rgba(255, 255, 255, 0.08);
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        justify-content: center !important;
+    }
+    
+    .nodes-toolbar-group.collapsible-group.expanded {
+        background: rgba(255, 255, 255, 0.15);
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        justify-content: center !important;
+    }
+    
+    /* ===== ACTIONS TOOLBAR - Editing Actions and History (HIGH SPECIFICITY) ===== */
+    .toolbar-tools-section .tools-toolbar-group,
+    .tools-toolbar-group.always-visible,
+    .tools-toolbar-group {
+        background: rgba(255, 255, 255, 0.1) !important;
+        width: fit-content !important; /* Exact fit */
+        max-width: none !important; /* No max width restriction */
+        flex: 0 0 auto !important; /* No grow, no shrink */
+        flex-basis: auto !important;
+        flex-wrap: nowrap !important; /* Never wrap */
+        justify-content: flex-start !important; /* Left align buttons */
+        align-items: center !important; /* Vertical center alignment */
+        margin: 0 !important; /* No margins */
+        padding: 6px 6px !important; /* Reduced padding for tighter fit */
+        min-width: fit-content !important;
+    }
+    
+    /* Old generic classes - kept for backward compatibility */
+    .toolbar-group.collapsible-group {
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-group.always-visible {
+        flex-wrap: nowrap;
+    }
+    
+    /* Toggle button for collapsible sections */
+    .toolbar-group-toggle {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 10px;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        margin-right: 4px;
+        border-radius: 3px;
+        transition: all 0.2s ease;
+    }
+    
+    .toolbar-group-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .toolbar-group-toggle:active {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Buttons in mobile mode - adaptive width for better fit */
+    .btn-tool,
+    .btn-secondary,
+    .btn-success,
+    .btn-warning {
+        padding: 6px 8px !important;
+        font-size: 10px !important;
+        white-space: nowrap;
+        visibility: visible !important;
+        line-height: 1.4 !important;
+        min-width: auto !important;
+    }
+    
+    /* Button SVGs smaller on mobile */
+    .btn-tool svg,
+    .btn-auto svg,
+    .btn-line svg,
+    .btn-learning svg,
+    .btn-node-palette svg {
+        width: 14px !important;
+        height: 14px !important;
+        margin-right: 3px !important;
+    }
+    
+    /* MindMate AI button on mobile - match other buttons */
+    .mindmate-ai-btn {
+        padding: 6px 8px !important; /* ← Same as other buttons */
+        font-size: 10px !important; /* ← Same as other buttons */
+        gap: 4px !important;
+        white-space: nowrap;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1.4 !important; /* ← Same as other buttons */
+        height: auto !important; /* Match natural height */
+        visibility: visible !important;
+    }
+    
+    .mindmate-ai-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    /* Show full AI button text on mobile if there's room */
+    #mindmate-btn-text {
+        display: inline !important;
+    }
+    
+    /* Ensure AI button sits right next to tools section with proper spacing */
+    .toolbar-center + .toolbar-right {
+        margin-left: 8px;
+    }
+    
+    /* Make sure toolbar groups are visible */
+    .toolbar-group {
+        display: inline-flex !important;
+    }
+    
+    /* Keep Nodes and Tools sections inline on same row if space allows */
+    .toolbar-center {
+        flex-wrap: wrap;
+    }
+    
+    /* Horizontal layout for buttons within groups */
+    .toolbar-group.expanded,
+    .toolbar-group.always-visible {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+    }
+    
+    .toolbar-group.expanded .btn-tool,
+    .toolbar-group.always-visible .btn-tool {
+        flex-shrink: 0;
+    }
+    
+    /* Auto Complete and special buttons */
+    .btn-auto,
+    .btn-line,
+    .btn-learning,
+    .btn-node-palette {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+    }
+    
+    /* Ensure buttons in always-visible groups stay compact */
+    .toolbar-group.always-visible .btn-tool {
+        margin: 0;
+    }
+}
+
+/* Flow Map Orientation Button - Hidden by default, shown only for flow_map diagram type */
+#flow-map-orientation-btn {
+    display: none !important;
+    /* Center align text when visible */
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+/* MindMate AI Button */
+.mindmate-ai-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* CRITICAL: Prevent Tab focus on MindMate button - mouse only */
+.mindmate-ai-btn:focus {
+    outline: none !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important; /* Keep normal shadow, no focus ring */
+}
+
+/* Node Palette button - also prevent Tab focus */
+.btn-node-palette:focus {
+    outline: none !important;
+}
+
+/* Icon-only mode for narrow desktop screens */
+.mindmate-ai-btn.icon-only {
+    padding: 10px;
+    gap: 0;
+    border-radius: 8px;
+}
+
+.mindmate-ai-btn.icon-only svg {
+    width: 20px;
+    height: 20px;
+}
+
+.mindmate-ai-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.5);
+}
+
+.mindmate-ai-btn:active {
+    transform: translateY(0);
+}
+
+.mindmate-ai-btn svg {
+    flex-shrink: 0;
+}
+
+.mindmate-ai-btn.active {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* Auto Complete Button */
+.btn-auto {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-auto:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+.btn-auto:active {
+    transform: translateY(0);
+}
+
+.btn-auto.loading {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
+
+.btn-auto.loading svg {
+    animation: rotate 1s linear infinite;
+}
+
+/* Line Mode Button */
+.btn-line {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3) !important;
+}
+
+.btn-line:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4) !important;
+}
+
+.btn-line:active {
+    transform: translateY(0);
+}
+
+.btn-line.active {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Learning Mode Button - Rainbow Glow */
+/* Animation name: rainbow-rotate-glow (for future reference) */
+.btn-learning {
+    position: relative;
+    background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%) !important;
+    color: #000 !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3) !important;
+    z-index: 1;
+    overflow: visible;
+}
+
+/* Rainbow glow border effect */
+.btn-learning::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9px;
+    padding: 3px;
+    background: linear-gradient(
+        45deg,
+        #ff0000, #ff7f00, #ffff00, #00ff00, 
+        #0000ff, #4b0082, #9400d3,
+        #ff0000
+    );
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, 
+                   linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, 
+          linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: rainbow-rotate-glow 3s linear infinite;
+    filter: blur(8px);
+    z-index: -1;
+    opacity: 1;
+}
+
+/* Hover state */
+.btn-learning:not(:disabled):hover {
+    background: linear-gradient(135deg, #FFC107 0%, #FFB300 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5) !important;
+}
+
+/* Hover makes rainbow glow more intense */
+.btn-learning:not(:disabled):hover::before {
+    filter: blur(10px);
+    opacity: 1;
+}
+
+.btn-learning:not(:disabled):active {
+    transform: translateY(0);
+}
+
+/* Disabled state - no rainbow glow */
+.btn-learning:disabled {
+    background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%) !important;
+    color: #757575 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+
+.btn-learning:disabled::before {
+    display: none;
+}
+
+/* Rainbow rotation animation - rainbow-rotate-glow */
+@keyframes rainbow-rotate-glow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* ============================================
+   NODE PALETTE BUTTON
+   ============================================ */
+
+.btn-node-palette {
+    position: relative;
+    background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-node-palette svg {
+    margin-right: 6px;
+}
+
+.btn-node-palette:not(:disabled):hover {
+    background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.5) !important;
+}
+
+.btn-node-palette:not(:disabled):active {
+    transform: translateY(0);
+}
+
+/* Disabled state */
+.btn-node-palette:disabled {
+    background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%) !important;
+    color: #757575 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+
+/* Active state when panel is open */
+.btn-node-palette.active {
+    background: linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%) !important;
+    box-shadow: 0 2px 8px rgba(106, 27, 154, 0.5) !important;
+}
+
+/* Learning Material Modal Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Pulse animation for node highlighting */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
+}

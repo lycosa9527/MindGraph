@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph Pro</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/editor.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/editor-toolbar.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/node-palette.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/comic-bubble.css?v={{ version }}">
+    
+    <!-- D3.js -->
+    <script src="/static/js/d3.min.js?v={{ version }}"></script>
+</head>
+<body 
+    data-verbose-logging="{{ verbose_logging | tojson }}"
+    data-feature-voice-agent="{{ feature_voice_agent | tojson }}"
+    data-feature-drag-and-drop="{{ feature_drag_and_drop | tojson }}"
+    data-feature-tab-mode="{{ feature_tab_mode | tojson }}"
+    data-ai-assistant-name="{{ ai_assistant_name }}"
+    data-default-language="{{ default_language }}"
+    data-wechat-qr-image="{{ wechat_qr_image }}">
+    <!-- Configuration from backend -->
+    <script>
+        // Load configuration from data attributes
+        const bodyElement = document.body;
+        window.VERBOSE_LOGGING = bodyElement.dataset.verboseLogging === 'true';
+        window.FEATURE_VOICE_AGENT = bodyElement.dataset.featureVoiceAgent === 'true';
+        window.FEATURE_DRAG_AND_DROP = bodyElement.dataset.featureDragAndDrop === 'true';
+        window.FEATURE_TAB_MODE = bodyElement.dataset.featureTabMode === 'true';
+        window.AI_ASSISTANT_NAME = bodyElement.dataset.aiAssistantName || 'MindMate AI';
+        window.DEFAULT_LANGUAGE = bodyElement.dataset.defaultLanguage || 'zh';
+        window.WECHAT_QR_IMAGE = bodyElement.dataset.wechatQrImage || '';
+        
+        // App version for .mg file exports
+        window.MINDGRAPH_VERSION = '{{ version }}';
+        
+        // Cache detection and refresh mechanism
+        (function() {
+            const CURRENT_VERSION = '{{ version }}';
+            const VERSION_STORAGE_KEY = 'mindgraph_app_version';
+            const CACHE_DETECTED_KEY = 'mindgraph_cache_detected';
+            
+            // Helper function to safely access localStorage
+            const safeLocalStorage = {
+                getItem: (key) => {
+                    try {
+                        return localStorage.getItem(key);
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        localStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+            };
+            
+            // Helper function to safely access sessionStorage
+            const safeSessionStorage = {
+                getItem: (key) => {
+                    try {
+                        return sessionStorage.getItem(key);
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        sessionStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                removeItem: (key) => {
+                    try {
+                        sessionStorage.removeItem(key);
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                }
+            };
+            
+            // Get stored version
+            const storedVersion = safeLocalStorage.getItem(VERSION_STORAGE_KEY);
+            const cacheDetected = safeSessionStorage.getItem(CACHE_DETECTED_KEY);
+            
+            // Check if version changed (cache detected)
+            if (storedVersion && storedVersion !== CURRENT_VERSION && !cacheDetected) {
+                // Mark that we've detected cache for this session
+                safeSessionStorage.setItem(CACHE_DETECTED_KEY, 'true');
+                
+                // Show cache warning notification
+                const showCacheWarning = () => {
+                    const currentLang = localStorage.getItem('language') || 'zh';
+                    const isZh = currentLang === 'zh';
+                    
+                    const warningHtml = `
+                        <div id="cache-warning" style="
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+                            color: white;
+                            padding: 20px 25px;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                            z-index: 10000;
+                            max-width: 400px;
+                            animation: slideIn 0.3s ease-out;
+                        ">
+                            <style>
+                                @keyframes slideIn {
+                                    from {
+                                        transform: translateX(100%);
+                                        opacity: 0;
+                                    }
+                                    to {
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }
+                                }
+                                @keyframes slideOut {
+                                    from {
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }
+                                    to {
+                                        transform: translateX(100%);
+                                        opacity: 0;
+                                    }
+                                }
+                            </style>
+                            <div style="display: flex; align-items: flex-start; gap: 15px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">
+                                        ${isZh ? '⚠️ 检测到旧版本缓存' : '⚠️ Old Cache Detected'}
+                                    </div>
+                                    <div style="font-size: 14px; opacity: 0.95; line-height: 1.5; margin-bottom: 12px;">
+                                        ${isZh 
+                                            ? `应用已更新到版本 ${CURRENT_VERSION}，但您可能在使用旧版本缓存。请点击下方按钮刷新，或使用快捷键强制刷新页面以获得最新功能。`
+                                            : `Application updated to version ${CURRENT_VERSION}, but you may be using cached files. Click the button below to refresh, or use keyboard shortcut to hard refresh and get the latest features.`
+                                        }
+                                    </div>
+                                    <div style="margin-bottom: 12px; padding: 10px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; border-left: 3px solid rgba(255, 255, 255, 0.5);">
+                                        <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">
+                                            ${isZh ? '⌨️ 如何强制刷新：' : '⌨️ How to Hard Refresh:'}
+                                        </div>
+                                        <div style="font-size: 12px; opacity: 0.95; line-height: 1.6;">
+                                            ${isZh 
+                                                ? '• Windows/Linux: 按 <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Ctrl</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd><br>• Mac: 按 <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Cmd</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd>'
+                                                : '• Windows/Linux: Press <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Ctrl</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd><br>• Mac: Press <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Cmd</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd>'
+                                            }
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button id="cache-refresh-btn" style="
+                                            background: white;
+                                            color: #ff6b6b;
+                                            border: none;
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            font-weight: 600;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                            ${isZh ? '🔄 立即刷新' : '🔄 Refresh Now'}
+                                        </button>
+                                        <button id="cache-dismiss-btn" style="
+                                            background: rgba(255, 255, 255, 0.2);
+                                            color: white;
+                                            border: 1px solid rgba(255, 255, 255, 0.3);
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            font-weight: 600;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                        " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+                                            ${isZh ? '稍后' : 'Later'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <button id="cache-close-btn" style="
+                                    background: rgba(255, 255, 255, 0.2);
+                                    border: none;
+                                    color: white;
+                                    width: 24px;
+                                    height: 24px;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                    font-size: 18px;
+                                    line-height: 1;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    transition: all 0.2s;
+                                " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">×</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', warningHtml);
+                    
+                    // Refresh button - force reload (prevent multiple clicks)
+                    let isRefreshing = false;
+                    document.getElementById('cache-refresh-btn').addEventListener('click', () => {
+                        if (isRefreshing) return; // Prevent multiple clicks
+                        isRefreshing = true;
+                        safeLocalStorage.setItem(VERSION_STORAGE_KEY, CURRENT_VERSION);
+                        safeSessionStorage.removeItem(CACHE_DETECTED_KEY);
+                        // Use modern reload method with cache bypass
+                        window.location.reload();
+                    });
+                    
+                    // Dismiss button - hide for this session
+                    document.getElementById('cache-dismiss-btn').addEventListener('click', () => {
+                        document.getElementById('cache-warning').remove();
+                    });
+                    
+                    // Close button
+                    document.getElementById('cache-close-btn').addEventListener('click', () => {
+                        document.getElementById('cache-warning').remove();
+                    });
+                    
+                    // Auto-dismiss after 30 seconds
+                    setTimeout(() => {
+                        const warning = document.getElementById('cache-warning');
+                        if (warning) {
+                            warning.style.animation = 'slideOut 0.3s ease-out';
+                            warning.style.animationFillMode = 'forwards';
+                            setTimeout(() => warning.remove(), 300);
+                        }
+                    }, 30000);
+                };
+                
+                // Show warning after page loads
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showCacheWarning);
+                } else {
+                    showCacheWarning();
+                }
+            }
+            
+            // Update stored version (always, even if cache detection failed)
+            safeLocalStorage.setItem(VERSION_STORAGE_KEY, CURRENT_VERSION);
+        })();
+    </script>
+    <!-- Landing Page / Gallery -->
+    <div class="editor-landing" id="editor-landing">
+        <!-- Top Right Buttons -->
+        <div class="top-right-controls">
+            <button id="language-toggle" class="control-btn" data-tooltip="Switch Language">
+                <span class="lang-text">EN</span>
+            </button>
+            <!-- SECURITY: Admin button always rendered but hidden by default. JavaScript will show it only if user is admin. -->
+            <button id="admin-btn" class="control-btn" data-tooltip="Admin Panel" style="display: none;">
+                <span class="lang-en">Admin</span>
+                <span class="lang-zh">后台</span>
+            </button>
+            {% if wechat_qr_image %}
+            <button id="feedback-btn" class="control-btn" data-tooltip="Feedback">
+                <span class="lang-en">Feedback</span>
+                <span class="lang-zh">反馈</span>
+            </button>
+            {% endif %}
+            <button id="logout-btn" class="control-btn" data-tooltip="Logout">
+                <span class="lang-en">Logout</span>
+                <span class="lang-zh">注销</span>
+                <span class="lang-az">Çıxış</span>
+            </button>
+        </div>
+        
+        <header class="editor-header">
+            <h1 id="main-title">MindGraph Professional</h1>
+            <p id="main-subtitle">Choose a diagram type to start creating</p>
+        </header>
+        
+        <!-- AI Prompt Input Section -->
+        <div class="prompt-section">
+            <div class="prompt-container">
+                <div class="prompt-input-wrapper">
+                    <label for="prompt-input" style="display:none;">Diagram prompt input</label>
+                    <input 
+                        type="text" 
+                        id="prompt-input" 
+                        name="prompt-input"
+                        class="prompt-input" 
+                        placeholder="Describe your diagram or choose from templates below..."
+                        autocomplete="off"
+                    />
+                    <button id="prompt-send-btn" class="prompt-send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Recent Prompts Dropdown -->
+                <div class="prompt-history-toggle" id="history-toggle">
+                    <span id="history-toggle-text">Recent Prompts</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                
+                <div class="prompt-history-dropdown" id="prompt-history" style="display: none;">
+                    <div class="prompt-history-header">
+                        <span id="history-header-text">Recent Prompts</span>
+                        <button id="clear-history-btn" class="clear-history-btn">Clear</button>
+                    </div>
+                    <div class="prompt-history-list" id="prompt-history-list">
+                        <div class="prompt-history-empty" id="history-empty">
+                            <span id="empty-history-text">No recent prompts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="diagram-gallery">
+            <!-- Thinking Maps Category -->
+            <div class="diagram-category">
+                <h2>Thinking Maps</h2>
+                <div class="diagram-grid">
+                    <div class="diagram-card" data-type="circle_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle class="circle-map-center" cx="100" cy="75" r="25" fill="#e91e63"/>
+                                <circle class="circle-map-outer-ring" cx="100" cy="75" r="71" fill="none" stroke="#f48fb1" stroke-width="2"/>
+                                <!-- 5 little bubbles around the circle -->
+                                <circle class="circle-map-bubble circle-map-bubble-1" cx="100" cy="23" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-2" cx="150" cy="59" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-3" cx="131" cy="117" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-4" cx="69" cy="117" r="13" fill="#f48fb1"/>
+                                <circle class="circle-map-bubble circle-map-bubble-5" cx="50" cy="59" r="13" fill="#f48fb1"/>
+                            </svg>
+                        </div>
+                        <h3>Circle Map</h3>
+                        <p>Defining in context</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="bubble_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Lines from center to bubbles -->
+                                <line x1="100" y1="80" x2="100" y2="25" stroke="#81c784" stroke-width="2"/>
+                                <line x1="100" y1="80" x2="152" y2="63" stroke="#81c784" stroke-width="2"/>
+                                <line x1="100" y1="80" x2="132" y2="125" stroke="#81c784" stroke-width="2"/>
+                                <line x1="100" y1="80" x2="68" y2="125" stroke="#81c784" stroke-width="2"/>
+                                <line x1="100" y1="80" x2="48" y2="63" stroke="#81c784" stroke-width="2"/>
+                                <!-- Center bubble -->
+                                <circle class="bubble-map-center" cx="100" cy="80" r="25" fill="#4caf50"/>
+                                <!-- 5 outer bubbles -->
+                                <circle class="bubble-map-bubble bubble-map-bubble-1" cx="100" cy="25" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-2" cx="152" cy="63" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-3" cx="132" cy="125" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-4" cx="68" cy="125" r="14" fill="#81c784"/>
+                                <circle class="bubble-map-bubble bubble-map-bubble-5" cx="48" cy="63" r="14" fill="#81c784"/>
+                            </svg>
+                        </div>
+                        <h3>Bubble Map</h3>
+                        <p>Describing with adjectives</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="double_bubble_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Lines from left main to left differences -->
+                                <line x1="60" y1="75" x2="20" y2="50" stroke="#64b5f6" stroke-width="2"/>
+                                <line x1="60" y1="75" x2="20" y2="100" stroke="#64b5f6" stroke-width="2"/>
+                                <!-- Lines from right main to right differences -->
+                                <line x1="140" y1="75" x2="180" y2="50" stroke="#64b5f6" stroke-width="2"/>
+                                <line x1="140" y1="75" x2="180" y2="100" stroke="#64b5f6" stroke-width="2"/>
+                                <!-- Lines from both mains to shared bubbles -->
+                                <line x1="60" y1="75" x2="100" y2="50" stroke="#64b5f6" stroke-width="2"/>
+                                <line x1="140" y1="75" x2="100" y2="50" stroke="#64b5f6" stroke-width="2"/>
+                                <line x1="60" y1="75" x2="100" y2="100" stroke="#64b5f6" stroke-width="2"/>
+                                <line x1="140" y1="75" x2="100" y2="100" stroke="#64b5f6" stroke-width="2"/>
+                                <!-- Two main circles -->
+                                <circle class="double-bubble-map-topic double-bubble-map-topic-left" cx="60" cy="75" r="22" fill="#2196f3"/>
+                                <circle class="double-bubble-map-topic double-bubble-map-topic-right" cx="140" cy="75" r="22" fill="#2196f3"/>
+                                <!-- Left differences (unique to left) -->
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-left-1" cx="20" cy="50" r="12" fill="#64b5f6"/>
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-left-2" cx="20" cy="100" r="12" fill="#64b5f6"/>
+                                <!-- Right differences (unique to right) -->
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-right-1" cx="180" cy="50" r="12" fill="#64b5f6"/>
+                                <circle class="double-bubble-map-diff double-bubble-map-diff-right-2" cx="180" cy="100" r="12" fill="#64b5f6"/>
+                                <!-- Shared bubbles in middle (similarities) -->
+                                <circle class="double-bubble-map-similarity double-bubble-map-similarity-1" cx="100" cy="50" r="12" fill="#90caf9"/>
+                                <circle class="double-bubble-map-similarity double-bubble-map-similarity-2" cx="100" cy="100" r="12" fill="#90caf9"/>
+                            </svg>
+                        </div>
+                        <h3>Double Bubble Map</h3>
+                        <p>Comparing and contrasting</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="tree_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- T-shaped connection lines -->
+                                <line x1="100" y1="49" x2="100" y2="74" stroke="#ce93d8" stroke-width="2"/>
+                                <line x1="45" y1="74" x2="155" y2="74" stroke="#ce93d8" stroke-width="2"/>
+                                <line x1="45" y1="74" x2="45" y2="104" stroke="#ce93d8" stroke-width="2"/>
+                                <line x1="100" y1="74" x2="100" y2="104" stroke="#ce93d8" stroke-width="2"/>
+                                <line x1="155" y1="74" x2="155" y2="104" stroke="#ce93d8" stroke-width="2"/>
+                                <!-- Root square -->
+                                <rect class="tree-map-topic" x="75" y="24" width="50" height="25" rx="3" fill="#9c27b0"/>
+                                <!-- Child squares -->
+                                <rect class="tree-map-child tree-map-child-1" x="22" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
+                                <rect class="tree-map-child tree-map-child-2" x="77" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
+                                <rect class="tree-map-child tree-map-child-3" x="132" y="104" width="46" height="22" rx="3" fill="#ba68c8"/>
+                            </svg>
+                        </div>
+                        <h3>Tree Map</h3>
+                        <p>Classifying and grouping</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="brace_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Curly brace shape (facing left, opening to right) -->
+                                <path d="M 115 25 
+                                         Q 105 25, 105 40 
+                                         L 105 65 
+                                         Q 105 75, 95 75 
+                                         Q 105 75, 105 85 
+                                         L 105 110 
+                                         Q 105 125, 115 125" 
+                                      stroke="#4dd0e1" stroke-width="3" fill="none"/>
+                                <!-- Whole (main item on left) -->
+                                <rect class="brace-map-topic" x="15" y="55" width="70" height="40" rx="4" fill="#00bcd4"/>
+                                <!-- Parts (items on right) -->
+                                <rect class="brace-map-child brace-map-child-1" x="125" y="22" width="60" height="26" rx="3" fill="#4dd0e1"/>
+                                <rect class="brace-map-child brace-map-child-2" x="125" y="62" width="60" height="26" rx="3" fill="#4dd0e1"/>
+                                <rect class="brace-map-child brace-map-child-3" x="125" y="102" width="60" height="26" rx="3" fill="#4dd0e1"/>
+                            </svg>
+                        </div>
+                        <h3>Brace Map</h3>
+                        <p>Whole to parts</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="flow_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Arrow 1: line + triangle -->
+                                <line x1="50" y1="75" x2="65" y2="75" stroke="#ffb74d" stroke-width="4"/>
+                                <polygon points="65,68 80,75 65,82" fill="#ffb74d"/>
+                                <!-- Arrow 2: line + triangle -->
+                                <line x1="120" y1="75" x2="135" y2="75" stroke="#ffb74d" stroke-width="4"/>
+                                <polygon points="135,68 150,75 135,82" fill="#ffb74d"/>
+                                <!-- Flow boxes (rectangles) -->
+                                <rect class="flow-map-box flow-map-box-1" x="5" y="60" width="45" height="30" rx="4" fill="#ff9800"/>
+                                <rect class="flow-map-box flow-map-box-2" x="80" y="60" width="40" height="30" rx="4" fill="#ff9800"/>
+                                <rect class="flow-map-box flow-map-box-3" x="150" y="60" width="45" height="30" rx="4" fill="#ff9800"/>
+                            </svg>
+                        </div>
+                        <h3>Flow Map</h3>
+                        <p>Sequencing and ordering</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="multi_flow_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Lines from causes to event -->
+                                <line x1="48" y1="51" x2="75" y2="67" stroke="#ff8a65" stroke-width="3"/>
+                                <line x1="48" y1="99" x2="75" y2="83" stroke="#ff8a65" stroke-width="3"/>
+                                <!-- Lines from event to effects -->
+                                <line x1="125" y1="67" x2="152" y2="51" stroke="#ff8a65" stroke-width="3"/>
+                                <line x1="125" y1="83" x2="152" y2="99" stroke="#ff8a65" stroke-width="3"/>
+                                <!-- Center event rectangle -->
+                                <rect class="multi-flow-map-event" x="75" y="62" width="50" height="26" rx="4" fill="#ff5722"/>
+                                <!-- Cause rectangles (left) - aligned -->
+                                <rect class="multi-flow-map-cause multi-flow-map-cause-1" x="5" y="40" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <rect class="multi-flow-map-cause multi-flow-map-cause-2" x="5" y="88" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <!-- Effect rectangles (right) - aligned with causes -->
+                                <rect class="multi-flow-map-effect multi-flow-map-effect-1" x="152" y="40" width="43" height="22" rx="3" fill="#ff8a65"/>
+                                <rect class="multi-flow-map-effect multi-flow-map-effect-2" x="152" y="88" width="43" height="22" rx="3" fill="#ff8a65"/>
+                            </svg>
+                        </div>
+                        <h3>Multi-Flow Map</h3>
+                        <p>Cause and effect</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="bridge_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Horizontal main line -->
+                                <line x1="20" y1="75" x2="180" y2="75" stroke="#666" stroke-width="3"/>
+                                <!-- Triangle separator -->
+                                <path d="M 92 75 L 100 67 L 108 75 Z" fill="#666"/>
+                                <!-- Left pair: top and bottom nodes -->
+                                <rect class="bridge-map-pair bridge-map-left bridge-map-left-top" x="30" y="45" width="50" height="18" rx="3" fill="#795548"/>
+                                <rect class="bridge-map-pair bridge-map-left bridge-map-left-bottom" x="30" y="87" width="50" height="18" rx="3" fill="#a1887f"/>
+                                <!-- Right pair: top and bottom nodes -->
+                                <rect class="bridge-map-pair bridge-map-right bridge-map-right-top" x="120" y="45" width="50" height="18" rx="3" fill="#795548"/>
+                                <rect class="bridge-map-pair bridge-map-right bridge-map-right-bottom" x="120" y="87" width="50" height="18" rx="3" fill="#a1887f"/>
+                            </svg>
+                        </div>
+                        <h3>Bridge Map</h3>
+                        <p>Seeing analogies</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Diagrams Category -->
+            <div class="diagram-category">
+                <h2>Advanced Diagrams</h2>
+                <div class="diagram-grid">
+                    <div class="diagram-card" data-type="mindmap">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Curved branches from center -->
+                                <path d="M 100 75 Q 65 55, 50 49" stroke="#64b5f6" stroke-width="3" fill="none"/>
+                                <path d="M 100 75 Q 65 95, 50 101" stroke="#64b5f6" stroke-width="3" fill="none"/>
+                                <path d="M 100 75 Q 135 55, 155 49" stroke="#64b5f6" stroke-width="3" fill="none"/>
+                                <path d="M 100 75 Q 135 95, 155 101" stroke="#64b5f6" stroke-width="3" fill="none"/>
+                                <!-- Center node (round circle) -->
+                                <circle class="mind-map-center" cx="100" cy="75" r="18" fill="#1976d2"/>
+                                <!-- Branch nodes -->
+                                <rect class="mind-map-branch mind-map-branch-top-left" x="10" y="40" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-lower-left" x="10" y="92" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-top-right" x="145" y="40" width="45" height="18" rx="9" fill="#42a5f5"/>
+                                <rect class="mind-map-branch mind-map-branch-lower-right" x="145" y="92" width="45" height="18" rx="9" fill="#42a5f5"/>
+                            </svg>
+                        </div>
+                        <h3>Mind Map</h3>
+                        <p>Creative brainstorming</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="concept_map">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <!-- Connection lines from center to center -->
+                                <line x1="100" y1="40" x2="50" y2="100" stroke="#ef5350" stroke-width="2"/>
+                                <line x1="100" y1="40" x2="150" y2="100" stroke="#ef5350" stroke-width="2"/>
+                                <line x1="50" y1="100" x2="150" y2="100" stroke="#ef5350" stroke-width="2" stroke-dasharray="5,5"/>
+                                <!-- Circles -->
+                                <circle class="concept-map-node concept-map-top" cx="100" cy="40" r="22" fill="#f44336"/>
+                                <circle class="concept-map-node concept-map-left" cx="50" cy="100" r="18" fill="#ef5350"/>
+                                <circle class="concept-map-node concept-map-right" cx="150" cy="100" r="18" fill="#ef5350"/>
+                            </svg>
+                        </div>
+                        <h3>Concept Map</h3>
+                        <p>Complex relationships</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Thinking Tools Category (Under Development) -->
+            <div class="diagram-category">
+                <h2 class="category-collapsible" data-category="thinking-tools">
+                    Thinking Tools
+                    <span class="coming-soon-badge">Coming Soon</span>
+                </h2>
+                <div class="diagram-grid" id="thinking-tools-grid" style="display: none;">
+                    <div class="diagram-card" data-type="factor_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#673ab7"/>
+                                <circle cx="50" cy="40" r="15" fill="#9575cd"/>
+                                <circle cx="150" cy="40" r="15" fill="#9575cd"/>
+                                <circle cx="50" cy="110" r="15" fill="#9575cd"/>
+                                <circle cx="150" cy="110" r="15" fill="#9575cd"/>
+                                <line x1="100" y1="75" x2="50" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="40" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="50" y2="110" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="75" x2="150" y2="110" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Factor Analysis</h3>
+                        <p>Analyzing key factors</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="three_position_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="40" r="20" fill="#009688"/>
+                                <circle cx="60" cy="100" r="20" fill="#26a69a"/>
+                                <circle cx="140" cy="100" r="20" fill="#26a69a"/>
+                                <line x1="100" y1="60" x2="60" y2="80" stroke="#666" stroke-width="2"/>
+                                <line x1="100" y1="60" x2="140" y2="80" stroke="#666" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Three-Position Analysis</h3>
+                        <p>Three perspectives</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="perspective_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="80" y="60" width="40" height="30" rx="5" fill="#607d8b"/>
+                                <circle cx="40" cy="75" r="12" fill="#90a4ae"/>
+                                <circle cx="160" cy="75" r="12" fill="#90a4ae"/>
+                                <path d="M 52 75 L 80 75" stroke="#666" stroke-width="2" marker-end="url(#arrow1)"/>
+                                <path d="M 120 75 L 148 75" stroke="#666" stroke-width="2" marker-end="url(#arrow1)"/>
+                            </svg>
+                        </div>
+                        <h3>Perspective Analysis</h3>
+                        <p>Understanding viewpoints</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="goal_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="30" fill="#ffc107"/>
+                                <circle cx="100" cy="75" r="20" fill="#ffb300"/>
+                                <circle cx="100" cy="75" r="10" fill="#ffa000"/>
+                                <text x="100" y="80" text-anchor="middle" fill="white" font-size="10">Goal</text>
+                            </svg>
+                        </div>
+                        <h3>Goal Analysis</h3>
+                        <p>Breaking down goals</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="possibility_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="25" fill="#8bc34a"/>
+                                <path d="M 100 50 L 130 65 L 120 95 L 80 95 L 70 65 Z" fill="#aed581" opacity="0.5"/>
+                            </svg>
+                        </div>
+                        <h3>Possibility Analysis</h3>
+                        <p>Exploring options</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="result_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="30" y="65" width="40" height="20" rx="3" fill="#ff5722"/>
+                                <rect x="130" y="65" width="40" height="20" rx="3" fill="#ff7043"/>
+                                <path d="M 70 75 L 130 75" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+                            </svg>
+                        </div>
+                        <h3>Result Analysis</h3>
+                        <p>Analyzing outcomes</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="five_w_one_h">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <circle cx="100" cy="75" r="20" fill="#3f51b5"/>
+                                <circle cx="50" cy="40" r="12" fill="#5c6bc0"/>
+                                <circle cx="150" cy="40" r="12" fill="#5c6bc0"/>
+                                <circle cx="50" cy="110" r="12" fill="#5c6bc0"/>
+                                <circle cx="150" cy="110" r="12" fill="#5c6bc0"/>
+                                <circle cx="100" cy="30" r="12" fill="#5c6bc0"/>
+                                <circle cx="100" cy="120" r="12" fill="#5c6bc0"/>
+                                <line x1="100" y1="75" x2="50" y2="40" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="150" y2="40" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="50" y2="110" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="150" y2="110" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="100" y2="30" stroke="#666" stroke-width="1.5"/>
+                                <line x1="100" y1="75" x2="100" y2="120" stroke="#666" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <h3>5W1H Analysis</h3>
+                        <p>Systematic analysis</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="whwm_analysis">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="50" y="60" width="30" height="30" rx="3" fill="#e91e63"/>
+                                <rect x="90" y="60" width="30" height="30" rx="3" fill="#ec407a"/>
+                                <rect x="130" y="60" width="30" height="30" rx="3" fill="#f06292"/>
+                                <rect x="170" y="60" width="30" height="30" rx="3" fill="#f48fb1"/>
+                            </svg>
+                        </div>
+                        <h3>WHWM Analysis</h3>
+                        <p>Project planning</p>
+                    </div>
+                    
+                    <div class="diagram-card" data-type="four_quadrant">
+                        <div class="diagram-preview">
+                            <svg viewBox="0 0 200 150">
+                                <rect x="50" y="40" width="60" height="40" rx="3" fill="#00bcd4" opacity="0.8"/>
+                                <rect x="120" y="40" width="60" height="40" rx="3" fill="#0097a7" opacity="0.8"/>
+                                <rect x="50" y="90" width="60" height="40" rx="3" fill="#26c6da" opacity="0.8"/>
+                                <rect x="120" y="90" width="60" height="40" rx="3" fill="#00acc1" opacity="0.8"/>
+                                <line x1="110" y1="40" x2="110" y2="130" stroke="#333" stroke-width="2"/>
+                                <line x1="50" y1="85" x2="180" y2="85" stroke="#333" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <h3>Four Quadrant Analysis</h3>
+                        <p>Categorizing items</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Editor Interface (hidden initially) -->
+    <div class="editor-interface" id="editor-interface" style="display: none;">
+        <div class="editor-toolbar">
+            <!-- Left Section: Navigation & File Operations -->
+            <div class="toolbar-section toolbar-left">
+                <button id="back-to-gallery" class="btn-secondary">Back to Gallery</button>
+                
+                <!-- File Operations Group: Export | Save | Import -->
+                <div class="toolbar-group file-operations-group">
+                    <span class="toolbar-group-label" id="file-group-label">File:</span>
+                    
+                    <!-- Export Button (PNG - primary action for teachers) -->
+                    <button id="export-btn" class="btn-tool btn-export" title="Export as PNG">Export</button>
+                    
+                    <!-- Save Button (.mg file) -->
+                    <button id="save-btn" class="btn-tool" title="Save as .mg file">Save</button>
+                    
+                    <!-- Import Button (.mg file) -->
+                    <button id="import-btn" class="btn-tool" title="Import .mg file">Import</button>
+                    <input type="file" id="import-file-input" accept=".mg" style="display: none;">
+                </div>
+            </div>
+            
+            <!-- Nodes Section: Node Management (节点) -->
+            <div class="toolbar-section toolbar-nodes-section">
+                <div class="toolbar-group nodes-toolbar-group">
+                    <span class="toolbar-group-label">Nodes:</span>
+                    <button id="add-node-btn" class="btn-tool" title="Add Node">Add</button>
+                    <button id="delete-node-btn" class="btn-tool" title="Delete Selected">Delete</button>
+                    <button id="auto-complete-btn" class="btn-tool btn-auto" title="Auto-complete diagram with AI">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        Auto
+                    </button>
+                    <button id="line-mode-btn" class="btn-tool btn-line" title="Toggle black & white line mode">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        Line
+                    </button>
+                    {% if feature_learning_mode %}
+                    <button id="learning-btn" class="btn-tool btn-learning" title="Start Interactive Learning Mode" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                        <span id="learning-btn-text">Learn</span>
+                    </button>
+                    {% endif %}
+                    <button id="node-palette-btn" class="btn-tool btn-node-palette" title="" tabindex="-1">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span id="node-palette-btn-text">Node Palette</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tools Section: Tool Management (工具) -->
+            <div class="toolbar-section toolbar-tools-section">
+                <div class="toolbar-group tools-toolbar-group">
+                    <span class="toolbar-group-label">Tools:</span>
+                    <button id="flow-map-orientation-btn" class="btn-tool" title="转向 / Flip Orientation" style="display: none;">转向</button>
+                    <button id="empty-node-btn" class="btn-tool" title="Empty selected node text">Empty</button>
+                    <button id="undo-btn" class="btn-tool" title="Undo">Undo</button>
+                    <button id="redo-btn" class="btn-tool" title="Redo">Redo</button>
+                </div>
+            </div>
+            
+            <!-- Right Section: AI Assistant Button (configurable name) -->
+            <div class="toolbar-section toolbar-right">
+                {% if feature_mindmate %}
+                <button id="mindmate-ai-btn" class="mindmate-ai-btn" tabindex="-1">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+                        <circle cx="8" cy="12" r="1" fill="currentColor"></circle>
+                        <circle cx="16" cy="12" r="1" fill="currentColor"></circle>
+                    </svg>
+                    <span id="mindmate-btn-text">{{ ai_assistant_name }}</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="editor-main-content">
+            <div class="canvas-panel">
+                <div id="d3-container"></div>
+                <!-- Black Cat VoiceAgent Mount Point -->
+                <div id="black-cat-mount"></div>
+            </div>
+            
+            <!-- Property Panel (shown when nodes are selected) -->
+            <div class="property-panel" id="property-panel" style="display: none;">
+                <div class="property-header">
+                    <h3>Properties</h3>
+                    <button id="close-properties" class="btn-close">×</button>
+                </div>
+                
+                <div class="property-content">
+                    <!-- Text Properties -->
+                    <div class="property-group">
+                        <label for="prop-text">Text</label>
+                        <textarea id="prop-text" name="prop-text" class="prop-input prop-textarea" placeholder="Node text" autocomplete="off" rows="3"></textarea>
+                        <button id="prop-text-apply" class="prop-btn">Apply</button>
+                    </div>
+                    
+                    <!-- Font Properties -->
+                    <div class="property-group">
+                        <label for="prop-font-family">字体</label>
+                        <select id="prop-font-family" name="prop-font-family" class="prop-select">
+                            <optgroup label="中文字体">
+                                <option value="'Source Han Sans SC', 'Noto Sans SC', sans-serif">思源黑体</option>
+                                <option value="'Source Han Serif SC', 'Noto Serif SC', serif">思源宋体</option>
+                                <option value="'Alibaba PuHuiTi', sans-serif">阿里巴巴普惠体</option>
+                                <option value="'SimSun', serif">宋体</option>
+                                <option value="'SimHei', sans-serif">黑体</option>
+                                <option value="'KaiTi', serif">楷体</option>
+                                <option value="'FangSong', serif">仿宋</option>
+                            </optgroup>
+                            <optgroup label="英文字体">
+                                <option value="Inter, sans-serif" selected>Inter</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label for="prop-font-size">字号</label>
+                        <input type="number" id="prop-font-size" name="prop-font-size" class="prop-input" min="8" max="72" value="14" autocomplete="off">
+                    </div>
+                    
+                    <!-- Font Style -->
+                    <div class="property-group">
+                        <label>文字样式</label>
+                        <div class="btn-group">
+                            <button id="prop-bold" class="prop-toggle-btn" title="Bold"><strong>B</strong></button>
+                            <button id="prop-italic" class="prop-toggle-btn" title="Italic"><em>I</em></button>
+                            <button id="prop-underline" class="prop-toggle-btn" title="Underline"><u>U</u></button>
+                            <button id="prop-strikethrough" class="prop-toggle-btn" title="Strikethrough"><s>S</s></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Color Properties - Compact Button Style -->
+                    <div class="property-group">
+                        <label>颜色</label>
+                        <div class="color-buttons-row">
+                            <button type="button" class="color-btn" id="btn-text-color" data-color-type="text" title="Text Color">
+                                <span class="color-btn-label">文字</span>
+                                <span class="color-btn-preview" id="preview-text-color"></span>
+                            </button>
+                            <button type="button" class="color-btn" id="btn-fill-color" data-color-type="fill" title="Fill Color">
+                                <span class="color-btn-label">填充</span>
+                                <span class="color-btn-preview" id="preview-fill-color"></span>
+                            </button>
+                            <button type="button" class="color-btn" id="btn-stroke-color" data-color-type="stroke" title="Stroke Color">
+                                <span class="color-btn-label">边框</span>
+                                <span class="color-btn-preview" id="preview-stroke-color"></span>
+                            </button>
+                        </div>
+                        <!-- Shared Color Palette Dropdown -->
+                        <div class="color-palette-dropdown" id="color-palette-dropdown">
+                            <div class="color-palette" id="shared-color-palette"></div>
+                            <input type="text" id="prop-color-hex" class="color-hex-input" value="#000000" placeholder="#000000" autocomplete="off">
+                        </div>
+                        <!-- Hidden inputs to store actual values -->
+                        <input type="hidden" id="prop-text-color" value="#000000">
+                        <input type="hidden" id="prop-fill-color" value="#2196f3">
+                        <input type="hidden" id="prop-stroke-color" value="#1976d2">
+                    </div>
+                    
+                    <!-- Stroke Width -->
+                    <div class="property-group">
+                        <label for="prop-stroke-width">Stroke Width</label>
+                        <input type="range" id="prop-stroke-width" name="prop-stroke-width" class="prop-slider" min="0" max="10" step="0.5" value="2">
+                        <span id="stroke-width-value">2px</span>
+                    </div>
+                    
+                    <!-- Reset Styles Button -->
+                    <div class="property-actions">
+                        <button id="reset-styles-btn" class="btn-reset btn-block" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Reset Styles</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Assistant Panel -->
+            <div class="ai-assistant-panel collapsed" id="ai-assistant-panel">
+                <div class="ai-assistant-header">
+                    <div class="ai-assistant-header-title">
+                        <div class="ai-icon-wrapper">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="11" r="1" fill="currentColor"></circle>
+                                <circle cx="8" cy="11" r="1" fill="currentColor"></circle>
+                                <circle cx="16" cy="11" r="1" fill="currentColor"></circle>
+                            </svg>
+                        </div>
+                        <div class="ai-header-text">
+                            <h3 id="ai-panel-title">{{ ai_assistant_name }}</h3>
+                        </div>
+                    </div>
+                    <button id="toggle-ai-assistant" class="ai-close-btn" title="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="ai-assistant-content">
+                    <div class="ai-chat-messages" id="ai-chat-messages">
+                        <div class="ai-welcome-message">
+                            <div class="welcome-icon">✨</div>
+                            <div class="welcome-text">
+                                <h4 id="ai-welcome-title">Welcome to {{ ai_assistant_name }}!</h4>
+                                <p>I'm here to help you with your diagrams. Ask me anything about creating, editing, or improving your work.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-chat-input-container">
+                        <div class="ai-input-wrapper">
+                            <label for="ai-chat-input" style="display:none;">AI chat input</label>
+                            <textarea 
+                                id="ai-chat-input" 
+                                name="ai-chat-input"
+                                class="ai-chat-input" 
+                                placeholder="Ask {{ ai_assistant_name.split(' ')[0] if ai_assistant_name else 'MindMate' }} anything..."
+                                rows="1"
+                                autocomplete="off"
+                            ></textarea>
+                            <button id="ai-chat-send" class="ai-chat-send-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Node Palette Panel -->
+            <div class="node-palette-panel" id="node-palette-panel" style="display: none;">
+                <div class="node-palette-header">
+                    <div class="node-palette-title">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <h3><!-- Will be updated by language manager --></h3>
+                    </div>
+                    <div id="selection-counter" class="selection-counter">
+                        <!-- Will be updated by language manager -->
+                    </div>
+                </div>
+                
+                <!-- Tab Switcher (Double Bubble Map / Multi Flow Map) -->
+                <div id="node-palette-tabs" style="display: none;">
+                    <div class="palette-tabs" data-active="">
+                        <!-- Tabs will be dynamically generated based on diagram type -->
+                    </div>
+                </div>
+                
+                <div class="node-palette-container" id="node-palette-container">
+                    <div class="node-palette-grid" id="node-palette-grid">
+                        <!-- Node cards will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <div class="node-palette-footer">
+                    <button id="cancel-palette-btn" class="cancel-palette-btn">
+                        <!-- Will be updated by language manager -->
+                    </button>
+                    <button id="finish-selection-btn" class="finish-selection-btn" disabled>
+                        <!-- Will be updated by language manager -->
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="editor-status-bar">
+            <div class="status-left">
+                <span id="node-count">Nodes: 0</span>
+                <span id="edit-mode">Edit Mode: Active</span>
+            </div>
+            <div class="status-center">
+                <span class="llm-label">AI Model:</span>
+                <div class="llm-selector">
+                    <button class="llm-btn" data-llm="qwen" title="Qwen (Fast & Reliable)">Qwen</button>
+                    <button class="llm-btn" data-llm="deepseek" title="DeepSeek-v3.1 (High Quality)">DeepSeek</button>
+                    <button class="llm-btn" data-llm="hunyuan" title="Hunyuan/混元 (Tencent Cloud)">Hunyuan</button>
+                    <button class="llm-btn" data-llm="kimi" title="Kimi (Moonshot AI)">Kimi</button>
+                    <button class="llm-btn" data-llm="doubao" title="Doubao/豆包 (Volcengine)">Doubao</button>
+                </div>
+            </div>
+            <div class="status-right">
+                <span id="school-name-display" class="school-name" style="display: none;"></span>
+                {% if feature_tab_mode %}
+                <button id="tab-mode-btn" class="tab-mode-btn" title="Enable Tab Mode (Autocomplete & Expansion)">
+                    <span class="tab-mode-icon">⇥</span> Tab
+                </button>
+                {% endif %}
+                <button id="reset-view-btn" class="reset-view-btn" title="Fit diagram to window">
+                    <span class="reset-view-icon">⛶</span> Reset View
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load all required scripts -->
+    <!-- Logger must load FIRST -->
+    <script src="/static/js/logger.js?v={{ version }}"></script>
+    
+    <!-- Event Bus Architecture (Core) - Load SECOND (after logger) -->
+    <script src="/static/js/core/event-bus.js?v={{ version }}"></script>
+    <script src="/static/js/core/state-manager.js?v={{ version }}"></script>
+    <script src="/static/js/core/session-lifecycle.js?v={{ version }}"></script>
+    <script src="/static/js/utils/sse-client.js?v={{ version }}"></script>
+    
+    <script src="/static/js/theme-config.js?v={{ version }}"></script>
+    <script src="/static/js/style-manager.js?v={{ version }}"></script>
+    
+    <!-- Panel Manager - MUST load before other editors -->
+    <script src="/static/js/managers/panel-manager.js?v={{ version }}"></script>
+    
+    <!-- Node Indicator System - Visual feedback for node updates -->
+    <script src="/static/js/editor/node-indicator.js?v={{ version }}"></script>
+    
+    <!-- Editor scripts -->
+    <script src="/static/js/editor/notification-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/modal-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/language-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/prompt-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/selection-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/canvas-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/node-editor.js?v={{ version }}"></script>
+    <script src="/static/js/editor/tab-mode-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/diagram-validator.js?v={{ version }}"></script>
+    
+    <!-- Phase 7: Extracted Modules (Load BEFORE toolbar-manager & interactive-editor) -->
+    <!-- Toolbar Modules -->
+    <script src="/static/js/managers/toolbar/export-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/session-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/property-panel-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-validation-manager.js?v={{ version }}"></script>
+    <!-- LLM Auto-Complete Sub-Managers (Load in order) -->
+    <script src="/static/js/managers/toolbar/property-validator.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-result-cache.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-progress-renderer.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-engine-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/llm-autocomplete-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/node-property-operations-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/ui-state-llm-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/text-toolbar-state-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/node-counter-feature-mode-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/toolbar/small-operations-manager.js?v={{ version }}"></script>
+    <!-- Editor Modules -->
+    <script src="/static/js/managers/editor/history-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/canvas-controller.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/view-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/drag-drop-manager.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/interaction-handler.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-operations-loader.js?v={{ version }}"></script>
+    <!-- Diagram Operations -->
+    <script src="/static/js/managers/editor/diagram-types/circle-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/bubble-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/double-bubble-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/brace-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/flow-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/multi-flow-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/tree-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/bridge-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/concept-map-operations.js?v={{ version }}"></script>
+    <script src="/static/js/managers/editor/diagram-types/mindmap-operations.js?v={{ version }}"></script>
+    
+    <script src="/static/js/editor/toolbar-manager.js?v={{ version }}"></script>
+    <script src="/static/js/editor/toolbar-responsive.js?v={{ version }}"></script>
+    <script src="/static/js/editor/interactive-editor.js?v={{ version }}"></script>
+    <script src="/static/js/editor/diagram-selector.js?v={{ version }}"></script>
+    
+    <!-- Renderer system (Dynamic loading) -->
+    <script src="/static/js/dynamic-renderer-loader.js?v={{ version }}"></script>
+    <script src="/static/js/renderers/renderer-dispatcher.js?v={{ version }}"></script>
+    
+    <!-- Markdown Libraries for AI Assistant (Local copies) -->
+    <script src="/static/js/markdown-it.min.js?v={{ version }}"></script>
+    <script src="/static/js/purify.min.js?v={{ version }}"></script>
+    
+    <!-- AI Assistant (MindMate) -->
+    <script src="/static/js/managers/mindmate-manager.js?v={{ version }}"></script>
+    
+    <script src="/static/js/editor/black-cat.js?v={{ version }}"></script>
+    <script src="/static/js/editor/comic-bubble.js?v={{ version }}"></script>
+    <!-- Voice Agent -->
+    <script src="/static/js/managers/voice-agent-manager.js?v={{ version }}"></script>
+    
+    <!-- Node Palette Manager - Must load AFTER other editor scripts -->
+    <script src="/static/js/editor/node-palette-manager.js?v={{ version }}"></script>
+    
+    <!-- Authentication Helper -->
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
+    <script>
+        // Check authentication on page load
+        auth.requireAuth();
+    </script>
+    
+    <!-- Update Notification (shows modal after login if there's an update) -->
+    <script src="/static/js/editor/update-notification.js?v={{ version }}"></script>
+    
+    <!-- AI Disclaimer Notification (shows small popup when user re-logins) -->
+    <script src="/static/js/editor/ai-disclaimer-notification.js?v={{ version }}"></script>
+    
+    <!-- Black Cat VoiceAgent Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Only initialize VoiceAgent if feature is enabled
+            if (window.FEATURE_VOICE_AGENT) {
+                // Initialize Black Cat
+                const blackCat = new BlackCat();
+                const mountPoint = document.getElementById('black-cat-mount');
+                if (mountPoint) {
+                    blackCat.init(mountPoint);
+                }
+                window.blackCat = blackCat;
+                
+                // Initialize VoiceAgent (handles black cat click internally)
+                const voiceAgent = new VoiceAgentManager(window.eventBus, window.stateManager, window.logger);
+                voiceAgent.init();
+                window.voiceAgent = voiceAgent;
+                
+                // Note: VoiceAgentManager sets blackCat.onClick to toggle chat window
+                // No need to set it again here
+                
+                window.logger.info('App', 'VoiceAgent and BlackCat initialized');
+            } else {
+                window.logger.info('App', 'VoiceAgent feature disabled');
+            }
+        });
+    </script>
+</body>
+</html>
+

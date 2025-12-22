@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindGraph - Demo Access</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            33% { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
+            66% { background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); }
+        }
+
+        /* Animated Background - 3x3 Grid of Diagrams + LLM Streaming */
+        .bg-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            display: flex;
+        }
+
+        /* Left 2/3: Diagram Grid */
+        .diagram-grid {
+            width: 66.67%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 20px;
+            gap: 10px;
+        }
+
+        .diagram {
+            opacity: 0.25;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diagram circle, .diagram line, .diagram rect, .diagram path {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.85);
+            stroke-width: 1.5;
+            stroke-linecap: round;
+        }
+
+        /* Right 1/3: LLM Streaming Scroll */
+        .llm-streaming {
+            width: 33.33%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .llm-line {
+            font-size: 96px;
+            font-weight: 900;
+            color: rgba(180, 180, 180, 0.5);
+            text-align: center;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            width: 100%;
+            animation: scrollDown 12s linear infinite;
+            position: absolute;
+        }
+
+        .llm-line:nth-child(1) { top: calc(-15% + 0 * 15vh); }
+        .llm-line:nth-child(2) { top: calc(-15% + 1 * 15vh); }
+        .llm-line:nth-child(3) { top: calc(-15% + 2 * 15vh); }
+        .llm-line:nth-child(4) { top: calc(-15% + 3 * 15vh); }
+        .llm-line:nth-child(5) { top: calc(-15% + 4 * 15vh); }
+        .llm-line:nth-child(6) { top: calc(-15% + 5 * 15vh); }
+        .llm-line:nth-child(7) { top: calc(-15% + 6 * 15vh); }
+        .llm-line:nth-child(8) { top: calc(-15% + 7 * 15vh); }
+        .llm-line:nth-child(9) { top: calc(-15% + 8 * 15vh); }
+        .llm-line:nth-child(10) { top: calc(-15% + 9 * 15vh); }
+        .llm-line:nth-child(11) { top: calc(-15% + 10 * 15vh); }
+        .llm-line:nth-child(12) { top: calc(-15% + 11 * 15vh); }
+
+        @keyframes scrollDown {
+            0% {
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 0.5;
+                transform: translateY(120vh);
+            }
+        }
+
+        /* Sequential Node Addition Animations - Each diagram adds nodes one by one */
+        .diagram circle, .diagram rect {
+            opacity: 0;
+            animation: addNode 8s ease-in-out infinite;
+        }
+
+        .diagram line, .diagram path {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: drawLine 8s ease-in-out infinite;
+        }
+
+        /* Stagger child nodes sequentially within each diagram */
+        .diagram circle:nth-of-type(1), .diagram rect:nth-of-type(1) { animation-delay: 0s; }
+        .diagram circle:nth-of-type(2), .diagram rect:nth-of-type(2) { animation-delay: 0.3s; }
+        .diagram circle:nth-of-type(3), .diagram rect:nth-of-type(3) { animation-delay: 0.6s; }
+        .diagram circle:nth-of-type(4), .diagram rect:nth-of-type(4) { animation-delay: 0.9s; }
+        .diagram circle:nth-of-type(5), .diagram rect:nth-of-type(5) { animation-delay: 1.2s; }
+        .diagram circle:nth-of-type(6), .diagram rect:nth-of-type(6) { animation-delay: 1.5s; }
+        .diagram circle:nth-of-type(7), .diagram rect:nth-of-type(7) { animation-delay: 1.8s; }
+        .diagram circle:nth-of-type(8), .diagram rect:nth-of-type(8) { animation-delay: 2.1s; }
+        .diagram circle:nth-of-type(9), .diagram rect:nth-of-type(9) { animation-delay: 2.4s; }
+        .diagram circle:nth-of-type(10), .diagram rect:nth-of-type(10) { animation-delay: 2.7s; }
+
+        .diagram line:nth-of-type(1), .diagram path:nth-of-type(1) { animation-delay: 0.15s; }
+        .diagram line:nth-of-type(2), .diagram path:nth-of-type(2) { animation-delay: 0.45s; }
+        .diagram line:nth-of-type(3), .diagram path:nth-of-type(3) { animation-delay: 0.75s; }
+        .diagram line:nth-of-type(4), .diagram path:nth-of-type(4) { animation-delay: 1.05s; }
+        .diagram line:nth-of-type(5), .diagram path:nth-of-type(5) { animation-delay: 1.35s; }
+        .diagram line:nth-of-type(6), .diagram path:nth-of-type(6) { animation-delay: 1.65s; }
+        .diagram line:nth-of-type(7), .diagram path:nth-of-type(7) { animation-delay: 1.95s; }
+        .diagram line:nth-of-type(8), .diagram path:nth-of-type(8) { animation-delay: 2.25s; }
+        .diagram line:nth-of-type(9), .diagram path:nth-of-type(9) { animation-delay: 2.55s; }
+
+        @keyframes addNode {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            15%, 85% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+
+        @keyframes drawLine {
+            0% {
+                stroke-dashoffset: 100;
+                opacity: 0;
+            }
+            20%, 80% {
+                stroke-dashoffset: 0;
+                opacity: 1;
+            }
+            100% {
+                stroke-dashoffset: 100;
+                opacity: 0;
+            }
+        }
+
+        .demo-container {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            padding: 60px 50px;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            animation: gradientRotate 3s ease infinite, logoFloat 3s ease-in-out infinite;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes gradientRotate {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            color: #1e293b;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 15px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .passkey-input {
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            outline: none;
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+
+        .passkey-input:focus {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 0 40px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .passkey-input.error {
+            border-color: #ef4444;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .submit-btn.loading .spinner {
+            display: block;
+        }
+
+        .submit-btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 14px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .hint {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 24px;
+            line-height: 1.6;
+        }
+
+        .hint strong {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* Success Animation */
+        .success-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .success-overlay.show {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            margin-bottom: 24px;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .success-overlay h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .success-overlay p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Language Toggle */
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Back link */
+        .back-link {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-link a:hover {
+            color: #5568d3;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Toggle -->
+    <div class="lang-toggle">
+        <button class="lang-btn" onclick="toggleLanguage()">
+            <span id="langIcon">🌐</span>
+            <span id="langText">English</span>
+        </button>
+    </div>
+
+    <!-- Background - Animated Thinking Map Diagrams (Actual Canvas Templates) -->
+    <div class="bg-shapes">
+        <!-- Left 2/3: 3x3 Grid of All 9 Diagrams -->
+        <div class="diagram-grid">
+            <!-- Row 1 -->
+            <!-- Circle Map -->
+            <svg class="diagram" viewBox="0 0 170 170">
+                <circle cx="85" cy="85" r="60" />
+                <circle cx="85" cy="85" r="20" />
+                <circle cx="85" cy="25" r="8" />
+                <circle cx="115" cy="35" r="8" />
+                <circle cx="135" cy="70" r="8" />
+                <circle cx="135" cy="100" r="8" />
+                <circle cx="115" cy="135" r="8" />
+                <circle cx="85" cy="145" r="8" />
+                <circle cx="55" cy="135" r="8" />
+                <circle cx="35" cy="100" r="8" />
+            </svg>
+
+            <!-- Bubble Map -->
+            <svg class="diagram" viewBox="0 0 150 140">
+                <circle cx="75" cy="70" r="18" />
+                <line x1="75" y1="70" x2="40" y2="30" />
+                <circle cx="40" cy="30" r="12" />
+                <line x1="75" y1="70" x2="110" y2="30" />
+                <circle cx="110" cy="30" r="12" />
+                <line x1="75" y1="70" x2="40" y2="110" />
+                <circle cx="40" cy="110" r="12" />
+                <line x1="75" y1="70" x2="110" y2="110" />
+                <circle cx="110" cy="110" r="12" />
+            </svg>
+
+            <!-- Double Bubble Map -->
+            <svg class="diagram" viewBox="0 0 160 120">
+                <circle cx="45" cy="60" r="18" />
+                <circle cx="115" cy="60" r="18" />
+                <circle cx="80" cy="45" r="8" />
+                <circle cx="80" cy="60" r="8" />
+                <circle cx="80" cy="75" r="8" />
+                <circle cx="20" cy="40" r="8" />
+                <circle cx="20" cy="80" r="8" />
+                <circle cx="140" cy="40" r="8" />
+                <circle cx="140" cy="80" r="8" />
+            </svg>
+
+            <!-- Row 2 -->
+            <!-- Tree Map -->
+            <svg class="diagram" viewBox="0 0 170 140">
+                <circle cx="85" cy="20" r="12" />
+                <line x1="85" y1="32" x2="85" y2="50" />
+                <line x1="40" y1="50" x2="130" y2="50" />
+                <line x1="40" y1="50" x2="40" y2="70" />
+                <circle cx="40" cy="70" r="10" />
+                <line x1="40" y1="80" x2="20" y2="100" />
+                <circle cx="20" cy="100" r="7" />
+                <line x1="40" y1="80" x2="40" y2="100" />
+                <circle cx="40" cy="100" r="7" />
+                <line x1="40" y1="80" x2="60" y2="100" />
+                <circle cx="60" cy="100" r="7" />
+                <line x1="85" y1="50" x2="85" y2="70" />
+                <circle cx="85" cy="70" r="10" />
+                <line x1="130" y1="50" x2="130" y2="70" />
+                <circle cx="130" cy="70" r="10" />
+            </svg>
+
+            <!-- Brace Map -->
+            <svg class="diagram" viewBox="0 0 160 140">
+                <rect x="10" y="60" width="40" height="20" rx="4" />
+                <path d="M 50 50 Q 65 50, 65 40 Q 65 30, 65 20 M 50 70 Q 65 70, 65 80 Q 65 90, 65 100 M 50 80 Q 65 80, 65 90 Q 65 100, 65 110" />
+                <rect x="70" y="15" width="35" height="15" rx="3" />
+                <rect x="70" y="62" width="35" height="15" rx="3" />
+                <rect x="70" y="109" width="35" height="15" rx="3" />
+                <rect x="110" y="10" width="30" height="10" rx="2" />
+                <rect x="110" y="25" width="30" height="10" rx="2" />
+                <rect x="110" y="57" width="30" height="10" rx="2" />
+                <rect x="110" y="72" width="30" height="10" rx="2" />
+                <rect x="110" y="104" width="30" height="10" rx="2" />
+                <rect x="110" y="119" width="30" height="10" rx="2" />
+            </svg>
+
+            <!-- Flow Map -->
+            <svg class="diagram" viewBox="0 0 180 100">
+                <circle cx="25" cy="50" r="15" />
+                <line x1="40" y1="50" x2="60" y2="50" />
+                <circle cx="75" cy="50" r="15" />
+                <line x1="90" y1="50" x2="110" y2="50" />
+                <circle cx="125" cy="50" r="15" />
+                <line x1="140" y1="50" x2="160" y2="50" />
+                <circle cx="165" cy="50" r="15" />
+            </svg>
+
+            <!-- Row 3 -->
+            <!-- Multi-Flow Map -->
+            <svg class="diagram" viewBox="0 0 160 120">
+                <circle cx="80" cy="60" r="18" />
+                <line x1="50" y1="30" x2="68" y2="48" />
+                <circle cx="50" cy="30" r="10" />
+                <line x1="50" y1="90" x2="68" y2="72" />
+                <circle cx="50" cy="90" r="10" />
+                <line x1="92" y1="48" x2="110" y2="30" />
+                <circle cx="110" cy="30" r="10" />
+                <line x1="92" y1="72" x2="110" y2="90" />
+                <circle cx="110" cy="90" r="10" />
+            </svg>
+
+            <!-- Bridge Map -->
+            <svg class="diagram" viewBox="0 0 200 100">
+                <rect x="10" y="15" width="35" height="18" rx="2" />
+                <rect x="10" y="40" width="35" height="18" rx="2" />
+                <rect x="10" y="65" width="35" height="18" rx="2" />
+                <rect x="90" y="40" width="20" height="18" rx="2" />
+                <rect x="155" y="15" width="35" height="18" rx="2" />
+                <rect x="155" y="40" width="35" height="18" rx="2" />
+                <rect x="155" y="65" width="35" height="18" rx="2" />
+                <line x1="45" y1="24" x2="90" y2="49" />
+                <line x1="45" y1="49" x2="90" y2="49" />
+                <line x1="45" y1="74" x2="90" y2="49" />
+                <line x1="110" y1="49" x2="155" y2="24" />
+                <line x1="110" y1="49" x2="155" y2="49" />
+                <line x1="110" y1="49" x2="155" y2="74" />
+            </svg>
+
+            <!-- Mind Map -->
+            <svg class="diagram" viewBox="0 0 200 120">
+                <rect x="75" y="50" width="50" height="20" rx="3" />
+                <line x1="125" y1="55" x2="160" y2="30" />
+                <rect x="160" y="25" width="35" height="12" rx="2" />
+                <line x1="125" y1="65" x2="160" y2="88" />
+                <rect x="160" y="83" width="35" height="12" rx="2" />
+                <line x1="75" y1="55" x2="40" y2="30" />
+                <rect x="5" y="25" width="35" height="12" rx="2" />
+                <line x1="75" y1="65" x2="40" y2="88" />
+                <rect x="5" y="83" width="35" height="12" rx="2" />
+            </svg>
+        </div>
+
+        <!-- Right 1/3: LLM Streaming Scroll -->
+        <div class="llm-streaming">
+            <div class="llm-line">QWEN</div>
+            <div class="llm-line">DEEPSEEK</div>
+            <div class="llm-line">HUNYUAN</div>
+            <div class="llm-line">KIMI</div>
+            <div class="llm-line">QWEN</div>
+            <div class="llm-line">DEEPSEEK</div>
+            <div class="llm-line">HUNYUAN</div>
+            <div class="llm-line">KIMI</div>
+            <div class="llm-line">QWEN</div>
+            <div class="llm-line">DEEPSEEK</div>
+            <div class="llm-line">HUNYUAN</div>
+            <div class="llm-line">KIMI</div>
+        </div>
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-icon">✓</div>
+        <h2 data-i18n="success-title">访问已授权</h2>
+        <p data-i18n="success-subtitle">正在跳转至 MindGraph...</p>
+    </div>
+
+    <div class="demo-container">
+        <div class="logo">🎯</div>
+        <h1 data-i18n="title">演示模式访问</h1>
+        <p class="subtitle" data-i18n="subtitle">
+            输入6位演示密码以体验 MindGraph
+        </p>
+
+        <form id="demoForm" onsubmit="handleSubmit(event)">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="passkey" 
+                    class="passkey-input" 
+                    placeholder="• • • • • •" 
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <div class="spinner"></div>
+                <span class="btn-text" data-i18n="submit-btn">进入演示 →</span>
+            </button>
+        </form>
+
+        <div id="alert" class="alert"></div>
+
+        <p class="hint">
+            <strong data-i18n="hint-title">需要密码？</strong><br>
+            <span data-i18n="hint-text">请联系学校管理员获取访问密码</span>
+        </p>
+
+        <div class="back-link">
+            <a href="/auth" data-i18n="back-link">← 返回登录</a>
+        </div>
+    </div>
+
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
+    <script src="/static/js/cat-walk.js?v={{ version }}"></script>
+    <script>
+        // Store app version for cache detection
+        window.MINDGRAPH_VERSION = '{{ version }}';
+        
+        // Cache detection and refresh mechanism
+        (function() {
+            const CURRENT_VERSION = '{{ version }}';
+            const VERSION_STORAGE_KEY = 'mindgraph_app_version';
+            const CACHE_DETECTED_KEY = 'mindgraph_cache_detected';
+            
+            // Helper function to safely access localStorage
+            const safeLocalStorage = {
+                getItem: (key) => {
+                    try {
+                        return localStorage.getItem(key);
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        localStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+            };
+            
+            // Helper function to safely access sessionStorage
+            const safeSessionStorage = {
+                getItem: (key) => {
+                    try {
+                        return sessionStorage.getItem(key);
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        sessionStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                removeItem: (key) => {
+                    try {
+                        sessionStorage.removeItem(key);
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                }
+            };
+            
+            // Get stored version
+            const storedVersion = safeLocalStorage.getItem(VERSION_STORAGE_KEY);
+            const cacheDetected = safeSessionStorage.getItem(CACHE_DETECTED_KEY);
+            
+            // Check if version changed (cache detected)
+            if (storedVersion && storedVersion !== CURRENT_VERSION && !cacheDetected) {
+                // Mark that we've detected cache for this session
+                safeSessionStorage.setItem(CACHE_DETECTED_KEY, 'true');
+                
+                // Show cache warning notification
+                const showCacheWarning = () => {
+                    const currentLang = localStorage.getItem('language') || 'zh';
+                    const isZh = currentLang === 'zh';
+                    
+                    const warningHtml = `
+                        <div id="cache-warning" style="
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+                            color: white;
+                            padding: 20px 25px;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                            z-index: 10000;
+                            max-width: 400px;
+                            animation: slideIn 0.3s ease-out;
+                        ">
+                            <style>
+                                @keyframes slideIn {
+                                    from {
+                                        transform: translateX(100%);
+                                        opacity: 0;
+                                    }
+                                    to {
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }
+                                }
+                                @keyframes slideOut {
+                                    from {
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }
+                                    to {
+                                        transform: translateX(100%);
+                                        opacity: 0;
+                                    }
+                                }
+                            </style>
+                            <div style="display: flex; align-items: flex-start; gap: 15px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">
+                                        ${isZh ? '⚠️ 检测到旧版本缓存' : '⚠️ Old Cache Detected'}
+                                    </div>
+                                    <div style="font-size: 14px; opacity: 0.95; line-height: 1.5; margin-bottom: 12px;">
+                                        ${isZh 
+                                            ? `应用已更新到版本 ${CURRENT_VERSION}，但您可能在使用旧版本缓存。请点击下方按钮刷新，或使用快捷键强制刷新页面以获得最新功能。`
+                                            : `Application updated to version ${CURRENT_VERSION}, but you may be using cached files. Click the button below to refresh, or use keyboard shortcut to hard refresh and get the latest features.`
+                                        }
+                                    </div>
+                                    <div style="margin-bottom: 12px; padding: 10px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; border-left: 3px solid rgba(255, 255, 255, 0.5);">
+                                        <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">
+                                            ${isZh ? '⌨️ 如何强制刷新：' : '⌨️ How to Hard Refresh:'}
+                                        </div>
+                                        <div style="font-size: 12px; opacity: 0.95; line-height: 1.6;">
+                                            ${isZh 
+                                                ? '• Windows/Linux: 按 <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Ctrl</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd><br>• Mac: 按 <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Cmd</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd>'
+                                                : '• Windows/Linux: Press <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Ctrl</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd><br>• Mac: Press <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Cmd</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">Shift</kbd> + <kbd style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">R</kbd>'
+                                            }
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button id="cache-refresh-btn" style="
+                                            background: white;
+                                            color: #ff6b6b;
+                                            border: none;
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            font-weight: 600;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                            ${isZh ? '🔄 立即刷新' : '🔄 Refresh Now'}
+                                        </button>
+                                        <button id="cache-dismiss-btn" style="
+                                            background: rgba(255, 255, 255, 0.2);
+                                            color: white;
+                                            border: 1px solid rgba(255, 255, 255, 0.3);
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            font-weight: 600;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                        " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+                                            ${isZh ? '稍后' : 'Later'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <button id="cache-close-btn" style="
+                                    background: rgba(255, 255, 255, 0.2);
+                                    border: none;
+                                    color: white;
+                                    width: 24px;
+                                    height: 24px;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                    font-size: 18px;
+                                    line-height: 1;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    transition: all 0.2s;
+                                " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">×</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', warningHtml);
+                    
+                    // Refresh button - force reload (prevent multiple clicks)
+                    let isRefreshing = false;
+                    document.getElementById('cache-refresh-btn').addEventListener('click', () => {
+                        if (isRefreshing) return; // Prevent multiple clicks
+                        isRefreshing = true;
+                        safeLocalStorage.setItem(VERSION_STORAGE_KEY, CURRENT_VERSION);
+                        safeSessionStorage.removeItem(CACHE_DETECTED_KEY);
+                        // Use modern reload method with cache bypass
+                        window.location.reload();
+                    });
+                    
+                    // Dismiss button - hide for this session
+                    document.getElementById('cache-dismiss-btn').addEventListener('click', () => {
+                        document.getElementById('cache-warning').remove();
+                    });
+                    
+                    // Close button
+                    document.getElementById('cache-close-btn').addEventListener('click', () => {
+                        document.getElementById('cache-warning').remove();
+                    });
+                    
+                    // Auto-dismiss after 30 seconds
+                    setTimeout(() => {
+                        const warning = document.getElementById('cache-warning');
+                        if (warning) {
+                            warning.style.animation = 'slideOut 0.3s ease-out';
+                            warning.style.animationFillMode = 'forwards';
+                            setTimeout(() => warning.remove(), 300);
+                        }
+                    }, 30000);
+                };
+                
+                // Show warning after page loads
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showCacheWarning);
+                } else {
+                    showCacheWarning();
+                }
+            }
+            
+            // Update stored version (always, even if cache detection failed)
+            safeLocalStorage.setItem(VERSION_STORAGE_KEY, CURRENT_VERSION);
+        })();
+    </script>
+    <script>
+        // Bilingual Support (Default: Chinese)
+        const translations = {
+            zh: {
+                'title': '演示模式访问',
+                'subtitle': '输入6位演示密码以体验 MindGraph',
+                'submit-btn': '进入演示 →',
+                'hint-title': '需要密码？',
+                'hint-text': '请联系学校管理员获取访问密码',
+                'back-link': '← 返回登录',
+                'success-title': '访问已授权',
+                'success-subtitle': '正在跳转至 MindGraph...',
+                'error-length': '请输入6位密码',
+                'error-invalid': '密码错误',
+                'error-network': '网络错误',
+                'success-msg': '验证成功！'
+            },
+            en: {
+                'title': 'Demo Access',
+                'subtitle': 'Enter your 6-digit passkey to explore MindGraph',
+                'submit-btn': 'Access Demo →',
+                'hint-title': 'Need a passkey?',
+                'hint-text': 'Contact your school administrator',
+                'back-link': '← Back to login',
+                'success-title': 'Access Granted',
+                'success-subtitle': 'Redirecting to MindGraph...',
+                'error-length': 'Please enter a 6-digit passkey',
+                'error-invalid': 'Invalid passkey',
+                'error-network': 'Network error',
+                'success-msg': 'Access granted!'
+            }
+        };
+
+        // Get saved language or default to Chinese
+        let currentLang = localStorage.getItem('demo-lang') || 'zh';
+
+        // Apply translations
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+
+            // Update language button
+            document.getElementById('langText').textContent = currentLang === 'zh' ? 'English' : '中文';
+        }
+
+        // Toggle language
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('demo-lang', currentLang);
+            applyTranslations();
+        }
+
+        // Apply on load
+        applyTranslations();
+
+        const passKeyInput = document.getElementById('passkey');
+        const submitBtn = document.getElementById('submitBtn');
+        const alertBox = document.getElementById('alert');
+
+        // Auto-format passkey input (numbers only)
+        passKeyInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            hideAlert();
+        });
+
+        // Handle form submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            const passkey = passKeyInput.value.trim();
+            
+            if (passkey.length !== 6) {
+                showAlert(translations[currentLang]['error-length'], 'error');
+                passKeyInput.classList.add('error');
+                setTimeout(() => passKeyInput.classList.remove('error'), 500);
+                return;
+            }
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            try {
+                const response = await fetch('/api/auth/demo/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passkey })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store authentication token and set mode to demo
+                    auth.setToken(result.access_token);
+                    auth.setUser(result.user);
+                    auth.setMode('demo');
+                    
+                    // Show success animation
+                    showAlert(translations[currentLang]['success-msg'], 'success');
+                    document.getElementById('successOverlay').classList.add('show');
+                    
+                    // Determine redirect URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let redirectUrl = urlParams.get('redirect');
+                    
+                    // If no explicit redirect and admin passkey was used, go to admin panel
+                    if (!redirectUrl) {
+                        redirectUrl = result.user.is_admin ? '/admin' : '/editor';
+                    }
+                    
+                    // Redirect to target page
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1500);
+                } else {
+                    // Show error
+                    passKeyInput.classList.add('error');
+                    setTimeout(() => passKeyInput.classList.remove('error'), 500);
+                    
+                    showAlert(translations[currentLang]['error-invalid'], 'error');
+                    
+                    // Clear input
+                    passKeyInput.value = '';
+                    passKeyInput.focus();
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                }
+            } catch (error) {
+                showAlert(translations[currentLang]['error-network'], 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+            }
+        }
+
+        function showAlert(message, type) {
+            alertBox.className = `alert alert-${type} show`;
+            alertBox.textContent = message;
+        }
+
+        function hideAlert() {
+            alertBox.classList.remove('show');
+        }
+
+        // Keyboard shortcut: Escape to clear
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                passKeyInput.value = '';
+                hideAlert();
+            }
+        });
+
+        // No need to check existing auth on page load
+        // The cookie will handle authentication for subsequent page loads
+        // If already authenticated, the /demo route will handle redirect on backend
+    </script>
+    
+    <!-- ICP Footer -->
+    <div class="icp-footer">
+        <span>京ICP备2025126228号-1</span>
+    </div>
+    
+    <style>
+        .icp-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 50%, transparent 100%);
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 1000;
+            font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+            pointer-events: none;
+        }
+        
+        .icp-footer span {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        @media (max-width: 480px) {
+            .icp-footer {
+                font-size: 10px;
+                padding: 12px 16px;
+            }
+        }
+    </style>
+</body>
+</html>
+

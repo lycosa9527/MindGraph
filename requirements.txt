@@ -1,0 +1,105 @@
+# MindGraph - AI-Powered Diagram Generation Platform
+# Version: 4.28.36 (see VERSION file for current version)
+# Python 3.8+ Required (3.13+ Recommended for Best Async Performance)
+#
+# INSTALLATION INSTRUCTIONS:
+#   1. pip install -r requirements.txt
+#   2. playwright install chromium  # Install Playwright browser binaries
+#   3. Copy .env.example to .env and configure settings
+#
+# PRODUCTION DEPLOYMENT NOTES:
+#   - Review and configure all environment variables in .env
+#   - Set feature flags (FEATURE_MINDMATE, FEATURE_VOICE_AGENT, etc.)
+#   - Configure database URL for your environment
+#   - Set DEBUG=False for production
+#   - Configure proper JWT_SECRET_KEY (min 32 characters)
+#   - Optional: Configure Sentry DSN for error tracking
+
+# ============================================================================
+# WEB FRAMEWORK
+# ============================================================================
+fastapi>=0.115.0  # NOTE: Verify >=5.4.3 for security fixes (CVE-2025-53528, CVE-2025-54073)
+uvicorn[standard]>=0.32.0
+jinja2>=3.1.4
+starlette>=0.40.0  # FastAPI dependency (explicit for version control)
+pydantic>=2.11.0
+pydantic-settings>=2.6.0
+email-validator>=2.2.0  # Pydantic email validation
+orjson>=3.10.0  # Fast JSON serialization for API responses
+
+# ============================================================================
+# HTTP & NETWORKING
+# ============================================================================
+aiohttp>=3.12.0
+openai>=1.58.0
+python-multipart>=0.0.20
+httpx[http2]>=0.28.0  # Modern async HTTP client with HTTP/2 support
+requests>=2.32.0  # Sync HTTP client (fallback) - REVIEW: May be removable if only httpx is used
+websockets>=14.2  # WebSocket support
+
+# ============================================================================
+# AI & LANGUAGE PROCESSING
+# ============================================================================
+# LangChain 1.x - Major upgrade with create_agent, LangGraph runtime, and middleware
+langchain>=1.1.0
+langchain-community>=0.3.27
+langchain-core>=1.0.0  # FIXED: Must be 1.x for LangChain 1.x compatibility (was >=0.3.72)
+langchain-openai>=0.1.0  # Explicitly pin compatible version to avoid conflicts with langchain-core 1.x
+langgraph>=1.0.0  # FIXED: Must be 1.x for LangChain 1.x compatibility (was >=0.2.60)
+langgraph-checkpoint>=2.0.0
+dashscope>=1.23.9
+
+# ============================================================================
+# CONFIGURATION & ENVIRONMENT
+# ============================================================================
+PyYAML>=6.0.2
+python-dotenv>=1.0.1
+
+# ============================================================================
+# ASYNC SUPPORT
+# ============================================================================
+nest_asyncio>=1.6.0
+aiofiles>=24.1.0
+
+# ============================================================================
+# BROWSER AUTOMATION & IMAGE PROCESSING
+# ============================================================================
+playwright>=1.54.0
+Pillow>=11.3.0
+
+# ============================================================================
+# SYSTEM MONITORING & UTILITIES
+# ============================================================================
+psutil>=6.1.0  # System resource monitoring
+watchfiles>=1.0.0  # File watching for auto-reload
+
+# ============================================================================
+# DATABASE & AUTHENTICATION
+# ============================================================================
+SQLAlchemy>=2.0.36
+alembic>=1.14.0  # Database migrations
+python-jose[cryptography]>=3.3.0
+bcrypt>=5.0.0  # Password hashing (direct bcrypt, passlib removed in v4.12.0)
+captcha>=0.6
+pycryptodome>=3.20.0  # AES decryption for bayi mode
+# Note: Tencent SMS uses native async httpx calls (no SDK needed)
+
+# ============================================================================
+# CLOUD STORAGE (Optional)
+# ============================================================================
+cos-python-sdk-v5>=1.9.27  # Tencent Cloud Object Storage (COS) SDK for online backups
+
+# ============================================================================
+# PRODUCTION DEPLOYMENT (Optional but Recommended)
+# ============================================================================
+# gunicorn>=24.0.0  # WSGI server (not needed - uvicorn is async)
+# python-json-logger>=3.2.1  # Structured JSON logging
+# sentry-sdk[fastapi]>=2.20.0  # Error tracking - configure SENTRY_DSN in .env
+# prometheus-fastapi-instrumentator>=7.0.0  # Prometheus metrics
+
+# ============================================================================
+# TESTING (Development/CI)
+# ============================================================================
+pytest>=8.3.0
+pytest-asyncio>=0.25.0
+pytest-cov>=6.0.0  # Code coverage

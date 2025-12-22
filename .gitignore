@@ -1,0 +1,180 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+test_output.jpg
+*.log
+*.tmp
+*.temp
+temp/
+tmp/
+temp_images/
+logs/*.log
+*.pid
+logs/*.pid
+
+# Runtime data directory (captcha storage, database files)
+data/
+captcha_store.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+# SQLite WAL mode files (created automatically)
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+
+# Database backups
+backup/
+backups/
+*.backup_*
+*_backup_*.sql
+*.db.*
+mindgraph.db.*
+*.sqlite.*
+*.sqlite3.*
+
+# Environment file backups
+logs/env_backups/
+.env.backup.*
+.env.*.backup
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker (removed - will be added back later)
+# .dockerignore
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# API Keys and sensitive data
+*API_KEY*.txt
+*API_KEY*.json
+*_key.txt
+api_keys/
+keys/
+
+# Development temporary files
+development_prompts/*.md
+
+# Test outputs
+tests/images/
+tests/results/
+tests/specs/
+tests/html_viewer/
+test/images/
+test/results/
+test/specs/
+test/html_viewer/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso
+
+# Browser binaries (offline Chromium installer)
+# Ignore entire browsers folder (transfer via personal methods, keep GitHub small)
+browsers/ 

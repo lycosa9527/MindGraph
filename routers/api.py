@@ -1,0 +1,2368 @@
+"""
+FastAPI API Routes for MindGraph Application
+==============================================
+
+Async versions of diagram generation, PNG export, and SSE streaming endpoints.
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Migration Status: Phase 2.2 - FastAPI API Routes
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+import json
+import logging
+import os
+import time
+import asyncio
+import uuid
+from pathlib import Path
+import aiofiles
+import httpx
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import StreamingResponse, JSONResponse, Response, PlainTextResponse, FileResponse
+
+# Import Pydantic models
+from models import (
+    AIAssistantRequest,
+    GenerateRequest,
+    GenerateResponse,
+    ExportPNGRequest,
+    GeneratePNGRequest,
+    GenerateDingTalkRequest,
+    FrontendLogRequest,
+    FrontendLogBatchRequest,
+    LLMHealthResponse,
+    RecalculateLayoutRequest,
+    FeedbackRequest,
+    Messages,
+    get_request_language
+)
+
+# Import async clients
+from clients.dify import AsyncDifyClient
+from clients.llm import qwen_client_generation, qwen_client_classification
+from agents import main_agent as agent
+from services.browser import BrowserContextManager
+from services.llm_service import llm_service
+
+# Import authentication
+from models.auth import User
+from utils.auth import get_current_user_or_api_key
+from config.database import get_db, SessionLocal
+from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
+
+# Create router
+router = APIRouter(prefix="/api", tags=["api"])
+
+# ============================================================================
+# SSE STREAMING - CRITICAL FOR 4,000+ CONCURRENT USERS
+# ============================================================================
+
+@router.post('/ai_assistant/stream')
+async def ai_assistant_stream(
+    req: AIAssistantRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Stream AI assistant responses using Dify API with SSE (async version).
+    
+    This is the CRITICAL endpoint for supporting 100+ concurrent SSE connections.
+    Uses AsyncDifyClient for non-blocking streaming.
+    """
+    
+    # Get language for error messages
+    lang = get_request_language(x_language)
+    
+    # Get message
+    message = req.message.strip()
+    
+    # Track user activity
+    if current_user and hasattr(current_user, 'id'):
+        try:
+            from services.user_activity_tracker import get_activity_tracker
+            tracker = get_activity_tracker()
+            tracker.record_activity(
+                user_id=current_user.id,
+                user_phone=getattr(current_user, 'phone', None),
+                activity_type='ai_assistant',
+                details={'conversation_id': req.conversation_id, 'user_id': req.user_id}
+            )
+        except Exception as e:
+            logger.debug(f"Failed to track user activity: {e}")
+    
+    # Handle Dify conversation opener trigger
+    # When message is "start" with no conversation_id, this triggers Dify's opener
+    if message.lower() == 'start' and not req.conversation_id:
+        logger.debug(f"[MindMate] Conversation opener triggered for user {req.user_id}")
+        logger.debug("[MindMate] Dify will respond with configured opening message")
+    
+    # Get Dify configuration from environment
+    api_key = os.getenv('DIFY_API_KEY')
+    api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
+    timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
+    
+    logger.debug(f"Dify Configuration - API URL: {api_url}, Has API Key: {bool(api_key)}, Timeout: {timeout}")
+    
+    if not api_key:
+        logger.error("DIFY_API_KEY not configured in environment")
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("ai_not_configured", lang)
+        )
+    
+    logger.debug(f"AI assistant request from user {req.user_id}: {message[:50]}...")
+    
+    async def generate():
+        """Async generator function for SSE streaming"""
+        logger.debug(f"[GENERATOR] Async generator function called - starting execution")
+        chunk_count = 0  # Initialize outside try block for finally access
+        try:
+            logger.debug(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
+            client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
+            logger.debug(f"[STREAM] AsyncDifyClient created successfully")
+            
+            logger.debug(f"[STREAM] Starting async stream_chat for message: {message[:50]}...")
+            async for chunk in client.stream_chat(message, req.user_id, req.conversation_id):
+                chunk_count += 1
+                logger.debug(f"[STREAM] Received chunk {chunk_count}: {chunk.get('event', 'unknown')}")
+                # Format as SSE
+                yield f"data: {json.dumps(chunk)}\n\n"
+            
+            logger.debug(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
+            
+            # Ensure at least one event is yielded to prevent RuntimeError
+            if chunk_count == 0:
+                logger.warning(f"[STREAM] No chunks yielded, sending completion event")
+                yield f"data: {json.dumps({'event': 'message_complete', 'timestamp': int(time.time() * 1000)})}\n\n"
+                
+        except Exception as e:
+            logger.error(f"[STREAM] AI assistant streaming error: {e}", exc_info=True)
+            import traceback
+            logger.error(f"[STREAM] Full traceback: {traceback.format_exc()}")
+            error_data = {
+                'event': 'error',
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'timestamp': int(time.time() * 1000)
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+            chunk_count += 1  # Count error event as a chunk
+        finally:
+            # Always ensure at least one event is yielded to prevent RuntimeError
+            if chunk_count == 0:
+                logger.warning(f"[STREAM] Generator completed without yielding, sending error event")
+                error_data = {
+                    'event': 'error',
+                    'error': 'No response returned from stream',
+                    'error_type': 'NoResponse',
+                    'timestamp': int(time.time() * 1000)
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+    
+    logger.debug(f"[SETUP] Creating StreamingResponse with async generator")
+    return StreamingResponse(
+        generate(),
+        media_type='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
+    )
+
+
+# ============================================================================
+# DIAGRAM GENERATION - MAIN ENDPOINT
+# ============================================================================
+
+@router.post('/generate_graph', response_model=GenerateResponse)
+async def generate_graph(
+    req: GenerateRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Generate graph specification from user prompt using selected LLM model (async).
+    
+    This endpoint returns JSON with the diagram specification for the frontend editor to render.
+    For PNG file downloads, use /api/export_png instead.
+    """
+    
+    # Get language for error messages
+    lang = get_request_language(x_language)
+    
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    request_id = f"gen_{int(time.time()*1000)}"
+    llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
+    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    
+    logger.debug(f"[{request_id}] Request: llm={llm_model!r}, language={language!r}, diagram_type={req.diagram_type}")
+    
+    if req.dimension_preference:
+        logger.debug(f"[{request_id}] Dimension preference: {req.dimension_preference!r}")
+    
+    logger.debug(f"[{request_id}] Using LLM model: {llm_model!r}")
+    
+    try:
+        # Generate diagram specification - fully async
+        # Pass model directly through call chain (no global state)
+        # Pass user context for token tracking
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
+        
+        # Determine request type for token tracking (default to 'diagram_generation')
+        request_type = req.request_type if req.request_type else 'diagram_generation'
+        
+        # Track user activity
+        if current_user and hasattr(current_user, 'id'):
+            try:
+                from services.user_activity_tracker import get_activity_tracker
+                tracker = get_activity_tracker()
+                activity_type = 'autocomplete' if request_type == 'autocomplete' else 'diagram_generation'
+                diagram_type_str = req.diagram_type.value if req.diagram_type else 'unknown'
+                tracker.record_activity(
+                    user_id=current_user.id,
+                    user_phone=getattr(current_user, 'phone', None),
+                    activity_type=activity_type,
+                    details={'diagram_type': diagram_type_str, 'llm_model': llm_model}
+                )
+            except Exception as e:
+                logger.debug(f"Failed to track user activity: {e}")
+        
+        # Log auto-complete start at INFO level for user activity tracking
+        # Note: AutoComplete fires 5 concurrent requests (one per LLM model)
+        # Log once per request with model info to reduce noise
+        if request_type == 'autocomplete':
+            diagram_type_str = req.diagram_type.value if req.diagram_type else 'auto'
+            logger.info(f"[AutoComplete] Started: User {user_id}, Diagram: {diagram_type_str}, Model: {llm_model}, Request: {request_id[:8]}")
+        
+        # Bridge map specific: pass existing analogies and fixed dimension for auto-complete mode
+        existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None
+        fixed_dimension = req.fixed_dimension if hasattr(req, 'fixed_dimension') else None
+        
+        result = await agent.agent_graph_workflow_with_styles(
+            prompt,
+            language=language,
+            forced_diagram_type=req.diagram_type.value if req.diagram_type else None,
+            dimension_preference=req.dimension_preference,
+            model=llm_model,  # Pass model explicitly (fixes race condition)
+            # Token tracking parameters
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=request_type,
+            endpoint_path='/api/generate_graph',
+            # Bridge map specific
+            existing_analogies=existing_analogies,
+            fixed_dimension=fixed_dimension
+        )
+        
+        diagram_type = result.get('diagram_type', 'unknown')
+        logger.debug(f"[{request_id}] Generated {diagram_type} diagram with {llm_model}")
+        
+        # Log auto-complete operations at INFO level for user activity tracking
+        if request_type == 'autocomplete':
+            node_count = len(result.get('nodes', [])) if isinstance(result.get('nodes'), list) else 0
+            logger.info(f"[AutoComplete] Completed: User {user_id}, Diagram {diagram_type}, Nodes added: {node_count}, Model: {llm_model}, Request: {request_id[:8]}")
+        
+        # Add metadata
+        result['llm_model'] = llm_model
+        result['request_id'] = request_id
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"[{request_id}] Error generating graph: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
+
+
+# ============================================================================
+# PNG EXPORT - BROWSER AUTOMATION
+# ============================================================================
+
+def _get_font_base64(font_filename: str) -> str:
+    """Convert font file to base64 for embedding in HTML."""
+    try:
+        font_path = Path(__file__).parent.parent / 'static' / 'fonts' / font_filename
+        if font_path.exists():
+            with open(font_path, 'rb') as f:
+                import base64
+                return base64.b64encode(f.read()).decode('utf-8')
+        else:
+            logger.debug(f"[ExportPNG] Font file not found: {font_path}")
+            return ""
+    except Exception as e:
+        logger.warning(f"[ExportPNG] Failed to load font {font_filename}: {e}")
+        return ""
+
+
+async def _export_png_core(
+    diagram_data: Dict[str, Any],
+    diagram_type: str,
+    width: int = 1200,
+    height: int = 800,
+    scale: int = 2,
+    x_language: Optional[str] = None
+) -> bytes:
+    """
+    Core PNG export function that embeds JS and fonts directly (like old working version).
+    
+    This function avoids Depends() issues by being a pure async function.
+    Returns raw PNG bytes.
+    """
+    from config.settings import Config
+    config = Config()
+    
+    logger.debug(f"[ExportPNG] Starting PNG export: diagram_type={diagram_type}, width={width}, height={height}, scale={scale}")
+    if isinstance(diagram_data, dict):
+        logger.debug(f"[ExportPNG] Diagram data keys: {list(diagram_data.keys())}")
+        if 'topic' in diagram_data:
+            logger.debug(f"[ExportPNG] Topic: {diagram_data['topic']}")
+    
+    # Normalize data format for renderers (transform LLM output format to renderer expected format)
+    if isinstance(diagram_data, dict):
+        if diagram_type == 'double_bubble_map':
+            # Transform left_topic/right_topic to left/right (renderer expects left/right)
+            if 'left_topic' in diagram_data and 'left' not in diagram_data:
+                diagram_data['left'] = diagram_data.pop('left_topic')
+            if 'right_topic' in diagram_data and 'right' not in diagram_data:
+                diagram_data['right'] = diagram_data.pop('right_topic')
+            logger.debug(f"[ExportPNG] Normalized double_bubble_map: left={diagram_data.get('left')}, right={diagram_data.get('right')}")
+        
+        elif diagram_type == 'circle_map':
+            # Transform contexts (plural) to context (singular) - renderer expects spec.context
+            if 'contexts' in diagram_data and 'context' not in diagram_data:
+                diagram_data['context'] = diagram_data.pop('contexts')
+            logger.debug(f"[ExportPNG] Normalized circle_map: context count={len(diagram_data.get('context', []))}")
+        
+        elif diagram_type == 'tree_map':
+            # Transform categories to children - renderer expects spec.children
+            # Each category: {name: "...", items: [...]} → {text: "...", children: [...]}
+            if 'categories' in diagram_data and 'children' not in diagram_data:
+                categories = diagram_data.pop('categories')
+                diagram_data['children'] = []
+                for cat in categories:
+                    if isinstance(cat, dict):
+                        child = {
+                            'text': cat.get('name', cat.get('label', '')),
+                            'children': cat.get('items', [])
+                        }
+                        diagram_data['children'].append(child)
+                    elif isinstance(cat, str):
+                        # Simple string category
+                        diagram_data['children'].append({'text': cat, 'children': []})
+                logger.debug(f"[ExportPNG] Normalized tree_map: children count={len(diagram_data.get('children', []))}")
+        
+        elif diagram_type == 'brace_map':
+            # Transform topic to whole (renderer expects 'whole' field)
+            if 'topic' in diagram_data and 'whole' not in diagram_data:
+                diagram_data['whole'] = diagram_data.pop('topic')
+                logger.debug(f"[ExportPNG] Normalized brace_map: topic -> whole = '{diagram_data['whole']}'")
+            
+            # Transform parts array: strings → objects with name property
+            # Renderer expects: parts = [{name: "...", subparts: [{name: "..."}]}]
+            # Prompt returns: parts = ["Part 1", "Part 2", ...]
+            if 'parts' in diagram_data and isinstance(diagram_data['parts'], list):
+                normalized_parts = []
+                for part in diagram_data['parts']:
+                    if isinstance(part, str):
+                        # String part → object with name
+                        normalized_parts.append({'name': part})
+                    elif isinstance(part, dict):
+                        # Already an object, ensure it has 'name' property
+                        if 'name' not in part and 'text' in part:
+                            part['name'] = part.pop('text')
+                        normalized_parts.append(part)
+                diagram_data['parts'] = normalized_parts
+                logger.debug(f"[ExportPNG] Normalized brace_map: parts count={len(diagram_data.get('parts', []))}")
+    
+    try:
+        # Load JS files from disk for embedding (like old version)
+        logger.debug(f"[ExportPNG] Loading JavaScript files for embedding")
+        
+        # Read local D3.js content for embedding in PNG generation (like old version)
+        d3_js_path = Path(__file__).parent.parent / 'static' / 'js' / 'd3.min.js'
+        try:
+            with open(d3_js_path, 'r', encoding='utf-8') as f:
+                d3_js_content = f.read()
+            logger.debug(f"[ExportPNG] D3.js loaded ({len(d3_js_content)} bytes)")
+            d3_script_tag = f'<script>{d3_js_content}</script>'
+        except Exception as e:
+            logger.error(f"[ExportPNG] Failed to load D3.js: {e}")
+            raise RuntimeError(f"Local D3.js library not available at {d3_js_path}")
+        
+        # Load other JS files for embedding
+        # IMPORTANT: Load order matters - logger must be loaded BEFORE dynamic_loader
+        js_files_to_embed = {
+            'logger': Path(__file__).parent.parent / 'static' / 'js' / 'logger.js',
+            'theme_config': Path(__file__).parent.parent / 'static' / 'js' / 'theme-config.js',
+            'style_manager': Path(__file__).parent.parent / 'static' / 'js' / 'style-manager.js',
+            'dynamic_loader': Path(__file__).parent.parent / 'static' / 'js' / 'dynamic-renderer-loader.js',
+        }
+        
+        embedded_js_content = {}
+        for key, path in js_files_to_embed.items():
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    if key == 'dynamic_loader':
+                        # Replace relative URLs with absolute ones for PNG generation context
+                        port = os.getenv('PORT', '9527')
+                        base_url = f"http://localhost:{port}"
+                        content = content.replace('/static/js/renderers/', f'{base_url}/static/js/renderers/')
+                    embedded_js_content[key] = content
+                logger.debug(f"[ExportPNG] JS file '{key}' loaded ({len(content)} bytes)")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Failed to load JS file '{key}': {e}")
+                raise RuntimeError(f"Required JavaScript file '{key}' not available at {path}")
+        
+        logger_js = embedded_js_content['logger']
+        theme_config = embedded_js_content['theme_config']
+        style_manager = embedded_js_content['style_manager']
+        dynamic_loader = embedded_js_content['dynamic_loader']
+        
+        renderer_scripts = f'''
+        <!-- Logger (MUST load first - required by dynamic-renderer-loader) -->
+        <script>
+        {logger_js}
+        </script>
+        
+        <!-- Dynamic Renderer Loader (Modified for PNG Generation) -->
+        <script>
+        {dynamic_loader}
+        </script>
+        '''
+        
+        # Calculate optimized dimensions for different graph types (like old version)
+        dimensions = config.get_d3_dimensions()
+        
+        if diagram_type == 'bridge_map' and diagram_data and 'analogies' in diagram_data:
+            num_analogies = len(diagram_data['analogies'])
+            min_width_per_analogy = 120
+            min_padding = 40
+            content_width = (num_analogies * min_width_per_analogy) + ((num_analogies - 1) * 60)
+            optimal_width = max(content_width + (2 * min_padding), 600)
+            optimal_height = max(90 + (2 * min_padding), 200)
+            
+            dimensions = {
+                'baseWidth': optimal_width,
+                'baseHeight': optimal_height,
+                'padding': min_padding,
+                'width': optimal_width,
+                'height': optimal_height,
+                'topicFontSize': dimensions.get('topicFontSize', 26),
+                'charFontSize': dimensions.get('charFontSize', 22)
+            }
+        elif diagram_type == 'brace_map' and diagram_data:
+            optimal_dims = diagram_data.get('_optimal_dimensions', {})
+            svg_data = diagram_data.get('_svg_data', {})
+            
+            if optimal_dims and optimal_dims.get('width') and optimal_dims.get('height'):
+                dimensions = {
+                    'baseWidth': optimal_dims['width'],
+                    'baseHeight': optimal_dims['height'],
+                    'padding': 50,
+                    'width': optimal_dims['width'],
+                    'height': optimal_dims['height'],
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
+            elif diagram_data.get('success') and svg_data and 'width' in svg_data and 'height' in svg_data:
+                dimensions = {
+                    'baseWidth': svg_data['width'],
+                    'baseHeight': svg_data['height'],
+                    'padding': 50,
+                    'width': svg_data['width'],
+                    'height': svg_data['height'],
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
+            else:
+                dimensions = {
+                    'baseWidth': 800,
+                    'baseHeight': 600,
+                    'padding': 50,
+                    'width': 800,
+                    'height': 600,
+                    'topicFontSize': dimensions.get('topicFontSize', 20),
+                    'partFontSize': dimensions.get('partFontSize', 16),
+                    'subpartFontSize': dimensions.get('subpartFontSize', 14)
+                }
+        elif diagram_type in ('multi_flow_map', 'flow_map', 'tree_map', 'concept_map') and isinstance(diagram_data, dict):
+            try:
+                rd = diagram_data.get('_recommended_dimensions') or {}
+                if rd:
+                    dimensions = {
+                        'baseWidth': rd.get('baseWidth', dimensions.get('baseWidth', 900)),
+                        'baseHeight': rd.get('baseHeight', dimensions.get('baseHeight', 500)),
+                        'padding': rd.get('padding', dimensions.get('padding', 40)),
+                        'width': rd.get('width', rd.get('baseWidth', dimensions.get('baseWidth', 900))),
+                        'height': rd.get('height', rd.get('baseHeight', dimensions.get('baseHeight', 500))),
+                        'topicFontSize': dimensions.get('topicFontSize', 18),
+                        'charFontSize': dimensions.get('charFontSize', 14)
+                    }
+            except Exception as e:
+                logger.warning(f"[ExportPNG] Failed to apply recommended dimensions: {e}")
+        
+        # Build font-face declarations only for fonts that exist
+        font_faces = []
+        font_files = [
+            ("inter-400.ttf", 400),
+            ("inter-600.ttf", 600),
+            ("inter-700.ttf", 700),
+        ]
+        
+        for font_file, weight in font_files:
+            font_base64 = _get_font_base64(font_file)
+            if font_base64:  # Only add if font was successfully loaded
+                font_faces.append(f'''
+            @font-face {{
+                font-display: swap;
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: {weight};
+                src: url('data:font/truetype;base64,{font_base64}') format('truetype');
+            }}''')
+        
+        font_css = '\n'.join(font_faces) if font_faces else '/* No fonts available - using system fonts */'
+        
+        # Build HTML exactly like old version
+        html = f'''<!DOCTYPE html>
+        <html><head>
+        <meta charset="utf-8">
+        {d3_script_tag}
+        <style>
+            body {{ margin:0; background:#fff; }}
+            #d3-container {{ 
+                width: 100%; 
+                height: 100vh; 
+                display: block; 
+            }}
+            
+            /* Inter Font Loading for Ubuntu Server Compatibility */
+            {font_css}
+        </style>
+        </head><body>
+        <div id="d3-container"></div>
+        
+        <!-- Theme Configuration -->
+        <script>
+        {theme_config}
+        </script>
+        
+        <!-- Style Manager -->
+        <script>
+        {style_manager}
+        </script>
+        
+        <!-- Modular D3 Renderers (Loaded in dependency order) -->
+        {renderer_scripts}
+        
+        <!-- Main Rendering Logic -->
+        <script>
+        // Wait for D3.js to load
+        function waitForD3() {{
+            if (typeof d3 !== "undefined") {{
+                try {{
+                    window.spec = {json.dumps(diagram_data, ensure_ascii=False)};
+                    window.graph_type = "{diagram_type}";
+                    
+                    // Get theme using style manager (centralized theme system)
+                    let theme;
+                    let backendTheme;
+                    if (typeof styleManager !== "undefined" && typeof styleManager.getTheme === "function") {{
+                        theme = styleManager.getTheme(window.graph_type);
+                    }} else {{
+                        theme = {{}};
+                        console.error("Style manager not available - this should not happen");
+                    }}
+                    const watermarkConfig = {json.dumps(config.get_watermark_config(), ensure_ascii=False)};
+                    backendTheme = {{...theme, ...watermarkConfig}};
+                    window.dimensions = {json.dumps(dimensions, ensure_ascii=False)};
+                    
+                    // Ensure style manager is available
+                    if (typeof styleManager === "undefined") {{
+                        console.error("Style manager not loaded!");
+                        throw new Error("Style manager not available");
+                    }}
+                    
+                    // Use dynamic renderer loader for all graph types
+                    if (typeof window.dynamicRendererLoader === "undefined") {{
+                        console.error("Dynamic renderer loader not available");
+                        console.error("Available window properties:", Object.keys(window).slice(0, 20));
+                        throw new Error("Dynamic renderer loader not available");
+                    }}
+                    
+                    try {{
+                        // Use the dynamic renderer loader to render the graph
+                        window.dynamicRendererLoader.renderGraph(window.graph_type, window.spec, backendTheme, window.dimensions)
+                            .then(() => {{
+                                // Rendering complete
+                            }})
+                            .catch(error => {{
+                                console.error("Dynamic rendering failed:", error);
+                            }});
+                    }} catch (error) {{
+                        console.error("Error calling dynamic renderer:", error);
+                    }}
+                }} catch (error) {{
+                    console.error("Render error:", error);
+                }}
+            }} else {{
+                setTimeout(waitForD3, 100);
+            }}
+        }}
+        waitForD3();
+        </script>
+        </body></html>
+        '''
+        
+        logger.debug(f"[ExportPNG] HTML content length: {len(html)} characters")
+        
+        # Create browser context (like old version)
+        logger.debug(f"[ExportPNG] Creating browser context")
+        async with BrowserContextManager() as context:
+            page = await context.new_page()
+            
+            # Set timeout and log HTML size and structure (like old version)
+            html_size = len(html)
+            timeout_ms = 60000  # 60 seconds for all content
+            logger.debug(f"[ExportPNG] HTML content size: {html_size} characters")
+            
+            # Set up comprehensive console and error logging BEFORE loading content (like old version)
+            console_messages = []
+            page_errors = []
+            
+            def log_console_message(msg):
+                message = f"{msg.type}: {msg.text}"
+                console_messages.append(message)
+                logger.debug(f"BROWSER CONSOLE: {message}")
+            
+            def log_page_error(err):
+                error_str = str(err)
+                page_errors.append(error_str)
+                logger.error(f"BROWSER ERROR: {error_str}")
+            
+            page.on("console", log_console_message)
+            page.on("pageerror", log_page_error)
+            page.on("requestfailed", lambda request: logger.error(f"RESOURCE FAILED: {request.url} - {request.failure}"))
+            page.on("response", lambda response: logger.debug(f"RESOURCE LOADED: {response.url} - {response.status}") if response.status >= 400 else None)
+            
+            # Set timeout (like old version)
+            page.set_default_timeout(60000)
+            page.set_default_navigation_timeout(60000)
+            
+            # Try to load the content with more detailed error handling (like old version)
+            try:
+                await page.set_content(html, timeout=timeout_ms)
+                logger.debug("[ExportPNG] HTML content loaded successfully")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Failed to set HTML content: {e}")
+                raise
+            
+            # Wait for rendering and check for console errors (like old version)
+            logger.debug("[ExportPNG] Waiting for initial rendering")
+            try:
+                await page.wait_for_selector('svg', timeout=10000)
+                logger.debug("[ExportPNG] SVG element found - initial rendering complete")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Timeout waiting for SVG element: {e}")
+                # Log console messages and errors for debugging
+                if console_messages:
+                    logger.error(f"[ExportPNG] Browser console messages: {len(console_messages)}")
+                    for i, msg in enumerate(console_messages[-10:]):
+                        logger.error(f"[ExportPNG] Console {i+1}: {msg}")
+                if page_errors:
+                    logger.error(f"[ExportPNG] Browser errors: {len(page_errors)}")
+                    for i, error in enumerate(page_errors):
+                        logger.error(f"[ExportPNG] Browser Error {i+1}: {error}")
+                raise ValueError("SVG element not found. The graph could not be rendered.")
+            
+            # Wait for rendering to complete (like old version)
+            logger.debug("[ExportPNG] Waiting for rendering to complete")
+            try:
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        return svg && svg.children.length > 0;
+                    }
+                ''', timeout=5000)
+                logger.debug("[ExportPNG] SVG content populated - rendering complete")
+            except Exception as e:
+                logger.warning(f"[ExportPNG] Timeout waiting for SVG content: {e}")
+            
+            # Log console messages and errors (like old version)
+            if console_messages:
+                logger.debug(f"[ExportPNG] Browser console messages: {len(console_messages)}")
+                for i, msg in enumerate(console_messages[-10:]):
+                    logger.debug(f"[ExportPNG] Console {i+1}: {msg}")
+            if page_errors:
+                logger.error(f"[ExportPNG] Browser errors: {len(page_errors)}")
+                for i, error in enumerate(page_errors):
+                    logger.error(f"[ExportPNG] Browser Error {i+1}: {error}")
+            
+            # Wait for SVG element to be created with timeout (like old version)
+            try:
+                element = await page.wait_for_selector("svg", timeout=10000)
+                logger.debug("[ExportPNG] SVG element found successfully")
+            except Exception as e:
+                logger.error(f"[ExportPNG] Timeout waiting for SVG element: {e}")
+                element = await page.query_selector("svg")  # Try one more time
+            
+            # Check if SVG exists and has content (like old version)
+            if element is None:
+                logger.error("[ExportPNG] SVG element not found in rendered page")
+                raise ValueError("SVG element not found. The graph could not be rendered.")
+            
+            # Check SVG dimensions (like old version)
+            svg_width = await element.get_attribute('width')
+            svg_height = await element.get_attribute('height')
+            logger.debug(f"[ExportPNG] SVG dimensions: width={svg_width}, height={svg_height}")
+            
+            # Ensure element is visible before screenshot (like old version)
+            await element.scroll_into_view_if_needed()
+            
+            # Wait for element to be ready for screenshot (like old version)
+            try:
+                await page.wait_for_function('''
+                    () => {
+                        const svg = document.querySelector('svg');
+                        if (!svg) return false;
+                        const rect = svg.getBoundingClientRect();
+                        return rect.width > 0 && rect.height > 0;
+                    }
+                ''', timeout=2000)
+                logger.debug("[ExportPNG] Element ready for screenshot")
+            except Exception as e:
+                logger.warning(f"[ExportPNG] Element not ready for screenshot within 2s timeout: {e}")
+                await page.wait_for_timeout(200)  # Fallback wait
+            
+            # Take screenshot using SVG element directly (like old version)
+            logger.debug("[ExportPNG] Taking screenshot")
+            screenshot_bytes = await element.screenshot(omit_background=False, timeout=60000)
+            logger.debug(f"[ExportPNG] Screenshot taken: {len(screenshot_bytes)} bytes")
+        
+        logger.info(f"[ExportPNG] PNG generated successfully: {len(screenshot_bytes)} bytes")
+        return screenshot_bytes
+        
+    except Exception as e:
+        logger.error(f"[ExportPNG] Error during PNG export: {e}", exc_info=True)
+        raise
+
+
+@router.post('/export_png')
+async def export_png(
+    req: ExportPNGRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Export diagram as PNG using Playwright browser automation (async).
+    
+    This is a STANDALONE endpoint - takes diagram data and renders PNG.
+    Creates minimal HTML dynamically in headless browser with D3.js and renderers.
+    No dependency on any existing pages or routes.
+    
+    This endpoint is already async-compatible (BrowserContextManager uses async_playwright).
+    """
+    
+    # Get language for error messages
+    lang = get_request_language(x_language)
+    
+    diagram_data = req.diagram_data
+    diagram_type = req.diagram_type.value if hasattr(req.diagram_type, 'value') else str(req.diagram_type)
+    
+    if not diagram_data:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("diagram_data_required", lang)
+        )
+    
+    logger.debug(f"PNG export request - diagram_type: {diagram_type}, data keys: {list(diagram_data.keys())}")
+    
+    # VERBOSE LOGGING: Complete diagram data from LLM
+    logger.debug("="*80)
+    logger.debug("VERBOSE PNG EXPORT - Complete Diagram Data:")
+    logger.debug(f"Diagram Type: {diagram_type}")
+    logger.debug(f"Diagram Data Keys: {list(diagram_data.keys())}")
+    logger.debug("Complete Diagram Data JSON:")
+    logger.debug(json.dumps(diagram_data, indent=2, ensure_ascii=False))
+    
+    # Check specific important fields
+    if 'topic' in diagram_data:
+        logger.debug(f"Topic: {diagram_data['topic']}")
+    if 'attributes' in diagram_data:
+        logger.debug(f"Number of attributes: {len(diagram_data['attributes'])}")
+        for i, attr in enumerate(diagram_data.get('attributes', [])):
+            logger.debug(f"  Attribute {i}: {attr}")
+    if 'nodes' in diagram_data:
+        logger.debug(f"Number of nodes: {len(diagram_data['nodes'])}")
+        for i, node in enumerate(diagram_data.get('nodes', [])):
+            logger.debug(f"  Node {i}: {node}")
+    if '_layout' in diagram_data:
+        logger.debug(f"Layout info: {diagram_data['_layout']}")
+    if '_recommended_dimensions' in diagram_data:
+        logger.debug(f"Recommended dimensions: {diagram_data['_recommended_dimensions']}")
+    if '_metadata' in diagram_data:
+        logger.debug(f"Metadata: {diagram_data['_metadata']}")
+    
+    logger.debug(f"Request width: {req.width}, height: {req.height}, scale: {req.scale}")
+    logger.debug("="*80)
+    
+    try:
+        # Use async browser manager
+        async with BrowserContextManager() as context:
+            page = await context.new_page()
+            logger.debug("Browser context created successfully")
+            
+            # Get server URL
+            port = os.getenv('PORT', '5000')
+            base_url = f"http://localhost:{port}"
+            
+            logger.debug(f"Creating HTML with base_url: {base_url}")
+            logger.debug(f"Container dimensions: {req.width or 1200}x{req.height or 800}")
+            
+            # Create minimal HTML page with rendering infrastructure
+            html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="{base_url}/static/js/d3.min.js"></script>
+</head>
+<body>
+    <div id="d3-container" style="width: {req.width or 1200}px; height: {req.height or 800}px;"></div>
+    <script>
+        window.renderingComplete = false;
+        window.renderingError = null;
+        
+        // Load theme config, style manager, logger, and renderer
+        const scripts = [
+            '{base_url}/static/js/theme-config.js',
+            '{base_url}/static/js/style-manager.js',
+            '{base_url}/static/js/logger.js',
+            '{base_url}/static/js/renderers/shared-utilities.js',
+            '{base_url}/static/js/renderers/renderer-dispatcher.js'
+        ];
+        
+        // Add diagram-specific renderer
+        const rendererMap = {{
+            // Thinking Maps
+            'bubble_map': 'bubble-map-renderer.js',
+            'double_bubble_map': 'bubble-map-renderer.js',
+            'circle_map': 'bubble-map-renderer.js',
+            'tree_map': 'tree-renderer.js',
+            'flow_map': 'flow-renderer.js',
+            'multi_flow_map': 'flow-renderer.js',
+            'brace_map': 'brace-renderer.js',
+            'bridge_map': 'flow-renderer.js',
+            'flowchart': 'flow-renderer.js',
+            // Mind Maps & Concept Maps
+            'mindmap': 'mind-map-renderer.js',
+            'mind_map': 'mind-map-renderer.js',
+            'concept_map': 'concept-map-renderer.js'
+        }};
+        
+        const diagramType = '{diagram_type}';
+        if (rendererMap[diagramType]) {{
+            scripts.push('{base_url}/static/js/renderers/' + rendererMap[diagramType]);
+        }}
+        
+        // Load scripts sequentially
+        async function loadScripts() {{
+            for (const src of scripts) {{
+                await new Promise((resolve, reject) => {{
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = () => {{
+                        console.log('Loaded:', src);
+                        resolve();
+                    }};
+                    script.onerror = (err) => {{
+                        console.error('Failed to load:', src);
+                        reject(err);
+                    }};
+                    document.head.appendChild(script);
+                }});
+                // Small delay between scripts to ensure execution
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }}
+        }}
+        
+        // Render diagram after scripts load
+        loadScripts()
+            .then(() => {{
+                console.log('All scripts loaded, starting render...');
+                console.log('renderGraph available:', typeof renderGraph);
+                
+                const diagramData = {json.dumps(diagram_data)};
+                console.log('='.repeat(80));
+                console.log('VERBOSE: Complete Diagram Data in Browser:');
+                console.log('Diagram type:', '{diagram_type}');
+                console.log('Diagram data keys:', Object.keys(diagramData));
+                console.log('Topic:', diagramData.topic);
+                if (diagramData.attributes) {{
+                    console.log('Attributes count:', diagramData.attributes.length);
+                    diagramData.attributes.forEach((attr, i) => {{
+                        console.log(`  Attribute ${{i}}:`, attr);
+                    }});
+                }}
+                if (diagramData.nodes) {{
+                    console.log('Nodes count:', diagramData.nodes.length);
+                    diagramData.nodes.forEach((node, i) => {{
+                        console.log(`  Node ${{i}}:`, node);
+                    }});
+                }}
+                console.log('Layout:', diagramData._layout);
+                console.log('Recommended dimensions:', diagramData._recommended_dimensions);
+                console.log('Metadata:', diagramData._metadata);
+                console.log('='.repeat(80));
+                
+                if (typeof renderGraph !== 'function') {{
+                    throw new Error('renderGraph function not available');
+                }}
+                
+                // Render the diagram (may be async)
+                console.log('Calling renderGraph with:');
+                console.log('  - Type:', '{diagram_type}');
+                console.log('  - Data:', diagramData);
+                console.log('  - Theme:', null);
+                console.log('  - Dimensions:', null);
+                
+                const renderResult = renderGraph('{diagram_type}', diagramData, null, null);
+                console.log('renderGraph returned:', renderResult);
+                console.log('Return value type:', typeof renderResult);
+                console.log('Is promise?', renderResult && typeof renderResult.then === 'function');
+                
+                // Check if result is a promise
+                if (renderResult && typeof renderResult.then === 'function') {{
+                    console.log('renderGraph returned a promise, waiting...');
+                    renderResult.then(() => {{
+                        checkRendering();
+                    }}).catch(err => {{
+                        console.error('renderGraph promise rejected:', err);
+                        window.renderingError = err.toString();
+                        window.renderingComplete = true;
+                    }});
+                }} else {{
+                    // Not a promise, wait a bit and check
+                    console.log('renderGraph did not return a promise, waiting 2s...');
+                    setTimeout(checkRendering, 2000);
+                }}
+                
+                function checkRendering() {{
+                    console.log('='.repeat(80));
+                    console.log('CHECKING RENDERING RESULTS:');
+                    const container = document.getElementById('d3-container');
+                    console.log('Container found:', !!container);
+                    
+                    if (container) {{
+                        console.log('Container dimensions:', container.offsetWidth, 'x', container.offsetHeight);
+                        console.log('Container innerHTML length:', container.innerHTML.length);
+                        console.log('Container children count:', container.children.length);
+                        
+                        const svg = container.querySelector('svg');
+                        console.log('SVG found:', !!svg);
+                        
+                        if (svg) {{
+                            console.log('SVG dimensions:', svg.getAttribute('width'), 'x', svg.getAttribute('height'));
+                            console.log('SVG viewBox:', svg.getAttribute('viewBox'));
+                            console.log('SVG children count:', svg.children.length);
+                            console.log('SVG child tags:', Array.from(svg.children).map(c => c.tagName).join(', '));
+                            
+                            // Check for specific elements
+                            const circles = svg.querySelectorAll('circle');
+                            const rects = svg.querySelectorAll('rect');
+                            const texts = svg.querySelectorAll('text');
+                            const paths = svg.querySelectorAll('path');
+                            console.log('SVG elements - circles:', circles.length, 'rects:', rects.length, 'texts:', texts.length, 'paths:', paths.length);
+                            
+                            // Add watermark to exported PNG
+                            console.log('Adding watermark...');
+                            if (typeof addWatermark === 'function' && typeof d3 !== 'undefined') {{
+                                try {{
+                                    const svgD3 = d3.select(svg);
+                                    addWatermark(svgD3, null);
+                                    console.log('Watermark added successfully');
+                                }} catch (err) {{
+                                    console.error('Error adding watermark:', err);
+                                }}
+                            }} else {{
+                                console.warn('addWatermark or d3 not available - watermark skipped');
+                            }}
+                        }} else {{
+                            console.log('NO SVG FOUND!');
+                            console.log('Container innerHTML (first 500 chars):', container.innerHTML.substring(0, 500));
+                            console.log('Container children:', Array.from(container.children).map(c => c.tagName).join(', '));
+                        }}
+                    }} else {{
+                        console.log('NO CONTAINER FOUND!');
+                    }}
+                    console.log('='.repeat(80));
+                    window.renderingComplete = true;
+                }}
+            }})
+            .catch(err => {{
+                console.error('Rendering error:', err);
+                window.renderingError = err.toString();
+                window.renderingComplete = true;
+            }});
+    </script>
+</body>
+</html>
+            """
+            
+            # Set page content
+            logger.debug("Setting page content...")
+            logger.debug(f"HTML content length: {len(html_content)} characters")
+            await page.set_content(html_content)
+            logger.debug("Page content set successfully")
+            
+            # Capture console logs for debugging
+            page.on("console", lambda msg: logger.debug(f"[Browser Console] {msg.type}: {msg.text}"))
+            
+            # Wait for rendering to complete by polling the flag
+            max_wait = 10  # seconds
+            waited = 0
+            while waited < max_wait:
+                rendering_complete = await page.evaluate("window.renderingComplete")
+                if rendering_complete:
+                    break
+                await asyncio.sleep(0.5)
+                waited += 0.5
+            
+            # Check if there was an error
+            rendering_error = await page.evaluate("window.renderingError")
+            if rendering_error:
+                logger.error(f"Rendering error in browser: {rendering_error}")
+                raise Exception(f"Browser rendering failed: {rendering_error}")
+            
+            # Verify SVG was created
+            svg_exists = await page.evaluate("!!document.querySelector('#d3-container svg')")
+            logger.debug(f"SVG exists check: {svg_exists}")
+            
+            if not svg_exists:
+                logger.error("="*80)
+                logger.error("NO SVG ELEMENT FOUND!")
+                
+                # Get detailed info from browser
+                container_info = await page.evaluate("""
+                    (() => {
+                        const container = document.getElementById('d3-container');
+                        return {
+                            found: !!container,
+                            innerHTML: container ? container.innerHTML : null,
+                            childCount: container ? container.children.length : 0,
+                            children: container ? Array.from(container.children).map(c => c.tagName) : []
+                        };
+                    })()
+                """)
+                logger.error(f"Container info: {json.dumps(container_info, indent=2)}")
+                
+                # Get page HTML for debugging
+                page_html = await page.content()
+                logger.error(f"Full page HTML length: {len(page_html)}")
+                logger.error(f"Page HTML (first 1000 chars):\n{page_html[:1000]}")
+                logger.error("="*80)
+                
+                raise Exception("No SVG element created - rendering may have failed")
+            
+            logger.debug("Rendering completed successfully, extracting dimensions")
+            
+            # Extract actual SVG dimensions from viewBox and verify content fits
+            svg_dimensions = await page.evaluate("""
+                (() => {
+                    const svg = document.querySelector('#d3-container svg');
+                    if (!svg) return null;
+                    
+                    const viewBox = svg.getAttribute('viewBox');
+                    if (viewBox) {
+                        const parts = viewBox.split(' ').map(Number);
+                        let minX = parts[0];
+                        let minY = parts[1];
+                        let width = parts[2];
+                        let height = parts[3];
+                        
+                        // Verify content actually fits within viewBox by checking getBBox
+                        // This catches cases where renderers update viewBox but content extends beyond
+                        try {
+                            const bbox = svg.getBBox();
+                            const contentMinX = bbox.x;
+                            const contentMinY = bbox.y;
+                            const contentMaxX = bbox.x + bbox.width;
+                            const contentMaxY = bbox.y + bbox.height;
+                            
+                            // Check if content extends beyond viewBox bounds
+                            if (contentMinX < minX || contentMinY < minY ||
+                                contentMaxX > (minX + width) || contentMaxY > (minY + height)) {
+                                // Expand viewBox to include all content with padding
+                                const padding = 20;
+                                minX = Math.min(minX, contentMinX - padding);
+                                minY = Math.min(minY, contentMinY - padding);
+                                width = Math.max(width, (contentMaxX - minX) + padding);
+                                height = Math.max(height, (contentMaxY - minY) + padding);
+                                
+                                // Update SVG viewBox to include all content
+                                svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+                                svg.setAttribute('width', width);
+                                svg.setAttribute('height', height);
+                                console.log(`ViewBox expanded to include all content: ${minX} ${minY} ${width} ${height}`);
+                            }
+                        } catch (e) {
+                            // getBBox might fail if SVG is empty or not rendered, use viewBox as-is
+                            console.warn('Could not verify content bounds, using viewBox as-is:', e);
+                        }
+                        
+                        return {
+                            x: minX,
+                            y: minY,
+                            width: width,
+                            height: height,
+                            source: 'viewBox'
+                        };
+                    }
+                    
+                    // Fallback to width/height attributes
+                    const width = parseFloat(svg.getAttribute('width')) || 800;
+                    const height = parseFloat(svg.getAttribute('height')) || 600;
+                    return {
+                        x: 0,
+                        y: 0,
+                        width: width,
+                        height: height,
+                        source: 'attributes'
+                    };
+                })()
+            """)
+            
+            if not svg_dimensions:
+                logger.error("Failed to extract SVG dimensions")
+                raise Exception("Could not determine SVG dimensions")
+            
+            logger.debug(f"SVG dimensions extracted: {svg_dimensions['width']}x{svg_dimensions['height']} (from {svg_dimensions['source']})")
+            
+            # Ensure SVG width/height attributes match viewBox dimensions (browser handles viewBox offset automatically)
+            # This fixes clipping issues without needing to translate elements
+            await page.evaluate("""
+                (() => {
+                    const svg = document.querySelector('#d3-container svg');
+                    if (!svg) return;
+                    
+                    const viewBox = svg.getAttribute('viewBox');
+                    if (viewBox) {
+                        const parts = viewBox.split(' ').map(Number);
+                        const width = parts[2];
+                        const height = parts[3];
+                        
+                        // Ensure SVG width/height match viewBox dimensions
+                        // Browser will automatically handle viewBox offset (minX, minY)
+                        const currentWidth = svg.getAttribute('width');
+                        const currentHeight = svg.getAttribute('height');
+                        
+                        if (currentWidth !== String(width) || currentHeight !== String(height)) {
+                            svg.setAttribute('width', width);
+                            svg.setAttribute('height', height);
+                            console.log(`SVG dimensions updated to match viewBox: ${width}x${height}`);
+                        }
+                    }
+                })()
+            """)
+            
+            # Resize container to match actual SVG dimensions and set background
+            await page.evaluate(f"""
+                (() => {{
+                    const container = document.getElementById('d3-container');
+                    if (container) {{
+                        container.style.width = '{svg_dimensions["width"]}px';
+                        container.style.height = '{svg_dimensions["height"]}px';
+                        // Set background color to match SVG background (prevents black areas)
+                        container.style.backgroundColor = '#f5f5f5';
+                        console.log('Container resized to:', '{svg_dimensions["width"]}x{svg_dimensions["height"]}');
+                    }}
+                }})()
+            """)
+            
+            # Apply scale factor for high-DPI displays
+            scale_factor = req.scale if req.scale else 2
+            final_width = int(svg_dimensions['width'] * scale_factor)
+            final_height = int(svg_dimensions['height'] * scale_factor)
+            
+            logger.debug(f"Taking screenshot at {svg_dimensions['width']}x{svg_dimensions['height']} with scale {scale_factor}x (output: {final_width}x{final_height})")
+            
+            # Take screenshot of the resized container with scale
+            d3_container = await page.query_selector('#d3-container')
+            if d3_container:
+                screenshot_bytes = await d3_container.screenshot(
+                    type='png',
+                    scale='device'  # Use device scale for quality
+                )
+            else:
+                # Fallback to full page screenshot
+                screenshot_bytes = await page.screenshot(full_page=True, type='png')
+            
+            logger.debug(f"PNG generated successfully ({len(screenshot_bytes)} bytes, scale={scale_factor}x)")
+            
+            # Return PNG as response
+            from fastapi.responses import Response
+            return Response(
+                content=screenshot_bytes,
+                media_type="image/png",
+                headers={
+                    'Content-Disposition': 'attachment; filename="diagram.png"'
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"PNG export error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("export_failed", lang, str(e))
+        )
+
+
+# ============================================================================
+# BACKWARD COMPATIBILITY ENDPOINTS - Restored from Flask Migration
+# ============================================================================
+
+@router.post('/generate_png')
+async def generate_png_from_prompt(
+    req: GeneratePNGRequest,
+    request: Request,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Generate PNG directly from user prompt using simplified prompt-to-diagram agent.
+    
+    Uses only Qwen in a single LLM call for fast, efficient diagram generation.
+    """
+    lang = get_request_language(x_language)
+    prompt = req.prompt.strip()
+    
+    if not prompt:
+        raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
+    
+    language = req.language.value if req.language and hasattr(req.language, 'value') else str(req.language) if req.language else 'zh'
+    if language not in ['zh', 'en']:
+        raise HTTPException(status_code=400, detail="Invalid language. Must be 'zh' or 'en'")
+    
+    logger.info(f"[GeneratePNG] Request: prompt='{prompt}', language='{language}'")
+    
+    try:
+        # Use simplified prompt-to-diagram approach (single Qwen call)
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
+        
+        # Detect learning sheet from prompt
+        from agents.main_agent import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
+        is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
+        logger.debug(f"[GeneratePNG] Learning sheet detected: {is_learning_sheet}")
+        
+        # Clean prompt for learning sheets to generate actual content, not meta-content
+        generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
+        if is_learning_sheet:
+            logger.debug(f"[GeneratePNG] Using cleaned prompt for generation: '{generation_prompt}'")
+        
+        # Get prompt from centralized system
+        from prompts import get_prompt
+        prompt_template = get_prompt('prompt_to_diagram', language, 'generation')
+        
+        if not prompt_template:
+            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}"))
+        
+        # Format prompt with cleaned user input
+        formatted_prompt = prompt_template.format(user_prompt=generation_prompt)
+        
+        # Call LLM service - single call with Qwen only
+        from services.llm_service import llm_service
+        from services.token_tracker import get_token_tracker
+        from config.settings import config
+        from agents.core.agent_utils import extract_json_from_response
+        
+        # Get API key ID from request state if API key was used
+        api_key_id = None
+        if hasattr(request, 'state'):
+            api_key_id = getattr(request.state, 'api_key_id', None)
+            if api_key_id:
+                logger.debug(f"[GeneratePNG] Using API key ID {api_key_id} for token tracking")
+        else:
+            logger.debug(f"[GeneratePNG] Request state not available")
+        
+        start_time = time.time()
+        response, usage_data = await llm_service.chat_with_usage(
+            prompt=formatted_prompt,
+            model='qwen',  # Force Qwen only
+            max_tokens=2000,
+            temperature=config.LLM_TEMPERATURE,
+            user_id=user_id,
+            organization_id=organization_id,
+            api_key_id=api_key_id,
+            request_type='diagram_generation',
+            endpoint_path='/api/generate_png'
+        )
+        
+        if not response:
+            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "No response from LLM"))
+        
+        # Extract JSON from response
+        result = extract_json_from_response(response)
+        
+        if not isinstance(result, dict) or 'spec' not in result:
+            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "Invalid response format from LLM"))
+        
+        spec = result.get('spec', {})
+        diagram_type = result.get('diagram_type', 'bubble_map')
+        
+        # Normalize diagram type
+        if diagram_type == 'mindmap':
+            diagram_type = 'mind_map'
+        
+        # Add learning sheet metadata to spec object so renderers can access it
+        if isinstance(spec, dict):
+            hidden_percentage = 0.2 if is_learning_sheet else 0
+            spec['is_learning_sheet'] = is_learning_sheet
+            spec['hidden_node_percentage'] = hidden_percentage
+            logger.debug(f"[GeneratePNG] Added learning sheet metadata to spec: is_learning_sheet={is_learning_sheet}, hidden_percentage={hidden_percentage}")
+        
+        # Track tokens with correct diagram_type
+        if usage_data:
+            try:
+                input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
+                output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                total_tokens = usage_data.get('total_tokens') or None
+                response_time = time.time() - start_time
+                
+                token_tracker = get_token_tracker()
+                await token_tracker.track_usage(
+                    model_alias='qwen',
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    request_type='diagram_generation',
+                    diagram_type=diagram_type,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    api_key_id=api_key_id,
+                    endpoint_path='/api/generate_png',
+                    response_time=response_time,
+                    success=True
+                )
+            except Exception as e:
+                logger.warning(f"[GeneratePNG] Token tracking failed (non-critical): {e}", exc_info=False)
+        
+        if isinstance(spec, dict) and spec.get('error'):
+            raise HTTPException(status_code=400, detail=spec.get('error'))
+        
+        # For mindmaps, enhance spec with layout data if missing
+        if diagram_type == 'mind_map' and isinstance(spec, dict):
+            if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
+                logger.debug("[GeneratePNG] Mindmap spec missing layout data, enhancing with MindMapAgent")
+                try:
+                    from agents.mind_maps.mind_map_agent import MindMapAgent
+                    mind_map_agent = MindMapAgent(model='qwen')
+                    enhanced_spec = await mind_map_agent.enhance_spec(spec)
+                    
+                    if enhanced_spec.get('_layout'):
+                        spec = enhanced_spec
+                        logger.debug("[GeneratePNG] Mindmap layout data added successfully")
+                    else:
+                        logger.warning("[GeneratePNG] MindMapAgent failed to generate layout data")
+                except Exception as e:
+                    logger.error(f"[GeneratePNG] Error enhancing mindmap spec: {e}", exc_info=True)
+                    # Continue with original spec - renderer will show error message
+        
+        # Export PNG using core function
+        screenshot_bytes = await _export_png_core(
+            diagram_data=spec,
+            diagram_type=diagram_type,
+            width=req.width or 1200,
+            height=req.height or 800,
+            scale=req.scale or 2,
+            x_language=x_language
+        )
+        
+        return Response(
+            content=screenshot_bytes,
+            media_type="image/png",
+            headers={'Content-Disposition': 'attachment; filename="diagram.png"'}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[GeneratePNG] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e)))
+
+
+@router.post('/generate_dingtalk')
+async def generate_dingtalk_png(
+    req: GenerateDingTalkRequest,
+    request: Request,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Generate PNG for DingTalk integration using simplified prompt-to-diagram agent.
+    
+    Uses only Qwen in a single LLM call. Saves PNG to temp folder and returns
+    plain text in ![]() format for DingTalk bot integration.
+    """
+    lang = get_request_language(x_language)
+    prompt = req.prompt.strip()
+    
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    try:
+        # Handle language - default to 'zh' if not provided
+        language = req.language.value if req.language and hasattr(req.language, 'value') else str(req.language) if req.language else 'zh'
+        if language not in ['zh', 'en']:
+            raise HTTPException(status_code=400, detail="Invalid language. Must be 'zh' or 'en'")
+        
+        logger.info("[GenerateDingTalk] Request: prompt='%s', language='%s'", prompt, language)
+        
+        # Handle current_user
+        user_id = None
+        organization_id = None
+        if current_user and hasattr(current_user, 'id'):
+            user_id = current_user.id
+            organization_id = getattr(current_user, 'organization_id', None)
+        
+        # Detect learning sheet from prompt
+        from agents.main_agent import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
+        is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
+        logger.debug(f"[GenerateDingTalk] Learning sheet detected: {is_learning_sheet}")
+        
+        # Clean prompt for learning sheets to generate actual content, not meta-content
+        generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
+        if is_learning_sheet:
+            logger.debug(f"[GenerateDingTalk] Using cleaned prompt for generation: '{generation_prompt}'")
+        
+        # Use simplified prompt-to-diagram approach (single Qwen call)
+        from prompts import get_prompt
+        prompt_template = get_prompt('prompt_to_diagram', language, 'generation')
+        
+        if not prompt_template:
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}")
+            )
+        
+        # Format prompt with cleaned user input
+        formatted_prompt = prompt_template.format(user_prompt=generation_prompt)
+        
+        # Call LLM service - single call with Qwen only
+        from services.llm_service import llm_service
+        from services.token_tracker import get_token_tracker
+        from config.settings import config
+        from agents.core.agent_utils import extract_json_from_response
+        
+        # Get API key ID from request state if API key was used
+        api_key_id = None
+        if hasattr(request, 'state'):
+            api_key_id = getattr(request.state, 'api_key_id', None)
+        
+        start_time = time.time()
+        response, usage_data = await llm_service.chat_with_usage(
+            prompt=formatted_prompt,
+            model='qwen',  # Force Qwen only
+            max_tokens=2000,
+            temperature=config.LLM_TEMPERATURE,
+            user_id=user_id,
+            organization_id=organization_id,
+            api_key_id=api_key_id,
+            request_type='diagram_generation',
+            endpoint_path='/api/generate_dingtalk'
+        )
+        
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generation_failed", lang, "No response from LLM")
+            )
+        
+        # Extract JSON from response
+        result = extract_json_from_response(response)
+        
+        if not isinstance(result, dict) or 'spec' not in result:
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generation_failed", lang, "Invalid response format from LLM")
+            )
+        
+        spec = result.get('spec', {})
+        diagram_type = result.get('diagram_type', 'bubble_map')
+        
+        # Normalize diagram type
+        if diagram_type == 'mindmap':
+            diagram_type = 'mind_map'
+        
+        # Add learning sheet metadata to spec object so renderers can access it
+        if isinstance(spec, dict):
+            hidden_percentage = 0.2 if is_learning_sheet else 0
+            spec['is_learning_sheet'] = is_learning_sheet
+            spec['hidden_node_percentage'] = hidden_percentage
+            logger.debug(f"[GenerateDingTalk] Added learning sheet metadata to spec: is_learning_sheet={is_learning_sheet}, hidden_percentage={hidden_percentage}")
+        
+        # Track tokens with correct diagram_type
+        if usage_data:
+            try:
+                input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
+                output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
+                total_tokens = usage_data.get('total_tokens') or None
+                response_time = time.time() - start_time
+                
+                token_tracker = get_token_tracker()
+                await token_tracker.track_usage(
+                    model_alias='qwen',
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    request_type='diagram_generation',
+                    diagram_type=diagram_type,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    api_key_id=api_key_id,
+                    endpoint_path='/api/generate_dingtalk',
+                    response_time=response_time,
+                    success=True
+                )
+            except Exception as e:
+                logger.warning(f"[GenerateDingTalk] Token tracking failed (non-critical): {e}", exc_info=False)
+        
+        if isinstance(spec, dict) and spec.get('error'):
+            raise HTTPException(status_code=400, detail=spec.get('error'))
+        
+        # For mindmaps, enhance spec with layout data if missing
+        if diagram_type == 'mind_map' and isinstance(spec, dict):
+            if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
+                logger.debug("[GenerateDingTalk] Mindmap spec missing layout data, enhancing with MindMapAgent")
+                try:
+                    from agents.mind_maps.mind_map_agent import MindMapAgent
+                    mind_map_agent = MindMapAgent(model='qwen')
+                    enhanced_spec = await mind_map_agent.enhance_spec(spec)
+                    
+                    if enhanced_spec.get('_layout'):
+                        spec = enhanced_spec
+                        logger.debug("[GenerateDingTalk] Mindmap layout data added successfully")
+                    else:
+                        logger.warning("[GenerateDingTalk] MindMapAgent failed to generate layout data")
+                except Exception as e:
+                    logger.error("[GenerateDingTalk] Error enhancing mindmap spec: %s", e, exc_info=True)
+                    # Continue with original spec - renderer will show error message
+        
+        # Export PNG using core helper function
+        screenshot_bytes = await _export_png_core(
+            diagram_data=spec,
+            diagram_type=diagram_type,
+            width=1200,
+            height=800,
+            scale=2,
+            x_language=x_language
+        )
+        
+        # Save PNG to temp directory (ASYNC file I/O)
+        temp_dir = Path("temp_images")
+        temp_dir.mkdir(exist_ok=True)
+        
+        # Generate unique filename
+        unique_id = uuid.uuid4().hex[:8]
+        timestamp = int(time.time())
+        filename = f"dingtalk_{unique_id}_{timestamp}.png"
+        temp_path = temp_dir / filename
+        
+        # Write PNG content to file using aiofiles (100% async, non-blocking)
+        async with aiofiles.open(temp_path, 'wb') as f:
+            await f.write(screenshot_bytes)
+        
+        # Build plain text response in ![](url) format (empty alt text)
+        # Priority order: EXTERNAL_BASE_URL → X-Forwarded-* headers → EXTERNAL_HOST:PORT
+        # This ensures HTTPS URLs are used when EXTERNAL_BASE_URL is set, preventing mixed content issues
+        external_base_url = os.getenv('EXTERNAL_BASE_URL', '').rstrip('/')
+        
+        if external_base_url:
+            # Explicit override - use EXTERNAL_BASE_URL directly (highest priority)
+            image_url = f"{external_base_url}/api/temp_images/{filename}"
+        else:
+            # Try reverse proxy headers
+            forwarded_proto = request.headers.get('X-Forwarded-Proto')
+            forwarded_host = request.headers.get('X-Forwarded-Host')
+            
+            if forwarded_proto and forwarded_host:
+                # Behind reverse proxy - use forwarded values (no port needed)
+                protocol = forwarded_proto
+                image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
+            else:
+                # Direct access - use backend protocol and EXTERNAL_HOST with port
+                protocol = request.url.scheme
+                external_host = os.getenv('EXTERNAL_HOST', 'localhost')
+                port = os.getenv('PORT', '9527')
+                image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
+        
+        plain_text = f"![]({image_url})"
+        
+        logger.info("[GenerateDingTalk] Success: %s", image_url)
+        
+        return PlainTextResponse(content=plain_text)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("[GenerateDingTalk] Error: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
+
+
+@router.get('/temp_images/{filename}')
+async def serve_temp_image(filename: str):
+    """
+    Serve temporary PNG files for DingTalk integration.
+    
+    Images auto-cleanup after 24 hours.
+    """
+    # Security: Validate filename to prevent directory traversal
+    if '..' in filename or '/' in filename or '\\' in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
+    temp_path = Path("temp_images") / filename
+    
+    if not temp_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found or expired")
+    
+    return FileResponse(
+        path=str(temp_path),
+        media_type="image/png",
+        headers={
+            'Cache-Control': 'public, max-age=86400',
+            'X-Content-Type-Options': 'nosniff'
+        }
+        )
+
+
+# ============================================================================
+# UTILITY ENDPOINTS
+# ============================================================================
+
+@router.post('/frontend_log')
+async def frontend_log(req: FrontendLogRequest):
+    """
+    Log single frontend message to backend console.
+    Receives logs from browser and displays them in Python terminal.
+    """
+    level_map = {
+        'error': logging.ERROR,
+        'warn': logging.WARNING,
+        'info': logging.INFO,
+        'debug': logging.DEBUG
+    }
+    level = level_map.get(req.level.lower(), logging.INFO)
+    
+    # Create a dedicated frontend logger
+    frontend_logger = logging.getLogger('frontend')
+    frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
+    
+    # Log message directly - Python logger will add its own timestamp
+    # Don't include frontend timestamp to avoid duplication
+    message = req.message
+    
+    # Log with clean formatting
+    frontend_logger.log(level, message)
+    
+    return {'status': 'logged'}
+
+
+@router.post('/frontend_log_batch')
+async def frontend_log_batch(req: FrontendLogBatchRequest):
+    """
+    Log batched frontend messages to backend console (efficient bulk logging).
+    Receives multiple logs from browser and displays them in Python terminal.
+    """
+    level_map = {
+        'error': logging.ERROR,
+        'warn': logging.WARNING,
+        'info': logging.INFO,
+        'debug': logging.DEBUG
+    }
+    
+    # Create a dedicated frontend logger
+    frontend_logger = logging.getLogger('frontend')
+    frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
+    
+    # Log batch header
+    frontend_logger.info(f"=== FRONTEND LOG BATCH ({req.batch_size} logs) ===")
+    
+    # Log each message in the batch
+    for log_entry in req.logs:
+        level = level_map.get(log_entry.level.lower(), logging.INFO)
+        
+        # Log message directly - Python logger will add its own timestamp
+        # Don't include frontend timestamp to avoid duplication
+        message = log_entry.message
+        
+        # Log to backend console
+        frontend_logger.log(level, message)
+    
+    return {'status': 'logged', 'count': req.batch_size}
+
+
+@router.post('/recalculate_mindmap_layout')
+async def recalculate_mindmap_layout(
+    req: RecalculateLayoutRequest,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Recalculate mind map layout after nodes are added/removed via node palette.
+    
+    This endpoint takes the current spec with new branches and recalculates
+    the _layout and positioning data using the MindMapAgent.
+    """
+    try:
+        spec = req.spec
+        
+        # Validate that it's a mindmap
+        # Use isinstance check to allow empty string (for empty button functionality)
+        if not isinstance(spec.get('topic'), str):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid spec: 'topic' field is required for mindmaps"
+            )
+        
+        # Import MindMapAgent
+        from agents.mind_maps.mind_map_agent import MindMapAgent
+        
+        # Create agent instance
+        mind_map_agent = MindMapAgent(model='qwen')
+        
+        # Use enhance_spec to recalculate layout
+        enhanced_spec = await mind_map_agent.enhance_spec(spec)
+        
+        if not enhanced_spec.get('_layout'):
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to calculate layout"
+            )
+        
+        logger.debug(f"[RecalculateLayout] Layout recalculated for {len(spec.get('children', []))} branches")
+        
+        return {
+            'success': True,
+            'spec': enhanced_spec
+        }
+        
+    except Exception as e:
+        logger.error(f"[RecalculateLayout] Error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Layout recalculation failed: {str(e)}"
+        )
+
+
+@router.get('/llm/metrics')
+async def get_llm_metrics(model: Optional[str] = None):
+    """
+    Get performance metrics for LLM models.
+    
+    Query Parameters:
+        model (optional): Specific model name to get metrics for
+        
+    Returns:
+        JSON with performance metrics including:
+        - Total requests
+        - Success/failure counts
+        - Response times (avg, min, max)
+        - Circuit breaker state
+        - Recent errors
+        
+    Examples:
+        GET /api/llm/metrics - Get metrics for all models
+        GET /api/llm/metrics?model=qwen - Get metrics for specific model
+    """
+    try:
+        metrics = llm_service.get_performance_metrics(model)
+        
+        return JSONResponse(
+            content={
+                'status': 'success',
+                'metrics': metrics,
+                'timestamp': int(time.time())
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting LLM metrics: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve metrics: {str(e)}"
+        )
+
+
+@router.post('/generate_multi_parallel')
+async def generate_multi_parallel(
+    req: GenerateRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Generate diagram using PARALLEL multi-LLM approach.
+    
+    Calls all specified LLMs in parallel and returns results as each completes.
+    This is much faster than sequential calls!
+    
+    Benefits:
+    - All LLMs called simultaneously (not one by one)
+    - Results returned progressively as each LLM completes
+    - Uses middleware for error handling, retries, and metrics
+    - Circuit breaker protection
+    - Performance tracking
+    
+    Request Body:
+        {
+            "prompt": "User's diagram description",
+            "diagram_type": "bubble_map",
+            "language": "zh",
+            "models": ["qwen", "deepseek", "kimi", "hunyuan"],  // optional
+            "dimension_preference": "optional dimension"
+        }
+    
+    Returns:
+        {
+            "results": {
+                "qwen": { "success": true, "spec": {...}, "duration": 1.2 },
+                "deepseek": { "success": true, "spec": {...}, "duration": 1.5 },
+                "kimi": { "success": false, "error": "...", "duration": 2.0 },
+                "hunyuan": { "success": true, "spec": {...}, "duration": 1.8 }
+            },
+            "total_time": 2.1,  // Time for slowest model (parallel execution!)
+            "success_count": 3,
+            "first_successful": "qwen"
+        }
+    """
+    lang = get_request_language(x_language)
+    
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    # Get models to use (default to all 5)
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
+    
+    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
+    
+    logger.debug(f"[generate_multi_parallel] Starting parallel generation with {len(models)} models")
+    
+    import time
+    import asyncio
+    start_time = time.time()
+    results = {}
+    first_successful = None
+    
+    try:
+        # Create parallel tasks for each model using the AGENT
+        # This ensures proper system prompts from prompts/thinking_maps.py are used
+        async def generate_for_model(model: str):
+            """Generate diagram for a single model using the full agent workflow."""
+            model_start = time.time()
+            try:
+                # Call agent - this uses proper system prompts!
+                spec_result = await agent.agent_graph_workflow_with_styles(
+                    prompt,
+                    language=language,
+                    forced_diagram_type=diagram_type,
+                    dimension_preference=req.dimension_preference if hasattr(req, 'dimension_preference') else None,
+                    model=model
+                )
+                
+                duration = time.time() - model_start
+                
+                # Check if agent actually succeeded (agent might return {"success": false, "error": "..."})
+                if spec_result.get('success') is False or 'error' in spec_result:
+                    error_msg = spec_result.get('error', 'Agent returned no spec')
+                    logger.error(f"[generate_multi_parallel] {model} agent failed: {error_msg}")
+                    return {
+                        'model': model,
+                        'success': False,
+                        'error': error_msg,
+                        'duration': duration
+                    }
+                
+                return {
+                    'model': model,
+                    'success': True,
+                    'spec': spec_result.get('spec'),
+                    'diagram_type': spec_result.get('diagram_type'),
+                    'topics': spec_result.get('topics', []),
+                    'style_preferences': spec_result.get('style_preferences', {}),
+                    'duration': duration,
+                    'llm_model': model
+                }
+                
+            except Exception as e:
+                duration = time.time() - model_start
+                logger.error(f"[generate_multi_parallel] {model} failed: {e}")
+                return {
+                    'model': model,
+                    'success': False,
+                    'error': str(e),
+                    'duration': duration
+                }
+        
+        # Run all models in PARALLEL using asyncio.gather
+        tasks = [generate_for_model(model) for model in models]
+        task_results = await asyncio.gather(*tasks)
+        
+        # Process results
+        for task_result in task_results:
+            model = task_result.pop('model')
+            results[model] = task_result
+            
+            if task_result['success'] and first_successful is None:
+                first_successful = model
+                
+            status = 'completed successfully' if task_result['success'] else 'failed'
+            logger.debug(f"[generate_multi_parallel] {model} {status} in {task_result['duration']:.2f}s")
+        
+        total_time = time.time() - start_time
+        success_count = sum(1 for r in results.values() if r['success'])
+        
+        logger.info(f"[generate_multi_parallel] Completed: {success_count}/{len(models)} successful in {total_time:.2f}s")
+        
+        return {
+            'results': results,
+            'total_time': total_time,
+            'success_count': success_count,
+            'first_successful': first_successful,
+            'models_requested': models
+        }
+        
+    except Exception as e:
+        logger.error(f"[generate_multi_parallel] Error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generation_failed", lang, str(e))
+        )
+
+
+@router.get('/llm/health', response_model=LLMHealthResponse)
+async def llm_health_check():
+    """
+    Health check for LLM service.
+    
+    Returns:
+        JSON with service health status including:
+        - Available models
+        - Circuit breaker states
+        - Rate limiter status
+        
+    HTTP Status Codes:
+        - 200 OK: All models healthy
+        - 503 Service Unavailable: Some models unhealthy (degraded state)
+        - 500 Internal Server Error: Health check itself failed
+        
+    Example:
+        GET /api/llm/health
+    """
+    try:
+        health_data = await llm_service.health_check()
+        
+        # Add circuit breaker states
+        metrics = llm_service.get_performance_metrics()
+        circuit_states = {
+            model: data.get('circuit_state', 'closed')
+            for model, data in metrics.items()
+        }
+        
+        health_data['circuit_states'] = circuit_states
+        
+        # Check if any models are unhealthy
+        available_models = health_data.get('available_models', [])
+        unhealthy_count = sum(
+            1 for model in available_models
+            if model in health_data 
+            and health_data[model].get('status') != 'healthy'
+        )
+        
+        response_data = {
+            'status': 'success',
+            'health': health_data,
+            'timestamp': int(time.time())
+        }
+        
+        # Return appropriate HTTP status code based on health
+        if unhealthy_count == 0:
+            status_code = 200  # All healthy
+        else:
+            status_code = 503  # Degraded (some unhealthy)
+            response_data['degraded'] = True
+            response_data['unhealthy_count'] = unhealthy_count
+            response_data['total_models'] = len(available_models)
+            response_data['healthy_count'] = len(available_models) - unhealthy_count
+        
+        return JSONResponse(
+            content=response_data,
+            status_code=status_code
+        )
+        
+    except Exception as e:
+        logger.error(f"LLM health check error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Health check failed: {str(e)}"
+        )
+
+
+@router.post('/generate_multi_progressive')
+async def generate_multi_progressive(
+    req: GenerateRequest,
+    x_language: str = None,
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+):
+    """
+    Progressive parallel generation - send results as each LLM completes.
+    
+    Uses SSE (Server-Sent Events) to stream results progressively.
+    Same pattern as /ai_assistant/stream and /thinking_mode/stream.
+    
+    Returns:
+        SSE stream with events:
+        - data: {"model": "qwen", "success": true, "spec": {...}, "duration": 8.05, ...}
+        - data: {"model": "deepseek", "success": true, ...}
+        - data: {"event": "complete", "total_time": 12.57}
+    """
+    # Get language for error messages (same pattern as line 59)
+    lang = get_request_language(x_language)
+    
+    # Validate prompt (same pattern as lines 362-367)
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("invalid_prompt", lang)
+        )
+    
+    # Get models to use (same as line 370)
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
+    
+    # Extract language and diagram_type (same as lines 372-373)
+    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
+    
+    logger.debug(f"[generate_multi_progressive] Starting progressive generation with {len(models)} models")
+    
+    start_time = time.time()
+    
+    async def generate():
+        """Async generator for SSE streaming (same pattern as line 85)."""
+        try:
+            # IMPORTANT: Define generate_for_model as nested function (same as lines 386-431)
+            async def generate_for_model(model: str):
+                """Generate diagram for a single model using the full agent workflow."""
+                model_start = time.time()
+                try:
+                    # Call agent (exact same call as line 391)
+                    spec_result = await agent.agent_graph_workflow_with_styles(
+                        prompt,
+                        language=language,
+                        forced_diagram_type=diagram_type,
+                        dimension_preference=req.dimension_preference if hasattr(req, 'dimension_preference') else None,
+                        model=model
+                    )
+                    
+                    duration = time.time() - model_start
+                    
+                    # Check if agent actually succeeded (same logic as lines 402-410)
+                    if spec_result.get('success') is False or 'error' in spec_result:
+                        error_msg = spec_result.get('error', 'Agent returned no spec')
+                        logger.error(f"[generate_multi_progressive] {model} agent failed: {error_msg}")
+                        return {
+                            'model': model,
+                            'success': False,
+                            'error': error_msg,
+                            'duration': duration
+                        }
+                    
+                    # Success case (same structure as lines 412-421)
+                    return {
+                        'model': model,
+                        'success': True,
+                        'spec': spec_result.get('spec'),
+                        'diagram_type': spec_result.get('diagram_type'),
+                        'topics': spec_result.get('topics', []),
+                        'style_preferences': spec_result.get('style_preferences', {}),
+                        'duration': duration,
+                        'llm_model': model
+                    }
+                    
+                except Exception as e:
+                    duration = time.time() - model_start
+                    logger.error(f"[generate_multi_progressive] {model} failed: {e}")
+                    return {
+                        'model': model,
+                        'success': False,
+                        'error': str(e),
+                        'duration': duration
+                    }
+            
+            # Create parallel tasks (same as line 434)
+            tasks = [generate_for_model(model) for model in models]
+            
+            # ⭐ KEY CHANGE: Use asyncio.as_completed instead of gather
+            # This yields results as each completes, not waiting for all
+            for coro in asyncio.as_completed(tasks):
+                result = await coro
+                
+                # Send SSE event for this model (same format as line 99)
+                logger.debug(f"[generate_multi_progressive] Sending {result['model']} result")
+                yield f"data: {json.dumps(result)}\n\n"
+            
+            # Send completion event
+            total_time = time.time() - start_time
+            logger.info(f"[generate_multi_progressive] All models completed in {total_time:.2f}s")
+            yield f"data: {json.dumps({'event': 'complete', 'total_time': total_time})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"[generate_multi_progressive] Error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
+    
+    # Return SSE stream (same pattern as lines 116-124)
+    return StreamingResponse(
+        generate(),
+        media_type='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
+    )
+
+
+@router.post('/feedback')
+async def submit_feedback(
+    req: FeedbackRequest,
+    request: Request
+):
+    """
+    Submit user feedback (bugs, features, issues) via email to support team.
+    Uses Resend API (https://resend.com) for simple email delivery without SMTP setup.
+    Includes captcha verification to prevent spam.
+    """
+    try:
+        from datetime import datetime
+        import time
+        
+        # Import captcha store from auth router
+        # Note: In production, use Redis for multi-server support
+        from routers.auth import captcha_store
+        
+        # Validate captcha first (anti-spam protection)
+        if req.captcha_id not in captcha_store:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha expired or invalid. Please refresh."
+            )
+        
+        stored_captcha = captcha_store[req.captcha_id]
+        
+        # Check expiration
+        if time.time() > stored_captcha["expires"]:
+            del captcha_store[req.captcha_id]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha expired. Please refresh."
+            )
+        
+        # Verify captcha code (case-insensitive)
+        if stored_captcha['code'].upper() != req.captcha.upper():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect captcha code"
+            )
+        
+        # Captcha verified, remove from store (one-time use)
+        del captcha_store[req.captcha_id]
+        logger.debug(f"Captcha verified for feedback from user {req.user_id or 'anonymous'}")
+        
+        # Support email
+        support_email = 'support@mindspringedu.cn'
+        
+        # Try to get user from JWT token if available (optional - allows anonymous feedback)
+        # Use manual session management - close immediately after DB query
+        user_id_from_db = None
+        user_name_from_db = None
+        try:
+            # Try to get token from Authorization header first
+            auth_header = request.headers.get('Authorization', '')
+            token = None
+            if auth_header.startswith('Bearer '):
+                token = auth_header[7:]
+            else:
+                # Try to get token from cookies (how browser-based auth typically works)
+                token = request.cookies.get('access_token')
+            
+            if token:
+                from utils.auth import decode_access_token
+                payload = decode_access_token(token)
+                user_id_from_token = payload.get("sub")
+                if user_id_from_token:
+                    # Use manual session - close immediately after query
+                    db = SessionLocal()
+                    try:
+                        current_user = db.query(User).filter(User.id == int(user_id_from_token)).first()
+                        if current_user:
+                            # Detach user from session so it can be used after closing
+                            db.expunge(current_user)
+                            user_id_from_db = current_user.id
+                            user_name_from_db = current_user.name if hasattr(current_user, 'name') else None
+                    finally:
+                        db.close()  # ✅ Connection released BEFORE email sending
+        except Exception:
+            # No valid token, continue as anonymous (this is OK for feedback)
+            pass
+        
+        # Get user info (use from request if provided, otherwise from token, otherwise anonymous)
+        user_id = req.user_id or (str(user_id_from_db) if user_id_from_db else 'anonymous')
+        user_name = req.user_name or (user_name_from_db if user_name_from_db else 'Anonymous User')
+        
+        # Always log feedback to application logs first
+        logger.info(f"[FEEDBACK] User: {user_name} ({user_id})")
+        logger.info(f"[FEEDBACK] Message: {req.message}")
+        
+        # Try to send via Resend API if configured
+        resend_api_key = os.getenv('RESEND_API_KEY')
+        
+        if resend_api_key:
+            try:
+                # Prepare email content
+                email_subject = f'[MindGraph Feedback] From {user_name}'
+                email_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }}
+        .info-row {{ margin: 10px 0; }}
+        .label {{ font-weight: bold; color: #667eea; }}
+        .message-box {{ background: white; padding: 15px; border-left: 4px solid #667eea; margin: 15px 0; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>MindGraph Feedback Submission</h2>
+        </div>
+        <div class="content">
+            <div class="info-row">
+                <span class="label">User ID:</span> {user_id}
+            </div>
+            <div class="info-row">
+                <span class="label">User Name:</span> {user_name}
+            </div>
+            <div class="info-row">
+                <span class="label">Timestamp:</span> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            </div>
+            <div class="message-box">
+                <div class="label">Message:</div>
+                <div style="margin-top: 10px; white-space: pre-wrap;">{req.message}</div>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                This feedback was submitted through MindGraph application.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+                
+                email_text = f"""
+User ID: {user_id}
+User Name: {user_name}
+Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Message:
+{req.message}
+
+---
+This feedback was submitted through MindGraph application.
+"""
+                
+                # Send via Resend API
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(
+                        'https://api.resend.com/emails',
+                        headers={
+                            'Authorization': f'Bearer {resend_api_key}',
+                            'Content-Type': 'application/json'
+                        },
+                        json={
+                            'from': os.getenv('RESEND_FROM_EMAIL', 'MindGraph <feedback@mindspringedu.cn>'),
+                            'to': [support_email],
+                            'subject': email_subject,
+                            'html': email_html,
+                            'text': email_text
+                        }
+                    )
+                    
+                    if response.status_code == 200:
+                        logger.info(f"Feedback email sent successfully via Resend from user {user_id} ({user_name})")
+                    else:
+                        logger.error(f"Resend API error: {response.status_code} - {response.text}")
+                        # Continue - feedback is still logged
+                        
+            except Exception as e:
+                logger.error(f"Failed to send feedback email via Resend: {e}", exc_info=True)
+                # Continue - feedback is still logged
+        else:
+            logger.warning("RESEND_API_KEY not configured, feedback logged only. Set RESEND_API_KEY in .env to enable email delivery.")
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                'success': True,
+                'message': 'Feedback submitted successfully'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing feedback: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail='Failed to submit feedback. Please try again later.'
+        )
+
+
+# Only log from main worker to avoid duplicate messages
+import os
+if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+    logger.info("API router loaded successfully")
+

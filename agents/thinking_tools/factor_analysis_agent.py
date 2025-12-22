@@ -1,0 +1,29 @@
+"""
+Factor Analysis Agent
+
+Generates factor analysis diagrams using mind map structure.
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+from agents.mind_maps.mind_map_agent import MindMapAgent
+from prompts.thinking_tools import THINKING_TOOLS_PROMPTS
+
+
+class FactorAnalysisAgent(MindMapAgent):
+    """Agent for generating factor analysis diagrams."""
+    
+    def __init__(self):
+        super().__init__()
+        self.diagram_type = 'factor_analysis'
+    
+    def get_prompt(self, language='en'):
+        """Get the generation prompt for the specified language."""
+        prompt_key = f"factor_analysis_generation_{language}"
+        return THINKING_TOOLS_PROMPTS.get(prompt_key, THINKING_TOOLS_PROMPTS['factor_analysis_generation_en'])
+

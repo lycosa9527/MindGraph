@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>MindGraph - Diagram Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2d3748;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Container and Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .main-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2.5rem 2rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Form Row Layout */
+        .form-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .language-selector {
+            flex-shrink: 0;
+            min-width: 200px;
+        }
+
+        .language-selector label {
+            display: block;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .language-selector .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+            cursor: pointer;
+        }
+
+        .language-selector .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 80px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        select.form-control {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            appearance: none;
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-family: inherit;
+            min-height: 3rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-info {
+            background: #ebf8ff;
+            color: #2b6cb0;
+            border: 1px solid #bee3f8;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+        }
+
+        .status-success {
+            background: #f0fff4;
+            color: #2f855a;
+            border: 1px solid #c6f6d5;
+        }
+
+        /* Results Display */
+        .result-container {
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        /* PNG Result Container - Force visibility when active */
+        #pngResult.result-container {
+            display: none; /* Default state */
+        }
+        
+        #pngResult.result-container.active {
+            display: block !important;
+        }
+        
+        /* DingTalk Result Container */
+        #dingtalkResult.result-container {
+            display: none; /* Default state */
+        }
+        
+        #dingtalkResult.result-container.active {
+            display: block !important;
+        }
+
+        .result-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-card h3 {
+            color: #4a5568;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* PNG Display */
+        .png-container {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .png-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .png-container img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .png-container img.expanded {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1.5);
+            z-index: 1000;
+            background: white;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            cursor: zoom-out;
+            border-radius: 16px;
+        }
+
+        .png-note {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* History Display */
+        .history-container {
+            margin-top: 1rem;
+        }
+
+
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 2rem 1.5rem;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .language-selector {
+                min-width: auto;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-top: 0;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading .btn-primary {
+            background: #cbd5e0;
+        }
+
+        /* Smooth Transitions */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-card">
+            <div class="header">
+                <h1>MindGraph</h1>
+                <p>Professional Diagram Generation Tool</p>
+            </div>
+            
+            <div class="content">
+                <div class="form-group">
+                    <label for="prompt">Diagram Prompt</label>
+                    <textarea id="prompt" class="form-control" placeholder="Describe the diagram you want to create..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="language-selector">
+                        <label for="language">Language</label>
+                        <select id="language" class="form-control">
+                            <option value="zh">中文 (Chinese)</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    
+                    <button id="generateDiagramBtn" class="btn btn-primary">
+                        Generate PNG
+                    </button>
+                    <button id="generateDingtalkBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                        Test DingTalk
+                    </button>
+                </div>
+                
+                <div id="infoMsg" class="status-message status-info"></div>
+                <div id="errorMsg" class="status-message status-error"></div>
+                
+                <div class="history-container" id="historyBox"></div>
+                
+                <div class="result-container" id="jsonResult"></div>
+                <div class="result-container" id="pngResult"></div>
+                <div class="result-container" id="dingtalkResult"></div>
+                
+                <!-- D3 Visualization Container -->
+                <div class="result-container">
+                    <h3>Diagram Visualization</h3>
+                    <div id="d3-container" style="width: 100%; height: 600px; border: 1px solid #ddd; margin-top: 10px;"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    
+    <!-- Auth Helper for API authentication -->
+    <script src="/static/js/auth-helper.js?v={{ version }}"></script>
+    
+    <!-- UNIFIED RENDERING PIPELINE SYSTEM -->
+    <script>
+        // Module mapping for different graph types
+        const graphTypeModules = {
+            'tree_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'tree-renderer', 'renderer-dispatcher'],
+            'mindmap': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'mind-map-renderer', 'renderer-dispatcher'],
+            'concept_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'concept-map-renderer', 'renderer-dispatcher'],
+            'bubble_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'bubble-map-renderer', 'renderer-dispatcher'],
+            'double_bubble_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'bubble-map-renderer', 'renderer-dispatcher'],
+            'flow_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'flow-renderer', 'renderer-dispatcher'],
+            'multi_flow_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'flow-renderer', 'renderer-dispatcher'],
+
+            'brace_map': ['d3', 'theme-config', 'style-manager', 'shared-utilities', 'brace-renderer', 'renderer-dispatcher']
+        };
+        
+        // Track loaded modules to prevent duplicates
+        const loadedModules = new Set();
+        
+        // PROMISE-BASED MODULE LOADING - FIXES TIMING ISSUES
+        function loadRequiredModules(graphType) {
+            return new Promise((resolve, reject) => {
+                console.log(`Loading modules for graphType: ${graphType}`);
+                console.log(`GraphType type: ${typeof graphType}`);
+                console.log(`Available graph types: ${Object.keys(graphTypeModules).join(', ')}`);
+                
+                const requiredModules = graphTypeModules[graphType] || [];
+                if (requiredModules.length === 0) {
+                    reject(new Error(`No module mapping found for: ${graphType}`));
+                    return;
+                }
+                
+                console.log(`Required modules: ${requiredModules.join(', ')}`);
+                
+                // CRITICAL FIX: Check if modules are already loaded by backend
+                console.log('Checking if modules are already loaded by backend...');
+                const existingScripts = document.querySelectorAll('script[data-module]');
+                console.log(`Found ${existingScripts.length} existing inline scripts from backend`);
+                
+                if (existingScripts.length > 0) {
+                    console.log('Backend has already loaded modules, checking availability...');
+                    // Wait a bit for backend scripts to execute
+                    setTimeout(() => {
+                        console.log('Checking module availability after backend loading...');
+                        if (validateFunctions(graphType)) {
+                            console.log('✅ All required functions available from backend loading');
+                            resolve();
+                        } else {
+                            console.log('⚠️ Some functions missing, attempting frontend loading...');
+                            loadModulesSequentially(requiredModules, 0, resolve, reject);
+                        }
+                    }, 500);
+                } else {
+                    console.log('No backend modules found, using frontend loading...');
+                    // Load modules sequentially with proper error handling
+                    loadModulesSequentially(requiredModules, 0, resolve, reject);
+                }
+            });
+        }
+        
+        // Load modules one by one with proper error handling
+        function loadModulesSequentially(modules, index, resolve, reject) {
+            if (index >= modules.length) {
+                console.log('All modules loaded successfully!');
+                // CRITICAL FIX: Add delay to ensure proper initialization
+                setTimeout(() => {
+                    console.log('Waiting for module initialization...');
+                    resolve();
+                }, 100);
+                return;
+            }
+            
+            const moduleName = modules[index];
+            const modulePath = getModulePath(moduleName);
+            
+            if (loadedModules.has(moduleName)) {
+                console.log(`${moduleName} already loaded, skipping...`);
+                loadModulesSequentially(modules, index + 1, resolve, reject);
+                return;
+            }
+            
+            console.log(`Loading module ${index + 1}/${modules.length}: ${moduleName}`);
+            
+            const script = document.createElement('script');
+            script.src = modulePath;
+            script.onload = function() {
+                console.log(`${moduleName} loaded successfully`);
+                loadedModules.add(moduleName);
+                // CRITICAL FIX: Add delay between module loads to prevent race conditions
+                setTimeout(() => {
+                    loadModulesSequentially(modules, index + 1, resolve, reject);
+                }, 50);
+            };
+            script.onerror = function() {
+                console.error(`❌ Failed to load ${moduleName} from ${modulePath}`);
+                // CRITICAL FIX: Stop loading if core modules fail
+                if (['d3', 'theme-config', 'style-manager', 'shared-utilities'].includes(moduleName)) {
+                    reject(new Error(`Critical module ${moduleName} failed to load`));
+                    return;
+                }
+                // Continue loading other modules for non-critical failures
+                loadModulesSequentially(modules, index + 1, resolve, reject);
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Get the correct path for each module
+        function getModulePath(moduleName) {
+            const modulePaths = {
+                'd3': '/static/js/d3.min.js',
+                'theme-config': '/static/js/theme-config.js',
+                'style-manager': '/static/js/style-manager.js',
+                'shared-utilities': '/static/js/renderers/shared-utilities.js',
+                'tree-renderer': '/static/js/renderers/tree-renderer.js',
+                'mind-map-renderer': '/static/js/renderers/mind-map-renderer.js',
+                'concept-map-renderer': '/static/js/renderers/concept-map-renderer.js',
+                'bubble-map-renderer': '/static/js/renderers/bubble-map-renderer.js',
+                'flow-renderer': '/static/js/renderers/flow-renderer.js',
+
+                'brace-renderer': '/static/js/renderers/brace-renderer.js',
+                'renderer-dispatcher': '/static/js/renderers/renderer-dispatcher.js'
+            };
+            
+            return modulePaths[moduleName] || `/static/js/renderers/${moduleName}.js`;
+        }
+        
+        // UNIFIED FUNCTION VALIDATION - FIXES RACE CONDITIONS
+        function validateFunctions(graphType) {
+            console.log(`Validating functions for ${graphType}...`);
+            
+            const requiredFunctions = {
+                'renderGraph': typeof renderGraph
+            };
+            
+            // Add renderer-specific functions
+            switch(graphType) {
+                case 'tree_map':
+                    console.log('Checking tree_map function availability...');
+                    console.log('  - window.renderTreeMap:', typeof window.renderTreeMap);
+                    console.log('  - window.TreeRenderer:', typeof window.TreeRenderer);
+                    console.log('  - window.TreeRenderer?.renderTreeMap:', typeof window.TreeRenderer?.renderTreeMap);
+                    
+                    // CRITICAL FIX: Check all possible locations for the functions
+                    console.log('Global scope check:');
+                    console.log('  - renderTreeMap (global):', typeof renderTreeMap);
+                    console.log('  - TreeRenderer (global):', typeof TreeRenderer);
+                    
+                    // Check if functions exist in different scopes
+                    if (typeof window.renderTreeMap === 'function') {
+                        console.log('window.renderTreeMap is available');
+                    } else {
+                        console.log('window.renderTreeMap is NOT available');
+                    }
+                    
+                    if (typeof window.TreeRenderer === 'object' && window.TreeRenderer) {
+                        console.log('window.TreeRenderer is available');
+                        if (typeof window.TreeRenderer.renderTreeMap === 'function') {
+                            console.log('window.TreeRenderer.renderTreeMap is available');
+                        } else {
+                            console.log('window.TreeRenderer.renderTreeMap is NOT available');
+                        }
+                    } else {
+                        console.log('window.TreeRenderer is NOT available');
+                    }
+                    
+                    requiredFunctions.renderTreeMap = typeof window.renderTreeMap;
+                    requiredFunctions.TreeRenderer = typeof window.TreeRenderer;
+                    // Also check if functions are available in the TreeRenderer object
+                    if (typeof window.TreeRenderer === 'object' && window.TreeRenderer) {
+                        requiredFunctions.TreeRendererRenderTreeMap = typeof window.TreeRenderer.renderTreeMap;
+                    }
+                    break;
+                case 'mindmap':
+                    requiredFunctions.renderMindMap = typeof renderMindMap;
+                    break;
+                case 'concept_map':
+                    console.log('Checking concept_map function availability...');
+                    console.log('  - renderConceptMap (global):', typeof renderConceptMap);
+                    console.log('  - window.renderConceptMap:', typeof window.renderConceptMap);
+                    console.log('  - window.ConceptMapRenderer:', typeof window.ConceptMapRenderer);
+                    console.log('  - window.ConceptMapRenderer?.renderConceptMap:', window.ConceptMapRenderer ? typeof window.ConceptMapRenderer.renderConceptMap : 'N/A');
+                    
+                    // Check if functions exist in different scopes
+                    if (typeof renderConceptMap === 'function') {
+                        console.log('renderConceptMap (global) is available');
+                    } else {
+                        console.log('renderConceptMap (global) is NOT available');
+                    }
+                    
+                    if (typeof window.renderConceptMap === 'function') {
+                        console.log('window.renderConceptMap is available');
+                    } else {
+                        console.log('window.renderConceptMap is NOT available');
+                    }
+                    
+                    if (typeof window.ConceptMapRenderer === 'object' && window.ConceptMapRenderer) {
+                        console.log('window.ConceptMapRenderer is available');
+                        if (typeof window.ConceptMapRenderer.renderConceptMap === 'function') {
+                            console.log('window.ConceptMapRenderer.renderConceptMap is available');
+                        } else {
+                            console.log('window.ConceptMapRenderer.renderConceptMap is NOT available');
+                        }
+                    } else {
+                        console.log('window.ConceptMapRenderer is NOT available');
+                    }
+                    
+                    requiredFunctions.renderConceptMap = typeof renderConceptMap;
+                    requiredFunctions.windowRenderConceptMap = typeof window.renderConceptMap;
+                    requiredFunctions.ConceptMapRenderer = typeof window.ConceptMapRenderer;
+                    requiredFunctions.renderGraph = typeof renderGraph;
+                    if (typeof window.ConceptMapRenderer === 'object' && window.ConceptMapRenderer) {
+                        requiredFunctions.ConceptMapRendererRenderConceptMap = typeof window.ConceptMapRenderer.renderConceptMap;
+                    }
+                    break;
+                case 'bubble_map':
+                    requiredFunctions.renderBubbleMap = typeof renderBubbleMap;
+                    break;
+                case 'flow_map':
+                    requiredFunctions.renderFlowMap = typeof renderFlowMap;
+                    break;
+
+                case 'brace_map':
+                    requiredFunctions.renderBraceMap = typeof renderBraceMap;
+                    break;
+            }
+            
+            const missingFunctions = Object.entries(requiredFunctions)
+                .filter(([name, type]) => type === 'undefined')
+                .map(([name]) => name);
+            
+            if (missingFunctions.length > 0) {
+                console.error(`❌ Missing required functions: ${missingFunctions.join(', ')}`);
+                return false;
+            }
+            
+            console.log('All required functions are available');
+            return true;
+        }
+        
+        // UNIFIED RENDERING FUNCTION - FIXES DUAL PIPELINE CONFLICT
+        async function renderDiagram(graphType, data) {
+            try {
+                console.log(`Starting unified rendering for ${graphType}...`);
+                
+                // 1. Load required modules first (PROACTIVE LOADING)
+                await loadRequiredModules(graphType);
+                
+                // 2. Add extra delay for specific graph types to ensure proper initialization
+                if (graphType === 'tree_map') {
+                    console.log('Tree map detected, adding extra initialization delay...');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } else if (graphType === 'concept_map') {
+                    console.log('Concept map detected, adding extra initialization delay...');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                // 3. Validate functions are available
+                if (!validateFunctions(graphType)) {
+                    // CRITICAL FIX: For specific graph types, try to manually check and fix function availability
+                    if (graphType === 'tree_map') {
+                        console.log('Attempting to fix tree_map function availability...');
+                        await attemptTreeMapFunctionFix();
+                        
+                        // Re-validate after fix attempt
+                        if (!validateFunctions(graphType)) {
+                            throw new Error('Required functions not available after module loading and fix attempt');
+                        }
+                    } else if (graphType === 'concept_map') {
+                        console.log('Attempting to fix concept_map function availability...');
+                        await attemptConceptMapFunctionFix();
+                        
+                        // Re-validate after fix attempt
+                        if (!validateFunctions(graphType)) {
+                            throw new Error('Required functions not available after module loading and fix attempt');
+                        }
+                    } else {
+                        throw new Error('Required functions not available after module loading');
+                    }
+                }
+                
+                // 4. Prepare theme and dimensions
+                const theme = prepareTheme(data, graphType);
+                const dimensions = data.dimensions || {};
+                
+                // 5. Clear previous D3 visualization
+                const d3Container = document.getElementById('d3-container');
+                if (d3Container) {
+                    d3Container.innerHTML = '';
+                    console.log('Cleared previous D3 visualization');
+                }
+                
+                // 6. Render the diagram
+                console.log('Calling renderGraph...');
+                renderGraph(graphType, data.spec, theme, dimensions);
+                
+                console.log('Diagram rendered successfully!');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Rendering failed:', error);
+                throw error;
+            }
+        }
+        
+        // CRITICAL FIX: Function to attempt fixing tree_map function availability
+        async function attemptTreeMapFunctionFix() {
+            console.log('Attempting to fix tree_map function availability...');
+            
+            // CRITICAL FIX: Check script loading status
+            console.log('Checking script loading status...');
+            const scripts = document.querySelectorAll('script[src*="tree-renderer"]');
+            console.log('Found tree-renderer scripts:', scripts.length);
+            scripts.forEach((script, index) => {
+                console.log(`  Script ${index}:`, script.src, 'Loaded:', script.complete);
+            });
+            
+            // Check if functions exist in different scopes
+            const functionChecks = [
+                { name: 'window.renderTreeMap', func: window.renderTreeMap },
+                { name: 'window.TreeRenderer.renderTreeMap', func: window.TreeRenderer?.renderTreeMap }
+            ];
+            
+            for (const check of functionChecks) {
+                if (typeof check.func === 'function') {
+                                            console.log(`Found ${check.name}:`, check.func);
+                    
+                    // Try to expose it globally if not already there
+                    if (check.name === 'window.renderTreeMap' && typeof window.renderTreeMap === 'function') {
+                        if (typeof window.renderTreeMap !== 'function') {
+                            window.renderTreeMap = window.renderTreeMap;
+                            console.log('Exposed window.renderTreeMap to global scope');
+                        }
+                    }
+                    
+                    if (check.name === 'window.TreeRenderer.renderTreeMap' && window.TreeRenderer?.renderTreeMap) {
+                        if (typeof window.TreeRenderer !== 'object') {
+                            window.TreeRenderer = window.TreeRenderer;
+                            console.log('Exposed window.TreeRenderer to global scope');
+                        }
+                    }
+                } else {
+                                            console.log(`${check.name} not available:`, typeof check.func);
+                }
+            }
+            
+            // CRITICAL FIX: Try to manually trigger the export if it failed
+            console.log('Attempting manual function exposure...');
+            try {
+                // Check if the tree-renderer script has executed but failed to export
+                if (typeof window.renderTreeMap === 'undefined' && typeof window.TreeRenderer === 'undefined') {
+                    console.log('No functions found, checking if script execution completed...');
+                    
+                    // Wait a bit more and check again
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    if (typeof window.renderTreeMap === 'undefined' && typeof window.TreeRenderer === 'undefined') {
+                        console.error('CRITICAL: Tree renderer functions still not available after delay');
+                        console.error('This suggests the tree-renderer.js script failed to execute properly');
+                    }
+                }
+            } catch (error) {
+                                    console.error('Error during manual function exposure:', error);
+            }
+            
+            // Wait a bit more for any async operations
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // CRITICAL FIX: Function to attempt fixing concept_map function availability
+        async function attemptConceptMapFunctionFix() {
+            console.log('Attempting to fix concept_map function availability...');
+            
+            // CRITICAL FIX: Check script loading status
+            console.log('Checking script loading status...');
+            const scripts = document.querySelectorAll('script[src*="concept-map-renderer"]');
+            console.log('Found concept-map-renderer scripts:', scripts.length);
+            scripts.forEach((script, index) => {
+                console.log(`  Script ${index}:`, script.src, 'Loaded:', script.complete);
+            });
+            
+            // Check if functions exist in different scopes
+            const functionChecks = [
+                { name: 'window.renderConceptMap', func: window.renderConceptMap },
+                { name: 'window.ConceptMapRenderer.renderConceptMap', func: window.ConceptMapRenderer?.renderConceptMap }
+            ];
+            
+            for (const check of functionChecks) {
+                if (typeof check.func === 'function') {
+                    console.log(`Found ${check.name}:`, check.func);
+                    
+                    // Try to expose it globally if not already there
+                    if (check.name === 'window.renderConceptMap' && typeof window.renderConceptMap === 'function') {
+                        if (typeof window.renderConceptMap !== 'function') {
+                            window.renderConceptMap = window.renderConceptMap;
+                            console.log('Exposed window.renderConceptMap to global scope');
+                        }
+                    }
+                    
+                    if (check.name === 'window.ConceptMapRenderer.renderConceptMap' && window.ConceptMapRenderer?.renderConceptMap) {
+                        if (typeof window.ConceptMapRenderer !== 'object') {
+                            window.ConceptMapRenderer = window.ConceptMapRenderer;
+                            console.log('Exposed window.ConceptMapRenderer to global scope');
+                        }
+                    }
+                } else {
+                    console.log(`${check.name} not available:`, typeof check.func);
+                }
+            }
+            
+            // CRITICAL FIX: Try to manually trigger the export if it failed
+            console.log('Attempting manual function exposure...');
+            try {
+                // Check if the concept-map-renderer script has executed but failed to export
+                if (typeof window.renderConceptMap === 'undefined' && typeof window.ConceptMapRenderer === 'undefined') {
+                    console.log('No functions found, checking if script execution completed...');
+                    
+                    // Wait a bit more and check again
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    if (typeof window.renderConceptMap === 'undefined' && typeof window.ConceptMapRenderer === 'undefined') {
+                        console.error('CRITICAL: Concept map renderer functions still not available after delay');
+                        console.error('This suggests the concept-map-renderer.js script failed to execute properly');
+                    }
+                }
+            } catch (error) {
+                console.error('Error during manual function exposure:', error);
+            }
+            
+            // Wait a bit more for any async operations
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Theme preparation function
+        function prepareTheme(data, graphType) {
+            const stylePreferences = data.style_preferences || {};
+            const backendTheme = data.theme || {};
+            const backendWatermark = data.watermark || {};
+            
+            // Use centralized style manager theme system
+            let baseTheme;
+            if (typeof styleManager !== 'undefined' && typeof styleManager.getTheme === 'function') {
+                baseTheme = styleManager.getTheme(graphType);
+                console.log('Using centralized style manager theme');
+            } else {
+                baseTheme = {};
+                console.warn('Style manager not available, using empty theme');
+            }
+            
+            // Merge themes in priority order
+            const finalTheme = { 
+                ...baseTheme, 
+                ...backendTheme, 
+                ...convertStylePreferencesToTheme(stylePreferences) 
+            };
+            
+            // Add watermark if provided
+            if (backendWatermark.watermarkText) {
+                finalTheme.watermarkText = backendWatermark.watermarkText;
+            }
+            
+            console.log('Final theme:', finalTheme);
+            return finalTheme;
+        }
+        
+        // Monitor server-generated inline scripts
+        function monitorInlineScripts() {
+            console.log('Monitoring for server-generated inline scripts...');
+            
+            // Use MutationObserver to watch for new script tags
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'SCRIPT') {
+                            if (node.hasAttribute('data-module')) {
+                                console.log(`New inline script detected: ${node.getAttribute('data-module')}`);
+                                monitorScriptExecution(node);
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // Start observing
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            // Also check existing scripts
+            const existingScripts = document.querySelectorAll('script[data-module]');
+            console.log(`Found ${existingScripts.length} existing inline scripts`);
+            existingScripts.forEach(monitorScriptExecution);
+        }
+        
+        // Monitor individual script execution
+        function monitorScriptExecution(script) {
+            const moduleName = script.getAttribute('data-module');
+            console.log(`Monitoring script: ${moduleName}`);
+            
+            // Check if script has content
+            const content = script.textContent || script.innerHTML;
+            if (content.trim().length === 0) {
+                console.error(`❌ Script ${moduleName} has no content!`);
+                return;
+            }
+            
+                            console.log(`Script ${moduleName} has content (${content.length} chars)`);
+            
+            // Monitor execution by checking function availability after a delay
+            setTimeout(() => {
+                checkFunctionAvailability(moduleName);
+            }, 100);
+        }
+        
+        // Check function availability for a specific module
+        function checkFunctionAvailability(moduleName) {
+                            console.log(`Checking functions for ${moduleName}...`);
+            
+            let functions = {};
+            switch(moduleName) {
+                case 'tree-renderer':
+                    functions = {
+                        'renderTreeMap': typeof renderTreeMap,
+                        'TreeRenderer': typeof TreeRenderer
+                    };
+                    break;
+                case 'shared-utilities':
+                    functions = {
+                        'MindGraphUtils': typeof MindGraphUtils,
+                        'addWatermark': typeof addWatermark
+                    };
+                    break;
+                case 'renderer-dispatcher':
+                    functions = {
+                        'renderGraph': typeof renderGraph
+                    };
+                    break;
+            }
+            
+            Object.entries(functions).forEach(([funcName, funcType]) => {
+                if (funcType === 'undefined') {
+                    console.warn(`⚠️ ${funcName} not available after ${moduleName} execution`);
+                } else {
+                    console.log(`${funcName} available: ${funcType}`);
+                }
+            });
+        }
+        
+
+        
+        // Load modules when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Debug page loaded');
+            
+            // Start monitoring for inline scripts
+            monitorInlineScripts();
+        });
+    </script>
+    
+    <script>
+    const generateDiagramBtn = document.getElementById('generateDiagramBtn');
+    const generateDingtalkBtn = document.getElementById('generateDingtalkBtn');
+    const promptBox = document.getElementById('prompt');
+    const languageSelect = document.getElementById('language');
+    const jsonResult = document.getElementById('jsonResult');
+    const pngResult = document.getElementById('pngResult');
+    const dingtalkResult = document.getElementById('dingtalkResult');
+    const errorMsg = document.getElementById('errorMsg');
+    const infoMsg = document.getElementById('infoMsg');
+    const historyBox = document.getElementById('historyBox');
+    
+
+    
+
+
+    // --- History logic ---
+    let history = JSON.parse(localStorage.getItem('mindgraph_history') || '[]');
+    function saveHistory(prompt, lang) {
+        if (!prompt.trim()) return;
+        history = history.filter(h => h.prompt !== prompt || h.lang !== lang);
+        history.unshift({prompt, lang});
+        if (history.length > 10) history = history.slice(0, 10);
+        localStorage.setItem('mindgraph_history', JSON.stringify(history));
+        renderHistory();
+    }
+    function renderHistory() {
+        if (!history.length) { 
+            historyBox.innerHTML = ''; 
+            return; 
+        }
+        
+        // Simple, compact history display like old debug.html
+        const historyTitle = document.createElement('div');
+        historyTitle.innerHTML = '<b>Recent Prompts:</b>';
+        historyTitle.style.marginBottom = '0.5rem';
+        historyTitle.style.color = '#4a5568';
+        historyTitle.style.fontSize = '0.9rem';
+        
+        const historyList = history.map((h, i) => {
+            const item = document.createElement('div');
+            item.style.cssText = 'margin: 4px 0; font-size: 0.9rem;';
+            
+            const link = document.createElement('a');
+            link.href = '#';
+            link.style.cssText = 'color: #4e79a7; text-decoration: underline; cursor: pointer;';
+            link.textContent = h.prompt;
+            link.onclick = (e) => {
+                e.preventDefault();
+                promptBox.value = h.prompt;
+                languageSelect.value = h.lang;
+            };
+            
+            const lang = document.createElement('span');
+            lang.style.cssText = 'color: #888; font-size: 0.8em; margin-left: 8px;';
+            lang.textContent = `[${h.lang}]`;
+            
+            item.appendChild(link);
+            item.appendChild(lang);
+            
+            return item;
+        });
+        
+        historyBox.innerHTML = '';
+        historyBox.appendChild(historyTitle);
+        historyList.forEach(item => historyBox.appendChild(item));
+    }
+
+    renderHistory();
+    
+    // Debug: Ensure history panel is visible
+    console.log('History panel initialized');
+    console.log('History items:', history.length);
+
+    // --- Style conversion and application ---
+    function convertStylePreferencesToTheme(stylePreferences) {
+        // Convert style preferences to theme object without dependencies
+        const userTheme = {
+            colorTheme: stylePreferences.color_theme,
+            topicFill: stylePreferences.primary_color ? getColorFromName(stylePreferences.primary_color) : null,
+            fontTopic: stylePreferences.font_size ? getFontSizeFromName(stylePreferences.font_size) + 4 : null,
+            fontAttribute: stylePreferences.font_size ? getFontSizeFromName(stylePreferences.font_size) : null,
+            background: stylePreferences.background === 'dark' ? '#2d3748' : 
+                       stylePreferences.background === 'light' ? '#ffffff' : null,
+            topicStrokeWidth: stylePreferences.stroke === 'bold' ? 4 : 
+                             stylePreferences.stroke === 'thin' ? 1 : null,
+            attributeStrokeWidth: stylePreferences.stroke === 'bold' ? 3 : 
+                                 stylePreferences.stroke === 'thin' ? 1 : null
+        };
+        
+        // Return the raw theme object - let prepareTheme handle styleManager integration
+        return userTheme;
+    }
+    
+    function getColorFromName(colorName) {
+        const colorMap = {
+            'red': '#e15759',
+            'blue': '#4e79a7',
+            'green': '#59a14f',
+            'yellow': '#f28e2c',
+            'purple': '#b07aa1',
+            'orange': '#ff9da7',
+            'pink': '#ff9da7',
+            'brown': '#9c755f',
+            'gray': '#bab0ab',
+            'black': '#4a4a4a',
+            'white': '#ffffff'
+        };
+        return colorMap[colorName.toLowerCase()] || null;
+    }
+    
+    function getFontSizeFromName(sizeName) {
+        const fontSizeMap = {
+            'small': 12,
+            'medium': 14,
+            'large': 16,
+            'extra-large': 18
+        };
+        return fontSizeMap[sizeName.toLowerCase()] || 14;
+    }
+    
+
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = msg ? 'block' : 'none';
+        if (msg) {
+            errorMsg.classList.add('fade-in');
+        }
+    }
+    
+    function showInfo(msg) {
+        infoMsg.textContent = msg;
+        infoMsg.style.display = msg ? 'block' : 'none';
+        if (msg) {
+            infoMsg.classList.add('fade-in');
+        }
+    }
+    
+    function showSuccess(msg) {
+        const successMsg = document.createElement('div');
+        successMsg.className = 'status-message status-success fade-in';
+        successMsg.textContent = msg;
+        
+        const content = document.querySelector('.content');
+        content.insertBefore(successMsg, content.firstChild);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            successMsg.remove();
+        }, 3000);
+    }
+    function showJsonResult(data) {
+        jsonResult.style.display = 'block';
+        pngResult.style.display = 'none';
+        
+        const resultCard = document.createElement('div');
+        resultCard.className = 'result-card fade-in';
+        
+        const title = document.createElement('h3');
+        title.innerHTML = '📊 Graph Specification';
+        
+        const content = document.createElement('pre');
+        content.style.cssText = 'background: #f1f5f9; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.4; color: #334155;';
+        content.textContent = JSON.stringify(data, null, 2);
+        
+        resultCard.appendChild(title);
+        resultCard.appendChild(content);
+        
+        jsonResult.innerHTML = '';
+        jsonResult.appendChild(resultCard);
+    }
+
+    function showPngResult(blob) {
+        console.log('🔍 Debug: showPngResult called with blob:', blob);
+        console.log('🔍 Debug: Blob size:', blob.size, 'bytes, type:', blob.type);
+        console.log('🔍 Debug: Blob constructor:', blob.constructor.name);
+        console.log('🔍 Debug: Blob instanceof Blob:', blob instanceof Blob);
+        console.log('🔍 Debug: Blob arrayBuffer available:', typeof blob.arrayBuffer === 'function');
+        console.log('🔍 Debug: Blob stream available:', typeof blob.stream === 'function');
+        console.log('🔍 Debug: Blob text available:', typeof blob.text === 'function');
+        
+        // Test if we can read the blob (non-interfering test)
+        blob.arrayBuffer().then(buffer => {
+            console.log('✅ Blob arrayBuffer read successfully, size:', buffer.byteLength);
+            console.log('✅ First few bytes:', new Uint8Array(buffer).slice(0, 8));
+            
+            // Verify PNG header (should start with 89 50 4E 47 0D 0A 1A 0A)
+            const header = new Uint8Array(buffer).slice(0, 8);
+            const pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+            const isPng = header.every((byte, i) => byte === pngHeader[i]);
+            console.log('✅ PNG header valid:', isPng);
+            console.log('✅ Header bytes:', Array.from(header).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+        }).catch(e => {
+            console.error('❌ Failed to read blob arrayBuffer:', e);
+        });
+        
+        console.log('🔍 Debug: Before DOM changes:');
+        console.log('  - jsonResult display:', jsonResult.style.display);
+        console.log('  - pngResult display:', pngResult.style.display);
+        console.log('  - pngResult children count:', pngResult.children.length);
+        
+        jsonResult.style.display = 'none';
+        jsonResult.classList.remove('active');
+        pngResult.style.display = 'block';
+        pngResult.classList.add('active');
+        pngResult.innerHTML = '';
+        
+        console.log('🔍 Debug: After DOM changes:');
+        console.log('  - jsonResult display:', jsonResult.style.display);
+        console.log('  - pngResult display:', pngResult.style.display);
+        console.log('  - pngResult children count:', pngResult.children.length);
+        console.log('🔍 Debug: PNG result container made visible');
+        
+        // Create PNG container with proper styling
+        const pngContainer = document.createElement('div');
+        pngContainer.className = 'png-container';
+        // Removed debug styling - clean appearance
+        console.log('🔍 Debug: PNG container created with class:', pngContainer.className);
+        
+        // Create image element
+        const img = document.createElement('img');
+        console.log('🔍 Debug: Image element created');
+        
+        // Create blob URL for display
+        const url = URL.createObjectURL(blob);
+        console.log('🔍 Debug: Blob URL created:', url);
+        console.log('🔍 Debug: Blob URL type:', typeof url);
+        console.log('🔍 Debug: Blob URL length:', url.length);
+        console.log('🔍 Debug: Blob URL starts with blob:', url.startsWith('blob:'));
+        
+        img.src = url;
+        console.log('🔍 Debug: Image src set to:', img.src);
+        console.log('🔍 Debug: Image element:', img);
+        console.log('🔍 Debug: Image complete:', img.complete);
+        console.log('🔍 Debug: Image naturalWidth:', img.naturalWidth);
+        console.log('🔍 Debug: Image naturalHeight:', img.naturalHeight);
+        
+        // Clean up blob URL ONLY after image is fully displayed and user has seen it
+        img.onload = () => {
+            console.log('✅ Image loaded successfully');
+            console.log('✅ Image naturalWidth after load:', img.naturalWidth);
+            console.log('✅ Image naturalHeight after load:', img.naturalHeight);
+            console.log('✅ Image complete after load:', img.complete);
+            console.log('✅ Image should now be visible on screen');
+            
+            // Don't revoke URL immediately - let user see the image first
+            // URL will be cleaned up when user clicks download or opens in new tab
+        };
+        
+        img.onerror = (error) => {
+            console.error('❌ Image failed to load:', error);
+            console.error('❌ Image src:', img.src);
+            console.error('❌ Image element:', img);
+            console.error('❌ Image complete:', img.complete);
+            console.error('❌ Image naturalWidth:', img.naturalWidth);
+            console.error('❌ Image naturalHeight:', img.naturalHeight);
+        };
+        
+        // Add click-to-expand functionality
+        img.addEventListener('click', function() {
+            if (this.classList.contains('expanded')) {
+                this.classList.remove('expanded');
+                document.body.style.overflow = '';
+            } else {
+                this.classList.add('expanded');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        
+        // Add escape key support for expanded image
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && img.classList.contains('expanded')) {
+                img.classList.remove('expanded');
+                document.body.style.overflow = '';
+            }
+        });
+        
+        pngContainer.appendChild(img);
+        console.log('🔍 Debug: Image appended to PNG container');
+        console.log('🔍 Debug: PNG container children count:', pngContainer.children.length);
+        
+        // Add download button and note
+        const controls = document.createElement('div');
+        controls.style.cssText = 'margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; align-items: center;';
+        
+        // Download button
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn';
+        downloadBtn.style.cssText = 'background: #48bb78; color: white; padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 0.9rem;';
+        downloadBtn.textContent = 'Download PNG';
+        downloadBtn.onclick = () => {
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = 'mindgraph-diagram.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+        };
+        
+        // Open in new tab button (with proper handling)
+        const openTabBtn = document.createElement('button');
+        openTabBtn.className = 'btn';
+        openTabBtn.style.cssText = 'background: #4299e1; color: white; padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 0.9rem;';
+        openTabBtn.textContent = 'Open in New Tab';
+        openTabBtn.onclick = () => {
+            // Create a new blob URL specifically for the new tab
+            const newTabUrl = URL.createObjectURL(blob);
+            const newTab = window.open(newTabUrl, '_blank');
+            
+            // Clean up the URL after the new tab opens
+            setTimeout(() => {
+                URL.revokeObjectURL(newTabUrl);
+            }, 1000);
+        };
+        
+        controls.appendChild(downloadBtn);
+        controls.appendChild(openTabBtn);
+        pngContainer.appendChild(controls);
+        
+        // Add a note about PNG generation
+        const note = document.createElement('div');
+        note.className = 'png-note';
+        note.innerHTML = '<strong>PNG Generated Successfully!</strong> Use the buttons above to download or view in new tab.';
+        pngContainer.appendChild(note);
+        
+        pngResult.appendChild(pngContainer);
+        console.log('🔍 Debug: PNG container appended to result');
+        console.log('🔍 Debug: Final PNG result children count:', pngResult.children.length);
+        console.log('🔍 Debug: PNG result display style:', pngResult.style.display);
+        console.log('🔍 Debug: PNG result classList:', pngResult.classList.toString());
+        console.log('🔍 Debug: PNG result has active class:', pngResult.classList.contains('active'));
+        console.log('🔍 Debug: PNG result visibility:', pngResult.style.visibility);
+        console.log('🔍 Debug: PNG result computed display:', window.getComputedStyle(pngResult).display);
+        console.log('🔍 Debug: PNG result computed visibility:', window.getComputedStyle(pngResult).visibility);
+        console.log('🔍 Debug: PNG result computed opacity:', window.getComputedStyle(pngResult).opacity);
+        console.log('🔍 Debug: PNG result computed height:', window.getComputedStyle(pngResult).height);
+        console.log('🔍 Debug: PNG result computed width:', window.getComputedStyle(pngResult).width);
+        
+        // Check the PNG container styles too
+        console.log('🔍 Debug: PNG container computed display:', window.getComputedStyle(pngContainer).display);
+        console.log('🔍 Debug: PNG container computed visibility:', window.getComputedStyle(pngContainer).visibility);
+        console.log('🔍 Debug: PNG container computed height:', window.getComputedStyle(pngContainer).height);
+        console.log('🔍 Debug: PNG container computed width:', window.getComputedStyle(pngContainer).width);
+        
+        // Force a reflow to ensure the image is visible
+        pngResult.offsetHeight;
+        console.log('🔍 Debug: Forced reflow, PNG result should now be visible');
+        
+        // Final check after reflow
+        setTimeout(() => {
+            console.log('🔍 Debug: Final check after timeout:');
+            console.log('  - PNG result computed display:', window.getComputedStyle(pngResult).display);
+            console.log('  - PNG result computed visibility:', window.getComputedStyle(pngResult).visibility);
+            console.log('  - PNG result children count:', pngResult.children.length);
+            console.log('  - PNG container children count:', pngContainer.children.length);
+            console.log('  - Image element:', pngContainer.querySelector('img'));
+            console.log('  - Image src:', pngContainer.querySelector('img')?.src);
+            console.log('  - Image complete:', pngContainer.querySelector('img')?.complete);
+            
+            // Additional debugging
+            console.log('🔍 Debug: PNG result element:', pngResult);
+            console.log('🔍 Debug: PNG result innerHTML length:', pngResult.innerHTML.length);
+            console.log('🔍 Debug: PNG result textContent length:', pngResult.textContent.length);
+            console.log('🔍 Debug: PNG result offsetHeight:', pngResult.offsetHeight);
+            console.log('🔍 Debug: PNG result offsetWidth:', pngResult.offsetWidth);
+            console.log('🔍 Debug: PNG result clientHeight:', pngResult.clientHeight);
+            console.log('🔍 Debug: PNG result clientWidth:', pngResult.clientWidth);
+            
+            // Final image visibility check
+            const finalImg = pngContainer.querySelector('img');
+            if (finalImg) {
+                console.log('🔍 Debug: Final image check:');
+                console.log('  - Image naturalWidth:', finalImg.naturalWidth);
+                console.log('  - Image naturalHeight:', finalImg.naturalHeight);
+                console.log('  - Image complete:', finalImg.complete);
+                console.log('  - Image currentSrc:', finalImg.currentSrc);
+                console.log('  - Image display style:', window.getComputedStyle(finalImg).display);
+                console.log('  - Image visibility style:', window.getComputedStyle(finalImg).visibility);
+                console.log('  - Image opacity style:', window.getComputedStyle(finalImg).opacity);
+                console.log('  - Image dimensions:', finalImg.offsetWidth, 'x', finalImg.offsetHeight);
+                
+                if (finalImg.naturalWidth > 0 && finalImg.naturalHeight > 0) {
+                    console.log('✅ Image has valid dimensions and should be visible!');
+                } else {
+                    console.error('❌ Image has zero dimensions - this is the problem!');
+                }
+            } else {
+                console.error('❌ No image element found in PNG container!');
+            }
+        }, 100);
+    }
+    
+
+    
+        // Single Generate Diagram button handler - PNG-only, production-like flow
+    generateDiagramBtn.onclick = async function() {
+        showError('');
+        showInfo('Generating PNG...');
+        jsonResult.style.display = 'none';
+        pngResult.style.display = 'none';
+        jsonResult.classList.remove('active');
+        pngResult.classList.remove('active');
+
+        try {
+            console.log('🔍 Debug: Calling /api/generate_png endpoint with prompt:', promptBox.value, 'language:', languageSelect.value);
+            console.log('🔍 Debug: Starting PNG generation...');
+            console.log('🔍 Debug: Request payload:', { prompt: promptBox.value, language: languageSelect.value });
+            const pngResp = await auth.fetch('/api/generate_png', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
+            });
+
+            if (!pngResp.ok) {
+                const errorText = await pngResp.text().catch(() => '');
+                console.error('❌ PNG generation failed with status:', pngResp.status);
+                console.error('❌ Error response:', errorText);
+                console.error('❌ Response headers:', Object.fromEntries(pngResp.headers.entries()));
+                showError(errorText || 'PNG generation failed.');
+                showInfo('');
+                return;
+            }
+
+            console.log('✅ PNG generation successful, status:', pngResp.status);
+            console.log('✅ Response headers:', Object.fromEntries(pngResp.headers.entries()));
+            console.log('✅ Response type:', pngResp.type);
+            console.log('✅ Response URL:', pngResp.url);
+            
+            const pngBlob = await pngResp.blob();
+            console.log('✅ PNG blob created:', pngBlob);
+            console.log('✅ Blob size:', pngBlob.size, 'bytes');
+            console.log('✅ Blob type:', pngBlob.type);
+            console.log('✅ Blob lastModified:', pngBlob.lastModified);
+            
+            showPngResult(pngBlob);
+            showInfo('');
+            saveHistory(promptBox.value, languageSelect.value);
+        } catch (e) {
+            console.error('❌ Exception during PNG generation:', e);
+            console.error('❌ Exception stack:', e.stack);
+            console.error('❌ Exception message:', e.message);
+            showError('Failed to generate PNG: ' + e);
+            showInfo('');
+        }
+    };
+    
+    // DingTalk endpoint test handler
+    generateDingtalkBtn.onclick = async function() {
+        showError('');
+        showInfo('Generating diagram for DingTalk...');
+        jsonResult.style.display = 'none';
+        pngResult.style.display = 'none';
+        dingtalkResult.style.display = 'none';
+        jsonResult.classList.remove('active');
+        pngResult.classList.remove('active');
+        dingtalkResult.classList.remove('active');
+
+        try {
+            console.log('🔍 Debug: Calling /api/generate_dingtalk endpoint');
+            console.log('🔍 Debug: Request payload:', { prompt: promptBox.value, language: languageSelect.value });
+            
+            const dingtalkResp = await auth.fetch('/api/generate_dingtalk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptBox.value, language: languageSelect.value })
+            });
+
+            if (!dingtalkResp.ok) {
+                const errorText = await dingtalkResp.text().catch(() => '');
+                console.error('❌ DingTalk generation failed with status:', dingtalkResp.status);
+                console.error('❌ Error response:', errorText);
+                showError(errorText || 'DingTalk generation failed.');
+                showInfo('');
+                return;
+            }
+
+            console.log('✅ DingTalk generation successful, status:', dingtalkResp.status);
+            console.log('✅ Response headers:', Object.fromEntries(dingtalkResp.headers.entries()));
+            console.log('✅ Response type:', dingtalkResp.type);
+            
+            // Get plain text response
+            const plainText = await dingtalkResp.text();
+            console.log('✅ Plain text response:', plainText);
+            
+            // Extract image URL from markdown format ![](url)
+            const urlMatch = plainText.match(/!\[\]\((.*?)\)/);
+            const imageUrl = urlMatch ? urlMatch[1] : null;
+            console.log('✅ Extracted image URL:', imageUrl);
+            
+            // Display result
+            dingtalkResult.style.display = 'block';
+            dingtalkResult.classList.add('active');
+            dingtalkResult.innerHTML = '';
+            
+            const resultCard = document.createElement('div');
+            resultCard.className = 'result-card fade-in';
+            
+            const title = document.createElement('h3');
+            title.innerHTML = '📱 DingTalk Integration Result';
+            resultCard.appendChild(title);
+            
+            // Plain text output
+            const plainTextDiv = document.createElement('div');
+            plainTextDiv.style.cssText = 'background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-family: monospace; font-size: 0.9rem; word-break: break-all;';
+            plainTextDiv.innerHTML = `<strong>Plain Text Output:</strong><br><code>${plainText}</code>`;
+            resultCard.appendChild(plainTextDiv);
+            
+            // Image URL
+            if (imageUrl) {
+                const urlDiv = document.createElement('div');
+                urlDiv.style.cssText = 'background: #ebf8ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;';
+                urlDiv.innerHTML = `<strong>Image URL:</strong><br><a href="${imageUrl}" target="_blank" style="color: #2b6cb0; word-break: break-all;">${imageUrl}</a>`;
+                resultCard.appendChild(urlDiv);
+                
+                // Display image preview
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'png-container';
+                imgContainer.style.cssText = 'margin-top: 1rem;';
+                
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.style.cssText = 'max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); cursor: pointer;';
+                img.onerror = () => {
+                    imgContainer.innerHTML = '<div style="padding: 2rem; text-align: center; color: #c53030;">Failed to load image. URL may be invalid or image may have expired.</div>';
+                };
+                
+                // Click to expand
+                img.addEventListener('click', function() {
+                    if (this.classList.contains('expanded')) {
+                        this.classList.remove('expanded');
+                        document.body.style.overflow = '';
+                    } else {
+                        this.classList.add('expanded');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+                
+                imgContainer.appendChild(img);
+                resultCard.appendChild(imgContainer);
+            }
+            
+            dingtalkResult.appendChild(resultCard);
+            showInfo('');
+            saveHistory(promptBox.value, languageSelect.value);
+        } catch (e) {
+            console.error('❌ Exception during DingTalk generation:', e);
+            console.error('❌ Exception stack:', e.stack);
+            showError('Failed to generate DingTalk response: ' + e.message);
+            showInfo('');
+        }
+    };
+
+    </script>
+</body>
+</html> 

@@ -1,0 +1,47 @@
+[Unit]
+Description=MindGraph AI Education Platform
+Documentation=https://github.com/your-repo/MindGraph
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+Group={{GROUP}}
+WorkingDirectory={{WORKING_DIR}}
+
+# Use full path to Python (works with conda or venv)
+ExecStart={{PYTHON_PATH}} run_server.py
+
+# Environment variables (optional - .env file is preferred)
+# Environment="PATH={{PYTHON_BIN_DIR}}:$PATH"
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# IMPORTANT: Don't restart if database is corrupted (exit code 1)
+# This prevents restart loops when manual recovery is needed
+RestartPreventExitStatus=1
+
+# Graceful shutdown configuration
+# SIGTERM to main process, then SIGKILL to remaining after timeout
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Security hardening (optional but recommended)
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging - use journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mindgraph
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
