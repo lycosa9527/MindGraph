@@ -2169,12 +2169,11 @@ async def submit_feedback(
     request: Request
 ):
     """
-    Submit user feedback (bugs, features, issues) via email to support team.
-    Uses Resend API (https://resend.com) for simple email delivery without SMTP setup.
+    Submit user feedback (bugs, features, issues).
+    Feedback is logged to application logs for review.
     Includes captcha verification to prevent spam.
     """
     try:
-        from datetime import datetime
         import time
         
         # Import captcha store from auth router
@@ -2209,9 +2208,6 @@ async def submit_feedback(
         del captcha_store[req.captcha_id]
         logger.debug(f"Captcha verified for feedback from user {req.user_id or 'anonymous'}")
         
-        # Support email
-        support_email = 'support@mindspringedu.cn'
-        
         # Try to get user from JWT token if available (optional - allows anonymous feedback)
         # Use manual session management - close immediately after DB query
         user_id_from_db = None
@@ -2241,7 +2237,7 @@ async def submit_feedback(
                             user_id_from_db = current_user.id
                             user_name_from_db = current_user.name if hasattr(current_user, 'name') else None
                     finally:
-                        db.close()  # ✅ Connection released BEFORE email sending
+                        db.close()
         except Exception:
             # No valid token, continue as anonymous (this is OK for feedback)
             pass
@@ -2250,100 +2246,9 @@ async def submit_feedback(
         user_id = req.user_id or (str(user_id_from_db) if user_id_from_db else 'anonymous')
         user_name = req.user_name or (user_name_from_db if user_name_from_db else 'Anonymous User')
         
-        # Always log feedback to application logs first
+        # Log feedback to application logs
         logger.info(f"[FEEDBACK] User: {user_name} ({user_id})")
         logger.info(f"[FEEDBACK] Message: {req.message}")
-        
-        # Try to send via Resend API if configured
-        resend_api_key = os.getenv('RESEND_API_KEY')
-        
-        if resend_api_key:
-            try:
-                # Prepare email content
-                email_subject = f'[MindGraph Feedback] From {user_name}'
-                email_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }}
-        .content {{ background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }}
-        .info-row {{ margin: 10px 0; }}
-        .label {{ font-weight: bold; color: #667eea; }}
-        .message-box {{ background: white; padding: 15px; border-left: 4px solid #667eea; margin: 15px 0; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>MindGraph Feedback Submission</h2>
-        </div>
-        <div class="content">
-            <div class="info-row">
-                <span class="label">User ID:</span> {user_id}
-            </div>
-            <div class="info-row">
-                <span class="label">User Name:</span> {user_name}
-            </div>
-            <div class="info-row">
-                <span class="label">Timestamp:</span> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-            </div>
-            <div class="message-box">
-                <div class="label">Message:</div>
-                <div style="margin-top: 10px; white-space: pre-wrap;">{req.message}</div>
-            </div>
-            <p style="margin-top: 20px; font-size: 12px; color: #666;">
-                This feedback was submitted through MindGraph application.
-            </p>
-        </div>
-    </div>
-</body>
-</html>
-"""
-                
-                email_text = f"""
-User ID: {user_id}
-User Name: {user_name}
-Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Message:
-{req.message}
-
----
-This feedback was submitted through MindGraph application.
-"""
-                
-                # Send via Resend API
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.post(
-                        'https://api.resend.com/emails',
-                        headers={
-                            'Authorization': f'Bearer {resend_api_key}',
-                            'Content-Type': 'application/json'
-                        },
-                        json={
-                            'from': os.getenv('RESEND_FROM_EMAIL', 'MindGraph <feedback@mindspringedu.cn>'),
-                            'to': [support_email],
-                            'subject': email_subject,
-                            'html': email_html,
-                            'text': email_text
-                        }
-                    )
-                    
-                    if response.status_code == 200:
-                        logger.info(f"Feedback email sent successfully via Resend from user {user_id} ({user_name})")
-                    else:
-                        logger.error(f"Resend API error: {response.status_code} - {response.text}")
-                        # Continue - feedback is still logged
-                        
-            except Exception as e:
-                logger.error(f"Failed to send feedback email via Resend: {e}", exc_info=True)
-                # Continue - feedback is still logged
-        else:
-            logger.warning("RESEND_API_KEY not configured, feedback logged only. Set RESEND_API_KEY in .env to enable email delivery.")
         
         return JSONResponse(
             status_code=200,
