@@ -26,7 +26,7 @@ from contextlib import asynccontextmanager
 
 from services.error_handler import error_handler, LLMServiceError
 from services.rate_limiter import get_rate_limiter
-from services.token_tracker import get_token_tracker
+from services.redis_token_buffer import get_token_tracker
 from services.performance_tracker import performance_tracker
 from config.settings import config
 

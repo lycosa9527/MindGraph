@@ -74,7 +74,7 @@ async def start_node_palette(
     # Track user activity
     if current_user:
         try:
-            from services.user_activity_tracker import get_activity_tracker
+            from services.redis_activity_tracker import get_activity_tracker
             tracker = get_activity_tracker()
             tracker.record_activity(
                 user_id=current_user.id,

@@ -74,15 +74,22 @@ class AuthHelper {
 
     /**
      * Check if user is authenticated
+     * 
+     * Note: Authentication can be done via:
+     * 1. httponly cookie (server-side JWT) - JavaScript cannot read this
+     * 2. localStorage token (for API calls with Authorization header)
+     * 
+     * We always call /me endpoint to verify because the httponly cookie
+     * will be sent automatically with the request, even if localStorage is empty.
      */
     async isAuthenticated() {
-        const token = this.getToken();
-        if (!token) return false;
-
-        // Verify token by calling /me endpoint
-        // This works for all auth modes (standard, enterprise, demo)
+        // Always verify by calling /me endpoint
+        // The httponly cookie will be sent automatically with the fetch request
+        // This works for all auth modes (standard, enterprise, demo, bayi)
         try {
-            const response = await this.fetch(`${this.apiBase}/me`);
+            const response = await fetch(`${this.apiBase}/me`, {
+                credentials: 'same-origin'  // Ensure cookies are sent
+            });
             return response.ok;
         } catch {
             return false;

@@ -88,7 +88,7 @@ async def ai_assistant_stream(
     # Track user activity
     if current_user and hasattr(current_user, 'id'):
         try:
-            from services.user_activity_tracker import get_activity_tracker
+            from services.redis_activity_tracker import get_activity_tracker
             tracker = get_activity_tracker()
             tracker.record_activity(
                 user_id=current_user.id,
@@ -231,7 +231,7 @@ async def generate_graph(
         # Track user activity
         if current_user and hasattr(current_user, 'id'):
             try:
-                from services.user_activity_tracker import get_activity_tracker
+                from services.redis_activity_tracker import get_activity_tracker
                 tracker = get_activity_tracker()
                 activity_type = 'autocomplete' if request_type == 'autocomplete' else 'diagram_generation'
                 diagram_type_str = req.diagram_type.value if req.diagram_type else 'unknown'
@@ -1294,7 +1294,7 @@ async def generate_png_from_prompt(
         
         # Call LLM service - single call with Qwen only
         from services.llm_service import llm_service
-        from services.token_tracker import get_token_tracker
+        from services.redis_token_buffer import get_token_tracker
         from config.settings import config
         from agents.core.agent_utils import extract_json_from_response
         
@@ -1475,7 +1475,7 @@ async def generate_dingtalk_png(
         
         # Call LLM service - single call with Qwen only
         from services.llm_service import llm_service
-        from services.token_tracker import get_token_tracker
+        from services.redis_token_buffer import get_token_tracker
         from config.settings import config
         from agents.core.agent_utils import extract_json_from_response
         

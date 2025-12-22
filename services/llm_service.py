@@ -28,7 +28,7 @@ from services.error_handler import (
 from services.rate_limiter import initialize_rate_limiter, get_rate_limiter
 from services.prompt_manager import prompt_manager
 from services.performance_tracker import performance_tracker
-from services.token_tracker import get_token_tracker
+from services.redis_token_buffer import get_token_tracker
 from config.settings import config
 
 logger = logging.getLogger(__name__)

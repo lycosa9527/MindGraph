@@ -4,7 +4,7 @@ Database Fixes Verification Script
 
 Tests all the fixes made to resolve QueuePool errors:
 1. TokenTracker batching (1000 records, 5 min interval)
-2. CaptchaStorage retry on pool exhaustion
+2. CaptchaStorage uses Redis (no SQLite)
 3. Database pool size (45 connections)
 4. WAL mode for concurrent reads
 5. Concurrent load simulation
@@ -47,7 +47,7 @@ def test_1_token_tracker_config():
     """Test TokenTracker configuration"""
     print_header("1. TokenTracker Configuration")
     
-    from services.token_tracker import get_token_tracker
+    from services.redis_token_buffer import get_token_tracker
     tt = get_token_tracker()
     
     # Check batch size
@@ -140,45 +140,39 @@ def test_3_wal_mode():
     return passed
 
 
-def test_4_captcha_retry_logic():
-    """Test CaptchaStorage has pool exhaustion retry"""
-    print_header("4. CaptchaStorage Retry Logic")
+def test_4_captcha_redis():
+    """Test CaptchaStorage uses Redis"""
+    print_header("4. CaptchaStorage Redis")
     
-    import inspect
-    from services.captcha_storage import SQLiteCaptchaStorage
+    from services.captcha_storage import get_captcha_storage, CaptchaStorage
+    from services.redis_client import is_redis_available
     
-    source = inspect.getsource(SQLiteCaptchaStorage._retry_on_lock)
+    storage = get_captcha_storage()
     
-    # Check for pool exhaustion detection
-    has_pool_check = "queuepool limit" in source.lower()
+    # Check storage is Redis-based
+    is_redis_storage = isinstance(storage, CaptchaStorage)
     print_result(
-        "Detects QueuePool exhaustion",
-        has_pool_check,
-        "Checks for 'queuepool limit' in error"
+        "Uses Redis-based CaptchaStorage",
+        is_redis_storage,
+        f"Storage type: {type(storage).__name__}"
     )
     
-    has_timeout_check = "connection timed out" in source.lower()
+    # Check Redis is available
+    redis_up = is_redis_available()
     print_result(
-        "Detects connection timeout",
-        has_timeout_check,
-        "Checks for 'connection timed out' in error"
+        "Redis is available",
+        redis_up,
+        "Required for captcha storage"
     )
     
-    has_retryable = "is_retryable" in source
-    print_result(
-        "Uses is_retryable flag",
-        has_retryable,
-        "Combines lock and pool errors"
-    )
-    
-    return has_pool_check and has_timeout_check
+    return is_redis_storage and redis_up
 
 
 def test_5_token_tracker_non_blocking():
     """Test TokenTracker is non-blocking"""
     print_header("5. TokenTracker Non-Blocking")
     
-    from services.token_tracker import get_token_tracker
+    from services.redis_token_buffer import get_token_tracker
     tt = get_token_tracker()
     
     # Measure time to add record to buffer
@@ -211,17 +205,12 @@ def test_6_concurrent_captcha():
     print_header("6. Concurrent CaptchaStorage Test")
     
     from services.captcha_storage import get_captcha_storage
-    from config.database import engine
-    from sqlalchemy import text, inspect
+    from services.redis_client import is_redis_available
     import uuid
     
-    # Check if captchas table exists
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
-    if 'captchas' not in tables:
-        print("  [SKIP]: Captchas table doesn't exist (DB not initialized)")
-        print("         This is expected in dev environment without full setup.")
-        print("         Run the app once to create tables, or run in production.")
+    # Check if Redis is available
+    if not is_redis_available():
+        print("  [SKIP]: Redis not available")
         return True  # Skip this test
     
     storage = get_captcha_storage()
@@ -272,7 +261,7 @@ async def test_7_token_tracker_buffer():
     """Test TokenTracker buffering works"""
     print_header("7. TokenTracker Buffer Test")
     
-    from services.token_tracker import get_token_tracker
+    from services.redis_token_buffer import get_token_tracker
     tt = get_token_tracker()
     
     initial_buffer = len(tt._buffer)
@@ -371,7 +360,7 @@ def run_all_tests():
     results.append(("TokenTracker Config", test_1_token_tracker_config()))
     results.append(("Database Pool", test_2_database_pool()))
     results.append(("WAL Mode", test_3_wal_mode()))
-    results.append(("CaptchaStorage Retry", test_4_captcha_retry_logic()))
+    results.append(("CaptchaStorage Redis", test_4_captcha_redis()))
     results.append(("Non-Blocking", test_5_token_tracker_non_blocking()))
     results.append(("Concurrent Captcha", test_6_concurrent_captcha()))
     

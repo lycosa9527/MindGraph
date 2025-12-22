@@ -23,7 +23,7 @@
 | `services/client_manager.py` | **MODIFY** | Register Volcengine clients |
 | `config/settings.py` | **MODIFY** | Add load balancing config |
 | `services/llm_service.py` | **MODIFY** | Integrate load balancer |
-| `services/token_tracker.py` | **MODIFY** | Add Volcengine pricing |
+| `services/token_tracker.py` | **SKIP** | No changes needed (fallback handles new models) |
 | `env.example` | **VERIFY** | Environment variables |
 
 ### Key Design Decisions
@@ -1289,8 +1289,7 @@ If `ark-deepseek` is not configured, fall back to `doubao` or `ark-qwen`.
 1. **Adaptive Load Balancing**: Adjust weights based on real-time rate limit usage
 2. **Per-User Routing**: Consistent routing per user/session
 3. **Geographic Routing**: Route based on user location
-4. **Cost Optimization**: Route based on model pricing
-5. **Health-Based Routing**: Route away from unhealthy providers
+4. **Health-Based Routing**: Route away from unhealthy providers
 
 ---
 
@@ -1430,64 +1429,22 @@ The load balancer must integrate with ALL LLM-related modules. Here is a complet
 
 ### 1. Token Tracker (`services/token_tracker.py`)
 
-**Current State:**
-```python
-MODEL_PRICING = {
-    'qwen': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope'},
-    'qwen-turbo': {'input': 0.3, 'output': 0.6, 'provider': 'dashscope'},
-    'qwen-plus': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope'},
-    'deepseek': {'input': 0.4, 'output': 2.0, 'provider': 'dashscope'},
-    'kimi': {'input': 2.0, 'output': 6.0, 'provider': 'dashscope'},
-    'hunyuan': {'input': 0.45, 'output': 0.5, 'provider': 'tencent'},
-}
-```
+**Status:** ✅ **NO CHANGES NEEDED**
 
-**ISSUES FOUND:**
-1. Missing `doubao` pricing - Volcengine Doubao not tracked!
-2. Missing Volcengine model pricing for Route B (`ark-qwen`, `ark-deepseek`, `ark-kimi`)
-3. No `route` field to track which route was used
-4. No distinction between logical and physical model names
+The token tracker is already optimized for high concurrency and will work with new models automatically.
 
-**REQUIRED CHANGES:**
-```python
-MODEL_PRICING = {
-    # Dashscope models (Route A physical names)
-    'qwen': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope', 'logical': 'qwen'},
-    'qwen-turbo': {'input': 0.3, 'output': 0.6, 'provider': 'dashscope', 'logical': 'qwen'},
-    'qwen-plus': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope', 'logical': 'qwen'},
-    'deepseek': {'input': 0.4, 'output': 2.0, 'provider': 'dashscope', 'logical': 'deepseek'},
-    'kimi': {'input': 2.0, 'output': 6.0, 'provider': 'dashscope', 'logical': 'kimi'},
-    'hunyuan': {'input': 0.45, 'output': 0.5, 'provider': 'tencent', 'logical': 'hunyuan'},
-    
-    # Volcengine models (physical names)
-    'doubao': {'input': 0.3, 'output': 0.9, 'provider': 'volcengine', 'logical': 'doubao'},
-    'ark-qwen': {'input': 0.35, 'output': 1.0, 'provider': 'volcengine', 'logical': 'qwen'},
-    'ark-deepseek': {'input': 0.4, 'output': 1.8, 'provider': 'volcengine', 'logical': 'deepseek'},
-    'ark-kimi': {'input': 1.8, 'output': 5.5, 'provider': 'volcengine', 'logical': 'kimi'},
-}
-```
+**Performance Features (Already Implemented):**
+- ✅ Memory-first batch writes (not per-request DB writes)
+- ✅ Large batch sizes (1000 records default)
+- ✅ Long intervals (5 minutes between writes)
+- ✅ Thread-safe buffer with lock
+- ✅ Bulk insert for 3-5x faster writes
+- ✅ Configurable via environment variables
+- ✅ Fallback handling for unknown models
 
-**Token Tracking Call (with abstraction):**
-```python
-await token_tracker.track_usage(
-    model_alias='deepseek',           # Logical name (for user-facing reports)
-    physical_model='ark-deepseek',    # Physical model (for cost calculation)
-    model_provider='volcengine',      # Actual provider
-    route='route_b',                  # Which route was selected
-    # ... other fields
-)
-```
-
-**Database Schema Update:**
-```sql
-ALTER TABLE token_usage ADD COLUMN route VARCHAR(20);           -- 'route_a' or 'route_b'
-ALTER TABLE token_usage ADD COLUMN physical_model VARCHAR(50);  -- 'ark-deepseek', 'qwen-plus', etc.
-```
-
-**Analytics Views:**
-- **User-facing reports**: Group by `model_alias` (logical name)
-- **Cost analysis**: Group by `physical_model` (actual pricing)
-- **Load balancing metrics**: Group by `route`
+New `ark-*` models will:
+- ✅ Have token counts tracked correctly
+- ✅ Be recorded in database with model alias
 
 ---
 
@@ -1668,7 +1625,7 @@ agent = TabAgent(model=model)
 |--------|-----------|-------------|------------------|
 | `llm_service.py` | `chat()`, `chat_stream()` | Various | **Core integration point** |
 | `llm_service.py` | `stream_progressive()` | 4 models parallel | Route-based model mapping |
-| `token_tracker.py` | N/A | Pricing lookup | Add Volcengine pricing |
+| `token_tracker.py` | N/A | Token tracking | No changes needed |
 | `base_palette_generator.py` | `stream_progressive()` | Hardcoded list | Model list from load balancer |
 | `tab_agent.py` | `chat()` | qwen-plus | Use load-balanced model |
 | `main_agent.py` | `chat()`, `chat_stream()` | Passed from router | No change (handled by service) |
@@ -1756,7 +1713,7 @@ agent = TabAgent(model=model)
 │ # Token tracking (internal analytics)                                        │
 │ await token_tracker.track_usage(                                             │
 │     model_alias='qwen',              # Logical (user sees this)              │
-│     physical_model='ark-qwen',       # Physical (cost calculation)           │
+│     physical_model='ark-qwen',       # Physical model used                    │
 │     route='route_b',                 # Load balancing metrics                │
 │     provider='volcengine'            # Actual provider                       │
 │ )                                                                            │
@@ -1938,29 +1895,9 @@ agent = TabAgent(model=model)
 
 ## Critical Issues Found During Review
 
-### Issue 1: Missing Doubao Pricing in Token Tracker
+### Issue 1: ~~Token Tracker~~ ✅ NOT AN ISSUE
 
-**Location**: `services/token_tracker.py`
-
-**Problem**: Doubao model is used but has no pricing entry. Token costs for Doubao requests are not tracked!
-
-**Evidence**:
-```python
-# Current MODEL_PRICING - missing doubao!
-MODEL_PRICING = {
-    'qwen': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope'},
-    'qwen-turbo': {...},
-    'qwen-plus': {...},
-    'deepseek': {...},
-    'kimi': {...},
-    'hunyuan': {...},
-    # NO DOUBAO!
-}
-```
-
-**Impact**: Token usage from Doubao is being tracked but cost calculation falls back to default pricing.
-
-**Fix Required**: Add doubao pricing before implementing load balancing.
+**Status**: ✅ **No changes needed** - Token tracker handles new models automatically.
 
 ---
 
@@ -2034,9 +1971,8 @@ def __init__(self, model='qwen-plus'):
 3. Add Volcengine rate limiter
 
 ### Phase 3: Token Tracking
-1. Add Volcengine model pricing to `token_tracker.py`
-2. Add `route` column to `token_usage` table
-3. Update analytics to show per-route breakdown
+1. ✅ No changes needed - token tracker handles new models automatically
+2. Optional: Add `route` column for load balancing analytics
 
 ### Phase 4: Testing
 1. Test diagram generation with both routes
@@ -2048,16 +1984,16 @@ def __init__(self, model='qwen-plus'):
 
 ## Files to Modify (Updated)
 
-| File | Action | Description |
-|------|--------|-------------|
-| `services/load_balancer.py` | **Create** | Core load balancing logic |
-| `clients/llm.py` | **Modify** | Add VolcengineClient class |
-| `services/client_manager.py` | **Modify** | Register new Volcengine clients |
-| `services/llm_service.py` | **Modify** | Integrate load balancer |
-| `services/rate_limiter.py` | **Modify** | Add Volcengine rate limiter |
-| `services/token_tracker.py` | **Modify** | Add Volcengine pricing + route tracking |
-| `config/settings.py` | **Modify** | Add load balancing and ARK model configs |
-| `env.example` | **Modify** | Document new environment variables |
+| File | Action | Description | Status |
+|------|--------|-------------|--------|
+| `services/load_balancer.py` | **Create** | Core load balancing logic | ⏳ Pending |
+| `clients/llm.py` | **Modify** | Add VolcengineClient class | ⏳ Pending |
+| `services/client_manager.py` | **Modify** | Register new Volcengine clients | ⏳ Pending |
+| `services/llm_service.py` | **Modify** | Integrate load balancer | ⏳ Pending |
+| `services/rate_limiter.py` | **Modify** | Add Volcengine rate limiter (optional) | ⏳ Pending |
+| `services/token_tracker.py` | **Skip** | No changes needed (fallback works) | ✅ Done |
+| `config/settings.py` | **Modify** | Add load balancing configs | ⏳ Pending |
+| `env.example` | **Verify** | Already has load balancing vars | ✅ Done |
 
 ---
 
@@ -2731,30 +2667,13 @@ tasks = [asyncio.create_task(stream_single(model)) for model in physical_models]
 
 ---
 
-### STEP 6: Update Token Tracker
+### STEP 6: Token Tracker - NO CHANGES NEEDED ✅
 
 **File**: `services/token_tracker.py`
 
-**Location**: Update MODEL_PRICING dict (around line 56)
+**Status**: ✅ **SKIP - No changes required**
 
-```python
-MODEL_PRICING = {
-    # Dashscope models (Route A physical names)
-    'qwen': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope', 'logical': 'qwen'},
-    'qwen-turbo': {'input': 0.3, 'output': 0.6, 'provider': 'dashscope', 'logical': 'qwen'},
-    'qwen-plus': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope', 'logical': 'qwen'},
-    'qwen-plus-latest': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope', 'logical': 'qwen'},
-    'deepseek': {'input': 0.4, 'output': 2.0, 'provider': 'dashscope', 'logical': 'deepseek'},
-    'kimi': {'input': 2.0, 'output': 6.0, 'provider': 'dashscope', 'logical': 'kimi'},
-    'hunyuan': {'input': 0.45, 'output': 0.5, 'provider': 'tencent', 'logical': 'hunyuan'},
-    
-    # Volcengine models (physical names) - ADD THESE
-    'doubao': {'input': 0.3, 'output': 0.9, 'provider': 'volcengine', 'logical': 'doubao'},
-    'ark-qwen': {'input': 0.35, 'output': 1.0, 'provider': 'volcengine', 'logical': 'qwen'},
-    'ark-deepseek': {'input': 0.4, 'output': 1.8, 'provider': 'volcengine', 'logical': 'deepseek'},
-    'ark-kimi': {'input': 1.8, 'output': 5.5, 'provider': 'volcengine', 'logical': 'kimi'},
-}
-```
+The token tracker automatically handles new model names. Token counts are tracked correctly regardless of model alias.
 
 ---
 
@@ -2820,17 +2739,17 @@ After implementation, test each scenario:
 
 ### Implementation Order Summary
 
-| Step | File | Action | Time Est. |
-|------|------|--------|-----------|
-| 1 | `services/load_balancer.py` | Create new file | 15 min |
-| 2 | `clients/llm.py` | Add VolcengineClient class | 10 min |
-| 3 | `services/client_manager.py` | Register new clients | 5 min |
-| 4 | `config/settings.py` | Add load balancing config | 10 min |
-| 5 | `services/llm_service.py` | Integrate load balancer | 20 min |
-| 6 | `services/token_tracker.py` | Add Volcengine pricing | 5 min |
-| 7 | `env.example` | Verify/update variables | 5 min |
-| 8 | Testing | Run all test scenarios | 30 min |
-| **Total** | | | **~100 min** |
+| Step | File | Action | Time Est. | Status |
+|------|------|--------|-----------|--------|
+| 1 | `services/load_balancer.py` | Create new file | 15 min | ⏳ |
+| 2 | `clients/llm.py` | Add VolcengineClient class | 10 min | ⏳ |
+| 3 | `services/client_manager.py` | Register new clients | 5 min | ⏳ |
+| 4 | `config/settings.py` | Add load balancing config | 10 min | ⏳ |
+| 5 | `services/llm_service.py` | Integrate load balancer | 20 min | ⏳ |
+| 6 | `services/token_tracker.py` | No changes needed | 0 min | ✅ Skip |
+| 7 | `env.example` | Verify variables | 2 min | ✅ Done |
+| 8 | Testing | Run all test scenarios | 30 min | ⏳ |
+| **Total** | | | **~90 min** | |
 
 ---
 

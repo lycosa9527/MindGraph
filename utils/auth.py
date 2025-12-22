@@ -17,7 +17,6 @@ import hashlib
 import base64
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Tuple
-from collections import defaultdict
 from urllib.parse import unquote
 
 from jose import JWTError, jwt
@@ -472,7 +471,7 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
         return None
     
     try:
-        # Decode token
+        # Decode token - jwt.decode automatically validates expiration
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub")
         
@@ -483,11 +482,17 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
         user = db.query(User).filter(User.id == int(user_id)).first()
         return user
         
-    except JWTError:
-        logger.debug("Invalid or expired cookie token")
+    except JWTError as e:
+        # JWTError includes ExpiredSignatureError and other JWT-related errors
+        # Log at debug level for expired tokens (expected behavior)
+        error_msg = str(e).lower()
+        if "expired" in error_msg or "exp" in error_msg:
+            logger.debug(f"Expired cookie token: {e}")
+        else:
+            logger.debug(f"Invalid cookie token: {e}")
         return None
     except Exception as e:
-        logger.error(f"Error validating cookie token: {e}")
+        logger.error(f"Error validating cookie token: {e}", exc_info=True)
         return None
 
 
@@ -764,59 +769,22 @@ def validate_invitation_code(org_code: str, invitation_code: str) -> bool:
 
 
 # ============================================================================
-# Rate Limiting & Security
+# Rate Limiting & Security (Redis-backed, shared across workers)
 # ============================================================================
 
-# In-memory storage for rate limiting
-# For production with multiple servers, use Redis
-login_attempts: Dict[str, list] = defaultdict(list)
-ip_attempts: Dict[str, list] = defaultdict(list)
-captcha_attempts: Dict[str, list] = defaultdict(list)
-captcha_session_attempts: Dict[str, list] = defaultdict(list)
-
-
-def check_rate_limit(
-    identifier: str,
-    attempts_dict: Dict[str, list],
-    max_attempts: int
-) -> Tuple[bool, str]:
-    """
-    Check if rate limit is exceeded
-    
-    Args:
-        identifier: Phone number or IP address
-        attempts_dict: Dictionary tracking attempts
-        max_attempts: Maximum attempts allowed
-    
-    Returns:
-        (is_allowed, error_message)
-    """
-    now = time.time()
-    window_start = now - (RATE_LIMIT_WINDOW_MINUTES * 60)
-    
-    # Get recent attempts
-    recent_attempts = [t for t in attempts_dict[identifier] if t > window_start]
-    attempts_dict[identifier] = recent_attempts
-    
-    if len(recent_attempts) >= max_attempts:
-        minutes_left = int((recent_attempts[0] + (RATE_LIMIT_WINDOW_MINUTES * 60) - now) / 60) + 1
-        attempts_made = len(recent_attempts)
-        if minutes_left == 1:
-            return False, f"Too many login attempts ({attempts_made} attempts in {RATE_LIMIT_WINDOW_MINUTES} minutes). Please try again in {minutes_left} minute."
-        return False, f"Too many login attempts ({attempts_made} attempts in {RATE_LIMIT_WINDOW_MINUTES} minutes). Please try again in {minutes_left} minutes."
-    
-    return True, ""
-
-
-def record_failed_attempt(identifier: str, attempts_dict: Dict[str, list]):
-    """Record a failed attempt"""
-    attempts_dict[identifier].append(time.time())
-
-
-def clear_attempts(identifier: str, attempts_dict: Dict[str, list]):
-    """Clear attempts on successful action"""
-    if identifier in attempts_dict:
-        del attempts_dict[identifier]
+# Re-export Redis rate limiter functions for convenience
+# All rate limiting is now handled by Redis for shared state across workers
+from services.redis_rate_limiter import (
+    get_rate_limiter,
+    check_login_rate_limit,
+    check_ip_rate_limit,
+    check_captcha_rate_limit,
+    clear_login_attempts,
+    clear_ip_attempts,
+    clear_captcha_attempts,
+    get_login_attempts_remaining,
+    get_attempt_count,
+)
 
 
 # ============================================================================

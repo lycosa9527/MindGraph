@@ -1173,6 +1173,15 @@
                 try {
                     // Check if admin by testing admin endpoint
                     const adminTest = await auth.fetch('/api/auth/admin/stats');
+                    
+                    // If 401, token expired - clear auth and stay on auth page to prevent redirect loop
+                    if (adminTest.status === 401) {
+                        auth.clearAuth();
+                        refreshCaptcha();
+                        refreshRegisterCaptcha();
+                        return;
+                    }
+                    
                     const isAdmin = adminTest.ok;
                     
                     // Check for redirect parameter
@@ -1186,8 +1195,10 @@
                     window.location.href = redirectUrl;
                     return; // Don't load captcha if redirecting
                 } catch (error) {
-                    // If error, just redirect to editor
-                    window.location.href = '/editor';
+                    // Network or other errors - clear auth and stay on auth page
+                    auth.clearAuth();
+                    refreshCaptcha();
+                    refreshRegisterCaptcha();
                     return;
                 }
             }

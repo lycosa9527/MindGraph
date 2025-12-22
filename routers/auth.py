@@ -31,7 +31,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from config.database import get_db
 from models.messages import Messages, get_request_language, Language
 from utils.invitations import normalize_or_generate, INVITE_PATTERN
-from models.auth import User, Organization, SMSVerification
+from models.auth import User, Organization
 from models.requests import (
     RegisterRequest, 
     LoginRequest, 
@@ -50,19 +50,12 @@ from utils.auth import (
     verify_demo_passkey,
     is_admin_demo_passkey,
     validate_invitation_code,
-    check_rate_limit,
-    record_failed_attempt,
-    clear_attempts,
     check_account_lockout,
     increment_failed_attempts,
     reset_failed_attempts,
     is_admin,
     get_client_ip,
     is_https,
-    login_attempts,
-    ip_attempts,
-    captcha_attempts,
-    captcha_session_attempts,
     MAX_LOGIN_ATTEMPTS,
     MAX_CAPTCHA_ATTEMPTS,
     CAPTCHA_SESSION_COOKIE_NAME,
@@ -74,9 +67,18 @@ from utils.auth import (
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
     decrypt_bayi_token,
-    validate_bayi_token_body
+    validate_bayi_token_body,
+)
+from services.redis_rate_limiter import (
+    check_login_rate_limit,
+    check_captcha_rate_limit,
+    clear_login_attempts,
+    clear_captcha_attempts,
+    get_login_attempts_remaining,
 )
 from services.captcha_storage import get_captcha_storage
+from services.redis_sms_storage import get_sms_storage
+from services.redis_rate_limiter import get_rate_limiter
 from services.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,
@@ -111,7 +113,7 @@ def track_user_activity(
         request: Optional request object for IP address
     """
     try:
-        from services.user_activity_tracker import get_activity_tracker
+        from services.redis_activity_tracker import get_activity_tracker
         
         tracker = get_activity_tracker()
         ip_address = None
@@ -411,10 +413,8 @@ async def login(
     accept_language = http_request.headers.get("Accept-Language", "")
     lang: Language = get_request_language(x_language, accept_language)
     
-    # Check rate limit by phone
-    is_allowed, _ = check_rate_limit(
-        request.phone, login_attempts, MAX_LOGIN_ATTEMPTS
-    )
+    # Check rate limit by phone (Redis-backed, shared across workers)
+    is_allowed, rate_limit_error = check_login_rate_limit(request.phone)
     if not is_allowed:
         logger.warning(f"Rate limit exceeded for {request.phone}")
         # Use localized message instead of hardcoded English from check_rate_limit
@@ -428,10 +428,9 @@ async def login(
     user = db.query(User).filter(User.phone == request.phone).first()
     
     if not user:
-        # Record failed attempt even if user doesn't exist (security)
-        record_failed_attempt(request.phone, login_attempts)
-        recent_attempts = [t for t in login_attempts.get(request.phone, []) if t > time.time() - (RATE_LIMIT_WINDOW_MINUTES * 60)]
-        attempts_left = MAX_LOGIN_ATTEMPTS - len(recent_attempts)
+        # Note: check_login_rate_limit already recorded the attempt in Redis
+        # Get remaining attempts from Redis (shared across all workers)
+        attempts_left = get_login_attempts_remaining(request.phone)
         if attempts_left > 0:
             error_msg = Messages.error("login_failed_phone_not_found", lang, attempts_left)
             raise HTTPException(
@@ -468,8 +467,7 @@ async def login(
                 detail=error_msg
             )
         
-        # For all other captcha errors, record failed attempt
-        record_failed_attempt(request.phone, login_attempts)
+        # For all other captcha errors, increment failed attempts in database
         increment_failed_attempts(user, db)
         attempts_left = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
         
@@ -501,7 +499,6 @@ async def login(
     
     # Verify password
     if not verify_password(request.password, user.password_hash):
-        record_failed_attempt(request.phone, login_attempts)
         increment_failed_attempts(user, db)
         
         attempts_left = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
@@ -520,8 +517,8 @@ async def login(
                 detail=error_msg
             )
     
-    # Successful login
-    clear_attempts(request.phone, login_attempts)
+    # Successful login - clear rate limit attempts in Redis
+    clear_login_attempts(request.phone)
     reset_failed_attempts(user, db)
     
     # Get organization
@@ -778,13 +775,11 @@ async def generate_captcha(
         session_token = str(uuid.uuid4())
         logger.debug(f"New captcha session created: {session_token[:8]}...")
     
-    # Rate limit by session token (not IP)
-    is_allowed, _ = check_rate_limit(
-        session_token, captcha_session_attempts, MAX_CAPTCHA_ATTEMPTS
-    )
+    # Rate limit by session token (Redis-backed, shared across workers)
+    is_allowed, rate_limit_error = check_captcha_rate_limit(session_token)
     if not is_allowed:
         logger.warning(f"Captcha rate limit exceeded for session: {session_token[:8]}...")
-        # Use localized message instead of hardcoded English from check_rate_limit
+        # Use localized message instead of hardcoded English from check_captcha_rate_limit
         accept_language = request.headers.get("Accept-Language", "")
         lang: Language = get_request_language(x_language, accept_language)
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
@@ -792,9 +787,7 @@ async def generate_captcha(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error_msg
         )
-    
-    # Record attempt
-    record_failed_attempt(session_token, captcha_session_attempts)
+    # Note: check_captcha_rate_limit already recorded the attempt in Redis
     
     # Set session cookie (matches rate limit window duration)
     response.set_cookie(
@@ -825,11 +818,10 @@ async def generate_captcha(
     lang: Language = get_request_language(x_language, accept_language)
     
     # Store code with expiration (5 minutes)
-    # Retry logic handles transient database locks automatically
-    try:
-        captcha_storage.store(session_id, code, expires_in_seconds=300)
-    except Exception as e:
-        logger.error(f"Failed to store captcha {session_id} after retries: {e}")
+    # Redis is required - fail fast if storage fails
+    success = captcha_storage.store(session_id, code, expires_in_seconds=300)
+    if not success:
+        logger.error(f"Failed to store captcha {session_id}: Redis unavailable")
         error_msg = Messages.error("captcha_generate_failed", lang)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -1031,43 +1023,41 @@ async def send_sms_code(
                     detail=error_msg
                 )
     
-    # Check rate limiting: cooldown between requests
-    now = datetime.now(timezone.utc)
-    cooldown_threshold = now - timedelta(seconds=SMS_RESEND_INTERVAL_SECONDS)
+    # Get Redis SMS storage and rate limiter
+    sms_storage = get_sms_storage()
+    rate_limiter = get_rate_limiter()
     
-    recent_code = db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.purpose == purpose,
-        SMSVerification.created_at > cooldown_threshold,
-        SMSVerification.is_used == False
-    ).first()
+    # Check rate limiting: cooldown between requests (via Redis TTL)
+    # Calculate how long ago the code was sent, only block if within cooldown period
+    if sms_storage.check_exists(phone, purpose):
+        remaining_ttl = sms_storage.get_remaining_ttl(phone, purpose)
+        if remaining_ttl > 0:
+            # Calculate how long ago the code was sent
+            # code_age = total_ttl - remaining_ttl
+            total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
+            code_age = total_ttl - remaining_ttl
+            
+            # Only block if code was sent within the cooldown period
+            if code_age < SMS_RESEND_INTERVAL_SECONDS:
+                wait_seconds = SMS_RESEND_INTERVAL_SECONDS - code_age
+                if wait_seconds >= 60:
+                    wait_minutes = (wait_seconds // 60) + 1
+                    error_msg = Messages.error("sms_cooldown_minutes", lang, wait_minutes)
+                else:
+                    error_msg = Messages.error("sms_cooldown_seconds", lang, wait_seconds)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=error_msg
+                )
+            # If code_age >= SMS_RESEND_INTERVAL_SECONDS, allow resend (old code will be overwritten)
     
-    if recent_code:
-        wait_seconds = SMS_RESEND_INTERVAL_SECONDS - int((now - recent_code.created_at).total_seconds())
-        wait_minutes = (wait_seconds // 60) + 1 if wait_seconds >= 60 else 0
-        if wait_minutes > 0:
-            error_msg = Messages.error("sms_cooldown_minutes", lang, wait_minutes)
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=error_msg
-            )
-        else:
-            error_msg = Messages.error("sms_cooldown_seconds", lang, wait_seconds)
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=error_msg
-            )
+    # Check rate limit within time window using Redis rate limiter
+    # Uses sliding window algorithm for accurate rate limiting across workers
+    allowed, window_count, error_message = rate_limiter.check_and_record(
+        "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
+    )
     
-    # Check rate limit within time window
-    # Count ALL codes created within the window to prevent rate limit bypass
-    # (users could otherwise request codes, let them expire, and request more)
-    window_start = now - timedelta(hours=SMS_MAX_ATTEMPTS_WINDOW_HOURS)
-    window_count = db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.created_at > window_start
-    ).count()
-    
-    if window_count >= SMS_MAX_ATTEMPTS_PER_PHONE:
+    if not allowed:
         error_msg = Messages.error("too_many_sms_requests", lang, window_count, SMS_MAX_ATTEMPTS_WINDOW_HOURS)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -1077,51 +1067,33 @@ async def send_sms_code(
     # Generate verification code first
     code = sms_middleware.generate_code()
     
-    # Store verification code in database BEFORE sending SMS
+    # Store verification code in Redis BEFORE sending SMS
     # This ensures the code is always verifiable if the user receives it.
-    # If we sent first and DB failed, user would have unusable code.
-    expires_at = now + timedelta(minutes=SMS_CODE_EXPIRY_MINUTES)
+    # Redis automatically handles expiration via TTL - no manual cleanup needed.
+    ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
     
-    # Delete any existing record with same (phone, code, purpose) to prevent
-    # IntegrityError from UniqueConstraint collision. This handles the case where
-    # the same 6-digit code is randomly generated again for the same phone/purpose.
-    db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.code == code,
-        SMSVerification.purpose == purpose
-    ).delete()
-    
-    sms_verification = SMSVerification(
-        phone=phone,
-        code=code,
-        purpose=purpose,
-        expires_at=expires_at,
-        created_at=now
-    )
-    db.add(sms_verification)
-    db.commit()
+    if not sms_storage.store(phone, code, purpose, ttl_seconds):
+        logger.error(f"Failed to store SMS code in Redis for {phone[:3]}****{phone[-4:]}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=Messages.error("sms_service_temporarily_unavailable", lang)
+        )
     
     # Now send the SMS with pre-generated code (using middleware's convenience method)
     try:
         success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code, lang=lang)
     except SMSServiceError as e:
         # SMS middleware error (rate limiting, etc.)
-        # Remove the database record since SMS won't be sent
-        db.query(SMSVerification).filter(
-            SMSVerification.id == sms_verification.id
-        ).delete()
-        db.commit()
+        # Remove the Redis record since SMS won't be sent
+        sms_storage.remove(phone, purpose)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
         )
     
     if not success:
-        # SMS sending failed - remove the database record since user won't receive the code
-        db.query(SMSVerification).filter(
-            SMSVerification.id == sms_verification.id
-        ).delete()
-        db.commit()
+        # SMS sending failed - remove the Redis record since user won't receive the code
+        sms_storage.remove(phone, purpose)
         # Provide more specific error message
         if message and message != "SMS service not available":
             error_detail = message
@@ -1165,45 +1137,31 @@ async def verify_sms_code(
     phone = request.phone
     code = request.code
     purpose = request.purpose
-    now = datetime.now(timezone.utc)
     
-    # Find valid verification code
-    verification = db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.code == code,
-        SMSVerification.purpose == purpose,
-        SMSVerification.is_used == False,
-        SMSVerification.expires_at > now
-    ).order_by(SMSVerification.created_at.desc()).first()
+    # Get SMS storage
+    sms_storage = get_sms_storage()
     
-    if not verification:
-        # Check if code exists but expired
-        expired = db.query(SMSVerification).filter(
-            SMSVerification.phone == phone,
-            SMSVerification.code == code,
-            SMSVerification.purpose == purpose,
-            SMSVerification.is_used == False
-        ).first()
-        
-        if expired and expired.expires_at <= now:
-            error_msg = Messages.error("sms_code_expired", lang, SMS_CODE_EXPIRY_MINUTES)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_msg
-            )
-        
+    # Peek at the stored code to verify (without consuming)
+    # The actual action endpoints (register_sms, login_sms, reset_password) will consume it
+    stored_code = sms_storage.peek(phone, purpose)
+    
+    if stored_code is None:
+        # No code exists - either expired (auto-deleted by Redis TTL) or never sent
         error_msg = Messages.error("sms_code_invalid", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
     
-    # Increment attempt count (for tracking)
-    verification.attempts += 1
-    db.commit()
+    if stored_code != code:
+        error_msg = Messages.error("sms_code_invalid", lang)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg
+        )
     
-    # Log successful verification
-    logger.info(f"SMS code verified: {phone[:3]}****{phone[-4:]} (Purpose: {purpose}, Attempts: {verification.attempts})")
+    # Log successful verification (code not consumed - just validated)
+    logger.info(f"SMS code verified: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
     
     return {
         "valid": True,
@@ -1223,75 +1181,32 @@ def _verify_and_consume_sms_code(
     
     Returns True if valid, raises HTTPException if invalid
     
-    Uses atomic UPDATE with rowcount check to prevent race conditions.
-    This approach works with both SQLite (which ignores SELECT FOR UPDATE)
-    and PostgreSQL/MySQL. Only one concurrent request can succeed.
+    Uses Redis atomic GET+DELETE to prevent race conditions.
+    Only one concurrent request can consume the code.
     
     Args:
         phone: Phone number
         code: SMS verification code
         purpose: Purpose of verification (register, login, reset_password)
-        db: Database session
+        db: Database session (kept for API compatibility, not used for SMS anymore)
         lang: Language for error messages (default: "en")
     """
-    now = datetime.now(timezone.utc)
+    # Get SMS storage
+    sms_storage = get_sms_storage()
     
-    # Use atomic UPDATE with WHERE conditions to prevent race conditions
-    # Only one concurrent request will get rowcount=1, others get rowcount=0
-    # This works on SQLite (which ignores SELECT FOR UPDATE) and PostgreSQL/MySQL
-    result = db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.code == code,
-        SMSVerification.purpose == purpose,
-        SMSVerification.is_used == False,
-        SMSVerification.expires_at > now
-    ).update(
-        {
-            SMSVerification.is_used: True,
-            SMSVerification.used_at: now
-        },
-        synchronize_session=False
-    )
-    db.commit()
-    
-    # If rowcount is 1, we successfully consumed the code
-    # If rowcount is 0, either code doesn't exist, is expired, or was already consumed
-    if result == 1:
-        # Log successful code consumption
+    # Atomic verify and remove - prevents race conditions
+    # If code matches, it is consumed (deleted) atomically
+    if sms_storage.verify_and_remove(phone, code, purpose):
         logger.info(f"SMS code consumed: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
         return True
     
-    # Code was not consumed - provide appropriate error message
-    # Check if code exists but expired (for better error message)
-    expired = db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.code == code,
-        SMSVerification.purpose == purpose,
-        SMSVerification.is_used == False
-    ).first()
-    
-    if expired and expired.expires_at <= now:
-        error_msg = Messages.error("sms_code_expired", lang, SMS_CODE_EXPIRY_MINUTES)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_msg
-        )
-    
-    # Check if code was already used (race condition - another request consumed it)
-    already_used = db.query(SMSVerification).filter(
-        SMSVerification.phone == phone,
-        SMSVerification.code == code,
-        SMSVerification.purpose == purpose,
-        SMSVerification.is_used == True
-    ).first()
-    
-    if already_used:
-        error_msg = Messages.error("sms_code_already_used", lang)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_msg
-        )
-    
+    # Code verification failed - provide appropriate error message
+    # Since Redis auto-expires keys, we can't distinguish between:
+    # - Code never existed
+    # - Code expired (auto-deleted by TTL)
+    # - Code was wrong
+    # - Code was already consumed (race condition)
+    # We use a generic "invalid" message for security
     error_msg = Messages.error("sms_code_invalid", lang)
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -1821,7 +1736,7 @@ async def logout(
     
     # End user sessions in activity tracker
     try:
-        from services.user_activity_tracker import get_activity_tracker
+        from services.redis_activity_tracker import get_activity_tracker
         tracker = get_activity_tracker()
         tracker.end_session(user_id=current_user.id)
     except Exception as e:
@@ -2945,6 +2860,9 @@ async def get_stats_trends_admin(
             counts_by_date = {}
             for row in user_counts:
                 utc_date = row.date
+                # SQLite returns date as string, need to parse it
+                if isinstance(utc_date, str):
+                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
                 beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
                 beijing_date_str = str(beijing_datetime.date())
@@ -2987,6 +2905,9 @@ async def get_stats_trends_admin(
             counts_by_date = {}
             for row in org_counts:
                 utc_date = row.date
+                # SQLite returns date as string, need to parse it
+                if isinstance(utc_date, str):
+                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
                 beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
                 beijing_date_str = str(beijing_datetime.date())
@@ -3022,6 +2943,9 @@ async def get_stats_trends_admin(
             counts_by_date = {}
             for row in reg_counts:
                 utc_date = row.date
+                # SQLite returns date as string, need to parse it
+                if isinstance(utc_date, str):
+                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
                 beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
                 beijing_date_str = str(beijing_datetime.date())
@@ -3059,6 +2983,9 @@ async def get_stats_trends_admin(
             tokens_by_date = {}
             for row in token_counts:
                 utc_date = row.date
+                # SQLite returns date as string, need to parse it
+                if isinstance(utc_date, str):
+                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
                 beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
                 beijing_date_str = str(beijing_datetime.date())

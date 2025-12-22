@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.auth import User
 from utils.auth import get_current_user, is_admin
-from services.user_activity_tracker import get_activity_tracker
+from services.redis_activity_tracker import get_activity_tracker
 
 logger = logging.getLogger(__name__)
 

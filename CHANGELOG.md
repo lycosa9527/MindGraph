@@ -7,6 +7,150 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.10] - 2025-12-23 - Captcha Storage Validation Fix
+
+### Fixed
+
+- **Captcha Generation Error Handling** (`routers/auth.py`)
+  - Fixed bug where captcha generation returned 200 OK even when Redis storage failed
+  - Previously: Redis SET failure was logged as warning but endpoint still returned captcha image
+  - Now: Properly checks `captcha_storage.store()` return value and returns 503 Service Unavailable if storage fails
+  - Prevents users from seeing captcha images that cannot be verified (because code was never stored)
+
+---
+
+## [4.37.8] - 2025-12-23 - Complete Redis Migration (SQLite + Redis Hybrid Architecture)
+
+### Added
+
+- **Redis Client Service** (`services/redis_client.py`)
+  - Centralized Redis connection management
+  - Redis is now REQUIRED for MindGraph (app exits if Redis unavailable)
+  - High-level `RedisOperations` class for common operations
+  - Supports: strings, lists, sorted sets, hashes with TTL
+
+- **Redis Rate Limiter** (`services/redis_rate_limiter.py`)
+  - Sliding window algorithm for auth rate limiting
+  - Shared across all workers for accurate rate limiting
+  - Categories: login, captcha, IP, SMS
+
+- **Redis Token Buffer** (`services/redis_token_buffer.py`)
+  - Replaces in-memory `token_tracker.py`
+  - Shared buffer across all workers (no data loss on worker crash)
+  - Periodic batch flush to SQLite for persistence
+
+- **Redis Activity Tracker** (`services/redis_activity_tracker.py`)
+  - Replaces in-memory `user_activity_tracker.py`
+  - Real-time active user tracking shared across workers
+  - Session management with automatic expiry
+
+- **Redis SMS Storage** (`services/redis_sms_storage.py`)
+  - SMS verification code storage with TTL
+  - Atomic operations for code verification
+
+- **Documentation** (`docs/REDIS_SQLITE_HYBRID_PLAN.md`)
+  - Complete architecture documentation for SQLite + Redis hybrid
+
+### Changed
+
+- **Captcha Storage Migrated to Redis** (`services/captcha_storage.py`)
+  - Migrated from SQLite to Redis
+  - 100x faster operations (0.1ms vs 10ms)
+  - No database write locks under high concurrency
+  - Automatic TTL expiration (no cleanup scheduler needed)
+  - Removed `start_captcha_cleanup_scheduler()` (no longer needed)
+
+- **LLM Rate Limiter Now Uses Redis** (`services/rate_limiter.py`)
+  - Migrated `DashscopeRateLimiter` from in-memory to Redis
+  - QPM tracking shared across all workers using Redis sorted sets
+  - Concurrent request tracking global using Redis atomic counters
+  - Resolves rate limit coordination issue from December 20 error review
+
+- **Auth Rate Limiting Migrated to Redis** (`utils/auth.py`)
+  - Removed in-memory rate limiting dictionaries
+  - Now re-exports functions from `redis_rate_limiter.py`
+  - All rate limiting shared across workers
+
+- **Main Application** (`main.py`)
+  - Added Redis initialization at startup (`init_redis_sync()`)
+  - Added Redis health check endpoint (`/health/redis`)
+  - Added Redis cleanup on shutdown (`close_redis_sync()`)
+  - Updated token tracker to use `redis_token_buffer`
+
+- **Routers Updated for Redis**
+  - `routers/auth.py` - Uses Redis rate limiter and SMS storage
+  - `routers/admin_realtime.py` - Uses Redis activity tracker
+  - `routers/api.py`, `routers/voice.py`, `routers/node_palette.py` - Minor updates
+
+- **Requirements** (`requirements.txt`)
+  - Added `redis>=5.0.0` as required dependency
+
+- **Environment Variables** (`env.example`)
+  - Added Redis configuration: `REDIS_URL`, `REDIS_MAX_CONNECTIONS`, etc.
+
+### Fixed
+
+- **SMS Resend Cooldown Logic** (`routers/auth.py`)
+  - Fixed bug where users were blocked for the entire 5-minute code validity period instead of the intended 60-second cooldown
+  - Old logic used `min(remaining_ttl, 60)` which always returned 60 whenever a code existed
+  - New logic calculates code age: `code_age = total_ttl - remaining_ttl`
+  - Only blocks if `code_age < SMS_RESEND_INTERVAL_SECONDS` (60 seconds)
+  - Example: Code sent 70 seconds ago now correctly allows resend (70 > 60 second cooldown)
+
+- **Admin Panel Token Trends Chart** (`routers/auth.py`)
+  - Fixed `combine() argument 1 must be datetime.date, not str` error when clicking token cards
+  - SQLite's `func.date()` returns strings (e.g., "2025-12-23"), not Python date objects
+  - Added string-to-date parsing before `datetime.combine()` for all 4 trend metrics (users, organizations, registrations, tokens)
+
+### Removed
+
+- **Deleted Files**:
+  - `services/token_tracker.py` - Replaced by `redis_token_buffer.py`
+  - `services/user_activity_tracker.py` - Replaced by `redis_activity_tracker.py`
+  - `tests/test_captcha_full_interactive.py` - Obsolete SQLite captcha tests
+  - `tests/test_captcha_retry_logic.py` - Obsolete SQLite retry tests
+
+### Technical Details
+
+- **Architecture**: SQLite + Redis Hybrid
+  - SQLite: Persistent data (users, organizations, token history)
+  - Redis: Ephemeral data (captcha, rate limiting, sessions, buffers)
+
+- **Redis Key Schema**:
+  - `captcha:{id}` - Captcha codes with TTL
+  - `rate:{category}:{identifier}` - Auth rate limiting
+  - `llm:rate:qpm` - LLM API QPM sliding window
+  - `llm:rate:concurrent` - LLM API concurrent requests
+  - `tokens:buffer` - Token usage buffer
+  - `activity:session:{id}` - User session data
+  - `sms:{phone}` - SMS verification codes
+
+- **Performance Improvements**:
+  - Captcha: 100x faster (0.1ms vs 10ms)
+  - Rate limiting: Global accuracy across all workers
+  - No more database locks for ephemeral data
+
+### Files Modified
+
+- `services/redis_client.py` - NEW
+- `services/redis_rate_limiter.py` - NEW
+- `services/redis_token_buffer.py` - NEW
+- `services/redis_activity_tracker.py` - NEW
+- `services/redis_sms_storage.py` - NEW
+- `services/captcha_storage.py` - Rewritten for Redis
+- `services/rate_limiter.py` - Rewritten for Redis
+- `services/backup_scheduler.py` - Updated
+- `utils/auth.py` - Uses Redis rate limiter
+- `main.py` - Redis initialization
+- `routers/auth.py` - Redis services
+- `routers/admin_realtime.py` - Redis activity tracker
+- `config/database.py` - Pool configuration
+- `models/auth.py` - Updated
+- `requirements.txt` - Added redis
+- `env.example` - Redis configuration
+
+---
+
 ## [4.37.7] - 2025-12-22 - Database QueuePool Fix for High Concurrency
 
 ### Fixed

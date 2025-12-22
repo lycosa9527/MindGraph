@@ -27,8 +27,7 @@ import logging
 try:
     from models.auth import (
         User, APIKey,
-        UpdateNotification, UpdateNotificationDismissed, Captcha,
-        SMSVerification
+        UpdateNotification, UpdateNotificationDismissed
     )
 except ImportError:
     pass  # Models may not all exist yet
@@ -298,8 +297,7 @@ def init_db():
     try:
         from models.auth import (
             Organization, User, APIKey,
-            UpdateNotification, UpdateNotificationDismissed, Captcha,
-            SMSVerification
+            UpdateNotification, UpdateNotificationDismissed
         )
     except ImportError:
         pass  # Some models may not exist yet

@@ -34,11 +34,188 @@ import asyncio
 import sqlite3
 import logging
 import threading
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Tuple, List
 
+from services.redis_client import get_redis, is_redis_available
+
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
+# ============================================================================
+# 
+# Problem: Uvicorn does NOT set UVICORN_WORKER_ID automatically.
+# All workers get default '0', causing all to run backup schedulers.
+#
+# Solution: Redis-based distributed lock ensures only ONE worker runs backups.
+# Uses SETNX (SET if Not eXists) with TTL for crash safety.
+#
+# Key: backup:scheduler:lock
+# Value: {worker_pid}:{uuid} (unique identifier per worker)
+# TTL: 10 minutes (auto-release if worker crashes)
+# ============================================================================
+
+BACKUP_LOCK_KEY = "backup:scheduler:lock"
+BACKUP_LOCK_TTL = 600  # 10 minutes - allows backup to complete, auto-releases on crash
+_worker_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+def _generate_lock_id() -> str:
+    """Generate unique lock ID for this worker: {pid}:{uuid}"""
+    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+
+def acquire_backup_scheduler_lock() -> bool:
+    """
+    Attempt to acquire the backup scheduler lock.
+    
+    Uses Redis SETNX for atomic lock acquisition.
+    Only ONE worker across all processes can hold this lock.
+    
+    Returns:
+        True if lock acquired (this worker should run scheduler)
+        False if lock held by another worker
+    """
+    global _worker_lock_id
+    
+    if not is_redis_available():
+        # No Redis = single worker mode, proceed
+        logger.warning("[Backup] Redis unavailable, assuming single worker mode")
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True  # Fallback to single worker mode
+    
+    try:
+        # Generate unique ID for this worker
+        if _worker_lock_id is None:
+            _worker_lock_id = _generate_lock_id()
+        
+        # Attempt atomic lock acquisition: SETNX with TTL
+        # Returns True only if key did not exist (lock acquired)
+        acquired = redis.set(
+            BACKUP_LOCK_KEY,
+            _worker_lock_id,
+            nx=True,  # Only set if not exists
+            ex=BACKUP_LOCK_TTL  # TTL in seconds
+        )
+        
+        if acquired:
+            logger.info(f"[Backup] Lock acquired by this worker (id={_worker_lock_id})")
+            return True
+        else:
+            # Lock held by another worker - check who
+            holder = redis.get(BACKUP_LOCK_KEY)
+            logger.debug(f"[Backup] Lock held by another worker (holder={holder})")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[Backup] Lock acquisition failed: {e}, proceeding anyway")
+        return True  # On error, proceed (better to have duplicate than no backup)
+
+
+def release_backup_scheduler_lock() -> bool:
+    """
+    Release the backup scheduler lock if held by this worker.
+    
+    Uses Lua script for atomic check-and-delete to prevent
+    accidentally releasing another worker's lock.
+    
+    Returns:
+        True if lock released, False otherwise
+    """
+    global _worker_lock_id
+    
+    if not is_redis_available() or _worker_lock_id is None:
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True
+    
+    try:
+        # Atomic check-and-delete using Lua script
+        # Only deletes if current holder matches our ID
+        lua_script = """
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+            return redis.call("del", KEYS[1])
+        else
+            return 0
+        end
+        """
+        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _worker_lock_id)
+        
+        if result == 1:
+            logger.info(f"[Backup] Lock released by this worker (id={_worker_lock_id})")
+        
+        return result == 1
+        
+    except Exception as e:
+        logger.warning(f"[Backup] Lock release failed: {e}")
+        return False
+
+
+def refresh_backup_scheduler_lock() -> bool:
+    """
+    Refresh the lock TTL if held by this worker.
+    
+    Called periodically during long-running backup to prevent
+    lock expiration before backup completes.
+    
+    Returns:
+        True if lock refreshed, False if not held by this worker
+    """
+    global _worker_lock_id
+    
+    if not is_redis_available() or _worker_lock_id is None:
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True
+    
+    try:
+        # Check if we still hold the lock
+        holder = redis.get(BACKUP_LOCK_KEY)
+        if holder != _worker_lock_id:
+            logger.warning(f"[Backup] Lock lost! Holder: {holder}, our ID: {_worker_lock_id}")
+            return False
+        
+        # Refresh TTL
+        redis.expire(BACKUP_LOCK_KEY, BACKUP_LOCK_TTL)
+        logger.debug(f"[Backup] Lock refreshed (TTL={BACKUP_LOCK_TTL}s)")
+        return True
+        
+    except Exception as e:
+        logger.warning(f"[Backup] Lock refresh failed: {e}")
+        return False
+
+
+def is_backup_lock_holder() -> bool:
+    """
+    Check if this worker currently holds the backup lock.
+    
+    Returns:
+        True if this worker holds the lock
+    """
+    global _worker_lock_id
+    
+    if not is_redis_available() or _worker_lock_id is None:
+        return True  # Single worker mode
+    
+    redis = get_redis()
+    if not redis:
+        return True
+    
+    try:
+        holder = redis.get(BACKUP_LOCK_KEY)
+        return holder == _worker_lock_id
+    except Exception:
+        return True  # On error, assume we hold it
 
 # Thread-safe flag to coordinate with WAL checkpoint scheduler
 # When backup is running, WAL checkpoint should skip (backup API handles WAL correctly)
@@ -1090,6 +1267,9 @@ async def start_backup_scheduler():
     """
     Start the automatic backup scheduler.
     
+    Uses Redis distributed lock to ensure only ONE worker runs the scheduler
+    across all uvicorn workers. This prevents duplicate backups.
+    
     Runs daily at the configured hour (default: 3:00 AM).
     This function runs forever until cancelled.
     """
@@ -1097,10 +1277,29 @@ async def start_backup_scheduler():
         logger.info("[Backup] Automatic backup is disabled (BACKUP_ENABLED=false)")
         return
     
+    # Attempt to acquire distributed lock
+    # Only ONE worker across all processes will succeed
+    if not acquire_backup_scheduler_lock():
+        logger.info("[Backup] Another worker holds the scheduler lock, this worker will not run backups")
+        # Keep running but don't do anything - just monitor
+        # If the lock holder dies, this worker can try to acquire on next check
+        while True:
+            try:
+                await asyncio.sleep(60)  # Check every minute
+                if acquire_backup_scheduler_lock():
+                    logger.info("[Backup] Lock acquired, this worker will now run backups")
+                    break
+            except asyncio.CancelledError:
+                logger.info("[Backup] Scheduler monitor stopped")
+                return
+            except Exception:
+                pass
+    
+    # This worker holds the lock - run the scheduler
     # Ensure backup directory exists
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     
-    logger.info(f"[Backup] Scheduler started")
+    logger.info(f"[Backup] Scheduler started (this worker is the lock holder)")
     logger.info(f"[Backup] Configuration: daily at {BACKUP_HOUR:02d}:00, keep {BACKUP_RETENTION_COUNT} backups")
     logger.info(f"[Backup] Backup directory: {BACKUP_DIR.resolve()}")
     if COS_BACKUP_ENABLED:
@@ -1110,19 +1309,40 @@ async def start_backup_scheduler():
     
     while True:
         try:
+            # Refresh lock to prevent expiration during long waits
+            if not refresh_backup_scheduler_lock():
+                logger.warning("[Backup] Lost scheduler lock, stopping scheduler on this worker")
+                break
+            
             # Calculate time until next backup
             next_backup = get_next_backup_time()
             wait_seconds = (next_backup - datetime.now()).total_seconds()
             
             logger.debug(f"[Backup] Next backup scheduled at {next_backup.strftime('%Y-%m-%d %H:%M:%S')}")
             
-            # Wait until backup time
-            await asyncio.sleep(wait_seconds)
+            # Wait until backup time, refreshing lock periodically
+            # Refresh every 5 minutes to keep lock alive during long waits
+            while wait_seconds > 0:
+                sleep_time = min(wait_seconds, 300)  # 5 minutes max
+                await asyncio.sleep(sleep_time)
+                wait_seconds -= sleep_time
+                
+                # Refresh lock during wait
+                if wait_seconds > 0 and not refresh_backup_scheduler_lock():
+                    logger.warning("[Backup] Lost scheduler lock during wait")
+                    return
             
-            # Perform backup (SQLite's own locking handles concurrent access)
-            # Only worker 0 runs scheduled backups, so no cross-worker conflicts
+            # Verify we still hold the lock before running backup
+            if not is_backup_lock_holder():
+                logger.warning("[Backup] Lock lost before backup execution, skipping")
+                continue
+            
+            # Perform backup
             logger.info("[Backup] Starting scheduled backup...")
             try:
+                # Refresh lock before starting (backup can take time)
+                refresh_backup_scheduler_lock()
+                
                 success = await asyncio.to_thread(create_backup)
                 if success:
                     logger.info("[Backup] Scheduled backup completed successfully")
@@ -1132,11 +1352,16 @@ async def start_backup_scheduler():
                 logger.error(f"[Backup] Scheduled backup failed with exception: {e}", exc_info=True)
                 success = False
             
+            # Refresh lock after backup completes
+            refresh_backup_scheduler_lock()
+            
             # Wait a bit to avoid running twice in the same minute
             await asyncio.sleep(60)
             
         except asyncio.CancelledError:
             logger.info("[Backup] Scheduler stopped")
+            # Release lock on shutdown
+            release_backup_scheduler_lock()
             break
         except Exception as e:
             logger.error(f"[Backup] Scheduler error: {e}", exc_info=True)
@@ -1148,25 +1373,27 @@ async def run_backup_now() -> bool:
     """
     Run a backup immediately (for manual trigger or API call).
     
-    Only worker 0 can run backups to prevent duplicate backups across workers.
-    SQLite's own locking mechanism handles concurrent access safely.
+    Only the worker holding the scheduler lock can run backups.
+    This prevents duplicate backups across workers.
     
     Returns:
         True if backup succeeded, False otherwise
     """
-    # Only allow worker 0 to run backups (same as scheduler)
-    # This prevents multiple workers from creating duplicate backups
-    worker_id = os.getenv('UVICORN_WORKER_ID', '0')
-    if worker_id != '0' and worker_id:
-        logger.warning(f"[Backup] Manual backup rejected: only worker 0 can run backups (current worker: {worker_id})")
+    # Only the lock holder can run manual backups
+    # This prevents duplicate backups from multiple workers
+    if not is_backup_lock_holder():
+        logger.warning("[Backup] Manual backup rejected: this worker does not hold the scheduler lock")
         return False
     
     logger.info("[Backup] Manual backup triggered")
     
-    # SQLite's backup API and connection locking naturally prevent concurrent backups
-    # If another backup is running, SQLite will handle the lock appropriately
+    # Refresh lock before starting backup
+    refresh_backup_scheduler_lock()
+    
     try:
         result = await asyncio.to_thread(create_backup)
+        # Refresh lock after backup
+        refresh_backup_scheduler_lock()
         return result
     except Exception as e:
         logger.error(f"[Backup] Backup failed with exception: {e}", exc_info=True)

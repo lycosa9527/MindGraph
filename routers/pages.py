@@ -81,6 +81,12 @@ async def index(request: Request):
                         # Already authenticated, go to editor
                         logger.debug("Standard mode: Authenticated user, redirecting / to /editor")
                         return RedirectResponse(url="/editor", status_code=303)
+                    else:
+                        # Token is invalid or expired - clear cookie before redirecting to /auth
+                        logger.debug("Invalid or expired token cookie detected on /, clearing cookie")
+                        response = RedirectResponse(url="/auth", status_code=303)
+                        response.delete_cookie(key="access_token", httponly=True, samesite="lax")
+                        return response
                 finally:
                     db.close()  # ✅ Connection released BEFORE redirect
             
@@ -409,6 +415,12 @@ async def auth_page(request: Request):
                     db.expunge(user)
                     logger.debug("User already authenticated, redirecting to /editor")
                     return RedirectResponse(url="/editor", status_code=303)
+                else:
+                    # Token is invalid or expired - clear the cookie to prevent redirect loops
+                    logger.debug("Invalid or expired token cookie detected, clearing cookie")
+                    response = templates.TemplateResponse("auth.html", {"request": request, "version": get_app_version()})
+                    response.delete_cookie(key="access_token", httponly=True, samesite="lax")
+                    return response
             finally:
                 db.close()  # ✅ Connection released BEFORE template rendering
         

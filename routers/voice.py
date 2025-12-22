@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from services.client_manager import client_manager
 from services.voice_agent import voice_agent_manager
-from services.token_tracker import get_token_tracker
+from services.redis_token_buffer import get_token_tracker
 from services.llm_service import llm_service
 from services.websocket_llm_middleware import omni_middleware
 from config.database import get_db, SessionLocal

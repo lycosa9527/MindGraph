@@ -33,8 +33,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from services.temp_image_cleaner import start_cleanup_scheduler
-from services.captcha_storage import start_captcha_cleanup_scheduler
 from services.backup_scheduler import start_backup_scheduler
+from services.redis_client import init_redis_sync, close_redis_sync, is_redis_available
 from utils.env_utils import ensure_utf8_env_file
 
 # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
@@ -737,6 +737,12 @@ async def lifespan(app: FastAPI):
         logger.info("FastAPI Application Starting")
         logger.info("=" * 80)
     
+    # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
+    # Application will exit if Redis is not available
+    init_redis_sync()
+    if worker_id == '0' or not worker_id:
+        logger.info("Redis initialized successfully")
+    
     # Initialize JavaScript cache (log only from first worker)
     try:
         from static.js.lazy_cache_manager import lazy_js_cache
@@ -807,16 +813,6 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to start cleanup scheduler: {e}")
     
-    # Start captcha cleanup task (removes expired captchas every 10 minutes)
-    captcha_cleanup_task = None
-    try:
-        captcha_cleanup_task = asyncio.create_task(start_captcha_cleanup_scheduler(interval_minutes=10))
-        if worker_id == '0' or not worker_id:
-            logger.info("Captcha cleanup scheduler started")
-    except Exception as e:
-        if worker_id == '0' or not worker_id:
-            logger.warning(f"Failed to start captcha cleanup scheduler: {e}")
-    
     # Start WAL checkpoint scheduler (checkpoints SQLite WAL every 5 minutes)
     # This is critical for database safety, especially when using kill -9 (SIGKILL)
     # which bypasses graceful shutdown. Periodic checkpointing ensures WAL file
@@ -833,13 +829,14 @@ async def lifespan(app: FastAPI):
     
     # Start database backup scheduler (daily automatic backups)
     # Backs up SQLite database daily, keeps configurable retention (default: 2 backups)
-    # Only run on worker 0 to avoid multiple workers backing up simultaneously
+    # Uses Redis distributed lock to ensure only ONE worker runs backups across all workers
+    # All workers start the scheduler, but only the lock holder executes backups
     backup_scheduler_task = None
-    if worker_id == '0' or not worker_id:
-        try:
-            backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
-            logger.info("Database backup scheduler started")
-        except Exception as e:
+    try:
+        backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
+        # Don't log here - the scheduler will log whether it acquired the lock
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to start backup scheduler: {e}")
     
     # Yield control to application
@@ -862,15 +859,6 @@ async def lifespan(app: FastAPI):
             if worker_id == '0' or not worker_id:
                 logger.info("Temp image cleanup scheduler stopped")
         
-        if captcha_cleanup_task:
-            captcha_cleanup_task.cancel()
-            try:
-                await captcha_cleanup_task
-            except asyncio.CancelledError:
-                pass
-            if worker_id == '0' or not worker_id:
-                logger.info("Captcha cleanup scheduler stopped")
-        
         # Stop WAL checkpoint scheduler
         if wal_checkpoint_task:
             wal_checkpoint_task.cancel()
@@ -881,14 +869,14 @@ async def lifespan(app: FastAPI):
             if worker_id == '0' or not worker_id:
                 logger.info("WAL checkpoint scheduler stopped")
         
-        # Stop backup scheduler (only runs on worker 0)
+        # Stop backup scheduler (runs on all workers, but only lock holder executes)
         if backup_scheduler_task:
             backup_scheduler_task.cancel()
             try:
                 await backup_scheduler_task
             except asyncio.CancelledError:
                 pass
-            logger.info("Database backup scheduler stopped")
+            # Only log on worker that was the lock holder (scheduler handles this internally)
         
         # Cleanup LLM Service
         try:
@@ -912,7 +900,7 @@ async def lifespan(app: FastAPI):
         
         # Flush TokenTracker before closing database
         try:
-            from services.token_tracker import get_token_tracker
+            from services.redis_token_buffer import get_token_tracker
             token_tracker = get_token_tracker()
             await token_tracker.flush()
             if worker_id == '0' or not worker_id:
@@ -940,6 +928,15 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to close database: {e}")
+        
+        # Close Redis connection
+        try:
+            close_redis_sync()
+            if worker_id == '0' or not worker_id:
+                logger.info("Redis connection closed")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to close Redis: {e}")
         
         # Don't try to cancel tasks - let uvicorn handle the shutdown
         # This prevents CancelledError exceptions during multiprocess shutdown
@@ -1252,6 +1249,41 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def health_check():
     """Basic health check endpoint"""
     return {"status": "ok", "version": config.VERSION}
+
+@app.get("/health/redis")
+async def redis_health_check():
+    """
+    Redis health check endpoint.
+    
+    Returns Redis connection status.
+    """
+    from services.redis_client import is_redis_available, redis_ops
+    
+    if not is_redis_available():
+        return {
+            "status": "unavailable",
+            "message": "Redis not connected"
+        }
+    
+    try:
+        # Test connection
+        if redis_ops.ping():
+            info = redis_ops.info("server")
+            return {
+                "status": "healthy",
+                "version": info.get("redis_version", "unknown"),
+                "uptime_seconds": info.get("uptime_in_seconds", 0)
+            }
+        else:
+            return {
+                "status": "unhealthy",
+                "message": "Ping failed"
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
 
 @app.get("/health/database", response_model=DatabaseHealthResponse)
 async def database_health_check():
