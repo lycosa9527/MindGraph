@@ -420,8 +420,7 @@ async def auth_page(request: Request):
 @router.get("/loginByXz")
 async def login_by_xz(
     request: Request,
-    token: Optional[str] = None,
-    db: Session = Depends(get_db)
+    token: Optional[str] = None
 ):
     """
     Bayi mode authentication endpoint
@@ -443,6 +442,9 @@ async def login_by_xz(
     - If IP whitelisted: Grant access immediately (no token needed)
     - If token valid: Redirects to /editor with JWT token set as cookie
     - If both fail: Redirects to /demo (demo passkey page)
+    
+    Note: Uses manual session management to release DB connections immediately
+    after authentication, before returning the redirect response.
     """
     try:
         # Verify AUTH_MODE is set to bayi
@@ -459,90 +461,95 @@ async def login_by_xz(
             # IP is whitelisted - grant immediate access, no token needed
             logger.info(f"IP {client_ip} is whitelisted, granting immediate access (skipping token verification)")
             
-            # Get or create organization (same as token flow)
-            org = db.query(Organization).filter(
-                Organization.code == BAYI_DEFAULT_ORG_CODE
-            ).first()
-            
-            if not org:
-                try:
-                    org = Organization(
-                        code=BAYI_DEFAULT_ORG_CODE,
-                        name="Bayi School",
-                        invitation_code="BAYI2024",
-                        created_at=datetime.utcnow()
-                    )
-                    db.add(org)
-                    db.commit()
-                    db.refresh(org)
-                    logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
-                except IntegrityError as e:
-                    # Organization created by another request (race condition)
-                    db.rollback()
-                    logger.debug(f"Organization creation race condition (expected): {e}")
-                    org = db.query(Organization).filter(
-                        Organization.code == BAYI_DEFAULT_ORG_CODE
-                    ).first()
-                    if not org:
-                        logger.error(f"Failed to create or retrieve bayi organization")
-                        return RedirectResponse(url="/demo", status_code=303)
-                except Exception as e:
-                    db.rollback()
-                    logger.error(f"Failed to create bayi organization: {e}")
-                    return RedirectResponse(url="/demo", status_code=303)
-            
-            # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
-            if org:
-                # Check if organization is locked
-                is_active = org.is_active if hasattr(org, 'is_active') else True
-                if not is_active:
-                    logger.warning(f"IP whitelist blocked: Organization {org.code} is locked")
-                    return RedirectResponse(url="/demo", status_code=303)
+            # Use manual session management - close immediately after DB operations
+            db = SessionLocal()
+            try:
+                # Get or create organization (same as token flow)
+                org = db.query(Organization).filter(
+                    Organization.code == BAYI_DEFAULT_ORG_CODE
+                ).first()
                 
-                # Check if organization subscription has expired
-                if hasattr(org, 'expires_at') and org.expires_at:
-                    if org.expires_at < datetime.utcnow():
-                        logger.warning(f"IP whitelist blocked: Organization {org.code} expired on {org.expires_at}")
+                if not org:
+                    try:
+                        org = Organization(
+                            code=BAYI_DEFAULT_ORG_CODE,
+                            name="Bayi School",
+                            invitation_code="BAYI2024",
+                            created_at=datetime.utcnow()
+                        )
+                        db.add(org)
+                        db.commit()
+                        db.refresh(org)
+                        logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                    except IntegrityError as e:
+                        # Organization created by another request (race condition)
+                        db.rollback()
+                        logger.debug(f"Organization creation race condition (expected): {e}")
+                        org = db.query(Organization).filter(
+                            Organization.code == BAYI_DEFAULT_ORG_CODE
+                        ).first()
+                        if not org:
+                            logger.error(f"Failed to create or retrieve bayi organization")
+                            return RedirectResponse(url="/demo", status_code=303)
+                    except Exception as e:
+                        db.rollback()
+                        logger.error(f"Failed to create bayi organization: {e}")
                         return RedirectResponse(url="/demo", status_code=303)
-            
-            # Use single shared user for all IP whitelist authentications
-            user_phone = "bayi-ip@system.com"
-            user_name = "Bayi IP User"
-            
-            bayi_user = db.query(User).filter(User.phone == user_phone).first()
-            
-            if not bayi_user:
-                try:
-                    bayi_user = User(
-                        phone=user_phone,
-                        password_hash=hash_password("bayi-no-pwd"),
-                        name=user_name,
-                        organization_id=org.id,
-                        created_at=datetime.utcnow()
-                    )
-                    db.add(bayi_user)
-                    db.commit()
-                    db.refresh(bayi_user)
-                    logger.info(f"Created shared bayi IP user: {user_phone}")
-                except IntegrityError as e:
-                    # Handle race condition: user created by another request
-                    db.rollback()
-                    logger.debug(f"User creation race condition (expected): {e}")
-                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
-                    if not bayi_user:
-                        logger.error(f"Failed to create or retrieve bayi IP user after race condition")
+                
+                # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
+                if org:
+                    # Check if organization is locked
+                    is_active = org.is_active if hasattr(org, 'is_active') else True
+                    if not is_active:
+                        logger.warning(f"IP whitelist blocked: Organization {org.code} is locked")
                         return RedirectResponse(url="/demo", status_code=303)
-                except Exception as e:
-                    db.rollback()
-                    logger.error(f"Failed to create bayi IP user: {e}")
-                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
-                    if not bayi_user:
-                        return RedirectResponse(url="/demo", status_code=303)
-            
-            # Generate JWT token
-            jwt_token = create_access_token(bayi_user)
-            
-            logger.info(f"Bayi IP whitelist authentication successful: {client_ip}")
+                    
+                    # Check if organization subscription has expired
+                    if hasattr(org, 'expires_at') and org.expires_at:
+                        if org.expires_at < datetime.utcnow():
+                            logger.warning(f"IP whitelist blocked: Organization {org.code} expired on {org.expires_at}")
+                            return RedirectResponse(url="/demo", status_code=303)
+                
+                # Use single shared user for all IP whitelist authentications
+                user_phone = "bayi-ip@system.com"
+                user_name = "Bayi IP User"
+                
+                bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                
+                if not bayi_user:
+                    try:
+                        bayi_user = User(
+                            phone=user_phone,
+                            password_hash=hash_password("bayi-no-pwd"),
+                            name=user_name,
+                            organization_id=org.id,
+                            created_at=datetime.utcnow()
+                        )
+                        db.add(bayi_user)
+                        db.commit()
+                        db.refresh(bayi_user)
+                        logger.info(f"Created shared bayi IP user: {user_phone}")
+                    except IntegrityError as e:
+                        # Handle race condition: user created by another request
+                        db.rollback()
+                        logger.debug(f"User creation race condition (expected): {e}")
+                        bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                        if not bayi_user:
+                            logger.error(f"Failed to create or retrieve bayi IP user after race condition")
+                            return RedirectResponse(url="/demo", status_code=303)
+                    except Exception as e:
+                        db.rollback()
+                        logger.error(f"Failed to create bayi IP user: {e}")
+                        bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                        if not bayi_user:
+                            return RedirectResponse(url="/demo", status_code=303)
+                
+                # Generate JWT token (user object is still valid after expunge)
+                jwt_token = create_access_token(bayi_user)
+                
+                logger.info(f"Bayi IP whitelist authentication successful: {client_ip}")
+            finally:
+                db.close()  # ✅ Connection released BEFORE redirect
             
             # Redirect to editor with cookie
             redirect_response = RedirectResponse(url="/editor", status_code=303)
@@ -574,7 +581,7 @@ async def login_by_xz(
         token_preview = token[:20] + "..." if len(token) > 20 else token
         logger.info(f"Bayi token authentication attempt - IP: {client_ip}, token length: {len(token)}, preview: {token_preview}")
         
-        # Decrypt token
+        # Decrypt token (no DB needed for this)
         try:
             logger.info(f"Attempting to decrypt token with key length: {len(BAYI_DECRYPTION_KEY)}")
             body = decrypt_bayi_token(token, BAYI_DECRYPTION_KEY)
@@ -587,7 +594,7 @@ async def login_by_xz(
             logger.error(f"Unexpected error during token decryption: {e} - redirecting to /demo", exc_info=True)
             return RedirectResponse(url="/demo", status_code=303)
         
-        # Validate token body
+        # Validate token body (no DB needed for this)
         logger.info(f"Validating token body - from: {body.get('from')}, timestamp: {body.get('timestamp')}")
         validation_result = validate_bayi_token_body(body)
         if not validation_result:
@@ -597,59 +604,64 @@ async def login_by_xz(
         
         logger.info(f"Token validation passed - proceeding with user creation/retrieval")
         
-        # Get or create organization
-        org = db.query(Organization).filter(
-            Organization.code == BAYI_DEFAULT_ORG_CODE
-        ).first()
-        
-        if not org:
-            # Create bayi organization if it doesn't exist
-            org = Organization(
-                code=BAYI_DEFAULT_ORG_CODE,
-                name="Bayi School",
-                invitation_code="BAYI2024",
-                created_at=datetime.utcnow()
-            )
-            db.add(org)
-            db.commit()
-            db.refresh(org)
-            logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
-        
-        # Extract user info from token body (if available)
-        # Default to a generic bayi user if not specified
-        user_phone = body.get('phone') or body.get('user') or "bayi@system.com"
-        user_name = body.get('name') or "Bayi User"
-        
-        # Get or create user
-        bayi_user = db.query(User).filter(User.phone == user_phone).first()
-        
-        if not bayi_user:
-            try:
-                bayi_user = User(
-                    phone=user_phone,
-                    password_hash=hash_password("bayi-no-pwd"),
-                    name=user_name,
-                    organization_id=org.id,
+        # Use manual session management - close immediately after DB operations
+        db = SessionLocal()
+        try:
+            # Get or create organization
+            org = db.query(Organization).filter(
+                Organization.code == BAYI_DEFAULT_ORG_CODE
+            ).first()
+            
+            if not org:
+                # Create bayi organization if it doesn't exist
+                org = Organization(
+                    code=BAYI_DEFAULT_ORG_CODE,
+                    name="Bayi School",
+                    invitation_code="BAYI2024",
                     created_at=datetime.utcnow()
                 )
-                db.add(bayi_user)
+                db.add(org)
                 db.commit()
-                db.refresh(bayi_user)
-                logger.info(f"Created bayi user: {user_phone}")
-            except Exception as e:
-                db.rollback()
-                logger.error(f"Failed to create bayi user: {e}")
-                # Try to get user again in case it was created by another request
-                bayi_user = db.query(User).filter(User.phone == user_phone).first()
-                if not bayi_user:
-                    logger.error(f"Failed to create bayi user after retry: {e}")
-                    # Redirect to demo instead of showing error
-                    return RedirectResponse(url="/demo", status_code=303)
-        
-        # Generate JWT token
-        jwt_token = create_access_token(bayi_user)
-        
-        logger.info(f"Bayi mode authentication successful: {user_phone}")
+                db.refresh(org)
+                logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+            
+            # Extract user info from token body (if available)
+            # Default to a generic bayi user if not specified
+            user_phone = body.get('phone') or body.get('user') or "bayi@system.com"
+            user_name = body.get('name') or "Bayi User"
+            
+            # Get or create user
+            bayi_user = db.query(User).filter(User.phone == user_phone).first()
+            
+            if not bayi_user:
+                try:
+                    bayi_user = User(
+                        phone=user_phone,
+                        password_hash=hash_password("bayi-no-pwd"),
+                        name=user_name,
+                        organization_id=org.id,
+                        created_at=datetime.utcnow()
+                    )
+                    db.add(bayi_user)
+                    db.commit()
+                    db.refresh(bayi_user)
+                    logger.info(f"Created bayi user: {user_phone}")
+                except Exception as e:
+                    db.rollback()
+                    logger.error(f"Failed to create bayi user: {e}")
+                    # Try to get user again in case it was created by another request
+                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                    if not bayi_user:
+                        logger.error(f"Failed to create bayi user after retry: {e}")
+                        # Redirect to demo instead of showing error
+                        return RedirectResponse(url="/demo", status_code=303)
+            
+            # Generate JWT token (user object is still valid after session close)
+            jwt_token = create_access_token(bayi_user)
+            
+            logger.info(f"Bayi mode authentication successful: {user_phone}")
+        finally:
+            db.close()  # ✅ Connection released BEFORE redirect
         
         # Valid token: redirect to editor with cookie set on redirect response
         redirect_response = RedirectResponse(url="/editor", status_code=303)

@@ -1037,7 +1037,7 @@ class LLMService:
         
         Args:
             prompt: Prompt to send to all LLMs
-            models: List of model names (default: ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao'])
+            models: List of model names (default: ['qwen', 'deepseek', 'kimi', 'doubao'])
             temperature: Sampling temperature (None uses model default)
             max_tokens: Maximum tokens to generate
             timeout: Per-LLM timeout in seconds (None uses default)
@@ -1058,7 +1058,7 @@ class LLMService:
         Example:
             async for chunk in llm_service.stream_progressive(
                 prompt="Generate observations about cars",
-                models=['qwen', 'deepseek', 'hunyuan', 'kimi']
+                models=['qwen', 'deepseek', 'kimi', 'doubao']
             ):
                 if chunk['event'] == 'token':
                     print(f"{chunk['llm']}: {chunk['token']}", end='', flush=True)
@@ -1067,8 +1067,9 @@ class LLMService:
                 elif chunk['event'] == 'error':
                     print(f"\n{chunk['llm']} error: {chunk['error']}")
         """
+        # NOTE: Hunyuan disabled due to 5 concurrent connection limit
         if models is None:
-            models = ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
+            models = ['qwen', 'deepseek', 'kimi', 'doubao']
         
         logger.debug(f"[LLMService] stream_progressive() - streaming from {len(models)} models concurrently")
         

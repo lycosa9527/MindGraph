@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.6] - 2025-12-22 - Disable Hunyuan LLM Due to Concurrent Connection Limit
+
+### Changed
+
+- **Hunyuan LLM Disabled** - Disabled Hunyuan across the entire application due to its 5 concurrent connection limit
+  - Removed Hunyuan button from the LLM selector in canvas toolbar (`templates/editor.html`)
+  - Removed from auto-complete models list (`static/js/managers/toolbar/llm-autocomplete-manager.js`)
+  - Removed from Node Palette generation (`agents/node_palette/base_palette_generator.py`)
+  - Removed from API default models (`routers/api.py`, `services/llm_service.py`)
+  - Removed from frontend configuration (`static/js/editor/toolbar-manager.js`)
+  - Removed from UI state management (`static/js/managers/toolbar/ui-state-llm-manager.js`)
+  - Removed translation entries (`static/js/editor/language-manager.js`)
+  - Updated cache configuration from 5 to 4 models (`static/js/managers/toolbar/llm-result-cache.js`)
+
+### Technical Details
+
+- **Active LLM Models**: Now using 4 models - Qwen, DeepSeek, Kimi, Doubao
+- **Infrastructure Preserved**: Hunyuan client code, error parser, and configuration remain in place for potential future re-enabling
+- **CSS Preserved**: Hunyuan button styles retained in `static/css/editor.css` for backward compatibility
+
+### Files Modified
+
+- `templates/editor.html` - Removed Hunyuan button from LLM selector
+- `static/js/editor/toolbar-manager.js` - Removed from LLM_CONFIG
+- `static/js/managers/toolbar/llm-autocomplete-manager.js` - Removed from models list
+- `static/js/managers/toolbar/llm-result-cache.js` - Updated max models to 4
+- `static/js/managers/toolbar/ui-state-llm-manager.js` - Removed from model names
+- `static/js/editor/language-manager.js` - Removed translation entries
+- `static/js/editor/node-palette-manager.js` - Updated docstring
+- `agents/node_palette/base_palette_generator.py` - Removed from llm_models list
+- `agents/main_agent.py` - Updated docstring
+- `routers/api.py` - Removed from default models
+- `services/llm_service.py` - Removed from stream_progressive defaults
+- `models/requests.py` - Updated field description
+
+---
+
 ## [4.37.5] - 2025-01-21 - Admin Panel Beijing Timezone, Token Aggregation, and Logging Fixes
 
 ### Fixed

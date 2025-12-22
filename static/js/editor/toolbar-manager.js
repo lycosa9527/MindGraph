@@ -11,14 +11,14 @@
  */
 
 // Multi-LLM Configuration
+// NOTE: Hunyuan disabled due to 5 concurrent connection limit
 const LLM_CONFIG = {
-    MODELS: ['qwen', 'deepseek', 'hunyuan', 'kimi', 'doubao'],
+    MODELS: ['qwen', 'deepseek', 'kimi', 'doubao'],
     TIMEOUT_MS: 60000, // 60 seconds per LLM request
     RENDER_DELAY_MS: 300, // Delay before fitting diagram to window
     MODEL_NAMES: {
         'qwen': 'Qwen',
         'deepseek': 'DeepSeek',
-        'hunyuan': 'Hunyuan',
         'kimi': 'Kimi',
         'doubao': 'Doubao'
     }

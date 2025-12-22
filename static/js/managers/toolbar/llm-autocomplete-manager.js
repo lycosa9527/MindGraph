@@ -3,7 +3,7 @@
  * ==========================
  * 
  * Orchestrator for LLM-based diagram auto-completion with multi-model support.
- * Coordinates with multiple LLM providers (Qwen, DeepSeek, Kimi, Hunyuan)
+ * Coordinates with multiple LLM providers (Qwen, DeepSeek, Kimi, Doubao)
  * using sub-managers for specific concerns.
  * 
  * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -295,6 +295,7 @@ class LLMAutoCompleteManager {
             
             // Run multi-model generation
             // Check if a model should be excluded (e.g., already used for initial generation)
+            // NOTE: Hunyuan disabled due to 5 concurrent connection limit
             let models = ['qwen', 'deepseek', 'kimi', 'doubao'];
             
             // Catapult mode: exclude model that was already used for initial generation

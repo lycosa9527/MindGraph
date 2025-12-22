@@ -34,7 +34,7 @@ class BasePaletteGenerator(ABC):
     
     Architecture:
     - Uses llm_service.stream_progressive() for concurrent token streaming
-    - All 5 LLMs (qwen, deepseek, hunyuan, kimi, doubao) fire simultaneously
+    - All 4 LLMs (qwen, deepseek, kimi, doubao) fire simultaneously (Hunyuan disabled)
     - Nodes render progressively as tokens arrive from any LLM
     - Deduplication across all batches and LLMs
     - Subclasses override _build_prompt() for diagram-specific generation
@@ -43,7 +43,8 @@ class BasePaletteGenerator(ABC):
     def __init__(self):
         """Initialize base palette generator"""
         self.llm_service = llm_service
-        self.llm_models = ['qwen', 'deepseek', 'hunyuan', 'kimi', 'doubao']
+        # NOTE: Hunyuan disabled due to 5 concurrent connection limit
+        self.llm_models = ['qwen', 'deepseek', 'kimi', 'doubao']
         
         # Session storage
         self.generated_nodes = {}  # session_id -> List[Dict]

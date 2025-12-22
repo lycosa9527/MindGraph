@@ -1844,7 +1844,7 @@ async def generate_multi_parallel(
             "prompt": "User's diagram description",
             "diagram_type": "bubble_map",
             "language": "zh",
-            "models": ["qwen", "deepseek", "kimi", "hunyuan"],  // optional
+            "models": ["qwen", "deepseek", "kimi", "doubao"],  // optional
             "dimension_preference": "optional dimension"
         }
     
@@ -1854,7 +1854,7 @@ async def generate_multi_parallel(
                 "qwen": { "success": true, "spec": {...}, "duration": 1.2 },
                 "deepseek": { "success": true, "spec": {...}, "duration": 1.5 },
                 "kimi": { "success": false, "error": "...", "duration": 2.0 },
-                "hunyuan": { "success": true, "spec": {...}, "duration": 1.8 }
+                "doubao": { "success": true, "spec": {...}, "duration": 1.8 }
             },
             "total_time": 2.1,  // Time for slowest model (parallel execution!)
             "success_count": 3,
@@ -1870,8 +1870,8 @@ async def generate_multi_parallel(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    # Get models to use (default to all 5)
-    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
+    # Get models to use (default to all 4, Hunyuan disabled due to 5 concurrent limit)
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'doubao']
     
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
@@ -2067,8 +2067,8 @@ async def generate_multi_progressive(
             detail=Messages.error("invalid_prompt", lang)
         )
     
-    # Get models to use (same as line 370)
-    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao']
+    # Get models to use (same as line 370, Hunyuan disabled due to 5 concurrent limit)
+    models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'doubao']
     
     # Extract language and diagram_type (same as lines 372-373)
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)

@@ -2308,13 +2308,16 @@ async def process_voice_command(
                 try:
                     user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
                     # Get organization_id from user if available
+                    # Use manual session management - close immediately after query
+                    db = SessionLocal()
                     try:
-                        db = next(get_db())
                         user = db.query(User).filter(User.id == user_id).first()
                         if user:
                             organization_id = user.organization_id
                     except Exception as e:
                         logger.debug(f"Error getting organization_id for token tracking: {e}")
+                    finally:
+                        db.close()
                 except (ValueError, TypeError) as e:
                     logger.debug(f"Error converting user_id for token tracking: {e}")
         

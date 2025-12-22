@@ -465,7 +465,6 @@ class UIStateLLMManager {
                     'qwen': 'Qwen',
                     'deepseek': 'DeepSeek',
                     'kimi': 'Kimi',
-                    'hunyuan': 'HunYuan',
                     'doubao': 'Doubao'
                 };
                 this.logger.debug('UIStateLLMManager', `Switched to ${modelNames[llmModel] || llmModel} result`);
@@ -490,7 +489,6 @@ class UIStateLLMManager {
                 'qwen': 'Qwen',
                 'deepseek': 'DeepSeek',
                 'kimi': 'Kimi',
-                'hunyuan': 'HunYuan',
                 'doubao': 'Doubao'
             };
             const modelName = modelNames[llmModel] || llmModel;

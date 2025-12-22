@@ -739,7 +739,7 @@ async def _detect_diagram_type_from_prompt(
     Args:
         user_prompt: User's input prompt
         language: Language ('zh' or 'en')
-        model: LLM model to use ('qwen', 'deepseek', 'kimi', 'hunyuan')
+        model: LLM model to use ('qwen', 'deepseek', 'kimi', 'doubao')
     
     Returns:
         dict: {'diagram_type': str, 'clarity': str, 'has_topic': bool}
