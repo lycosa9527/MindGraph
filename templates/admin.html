@@ -3934,6 +3934,18 @@ curl -X POST http://your-server/api/generate_graph \
         let realtimeEventSource = null;
         let realtimeUsers = [];
         
+        // Reconnection state (module-level to persist across errors)
+        let reconnectState = {
+            delay: 1000,
+            attempts: 0,
+            timeoutId: null,
+            maxDelay: 30000,
+            maxAttempts: 10
+        };
+        
+        // Track if event listeners are already added to prevent accumulation
+        let realtimeListenersAdded = false;
+        
         function toggleRealtimeStream() {
             if (realtimeEventSource) {
                 stopRealtimeStream();
@@ -3962,7 +3974,12 @@ curl -X POST http://your-server/api/generate_graph \
                     const data = JSON.parse(event.data);
                     handleRealtimeEvent(data);
                 } catch (e) {
-                    console.error('Failed to parse realtime event:', e);
+                    console.error('Failed to parse realtime event:', e, 'Event data:', event.data);
+                    // Show user-friendly error message
+                    const statusEl = document.getElementById('realtime-status');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span><span class="lang-zh">数据解析错误</span><span class="lang-en">Parse Error</span><span class="lang-az">Parse Xətası</span>';
+                    }
                 }
             };
             
@@ -3976,11 +3993,42 @@ curl -X POST http://your-server/api/generate_graph \
                 const btnEl = document.getElementById('realtime-toggle-btn');
                 statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></span><span class="lang-zh">连接错误</span><span class="lang-en">Connection Error</span><span class="lang-az">Qoşulma Xətası</span>';
                 btnEl.innerHTML = '<span class="lang-zh">开始监控</span><span class="lang-en">Start Monitoring</span><span class="lang-az">Monitoru Başlat</span>';
+                
+                // Attempt reconnection with exponential backoff
+                // Only if no reconnection already in progress and page is visible
+                if (!reconnectState.timeoutId && document.visibilityState === 'visible') {
+                    if (reconnectState.attempts >= reconnectState.maxAttempts) {
+                        console.error('Max reconnection attempts reached');
+                        return;
+                    }
+                    
+                    reconnectState.attempts++;
+                    console.log(`Scheduling reconnection attempt ${reconnectState.attempts} after ${reconnectState.delay}ms`);
+                    
+                    reconnectState.timeoutId = setTimeout(function() {
+                        reconnectState.timeoutId = null;
+                        if (!realtimeEventSource && document.visibilityState === 'visible') {
+                            console.log(`Attempting to reconnect (attempt ${reconnectState.attempts})...`);
+                            startRealtimeStream();
+                        }
+                    }, reconnectState.delay);
+                    
+                    // Exponential backoff: double delay each time, capped at maxDelay
+                    reconnectState.delay = Math.min(reconnectState.delay * 2, reconnectState.maxDelay);
+                }
             };
             
             realtimeEventSource.onopen = function() {
                 const statusEl = document.getElementById('realtime-status');
                 statusEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse 2s infinite;"></span><span class="lang-zh">已连接</span><span class="lang-en">Connected</span><span class="lang-az">Qoşulub</span>';
+                
+                // Reset reconnection state on successful connection
+                reconnectState.delay = 1000;
+                reconnectState.attempts = 0;
+                if (reconnectState.timeoutId) {
+                    clearTimeout(reconnectState.timeoutId);
+                    reconnectState.timeoutId = null;
+                }
             };
         }
         
@@ -3988,6 +4036,12 @@ curl -X POST http://your-server/api/generate_graph \
             if (realtimeEventSource) {
                 realtimeEventSource.close();
                 realtimeEventSource = null;
+            }
+            
+            // Cancel any pending reconnection
+            if (reconnectState.timeoutId) {
+                clearTimeout(reconnectState.timeoutId);
+                reconnectState.timeoutId = null;
             }
             
             const statusEl = document.getElementById('realtime-status');
@@ -4010,12 +4064,28 @@ curl -X POST http://your-server/api/generate_graph \
                     updateRealtimeUsers(data.users);
                     break;
                 case 'user_joined':
-                    // User joined - refresh list
-                    loadRealtimeUsers();
+                    // User joined - use incremental update from SSE event
+                    if (data && data.user && data.user.session_id) {
+                        // Add or update user in local list
+                        const existingIndex = realtimeUsers.findIndex(u => u.session_id === data.user.session_id);
+                        if (existingIndex >= 0) {
+                            realtimeUsers[existingIndex] = data.user;
+                        } else {
+                            realtimeUsers.push(data.user);
+                        }
+                        renderRealtimeUsers();
+                        // Update stats if available
+                        if (data.stats) {
+                            updateRealtimeStats(data.stats);
+                        }
+                    }
                     break;
                 case 'user_left':
-                    // User/session left - refresh list to get updated state
-                    loadRealtimeUsers();
+                    // User/session left - remove from local list
+                    if (data && data.session_id) {
+                        realtimeUsers = realtimeUsers.filter(u => u.session_id !== data.session_id);
+                        renderRealtimeUsers();
+                    }
                     break;
                 case 'heartbeat':
                     // Keep-alive ping
@@ -4052,17 +4122,30 @@ curl -X POST http://your-server/api/generate_graph \
             }
             
             tbody.innerHTML = realtimeUsers.map(user => {
-                const lastActivity = new Date(user.last_activity);
+                // Validate date before parsing
+                let lastActivity;
+                try {
+                    lastActivity = new Date(user.last_activity);
+                    if (isNaN(lastActivity.getTime())) {
+                        // Invalid date, use current time as fallback
+                        lastActivity = new Date();
+                    }
+                } catch (e) {
+                    // Date parsing failed, use current time
+                    lastActivity = new Date();
+                }
                 const timeAgo = formatTimeAgo(lastActivity);
                 const userPhone = user.user_phone ? escapeHtml(user.user_phone) : '<span class="lang-zh">未知</span><span class="lang-en">Unknown</span><span class="lang-az">Naməlum</span>';
                 const activityLabel = user.current_activity_label ? escapeHtml(user.current_activity_label) : '<span class="lang-zh">未知</span><span class="lang-en">Unknown</span><span class="lang-az">Naməlum</span>';
+                // Handle user_name: show if it exists and is not empty
+                const userName = user.user_name && user.user_name.trim() ? escapeHtml(user.user_name.trim()) : null;
                 
                 return `
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                         <td style="padding:0.75rem;">
                             <div style="display:flex;flex-direction:column;gap:0.25rem;">
                                 <span style="font-weight:600;color:#ffffff;">${userPhone}</span>
-                                ${user.user_name ? `<span style="font-size:0.875rem;color:#94a3b8;">${escapeHtml(user.user_name)}</span>` : ''}
+                                ${userName ? `<span style="font-size:0.875rem;color:#94a3b8;">${userName}</span>` : ''}
                                 ${user.ip_address ? `<span style="font-size:0.75rem;color:#64748b;">IP: ${escapeHtml(user.ip_address)}</span>` : ''}
                             </div>
                         </td>
@@ -4091,6 +4174,11 @@ curl -X POST http://your-server/api/generate_graph \
         }
         
         function formatTimeAgo(date) {
+            // Validate date
+            if (!date || isNaN(date.getTime())) {
+                return '<span class="lang-zh">无效日期</span><span class="lang-en">Invalid Date</span><span class="lang-az">Yanlış Tarix</span>';
+            }
+            
             const now = new Date();
             const diffMs = now - date;
             const diffSec = Math.floor(diffMs / 1000);
@@ -4105,14 +4193,18 @@ curl -X POST http://your-server/api/generate_graph \
                 return diffHour + 'h ago';
             } else {
                 // Display in Beijing timezone
-                return date.toLocaleString('en-US', {
-                    timeZone: 'Asia/Shanghai',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                try {
+                    return date.toLocaleString('en-US', {
+                        timeZone: 'Asia/Shanghai',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    return '<span class="lang-zh">日期格式错误</span><span class="lang-en">Date Format Error</span><span class="lang-az">Tarix Formatı Xətası</span>';
+                }
             }
         }
         
@@ -4125,6 +4217,32 @@ curl -X POST http://your-server/api/generate_graph \
                 }
                 originalSwitchTab(tab, element);
             };
+        }
+        
+        // Shut down SSE stream immediately when admin closes panel or webpage
+        // Use once: true to prevent listener accumulation, or check if already added
+        if (!realtimeListenersAdded) {
+            window.addEventListener('beforeunload', function() {
+                if (realtimeEventSource) {
+                    stopRealtimeStream();
+                }
+            }, { once: false }); // Keep false to handle multiple page closes
+            
+            // Handle page visibility changes (tab switch, minimize, etc.)
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden && realtimeEventSource) {
+                    stopRealtimeStream();
+                }
+            });
+            
+            // Fallback for mobile browsers (pagehide event)
+            window.addEventListener('pagehide', function() {
+                if (realtimeEventSource) {
+                    stopRealtimeStream();
+                }
+            });
+            
+            realtimeListenersAdded = true;
         }
         
         // Add pulse animation for connection indicator

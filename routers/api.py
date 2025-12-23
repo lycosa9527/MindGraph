@@ -94,7 +94,8 @@ async def ai_assistant_stream(
                 user_id=current_user.id,
                 user_phone=getattr(current_user, 'phone', None),
                 activity_type='ai_assistant',
-                details={'conversation_id': req.conversation_id, 'user_id': req.user_id}
+                details={'conversation_id': req.conversation_id, 'user_id': req.user_id},
+                user_name=getattr(current_user, 'name', None)
             )
         except Exception as e:
             logger.debug(f"Failed to track user activity: {e}")
@@ -239,7 +240,8 @@ async def generate_graph(
                     user_id=current_user.id,
                     user_phone=getattr(current_user, 'phone', None),
                     activity_type=activity_type,
-                    details={'diagram_type': diagram_type_str, 'llm_model': llm_model}
+                    details={'diagram_type': diagram_type_str, 'llm_model': llm_model},
+                    user_name=getattr(current_user, 'name', None)
                 )
             except Exception as e:
                 logger.debug(f"Failed to track user activity: {e}")

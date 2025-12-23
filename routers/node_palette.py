@@ -80,7 +80,8 @@ async def start_node_palette(
                 user_id=current_user.id,
                 user_phone=current_user.phone,
                 activity_type='node_palette',
-                details={'diagram_type': req.diagram_type, 'session_id': session_id}
+                details={'diagram_type': req.diagram_type, 'session_id': session_id},
+                user_name=getattr(current_user, 'name', None)
             )
         except Exception as e:
             logger.debug(f"Failed to track user activity: {e}")

@@ -211,7 +211,12 @@ class RedisActivityTracker:
             if user_id in self._memory_user_sessions:
                 for sid in self._memory_user_sessions[user_id]:
                     if sid in self._memory_sessions:
+                        # Update session info (consistent with Redis mode)
                         self._memory_sessions[sid]['last_activity'] = get_beijing_now()
+                        if user_name:
+                            self._memory_sessions[sid]['user_name'] = user_name
+                        if ip_address:
+                            self._memory_sessions[sid]['ip_address'] = ip_address
                         return sid
         
         # Create new session
@@ -313,13 +318,14 @@ class RedisActivityTracker:
         user_phone: str,
         activity_type: str,
         details: Optional[Dict] = None,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        user_name: Optional[str] = None
     ):
         """Record a user activity."""
         if self._use_redis():
-            self._redis_record_activity(user_id, user_phone, activity_type, details, session_id)
+            self._redis_record_activity(user_id, user_phone, activity_type, details, session_id, user_name)
         else:
-            self._memory_record_activity(user_id, user_phone, activity_type, details, session_id)
+            self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name)
     
     def _redis_record_activity(
         self,
@@ -327,19 +333,20 @@ class RedisActivityTracker:
         user_phone: str,
         activity_type: str,
         details: Optional[Dict],
-        session_id: Optional[str]
+        session_id: Optional[str],
+        user_name: Optional[str]
     ):
         """Record activity using Redis."""
         redis = get_redis()
         if not redis:
-            return self._memory_record_activity(user_id, user_phone, activity_type, details, session_id)
+            return self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name)
         
         try:
             now = get_beijing_now()
             
             # Find or create session
             if session_id is None:
-                session_id = self.start_session(user_id, user_phone)
+                session_id = self.start_session(user_id, user_phone, user_name=user_name)
             
             session_key = f"{SESSION_PREFIX}{session_id}"
             
@@ -349,6 +356,11 @@ class RedisActivityTracker:
                 pipe.hset(session_key, "last_activity", now.isoformat())
                 pipe.hset(session_key, "current_activity", activity_type)
                 pipe.hincrby(session_key, "activity_count", 1)
+                # Update user_name if provided and session doesn't have one or it's empty
+                if user_name:
+                    existing_name = redis.hget(session_key, "user_name")
+                    if not existing_name or existing_name == "":
+                        pipe.hset(session_key, "user_name", user_name)
                 pipe.expire(session_key, SESSION_TTL)
                 pipe.execute()
             
@@ -364,19 +376,23 @@ class RedisActivityTracker:
         user_phone: str,
         activity_type: str,
         details: Optional[Dict],
-        session_id: Optional[str]
+        session_id: Optional[str],
+        user_name: Optional[str]
     ):
         """Record activity using in-memory storage."""
         now = get_beijing_now()
         
         if session_id is None:
-            session_id = self.start_session(user_id, user_phone)
+            session_id = self.start_session(user_id, user_phone, user_name=user_name)
         
         if session_id in self._memory_sessions:
             session = self._memory_sessions[session_id]
             session['last_activity'] = now
             session['current_activity'] = activity_type
             session['activity_count'] = session.get('activity_count', 0) + 1
+            # Update user_name if provided and session doesn't have one or it's empty
+            if user_name and (not session.get('user_name') or session.get('user_name') == ""):
+                session['user_name'] = user_name
     
     def _log_activity(
         self,
@@ -440,8 +456,24 @@ class RedisActivityTracker:
                     session_data = redis.hgetall(key)
                     if session_data:
                         try:
-                            created_at = datetime.fromisoformat(session_data.get('created_at', ''))
-                            last_activity = datetime.fromisoformat(session_data.get('last_activity', ''))
+                            # Parse dates with fallback to current time if invalid
+                            try:
+                                created_at = datetime.fromisoformat(session_data.get('created_at', ''))
+                            except (ValueError, TypeError):
+                                created_at = get_beijing_now()
+                                logger.debug(f"Invalid created_at for session {session_data.get('session_id', 'unknown')}, using current time")
+                            
+                            try:
+                                last_activity = datetime.fromisoformat(session_data.get('last_activity', ''))
+                            except (ValueError, TypeError):
+                                last_activity = get_beijing_now()
+                                logger.debug(f"Invalid last_activity for session {session_data.get('session_id', 'unknown')}, using current time")
+                            
+                            # Calculate duration with error handling
+                            try:
+                                duration = str(get_beijing_now() - created_at).split('.')[0]
+                            except Exception:
+                                duration = '0:00:00'
                             
                             user_data = {
                                 'session_id': session_data.get('session_id', ''),
@@ -456,7 +488,7 @@ class RedisActivityTracker:
                                 ),
                                 'last_activity': last_activity.isoformat(),
                                 'activity_count': int(session_data.get('activity_count', 0)),
-                                'session_duration': str(get_beijing_now() - created_at).split('.')[0]
+                                'session_duration': duration
                             }
                             active_users.append(user_data)
                         except Exception as e:

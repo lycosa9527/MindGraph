@@ -139,7 +139,8 @@ def track_user_activity(
             user_phone=user.phone,
             activity_type=activity_type,
             details=details or {},
-            session_id=session_id
+            session_id=session_id,
+            user_name=user.name
         )
     except Exception as e:
         # Don't fail the request if tracking fails
