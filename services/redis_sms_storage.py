@@ -8,7 +8,7 @@ Replaces SQLite for SMS verification to eliminate write contention.
 Features:
 - O(1) store, verify, delete operations
 - Automatic TTL-based expiration (no cleanup needed)
-- One-time use verification (atomic get-and-delete)
+- One-time use verification (atomic compare-and-delete via Lua script)
 - Shared across all workers (accurate verification)
 
 Key Schema:
@@ -24,7 +24,7 @@ Proprietary License
 
 import logging
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
 
 from services.redis_client import is_redis_available, get_redis, redis_ops
@@ -44,7 +44,7 @@ class RedisSMSStorage:
     
     Performance:
     - Store: O(1) - SETEX command
-    - Verify: O(1) - GET + DEL atomic via pipeline
+    - Verify: O(1) - Atomic compare-and-delete via Lua script
     - No background cleanup needed (Redis TTL handles expiration)
     
     Thread-safe: All operations are atomic Redis commands.
@@ -101,7 +101,9 @@ class RedisSMSStorage:
         """
         Verify SMS code and remove it (one-time use).
         
-        Uses atomic GET+DELETE to prevent race conditions.
+        Uses atomic Lua script for compare-and-delete to prevent race conditions.
+        Only removes the code if it matches. Wrong attempts do not consume the code,
+        allowing users to retry with the correct code.
         
         Args:
             phone: Phone number
@@ -115,20 +117,43 @@ class RedisSMSStorage:
             logger.warning("[SMS] Redis unavailable, cannot verify code")
             return False
         
-        key = self._get_key(phone, purpose)
-        
-        # Atomic get and delete
-        stored_code = redis_ops.get_and_delete(key)
-        
-        if stored_code is None:
-            logger.debug(f"[SMS] No code found for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
+        redis = get_redis()
+        if not redis:
+            logger.warning("[SMS] Redis client unavailable, cannot verify code")
             return False
         
-        if stored_code == code:
-            logger.info(f"[SMS] Code verified for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
-            return True
-        else:
-            logger.warning(f"[SMS] Invalid code for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
+        key = self._get_key(phone, purpose)
+        
+        try:
+            # Atomic compare-and-delete using Lua script
+            # Only deletes if stored code matches provided code
+            # Prevents race condition where two concurrent requests could both consume the same code
+            lua_script = """
+            if redis.call("get", KEYS[1]) == ARGV[1] then
+                return redis.call("del", KEYS[1])
+            else
+                return 0
+            end
+            """
+            result = redis.eval(lua_script, 1, key, code)
+            
+            if result == 1:
+                logger.info(f"[SMS] Code verified and consumed for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
+                return True
+            elif result == 0:
+                # Code doesn't match or doesn't exist - check which case
+                stored_code = redis_ops.get(key)
+                if stored_code is None:
+                    logger.debug(f"[SMS] No code found for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
+                else:
+                    logger.warning(f"[SMS] Invalid code for {phone[:3]}***{phone[-4:]} (purpose: {purpose}) - code preserved for retry")
+                return False
+            else:
+                logger.warning(f"[SMS] Unexpected Lua script result: {result}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[SMS] Lua script execution failed: {e}")
             return False
     
     def check_exists(self, phone: str, purpose: str = "verification") -> bool:
@@ -169,6 +194,46 @@ class RedisSMSStorage:
         
         key = self._get_key(phone, purpose)
         return redis_ops.get(key)
+    
+    def check_exists_and_get_ttl(self, phone: str, purpose: str = "verification") -> Tuple[bool, int]:
+        """
+        Atomically check if code exists and get its remaining TTL.
+        
+        Uses Redis pipeline to get both EXISTS and TTL in a single operation,
+        eliminating race conditions where code could expire between checks.
+        
+        Args:
+            phone: Phone number
+            purpose: Purpose of code
+        
+        Returns:
+            Tuple of (exists: bool, ttl: int)
+            - exists: True if code exists, False otherwise
+            - ttl: Remaining TTL in seconds, -1 if no TTL, -2 if key doesn't exist
+        """
+        if not is_redis_available():
+            return False, -2
+        
+        redis = get_redis()
+        if not redis:
+            return False, -2
+        
+        key = self._get_key(phone, purpose)
+        
+        try:
+            # Atomic pipeline: check existence and get TTL in one operation
+            pipe = redis.pipeline()
+            pipe.exists(key)
+            pipe.ttl(key)
+            results = pipe.execute()
+            
+            exists = bool(results[0])
+            ttl = results[1] if results[1] is not None else -2
+            
+            return exists, ttl
+        except Exception as e:
+            logger.error(f"[SMS] Pipeline execution failed: {e}")
+            return False, -2
     
     def get_remaining_ttl(self, phone: str, purpose: str = "verification") -> int:
         """

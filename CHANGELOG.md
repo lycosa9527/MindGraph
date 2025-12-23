@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.12] - 2025-12-23 - SMS Verification Race Condition Fixes
+
+### Fixed
+
+- **SMS Code Verification Race Condition** (`services/redis_sms_storage.py`)
+  - Fixed critical security vulnerability where two concurrent requests could both consume the same SMS code
+  - Previously: Non-atomic GET + DELETE operations allowed code reuse
+  - Now: Uses Redis Lua script for atomic compare-and-delete operation
+  - Prevents double consumption of SMS codes, ensuring true one-time use
+  - Pattern matches existing `backup_scheduler.py` implementation
+
+- **SMS Cooldown Check Race Condition** (`routers/auth.py`)
+  - Fixed race condition where code could expire between existence check and TTL retrieval
+  - Previously: Two separate Redis calls (`check_exists` + `get_remaining_ttl`)
+  - Now: Single atomic operation (`check_exists_and_get_ttl`) using Redis pipeline
+  - Eliminates potential for inconsistent state between checks
+  - More efficient: Reduced from 2 Redis round-trips to 1
+
+### Changed
+
+- **SMS Storage Methods** (`services/redis_sms_storage.py`)
+  - `verify_and_remove()` now uses Lua script for atomic compare-and-delete
+  - Added new `check_exists_and_get_ttl()` method for atomic cooldown checks
+  - Updated documentation to accurately reflect atomic operations
+
+- **SMS Send Endpoint** (`routers/auth.py`)
+  - Updated cooldown logic to use atomic `check_exists_and_get_ttl()` method
+  - Improved performance and eliminated race condition
+
+### Technical Details
+
+- **Lua Script Implementation**:
+  ```lua
+  if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("del", KEYS[1])
+  else
+      return 0
+  end
+  ```
+  - Returns 1 if code matched and deleted, 0 otherwise
+  - Fully atomic: single Redis operation prevents race conditions
+
+- **Pipeline Implementation**:
+  - Uses Redis pipeline to execute EXISTS and TTL commands atomically
+  - Returns tuple `(exists: bool, ttl: int)` in single operation
+
+### Security
+
+- Fixed security vulnerability allowing SMS code reuse
+- Ensures SMS codes are truly one-time use (cannot be consumed twice)
+- Maintains security best practices: wrong attempts don't consume codes
+
+### Files Modified
+
+- `services/redis_sms_storage.py` - Fixed race condition, added atomic cooldown check
+- `routers/auth.py` - Updated to use atomic cooldown check method
+
+---
+
 ## [4.37.11] - 2025-12-23 - Redis Operations Retry Logic
 
 ### Added

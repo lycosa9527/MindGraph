@@ -1028,28 +1028,29 @@ async def send_sms_code(
     rate_limiter = get_rate_limiter()
     
     # Check rate limiting: cooldown between requests (via Redis TTL)
-    # Calculate how long ago the code was sent, only block if within cooldown period
-    if sms_storage.check_exists(phone, purpose):
-        remaining_ttl = sms_storage.get_remaining_ttl(phone, purpose)
-        if remaining_ttl > 0:
-            # Calculate how long ago the code was sent
-            # code_age = total_ttl - remaining_ttl
-            total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
-            code_age = total_ttl - remaining_ttl
-            
-            # Only block if code was sent within the cooldown period
-            if code_age < SMS_RESEND_INTERVAL_SECONDS:
-                wait_seconds = SMS_RESEND_INTERVAL_SECONDS - code_age
-                if wait_seconds >= 60:
-                    wait_minutes = (wait_seconds // 60) + 1
-                    error_msg = Messages.error("sms_cooldown_minutes", lang, wait_minutes)
-                else:
-                    error_msg = Messages.error("sms_cooldown_seconds", lang, wait_seconds)
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail=error_msg
-                )
-            # If code_age >= SMS_RESEND_INTERVAL_SECONDS, allow resend (old code will be overwritten)
+    # Use atomic operation to check existence and get TTL in one call
+    # This prevents race conditions where code could expire between checks
+    exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)
+    
+    if exists and remaining_ttl > 0:
+        # Calculate how long ago the code was sent
+        # code_age = total_ttl - remaining_ttl
+        total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
+        code_age = total_ttl - remaining_ttl
+        
+        # Only block if code was sent within the cooldown period
+        if code_age < SMS_RESEND_INTERVAL_SECONDS:
+            wait_seconds = SMS_RESEND_INTERVAL_SECONDS - code_age
+            if wait_seconds >= 60:
+                wait_minutes = (wait_seconds // 60) + 1
+                error_msg = Messages.error("sms_cooldown_minutes", lang, wait_minutes)
+            else:
+                error_msg = Messages.error("sms_cooldown_seconds", lang, wait_seconds)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=error_msg
+            )
+        # If code_age >= SMS_RESEND_INTERVAL_SECONDS, allow resend (old code will be overwritten)
     
     # Check rate limit within time window using Redis rate limiter
     # Uses sliding window algorithm for accurate rate limiting across workers
@@ -1181,8 +1182,8 @@ def _verify_and_consume_sms_code(
     
     Returns True if valid, raises HTTPException if invalid
     
-    Uses Redis atomic GET+DELETE to prevent race conditions.
-    Only one concurrent request can consume the code.
+    Uses Redis Lua script for atomic compare-and-delete to prevent race conditions.
+    Only one concurrent request can consume the code successfully.
     
     Args:
         phone: Phone number
