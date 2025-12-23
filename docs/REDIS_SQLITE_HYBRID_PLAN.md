@@ -212,7 +212,7 @@ services/token_tracker.py:
 
 ### 4.1 Redis Installation
 
-**Option A: Docker (Recommended)**
+**Option A: Docker (Recommended - Redis 8.4)**
 ```bash
 # Single command, runs in background
 docker run -d \
@@ -220,11 +220,16 @@ docker run -d \
   --restart unless-stopped \
   -p 6379:6379 \
   -v redis_data:/data \
-  redis:7-alpine \
+  redis:8.4-alpine \
   redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+
+# Or use docker-compose (see docker/docker-compose.yml)
+docker-compose -f docker/docker-compose.yml up -d redis
 ```
 
-**Option B: Linux Package**
+**Note:** Redis 8.4 is the latest stable release. Redis 8.2+ provides 35%+ faster command execution and 49% higher throughput compared to Redis 7.0. Recommended for production.
+
+**Option B: Linux Package (Redis 7.0.x)**
 ```bash
 # Ubuntu/Debian
 sudo apt update
@@ -233,10 +238,12 @@ sudo systemctl enable redis-server
 sudo systemctl start redis-server
 ```
 
+**Note:** Ubuntu repositories provide Redis 7.0.x. For Redis 8.2 performance improvements, use Docker (Option A) or install from source (see docs/REDIS_SETUP.md).
+
 **Option C: Windows (Development)**
 ```bash
 # Using Docker Desktop
-docker run -d --name redis -p 6379:6379 redis:alpine
+docker run -d --name redis -p 6379:6379 redis:8.4-alpine
 
 # Or use Memurai (Redis-compatible for Windows)
 # Download from: https://www.memurai.com/

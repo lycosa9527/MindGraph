@@ -31,37 +31,42 @@
 | Decision | Choice | Reason |
 |----------|--------|--------|
 | Load balancer location | LLM Service level | Transparent to routers/agents |
+| Routing approach | Model-specific | Only DeepSeek needs load balancing |
 | Strategy | Weighted random | Multi-worker safe, stateless |
-| Weight distribution | 30% Route A, 70% Route B | Volcengine higher capacity |
-| Kimi provider | Always Volcengine | Dashscope only 60 RPM! |
+| DeepSeek weight | 50% Dashscope, 50% Volcengine | Balanced load distribution |
+| Qwen provider | Always Dashscope (fixed) | Cost optimization (Volcengine elastic too expensive) |
+| Doubao provider | Always Volcengine (fixed) | Not available on Dashscope |
+| Kimi provider | Always Volcengine (fixed) | Dashscope only 60 RPM (Volcengine: 5,000 RPM) |
+| DeepSeek provider | 50/50 Dashscope/Volcengine (load balanced) | Balanced load distribution |
 | Model names | Logical → Physical mapping | Users never see provider details |
 
 ---
 
 ## Overview
 
-This document describes the load balancing framework for distributing LLM requests between two provider routes to mitigate Dashscope rate limiting issues.
+This document describes the load balancing framework for distributing LLM requests between two provider routes for cost optimization and performance. The primary goal is to route Qwen requests to Dashscope (avoiding expensive Volcengine elastic service) while maintaining optimal performance for other models.
 
 ## Problem Statement
 
-### The Real Bottleneck: Kimi on Dashscope
+### Cost Optimization: Volcengine Elastic Service Too Expensive
 
-After reviewing actual rate limits from [Aliyun Bailian Console](https://bailian.console.aliyun.com), we discovered:
+The primary driver for this load balancing framework is **cost optimization**. Volcengine's elastic service for Qwen is too expensive, so we need to route Qwen requests to Dashscope instead.
 
-| Model on Dashscope | RPM Limit | Status |
-|--------------------|-----------|--------|
-| qwen-plus | 15,000 | OK |
-| deepseek-v3.1 | 15,000 | OK |
-| **Moonshot-Kimi-K2** | **60** | **BOTTLENECK!** |
+### Routing Strategy
 
-**Kimi on Dashscope is severely limited to only 60 RPM!**
+Based on cost and performance considerations:
 
-Meanwhile, Volcengine provides:
-- **Kimi**: 5,000 RPM (83x higher than Dashscope!)
-- **Doubao**: 30,000 RPM
-- **DeepSeek**: 15,000 RPM
+| Model | Provider Strategy | Reason |
+|-------|------------------|--------|
+| **Qwen** | **Always Dashscope** | Volcengine elastic service too expensive |
+| **Doubao** | **Always Volcengine** | Not available on Dashscope |
+| **Kimi** | **Always Volcengine** | Dashscope only 60 RPM (Volcengine: 5,000 RPM = 83x higher!) |
+| **DeepSeek** | **50/50 Split** | Balanced load distribution between Dashscope and Volcengine |
 
-**Goal**: Route Kimi requests to Volcengine to eliminate the 60 RPM bottleneck, effectively increasing Kimi throughput by 83x.
+**Key Benefits**:
+- **Cost savings**: Qwen always uses Dashscope (cheaper than Volcengine elastic)
+- **Performance**: Kimi uses Volcengine (5,000 RPM vs Dashscope's 60 RPM)
+- **Load balancing**: DeepSeek distributed 50/50 across providers
 
 ---
 
@@ -89,7 +94,9 @@ Meanwhile, Volcengine provides:
 
 ## Load Balancing Architecture
 
-### Route Definition
+### Model-Specific Routing
+
+Since most models have fixed providers, **load balancing is only needed for DeepSeek**. The routing is model-specific:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -99,45 +106,48 @@ Meanwhile, Volcengine provides:
                                           │
                                           ▼
                           ┌───────────────────────────────┐
-                          │       LOAD BALANCER           │
-                          │   (30% Route A / 70% Route B) │
+                          │    MODEL-SPECIFIC ROUTER       │
                           └───────────────┬───────────────┘
                                           │
                     ┌─────────────────────┴─────────────────────┐
                     │                                           │
-                    ▼ (30%)                                     ▼ (70%)
-     ┌──────────────────────────────┐           ┌──────────────────────────────┐
-     │         ROUTE A              │           │         ROUTE B              │
-     │   (Dashscope + Volcengine)   │           │   (Full Volcengine)          │
-     └──────────────┬───────────────┘           └──────────────┬───────────────┘
-                    │                                          │
-     ┌──────────────┴──────────────┐            ┌──────────────┴──────────────┐
-     │                             │            │                             │
-     ▼                             ▼            ▼                             ▼
-┌─────────────┐            ┌─────────────┐ ┌─────────────┐            ┌─────────────┐
-│  Dashscope  │            │ Volcengine  │ │ Volcengine  │            │ Volcengine  │
-├─────────────┤            ├─────────────┤ ├─────────────┤            ├─────────────┤
-│ qwen-plus   │            │   doubao    │ │ ark-qwen    │            │   doubao    │
-│ deepseek    │            │  ark-kimi   │ │ ark-deepseek│            │  ark-kimi   │
-└─────────────┘            └─────────────┘ └─────────────┘            └─────────────┘
-
-Route A: qwen/deepseek on Dashscope, kimi/doubao on Volcengine
-Route B: All 4 models on Volcengine
+        ┌───────────┴──────────┐    ┌───────────┴──────────┐    ┌───────────┴──────────┐
+        │                      │    │                      │    │                      │
+        ▼                      ▼    ▼                      ▼    ▼                      ▼
+   ┌─────────┐          ┌─────────┐ ┌─────────┐          ┌──────────────────────────┐
+   │ Qwen    │          │ Doubao  │ │ Kimi    │          │      DeepSeek             │
+   │         │          │         │ │         │          │   (Load Balanced 50/50)  │
+   └────┬────┘          └────┬────┘ └────┬────┘          └──────┬───────────────────┘
+        │                    │            │                       │
+        │                    │            │                       │
+        │                    │            │              ┌────────┴────────┐
+        │                    │            │              │                   │
+        ▼                    ▼            ▼              ▼                   ▼
+   ┌─────────┐          ┌─────────┐ ┌─────────┐  ┌─────────┐         ┌─────────┐
+   │Dashscope│          │Volcengine│ │Volcengine│  │Dashscope│         │Volcengine│
+   │(Fixed)  │          │(Fixed)   │ │(Fixed)   │  │(50%)    │         │(50%)    │
+   └─────────┘          └─────────┘ └─────────┘  └─────────┘         └─────────┘
 ```
 
-### Route A: Mixed (Dashscope + Volcengine for Doubao/Kimi)
+### Fixed Routing (No Load Balancing)
 
-- **Dashscope**: qwen, deepseek (15,000 RPM each)
-- **Volcengine**: doubao (30,000 RPM), kimi (5,000 RPM)
-- Avoids Dashscope Kimi bottleneck (only 60 RPM on Dashscope!)
-- **4 models** for Node Palette: qwen, deepseek, kimi, doubao
+| Model | Provider | Reason |
+|-------|----------|--------|
+| **Qwen** | **Always Dashscope** | Cost optimization (Volcengine elastic too expensive) |
+| **Doubao** | **Always Volcengine** | Not available on Dashscope |
+| **Kimi** | **Always Volcengine** | Dashscope only 60 RPM (Volcengine: 5,000 RPM = 83x higher!) |
 
-### Route B: Full Volcengine
+### Load Balanced Routing (DeepSeek Only)
 
-- **Volcengine**: ark-qwen, ark-deepseek, ark-kimi, doubao
-- All requests go through Volcengine ARK API
-- Uses Volcengine rate limits only
-- **4 models** for Node Palette: all on Volcengine
+| Model | Provider Split | Reason |
+|-------|----------------|--------|
+| **DeepSeek** | **50% Dashscope / 50% Volcengine** | Balanced load distribution across providers |
+
+**Key Benefits**:
+- **Simpler design**: Only DeepSeek needs load balancing logic
+- **Fixed routing**: Qwen, Doubao, and Kimi always go to their optimal providers
+- **Cost optimization**: Qwen always uses cheaper Dashscope
+- **Performance**: Kimi always uses high-capacity Volcengine
 
 ---
 
@@ -181,14 +191,18 @@ Route B: All 4 models on Volcengine
 
 ### Model Mapping Table
 
-| Logical Name (Frontend) | Route A (Physical) | Route B (Physical) |
-|-------------------------|--------------------|--------------------|
-| `qwen` | Dashscope `qwen-plus-latest` | Volcengine `ark-qwen` |
-| `deepseek` | Dashscope `deepseek-v3.1` | Volcengine `ark-deepseek` |
-| `kimi` | Volcengine `ark-kimi` | Volcengine `ark-kimi` |
-| `doubao` | Volcengine `doubao` | Volcengine `doubao` |
+| Logical Name (Frontend) | Provider | Physical Model | Load Balancing |
+|-------------------------|----------|----------------|----------------|
+| `qwen` | **Dashscope** (Fixed) | `qwen-plus-latest` | No - always Dashscope |
+| `deepseek` | **Dashscope** (50%) or **Volcengine** (50%) | `deepseek-v3.1` or `ark-deepseek` | Yes - 50/50 split |
+| `kimi` | **Volcengine** (Fixed) | `ark-kimi` | No - always Volcengine |
+| `doubao` | **Volcengine** (Fixed) | `doubao` | No - always Volcengine |
 
-**Note**: Kimi and Doubao ALWAYS use Volcengine (even on Route A) to avoid Dashscope's 60 RPM Kimi limit!
+**Routing Logic**:
+- **Qwen**: Always routes to Dashscope (cost optimization)
+- **Doubao**: Always routes to Volcengine (not available on Dashscope)
+- **Kimi**: Always routes to Volcengine (avoids Dashscope's 60 RPM limit)
+- **DeepSeek**: Load balanced 50/50 between Dashscope and Volcengine
 
 ### Internal Model Aliases (Backend Only)
 
@@ -198,7 +212,7 @@ These are NEVER exposed to frontend:
 |----------------|----------|---------|
 | `qwen-turbo` | Dashscope | Fast classification |
 | `qwen-plus` | Dashscope | High-quality generation |
-| `ark-qwen` | Volcengine | Qwen3-14B on ARK |
+| `ark-qwen` | Volcengine | Qwen3-14B on ARK (deprecated - Qwen always uses Dashscope) |
 | `ark-deepseek` | Volcengine | DeepSeek-V3 on ARK |
 | `ark-kimi` | Volcengine | Kimi on ARK |
 
@@ -233,11 +247,13 @@ const MODEL_BUTTONS = [
 **Backend Processing:**
 ```python
 # In load_balancer.py
-logical_model = request.model  # 'deepseek'
-route = self.select_route()    # 'route_a' or 'route_b'
-physical_model = self.map_model(logical_model, route)
-# Route A: 'deepseek' → uses Dashscope deepseek-v3.1 client
-# Route B: 'deepseek' → uses Volcengine ark-deepseek client
+logical_model = request.model  # 'deepseek', 'qwen', 'kimi', or 'doubao'
+physical_model = self.map_model(logical_model)
+# Model-specific routing:
+# - 'qwen' → 'qwen' (fixed: ALWAYS Dashscope)
+# - 'deepseek' → 'deepseek' or 'ark-deepseek' (load balanced: 50/50)
+# - 'kimi' → 'ark-kimi' (fixed: ALWAYS Volcengine)
+# - 'doubao' → 'doubao' (fixed: ALWAYS Volcengine)
 ```
 
 **Response (Backend → Frontend):**
@@ -281,10 +297,10 @@ LOAD_BALANCING_ENABLED=true
 # Strategy: 'weighted', 'round_robin', 'random'
 LOAD_BALANCING_STRATEGY=weighted
 
-# Weight distribution (must sum to 100)
-# Format: route_a:weight,route_b:weight
-# 30% Dashscope, 70% Volcengine (Volcengine has higher TPM limits)
-LOAD_BALANCING_WEIGHTS=route_a:30,route_b:70
+# DeepSeek load balancing weight (0-100)
+# 50 = 50% Dashscope, 50% Volcengine
+# Only DeepSeek uses load balancing; Qwen/Doubao/Kimi have fixed providers
+DEEPSEEK_DASHSCOPE_WEIGHT=50
 
 # ============================================================================
 # VOLCENGINE ARK CONFIGURATION
@@ -364,29 +380,18 @@ DASHSCOPE_RATE_LIMITING_ENABLED=true  # Protect Kimi's 60 RPM limit
 ```python
 class LLMLoadBalancer:
     """
-    Distributes requests between Route A (Mixed) and Route B (Full Volcengine).
+    Model-specific routing: Only DeepSeek uses load balancing (50/50 split).
+    Qwen, Doubao, and Kimi have fixed providers.
     
     KEY PRINCIPLE: Users see logical model names (deepseek, qwen, kimi, doubao).
-    The load balancer maps these to physical models transparently.
+    The router maps these to physical models based on model-specific rules.
     """
     
-    ROUTE_A = 'route_a'  # Mixed: Dashscope + Volcengine Doubao
-    ROUTE_B = 'route_b'  # Full Volcengine
-    
-    # Logical model names (what frontend sends)
-    LOGICAL_MODELS = ['deepseek', 'qwen', 'kimi', 'doubao']
-    
-    # Internal aliases (used within backend, never exposed to frontend)
-    INTERNAL_ALIASES = ['qwen-turbo', 'qwen-plus']
-    
-    # Route A mapping: logical → physical (Dashscope + Volcengine for Kimi/Doubao)
-    # Kimi and Doubao ALWAYS use Volcengine to avoid Dashscope's 60 RPM Kimi limit
-    ROUTE_A_MODEL_MAP = {
-        # Logical models (frontend buttons)
-        'qwen': 'qwen',             # → Dashscope qwen-plus-latest (15,000 RPM)
-        'deepseek': 'deepseek',     # → Dashscope deepseek-v3.1 (15,000 RPM)
-        'kimi': 'ark-kimi',         # → Volcengine Kimi (5,000 RPM) - NOT Dashscope!
-        'doubao': 'doubao',         # → Volcengine doubao (30,000 RPM)
+    # Fixed routing mappings (no load balancing needed)
+    FIXED_MODEL_MAP = {
+        'qwen': 'qwen',             # → Dashscope qwen-plus-latest (ALWAYS Dashscope)
+        'kimi': 'ark-kimi',         # → Volcengine Kimi (ALWAYS Volcengine)
+        'doubao': 'doubao',         # → Volcengine doubao (ALWAYS Volcengine)
         # Internal aliases
         'qwen-turbo': 'qwen-turbo', # → Dashscope qwen-turbo
         'qwen-plus': 'qwen-plus',   # → Dashscope qwen-plus-latest
@@ -395,85 +400,90 @@ class LLMLoadBalancer:
         'omni': 'omni',             # → Voice agent
     }
     
-    # Route B mapping: logical → physical (Full Volcengine)
-    # All 4 models on Volcengine
-    ROUTE_B_MODEL_MAP = {
-        # Logical models (frontend buttons)
-        'qwen': 'ark-qwen',         # → Volcengine Qwen3-14B (Elastic)
-        'deepseek': 'ark-deepseek', # → Volcengine DeepSeek-V3 (15,000 RPM)
-        'kimi': 'ark-kimi',         # → Volcengine Kimi (5,000 RPM)
-        'doubao': 'doubao',         # → Volcengine doubao (30,000 RPM)
-        # Internal aliases also mapped
-        'qwen-turbo': 'ark-qwen',   # → Volcengine Qwen3-14B
-        'qwen-plus': 'ark-qwen',    # → Volcengine Qwen3-14B
-        # Unaffected
-        'hunyuan': 'hunyuan',       # → Tencent hunyuan (not on Volcengine)
-        'omni': 'omni',             # → Voice agent
-    }
+    # DeepSeek load balancing options
+    DEEPSEEK_DASHSCOPE = 'deepseek'      # Dashscope deepseek-v3.1
+    DEEPSEEK_VOLCENGINE = 'ark-deepseek' # Volcengine DeepSeek-V3
     
-    def __init__(self, strategy='weighted', weights=None, enabled=True):
+    def __init__(self, strategy='weighted', deepseek_weight=50, enabled=True):
+        """
+        Initialize load balancer.
+        
+        Args:
+            strategy: 'weighted', 'random', or 'round_robin'
+            deepseek_weight: Weight for Dashscope (0-100), remainder goes to Volcengine
+            enabled: Whether load balancing is enabled (if False, DeepSeek uses Dashscope)
+        """
         self.strategy = strategy
-        self.weights = weights or {'route_a': 30, 'route_b': 70}
+        self.deepseek_dashscope_weight = deepseek_weight  # 50 = 50% Dashscope, 50% Volcengine
         self.enabled = enabled
         self._counter = 0
-        self._current_route = None  # Cache for request consistency
         
-    def select_route(self) -> str:
-        """Select route based on strategy."""
+    def select_deepseek_provider(self) -> str:
+        """
+        Select DeepSeek provider (only model that needs load balancing).
+        
+        Returns:
+            'deepseek' (Dashscope) or 'ark-deepseek' (Volcengine)
+        """
         if not self.enabled:
-            return self.ROUTE_A
+            return self.DEEPSEEK_DASHSCOPE  # Default to Dashscope if disabled
         
         if self.strategy == 'round_robin':
             self._counter += 1
-            return self.ROUTE_A if self._counter % 2 == 0 else self.ROUTE_B
+            return self.DEEPSEEK_DASHSCOPE if self._counter % 2 == 0 else self.DEEPSEEK_VOLCENGINE
         
         elif self.strategy == 'weighted':
             import random
             rand = random.randint(1, 100)
-            if rand <= self.weights['route_a']:
-                return self.ROUTE_A
-            return self.ROUTE_B
+            if rand <= self.deepseek_dashscope_weight:
+                return self.DEEPSEEK_DASHSCOPE
+            return self.DEEPSEEK_VOLCENGINE
         
         elif self.strategy == 'random':
             import random
-            return random.choice([self.ROUTE_A, self.ROUTE_B])
+            return random.choice([self.DEEPSEEK_DASHSCOPE, self.DEEPSEEK_VOLCENGINE])
         
-        return self.ROUTE_A
+        return self.DEEPSEEK_DASHSCOPE
     
-    def map_model(self, logical_model: str, route: str) -> str:
+    def map_model(self, logical_model: str) -> str:
         """
-        Map logical model name to physical model based on route.
+        Map logical model name to physical model.
         
         Args:
             logical_model: Frontend model name (e.g., 'deepseek', 'qwen')
-            route: Selected route ('route_a' or 'route_b')
             
         Returns:
-            Physical model alias for the selected route
+            Physical model alias
         """
-        if route == self.ROUTE_A:
-            return self.ROUTE_A_MODEL_MAP.get(logical_model, logical_model)
-        else:
-            return self.ROUTE_B_MODEL_MAP.get(logical_model, logical_model)
-    
-    def get_palette_models(self, route: str) -> list:
-        """
-        Get model list for Node Palette based on route.
+        # Fixed routing for Qwen, Doubao, Kimi
+        if logical_model in self.FIXED_MODEL_MAP:
+            return self.FIXED_MODEL_MAP[logical_model]
         
-        Args:
-            route: Selected route
-            
+        # Load balanced routing for DeepSeek only
+        if logical_model == 'deepseek':
+            return self.select_deepseek_provider()
+        
+        # Unknown model - return as-is
+        return logical_model
+    
+    def get_palette_models(self) -> list:
+        """
+        Get model list for Node Palette (parallel streaming).
+        
         Returns:
             List of physical model aliases for parallel streaming
-            - Route A: 4 models (Dashscope qwen/deepseek + Volcengine kimi/doubao)
-            - Route B: 4 models (all on Volcengine)
+            - Qwen: Dashscope (fixed)
+            - DeepSeek: Dashscope or Volcengine (load balanced)
+            - Kimi: Volcengine (fixed)
+            - Doubao: Volcengine (fixed)
         """
-        if route == self.ROUTE_A:
-            # Mixed: Dashscope for qwen/deepseek, Volcengine for kimi/doubao
-            return ['qwen', 'deepseek', 'ark-kimi', 'doubao']  # 4 models
-        else:
-            # All 4 models on Volcengine
-            return ['ark-qwen', 'ark-deepseek', 'ark-kimi', 'doubao']  # 4 models
+        deepseek_provider = self.select_deepseek_provider()
+        return [
+            'qwen',              # Dashscope (fixed)
+            deepseek_provider,   # Dashscope or Volcengine (load balanced)
+            'ark-kimi',          # Volcengine (fixed)
+            'doubao'             # Volcengine (fixed)
+        ]
     
     def get_logical_name(self, physical_model: str) -> str:
         """
@@ -609,26 +619,24 @@ class LLMService:
         if config.LOAD_BALANCING_ENABLED:
             self.load_balancer = LLMLoadBalancer(
                 strategy=config.LOAD_BALANCING_STRATEGY,
-                weights=config.LOAD_BALANCING_WEIGHTS,
+                deepseek_weight=config.DEEPSEEK_DASHSCOPE_WEIGHT,
                 enabled=True
             )
-            logger.info("[LLMService] Load balancer enabled")
+            logger.info("[LLMService] Load balancer enabled (model-specific routing)")
     
     async def chat(self, prompt, model='qwen', ...):
-        # Apply load balancing
+        # Apply model-specific routing
         actual_model = model
-        selected_route = None
         
         if self.load_balancer and self.load_balancer.enabled:
-            selected_route = self.load_balancer.select_route()
-            actual_model = self.load_balancer.map_model(model, selected_route)
-            logger.debug(f"[LLMService] Route: {selected_route}, Model: {model} -> {actual_model}")
+            actual_model = self.load_balancer.map_model(model)
+            logger.debug(f"[LLMService] Model routing: {model} -> {actual_model}")
         
         # Get appropriate client
         client = self.client_manager.get_client(actual_model)
         
-        # Use appropriate rate limiter based on route
-        rate_limiter = self._get_rate_limiter(actual_model, selected_route)
+        # Use appropriate rate limiter based on provider
+        rate_limiter = self._get_rate_limiter(actual_model)
         
         # ... rest of chat implementation ...
 ```
@@ -735,30 +743,34 @@ This is still plenty of capacity for most use cases!
 
 ### Example: Generate Mind Map for "汽车"
 
-**Request 1 (Route A - 30% chance)**:
+**Request 1 (DeepSeek → Dashscope - 50% chance)**:
 ```
-User Request -> Load Balancer selects Route A
--> model='qwen' stays as 'qwen'
--> Uses Dashscope qwen-plus-latest
--> Rate limited by Dashscope limiter
--> If parallel calls needed (node palette), uses:
-   - qwen (Dashscope)      - 15,000 RPM
-   - deepseek (Dashscope)  - 15,000 RPM
-   - ark-kimi (Volcengine) - 5,000 RPM (NOT Dashscope - avoids 60 RPM limit!)
-   - doubao (Volcengine)   - 30,000 RPM
+User Request -> Model-specific router
+-> model='qwen' → 'qwen' (fixed: ALWAYS Dashscope)
+-> model='deepseek' → 'deepseek' (load balanced: 50% Dashscope)
+-> model='kimi' → 'ark-kimi' (fixed: ALWAYS Volcengine)
+-> model='doubao' → 'doubao' (fixed: ALWAYS Volcengine)
+
+If parallel calls needed (node palette), uses:
+   - qwen (Dashscope)      - 15,000 RPM (fixed)
+   - deepseek (Dashscope)  - 15,000 RPM (50% chance)
+   - ark-kimi (Volcengine) - 5,000 RPM (fixed)
+   - doubao (Volcengine)   - 30,000 RPM (fixed)
 ```
 
-**Request 2 (Route B - 70% chance)**:
+**Request 2 (DeepSeek → Volcengine - 50% chance)**:
 ```
-User Request -> Load Balancer selects Route B
--> model='qwen' mapped to 'ark-qwen'
--> Uses Volcengine ark-qwen
--> Rate limited by Volcengine limiter
--> If parallel calls needed (node palette), uses:
-   - ark-qwen (Volcengine)     - Elastic
-   - ark-deepseek (Volcengine) - 15,000 RPM
-   - ark-kimi (Volcengine)     - 5,000 RPM
-   - doubao (Volcengine)       - 30,000 RPM
+User Request -> Model-specific router
+-> model='qwen' → 'qwen' (fixed: ALWAYS Dashscope)
+-> model='deepseek' → 'ark-deepseek' (load balanced: 50% Volcengine)
+-> model='kimi' → 'ark-kimi' (fixed: ALWAYS Volcengine)
+-> model='doubao' → 'doubao' (fixed: ALWAYS Volcengine)
+
+If parallel calls needed (node palette), uses:
+   - qwen (Dashscope)      - 15,000 RPM (fixed)
+   - ark-deepseek (Volcengine) - 15,000 RPM (50% chance)
+   - ark-kimi (Volcengine)     - 5,000 RPM (fixed)
+   - doubao (Volcengine)       - 30,000 RPM (fixed)
 ```
 
 ---
@@ -862,31 +874,33 @@ The slowest model (Kimi at 60 RPM) limits the entire parallel request!
 Kimi uses Volcengine even on Route A (avoids 60 RPM Dashscope limit!)
 ```
 
-**Route B (70%): Full Volcengine**
+**Route B (50%): Mixed (Dashscope Qwen + Volcengine DeepSeek/Kimi/Doubao)**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ark-qwen (Volcengine)     │ Elastic (4,200 TPS)  │ OK          │
+│  qwen (Dashscope)         │ 15,000 RPM           │ OK          │
 │  ark-deepseek (Volcengine) │ 15,000 RPM           │ OK          │
 │  ark-kimi (Volcengine)     │ 5,000 RPM            │ OK          │
 │  doubao (Volcengine)       │ 30,000 RPM           │ OK          │
 └─────────────────────────────────────────────────────────────────┘
-All 4 models on Volcengine with high capacity!
+Qwen always uses Dashscope (cost optimization), DeepSeek uses Volcengine on Route B!
 ```
 
 ### Capacity Comparison by Model
 
-| Model | Route A (Dashscope) | Route B (Volcengine) | Improvement |
-|-------|---------------------|----------------------|-------------|
-| Qwen | 15,000 RPM | Elastic | ~ |
-| DeepSeek | 15,000 RPM | 15,000 RPM | Same |
-| **Kimi** | **60 RPM** | **5,000 RPM** | **83x!** |
-| Doubao | N/A | 30,000 RPM | N/A |
+| Model | Route A | Route B | Notes |
+|-------|---------|---------|-------|
+| Qwen | Dashscope: 15,000 RPM | Dashscope: 15,000 RPM | **ALWAYS Dashscope** (cost optimization) |
+| DeepSeek | Dashscope: 15,000 RPM | Volcengine: 15,000 RPM | **50/50 split** between providers |
+| Kimi | Volcengine: 5,000 RPM | Volcengine: 5,000 RPM | **ALWAYS Volcengine** (avoids Dashscope 60 RPM limit) |
+| Doubao | Volcengine: 30,000 RPM | Volcengine: 30,000 RPM | **ALWAYS Volcengine** (not available on Dashscope) |
 
-### Why 30/70 Split?
+### Why Model-Specific Routing?
 
-- **70% Route B**: Eliminates Kimi bottleneck for most requests
-- **30% Route A**: Keeps some Dashscope usage for diversity/fallback
-- Could go **10/90** or even **5/95** since Volcengine has much higher limits
+- **Simpler design**: Only DeepSeek needs load balancing logic
+- **Fixed routing**: Qwen, Doubao, and Kimi always go to their optimal providers
+- **DeepSeek 50/50 split**: Balanced load distribution between Dashscope and Volcengine
+- **Cost optimization**: Qwen always uses cheaper Dashscope
+- **Performance**: Kimi always uses high-capacity Volcengine (avoids Dashscope's 60 RPM limit)
 
 ---
 
@@ -976,9 +990,9 @@ Request Distribution Over Time (4 workers, 1000 total requests):
 Worker 1: 250 requests → ~75 Route A, ~175 Route B (30/70)
 Worker 2: 250 requests → ~75 Route A, ~175 Route B (30/70)
 Worker 3: 250 requests → ~75 Route A, ~175 Route B (30/70)
-Worker 4: 250 requests → ~75 Route A, ~175 Route B (30/70)
+Worker 4: 250 requests → ~125 Route A, ~125 Route B (50/50)
 ────────────────────────────────────────────────────────────
-Total:   1000 requests → ~300 Route A, ~700 Route B (30/70) ✓
+Total:   1000 requests → ~500 Route A, ~500 Route B (50/50) ✓
 ```
 
 Each worker independently achieves the correct distribution!
@@ -1801,9 +1815,9 @@ agent = TabAgent(model=model)
                                       │
            ┌──────────────────────────┴──────────────────────────┐
            │                                                      │
-           ▼ (Route A - 30%)                                      ▼ (Route B - 70%)
+           ▼ (Route A - 50%)                                      ▼ (Route B - 50%)
 ┌──────────────────────────────────────┐       ┌──────────────────────────────────────┐
-│ STEP 5A: Mixed Providers (Route A)   │       │ STEP 5B: Full Volcengine (Route B)   │
+│ STEP 5A: Mixed Providers (Route A)   │       │ STEP 5B: Mixed Providers (Route B)   │
 │                                      │       │                                      │
 │ 4 Concurrent LLM Calls:              │       │ 4 Concurrent LLM Calls:              │
 │                                      │       │                                      │
@@ -2031,8 +2045,8 @@ Distributes LLM requests between multiple provider routes to maximize throughput
 and avoid rate limiting bottlenecks.
 
 Key Design:
-- Route A (30%): Dashscope (qwen, deepseek) + Volcengine (kimi, doubao)
-- Route B (70%): Full Volcengine (all models)
+- Route A (50%): Dashscope (qwen, deepseek) + Volcengine (kimi, doubao)
+- Route B (50%): Dashscope (qwen) + Volcengine (deepseek, kimi, doubao)
 - Users see LOGICAL names (deepseek, qwen, kimi, doubao)
 - Backend maps to PHYSICAL models transparently
 
@@ -2049,14 +2063,15 @@ logger = logging.getLogger(__name__)
 
 class LLMLoadBalancer:
     """
-    Distributes requests between Route A (Mixed) and Route B (Full Volcengine).
+    Distributes requests between Route A and Route B for Deepseek 50/50 split.
+    Qwen always uses Dashscope, Doubao/Kimi always use Volcengine.
     
     KEY PRINCIPLE: Users see logical model names (deepseek, qwen, kimi, doubao).
     The load balancer maps these to physical models transparently.
     """
     
-    ROUTE_A = 'route_a'  # Mixed: Dashscope + Volcengine Doubao/Kimi
-    ROUTE_B = 'route_b'  # Full Volcengine
+    ROUTE_A = 'route_a'  # Mixed: Dashscope (qwen/deepseek) + Volcengine (kimi/doubao)
+    ROUTE_B = 'route_b'  # Mixed: Dashscope (qwen) + Volcengine (deepseek/kimi/doubao)
     
     # Logical model names (what frontend sends)
     LOGICAL_MODELS = ['deepseek', 'qwen', 'kimi', 'doubao']
@@ -2081,18 +2096,18 @@ class LLMLoadBalancer:
         'omni': 'omni',             # → Voice agent
     }
     
-    # Route B mapping: logical → physical (Full Volcengine)
-    # All 4 models on Volcengine
+    # Route B mapping: logical → physical (Dashscope for Qwen, Volcengine for DeepSeek/Kimi/Doubao)
+    # Qwen ALWAYS uses Dashscope (cost optimization), DeepSeek uses Volcengine on Route B
     ROUTE_B_MODEL_MAP = {
         # Logical models (frontend buttons)
-        'qwen': 'ark-qwen',         # → Volcengine Qwen3-14B (Elastic)
+        'qwen': 'qwen',             # → Dashscope qwen-plus-latest (15,000 RPM) - ALWAYS Dashscope
         'deepseek': 'ark-deepseek', # → Volcengine DeepSeek-V3 (15,000 RPM)
         'kimi': 'ark-kimi',         # → Volcengine Kimi (5,000 RPM)
         'doubao': 'doubao',         # → Volcengine doubao (30,000 RPM)
-        # Internal aliases also mapped
-        'qwen-turbo': 'ark-qwen',   # → Volcengine Qwen3-14B
-        'qwen-plus': 'ark-qwen',    # → Volcengine Qwen3-14B
-        'qwen-plus-latest': 'ark-qwen',  # → Volcengine Qwen3-14B
+        # Internal aliases
+        'qwen-turbo': 'qwen-turbo', # → Dashscope qwen-turbo (ALWAYS Dashscope)
+        'qwen-plus': 'qwen-plus',   # → Dashscope qwen-plus-latest (ALWAYS Dashscope)
+        'qwen-plus-latest': 'qwen-plus',  # → Dashscope qwen-plus-latest (ALWAYS Dashscope)
         # Unaffected
         'hunyuan': 'hunyuan',       # → Tencent hunyuan (not on Volcengine)
         'omni': 'omni',             # → Voice agent
@@ -2119,11 +2134,11 @@ class LLMLoadBalancer:
         
         Args:
             strategy: 'weighted', 'random', or 'round_robin' (not recommended for multi-worker)
-            weights: Route weights, e.g., {'route_a': 30, 'route_b': 70}
+            weights: Route weights, e.g., {'route_a': 50, 'route_b': 50}
             enabled: Whether load balancing is enabled
         """
         self.strategy = strategy
-        self.weights = weights or {'route_a': 30, 'route_b': 70}
+        self.weights = weights or {'route_a': 50, 'route_b': 50}  # 50/50 for Deepseek split
         self.enabled = enabled
         self._counter = 0  # For round_robin (not recommended)
         
@@ -2507,7 +2522,7 @@ def LOAD_BALANCING_STRATEGY(self):
 @property
 def LOAD_BALANCING_WEIGHTS(self) -> dict:
     """Parse load balancing weights from env"""
-    weights_str = self._get_cached_value('LOAD_BALANCING_WEIGHTS', 'route_a:30,route_b:70')
+    weights_str = self._get_cached_value('LOAD_BALANCING_WEIGHTS', 'route_a:50,route_b:50')
     weights = {}
     try:
         for pair in weights_str.split(','):
@@ -2515,7 +2530,7 @@ def LOAD_BALANCING_WEIGHTS(self) -> dict:
             weights[route.strip()] = int(weight.strip())
     except Exception as e:
         logger.warning(f"Invalid LOAD_BALANCING_WEIGHTS, using defaults: {e}")
-        weights = {'route_a': 30, 'route_b': 70}
+        weights = {'route_a': 50, 'route_b': 50}  # 50/50 for Deepseek split
     return weights
 
 # ============================================================================
@@ -2701,7 +2716,7 @@ ARK_DOUBAO_ENDPOINT=ep-20251222212319-qqzb7
 # ============================================================================
 LOAD_BALANCING_ENABLED=true
 LOAD_BALANCING_STRATEGY=weighted
-LOAD_BALANCING_WEIGHTS=route_a:30,route_b:70
+LOAD_BALANCING_WEIGHTS=route_a:50,route_b:50
 
 # ============================================================================
 # VOLCENGINE RATE LIMITING
@@ -2719,19 +2734,20 @@ After implementation, test each scenario:
 
 | Test | Command/Action | Expected Result |
 |------|----------------|-----------------|
-| Load balancer disabled | Set `LOAD_BALANCING_ENABLED=false` | All requests use Route A (Dashscope) |
-| Route A only | Set `LOAD_BALANCING_WEIGHTS=route_a:100,route_b:0` | All requests use Route A |
-| Route B only | Set `LOAD_BALANCING_WEIGHTS=route_a:0,route_b:100` | All requests use Route B (Volcengine) |
-| Balanced | Set `LOAD_BALANCING_WEIGHTS=route_a:30,route_b:70` | ~30% Route A, ~70% Route B |
-| Node Palette | Generate nodes for any diagram | 4 LLMs fire in parallel, all use same route |
-| Tab Autocomplete | Type in tab mode | Single LLM call, route varies |
-| Token tracking | Check logs/database | Physical model and route logged |
+| Load balancer disabled | Set `LOAD_BALANCING_ENABLED=false` | DeepSeek uses Dashscope (default), others unchanged |
+| DeepSeek Dashscope only | Set `DEEPSEEK_DASHSCOPE_WEIGHT=100` | All DeepSeek requests use Dashscope |
+| DeepSeek Volcengine only | Set `DEEPSEEK_DASHSCOPE_WEIGHT=0` | All DeepSeek requests use Volcengine |
+| Balanced (50/50) | Set `DEEPSEEK_DASHSCOPE_WEIGHT=50` | ~50% DeepSeek Dashscope, ~50% Volcengine |
+| Fixed models | Any setting | Qwen always Dashscope, Doubao/Kimi always Volcengine |
+| Node Palette | Generate nodes for any diagram | 4 LLMs fire in parallel, DeepSeek provider varies |
+| Tab Autocomplete | Type in tab mode | Single LLM call, DeepSeek provider varies if using DeepSeek |
 
 **Verification Logs to Look For:**
 ```
-[LLMService] Load balancer enabled: strategy=weighted, weights={'route_a': 30, 'route_b': 70}
-[LoadBalancer] Weighted selection: rand=42, route=route_b
-[LLMService] Load balanced: qwen → ark-qwen (route=route_b)
+[LLMService] Load balancer enabled (model-specific routing)
+[LoadBalancer] DeepSeek routing: dashscope_weight=50, selected=ark-deepseek (Volcengine)
+[LLMService] Model routing: qwen -> qwen (fixed: Dashscope)
+[LLMService] Model routing: deepseek -> ark-deepseek (load balanced: Volcengine)
 [LLMService] stream_progressive: route=route_a, models=['qwen', 'deepseek', 'kimi', 'doubao'] → ['qwen', 'deepseek', 'ark-kimi', 'doubao']
 ```
 

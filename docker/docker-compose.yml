@@ -65,21 +65,22 @@ services:
     networks:
       - mindgraph-network
 
-  # Optional: Redis for caching (if you want to add caching later)
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: mindgraph-redis
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   restart: unless-stopped
-  #   networks:
-  #     - mindgraph-network
+  # Redis for caching (REQUIRED for MindGraph)
+  redis:
+    image: redis:8.4-alpine
+    container_name: mindgraph-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    networks:
+      - mindgraph-network
 
 networks:
   mindgraph-network:
     driver: bridge
 
-# volumes:
-#   redis_data:
+volumes:
+  redis_data:

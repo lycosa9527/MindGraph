@@ -7,6 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.14] - 2025-01-XX - Comprehensive Health Check Endpoint
+
+### Added
+
+- **Comprehensive Health Check Endpoint** (`main.py`)
+  - Added `/health/all` endpoint that aggregates all system health checks
+  - Checks application status, Redis connection, database integrity, and optional LLM services
+  - Returns unified status with detailed breakdown of each component
+  - LLM health checks disabled by default (`?include_llm=true` to enable) to avoid API costs
+  - Parallel execution of independent checks for improved performance
+  - Timeout protection: Redis (2s), Database (5s), LLM (30s)
+  - Proper error handling with comprehensive logging
+  - Summary statistics excluding skipped checks from unhealthy count
+
+### Fixed
+
+- **Health Check Summary Calculation** (`main.py`)
+  - Fixed bug where skipped checks were incorrectly counted as unhealthy
+  - Summary now properly excludes skipped checks from unhealthy count
+  - Added separate `skipped` count to summary for clarity
+
+- **Redis Health Check** (`main.py`)
+  - Added validation for empty dict returned by `redis_ops.info()` on failure
+  - Now correctly returns "unhealthy" status when Redis info fails
+  - Previously could return "healthy" even when info() failed internally
+
+- **Result Structure Validation** (`main.py`)
+  - Added validation to ensure health check results have required "status" key
+  - Prevents AttributeError from malformed check results
+  - Better error handling for unexpected check result structures
+
+- **Performance Metrics Handling** (`main.py`)
+  - Added validation for empty or invalid metrics dict from LLM service
+  - Added type checking for metrics items to prevent KeyError
+  - Handles edge cases when `get_performance_metrics()` returns unexpected data
+
+- **Status Logic Edge Cases** (`main.py`)
+  - Added handling for "unknown" status (treats as error for safety)
+  - Improved status code logic with clearer comments
+  - Better handling of degraded vs unhealthy states
+
+### Changed
+
+- **Error Message Standardization** (`main.py`)
+  - Standardized all timeout error messages to "Health check timed out"
+  - Consistent error messages across all health check functions
+  - Improved error logging with proper exception traces
+
+- **Code Structure** (`main.py`)
+  - Refactored health checks into separate helper functions for maintainability
+  - Added `_update_overall_status()` helper function for status code logic
+  - Improved code organization and readability
+  - Added type hints (`Dict[str, Any]`) to all helper functions
+
+### Technical Details
+
+- **Performance Improvements**:
+  - Independent checks now run in parallel using `asyncio.gather()`
+  - Reduces response time from sequential (~1-2s) to parallel execution
+  - Timeout protection prevents endpoint from hanging indefinitely
+
+- **Error Handling**:
+  - All errors are logged with appropriate log levels (`logger.error`, `logger.warning`)
+  - Exception traces included for debugging
+  - Graceful degradation: individual check failures don't crash the endpoint
+
+- **Response Format**:
+  ```json
+  {
+    "status": "healthy" | "degraded" | "unhealthy",
+    "timestamp": 1234567890,
+    "summary": {
+      "healthy": 3,
+      "unhealthy": 1,
+      "skipped": 1,
+      "total": 4
+    },
+    "checks": {
+      "application": {...},
+      "redis": {...},
+      "database": {...},
+      "llm_services": {...}
+    },
+    "errors": [] // Only present if errors occurred
+  }
+  ```
+
+- **HTTP Status Codes**:
+  - `200 OK`: All systems healthy
+  - `503 Service Unavailable`: Some systems unhealthy (degraded state)
+  - `500 Internal Server Error`: Health check itself failed
+
+- **Code Review**: Complete code review performed with 8 issues identified and fixed
+  - See `docs/HEALTH_ALL_ENDPOINT_REVIEW.md` for detailed review documentation
+
+---
+
 ## [4.37.13] - 2025-12-23 - Tree Map & Brace Map Auto-Complete Three-Scenario System
 
 ### Fixed

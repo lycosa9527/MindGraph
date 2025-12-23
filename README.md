@@ -85,7 +85,10 @@ Transform natural language into professional visual diagrams. **API-first platfo
 - **SMS Verification | 短信验证**: Secure phone-based authentication | 安全的手机验证
 - **Admin Panel | 管理面板**: Complete API key management | 完整的API密钥管理
 
-### 💾 Database & Backup | 数据库和备份
+### 💾 Database & Storage | 数据库和存储
+- **Hybrid Architecture | 混合架构**: SQLite (persistent) + Redis (ephemeral) | SQLite（持久化）+ Redis（临时数据）
+- **SQLite | SQLite**: Stores users, organizations, token history | 存储用户、组织、令牌历史
+- **Redis | Redis**: Handles captcha, rate limiting, sessions, activity tracking | 处理验证码、速率限制、会话、活动跟踪
 - **Automated Backups | 自动备份**: Daily scheduled backups with retention policy | 每日定时备份与保留策略
 - **Recovery Wizard | 恢复向导**: Interactive database recovery system | 交互式数据库恢复系统
 - **Data Anomaly Detection | 数据异常检测**: Detects significant data loss | 检测重大数据丢失
@@ -103,8 +106,28 @@ Transform natural language into professional visual diagrams. **API-first platfo
 ### Prerequisites | 前置要求
 
 - **Python 3.8+** (Recommended: 3.13+ for best performance | 推荐：3.13+以获得最佳性能)
+- **Redis 7.0+** (Required | 必需) - For caching, rate limiting, and session management | 用于缓存、速率限制和会话管理
 - Internet connection for LLM API access | 互联网连接以访问LLM API
 - Modern web browser | 现代网页浏览器
+
+**Redis Setup | Redis设置:**
+
+```bash
+# Option 1: Docker (Recommended for Redis 8.2+ | 推荐用于Redis 8.2+)
+docker run -d --name redis -p 6379:6379 redis:8.2-alpine
+
+# Option 2: Ubuntu/Debian (Redis 7.0.x)
+sudo apt install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+
+# Option 3: macOS
+brew install redis
+brew services start redis
+
+# Verify Redis is running | 验证Redis运行
+redis-cli ping  # Should return: PONG
+```
 
 ### Installation | 安装
 
@@ -136,6 +159,12 @@ playwright install chromium
 ```bash
 # LLM API Key (Required for diagram generation)
 QWEN_API_KEY=your-qwen-api-key-here
+
+# Redis Configuration (REQUIRED | 必需)
+# MindGraph uses SQLite + Redis hybrid architecture:
+#   - SQLite: Persistent data (users, organizations, token history)
+#   - Redis: Ephemeral data (captcha, rate limiting, sessions, buffers)
+REDIS_URL=redis://localhost:6379/0
 
 # Optional: Additional LLM models
 HUNYUAN_SECRET_ID=your-hunyuan-id
@@ -181,12 +210,16 @@ Environment: production
 Host: 0.0.0.0
 Port: 9527
 
+✅ Redis connected: redis://localhost:6379/0
 ✅ Server ready at: http://localhost:9527
 ✅ Interactive Editor: http://localhost:9527/editor
 ✅ API Documentation: http://localhost:9527/docs (DEBUG mode only)
 ✅ Admin Panel: http://localhost:9527/admin
 ✅ Health Check: http://localhost:9527/health
 ```
+
+**Note | 注意:** If Redis is not running, the application will fail to start. Ensure Redis is running before starting the server.  
+**注意：** 如果Redis未运行，应用程序将无法启动。启动服务器前请确保Redis正在运行。
 
 **Note | 注意:** API documentation (`/docs`) is only available when `DEBUG=True` in `.env` for security.
 **注意：** API文档 (`/docs`) 仅在 `.env` 中设置 `DEBUG=True` 时可用，以确保安全。
@@ -200,6 +233,7 @@ Port: 9527
 | **Admin Panel** | http://localhost:9527/admin | Manage API keys, users, settings |
 | **Health Check** | http://localhost:9527/health | Server status endpoint |
 | **Database Health** | http://localhost:9527/health/database | Database integrity check |
+| **Redis Health** | http://localhost:9527/health/redis | Redis connection status |
 
 ---
 
@@ -355,32 +389,51 @@ Transform any diagram into an interactive learning experience | 将任何图表�
 
 ### Quick Start with Docker | Docker快速开始
 
+**Note | 注意:** MindGraph requires Redis. Use Docker Compose (recommended) or ensure Redis is running separately.  
+**注意：** MindGraph需要Redis。推荐使用Docker Compose，或确保Redis单独运行。
+
+**Option 1: Docker Compose (Recommended | 推荐)**
+
 ```bash
-# Build image
+# Copy environment template
+cp docker/docker.env.example .env
+
+# Edit .env with your configuration (QWEN_API_KEY, REDIS_URL, etc.)
+
+# Start application with Redis
+docker-compose -f docker/docker-compose.yml up -d
+
+# View logs
+docker logs -f mindgraph-app
+docker logs -f mindgraph-redis
+```
+
+**Option 2: Separate Containers | 独立容器**
+
+```bash
+# Start Redis first
+docker run -d --name redis -p 6379:6379 redis:8.4-alpine
+
+# Build and run MindGraph
 docker build -f docker/Dockerfile -t mindgraph:latest .
 
-# Run container
 docker run -d -p 9527:9527 \
   -e QWEN_API_KEY=your-api-key \
+  -e REDIS_URL=redis://host.docker.internal:6379/0 \
   -e EXTERNAL_HOST=your-server-ip \
   --name mindgraph \
+  --link redis:redis \
   mindgraph:latest
 
 # View logs
 docker logs -f mindgraph
 ```
 
-### Docker Compose
-
-```bash
-# Copy environment template
-cp docker/docker.env.example .env
-
-# Edit .env with your configuration
-
-# Start application
-docker-compose -f docker/docker-compose.yml up -d
-```
+**Docker Compose includes | Docker Compose包含:**
+- ✅ MindGraph application | MindGraph应用
+- ✅ Redis 8.4 (required | 必需)
+- ✅ Network configuration | 网络配置
+- ✅ Volume persistence | 数据持久化
 
 ---
 
