@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 BACKUP_LOCK_KEY = "backup:scheduler:lock"
-BACKUP_LOCK_TTL = 600  # 10 minutes - allows backup to complete, auto-releases on crash
+BACKUP_LOCK_TTL = 600  # 10 minutes - plenty of time for backup, auto-release on crash
 _worker_lock_id: Optional[str] = None  # This worker's unique lock identifier
 
 
@@ -162,9 +162,6 @@ def release_backup_scheduler_lock() -> bool:
 def refresh_backup_scheduler_lock() -> bool:
     """
     Refresh the lock TTL if held by this worker.
-    
-    Called periodically during long-running backup to prevent
-    lock expiration before backup completes.
     
     Returns:
         True if lock refreshed, False if not held by this worker
@@ -1320,10 +1317,9 @@ async def start_backup_scheduler():
             
             logger.debug(f"[Backup] Next backup scheduled at {next_backup.strftime('%Y-%m-%d %H:%M:%S')}")
             
-            # Wait until backup time, refreshing lock periodically
-            # Refresh every 5 minutes to keep lock alive during long waits
+            # Wait until backup time, refreshing lock every 5 minutes
             while wait_seconds > 0:
-                sleep_time = min(wait_seconds, 300)  # 5 minutes max
+                sleep_time = min(wait_seconds, 300)  # 5 minutes
                 await asyncio.sleep(sleep_time)
                 wait_seconds -= sleep_time
                 
@@ -1339,10 +1335,9 @@ async def start_backup_scheduler():
             
             # Perform backup
             logger.info("[Backup] Starting scheduled backup...")
+            refresh_backup_scheduler_lock()
+            
             try:
-                # Refresh lock before starting (backup can take time)
-                refresh_backup_scheduler_lock()
-                
                 success = await asyncio.to_thread(create_backup)
                 if success:
                     logger.info("[Backup] Scheduled backup completed successfully")
@@ -1350,9 +1345,7 @@ async def start_backup_scheduler():
                     logger.error("[Backup] Scheduled backup failed")
             except Exception as e:
                 logger.error(f"[Backup] Scheduled backup failed with exception: {e}", exc_info=True)
-                success = False
             
-            # Refresh lock after backup completes
             refresh_backup_scheduler_lock()
             
             # Wait a bit to avoid running twice in the same minute
@@ -1386,13 +1379,10 @@ async def run_backup_now() -> bool:
         return False
     
     logger.info("[Backup] Manual backup triggered")
-    
-    # Refresh lock before starting backup
     refresh_backup_scheduler_lock()
     
     try:
         result = await asyncio.to_thread(create_backup)
-        # Refresh lock after backup
         refresh_backup_scheduler_lock()
         return result
     except Exception as e:

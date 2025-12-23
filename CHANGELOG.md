@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.11] - 2025-12-23 - Redis Operations Retry Logic
+
+### Added
+
+- **Redis Retry Decorator** (`services/redis_client.py`)
+  - Added `_with_retry()` decorator for Redis operations with exponential backoff
+  - Retries on transient `ConnectionError` and `TimeoutError` (up to 3 attempts)
+  - Non-retryable errors fail immediately with graceful fallback
+  - Reduces Redis operation failures during brief network hiccups
+
+### Changed
+
+- **RedisOperations Class** (`services/redis_client.py`)
+  - All Redis operations now use retry decorator for resilience
+  - Cleaner code: removed repetitive try/except blocks
+  - Consistent error handling and logging across all operations
+
+---
+
 ## [4.37.10] - 2025-12-23 - Captcha Storage Validation Fix
 
 ### Fixed
