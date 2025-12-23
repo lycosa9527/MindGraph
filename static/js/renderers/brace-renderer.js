@@ -288,6 +288,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
     // Check for preserved dimensions from empty button operation
     const nodeDimensions = actualSpec._node_dimensions || {};
     
+    // Read node styles from spec
+    const nodeStyles = actualSpec._node_styles || {};
+    
     // Measure topic text (with line break support) - use preserved dimensions if available
     const topicText = actualSpec.whole || '';
     const topicLines = (typeof window.splitTextLines === 'function') 
@@ -528,6 +531,10 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // Store the part center Y for brace boundary calculation
         partCenterYs.push(partY);
         
+        // Get styles for part node
+        const partNodeId = `brace-part-${partIndex}`;
+        const partStyles = nodeStyles[partNodeId] || {};
+        
         // Draw part
         svg.append('rect')
             .attr('x', partsStartX)
@@ -535,21 +542,22 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('width', partBoxWidth)
             .attr('height', partBoxHeight)
             .attr('rx', 5)
-            .attr('fill', THEME.partFill)
-            .attr('stroke', THEME.partStroke)
-            .attr('stroke-width', 1)
-            .attr('data-node-id', `brace-part-${partIndex}`)
+            .attr('fill', partStyles.fill || THEME.partFill)
+            .attr('stroke', partStyles.stroke || THEME.partStroke)
+            .attr('stroke-width', partStyles.strokeWidth || 1)
+            .attr('data-node-id', partNodeId)
             .attr('data-node-type', 'part')
             .attr('data-part-index', partIndex);
         
         // Render part text - use multiple text elements (tspan doesn't render)
         const partText = partInfo.text || '';
         const partMaxWidth = partBoxWidth * 0.9; // Max width based on box width
-        const partLineHeight = Math.round(partFontSize * 1.2);
+        const partFontSizeWithStyle = partStyles.fontSize || partFontSize;
+        const partLineHeight = Math.round(partFontSizeWithStyle * 1.2);
         
         // Use splitAndWrapText for automatic word wrapping
         const partLines = (typeof window.splitAndWrapText === 'function')
-            ? window.splitAndWrapText(partText, partFontSize, partMaxWidth, measureLineWidthForWrap)
+            ? window.splitAndWrapText(partText, partFontSizeWithStyle, partMaxWidth, measureLineWidthForWrap)
             : (partText ? [partText] : ['']);
         
         // Ensure at least one line for placeholder
@@ -558,21 +566,28 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // WORKAROUND: Use multiple text elements instead of tspan
         const partStartY = partY - (finalPartLines.length - 1) * partLineHeight / 2;
         finalPartLines.forEach((line, i) => {
-            svg.append('text')
+            const partTextEl = svg.append('text')
                 .attr('x', partsStartX + partBoxWidth / 2)
                 .attr('y', partStartY + i * partLineHeight)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.partText)
-                .attr('font-size', partFontSize)
-                .attr('font-family', parseFontSpec(THEME.fontPart).family)
-                .attr('font-weight', 'bold')
-                .attr('data-node-id', `brace-part-${partIndex}`)
+                .attr('fill', partStyles.textColor || THEME.partText)
+                .attr('font-size', partFontSizeWithStyle)
+                .attr('font-family', partStyles.fontFamily || parseFontSpec(THEME.fontPart).family)
+                .attr('font-weight', partStyles.fontWeight || 'bold')
+                .attr('data-node-id', partNodeId)
                 .attr('data-node-type', 'part')
                 .attr('data-part-index', partIndex)
                 .attr('data-text-for', `part_${partIndex}`)
                 .attr('data-line-index', i)
                 .text(line);
+            
+            // Apply text styles if present
+            if (partStyles.fontStyle) partTextEl.attr('font-style', partStyles.fontStyle);
+            if (partStyles.textDecoration) {
+                partTextEl.style('text-decoration', partStyles.textDecoration);
+                partTextEl.attr('text-decoration', partStyles.textDecoration);
+            }
         });
 
         // Move to next position for subparts
@@ -597,16 +612,20 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 // Track rightmost content
                 maxContentRightX = Math.max(maxContentRightX, subpartsStartX + subpartBoxWidth);
                 
+                // Get styles for subpart node
+                const subpartNodeId = `brace-subpart-${partIndex}-${subpartIndex}`;
+                const subpartStyles = nodeStyles[subpartNodeId] || {};
+                
                 svg.append('rect')
                     .attr('x', subpartsStartX)
                     .attr('y', subpartY - subpartInfo.boxHeight / 2)
                     .attr('width', subpartBoxWidth)
                     .attr('height', subpartInfo.boxHeight)
                     .attr('rx', 3)
-                    .attr('fill', THEME.subpartFill)
-                    .attr('stroke', THEME.subpartStroke)
-                    .attr('stroke-width', 1)
-                    .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
+                    .attr('fill', subpartStyles.fill || THEME.subpartFill)
+                    .attr('stroke', subpartStyles.stroke || THEME.subpartStroke)
+                    .attr('stroke-width', subpartStyles.strokeWidth || 1)
+                    .attr('data-node-id', subpartNodeId)
                     .attr('data-node-type', 'subpart')
                     .attr('data-part-index', partIndex)
                     .attr('data-subpart-index', subpartIndex);
@@ -614,11 +633,12 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 // Render subpart text - use multiple text elements (tspan doesn't render)
                 const subpartText = subpartInfo.text || '';
                 const subpartMaxWidth = subpartBoxWidth * 0.9; // Max width based on box width
-                const subpartLineHeight = Math.round(subpartFontSize * 1.2);
+                const subpartFontSizeWithStyle = subpartStyles.fontSize || subpartFontSize;
+                const subpartLineHeight = Math.round(subpartFontSizeWithStyle * 1.2);
                 
                 // Use splitAndWrapText for automatic word wrapping
                 const subpartLines = (typeof window.splitAndWrapText === 'function')
-                    ? window.splitAndWrapText(subpartText, subpartFontSize, subpartMaxWidth, measureLineWidthForWrap)
+                    ? window.splitAndWrapText(subpartText, subpartFontSizeWithStyle, subpartMaxWidth, measureLineWidthForWrap)
                     : (subpartText ? [subpartText] : ['']);
                 
                 // Ensure at least one line for placeholder
@@ -627,21 +647,29 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 // WORKAROUND: Use multiple text elements instead of tspan
                 const subpartStartY = subpartY - (finalSubpartLines.length - 1) * subpartLineHeight / 2;
                 finalSubpartLines.forEach((line, i) => {
-                    svg.append('text')
+                    const subpartTextEl = svg.append('text')
                         .attr('x', subpartsStartX + subpartBoxWidth / 2)
                         .attr('y', subpartStartY + i * subpartLineHeight)
                         .attr('text-anchor', 'middle')
                         .attr('dominant-baseline', 'middle')
-                        .attr('fill', THEME.subpartText)
-                        .attr('font-size', subpartFontSize)
-                        .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
+                        .attr('fill', subpartStyles.textColor || THEME.subpartText)
+                        .attr('font-size', subpartFontSizeWithStyle)
+                        .attr('font-family', subpartStyles.fontFamily || parseFontSpec(THEME.fontSubpart).family)
                         .attr('data-text-for', `subpart_${partIndex}_${subpartIndex}`)
-                        .attr('data-node-id', `brace-subpart-${partIndex}-${subpartIndex}`)
+                        .attr('data-node-id', subpartNodeId)
                         .attr('data-node-type', 'subpart')
                         .attr('data-part-index', partIndex)
                         .attr('data-subpart-index', subpartIndex)
                         .attr('data-line-index', i)
                         .text(line);
+                    
+                    // Apply text styles if present
+                    if (subpartStyles.fontWeight) subpartTextEl.attr('font-weight', subpartStyles.fontWeight);
+                    if (subpartStyles.fontStyle) subpartTextEl.attr('font-style', subpartStyles.fontStyle);
+                    if (subpartStyles.textDecoration) {
+                        subpartTextEl.style('text-decoration', subpartStyles.textDecoration);
+                        subpartTextEl.attr('text-decoration', subpartStyles.textDecoration);
+                    }
                 });
 
                 currentY += subpartInfo.boxHeight + 7;  // Reduced from 10 for tighter spacing
@@ -838,6 +866,9 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
                 .attr('stroke-linejoin', 'round');
         }
         
+        // Get styles for topic node
+        const topicStyles = nodeStyles['topic'] || nodeStyles['topic_center'] || {};
+        
         // CRITICAL: Draw topic NOW with correct position (AFTER braces for proper z-order)
         const topicRect = svg.append('rect')
             .attr('x', topicX)
@@ -845,19 +876,20 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             .attr('width', topicBoxWidth)
             .attr('height', topicBoxHeight)
             .attr('rx', 8)
-            .attr('fill', THEME.topicFill)
-            .attr('stroke', THEME.topicStroke)
-            .attr('stroke-width', 2)
+            .attr('fill', topicStyles.fill || THEME.topicFill)
+            .attr('stroke', topicStyles.stroke || THEME.topicStroke)
+            .attr('stroke-width', topicStyles.strokeWidth || 2)
             .attr('data-node-id', 'topic_center')
             .attr('data-node-type', 'topic');
         
         // Render topic text - use multiple text elements (tspan doesn't render)
         const topicMaxWidth = topicBoxWidth * 0.9; // Max width based on box width
-        const topicLineHeight = Math.round(topicFontSize * 1.2);
+        const topicFontSizeWithStyle = topicStyles.fontSize || topicFontSize;
+        const topicLineHeight = Math.round(topicFontSizeWithStyle * 1.2);
         
         // Use splitAndWrapText for automatic word wrapping
         const topicLines = (typeof window.splitAndWrapText === 'function')
-            ? window.splitAndWrapText(topicText, topicFontSize, topicMaxWidth, measureLineWidthForWrap)
+            ? window.splitAndWrapText(topicText, topicFontSizeWithStyle, topicMaxWidth, measureLineWidthForWrap)
             : (topicText ? [topicText] : ['']);
         
         // Ensure at least one line for placeholder
@@ -866,27 +898,35 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
         // WORKAROUND: Use multiple text elements instead of tspan
         const topicStartY = topicY - (finalTopicLines.length - 1) * topicLineHeight / 2;
         finalTopicLines.forEach((line, i) => {
-            svg.append('text')
+            const topicTextEl = svg.append('text')
                 .attr('x', topicX + topicBoxWidth / 2)
                 .attr('y', topicStartY + i * topicLineHeight)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.topicText)
-                .attr('font-size', topicFontSize)
-                .attr('font-family', parseFontSpec(THEME.fontTopic).family)
-                .attr('font-weight', 'bold')
+                .attr('fill', topicStyles.textColor || THEME.topicText)
+                .attr('font-size', topicFontSizeWithStyle)
+                .attr('font-family', topicStyles.fontFamily || parseFontSpec(THEME.fontTopic).family)
+                .attr('font-weight', topicStyles.fontWeight || 'bold')
                 .attr('data-text-for', 'topic_center')
                 .attr('data-node-id', 'topic_center')
                 .attr('data-node-type', 'topic')
                 .attr('data-line-index', i)
                 .text(line);
+            
+            // Apply text styles if present
+            if (topicStyles.fontStyle) topicTextEl.attr('font-style', topicStyles.fontStyle);
+            if (topicStyles.textDecoration) {
+                topicTextEl.style('text-decoration', topicStyles.textDecoration);
+                topicTextEl.attr('text-decoration', topicStyles.textDecoration);
+            }
         });
         
         // ALWAYS show dimension field (even if empty) so users can edit it
         // Only show if dimension field exists in spec (even if empty string)
         if ('dimension' in actualSpec) {
+            const dimensionStyles = nodeStyles['dimension'] || nodeStyles['dimension_label'] || {};
             const dimensionY = topicY + topicBoxHeight / 2 + 25;  // 25px below topic box
-            const dimensionFontSize = 14;
+            const dimensionFontSize = dimensionStyles.fontSize || 14;
             
             let dimensionText;
             let textOpacity;
@@ -906,21 +946,28 @@ function renderBraceMap(spec, theme = null, dimensions = null) {
             }
             
             // Make dimension text EDITABLE - users can click to change/fill decomposition standard
-            svg.append('text')
+            const dimensionTextEl = svg.append('text')
                 .attr('x', topicX + topicBoxWidth / 2)
                 .attr('y', dimensionY)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
+                .attr('fill', dimensionStyles.textColor || dimensionStyles.fill || THEME.dimensionLabelColor || '#1976d2')  // Dark blue for classroom visibility
                 .attr('font-size', dimensionFontSize)
-                .attr('font-family', parseFontSpec(THEME.fontSubpart).family)
-                .attr('font-style', 'italic')
+                .attr('font-family', dimensionStyles.fontFamily || parseFontSpec(THEME.fontSubpart).family)
+                .attr('font-style', dimensionStyles.fontStyle || 'italic')
                 .style('opacity', textOpacity)
                 .style('cursor', 'pointer')  // Show it's clickable
                 .attr('data-node-id', 'dimension_label')  // Make it editable
                 .attr('data-node-type', 'dimension')  // Identify as dimension node
                 .attr('data-dimension-value', actualSpec.dimension || '')  // Store actual dimension value (or empty)
                 .text(dimensionText);
+            
+            // Apply text styles if present
+            if (dimensionStyles.fontWeight) dimensionTextEl.attr('font-weight', dimensionStyles.fontWeight);
+            if (dimensionStyles.textDecoration) {
+                dimensionTextEl.style('text-decoration', dimensionStyles.textDecoration);
+                dimensionTextEl.attr('text-decoration', dimensionStyles.textDecoration);
+            }
         }
     }
 

@@ -150,7 +150,10 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
 
     // Check for preserved dimensions from empty button operation
     const nodeDimensions = spec._node_dimensions || {};
-
+    
+    // Read node styles from spec
+    const nodeStyles = spec._node_styles || {};
+    
     // Helpers for text wrapping and box measurement
     function measureLineWidth(text, fontSize) {
         const container = getMeasurementContainer();
@@ -200,7 +203,31 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
     }
 
     function drawBox(x, y, text, isTopic = false, nodeKey = null) {
-        const fontSize = isTopic ? THEME.fontTopic : THEME.fontConcept;
+        // Determine node ID for style lookup
+        // Concept map uses concept text as identifier, but we need to find matching nodeId
+        // Try to find nodeId from concepts array index or use text as fallback
+        let nodeId = null;
+        if (isTopic) {
+            nodeId = 'topic';
+        } else {
+            // Find concept index to construct nodeId
+            const conceptIndex = spec.concepts.findIndex(c => c === text || (typeof c === 'object' && c.text === text));
+            if (conceptIndex >= 0) {
+                // Try common nodeId patterns
+                nodeId = `concept_${conceptIndex}`;
+                if (!nodeStyles[nodeId]) {
+                    // Try with concept text as key
+                    nodeId = `concept-${text}`;
+                }
+            } else {
+                nodeId = `concept-${text}`;
+            }
+        }
+        
+        const styles = nodeStyles[nodeId] || {};
+        
+        const baseFontSize = isTopic ? THEME.fontTopic : THEME.fontConcept;
+        const fontSize = styles.fontSize || baseFontSize;
         const maxTextWidth = isTopic ? 350 : 300;
         const lines = wrapIntoLines(text, fontSize, maxTextWidth);
         const lineHeight = Math.round(fontSize * 1.2);
@@ -226,30 +253,45 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         }
 
         const group = svg.append('g');
-        group.append('rect')
+        const rect = group.append('rect')
             .attr('x', x - boxW / 2)
             .attr('y', y - boxH / 2)
             .attr('rx', 8)
             .attr('ry', 8)
             .attr('width', boxW)
             .attr('height', boxH)
-            .attr('fill', isTopic ? THEME.topicFill : THEME.conceptFill)
-            .attr('stroke', isTopic ? THEME.topicStroke : THEME.conceptStroke)
-            .attr('stroke-width', isTopic ? THEME.topicStrokeWidth : THEME.conceptStrokeWidth);
+            .attr('fill', styles.fill || (isTopic ? THEME.topicFill : THEME.conceptFill))
+            .attr('stroke', styles.stroke || (isTopic ? THEME.topicStroke : THEME.conceptStroke))
+            .attr('stroke-width', styles.strokeWidth || (isTopic ? THEME.topicStrokeWidth : THEME.conceptStrokeWidth));
+        
+        // Add data attributes for node identification
+        if (isTopic) {
+            rect.attr('data-node-id', 'topic').attr('data-node-type', 'topic');
+        } else {
+            rect.attr('data-node-id', nodeId).attr('data-node-type', 'concept');
+        }
 
         // WORKAROUND: Use multiple text elements instead of tspan
         const textStartY = y - (lines.length - 1) * lineHeight / 2;
         lines.forEach((ln, i) => {
-            group.append('text')
+            const textEl = group.append('text')
                 .attr('x', x)
                 .attr('y', textStartY + i * lineHeight)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', isTopic ? THEME.topicText : THEME.conceptText)
+                .attr('fill', styles.textColor || (isTopic ? THEME.topicText : THEME.conceptText))
                 .attr('font-size', fontSize)
-                .attr('font-weight', isTopic ? '600' : '400')
+                .attr('font-weight', styles.fontWeight || (isTopic ? '600' : '400'))
                 .attr('data-line-index', i)
                 .text(ln);
+            
+            // Apply text styles if present
+            if (styles.fontFamily) textEl.attr('font-family', styles.fontFamily);
+            if (styles.fontStyle) textEl.attr('font-style', styles.fontStyle);
+            if (styles.textDecoration) {
+                textEl.style('text-decoration', styles.textDecoration);
+                textEl.attr('text-decoration', styles.textDecoration);
+            }
         });
 
         return { x, y, width: boxW, height: boxH, group };

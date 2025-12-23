@@ -339,6 +339,40 @@ class BridgeMapOperations {
     }
     
     /**
+     * Save node styles to spec
+     * @param {Object} spec - Current diagram spec
+     * @param {string} nodeId - Node ID (e.g., 'bridge-left-0', 'bridge-right-0')
+     * @param {Object} styles - Style properties (fill, stroke, strokeWidth, fontSize, textColor, etc.)
+     * @returns {Object} Updated spec
+     */
+    saveNodeStyles(spec, nodeId, styles) {
+        if (!spec) {
+            this.logger.error('BridgeMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Initialize _node_styles if it doesn't exist
+        if (!spec._node_styles) {
+            spec._node_styles = {};
+        }
+        
+        // Merge with existing styles (preserve other properties)
+        if (!spec._node_styles[nodeId]) {
+            spec._node_styles[nodeId] = {};
+        }
+        
+        // Save/update styles for this node
+        Object.assign(spec._node_styles[nodeId], styles);
+        
+        this.logger.debug('BridgeMapOperations', 'Saved node styles', {
+            nodeId,
+            styles: Object.keys(styles)
+        });
+        
+        return spec;
+    }
+    
+    /**
      * Validate Bridge Map spec
      * @param {Object} spec - Diagram spec
      * @returns {boolean} Whether spec is valid

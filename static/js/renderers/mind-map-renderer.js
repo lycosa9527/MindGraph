@@ -125,7 +125,8 @@ function renderMindMap(spec, theme = null, dimensions = null) {
     if (spec._layout && spec._layout.positions) {
         // Render with positioned layout
         // Pass _node_dimensions for empty button dimension preservation
-        renderMindMapWithLayout(spec._layout, svg, centerX, centerY, THEME, spec._node_dimensions);
+        // Pass _node_styles for style persistence
+        renderMindMapWithLayout(spec._layout, svg, centerX, centerY, THEME, spec._node_dimensions, spec._node_styles);
     } else {
         // Error: No layout data
         logger.error('MindMapRenderer', 'Mindmap rendering failed: No layout data from Python agent');
@@ -177,12 +178,15 @@ function getRectangleEdgePoint(centerX, centerY, width, height, targetX, targetY
     return { x: edgeX, y: edgeY };
 }
 
-function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNodeDimensions = null) {
+function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNodeDimensions = null, nodeStyles = null) {
     const positions = spec.positions;
     const connections = spec.connections || [];
     
     // Check for preserved dimensions from empty button operation
     const preservedDims = preservedNodeDimensions || {};
+    
+    // Read node styles from spec
+    const styles = nodeStyles || {};
     
     // Debug: Log connection count and positions
     logger.debug('MindMapRenderer', `Rendering ${connections.length} connections, ${Object.keys(positions).length} positions`);
@@ -255,10 +259,14 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                     : 30; // Minimum radius for empty topic
             }
             
+            // Get styles for topic node
+            const topicNodeId = 'topic';
+            const topicNodeStyles = styles[topicNodeId] || styles['topic_center'] || {};
+            
             // Use white fill to hide connections behind nodes
-            const finalFill = pos.fill || THEME.centralTopicFill || '#ffffff';
-            const finalStroke = pos.stroke || THEME.centralTopicStroke || '#35506b';
-            const finalTextColor = pos.text_color || THEME.centralTopicText || '#333333';
+            const finalFill = topicNodeStyles.fill || pos.fill || THEME.centralTopicFill || '#ffffff';
+            const finalStroke = topicNodeStyles.stroke || pos.stroke || THEME.centralTopicStroke || '#35506b';
+            const finalTextColor = topicNodeStyles.textColor || pos.text_color || THEME.centralTopicText || '#333333';
             
             // Store node dimensions for connection calculations
             const nodeKey = `${pos.x}_${pos.y}`;
@@ -277,14 +285,14 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 .attr('r', topicRadius)
                 .attr('fill', finalFill)
                 .attr('stroke', finalStroke)
-                .attr('stroke-width', pos.stroke_width || 3)
+                .attr('stroke-width', topicNodeStyles.strokeWidth || pos.stroke_width || 3)
                 .attr('opacity', 1)
                 .attr('data-node-id', 'topic_center')
                 .attr('data-node-type', 'topic');
             
             // Only render text if there's actual content
             if (topicText.length > 0) {
-                const topicFontSize = parseFloat(THEME.fontTopic || '16px');
+                const topicFontSize = parseFloat(topicNodeStyles.fontSize || THEME.fontTopic || '16px');
                 const topicMaxWidth = topicRadius * 1.8; // Max width based on circle radius
                 const topicLineHeight = Math.round(topicFontSize * 1.2);
                 const measureLineWidth = createMeasureLineWidth();
@@ -297,19 +305,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 // WORKAROUND: Use multiple text elements instead of tspan
                 const topicStartY = topicY - (topicLines.length - 1) * topicLineHeight / 2;
                 topicLines.forEach((line, i) => {
-                    nodesLayer.append('text')
+                    const topicTextEl = nodesLayer.append('text')
                         .attr('x', topicX)
                         .attr('y', topicStartY + i * topicLineHeight)
                         .attr('text-anchor', 'middle')
                         .attr('dominant-baseline', 'middle')
                         .attr('fill', finalTextColor)
-                        .attr('font-size', THEME.fontTopic || '16px')
-                        .attr('font-weight', 'bold')
+                        .attr('font-size', topicFontSize)
+                        .attr('font-weight', topicNodeStyles.fontWeight || 'bold')
                         .attr('data-text-for', 'topic_center')
                         .attr('data-node-id', 'topic_center')
                         .attr('data-node-type', 'topic')
                         .attr('data-line-index', i)
                         .text(line);
+                    
+                    // Apply text styles if present
+                    if (topicNodeStyles.fontFamily) topicTextEl.attr('font-family', topicNodeStyles.fontFamily);
+                    if (topicNodeStyles.fontStyle) topicTextEl.attr('font-style', topicNodeStyles.fontStyle);
+                    if (topicNodeStyles.textDecoration) {
+                        topicTextEl.style('text-decoration', topicNodeStyles.textDecoration);
+                        topicTextEl.attr('text-decoration', topicNodeStyles.textDecoration);
+                    }
                 });
             }
                 
@@ -357,13 +373,14 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 branchHeight = Math.max(50, branchTextHeight + 20);
             }
             
-            // Use white fill to hide connections behind nodes
-            const finalBranchFill = pos.fill || THEME.branchFill || '#ffffff';
-            const finalBranchStroke = pos.stroke || THEME.branchStroke || '#4e79a7';
-            const finalBranchTextColor = pos.text_color || THEME.branchText || '#333333';
-            
             // Generate node ID for branch
             const branchNodeId = `branch_${pos.branch_index}`;
+            const branchStyles = styles[branchNodeId] || {};
+            
+            // Use white fill to hide connections behind nodes
+            const finalBranchFill = branchStyles.fill || pos.fill || THEME.branchFill || '#ffffff';
+            const finalBranchStroke = branchStyles.stroke || pos.stroke || THEME.branchStroke || '#4e79a7';
+            const finalBranchTextColor = branchStyles.textColor || pos.text_color || THEME.branchText || '#333333';
             
             // Store node dimensions for connection calculations
             const nodeKey = `${pos.x}_${pos.y}`;
@@ -386,7 +403,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 .attr('ry', 8)
                 .attr('fill', finalBranchFill)
                 .attr('stroke', finalBranchStroke)
-                .attr('stroke-width', pos.stroke_width || THEME.branchStrokeWidth || 2)
+                .attr('stroke-width', branchStyles.strokeWidth || pos.stroke_width || THEME.branchStrokeWidth || 2)
                 .attr('opacity', 1)
                 .attr('data-node-id', branchNodeId)
                 .attr('data-node-type', 'branch')
@@ -398,18 +415,27 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 // WORKAROUND: Use multiple text elements instead of tspan
                 const branchStartY = branchY - (branchLines.length - 1) * branchLineHeight / 2;
                 branchLines.forEach((line, i) => {
-                    nodesLayer.append('text')
+                    const branchTextEl = nodesLayer.append('text')
                         .attr('x', branchX)
                         .attr('y', branchStartY + i * branchLineHeight)
                         .attr('text-anchor', 'middle')
                         .attr('dominant-baseline', 'middle')
                         .attr('fill', finalBranchTextColor)
-                        .attr('font-size', THEME.fontBranch || '16px')
+                        .attr('font-size', branchStyles.fontSize || THEME.fontBranch || '16px')
                         .attr('data-text-for', branchNodeId)
                         .attr('data-node-id', branchNodeId)
                         .attr('data-node-type', 'branch')
                         .attr('data-line-index', i)
                         .text(line);
+                    
+                    // Apply text styles if present
+                    if (branchStyles.fontFamily) branchTextEl.attr('font-family', branchStyles.fontFamily);
+                    if (branchStyles.fontWeight) branchTextEl.attr('font-weight', branchStyles.fontWeight);
+                    if (branchStyles.fontStyle) branchTextEl.attr('font-style', branchStyles.fontStyle);
+                    if (branchStyles.textDecoration) {
+                        branchTextEl.style('text-decoration', branchStyles.textDecoration);
+                        branchTextEl.attr('text-decoration', branchStyles.textDecoration);
+                    }
                 });
             }
                 
@@ -457,13 +483,14 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 childHeight = Math.max(40, childTextHeight + 16);
             }
             
-            // Use white fill to hide connections behind nodes
-            const finalChildFill = pos.fill || THEME.childFill || '#ffffff';
-            const finalChildStroke = pos.stroke || THEME.childStroke || '#6c757d';
-            const finalChildTextColor = pos.text_color || THEME.childText || '#333333';
-            
             // Generate node ID for child
             const childNodeId = `child_${pos.branch_index}_${pos.child_index}`;
+            const childStyles = styles[childNodeId] || {};
+            
+            // Use white fill to hide connections behind nodes
+            const finalChildFill = childStyles.fill || pos.fill || THEME.childFill || '#ffffff';
+            const finalChildStroke = childStyles.stroke || pos.stroke || THEME.childStroke || '#6c757d';
+            const finalChildTextColor = childStyles.textColor || pos.text_color || THEME.childText || '#333333';
             
             // Store node dimensions for connection calculations
             const nodeKey = `${pos.x}_${pos.y}`;
@@ -486,7 +513,7 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 .attr('ry', 6)
                 .attr('fill', finalChildFill)
                 .attr('stroke', finalChildStroke)
-                .attr('stroke-width', pos.stroke_width || 2)
+                .attr('stroke-width', childStyles.strokeWidth || pos.stroke_width || 2)
                 .attr('opacity', 1)
                 .attr('data-node-id', childNodeId)
                 .attr('data-node-type', 'child')
@@ -499,13 +526,13 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                 // WORKAROUND: Use multiple text elements instead of tspan
                 const childStartY = childY - (childLines.length - 1) * childLineHeight / 2;
                 childLines.forEach((line, i) => {
-                    nodesLayer.append('text')
+                    const childTextEl = nodesLayer.append('text')
                         .attr('x', childX)
                         .attr('y', childStartY + i * childLineHeight)
                         .attr('text-anchor', 'middle')
                         .attr('dominant-baseline', 'middle')
                         .attr('fill', finalChildTextColor)
-                        .attr('font-size', THEME.fontChild || '14px')
+                        .attr('font-size', childStyles.fontSize || THEME.fontChild || '14px')
                         .attr('data-text-for', childNodeId)
                         .attr('data-node-id', childNodeId)
                         .attr('data-node-type', 'child')
@@ -513,6 +540,15 @@ function renderMindMapWithLayout(spec, svg, centerX, centerY, THEME, preservedNo
                         .attr('data-child-index', pos.child_index)
                         .attr('data-line-index', i)
                         .text(line);
+                    
+                    // Apply text styles if present
+                    if (childStyles.fontFamily) childTextEl.attr('font-family', childStyles.fontFamily);
+                    if (childStyles.fontWeight) childTextEl.attr('font-weight', childStyles.fontWeight);
+                    if (childStyles.fontStyle) childTextEl.attr('font-style', childStyles.fontStyle);
+                    if (childStyles.textDecoration) {
+                        childTextEl.style('text-decoration', childStyles.textDecoration);
+                        childTextEl.attr('text-decoration', childStyles.textDecoration);
+                    }
                 });
             }
         }

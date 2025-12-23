@@ -344,6 +344,9 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     // Check for preserved dimensions first
     const nodeDimensions = spec._node_dimensions || {};
     
+    // Read node styles from spec
+    const nodeStyles = spec._node_styles || {};
+    
     // Title size - use preserved if available
     let titleSize;
     if (nodeDimensions.title && nodeDimensions.title.w && nodeDimensions.title.h) {
@@ -564,18 +567,27 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         
         titleY = Math.max(padding, referenceY - titleSize.h - 15); // 15px gap above reference
         
-        svg.append('text')
+        // Get styles for title node
+        const titleStyles = nodeStyles['flow-title'] || nodeStyles['title'] || {};
+        const titleTextEl = svg.append('text')
             .attr('x', centerX)  // Aligned with step 1 (centerX)
             .attr('y', titleY)
             .attr('text-anchor', 'middle')
-            .attr('fill', THEME.titleText)
-            .attr('font-size', THEME.fontTitle)
-            .attr('font-family', THEME.fontFamily)
-            .attr('font-weight', 'bold')
+            .attr('fill', titleStyles.textColor || titleStyles.fill || THEME.titleText)
+            .attr('font-size', titleStyles.fontSize || THEME.fontTitle)
+            .attr('font-family', titleStyles.fontFamily || THEME.fontFamily)
+            .attr('font-weight', titleStyles.fontWeight || 'bold')
             .attr('data-node-id', 'flow-title')
             .attr('data-node-type', 'title')
             .attr('cursor', 'pointer')
             .text(spec.title);
+        
+        // Apply text styles if present
+        if (titleStyles.fontStyle) titleTextEl.attr('font-style', titleStyles.fontStyle);
+        if (titleStyles.textDecoration) {
+            titleTextEl.style('text-decoration', titleStyles.textDecoration);
+            titleTextEl.attr('text-decoration', titleStyles.textDecoration);
+        }
     }
     
     // RENDERING ORDER: Draw all connectors FIRST, then nodes on top
@@ -651,6 +663,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
     stepSizes.forEach((s, index) => {
         const stepXCenter = centerX;
         const stepYCenter = stepCenters[index];
+        
+        // Get styles for step node
+        const stepNodeId = `flow-step-${index}`;
+        const stepStyles = nodeStyles[stepNodeId] || {};
 
         // Rect
         svg.append('rect')
@@ -659,10 +675,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             .attr('width', s.w)
             .attr('height', s.h)
             .attr('rx', THEME.rectRadius)
-            .attr('fill', THEME.stepFill)        // Deep blue fill
-            .attr('stroke', THEME.stepStroke)    // Darker blue border
-            .attr('stroke-width', THEME.stepStrokeWidth)
-            .attr('data-node-id', `flow-step-${index}`)
+            .attr('fill', stepStyles.fill || THEME.stepFill)        // Deep blue fill
+            .attr('stroke', stepStyles.stroke || THEME.stepStroke)    // Darker blue border
+            .attr('stroke-width', stepStyles.strokeWidth || THEME.stepStrokeWidth)
+            .attr('data-node-id', stepNodeId)
             .attr('data-node-type', 'step')
             .attr('data-step-index', index)
             .attr('cursor', 'pointer');
@@ -670,11 +686,12 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         // Render step text with automatic wrapping and tspan (always use tspan)
         const stepText = s.text || '';
         const stepMaxWidth = s.w * 0.9; // Max width based on box width
-        const stepLineHeight = Math.round(THEME.fontStep * 1.2);
+        const stepFontSizeWithStyle = stepStyles.fontSize || THEME.fontStep;
+        const stepLineHeight = Math.round(stepFontSizeWithStyle * 1.2);
         
         // Use splitAndWrapText for automatic word wrapping
         const stepLines = (typeof window.splitAndWrapText === 'function')
-            ? window.splitAndWrapText(stepText, THEME.fontStep, stepMaxWidth, measureLineWidth)
+            ? window.splitAndWrapText(stepText, stepFontSizeWithStyle, stepMaxWidth, measureLineWidth)
             : (stepText ? [stepText] : ['']);
         
         // Ensure at least one line for placeholder
@@ -683,20 +700,28 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         // WORKAROUND: Use multiple text elements instead of tspan
         const stepStartY = stepYCenter - (finalStepLines.length - 1) * stepLineHeight / 2;
         finalStepLines.forEach((line, i) => {
-            svg.append('text')
+            const stepTextEl = svg.append('text')
                 .attr('x', stepXCenter)
                 .attr('y', stepStartY + i * stepLineHeight)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.stepText)        // White text
-                .attr('font-size', THEME.fontStep)
-                .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
-                .attr('data-node-id', `flow-step-${index}`)
+                .attr('fill', stepStyles.textColor || THEME.stepText)        // White text
+                .attr('font-size', stepFontSizeWithStyle)
+                .attr('font-family', stepStyles.fontFamily || THEME.fontFamily)  // Add font family to match bubble map
+                .attr('data-node-id', stepNodeId)
                 .attr('data-node-type', 'step')
                 .attr('data-step-index', index)
                 .attr('cursor', 'pointer')
                 .attr('data-line-index', i)
                 .text(line);
+            
+            // Apply text styles if present
+            if (stepStyles.fontWeight) stepTextEl.attr('font-weight', stepStyles.fontWeight);
+            if (stepStyles.fontStyle) stepTextEl.attr('font-style', stepStyles.fontStyle);
+            if (stepStyles.textDecoration) {
+                stepTextEl.style('text-decoration', stepStyles.textDecoration);
+                stepTextEl.attr('text-decoration', stepStyles.textDecoration);
+            }
         });
     });
 
@@ -771,6 +796,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
         const stepRightX = centerX + stepSizes[stepIdx].w / 2;
         
         stepPositions.forEach((substep, nodeIdx) => {
+            // Get styles for substep node
+            const substepNodeId = `flow-substep-${stepIdx}-${nodeIdx}`;
+            const substepStyles = nodeStyles[substepNodeId] || {};
+            
             // Draw substep rectangle
             svg.append('rect')
                 .attr('x', substep.x)
@@ -778,10 +807,10 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
                 .attr('width', substep.w)
                 .attr('height', substep.h)
                 .attr('rx', Math.max(4, THEME.rectRadius - 2))
-                .attr('fill', THEME.substepFill)        // Light blue fill
-                .attr('stroke', THEME.substepStroke)    // Blue border
-                .attr('stroke-width', Math.max(1, THEME.stepStrokeWidth - 1))
-                .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                .attr('fill', substepStyles.fill || THEME.substepFill)        // Light blue fill
+                .attr('stroke', substepStyles.stroke || THEME.substepStroke)    // Blue border
+                .attr('stroke-width', substepStyles.strokeWidth != null ? substepStyles.strokeWidth : Math.max(1, THEME.stepStrokeWidth - 1))
+                .attr('data-node-id', substepNodeId)
                 .attr('data-node-type', 'substep')
                 .attr('data-step-index', stepIdx)
                 .attr('data-substep-index', nodeIdx)
@@ -790,7 +819,7 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             // Render substep text with automatic wrapping and tspan (always use tspan)
             const substepText = substep.text || '';
             const substepMaxWidth = substep.w * 0.9; // Max width based on box width
-            const substepFontSize = Math.max(12, THEME.fontStep - 1);
+            const substepFontSize = substepStyles.fontSize || Math.max(12, THEME.fontStep - 1);
             const substepLineHeight = Math.round(substepFontSize * 1.2);
             
             // Use splitAndWrapText for automatic word wrapping
@@ -804,21 +833,29 @@ function renderFlowMap(spec, theme = null, dimensions = null) {
             // WORKAROUND: Use multiple text elements instead of tspan
             const substepStartY = substep.y + substep.h / 2 - (finalSubstepLines.length - 1) * substepLineHeight / 2;
             finalSubstepLines.forEach((line, i) => {
-                svg.append('text')
+                const substepTextEl = svg.append('text')
                     .attr('x', substep.x + substep.w / 2)
                     .attr('y', substepStartY + i * substepLineHeight)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'middle')
-                    .attr('fill', THEME.substepText)        // Dark text for readability
+                    .attr('fill', substepStyles.textColor || THEME.substepText)        // Dark text for readability
                     .attr('font-size', substepFontSize)
-                    .attr('font-family', THEME.fontFamily)  // Add font family to match bubble map
-                    .attr('data-node-id', `flow-substep-${stepIdx}-${nodeIdx}`)
+                    .attr('font-family', substepStyles.fontFamily || THEME.fontFamily)  // Add font family to match bubble map
+                    .attr('data-node-id', substepNodeId)
                     .attr('data-node-type', 'substep')
                     .attr('data-step-index', stepIdx)
                     .attr('data-substep-index', nodeIdx)
                     .attr('cursor', 'pointer')
                     .attr('data-line-index', i)
                     .text(line);
+                
+                // Apply text styles if present
+                if (substepStyles.fontWeight) substepTextEl.attr('font-weight', substepStyles.fontWeight);
+                if (substepStyles.fontStyle) substepTextEl.attr('font-style', substepStyles.fontStyle);
+                if (substepStyles.textDecoration) {
+                    substepTextEl.style('text-decoration', substepStyles.textDecoration);
+                    substepTextEl.attr('text-decoration', substepStyles.textDecoration);
+                }
             });
             
             // L-shaped connectors already drawn earlier (Step 3b) for proper z-order
@@ -1202,6 +1239,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
     // Check for preserved dimensions from empty button operation
     const nodeDimensions = spec._node_dimensions || {};
     
+    // Read node styles from spec
+    const nodeStyles = spec._node_styles || {};
+    
     const nodeWidths = spec.analogies.map((analogy, pairIndex) => {
         // Measure left text - use preserved dimensions if available
         const leftText = analogy.left || '';
@@ -1413,6 +1453,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 height: rectHeight
             });
             
+            // Get styles for left node
+            const leftStyles = nodeStyles[leftNodeId] || {};
+            
             // Draw rectangle background
             svg.append("rect")
                 .attr("x", leftX - rectWidth/2)
@@ -1420,9 +1463,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .attr("width", rectWidth)
                 .attr("height", rectHeight)
                 .attr("rx", 4)
-                .attr("fill", "#1976d2") // Deep blue from mind map
-                .attr("stroke", "#0d47a1")
-                .attr("stroke-width", 2)
+                .attr("fill", leftStyles.fill || "#1976d2") // Deep blue from mind map
+                .attr("stroke", leftStyles.stroke || "#0d47a1")
+                .attr("stroke-width", leftStyles.strokeWidth || 2)
                 .attr("data-node-id", leftNodeId)
                 .attr("data-node-type", "left")
                 .attr("data-pair-index", i)
@@ -1430,15 +1473,16 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             
             // WORKAROUND: Use multiple text elements instead of tspan
             const leftStartY = leftY - (finalLeftLines.length - 1) * leftLineHeight / 2;
+            const leftFontSizeWithStyle = leftStyles.fontSize || THEME.analogyFontSize;
             finalLeftLines.forEach((line, idx) => {
-                svg.append("text")
+                const leftTextEl = svg.append("text")
                     .attr("x", leftX)
                     .attr("y", leftStartY + idx * leftLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
-                    .style("font-size", THEME.analogyFontSize)
-                    .style("fill", "#ffffff") // White text
-                    .style("font-weight", "bold")
+                    .style("font-size", leftFontSizeWithStyle)
+                    .style("fill", leftStyles.textColor || "#ffffff") // White text
+                    .style("font-weight", leftStyles.fontWeight || "bold")
                     .attr("data-text-for", leftNodeId)
                     .attr("data-node-id", leftNodeId)
                     .attr("data-node-type", "left")
@@ -1446,6 +1490,13 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                     .attr("cursor", "pointer")
                     .attr("data-line-index", idx)
                     .text(line);
+                
+                // Apply text styles if present
+                if (leftStyles.fontFamily) leftTextEl.style("font-family", leftStyles.fontFamily);
+                if (leftStyles.fontStyle) leftTextEl.style("font-style", leftStyles.fontStyle);
+                if (leftStyles.textDecoration) {
+                    leftTextEl.style("text-decoration", leftStyles.textDecoration);
+                }
             });
         } else {
             // Store node reference for regular pairs
@@ -1472,23 +1523,34 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // Ensure at least one line for placeholder
             const finalRegLeftLines = regLeftLines.length > 0 ? regLeftLines : [''];
             
+            // Get styles for regular left node
+            const regLeftStyles = nodeStyles[leftNodeId] || {};
+            
             // WORKAROUND: Use multiple text elements instead of tspan
             const regLeftStartY = leftY - (finalRegLeftLines.length - 1) * regLeftLineHeight / 2;
+            const regLeftFontSizeWithStyle = regLeftStyles.fontSize || THEME.analogyFontSize;
             finalRegLeftLines.forEach((line, idx) => {
-                svg.append("text")
+                const regLeftTextEl = svg.append("text")
                     .attr("x", leftX)
                     .attr("y", regLeftStartY + idx * regLeftLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
-                    .style("font-size", THEME.analogyFontSize)
-                    .style("fill", THEME.analogyTextColor)
-                    .style("font-weight", "bold")
+                    .style("font-size", regLeftFontSizeWithStyle)
+                    .style("fill", regLeftStyles.textColor || regLeftStyles.fill || THEME.analogyTextColor)
+                    .style("font-weight", regLeftStyles.fontWeight || "bold")
                     .attr("data-node-id", leftNodeId)
                     .attr("data-node-type", "left")
                     .attr("data-pair-index", i)
                     .attr("cursor", "pointer")
                     .attr("data-line-index", idx)
                     .text(line);
+                
+                // Apply text styles if present
+                if (regLeftStyles.fontFamily) regLeftTextEl.style("font-family", regLeftStyles.fontFamily);
+                if (regLeftStyles.fontStyle) regLeftTextEl.style("font-style", regLeftStyles.fontStyle);
+                if (regLeftStyles.textDecoration) {
+                    regLeftTextEl.style("text-decoration", regLeftStyles.textDecoration);
+                }
             });
         }
         
@@ -1536,6 +1598,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 height: rectHeight
             });
             
+            // Get styles for right node (first pair)
+            const rightStyles = nodeStyles[rightNodeId] || {};
+            
             // Draw rectangle background
             svg.append("rect")
                 .attr("x", rightX - rightRectWidth/2)
@@ -1543,9 +1608,9 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
                 .attr("width", rightRectWidth)
                 .attr("height", rectHeight)
                 .attr("rx", 4)
-                .attr("fill", "#1976d2") // Deep blue from mind map
-                .attr("stroke", "#0d47a1")
-                .attr("stroke-width", 2)
+                .attr("fill", rightStyles.fill || "#1976d2") // Deep blue from mind map
+                .attr("stroke", rightStyles.stroke || "#0d47a1")
+                .attr("stroke-width", rightStyles.strokeWidth || 2)
                 .attr("data-node-id", rightNodeId)
                 .attr("data-node-type", "right")
                 .attr("data-pair-index", i)
@@ -1553,22 +1618,30 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             
             // Render right analogy text - first pair (white) - use multiple text elements
             const rightStartY = rightY - (finalRightLines.length - 1) * rightLineHeight / 2;
+            const rightFontSizeWithStyle = rightStyles.fontSize || THEME.analogyFontSize;
             finalRightLines.forEach((line, idx) => {
-                svg.append("text")
+                const rightTextEl = svg.append("text")
                     .attr("x", rightX)
                     .attr("y", rightStartY + idx * rightLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
-                    .style("font-size", THEME.analogyFontSize)
-                    .style("fill", "#ffffff") // White text
-                    .style("font-weight", "bold")
-                    .attr("data-text-for", `bridge-right-${i}`)
-                    .attr("data-node-id", `bridge-right-${i}`)
+                    .style("font-size", rightFontSizeWithStyle)
+                    .style("fill", rightStyles.textColor || "#ffffff") // White text
+                    .style("font-weight", rightStyles.fontWeight || "bold")
+                    .attr("data-text-for", rightNodeId)
+                    .attr("data-node-id", rightNodeId)
                     .attr("data-node-type", "right")
                     .attr("data-pair-index", i)
                     .attr("cursor", "pointer")
                     .attr("data-line-index", idx)
                     .text(line);
+                
+                // Apply text styles if present
+                if (rightStyles.fontFamily) rightTextEl.style("font-family", rightStyles.fontFamily);
+                if (rightStyles.fontStyle) rightTextEl.style("font-style", rightStyles.fontStyle);
+                if (rightStyles.textDecoration) {
+                    rightTextEl.style("text-decoration", rightStyles.textDecoration);
+                }
             });
         } else {
             // Render right analogy text - regular pairs - use multiple text elements
@@ -1584,23 +1657,34 @@ function renderBridgeMap(spec, theme = null, dimensions = null, containerId = 'd
             // Ensure at least one line for placeholder
             const finalRegRightLines = regRightLines.length > 0 ? regRightLines : [''];
             
+            // Get styles for regular right node
+            const regRightStyles = nodeStyles[rightNodeId] || {};
+            
             // WORKAROUND: Use multiple text elements instead of tspan
             const regRightStartY = rightY - (finalRegRightLines.length - 1) * regRightLineHeight / 2;
+            const regRightFontSizeWithStyle = regRightStyles.fontSize || THEME.analogyFontSize;
             finalRegRightLines.forEach((line, idx) => {
-                svg.append("text")
+                const regRightTextEl = svg.append("text")
                     .attr("x", rightX)
                     .attr("y", regRightStartY + idx * regRightLineHeight)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
-                    .style("font-size", THEME.analogyFontSize)
-                    .style("fill", THEME.analogyTextColor)
-                    .style("font-weight", "bold")
+                    .style("font-size", regRightFontSizeWithStyle)
+                    .style("fill", regRightStyles.textColor || regRightStyles.fill || THEME.analogyTextColor)
+                    .style("font-weight", regRightStyles.fontWeight || "bold")
                     .attr("data-node-id", rightNodeId)
                     .attr("data-node-type", "right")
                     .attr("data-pair-index", i)
                     .attr("cursor", "pointer")
                     .attr("data-line-index", idx)
                     .text(line);
+                
+                // Apply text styles if present
+                if (regRightStyles.fontFamily) regRightTextEl.style("font-family", regRightStyles.fontFamily);
+                if (regRightStyles.fontStyle) regRightTextEl.style("font-style", regRightStyles.fontStyle);
+                if (regRightStyles.textDecoration) {
+                    regRightTextEl.style("text-decoration", regRightStyles.textDecoration);
+                }
             });
         }
         
@@ -1990,6 +2074,9 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     // Check for preserved dimensions from empty button operation
     const nodeDimensions = spec._node_dimensions || {};
     
+    // Read node styles from spec
+    const nodeStyles = spec._node_styles || {};
+    
     // Measure central event size - check for preserved dimensions first
     let eventW, eventH;
     const eventPreservedDims = nodeDimensions['event'];
@@ -2246,6 +2333,10 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     // STEP 2: Draw all nodes ON TOP of arrows
     // Draw cause nodes
     causes.forEach((n, idx) => {
+        // Get styles for cause node
+        const causeNodeId = `multi-flow-cause-${idx}`;
+        const causeStyles = nodeStyles[causeNodeId] || {};
+        
         svg.append('rect')
             .attr('x', n.cx - n.w / 2)
             .attr('y', n.cy - n.h / 2)
@@ -2253,10 +2344,10 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('height', n.h)
             .attr('rx', THEME.rectRadius)
             .attr('ry', THEME.rectRadius)
-            .attr('fill', THEME.causeFill)
-            .attr('stroke', THEME.causeStroke)
-            .attr('stroke-width', THEME.causeStrokeWidth)
-            .attr('data-node-id', `multi-flow-cause-${idx}`)
+            .attr('fill', causeStyles.fill || THEME.causeFill)
+            .attr('stroke', causeStyles.stroke || THEME.causeStroke)
+            .attr('stroke-width', causeStyles.strokeWidth || THEME.causeStrokeWidth)
+            .attr('data-node-id', causeNodeId)
             .attr('data-node-type', 'cause')
             .attr('data-cause-index', idx)
             .attr('cursor', 'pointer');
@@ -2265,30 +2356,44 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         const causeLines = (typeof window.splitTextLines === 'function') 
             ? window.splitTextLines(n.text) 
             : (n.text || '').split(/\n/);
-        const causeLineHeight = Math.round(THEME.fontCause * 1.2);
+        const causeFontSizeWithStyle = causeStyles.fontSize || THEME.fontCause;
+        const causeLineHeight = Math.round(causeFontSizeWithStyle * 1.2);
         
         // WORKAROUND: Use multiple text elements instead of tspan
         const causeStartY = n.cy - (causeLines.length - 1) * causeLineHeight / 2;
         causeLines.forEach((line, i) => {
-            svg.append('text')
+            const causeTextEl = svg.append('text')
                 .attr('x', n.cx)
                 .attr('y', causeStartY + i * causeLineHeight)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.causeText)
-                .attr('font-size', THEME.fontCause)
-                .attr('data-node-id', `multi-flow-cause-${idx}`)
+                .attr('fill', causeStyles.textColor || THEME.causeText)
+                .attr('font-size', causeFontSizeWithStyle)
+                .attr('data-node-id', causeNodeId)
                 .attr('data-node-type', 'cause')
                 .attr('data-cause-index', idx)
-                .attr('data-text-for', `multi-flow-cause-${idx}`)
+                .attr('data-text-for', causeNodeId)
                 .attr('cursor', 'pointer')
                 .attr('data-line-index', i)
                 .text(line);
+            
+            // Apply text styles if present
+            if (causeStyles.fontFamily) causeTextEl.attr('font-family', causeStyles.fontFamily);
+            if (causeStyles.fontWeight) causeTextEl.attr('font-weight', causeStyles.fontWeight);
+            if (causeStyles.fontStyle) causeTextEl.attr('font-style', causeStyles.fontStyle);
+            if (causeStyles.textDecoration) {
+                causeTextEl.style('text-decoration', causeStyles.textDecoration);
+                causeTextEl.attr('text-decoration', causeStyles.textDecoration);
+            }
         });
     });
     
     // Draw effect nodes
     effects.forEach((n, idx) => {
+        // Get styles for effect node
+        const effectNodeId = `multi-flow-effect-${idx}`;
+        const effectStyles = nodeStyles[effectNodeId] || {};
+        
         svg.append('rect')
             .attr('x', n.cx - n.w / 2)
             .attr('y', n.cy - n.h / 2)
@@ -2296,10 +2401,10 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
             .attr('height', n.h)
             .attr('rx', THEME.rectRadius)
             .attr('ry', THEME.rectRadius)
-            .attr('fill', THEME.effectFill)
-            .attr('stroke', THEME.effectStroke)
-            .attr('stroke-width', THEME.effectStrokeWidth)
-            .attr('data-node-id', `multi-flow-effect-${idx}`)
+            .attr('fill', effectStyles.fill || THEME.effectFill)
+            .attr('stroke', effectStyles.stroke || THEME.effectStroke)
+            .attr('stroke-width', effectStyles.strokeWidth || THEME.effectStrokeWidth)
+            .attr('data-node-id', effectNodeId)
             .attr('data-node-type', 'effect')
             .attr('data-effect-index', idx)
             .attr('cursor', 'pointer');
@@ -2308,27 +2413,40 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         const effectLines = (typeof window.splitTextLines === 'function') 
             ? window.splitTextLines(n.text) 
             : (n.text || '').split(/\n/);
-        const effectLineHeight = Math.round(THEME.fontEffect * 1.2);
+        const effectFontSizeWithStyle = effectStyles.fontSize || THEME.fontEffect;
+        const effectLineHeight = Math.round(effectFontSizeWithStyle * 1.2);
         
         // WORKAROUND: Use multiple text elements instead of tspan
         const effectStartY = n.cy - (effectLines.length - 1) * effectLineHeight / 2;
         effectLines.forEach((line, i) => {
-            svg.append('text')
+            const effectTextEl = svg.append('text')
                 .attr('x', n.cx)
                 .attr('y', effectStartY + i * effectLineHeight)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'middle')
-                .attr('fill', THEME.effectText)
-                .attr('font-size', THEME.fontEffect)
-                .attr('data-node-id', `multi-flow-effect-${idx}`)
+                .attr('fill', effectStyles.textColor || THEME.effectText)
+                .attr('font-size', effectFontSizeWithStyle)
+                .attr('data-node-id', effectNodeId)
                 .attr('data-node-type', 'effect')
                 .attr('data-effect-index', idx)
-                .attr('data-text-for', `multi-flow-effect-${idx}`)
+                .attr('data-text-for', effectNodeId)
                 .attr('cursor', 'pointer')
                 .attr('data-line-index', i)
                 .text(line);
+            
+            // Apply text styles if present
+            if (effectStyles.fontFamily) effectTextEl.attr('font-family', effectStyles.fontFamily);
+            if (effectStyles.fontWeight) effectTextEl.attr('font-weight', effectStyles.fontWeight);
+            if (effectStyles.fontStyle) effectTextEl.attr('font-style', effectStyles.fontStyle);
+            if (effectStyles.textDecoration) {
+                effectTextEl.style('text-decoration', effectStyles.textDecoration);
+                effectTextEl.attr('text-decoration', effectStyles.textDecoration);
+            }
         });
     });
+    
+    // Get styles for event node
+    const eventStyles = nodeStyles['multi-flow-event'] || nodeStyles['event'] || {};
     
     // Draw central event node (on top of everything)
     svg.append('rect')
@@ -2338,9 +2456,9 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
         .attr('height', eventH)
         .attr('rx', THEME.rectRadius)
         .attr('ry', THEME.rectRadius)
-        .attr('fill', THEME.eventFill)
-        .attr('stroke', THEME.eventStroke)
-        .attr('stroke-width', THEME.eventStrokeWidth)
+        .attr('fill', eventStyles.fill || THEME.eventFill)
+        .attr('stroke', eventStyles.stroke || THEME.eventStroke)
+        .attr('stroke-width', eventStyles.strokeWidth || THEME.eventStrokeWidth)
         .attr('data-node-id', 'multi-flow-event')
         .attr('data-node-type', 'event')
         .attr('cursor', 'pointer');
@@ -2349,25 +2467,34 @@ function renderMultiFlowMap(spec, theme = null, dimensions = null) {
     const eventLines = (typeof window.splitTextLines === 'function') 
         ? window.splitTextLines(spec.event) 
         : (spec.event || '').split(/\n/);
-    const eventLineHeight = Math.round(THEME.fontEvent * 1.2);
+    const eventFontSizeWithStyle = eventStyles.fontSize || THEME.fontEvent;
+    const eventLineHeight = Math.round(eventFontSizeWithStyle * 1.2);
     
     // WORKAROUND: Use multiple text elements instead of tspan
     const eventStartY = centerY - (eventLines.length - 1) * eventLineHeight / 2;
     eventLines.forEach((line, i) => {
-        svg.append('text')
+        const eventTextEl = svg.append('text')
             .attr('x', centerX)
             .attr('y', eventStartY + i * eventLineHeight)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
-            .attr('fill', THEME.eventText)
-            .attr('font-size', THEME.fontEvent)
-            .attr('font-weight', 'bold')
+            .attr('fill', eventStyles.textColor || THEME.eventText)
+            .attr('font-size', eventFontSizeWithStyle)
+            .attr('font-weight', eventStyles.fontWeight || 'bold')
             .attr('data-node-id', 'multi-flow-event')
             .attr('data-node-type', 'event')
             .attr('data-text-for', 'multi-flow-event')
             .attr('cursor', 'pointer')
             .attr('data-line-index', i)
             .text(line || '\u00A0');
+        
+        // Apply text styles if present
+        if (eventStyles.fontFamily) eventTextEl.attr('font-family', eventStyles.fontFamily);
+        if (eventStyles.fontStyle) eventTextEl.attr('font-style', eventStyles.fontStyle);
+        if (eventStyles.textDecoration) {
+            eventTextEl.style('text-decoration', eventStyles.textDecoration);
+            eventTextEl.attr('text-decoration', eventStyles.textDecoration);
+        }
     });
     
     // Apply learning sheet text knockout if needed

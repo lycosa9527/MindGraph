@@ -3317,8 +3317,8 @@ curl -X POST http://your-server/api/generate_graph \
                     
                     // Format token display - show input+output format (e.g., "13+1K")
                     const formatTokens = (num) => {
-                        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-                        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                        if (num >= 1000000) return Math.round(num / 1000000) + 'M';
+                        if (num >= 1000) return Math.round(num / 1000) + 'K';
                         return num.toLocaleString();
                     };
                     

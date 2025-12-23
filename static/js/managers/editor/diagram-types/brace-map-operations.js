@@ -391,6 +391,40 @@ class BraceMapOperations {
     }
     
     /**
+     * Save node styles to spec
+     * @param {Object} spec - Current diagram spec
+     * @param {string} nodeId - Node ID (e.g., 'topic', 'dimension', 'part_0', 'subpart_0_0')
+     * @param {Object} styles - Style properties (fill, stroke, strokeWidth, fontSize, textColor, etc.)
+     * @returns {Object} Updated spec
+     */
+    saveNodeStyles(spec, nodeId, styles) {
+        if (!spec) {
+            this.logger.error('BraceMapOperations', 'Invalid spec');
+            return null;
+        }
+        
+        // Initialize _node_styles if it doesn't exist
+        if (!spec._node_styles) {
+            spec._node_styles = {};
+        }
+        
+        // Merge with existing styles (preserve other properties)
+        if (!spec._node_styles[nodeId]) {
+            spec._node_styles[nodeId] = {};
+        }
+        
+        // Save/update styles for this node
+        Object.assign(spec._node_styles[nodeId], styles);
+        
+        this.logger.debug('BraceMapOperations', 'Saved node styles', {
+            nodeId,
+            styles: Object.keys(styles)
+        });
+        
+        return spec;
+    }
+    
+    /**
      * Validate Brace Map spec
      * @param {Object} spec - Diagram spec
      * @returns {boolean} Whether spec is valid

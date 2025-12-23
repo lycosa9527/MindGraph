@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.15] - 2025-01-XX - Style Persistence Fix
+
+### Fixed
+
+- **Style Persistence Bug** - Cross-diagram issue where custom node styles (fill color, stroke, font properties) were lost when:
+  - Adding new nodes to a diagram
+  - Emptying nodes (clearing node text)
+  - Re-rendering the diagram for any reason
+  
+  **Root Cause**: Styles were being applied to DOM elements but not persisted to the diagram's `spec._node_styles` object. Any re-render would rebuild the diagram from `spec`, losing unpersisted styles.
+
+  **Solution**: Implemented comprehensive style persistence following the existing pattern used for `_node_dimensions` and `_customPositions`:
+  
+  - **Immediate Persistence**: `NodePropertyOperationsManager` now extracts current DOM styles and saves them to `spec._node_styles` immediately when styles are applied
+  - **Operations Modules**: Added `saveNodeStyles()` method to all 10 diagram-specific operations modules to persist styles to `spec._node_styles`
+  - **Renderer Updates**: Updated all renderers to read from `spec._node_styles` and apply custom styles during rendering, falling back to THEME defaults if styles are missing
+
+  **Affected Diagrams**: All diagram types that support node styling:
+  - Bubble Map, Circle Map, Double Bubble Map
+  - Mind Map (topic, branch, child nodes)
+  - Concept Map (topic, concept nodes)
+  - Brace Map (topic, dimension, parts, subparts)
+  - Tree Map (topic, dimension, categories, leaves)
+  - Flow Map (title, steps, substeps)
+  - Bridge Map (left/right analogy nodes)
+  - Multi-Flow Map (event, causes, effects)
+
+  **Technical Details**:
+  - Styles persisted: `fill`, `stroke`, `strokeWidth`, `fontSize`, `textColor`, `fontFamily`, `fontWeight`, `fontStyle`, `textDecoration`
+  - Style storage: `spec._node_styles[nodeId] = { ...styles }`
+  - Renderer pattern: `const styles = nodeStyles[nodeId] || {};` then `styles.fill || THEME.defaultFill`
+  - Consistent with existing patterns for dimensions (`_node_dimensions`) and positions (`_customPositions`)
+
+### Changed
+
+- **NodePropertyOperationsManager** (`static/js/managers/toolbar/node-property-operations-manager.js`)
+  - Added `_saveStylesToSpec()` private method to extract DOM styles and persist them
+  - Updated `applyAllProperties()` and `applyStylesRealtime()` to call `_saveStylesToSpec()` after applying styles to DOM
+  - Extracts styles from both shape elements (circles/rectangles) and text elements
+
+- **Operations Modules** (all 10 diagram-specific operations modules in `static/js/managers/editor/diagram-types/`)
+  - Added `saveNodeStyles(spec, nodeId, styles)` method to each operations module
+  - Initializes `spec._node_styles` if it doesn't exist
+  - Merges new styles with existing styles for the node
+
+- **Renderers** (all renderer files in `static/js/renderers/`)
+  - Updated to read `spec._node_styles` at render time
+  - Apply custom styles to nodes during rendering
+  - Fall back to THEME defaults if styles are missing
+  - Support all style properties: fill, stroke, strokeWidth, fontSize, textColor, fontFamily, fontWeight, fontStyle, textDecoration
+
+---
+
 ## [4.37.14] - 2025-01-XX - Comprehensive Health Check Endpoint
 
 ### Added

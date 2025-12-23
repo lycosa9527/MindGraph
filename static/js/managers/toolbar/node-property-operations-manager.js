@@ -548,10 +548,14 @@ class NodePropertyOperationsManager {
             }
         });
         
+        // Save to history silently
         this.editor?.saveToHistory('update_properties', { 
             nodes: selectedNodes, 
             properties 
         });
+        
+        // Save styles to spec via operations module
+        this.saveStylesToSpec(selectedNodes, properties, false);
         
         this.toolbarManager.showNotification(this.toolbarManager.getNotif('propertiesApplied'), 'success');
     }
@@ -679,6 +683,71 @@ class NodePropertyOperationsManager {
         this.editor?.saveToHistory('update_properties', { 
             nodes: selectedNodes, 
             properties 
+        });
+        
+        // Save styles to spec via operations module
+        this.saveStylesToSpec(selectedNodes, properties, isLineMode);
+    }
+    
+    /**
+     * Save node styles to spec via operations module
+     * @param {Array<string>} nodeIds - Array of node IDs
+     * @param {Object} properties - Style properties applied
+     * @param {boolean} isLineMode - Whether in line mode
+     */
+    saveStylesToSpec(nodeIds, properties, isLineMode = false) {
+        if (!this.editor || !this.editor.currentSpec) return;
+        
+        const operationsLoader = this.editor.modules?.diagramOperationsLoader;
+        if (!operationsLoader) return;
+        
+        const operations = operationsLoader.getOperations();
+        if (!operations || typeof operations.saveNodeStyles !== 'function') return;
+        
+        nodeIds.forEach(nodeId => {
+            const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (nodeElement.empty()) return;
+            
+            // Extract current styles from DOM
+            const styles = {};
+            
+            // Shape styles (skip in line mode)
+            if (!isLineMode) {
+                const fill = nodeElement.attr('fill');
+                const stroke = nodeElement.attr('stroke');
+                if (fill && fill !== 'none') styles.fill = fill;
+                if (stroke && stroke !== 'none') styles.stroke = stroke;
+            }
+            
+            const strokeWidth = nodeElement.attr('stroke-width');
+            if (strokeWidth) styles.strokeWidth = strokeWidth;
+            
+            // Text styles
+            const textElements = this.findTextElementsForNode(nodeId, nodeElement);
+            if (!textElements.empty()) {
+                const firstText = textElements.node();
+                if (firstText) {
+                    const textEl = d3.select(firstText);
+                    const fontSize = textEl.attr('font-size');
+                    const fontFamily = textEl.attr('font-family');
+                    const fontWeight = textEl.attr('font-weight');
+                    const fontStyle = textEl.attr('font-style');
+                    const textColor = textEl.attr('fill');
+                    const textDecoration = textEl.attr('text-decoration') || textEl.style('text-decoration');
+                    
+                    if (fontSize) styles.fontSize = fontSize;
+                    if (fontFamily) styles.fontFamily = fontFamily;
+                    if (fontWeight) styles.fontWeight = fontWeight;
+                    if (fontStyle) styles.fontStyle = fontStyle;
+                    if (textColor && !isLineMode) styles.textColor = textColor;
+                    if (textDecoration && textDecoration !== 'none') styles.textDecoration = textDecoration;
+                }
+            }
+            
+            // Save to spec if we have any styles
+            if (Object.keys(styles).length > 0) {
+                operations.saveNodeStyles(this.editor.currentSpec, nodeId, styles);
+            }
         });
     }
     
