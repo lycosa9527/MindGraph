@@ -254,6 +254,8 @@ async def generate_graph(
         # Bridge map specific: pass existing analogies and fixed dimension for auto-complete mode
         existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None
         fixed_dimension = req.fixed_dimension if hasattr(req, 'fixed_dimension') else None
+        # Tree map and brace map: dimension-only mode flag
+        dimension_only_mode = req.dimension_only_mode if hasattr(req, 'dimension_only_mode') else None
         
         result = await agent.agent_graph_workflow_with_styles(
             prompt,
@@ -268,7 +270,9 @@ async def generate_graph(
             endpoint_path='/api/generate_graph',
             # Bridge map specific
             existing_analogies=existing_analogies,
-            fixed_dimension=fixed_dimension
+            fixed_dimension=fixed_dimension,
+            # Tree map and brace map: dimension-only mode
+            dimension_only_mode=dimension_only_mode
         )
         
         diagram_type = result.get('diagram_type', 'unknown')

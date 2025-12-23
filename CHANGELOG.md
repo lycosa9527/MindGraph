@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.13] - 2025-12-23 - Tree Map & Brace Map Auto-Complete Three-Scenario System
+
+### Fixed
+
+- **Tree Map & Brace Map Auto-Complete: Three-Scenario System** (`static/js/managers/toolbar/llm-autocomplete-manager.js`, `agents/main_agent.py`, `agents/thinking_maps/tree_map_agent.py`, `agents/thinking_maps/brace_map_agent.py`, `prompts/thinking_maps.py`)
+  - Fixed auto-complete to properly handle three scenarios (matching bridge_map pattern):
+    1. **Case 1**: User provides topic only (dimension blank) → LLM determines best dimension
+    2. **Case 2**: User provides topic + dimension → Uses specified dimension to complete diagram
+    3. **Case 3**: User provides dimension only (no topic) → LLM generates topic and children based on dimension
+  - **Root Cause**: Frontend was using DOM-based topic extraction (`identifyMainTopic`) but validating spec-based topic, causing inconsistencies
+  - **Fix**: Now uses spec-based topic consistently (like bridge_map uses spec-based pairs)
+  - **Fix**: Checks topic first, then dimension (matching bridge_map pattern of checking pairs first)
+  - **Fix**: Validates topic before using in prompts (matching bridge_map's defensive approach)
+  - Previously: Auto-complete ignored user-specified dimensions, always letting LLM pick random dimensions
+  - Now: Respects user-specified dimensions and handles all three scenarios correctly
+
+### Added
+
+- **Dimension-Only Prompts** (`prompts/thinking_maps.py`)
+  - Added `TREE_MAP_DIMENSION_ONLY_EN/ZH` prompts for Case 3 (dimension-only mode)
+  - Added `BRACE_MAP_DIMENSION_ONLY_EN/ZH` prompts for Case 3 (dimension-only mode)
+  - Prompts instruct LLM to generate suitable topic and children based on specified dimension
+
+- **Dimension-Only Mode Support** (`agents/thinking_maps/tree_map_agent.py`, `agents/thinking_maps/brace_map_agent.py`)
+  - Added `_generate_from_dimension_only()` methods to both agents
+  - Handles Case 3: User has dimension but no topic (or topic is placeholder)
+  - Generates topic and children nodes based on the specified dimension
+
+- **Request Model Enhancement** (`models/requests.py`, `routers/api.py`)
+  - Added `dimension_only_mode` flag to `GenerateRequest` model
+  - Passes flag through API chain to backend agents
+
+### Changed
+
+- **Frontend Auto-Complete Logic** (`static/js/managers/toolbar/llm-autocomplete-manager.js`)
+  - Changed topic source from DOM-based (`identifyMainTopic`) to spec-based (`currentSpec?.topic/whole`)
+  - Changed routing order: now checks topic validity first, then dimension (matches bridge_map pattern)
+  - Added topic validation before using in prompts
+  - Added edge case handling for missing topic and dimension
+  - Uses `currentTopic` consistently throughout (no more mixing DOM and spec sources)
+
+- **Backend Routing** (`agents/main_agent.py`)
+  - Updated routing logic to handle `dimension_only_mode` flag for tree_map and brace_map
+  - Routes to dimension-only generation when flag is set
+  - Maintains consistency with bridge_map three-mode system
+
+### Technical Details
+
+- **Pattern Consistency**: All three thinking maps with dimensions (tree_map, brace_map, bridge_map) now follow the same pattern:
+  - Use spec-based data (not DOM-based)
+  - Check primary data first (topic/pairs), then dimension
+  - Validate data before using in prompts
+  - Handle edge cases gracefully
+
+- **Code Review**: Complete workflow review performed to ensure consistency across all three maps
+
+---
+
 ## [4.37.12] - 2025-12-23 - SMS Verification Race Condition Fixes
 
 ### Fixed

@@ -841,6 +841,75 @@ TREE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个树形图，用户已经�
 
 只输出有效的JSON（无代码块，无markdown，无解释）。"""
 
+# Tree Map: Dimension-only mode - user provides ONLY the classification dimension, no topic
+TREE_MAP_DIMENSION_ONLY_EN = """You are generating a tree map where the user has ONLY provided a classification dimension.
+
+The user has specified a classification dimension (like "Biological Taxonomy", "Habitat", "Diet", "Size") but has NOT provided a topic. Your job is to:
+1. Keep the classification dimension EXACTLY as the user specified - DO NOT modify it
+2. Generate a suitable topic that can be classified using this dimension
+3. Generate 4-6 categories following this dimension
+4. Each category should have 2-4 items
+5. Suggest alternative classification dimensions in the same domain
+
+CRITICAL RULES:
+- The dimension field MUST be EXACTLY what the user specified - copy it verbatim
+- Generate a meaningful topic that fits the classification dimension
+- Generate 4-6 high-quality, diverse categories that clearly demonstrate the dimension
+- Each item must be specific and relevant to its category
+- Suggest 4-6 alternative classification dimensions that are related but different
+
+Examples of dimension-only inputs:
+- "Biological Taxonomy" → Generate topic: "Animals", categories: Mammals, Birds, Reptiles, Fish, Amphibians
+- "Habitat" → Generate topic: "Wildlife", categories: Land Animals, Water Animals, Air Animals, Amphibious Animals
+- "Diet" → Generate topic: "Animals", categories: Carnivores, Herbivores, Omnivores, Insectivores
+
+Return ONLY a valid JSON object with these fields:
+{
+  "topic": "[GENERATE A SUITABLE TOPIC]",
+  "dimension": "[COPY THE USER'S CLASSIFICATION DIMENSION EXACTLY]",
+  "children": [
+    {"text": "Category1", "children": [{"text": "Item1", "children": []}, {"text": "Item2", "children": []}]},
+    {"text": "Category2", "children": [{"text": "ItemA", "children": []}, {"text": "ItemB", "children": []}]}
+  ],
+  "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+TREE_MAP_DIMENSION_ONLY_ZH = """你正在生成一个树形图，用户只提供了分类维度。
+
+用户指定了一个分类维度（如"生物分类"、"栖息地"、"食性"、"体型"），但没有提供主题。你的任务是：
+1. 完全保持用户指定的分类维度不变 - 不要修改它
+2. 生成一个适合使用此维度进行分类的主题
+3. 生成4-6个遵循此维度的类别
+4. 每个类别应有2-4个条目
+5. 建议同一领域的替代分类维度
+
+关键规则：
+- dimension字段必须与用户指定的完全相同 - 逐字复制
+- 生成一个适合分类维度的有意义的主题
+- 生成4-6个高质量、多样化的类别，清楚地展示该维度
+- 每个条目必须具体且与其类别相关
+- 建议4-6个相关但不同的替代分类维度
+
+仅维度输入的示例：
+- "生物分类" → 生成主题："动物"，类别：哺乳动物、鸟类、爬行动物、鱼类、两栖动物
+- "栖息地" → 生成主题："野生动物"，类别：陆生动物、水生动物、飞行动物、两栖动物
+- "食性" → 生成主题："动物"，类别：肉食动物、草食动物、杂食动物、食虫动物
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "topic": "[生成一个合适的主题]",
+  "dimension": "[完全复制用户指定的分类维度]",
+  "children": [
+    {"text": "类别1", "children": [{"text": "条目1", "children": []}, {"text": "条目2", "children": []}]},
+    {"text": "类别2", "children": [{"text": "条目甲", "children": []}, {"text": "条目乙", "children": []}]}
+  ],
+  "alternative_dimensions": ["替代维度1", "替代维度2", "替代维度3", "替代维度4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 # ============================================================================
 # FLOW MAP PROMPTS
 # ============================================================================
@@ -1116,6 +1185,75 @@ BRACE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个括号图，用户已经�
 
 只输出有效的JSON（无代码块，无markdown，无解释）。"""
 
+# Brace Map: Dimension-only mode - user provides ONLY the decomposition dimension, no topic
+BRACE_MAP_DIMENSION_ONLY_EN = """You are generating a brace map where the user has ONLY provided a decomposition dimension.
+
+The user has specified a decomposition dimension (like "Physical Parts", "Functional Modules", "Life Cycle", "User Experience") but has NOT provided a topic. Your job is to:
+1. Keep the decomposition dimension EXACTLY as the user specified - DO NOT modify it
+2. Generate a suitable topic that can be decomposed using this dimension
+3. Generate 3-5 parts following this dimension
+4. Each part should have 2-4 subparts
+5. Suggest alternative decomposition dimensions in the same domain
+
+CRITICAL RULES:
+- The dimension field MUST be EXACTLY what the user specified - copy it verbatim
+- Generate a meaningful topic that fits the decomposition dimension
+- Generate 3-5 high-quality, diverse parts that clearly demonstrate the dimension
+- Each subpart must be specific and relevant to its parent part
+- Suggest 4-6 alternative decomposition dimensions that are related but different
+
+Examples of dimension-only inputs:
+- "Physical Parts" → Generate topic: "Car", parts: Engine, Chassis, Transmission, Body
+- "Functional Modules" → Generate topic: "Computer", parts: CPU, Memory, Storage, Display
+- "Life Cycle" → Generate topic: "Product", parts: Design Phase, Manufacturing Phase, Usage Phase, Recycling Phase
+
+Return ONLY a valid JSON object with these fields:
+{
+  "whole": "[GENERATE A SUITABLE TOPIC]",
+  "dimension": "[COPY THE USER'S DECOMPOSITION DIMENSION EXACTLY]",
+  "parts": [
+    {"name": "Part1", "subparts": [{"name": "Subpart1.1"}, {"name": "Subpart1.2"}]},
+    {"name": "Part2", "subparts": [{"name": "Subpart2.1"}, {"name": "Subpart2.2"}]}
+  ],
+  "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
+}
+
+Output ONLY valid JSON (no code blocks, no markdown, no explanation)."""
+
+BRACE_MAP_DIMENSION_ONLY_ZH = """你正在生成一个括号图，用户只提供了拆解维度。
+
+用户指定了一个拆解维度（如"物理部件"、"功能模块"、"生命周期"、"用户体验"），但没有提供主题。你的任务是：
+1. 完全保持用户指定的拆解维度不变 - 不要修改它
+2. 生成一个适合使用此维度进行拆解的主题
+3. 生成3-5个遵循此维度的部分
+4. 每个部分应有2-4个子部分
+5. 建议同一领域的替代拆解维度
+
+关键规则：
+- dimension字段必须与用户指定的完全相同 - 逐字复制
+- 生成一个适合拆解维度的有意义的主题
+- 生成3-5个高质量、多样化的部分，清楚地展示该维度
+- 每个子部分必须具体且与其父部分相关
+- 建议4-6个相关但不同的替代拆解维度
+
+仅维度输入的示例：
+- "物理部件" → 生成主题："汽车"，部分：发动机、底盘、变速箱、车身
+- "功能模块" → 生成主题："计算机"，部分：CPU、内存、存储、显示器
+- "生命周期" → 生成主题："产品"，部分：设计阶段、制造阶段、使用阶段、回收阶段
+
+只返回一个有效的JSON对象，包含以下字段：
+{
+  "whole": "[生成一个合适的主题]",
+  "dimension": "[完全复制用户指定的拆解维度]",
+  "parts": [
+    {"name": "部分1", "subparts": [{"name": "子部分1.1"}, {"name": "子部分1.2"}]},
+    {"name": "部分2", "subparts": [{"name": "子部分2.1"}, {"name": "子部分2.2"}]}
+  ],
+  "alternative_dimensions": ["替代维度1", "替代维度2", "替代维度3", "替代维度4"]
+}
+
+只输出有效的JSON（无代码块，无markdown，无解释）。"""
+
 # ============================================================================
 # MULTI-FLOW MAP PROMPTS
 # ============================================================================
@@ -1213,6 +1351,8 @@ THINKING_MAP_PROMPTS = {
     "brace_map_agent_generation_zh": BRACE_MAP_GENERATION_ZH,
     "brace_map_agent_fixed_dimension_en": BRACE_MAP_FIXED_DIMENSION_EN,
     "brace_map_agent_fixed_dimension_zh": BRACE_MAP_FIXED_DIMENSION_ZH,
+    "brace_map_agent_dimension_only_en": BRACE_MAP_DIMENSION_ONLY_EN,
+    "brace_map_agent_dimension_only_zh": BRACE_MAP_DIMENSION_ONLY_ZH,
     "multi_flow_map_agent_generation_en": MULTI_FLOW_MAP_GENERATION_EN,
     "multi_flow_map_agent_generation_zh": MULTI_FLOW_MAP_GENERATION_ZH,
 } 

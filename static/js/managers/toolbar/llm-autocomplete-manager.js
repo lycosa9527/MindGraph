@@ -262,20 +262,76 @@ class LLMAutoCompleteManager {
                     }
                 }
             } else if (currentDiagramType === 'tree_map' || currentDiagramType === 'brace_map') {
-                // Tree Map and Brace Map: For auto-complete, send ONLY the topic
-                // Do NOT send the dimension - let LLM generate fresh content based on the topic
-                // This allows users to edit the topic and get new suggestions without being constrained by old dimension
-                const dimType = currentDiagramType === 'tree_map' ? 'classification' : 'decomposition';
-                prompt = `Generate a ${currentDiagramType.replace('_', ' ')} for topic "${mainTopic}". Determine the best ${dimType} dimension based on the topic.`;
-                this.logger.info('LLMAutoCompleteManager', `${currentDiagramType}: auto-complete with topic only (no fixed dimension)`);
+                // Tree Map and Brace Map: Three-scenario system (similar to bridge_map)
+                // Scenario 1: Topic only → generate dimension and children
+                // Scenario 2: Topic + dimension → use dimension to generate children
+                // Scenario 3: Dimension only (no topic) → generate topic and children based on dimension
+                // 
+                // Pattern matches bridge_map: check topic first (like bridge_map checks pairs first), then dimension
                 
-                requestBody = {
-                    prompt: prompt,
-                    diagram_type: currentDiagramType,
-                    language: language,
-                    request_type: 'autocomplete'
-                    // NOTE: Do NOT send fixed_dimension - let LLM determine dimension from topic
-                };
+                const topicField = currentDiagramType === 'tree_map' ? 'topic' : 'whole';
+                const currentTopic = this.editor.currentSpec?.[topicField];
+                const hasValidTopic = currentTopic && currentTopic.trim() !== '' && !this.llmValidationManager.validator.isPlaceholderText(currentTopic);
+                
+                const currentDimension = this.editor.currentSpec?.dimension;
+                const hasFixedDimension = currentDimension && currentDimension.trim() !== '';
+                
+                const dimType = currentDiagramType === 'tree_map' ? 'classification' : 'decomposition';
+                
+                // Check topic first (like bridge_map checks pairs first), then dimension
+                if (hasValidTopic && hasFixedDimension) {
+                    // Scenario 2: Topic + dimension - use dimension to generate children
+                    // Use spec-based topic (like bridge_map uses spec-based pairs)
+                    prompt = `Generate a ${currentDiagramType.replace('_', ' ')} for topic "${currentTopic}" using the ${dimType} dimension: "${currentDimension}". Generate children nodes based on this dimension.`;
+                    this.logger.info('LLMAutoCompleteManager', `${currentDiagramType}: Topic + dimension mode - topic "${currentTopic}" with dimension "${currentDimension}"`);
+                    
+                    requestBody = {
+                        prompt: prompt,
+                        diagram_type: currentDiagramType,
+                        language: language,
+                        request_type: 'autocomplete',
+                        fixed_dimension: currentDimension  // Send the user-specified dimension
+                    };
+                } else if (hasValidTopic && !hasFixedDimension) {
+                    // Scenario 1: Topic only - let LLM determine the best dimension
+                    // Use spec-based topic and validate it exists (like bridge_map validates pairs)
+                    prompt = `Generate a ${currentDiagramType.replace('_', ' ')} for topic "${currentTopic}". Determine the best ${dimType} dimension based on the topic.`;
+                    this.logger.info('LLMAutoCompleteManager', `${currentDiagramType}: Topic-only mode - topic "${currentTopic}" (no fixed dimension - LLM will determine)`);
+                    
+                    requestBody = {
+                        prompt: prompt,
+                        diagram_type: currentDiagramType,
+                        language: language,
+                        request_type: 'autocomplete'
+                        // NOTE: No fixed_dimension - let LLM determine dimension from topic
+                    };
+                } else if (hasFixedDimension && !hasValidTopic) {
+                    // Scenario 3: Dimension-only mode - user has specified dimension but no topic (or topic is placeholder)
+                    // Generate topic and children based on the dimension
+                    prompt = `Generate a ${currentDiagramType.replace('_', ' ')} using the ${dimType} dimension: "${currentDimension}". Generate a suitable topic and children nodes based on this dimension.`;
+                    this.logger.info('LLMAutoCompleteManager', `${currentDiagramType}: Dimension-only mode with dimension "${currentDimension}" (no valid topic)`);
+                    
+                    requestBody = {
+                        prompt: prompt,
+                        diagram_type: currentDiagramType,
+                        language: language,
+                        request_type: 'autocomplete',
+                        fixed_dimension: currentDimension,  // Send the user-specified dimension
+                        dimension_only_mode: true  // Flag to indicate dimension-only mode
+                    };
+                } else {
+                    // Edge case: No topic and no dimension - fallback to standard generation
+                    // This shouldn't normally happen, but handle gracefully
+                    prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Generate additional nodes to complete the diagram structure.`;
+                    this.logger.warn('LLMAutoCompleteManager', `${currentDiagramType}: Fallback mode - no valid topic or dimension`);
+                    
+                    requestBody = {
+                        prompt: prompt,
+                        diagram_type: currentDiagramType,
+                        language: language,
+                        request_type: 'autocomplete'
+                    };
+                }
             } else {
                 // Standard prompt for other diagram types
                 prompt = `Continue the following ${currentDiagramType} diagram with ${existingNodes.length} existing nodes. Main topic/center: "${mainTopic}". Generate additional nodes to complete the diagram structure.`;

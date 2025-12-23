@@ -1139,21 +1139,39 @@ class BraceMapAgent(BaseAgent):
         request_type: str = 'diagram_generation',
         endpoint_path: Optional[str] = None,
         # Fixed dimension: user has already specified this, do NOT change it
-        fixed_dimension: Optional[str] = None
+        fixed_dimension: Optional[str] = None,
+        # Dimension-only mode: user has dimension but no topic (generate topic and children)
+        dimension_only_mode: Optional[bool] = None
     ) -> Dict[str, Any]:
         """Generate a brace map from a prompt."""
         try:
-            # Generate the initial brace map specification
-            spec = await self._generate_brace_map_spec(
-                prompt, 
-                language, 
-                dimension_preference,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                fixed_dimension=fixed_dimension
-            )
+            # Three-scenario system (similar to bridge_map):
+            # Scenario 1: Topic only → standard generation
+            # Scenario 2: Topic + dimension → fixed_dimension mode
+            # Scenario 3: Dimension only (no topic) → dimension_only_mode
+            if dimension_only_mode and fixed_dimension:
+                # Scenario 3: Dimension-only mode - generate topic and children based on dimension
+                logger.debug(f"BraceMapAgent: Dimension-only mode - generating topic and children for dimension '{fixed_dimension}'")
+                spec = await self._generate_from_dimension_only(
+                    fixed_dimension,
+                    language,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
+            else:
+                # Scenario 1 or 2: Standard generation or fixed dimension with topic
+                spec = await self._generate_brace_map_spec(
+                    prompt, 
+                    language, 
+                    dimension_preference,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path,
+                    fixed_dimension=fixed_dimension
+                )
             if not spec:
                 return {
                     'success': False,
@@ -1313,6 +1331,99 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             
         except Exception as e:
             logger.error(f"BraceMapAgent: Error in spec generation: {e}")
+            return None
+    
+    async def _generate_from_dimension_only(
+        self,
+        dimension: str,
+        language: str,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        request_type: str = 'diagram_generation',
+        endpoint_path: Optional[str] = None
+    ) -> Optional[Dict]:
+        """
+        Generate brace map from a decomposition dimension only (no topic).
+        
+        This is Scenario 3 of the three-scenario system:
+        - Scenario 1: Topic only → standard generation
+        - Scenario 2: Topic + dimension → fixed_dimension mode
+        - Scenario 3: Dimension only (no topic) → generate topic and children (this method)
+        
+        Args:
+            dimension: The decomposition dimension specified by user (e.g., "Physical Parts", "Functional Modules")
+            language: Language for generation
+            
+        Returns:
+            Spec with generated topic and parts following the specified dimension
+        """
+        try:
+            logger.debug(f"BraceMapAgent: Dimension-only mode - generating topic and parts for dimension '{dimension}'")
+            
+            # Import centralized prompt system
+            from prompts import get_prompt
+            
+            # Get the dimension-only prompt
+            system_prompt = get_prompt("brace_map_agent", language, "dimension_only")
+            
+            if not system_prompt:
+                logger.warning("BraceMapAgent: No dimension_only prompt found, using fixed_dimension prompt as fallback")
+                system_prompt = get_prompt("brace_map_agent", language, "fixed_dimension")
+            
+            # Build user prompt with the dimension
+            if language == "zh":
+                user_prompt = f"用户指定的拆解维度：{dimension}\n\n请根据这个拆解维度生成一个合适的主题和部分。"
+            else:
+                user_prompt = f"User's specified decomposition dimension: {dimension}\n\nGenerate a suitable topic and parts following this decomposition dimension."
+            
+            logger.debug(f"User prompt: {user_prompt}")
+            
+            # Call LLM
+            from services.llm_service import llm_service
+            from config.settings import config
+            
+            response = await llm_service.chat(
+                prompt=user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=1000,
+                temperature=config.LLM_TEMPERATURE,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type='brace_map'
+            )
+            
+            logger.debug(f"LLM response: {response[:500] if response else 'None'}...")
+            
+            # Extract JSON from response
+            from ..core.agent_utils import extract_json_from_response
+            
+            if isinstance(response, dict):
+                result = response
+            else:
+                result = extract_json_from_response(str(response))
+            
+            if not result:
+                logger.error("BraceMapAgent: Failed to extract JSON from dimension-only response")
+                return None
+            
+            # Normalize field names (e.g., 'topic' -> 'whole') before validation
+            result = self._normalize_field_names(result)
+            
+            # If fixed_dimension was provided, enforce it regardless of what LLM returned
+            if dimension:
+                result['dimension'] = dimension
+                logger.debug(f"BraceMapAgent: Enforced FIXED dimension: {dimension}")
+            
+            logger.debug(f"BraceMapAgent: Dimension-only complete - dimension: '{dimension}', whole: '{result.get('whole', 'N/A')}'")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"BraceMapAgent: Error in dimension-only mode: {e}")
             return None
     
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:

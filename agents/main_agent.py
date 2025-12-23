@@ -1433,7 +1433,9 @@ async def _generate_spec_with_agent(
     diagram_type_for_tracking=None,
     # Bridge map specific
     existing_analogies=None,
-    fixed_dimension=None
+    fixed_dimension=None,
+    # Tree map and brace map: dimension-only mode (user has dimension but no topic)
+    dimension_only_mode=None
 ) -> dict:
     """
     Generate specification using the appropriate specialized agent.
@@ -1561,36 +1563,42 @@ async def _generate_spec_with_agent(
                 existing_analogies=None,
                 fixed_dimension=fixed_dimension
             )
-        # For tree maps with fixed dimension (auto-complete mode)
-        elif diagram_type == 'tree_map' and fixed_dimension:
-            logger.debug(f"Tree map auto-complete mode with FIXED dimension '{fixed_dimension}'")
-            result = await agent.generate_graph(
-                user_prompt, 
-                language, 
-                fixed_dimension,  # Use fixed_dimension as the dimension_preference
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                # Pass fixed_dimension flag
-                fixed_dimension=fixed_dimension
-            )
-        # For brace maps with fixed dimension (auto-complete mode)
-        elif diagram_type == 'brace_map' and fixed_dimension:
-            logger.debug(f"Brace map auto-complete mode with FIXED dimension '{fixed_dimension}'")
-            result = await agent.generate_graph(
-                user_prompt, 
-                language, 
-                fixed_dimension,  # Use fixed_dimension as the dimension_preference
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                # Pass fixed_dimension flag
-                fixed_dimension=fixed_dimension
-            )
+        # Tree map and brace map: Three-scenario system (similar to bridge_map)
+        # Scenario 1: Topic only → handled by standard generation below
+        # Scenario 2: Topic + dimension → fixed_dimension mode (topic exists)
+        # Scenario 3: Dimension only (no topic) → dimension_only_mode
+        elif (diagram_type == 'tree_map' or diagram_type == 'brace_map') and fixed_dimension:
+            if dimension_only_mode:
+                # Scenario 3: Dimension-only mode - user has dimension but no topic
+                logger.debug(f"{diagram_type} dimension-only mode: generating topic and children for dimension '{fixed_dimension}'")
+                result = await agent.generate_graph(
+                    user_prompt, 
+                    language, 
+                    fixed_dimension,  # Use fixed_dimension as the dimension_preference
+                    # Token tracking parameters
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path,
+                    # Pass fixed_dimension flag and dimension_only_mode
+                    fixed_dimension=fixed_dimension,
+                    dimension_only_mode=True
+                )
+            else:
+                # Scenario 2: Topic + dimension mode
+                logger.debug(f"{diagram_type} auto-complete mode with FIXED dimension '{fixed_dimension}' (topic exists)")
+                result = await agent.generate_graph(
+                    user_prompt, 
+                    language, 
+                    fixed_dimension,  # Use fixed_dimension as the dimension_preference
+                    # Token tracking parameters
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path,
+                    # Pass fixed_dimension flag
+                    fixed_dimension=fixed_dimension
+                )
         # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
         elif (diagram_type == 'brace_map' or diagram_type == 'tree_map' or diagram_type == 'bridge_map') and dimension_preference:
             if diagram_type == 'brace_map':
@@ -1711,7 +1719,9 @@ async def agent_graph_workflow_with_styles(
     # Bridge map specific: existing pairs for auto-complete mode
     existing_analogies=None,
     # Bridge map specific: fixed dimension/relationship that user has already specified
-    fixed_dimension=None
+    fixed_dimension=None,
+    # Tree map and brace map: dimension-only mode (user has dimension but no topic)
+    dimension_only_mode=None
 ):
     """
     Simplified agent workflow that directly calls specialized agents.
@@ -1725,6 +1735,7 @@ async def agent_graph_workflow_with_styles(
         model (str): LLM model to use ('qwen', 'deepseek', 'kimi'). Passed through call chain to avoid race conditions.
         existing_analogies (list, optional): For bridge map auto-complete - existing pairs to preserve [{left, right}, ...]
         fixed_dimension (str, optional): For bridge map auto-complete - user-specified relationship pattern that should NOT be changed
+        dimension_only_mode (bool, optional): For tree_map/brace_map auto-complete - user has dimension but no topic (generate topic and children)
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
@@ -1844,7 +1855,9 @@ async def agent_graph_workflow_with_styles(
             diagram_type_for_tracking=diagram_type,
             # Bridge map specific
             existing_analogies=existing_analogies,
-            fixed_dimension=fixed_dimension
+            fixed_dimension=fixed_dimension,
+            # Tree map and brace map: dimension-only mode
+            dimension_only_mode=dimension_only_mode
         )
         generation_time = time.time() - generation_start
         logger.info(f"Diagram generation completed in {generation_time:.2f}s for {diagram_type}")

@@ -28,8 +28,10 @@ class GenerateRequest(BaseModel):
     request_type: Optional[str] = Field('diagram_generation', description="Request type for token tracking: 'diagram_generation' or 'autocomplete'")
     # Bridge map specific: existing analogy pairs for auto-complete (preserve user's pairs, only identify relationship)
     existing_analogies: Optional[List[Dict[str, str]]] = Field(None, description="Existing bridge map analogy pairs [{left, right}, ...] for auto-complete mode")
-    # Bridge map specific: fixed dimension/relationship that user has already specified (should not be changed by LLM)
-    fixed_dimension: Optional[str] = Field(None, description="User-specified relationship pattern for bridge map that should be preserved")
+    # Fixed dimension: user-specified dimension that should be preserved (used for tree_map, brace_map, and bridge_map)
+    fixed_dimension: Optional[str] = Field(None, description="User-specified dimension/relationship pattern that should be preserved (classification dimension for tree_map, decomposition dimension for brace_map, relationship pattern for bridge_map)")
+    # Dimension-only mode: user has specified dimension but no topic (used for tree_map and brace_map)
+    dimension_only_mode: Optional[bool] = Field(None, description="Flag indicating dimension-only mode where user has specified dimension but no topic (generate topic and children based on dimension)")
     
     @field_validator('diagram_type', mode='before')
     @classmethod
